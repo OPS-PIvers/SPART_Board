@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { detectWidgetType } from './smartPaste';
-import { EmbedConfig, QRConfig } from '../types';
+import {
+  EmbedConfig,
+  QRConfig,
+  StickerConfig,
+  ChecklistConfig,
+  TextConfig,
+} from '../types';
 
 describe('detectWidgetType (Smart Paste)', () => {
   it('detects Google Slides and converts to preview URL', () => {
@@ -122,7 +128,7 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result).not.toBeNull();
     if (result?.action === 'create-widget') {
       expect(result.type).toBe('sticker');
-      const config = result.config as any;
+      const config = result.config as StickerConfig;
       expect(config.url).toBe('https://example.com/image.png');
     } else {
       throw new Error('Expected create-widget action');
@@ -136,7 +142,7 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result).not.toBeNull();
     if (result?.action === 'create-widget') {
       expect(result.type).toBe('checklist');
-      const config = result.config as any;
+      const config = result.config as ChecklistConfig;
       expect(config.items.length).toBe(3);
       expect(config.items[0].text).toBe('item 1');
       expect(config.items[1].text).toBe('item 2');
@@ -153,7 +159,7 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result).not.toBeNull();
     if (result?.action === 'create-widget') {
       expect(result.type).toBe('text');
-      const config = result.config as any;
+      const config = result.config as TextConfig;
       expect(config.content).toBe('Hello world');
     } else {
       throw new Error('Expected create-widget action');
