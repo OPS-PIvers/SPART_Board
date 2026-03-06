@@ -182,6 +182,11 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     if (!syncBackground || !activeDashboard) return;
 
+    // Don't override user-selected image or video backgrounds (URLs).
+    // The weather sync only applies to Tailwind class-based backgrounds.
+    const currentBg = activeDashboard.background;
+    if (currentBg.startsWith('http') || currentBg.startsWith('data:')) return;
+
     const getBackgroundForCondition = (cond: string) => {
       switch (cond.toLowerCase()) {
         case 'sunny':
