@@ -224,12 +224,27 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
       <WidgetLayout
         padding="p-0"
         content={
-          <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center bg-rose-50/30">
-            <Ban className="w-12 h-12 text-rose-400 mb-2 animate-pulse" />
-            <p className="text-xs font-black uppercase text-rose-500 tracking-widest">
+          <div
+            className="h-full w-full flex flex-col items-center justify-center text-center bg-rose-50/30"
+            style={{ padding: 'min(24px, 5cqmin)', gap: 'min(8px, 2cqmin)' }}
+          >
+            <Ban
+              className="text-rose-400 animate-pulse"
+              style={{
+                width: 'min(48px, 12cqmin)',
+                height: 'min(48px, 12cqmin)',
+              }}
+            />
+            <p
+              className="font-black uppercase text-rose-500 tracking-widest"
+              style={{ fontSize: 'min(14px, 5cqmin)' }}
+            >
               Calendar Blocked
             </p>
-            <p className="text-[10px] text-rose-400 font-medium mt-1 leading-tight">
+            <p
+              className="text-rose-400 font-medium leading-tight"
+              style={{ fontSize: 'min(12px, 4cqmin)' }}
+            >
               A district-wide blocked date is active today.
             </p>
           </div>
@@ -282,7 +297,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                     >
                       <span
                         className="font-black text-slate-400 uppercase tracking-widest shrink-0"
-                        style={{ fontSize: 'min(14px, 6cqmin)' }}
+                        style={{ fontSize: 'min(24px, 6cqmin)' }}
                       >
                         {isToday ? 'Today' : event.date}
                       </span>
@@ -290,13 +305,13 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                         <>
                           <span
                             className="text-slate-300 shrink-0"
-                            style={{ fontSize: 'min(14px, 6cqmin)' }}
+                            style={{ fontSize: 'min(24px, 6cqmin)' }}
                           >
                             •
                           </span>
                           <span
                             className="font-bold text-slate-400 truncate min-w-0 flex-1"
-                            style={{ fontSize: 'min(14px, 6cqmin)' }}
+                            style={{ fontSize: 'min(24px, 6cqmin)' }}
                           >
                             {event.time}
                           </span>
@@ -305,7 +320,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                     </div>
                     <span
                       className="font-black text-slate-700 truncate leading-tight"
-                      style={{ fontSize: 'min(24px, 10cqmin)' }}
+                      style={{ fontSize: 'min(36px, 10cqmin)' }}
                     >
                       {event.title}
                     </span>
