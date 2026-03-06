@@ -28,10 +28,12 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
   const [loading, setLoading] = useState(false);
 
   // Firestore session ID is [teacherUid]_[widgetId] to ensure ownership and avoid collisions/permission issues
-  const sessionId = useMemo(
-    () => (user ? `${user.uid}_${widget.id}` : null),
-    [user, widget.id]
-  );
+  const sessionId = useMemo(() => {
+    if (!user || !widget.id) return null;
+    // Sanitize widget.id to prevent path traversal
+    const safeWidgetId = widget.id.replace(/[^a-zA-Z0-9_-]/g, '');
+    return `${user.uid}_${safeWidgetId}`;
+  }, [user, widget.id]);
 
   // Auto-expiry check: Deactivate session if it's from a previous day
   useEffect(() => {
@@ -82,6 +84,11 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
     config.isActive,
   ]);
 
+  const queueRef = React.useRef(queue);
+  React.useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+
   // Firestore "Buffer" Listener: Watch for incoming student entries
   useEffect(() => {
     if (
@@ -106,8 +113,8 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
         if (snap.empty) return;
 
         const processEntries = async () => {
-          // Process new entries
-          const updatedQueue = [...queue];
+          // Process new entries using a ref to get the latest queue state
+          const updatedQueue = [...queueRef.current];
           const deletePromises: Promise<void>[] = [];
 
           snap.docs.forEach((doc) => {
@@ -120,7 +127,11 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
             };
 
             // Avoid duplicates if listener triggers multiple times
-            if (!updatedQueue.some((q) => q.id === doc.id)) {
+            // and cap the queue length to prevent abuse (DoS / Drive space exhaustion)
+            if (
+              !updatedQueue.some((q) => q.id === doc.id) &&
+              updatedQueue.length < 500
+            ) {
               // If no active student, make the first one active
               if (updatedQueue.length === 0) {
                 newItem.status = 'active';
@@ -153,7 +164,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
         console.error('[NextUp] Entries listener error:', error);
       }
     );
-  }, [sessionId, driveService, queue, config, widget.id, updateWidget]);
+  }, [sessionId, driveService, config, widget.id, updateWidget]);
 
   const syncToDrive = useCallback(
     async (updatedQueue: NextUpQueueItem[]) => {
