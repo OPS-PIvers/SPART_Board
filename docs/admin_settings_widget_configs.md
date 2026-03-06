@@ -170,7 +170,6 @@ These widgets currently lack specific global settings panels beyond basic enable
 
 **Proposed Admin Config**: SIS Synchronization Limits. Add controls for how often roster data can be pulled from ClassLink/Drive. Set building-level default display styles (e.g., "First Name + Last Initial" vs "Full Name").
 
-
 ## 3. Embed (embed)
 
 **Proposed Admin Config**: Domain Allowlist. Establish security array of allowed domains. Set default URLs per building (e.g., daily announcements).
@@ -206,7 +205,6 @@ These widgets currently lack specific global settings panels beyond basic enable
 ## 11. Smart Notebook (smartNotebook)
 
 **Proposed Admin Config**: Data Caps. Define max pages or stroke paths per notebook.
-
 
 ## 13. Breathing (breathing)
 
