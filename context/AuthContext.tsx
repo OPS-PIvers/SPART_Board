@@ -234,26 +234,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 scope: GOOGLE_OAUTH_SCOPES.join(' '),
                 hint: email,
                 callback: (response: google.accounts.oauth2.TokenResponse) => {
-                  if (response.access_token) {
-                    const expiryMs =
-                      Date.now() +
-                      (parseInt(response.expires_in ?? '3600', 10) || 3600) *
-                        1000;
-                    // Write token before expiry so that a fast page reload never
-                    // finds an expiry key without its accompanying token.
-                    // Note: two separate setItem calls are not truly atomic; this
-                    // ordering minimises the window where expiry exists without token.
-                    localStorage.setItem(
-                      GOOGLE_ACCESS_TOKEN_KEY,
-                      response.access_token
-                    );
-                    localStorage.setItem(
-                      GOOGLE_TOKEN_EXPIRY_KEY,
-                      expiryMs.toString()
-                    );
-                    setGoogleAccessToken(response.access_token);
-                    resolve(response.access_token);
-                  } else {
+                  try {
+                    if (response.access_token) {
+                      const expiryMs =
+                        Date.now() +
+                        (parseInt(response.expires_in ?? '3600', 10) || 3600) *
+                          1000;
+                      // Write token before expiry so that a fast page reload never
+                      // finds an expiry key without its accompanying token.
+                      // Note: two separate setItem calls are not truly atomic; this
+                      // ordering minimises the window where expiry exists without token.
+                      localStorage.setItem(
+                        GOOGLE_ACCESS_TOKEN_KEY,
+                        response.access_token
+                      );
+                      localStorage.setItem(
+                        GOOGLE_TOKEN_EXPIRY_KEY,
+                        expiryMs.toString()
+                      );
+                      setGoogleAccessToken(response.access_token);
+                      resolve(response.access_token);
+                    } else {
+                      resolve(null);
+                    }
+                  } catch (err) {
+                    console.error('Failed to handle GIS token response', err);
                     resolve(null);
                   }
                 },
