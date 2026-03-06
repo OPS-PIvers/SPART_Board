@@ -220,6 +220,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
     bringToFront(widget.id);
     // Explicitly focus the widget so it can receive keyboard events
     (e.currentTarget as HTMLElement).focus();
@@ -543,6 +544,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     !isMaximized && (showTools || isDragging || isResizing || widget.flipped);
 
   const handleWidgetClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     // Avoid triggering when clicking interactive elements
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(INTERACTIVE_ELEMENTS_SELECTOR);
