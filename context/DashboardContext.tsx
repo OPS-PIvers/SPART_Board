@@ -86,7 +86,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   } = useFirestore(user?.uid ?? null);
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
-  const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [pendingShareId, setPendingShareId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const path = window.location.pathname;
@@ -103,6 +102,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = useRef(activeId);
+  const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [visibleTools, setVisibleTools] = useState<

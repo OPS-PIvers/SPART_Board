@@ -77,10 +77,12 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // Click Settings button in the toolbar (it appears in DOM when active)
   // We target the button with title "Settings" which is unique to the widget toolbar
   // (Admin settings has title "Admin Settings")
-  const settingsButton = page.getByRole('button', {
-    name: 'Settings',
-    exact: true,
-  }).last();
+  const settingsButton = page
+    .getByRole('button', {
+      name: 'Settings',
+      exact: true,
+    })
+    .last();
   // Force click to ensure it works even if animation/position is tricky
   await settingsButton.click({ force: true });
 
