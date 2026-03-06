@@ -318,6 +318,9 @@ export interface ExpectationsBuildingConfig {
   volumeOverrides?: Record<number, ExpectationsOptionOverride>;
   groupOverrides?: Record<string, ExpectationsOptionOverride>;
   interactionOverrides?: Record<string, ExpectationsOptionOverride>;
+  showVolume?: boolean;
+  showGroup?: boolean;
+  showInteraction?: boolean;
 }
 
 export interface ExpectationsGlobalConfig {
@@ -669,6 +672,8 @@ export interface GlobalMiniAppItem extends MiniAppItem {
 // 2. Define the Widget Configuration
 export interface MiniAppConfig {
   activeApp: MiniAppItem | null;
+  /** True when activeApp was created via smart-paste and has not yet been saved to the library */
+  activeAppUnsaved?: boolean;
 }
 
 export interface PdfItem {

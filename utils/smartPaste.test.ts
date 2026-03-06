@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectWidgetType } from './smartPaste';
-import { EmbedConfig, QRConfig } from '../types';
+import { EmbedConfig, QRConfig, ChecklistConfig } from '../types';
 
 describe('detectWidgetType (Smart Paste)', () => {
   it('detects Google Slides and converts to preview URL', () => {
@@ -77,6 +77,20 @@ describe('detectWidgetType (Smart Paste)', () => {
     }
   });
 
+  it('detects HTML starting with <!DOCTYPE html>', () => {
+    const input =
+      '<!DOCTYPE html><html><title>Full Doc</title><body>Hello</body></html>';
+    const result = detectWidgetType(input);
+
+    expect(result).not.toBeNull();
+    if (result?.action === 'create-mini-app') {
+      expect(result.title).toBe('Full Doc');
+      expect(result.html).toBe(input);
+    } else {
+      throw new Error('Expected create-mini-app action');
+    }
+  });
+
   it('detects Share Links', () => {
     const input = 'https://myapp.com/share/12345';
     const result = detectWidgetType(input);
@@ -86,6 +100,46 @@ describe('detectWidgetType (Smart Paste)', () => {
       expect(result.url).toBe(input);
     } else {
       throw new Error('Expected import-board action');
+    }
+  });
+
+  it('detects ambiguous checklists and prompts the user', () => {
+    const input = 'Buy milk\nWalk the dog\nFinish the review';
+    const result = detectWidgetType(input);
+
+    expect(result).not.toBeNull();
+    if (result?.action === 'prompt-text-or-checklist') {
+      expect(result.text).toBe(input);
+    } else {
+      throw new Error('Expected prompt-text-or-checklist action');
+    }
+  });
+
+  it('detects paragraph-separated checklists', () => {
+    const input = 'First item\n\nSecond item\n\nThird item';
+    const result = detectWidgetType(input);
+
+    expect(result).not.toBeNull();
+    if (result?.action === 'create-widget') {
+      expect(result.type).toBe('checklist');
+      const config = result.config as ChecklistConfig;
+      expect(config.items).toHaveLength(3);
+      expect(config.items[0].text).toBe('First item');
+    } else {
+      throw new Error('Expected create-widget action');
+    }
+  });
+
+  it('defaults to text widget for long prose', () => {
+    const input =
+      'This is a very long paragraph that should definitely be treated as a text widget rather than a checklist, even if it has multiple lines that are not clearly separated into a list format. It contains multiple sentences and is quite long in terms of character count per line or paragraph.';
+    const result = detectWidgetType(input);
+
+    expect(result).not.toBeNull();
+    if (result?.action === 'create-widget') {
+      expect(result.type).toBe('text');
+    } else {
+      throw new Error('Expected create-widget action');
     }
   });
 });

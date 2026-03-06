@@ -36,7 +36,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
   } = useDashboard();
   const {
     signOut,
-    signInWithGoogle,
+    connectGoogleDrive,
     selectedBuildings,
     setSelectedBuildings,
     refreshGoogleToken,
@@ -101,7 +101,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
                   if (isDriveConnected) {
                     void signOut();
                   } else {
-                    void signInWithGoogle();
+                    void connectGoogleDrive();
                   }
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all ${

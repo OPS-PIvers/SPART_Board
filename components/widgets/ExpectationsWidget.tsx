@@ -47,36 +47,46 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
     ? globalConfig?.buildings?.[primaryBuildingId]
     : undefined;
 
-  // Compute active options based on overrides
-  const activeVolumeOptions = VOLUME_OPTIONS.map((opt) => {
-    const override = buildingConfig?.volumeOverrides?.[opt.id];
-    if (override && override.enabled === false) return null;
-    return {
-      ...opt,
-      label: override?.customLabel ?? opt.label,
-      sub: override?.customSub ?? opt.sub,
-    };
-  }).filter(Boolean) as typeof VOLUME_OPTIONS;
+  // Compute active options based on overrides and category toggles
+  const activeVolumeOptions =
+    buildingConfig?.showVolume === false
+      ? []
+      : (VOLUME_OPTIONS.map((opt) => {
+          const override = buildingConfig?.volumeOverrides?.[opt.id];
+          if (override && override.enabled === false) return null;
+          return {
+            ...opt,
+            label: override?.customLabel ?? opt.label,
+            sub: override?.customSub ?? opt.sub,
+          };
+        }).filter(Boolean) as typeof VOLUME_OPTIONS);
 
-  const activeGroupOptions = GROUP_OPTIONS.map((opt) => {
-    if (opt.id === null) return null;
-    const override = buildingConfig?.groupOverrides?.[opt.id as string];
-    if (override && override.enabled === false) return null;
-    return {
-      ...opt,
-      label: override?.customLabel ?? opt.label,
-    };
-  }).filter(Boolean) as typeof GROUP_OPTIONS;
+  const activeGroupOptions =
+    buildingConfig?.showGroup === false
+      ? []
+      : (GROUP_OPTIONS.map((opt) => {
+          if (opt.id === null) return null;
+          const override = buildingConfig?.groupOverrides?.[opt.id as string];
+          if (override && override.enabled === false) return null;
+          return {
+            ...opt,
+            label: override?.customLabel ?? opt.label,
+          };
+        }).filter(Boolean) as typeof GROUP_OPTIONS);
 
-  const activeInteractionOptions = INTERACTION_OPTIONS.map((opt) => {
-    if (opt.id === null) return null;
-    const override = buildingConfig?.interactionOverrides?.[opt.id as string];
-    if (override && override.enabled === false) return null;
-    return {
-      ...opt,
-      label: override?.customLabel ?? opt.label,
-    };
-  }).filter(Boolean) as typeof INTERACTION_OPTIONS;
+  const activeInteractionOptions =
+    buildingConfig?.showInteraction === false
+      ? []
+      : (INTERACTION_OPTIONS.map((opt) => {
+          if (opt.id === null) return null;
+          const override =
+            buildingConfig?.interactionOverrides?.[opt.id as string];
+          if (override && override.enabled === false) return null;
+          return {
+            ...opt,
+            label: override?.customLabel ?? opt.label,
+          };
+        }).filter(Boolean) as typeof INTERACTION_OPTIONS);
 
   const [activeCategory, setActiveCategory] = useState<
     'volume' | 'groups' | 'interaction' | null
@@ -307,6 +317,24 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
 
   const isElementary = config.layout === 'elementary';
 
+  const showVolume = buildingConfig?.showVolume !== false;
+  const showGroup = buildingConfig?.showGroup !== false;
+  const showInteraction = buildingConfig?.showInteraction !== false;
+
+  // If no categories are enabled, show an empty state
+  if (!showVolume && !showGroup && !showInteraction) {
+    return (
+      <WidgetLayout
+        padding="p-0"
+        content={
+          <div className="h-full w-full flex items-center justify-center text-slate-400 font-bold uppercase tracking-widest text-xs p-6 text-center">
+            No expectation categories enabled for this building.
+          </div>
+        }
+      />
+    );
+  }
+
   return (
     <WidgetLayout
       padding="p-0"
@@ -320,137 +348,143 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             gap: 'min(16px, 3cqmin)',
           }}
         >
-          <button
-            onClick={() => setActiveCategory('volume')}
-            className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
-              selectedVolume
-                ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
-                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-            } ${isElementary ? 'col-span-2' : ''}`}
-            style={{
-              gap: 'min(20px, 4cqmin)',
-              padding: 'min(20px, 4cqmin)',
-            }}
-          >
-            <div
-              className={`rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
+          {showVolume && (
+            <button
+              onClick={() => setActiveCategory('volume')}
+              className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
+                selectedVolume
+                  ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
+              } ${isElementary && showVolume && (!showGroup || !showInteraction) ? 'col-span-2' : isElementary && showVolume ? 'col-span-2' : ''}`}
               style={{
-                width: '18cqmin',
-                height: '18cqmin',
-                padding: 'min(12px, 2.5cqmin)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                gap: 'min(20px, 4cqmin)',
+                padding: 'min(20px, 4cqmin)',
               }}
             >
-              <Volume2
-                style={{ width: '100%', height: '100%' }}
-                strokeWidth={2.5}
-              />
-            </div>
-            <div className="text-left flex-1 min-w-0">
               <div
-                className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(16px, 5.5cqmin)' }}
+                className={`rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
+                style={{
+                  width: '18cqmin',
+                  height: '18cqmin',
+                  padding: 'min(12px, 2.5cqmin)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                Volume
+                <Volume2
+                  style={{ width: '100%', height: '100%' }}
+                  strokeWidth={2.5}
+                />
               </div>
-              <div
-                className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(32px, 10cqmin)' }}
-              >
-                {selectedVolume ? selectedVolume.label : 'Not Set'}
+              <div className="text-left flex-1 min-w-0">
+                <div
+                  className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
+                  style={{ fontSize: 'min(16px, 5.5cqmin)' }}
+                >
+                  Volume
+                </div>
+                <div
+                  className="font-black uppercase tracking-tight truncate"
+                  style={{ fontSize: 'min(32px, 10cqmin)' }}
+                >
+                  {selectedVolume ? selectedVolume.label : 'Not Set'}
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveCategory('groups')}
-            className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
-              selectedGroup
-                ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
-                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-            }`}
-            style={{
-              gap: 'min(20px, 4cqmin)',
-              padding: 'min(20px, 4cqmin)',
-            }}
-          >
-            <div
-              className={`rounded-xl transition-colors ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
+          {showGroup && (
+            <button
+              onClick={() => setActiveCategory('groups')}
+              className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
+                selectedGroup
+                  ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
+              } ${isElementary && !showVolume ? 'col-span-2' : ''}`}
               style={{
-                width: '18cqmin',
-                height: '18cqmin',
-                padding: 'min(12px, 2.5cqmin)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                gap: 'min(20px, 4cqmin)',
+                padding: 'min(20px, 4cqmin)',
               }}
             >
-              <Users
-                style={{ width: '100%', height: '100%' }}
-                strokeWidth={2.5}
-              />
-            </div>
-            <div className="text-left flex-1 min-w-0">
               <div
-                className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(16px, 5.5cqmin)' }}
+                className={`rounded-xl transition-colors ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
+                style={{
+                  width: '18cqmin',
+                  height: '18cqmin',
+                  padding: 'min(12px, 2.5cqmin)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                Group Size
+                <Users
+                  style={{ width: '100%', height: '100%' }}
+                  strokeWidth={2.5}
+                />
               </div>
-              <div
-                className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(32px, 10cqmin)' }}
-              >
-                {selectedGroup ? selectedGroup.label : 'Not Set'}
+              <div className="text-left flex-1 min-w-0">
+                <div
+                  className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
+                  style={{ fontSize: 'min(16px, 5.5cqmin)' }}
+                >
+                  Group Size
+                </div>
+                <div
+                  className="font-black uppercase tracking-tight truncate"
+                  style={{ fontSize: 'min(32px, 10cqmin)' }}
+                >
+                  {selectedGroup ? selectedGroup.label : 'Not Set'}
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveCategory('interaction')}
-            className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
-              selectedInteraction
-                ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
-                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-            }`}
-            style={{
-              gap: 'min(20px, 4cqmin)',
-              padding: 'min(20px, 4cqmin)',
-            }}
-          >
-            <div
-              className={`rounded-xl transition-colors ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
+          {showInteraction && (
+            <button
+              onClick={() => setActiveCategory('interaction')}
+              className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
+                selectedInteraction
+                  ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
+              } ${isElementary && !showVolume && !showGroup ? 'col-span-2' : isElementary && showVolume && !showGroup ? 'col-span-2' : ''}`}
               style={{
-                width: '18cqmin',
-                height: '18cqmin',
-                padding: 'min(12px, 2.5cqmin)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                gap: 'min(20px, 4cqmin)',
+                padding: 'min(20px, 4cqmin)',
               }}
             >
-              <MessagesSquare
-                style={{ width: '100%', height: '100%' }}
-                strokeWidth={2.5}
-              />
-            </div>
-            <div className="text-left flex-1 min-w-0">
               <div
-                className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(16px, 5.5cqmin)' }}
+                className={`rounded-xl transition-colors ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
+                style={{
+                  width: '18cqmin',
+                  height: '18cqmin',
+                  padding: 'min(12px, 2.5cqmin)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                Interaction
+                <MessagesSquare
+                  style={{ width: '100%', height: '100%' }}
+                  strokeWidth={2.5}
+                />
               </div>
-              <div
-                className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(32px, 10cqmin)' }}
-              >
-                {selectedInteraction ? selectedInteraction.label : 'Not Set'}
+              <div className="text-left flex-1 min-w-0">
+                <div
+                  className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
+                  style={{ fontSize: 'min(16px, 5.5cqmin)' }}
+                >
+                  Interaction
+                </div>
+                <div
+                  className="font-black uppercase tracking-tight truncate"
+                  style={{ fontSize: 'min(32px, 10cqmin)' }}
+                >
+                  {selectedInteraction ? selectedInteraction.label : 'Not Set'}
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
         </div>
       }
     />
