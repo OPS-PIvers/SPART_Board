@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '@/context/useDashboard';
+import { isExternalBackground } from '@/utils/backgrounds';
 import { useAuth } from '@/context/useAuth';
 import { useLiveSession } from '@/hooks/useLiveSession';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
@@ -548,7 +549,7 @@ export const DashboardView: React.FC = () => {
     if (youTubeVideoId) return {};
 
     // Check if it's a URL or Base64 image
-    if (bg.startsWith('http') || bg.startsWith('data:')) {
+    if (isExternalBackground(bg)) {
       return {
         backgroundImage: `url("${bg}")`,
         backgroundSize: 'cover',
@@ -563,7 +564,7 @@ export const DashboardView: React.FC = () => {
     if (!activeDashboard) return '';
     const bg = activeDashboard.background;
     // If it's a URL (including YouTube), don't apply the Tailwind class
-    if (bg.startsWith('http') || bg.startsWith('data:')) return '';
+    if (isExternalBackground(bg)) return '';
     return bg;
   }, [activeDashboard]);
 
