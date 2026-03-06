@@ -80,7 +80,7 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   const settingsButton = page.getByRole('button', {
     name: 'Settings',
     exact: true,
-  });
+  }).last();
   // Force click to ensure it works even if animation/position is tricky
   await settingsButton.click({ force: true });
 

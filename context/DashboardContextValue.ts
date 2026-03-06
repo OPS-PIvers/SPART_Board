@@ -99,6 +99,9 @@ export interface DashboardContextValue {
     folderId: string,
     newItems: (WidgetType | InternalToolType)[]
   ) => void;
+
+  selectedWidgetId: string | null;
+  setSelectedWidgetId: (id: string | null) => void;
 }
 
 export const DashboardContext = createContext<

@@ -214,6 +214,10 @@ const mockDashboard: DashboardContextValue = {
   setActiveRoster: () => {
     // No-op
   },
+  selectedWidgetId: null,
+  setSelectedWidgetId: () => {
+    // No-op
+  },
 };
 
 export const StudentProvider: React.FC<StudentProviderProps> = ({
