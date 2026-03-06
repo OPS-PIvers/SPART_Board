@@ -234,18 +234,12 @@ const AnnouncementWindow: React.FC<{
 
   const isMaximized = announcement.maximized;
 
-  const containerStyle: React.CSSProperties = isMaximized
-    ? {
-        position: 'fixed',
-        inset: 0,
-        zIndex: Z_INDEX.announcementMaximized,
-      }
-    : {
-        position: 'relative',
-        width: announcement.widgetSize.w,
-        height: announcement.widgetSize.h + 48, // + header
-        flexShrink: 0,
-      };
+  const containerStyle: React.CSSProperties = {
+    position: 'relative',
+    width: announcement.widgetSize.w,
+    height: announcement.widgetSize.h + 48, // + header
+    flexShrink: 0,
+  };
 
   const headerStyle: React.CSSProperties = {
     height: 48,
