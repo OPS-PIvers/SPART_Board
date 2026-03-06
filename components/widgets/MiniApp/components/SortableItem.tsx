@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Play, Pencil, Trash2 } from 'lucide-react';
 import { MiniAppItem } from '@/types';
+import { Z_INDEX } from '@/config/zIndex';
 
 interface SortableItemProps {
   app: MiniAppItem;
@@ -29,7 +30,7 @@ export const SortableItem: React.FC<SortableItemProps> = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 10 : 'auto',
+    zIndex: isDragging ? Z_INDEX.decorator : 'auto',
     opacity: isDragging ? 0.5 : 1,
   };
 

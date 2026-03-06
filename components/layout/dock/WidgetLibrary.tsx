@@ -21,6 +21,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { TOOLS } from '../../../config/tools';
 import { WidgetType, GlobalStyle, InternalToolType } from '../../../types';
 import { useClickOutside } from '../../../hooks/useClickOutside';
+import { Z_INDEX } from '../../../config/zIndex';
 
 interface WidgetLibraryProps {
   onToggle: (type: WidgetType | InternalToolType) => void;
@@ -61,7 +62,7 @@ const SortableLibraryTool = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 100 : 1,
+    zIndex: isDragging ? Z_INDEX.widgetDrag : Z_INDEX.base + 1,
   };
 
   return (

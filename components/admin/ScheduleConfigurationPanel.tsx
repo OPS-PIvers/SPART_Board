@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { BUILDINGS } from '@/config/buildings';
+import { Z_INDEX } from '@/config/zIndex';
 import {
   ScheduleGlobalConfig,
   BuildingScheduleDefaults,
@@ -89,7 +90,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 50 : undefined,
+    zIndex: isDragging ? Z_INDEX.stickerControl : undefined,
   };
 
   return (

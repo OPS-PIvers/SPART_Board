@@ -126,3 +126,5 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 2. Refactored `AnnouncementOverlay.tsx` to use the new `z-announcement-overlay` and `z-announcement-maximized` classes and inline `Z_INDEX` values.
 3. Updated `ClassRosterMenu.tsx` to use `Z_INDEX.modalNested` (10100).
 4. Updated `LiveControl.tsx` to use `Z_INDEX.modal` (10000).
+
+## 2024-05-19 - Standardized Hardcoded Z-Indexes **Drift:** Discovered multiple hardcoded z-index values (`z-[9999]`, `zIndex: 100`, `zIndex: 50`, `zIndex: 10`) across components, including `DriveDisconnectBanner.tsx` and draggable sortable items, creating inconsistent stacking contexts and bypassing the centralized `config/zIndex.ts` registry. **Fix:** Replaced `z-[9999]` with Tailwind standard `z-toast` class, and unified sortable dragging layers to use standardized values (`Z_INDEX.widgetDrag`, `Z_INDEX.stickerControl`, `Z_INDEX.decorator`) pulled from the established `Z_INDEX` design system token object.
