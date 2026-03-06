@@ -1,10 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DrawingConfigurationPanel } from './DrawingConfigurationPanel';
-import { DrawingGlobalConfig } from '../../types';
+import { DrawingGlobalConfig } from '@/types';
 
 // Mock BUILDINGS
-vi.mock('../../config/buildings', () => ({
+vi.mock('@/config/buildings', () => ({
   BUILDINGS: [
     { id: 'b1', name: 'Building 1' },
     { id: 'b2', name: 'Building 2' },

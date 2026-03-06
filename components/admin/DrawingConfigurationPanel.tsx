@@ -36,10 +36,13 @@ export const DrawingConfigurationPanel: React.FC<
     });
   };
 
+  const NUM_COLOR_PRESETS = 5;
+
   const activeMode = currentBuildingConfig.mode ?? 'window';
   const activeWidth = currentBuildingConfig.width ?? 4;
   const activePalette =
-    currentBuildingConfig.customColors ?? WIDGET_PALETTE.slice(0, 5);
+    currentBuildingConfig.customColors ??
+    WIDGET_PALETTE.slice(0, NUM_COLOR_PRESETS);
 
   const handleColorChange = (index: number, newColor: string) => {
     const nextColors = [...activePalette];
@@ -133,7 +136,8 @@ export const DrawingConfigurationPanel: React.FC<
         {/* Default Color Presets */}
         <div>
           <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block flex items-center gap-1.5">
-            <Palette className="w-3 h-3" /> Default Color Presets (5)
+            <Palette className="w-3 h-3" /> Default Color Presets (
+            {NUM_COLOR_PRESETS})
           </label>
           <div className="flex gap-2 px-2">
             {activePalette.map((c, i) => (
