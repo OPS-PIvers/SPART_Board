@@ -221,40 +221,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Prefer GIS silent refresh when the client ID env var is configured.
       // google.accounts is loaded asynchronously via the GIS script tag in index.html.
       if (clientId && email && typeof window.google !== 'undefined') {
-        const gisToken = await new Promise<string | null>((resolve) => {
-          const tokenClient = window.google.accounts.oauth2.initTokenClient({
-            client_id: clientId,
-            scope: GOOGLE_OAUTH_SCOPES.join(' '),
-            hint: email,
-            callback: (response: google.accounts.oauth2.TokenResponse) => {
-              if (response.access_token) {
-                const expiryMs =
-                  Date.now() +
-                  (parseInt(response.expires_in ?? '3600', 10) || 3600) * 1000;
-                // Write token before expiry so that a fast page reload never
-                // finds an expiry key without its accompanying token.
-                // Note: two separate setItem calls are not truly atomic; this
-                // ordering minimises the window where expiry exists without token.
-                localStorage.setItem(
-                  GOOGLE_ACCESS_TOKEN_KEY,
-                  response.access_token
-                );
-                localStorage.setItem(
-                  GOOGLE_TOKEN_EXPIRY_KEY,
-                  expiryMs.toString()
-                );
-                setGoogleAccessToken(response.access_token);
-                resolve(response.access_token);
-              } else {
-                resolve(null);
-              }
-            },
-            error_callback: () => resolve(null),
+        let gisToken: string | null = null;
+        try {
+          gisToken = await new Promise<string | null>((resolve) => {
+            // Use optional chaining as a belt-and-suspenders guard: the outer
+            // typeof check confirms window.google exists, but accounts/oauth2
+            // sub-properties could still be absent if the GIS script partially
+            // loaded or a future API change removes them.
+            const tokenClient =
+              window.google?.accounts?.oauth2?.initTokenClient({
+                client_id: clientId,
+                scope: GOOGLE_OAUTH_SCOPES.join(' '),
+                hint: email,
+                callback: (response: google.accounts.oauth2.TokenResponse) => {
+                  if (response.access_token) {
+                    const expiryMs =
+                      Date.now() +
+                      (parseInt(response.expires_in ?? '3600', 10) || 3600) *
+                        1000;
+                    // Write token before expiry so that a fast page reload never
+                    // finds an expiry key without its accompanying token.
+                    // Note: two separate setItem calls are not truly atomic; this
+                    // ordering minimises the window where expiry exists without token.
+                    localStorage.setItem(
+                      GOOGLE_ACCESS_TOKEN_KEY,
+                      response.access_token
+                    );
+                    localStorage.setItem(
+                      GOOGLE_TOKEN_EXPIRY_KEY,
+                      expiryMs.toString()
+                    );
+                    setGoogleAccessToken(response.access_token);
+                    resolve(response.access_token);
+                  } else {
+                    resolve(null);
+                  }
+                },
+                error_callback: () => resolve(null),
+              });
+            if (!tokenClient) {
+              resolve(null);
+              return;
+            }
+            // prompt: '' = attempt silent authorization without showing a popup.
+            // A popup only appears when the user's Google session has expired.
+            tokenClient.requestAccessToken({ prompt: '' });
           });
-          // prompt: '' = attempt silent authorization without showing a popup.
-          // A popup only appears when the user's Google session has expired.
-          tokenClient.requestAccessToken({ prompt: '' });
-        });
+        } catch {
+          // initTokenClient or requestAccessToken threw synchronously.
+          // Treat as a GIS failure so the silent/Firebase fallback logic below runs.
+          gisToken = null;
+        }
 
         // GIS succeeded — return immediately.
         if (gisToken) return gisToken;
