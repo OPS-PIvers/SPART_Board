@@ -1491,6 +1491,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         case 'dice':
           if (typeof raw.count === 'number') out.count = raw.count;
           break;
+        case 'drawing':
+          if (raw.mode) out.mode = raw.mode;
+          if (typeof raw.width === 'number') out.width = raw.width;
+          if (Array.isArray(raw.customColors) && raw.customColors.length > 0)
+            out.customColors = raw.customColors;
+          break;
         case 'scoreboard':
           if (Array.isArray(raw.teams) && raw.teams.length > 0) {
             out.teams = (
