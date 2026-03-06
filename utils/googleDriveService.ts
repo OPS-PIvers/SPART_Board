@@ -144,6 +144,22 @@ export class GoogleDriveService {
   }
 
   /**
+   * Look up a folder by name without creating it if it doesn't exist.
+   * Returns the folder ID, or null if not found.
+   */
+  async findFolder(
+    folderName: string,
+    parentId?: string
+  ): Promise<string | null> {
+    let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    if (parentId) {
+      query += ` and '${parentId}' in parents`;
+    }
+    const folders = await this.listFiles(query);
+    return folders.length > 0 ? folders[0].id : null;
+  }
+
+  /**
    * Search for a folder by name within a parent folder.
    */
   async getOrCreateFolder(

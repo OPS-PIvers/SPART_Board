@@ -59,9 +59,10 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
         setUserUploads(urls);
         setHasFetchedDrive(true);
       })
-      .catch(() =>
-        addToast('Failed to load past backgrounds from Drive', 'error')
-      )
+      .catch(() => {
+        addToast('Failed to load past backgrounds from Drive', 'error');
+        setHasFetchedDrive(true);
+      })
       .finally(() => setLoadingUploads(false));
   }, [
     designTab,
@@ -303,9 +304,9 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
             </div>
           ) : userUploads.length > 0 ? (
             <div className="grid grid-cols-2 gap-2">
-              {userUploads.map((url, i) => (
+              {userUploads.map((url) => (
                 <button
-                  key={i}
+                  key={url}
                   onClick={() => setBackground(url)}
                   className={`aspect-video rounded-lg overflow-hidden border transition-all ${
                     activeDashboard?.background === url
