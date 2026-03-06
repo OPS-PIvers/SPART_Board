@@ -295,7 +295,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                       </span>
                       {event.time && (
                         <span
-                          className="font-medium text-slate-400 shrink-0"
+                          className="font-medium text-slate-400 min-w-0 truncate"
                           style={{ fontSize: 'min(11px, 3.5cqmin)' }}
                         >
                           · {event.time}
