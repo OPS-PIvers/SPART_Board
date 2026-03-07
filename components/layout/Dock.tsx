@@ -95,6 +95,16 @@ export const Dock: React.FC = () => {
   } = useAuth();
   const { driveService } = useGoogleDrive();
 
+  const getToolLabel = useCallback(
+    (type: WidgetType | InternalToolType): string => {
+      const permission = featurePermissions.find((p) => p.widgetType === type);
+      const staticLabel = TOOLS.find((t) => t.type === type)?.label ?? '';
+      const trimmed = permission?.displayName?.trim() ?? '';
+      return trimmed !== '' ? trimmed : staticLabel;
+    },
+    [featurePermissions]
+  );
+
   const getBuildingAwareOverrides = useCallback(
     (type: WidgetType): AddWidgetOverrides | undefined => {
       if (type === 'expectations') {
@@ -588,6 +598,7 @@ export const Dock: React.FC = () => {
               libraryOrder={libraryOrder}
               onReorderLibrary={reorderLibrary}
               onAddFolder={() => setShowCreateFolderModal(true)}
+              getToolLabel={getToolLabel}
             />
           )}
 
@@ -681,7 +692,7 @@ export const Dock: React.FC = () => {
                                       .padStart(2, '0')}:${(duration % 60)
                                       .toString()
                                       .padStart(2, '0')}`
-                                  : undefined
+                                  : getToolLabel(item.toolType)
                               }
                             />
                           );
@@ -711,6 +722,7 @@ export const Dock: React.FC = () => {
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
                               globalStyle={globalStyle}
+                              customLabel={getToolLabel(tool.type)}
                               onClickOverride={
                                 minimizedWidgets.length === 0
                                   ? handleToggleRosterMenu
@@ -749,6 +761,7 @@ export const Dock: React.FC = () => {
                             isEditMode={isEditMode}
                             onLongPress={handleLongPress}
                             globalStyle={globalStyle}
+                            customLabel={getToolLabel(tool.type)}
                           />
                         );
                       } else {

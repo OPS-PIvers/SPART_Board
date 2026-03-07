@@ -36,7 +36,8 @@ export type WidgetType =
   | 'breathing'
   | 'mathTools'
   | 'mathTool'
-  | 'nextUp';
+  | 'nextUp'
+  | 'onboarding';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -1084,6 +1085,10 @@ export interface NextUpGlobalConfig {
   >;
 }
 
+export interface OnboardingConfig {
+  completedTasks: string[];
+}
+
 export interface NextUpSession {
   id: string; // widgetId
   teacherUid: string;
@@ -1134,7 +1139,8 @@ export type WidgetConfig =
   | BreathingConfig
   | MathToolsConfig
   | MathToolConfig
-  | NextUpConfig;
+  | NextUpConfig
+  | OnboardingConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1213,7 +1219,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                           ? MathToolConfig
                                                                           : T extends 'nextUp'
                                                                             ? NextUpConfig
-                                                                            : never;
+                                                                            : T extends 'onboarding'
+                                                                              ? OnboardingConfig
+                                                                              : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

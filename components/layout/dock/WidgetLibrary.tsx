@@ -35,6 +35,7 @@ interface WidgetLibraryProps {
   onReorderLibrary: (tools: (WidgetType | InternalToolType)[]) => void;
   isEditMode?: boolean;
   onAddFolder?: () => void;
+  getToolLabel?: (type: WidgetType | InternalToolType) => string;
 }
 
 const SortableLibraryTool = ({
@@ -42,11 +43,13 @@ const SortableLibraryTool = ({
   isActive,
   isEditMode,
   onToggle,
+  label,
 }: {
   tool: (typeof TOOLS)[0];
   isActive: boolean;
   isEditMode: boolean;
   onToggle: () => void;
+  label?: string;
 }) => {
   const {
     attributes,
@@ -97,7 +100,7 @@ const SortableLibraryTool = ({
         )}
       </div>
       <span className="text-xxs font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
-        {tool.label}
+        {label ?? tool.label}
       </span>
     </button>
   );
@@ -117,6 +120,7 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
       onReorderLibrary,
       isEditMode = false,
       onAddFolder,
+      getToolLabel,
     },
     ref
   ) => {
@@ -226,6 +230,9 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
                         isActive={false} // They are always inactive now due to filtering
                         isEditMode={isEditMode}
                         onToggle={() => onToggle(tool.type)}
+                        label={
+                          getToolLabel ? getToolLabel(tool.type) : undefined
+                        }
                       />
                     ))}
                   </div>

@@ -1031,8 +1031,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       icon={<Settings className="w-3.5 h-3.5" />}
                       label={
                         widget.flipped
-                          ? t('widgetWindow.closeSettings')
-                          : t('widgetWindow.settings')
+                          ? `${t('widgetWindow.closeSettings')} (Alt+S)`
+                          : `${t('widgetWindow.settings')} (Alt+S)`
                       }
                       size="sm"
                       variant="glass"
@@ -1092,10 +1092,38 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
                 {canScreenshot && (
                   <IconButton
-                    onClick={() => void takeScreenshot()}
+                    onClick={() => {
+                      void takeScreenshot();
+                      let shownTips: string[] = [];
+                      try {
+                        const raw = localStorage.getItem('spart_shown_tips');
+                        const parsed: unknown = raw ? JSON.parse(raw) : [];
+                        if (
+                          Array.isArray(parsed) &&
+                          parsed.every((v) => typeof v === 'string')
+                        ) {
+                          shownTips = parsed;
+                        }
+                      } catch {
+                        // Corrupted storage value — treat as empty
+                      }
+                      if (!shownTips.includes('screenshot-gesture')) {
+                        shownTips.push('screenshot-gesture');
+                        localStorage.setItem(
+                          'spart_shown_tips',
+                          JSON.stringify(shownTips)
+                        );
+                        setTimeout(() => {
+                          addToast(
+                            t('widgetWindow.screenshotGestureProTip'),
+                            'info'
+                          );
+                        }, 1200);
+                      }
+                    }}
                     disabled={isCapturing}
                     icon={<Camera className="w-3.5 h-3.5" />}
-                    label={t('widgetWindow.takeScreenshot')}
+                    label={`${t('widgetWindow.takeScreenshot')} (3-finger swipe \u2193)`}
                     size="sm"
                     variant="glass"
                   />
@@ -1106,7 +1134,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     handleCloseTools();
                   }}
                   icon={<Highlighter className="w-3.5 h-3.5" />}
-                  label={t('widgetWindow.annotate')}
+                  label={`${t('widgetWindow.annotate')} (Alt+D)`}
                   size="sm"
                   variant="glass"
                   active={isAnnotating}
@@ -1132,8 +1160,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   }
                   label={
                     isMaximized
-                      ? t('widgetWindow.restore')
-                      : t('widgetWindow.maximize')
+                      ? `${t('widgetWindow.restore')} (Alt+M)`
+                      : `${t('widgetWindow.maximize')} (Alt+M)`
                   }
                   size="sm"
                   variant="glass"
@@ -1146,7 +1174,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     })
                   }
                   icon={<Minus className="w-3.5 h-3.5" />}
-                  label={t('widgetWindow.minimize')}
+                  label={`${t('widgetWindow.minimize')} (Esc)`}
                   size="sm"
                   variant="glass"
                 />
