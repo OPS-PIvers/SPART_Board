@@ -1085,6 +1085,10 @@ export interface NextUpGlobalConfig {
   >;
 }
 
+export interface OnboardingConfig {
+  completedTasks: string[];
+}
+
 export interface NextUpSession {
   id: string; // widgetId
   teacherUid: string;
@@ -1135,7 +1139,8 @@ export type WidgetConfig =
   | BreathingConfig
   | MathToolsConfig
   | MathToolConfig
-  | NextUpConfig;
+  | NextUpConfig
+  | OnboardingConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'

@@ -116,7 +116,9 @@ export const DashboardView: React.FC = () => {
   const [isCheatSheetOpen, setIsCheatSheetOpen] = React.useState(false);
   const onboardingShownRef = React.useRef(false);
 
-  // Auto-add onboarding widget for brand-new users on their first empty board
+  // Auto-add onboarding widget for brand-new users on their first empty board.
+  // onboardingShownRef guards against duplicate adds within a session;
+  // localStorage persists the flag across reloads so the widget is never re-added.
   React.useEffect(() => {
     if (!activeDashboard) return;
     if (onboardingShownRef.current) return;
@@ -130,8 +132,7 @@ export const DashboardView: React.FC = () => {
       localStorage.setItem('spart_onboarding_shown', 'true');
       addWidget('onboarding', { x: 60, y: 80, w: 380, h: 440 });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDashboard?.id, dashboards.length]);
+  }, [activeDashboard, dashboards, addWidget]);
 
   const {
     session,

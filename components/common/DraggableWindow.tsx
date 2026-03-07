@@ -1094,9 +1094,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   <IconButton
                     onClick={() => {
                       void takeScreenshot();
-                      const shownTips = JSON.parse(
-                        localStorage.getItem('spart_shown_tips') ?? '[]'
-                      ) as string[];
+                      let shownTips: string[] = [];
+                      try {
+                        const raw = localStorage.getItem('spart_shown_tips');
+                        const parsed: unknown = raw ? JSON.parse(raw) : [];
+                        if (
+                          Array.isArray(parsed) &&
+                          parsed.every((v) => typeof v === 'string')
+                        ) {
+                          shownTips = parsed as string[];
+                        }
+                      } catch {
+                        // Corrupted storage value — treat as empty
+                      }
                       if (!shownTips.includes('screenshot-gesture')) {
                         shownTips.push('screenshot-gesture');
                         localStorage.setItem(
@@ -1105,7 +1115,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         );
                         setTimeout(() => {
                           addToast(
-                            'Pro-tip: 3-finger swipe down on a widget to screenshot faster!',
+                            t('widgetWindow.screenshotGestureProTip'),
                             'info'
                           );
                         }, 1200);

@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { CheckCircle2, Circle, Rocket } from 'lucide-react';
-import { WidgetComponentProps } from '@/types';
+import { OnboardingConfig, WidgetComponentProps } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 
 interface OnboardingTask {
@@ -28,7 +28,7 @@ const TASKS: OnboardingTask[] = [
   {
     id: 'open-cheatsheet',
     label: 'Open the Cheat Sheet',
-    hint: 'Press Ctrl+/ or click the ? button in the bottom-right',
+    hint: 'Press Ctrl/⌘+/ or click the ? button in the bottom-right',
   },
 ];
 
@@ -36,15 +36,20 @@ export const OnboardingWidget: React.FC<WidgetComponentProps> = ({
   widget,
 }) => {
   const { updateWidget, activeDashboard, dashboards } = useDashboard();
-  const completedTasks: string[] =
-    (widget.config.completedTasks as string[]) ?? [];
+  const config = widget.config as OnboardingConfig;
+  const completedTasks: string[] = config.completedTasks ?? [];
 
-  const markDone = (taskId: string) => {
-    if (completedTasks.includes(taskId)) return;
-    updateWidget(widget.id, {
-      config: { ...widget.config, completedTasks: [...completedTasks, taskId] },
-    });
-  };
+  const markDone = useCallback(
+    (taskId: string) => {
+      if (completedTasks.includes(taskId)) return;
+      updateWidget(widget.id, {
+        config: {
+          completedTasks: [...completedTasks, taskId],
+        } as OnboardingConfig,
+      });
+    },
+    [completedTasks, updateWidget, widget.id]
+  );
 
   // Auto-detect: widget added (board has > 1 widget = onboarding + at least one more)
   useEffect(() => {
@@ -52,11 +57,8 @@ export const OnboardingWidget: React.FC<WidgetComponentProps> = ({
     const nonOnboarding = activeDashboard.widgets.filter(
       (w) => w.type !== 'onboarding'
     );
-    if (nonOnboarding.length > 0) {
-      markDone('add-widget');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDashboard?.widgets.length]);
+    if (nonOnboarding.length > 0) markDone('add-widget');
+  }, [activeDashboard, markDone]);
 
   // Auto-detect: settings opened (any other widget is flipped)
   useEffect(() => {
@@ -65,26 +67,27 @@ export const OnboardingWidget: React.FC<WidgetComponentProps> = ({
       (w) => w.flipped && w.id !== widget.id
     );
     if (anyFlipped) markDone('open-settings');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDashboard?.widgets]);
+  }, [activeDashboard, markDone, widget.id]);
 
   // Auto-detect: second board created
   useEffect(() => {
     if (dashboards.length > 1) markDone('create-board');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dashboards.length]);
+  }, [dashboards.length, markDone]);
 
-  // Auto-detect: cheat sheet opened (localStorage flag)
+  // Auto-detect: cheat sheet opened via custom DOM event (same-tab)
+  // and localStorage (cross-tab / already opened before widget was added)
   useEffect(() => {
-    const poll = setInterval(() => {
-      if (localStorage.getItem('spart_cheatsheet_opened') === 'true') {
-        markDone('open-cheatsheet');
-        clearInterval(poll);
-      }
-    }, 1000);
-    return () => clearInterval(poll);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completedTasks]);
+    if (completedTasks.includes('open-cheatsheet')) return;
+
+    if (localStorage.getItem('spart_cheatsheet_opened') === 'true') {
+      markDone('open-cheatsheet');
+      return;
+    }
+
+    const handler = () => markDone('open-cheatsheet');
+    window.addEventListener('spart:cheatsheet-opened', handler);
+    return () => window.removeEventListener('spart:cheatsheet-opened', handler);
+  }, [completedTasks, markDone]);
 
   const allDone = TASKS.every((t) => completedTasks.includes(t.id));
 

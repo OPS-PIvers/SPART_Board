@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Keyboard, Hand } from 'lucide-react';
+import { Z_INDEX } from '@/config/zIndex';
 
 interface CheatSheetModalProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ interface GestureRow {
 }
 
 const KEYBOARD_SHORTCUTS: ShortcutRow[] = [
-  { keys: ['Ctrl', '/'], description: 'Open this cheat sheet' },
+  { keys: ['Ctrl/⌘', '/'], description: 'Open this cheat sheet' },
   { keys: ['Alt', '←/→'], description: 'Switch boards' },
   { keys: ['Alt', 'S'], description: 'Open / close widget settings' },
   { keys: ['Alt', 'D'], description: 'Toggle annotation draw mode' },
@@ -52,25 +53,46 @@ const KeyBadge: React.FC<{ label: string }> = ({ label }) => (
   </kbd>
 );
 
+// Track open modals for nested scroll-lock, matching the shared Modal pattern
+let openCheatSheetCount = 0;
+
 export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  React.useEffect(() => {
-    if (!isOpen) return;
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    // Notify the onboarding widget (same-tab, storage event won't fire)
     localStorage.setItem('spart_cheatsheet_opened', 'true');
-    const handleKey = (e: KeyboardEvent) => {
+    window.dispatchEvent(new Event('spart:cheatsheet-opened'));
+
+    // Body scroll lock (matching shared Modal behaviour)
+    if (openCheatSheetCount === 0) {
+      document.body.style.overflow = 'hidden';
+    }
+    openCheatSheetCount++;
+
+    const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      openCheatSheetCount--;
+      if (openCheatSheetCount === 0) {
+        document.body.style.overflow = 'unset';
+      }
+      window.removeEventListener('keydown', handleEscape);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen || typeof document === 'undefined') return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ zIndex: Z_INDEX.modal }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -87,7 +109,7 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-white font-black uppercase tracking-widest text-sm">
-            Shortcuts & Gestures
+            Shortcuts &amp; Gestures
           </h2>
           <button
             onClick={onClose}
@@ -158,7 +180,7 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
         {/* Footer */}
         <div className="px-6 py-3 border-t border-white/10 text-center">
           <p className="text-slate-500 text-xs">
-            Press <KeyBadge label="Ctrl" />
+            Press <KeyBadge label="Ctrl/⌘" />
             {' + '}
             <KeyBadge label="/" /> anytime to open this panel
           </p>
