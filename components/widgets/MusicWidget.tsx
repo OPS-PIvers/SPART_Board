@@ -23,13 +23,15 @@ const loadYouTubeApi = (callback: () => void) => {
   }
   ytPendingCallbacks.push(callback);
   if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+    const previousHandler = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof previousHandler === 'function') previousHandler();
+      ytPendingCallbacks.splice(0).forEach((cb) => cb());
+    };
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     document.head.appendChild(tag);
   }
-  window.onYouTubeIframeAPIReady = () => {
-    ytPendingCallbacks.splice(0).forEach((cb) => cb());
-  };
 };
 
 const extractYouTubeId = (url: string): string | null => {
@@ -45,14 +47,16 @@ const extractYouTubeId = (url: string): string | null => {
 const buildSpotifyEmbedUrl = (url: string): string | null => {
   try {
     const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
     if (
       parsed.protocol !== 'https:' ||
-      !parsed.hostname.endsWith('spotify.com')
+      (hostname !== 'spotify.com' && !hostname.endsWith('.spotify.com'))
     ) {
       return null;
     }
-    if (parsed.pathname.includes('/embed/')) return url;
-    return url.replace('spotify.com/', 'spotify.com/embed/');
+    if (parsed.pathname.startsWith('/embed/')) return parsed.toString();
+    parsed.pathname = `/embed${parsed.pathname}`;
+    return parsed.toString();
   } catch {
     return null;
   }
@@ -323,7 +327,9 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { stations, isLoading } = useMusicStations();
 
   const activeStation = stations.find((s) => s.id === config.stationId);
-  const isSpotify = activeStation?.url.includes('spotify.com') ?? false;
+  const isSpotify = activeStation?.url
+    ? buildSpotifyEmbedUrl(activeStation.url) !== null
+    : false;
 
   return (
     <div className="space-y-5">

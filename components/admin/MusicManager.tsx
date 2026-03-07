@@ -14,7 +14,9 @@ import { MusicStation } from '@/types';
 import { Button } from '../common/Button';
 import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 
-// Accepts only https YouTube or Spotify URLs that contain a recognisable video/track ID.
+// Accepts only https YouTube or Spotify URLs. YouTube URLs must contain a
+// recognisable video ID. Any https *.spotify.com URL is accepted; embed-URL
+// conversion happens in the widget itself.
 const isValidStationUrl = (url: string): boolean => {
   try {
     const parsed = new URL(url);
@@ -27,7 +29,9 @@ const isValidStationUrl = (url: string): boolean => {
         url
       );
     }
-    if (parsed.hostname.endsWith('spotify.com')) return true;
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === 'spotify.com' || hostname.endsWith('.spotify.com'))
+      return true;
     return false;
   } catch {
     return false;
@@ -50,8 +54,9 @@ export const MusicManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<MusicStation>>({});
-  const [urlError, setUrlError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isNewStation, setIsNewStation] = useState(false);
 
   useEffect(() => {
     const docRef = doc(db, 'global_music_stations', 'library');
@@ -98,24 +103,25 @@ export const MusicManager: React.FC = () => {
       isActive: true,
       order: stations.length,
     };
-    const updated = [...stations, newStation];
-    setStations(updated);
-    void saveToFirestore(updated);
+    setStations([...stations, newStation]);
     setEditingId(newStation.id);
     setEditForm(newStation);
+    setIsNewStation(true);
   };
 
   const saveEdit = () => {
     if (!editingId) return;
     if (!isValidStationUrl(editForm.url ?? '')) {
-      setUrlError('Please enter a valid YouTube or Spotify URL (https only).');
+      setValidationError(
+        'Please enter a valid YouTube or Spotify URL (https only).'
+      );
       return;
     }
     if (!isValidImageUrl(editForm.thumbnail ?? '')) {
-      setUrlError('Thumbnail must be a valid https image URL.');
+      setValidationError('Thumbnail must be a valid https image URL.');
       return;
     }
-    setUrlError(null);
+    setValidationError(null);
     const updated = stations.map((s) =>
       s.id === editingId ? ({ ...s, ...editForm } as MusicStation) : s
     );
@@ -123,12 +129,17 @@ export const MusicManager: React.FC = () => {
     void saveToFirestore(updated);
     setEditingId(null);
     setEditForm({});
+    setIsNewStation(false);
   };
 
   const cancelEdit = () => {
+    if (isNewStation && editingId) {
+      setStations((prev) => prev.filter((s) => s.id !== editingId));
+    }
     setEditingId(null);
     setEditForm({});
-    setUrlError(null);
+    setValidationError(null);
+    setIsNewStation(false);
   };
 
   const deleteStation = (id: string) => {
@@ -218,9 +229,9 @@ export const MusicManager: React.FC = () => {
                       }
                       className="col-span-2 w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                     />
-                    {urlError && (
+                    {validationError && (
                       <p className="col-span-2 text-xs text-red-600">
-                        {urlError}
+                        {validationError}
                       </p>
                     )}
                   </div>
