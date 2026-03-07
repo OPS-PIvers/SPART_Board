@@ -12,6 +12,7 @@ import {
 import { db } from '@/config/firebase';
 import { MusicStation } from '@/types';
 import { Button } from '../common/Button';
+import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 
 // Accepts only https YouTube or Spotify URLs that contain a recognisable video/track ID.
 const isValidStationUrl = (url: string): boolean => {
@@ -50,6 +51,7 @@ export const MusicManager: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<MusicStation>>({});
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     const docRef = doc(db, 'global_music_stations', 'library');
@@ -130,7 +132,6 @@ export const MusicManager: React.FC = () => {
   };
 
   const deleteStation = (id: string) => {
-    if (!window.confirm('Delete this station?')) return;
     const updated = stations.filter((s) => s.id !== id);
     // Re-index order
     const reindexed = updated.map((s, i) => ({ ...s, order: i }));
@@ -272,7 +273,7 @@ export const MusicManager: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteStation(station.id)}
+                      onClick={() => setDeleteConfirmId(station.id)}
                       title="Delete station"
                       className="text-slate-400 hover:text-red-600 hover:bg-red-50"
                     >
@@ -285,6 +286,19 @@ export const MusicManager: React.FC = () => {
           ))
         )}
       </div>
+      {deleteConfirmId && (
+        <ConfirmDialog
+          title="Delete Station"
+          message="Are you sure you want to delete this station? This cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            deleteStation(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }}
+          onCancel={() => setDeleteConfirmId(null)}
+        />
+      )}
     </div>
   );
 };
