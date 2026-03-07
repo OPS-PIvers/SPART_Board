@@ -123,15 +123,23 @@ export const DashboardView: React.FC = () => {
   React.useEffect(() => {
     if (!activeDashboard) return;
     if (onboardingShownRef.current) return;
-    if (localStorage.getItem('spart_onboarding_shown') === 'true') return;
     if (import.meta.env.VITE_AUTH_BYPASS === 'true') return;
+    try {
+      if (localStorage.getItem('spart_onboarding_shown') === 'true') return;
+    } catch {
+      // Storage unavailable — treat as not yet shown
+    }
     const totalWidgets = dashboards.reduce(
       (sum, d) => sum + d.widgets.length,
       0
     );
     if (totalWidgets === 0) {
       onboardingShownRef.current = true;
-      localStorage.setItem('spart_onboarding_shown', 'true');
+      try {
+        localStorage.setItem('spart_onboarding_shown', 'true');
+      } catch {
+        // Non-critical — onboardingShownRef still prevents duplicates this session
+      }
       addWidget('onboarding', { x: 60, y: 80, w: 380, h: 440 });
     }
   }, [activeDashboard, dashboards, addWidget]);

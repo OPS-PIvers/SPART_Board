@@ -64,7 +64,11 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
     if (!isOpen) return undefined;
 
     // Notify the onboarding widget (same-tab, storage event won't fire)
-    localStorage.setItem('spart_cheatsheet_opened', 'true');
+    try {
+      localStorage.setItem('spart_cheatsheet_opened', 'true');
+    } catch {
+      // Ignore storage errors so the cheat sheet can still open
+    }
     window.dispatchEvent(new Event('spart:cheatsheet-opened'));
 
     // Body scroll lock (matching shared Modal behaviour)
@@ -73,17 +77,22 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
     }
     openCheatSheetCount++;
 
+    // Use capture phase so Escape is intercepted before DashboardView's
+    // global keydown handler (which also handles Escape for widget actions).
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.stopImmediatePropagation();
+        onClose();
+      }
     };
-    window.addEventListener('keydown', handleEscape);
+    window.addEventListener('keydown', handleEscape, { capture: true });
 
     return () => {
       openCheatSheetCount--;
       if (openCheatSheetCount === 0) {
         document.body.style.overflow = 'unset';
       }
-      window.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('keydown', handleEscape, { capture: true });
     };
   }, [isOpen, onClose]);
 
