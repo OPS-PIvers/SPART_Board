@@ -119,10 +119,12 @@ export const DashboardView: React.FC = () => {
   // Auto-add onboarding widget for brand-new users on their first empty board.
   // onboardingShownRef guards against duplicate adds within a session;
   // localStorage persists the flag across reloads so the widget is never re-added.
+  // Skipped in auth-bypass mode (E2E / local dev) to keep tests deterministic.
   React.useEffect(() => {
     if (!activeDashboard) return;
     if (onboardingShownRef.current) return;
     if (localStorage.getItem('spart_onboarding_shown') === 'true') return;
+    if (import.meta.env.VITE_AUTH_BYPASS === 'true') return;
     const totalWidgets = dashboards.reduce(
       (sum, d) => sum + d.widgets.length,
       0

@@ -1219,7 +1219,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                           ? MathToolConfig
                                                                           : T extends 'nextUp'
                                                                             ? NextUpConfig
-                                                                            : never;
+                                                                            : T extends 'onboarding'
+                                                                              ? OnboardingConfig
+                                                                              : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

@@ -72,7 +72,7 @@ export const OnboardingWidget: React.FC<WidgetComponentProps> = ({
   // Auto-detect: second board created
   useEffect(() => {
     if (dashboards.length > 1) markDone('create-board');
-  }, [dashboards.length, markDone]);
+  }, [dashboards, markDone]);
 
   // Auto-detect: cheat sheet opened via custom DOM event (same-tab)
   // and localStorage (cross-tab / already opened before widget was added)
