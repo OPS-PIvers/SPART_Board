@@ -19,7 +19,10 @@ import {
 } from 'lucide-react';
 import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
 import { SNAP_LAYOUTS, SnapZone } from '../../config/snapLayouts';
-import { calculateSnapBounds } from '../../utils/layoutMath';
+import {
+  calculateSnapBounds,
+  SNAP_LAYOUT_CONSTANTS,
+} from '../../utils/layoutMath';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useDashboard } from '../../context/useDashboard';
 import { GlassCard } from './GlassCard';
@@ -397,10 +400,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       const isRightEdge = moveEvent.clientX >= screenW - EDGE_THRESHOLD;
       const isTopEdge = moveEvent.clientY <= EDGE_THRESHOLD;
 
+      const splitLayout = SNAP_LAYOUTS.find((l) => l.id === 'split-half');
       const newZone = isLeftEdge
-        ? SNAP_LAYOUTS[0].zones[0]
+        ? (splitLayout?.zones.find((z) => z.id === 'left-half') ?? null)
         : isRightEdge
-          ? SNAP_LAYOUTS[0].zones[1]
+          ? (splitLayout?.zones.find((z) => z.id === 'right-half') ?? null)
           : isTopEdge
             ? 'maximize'
             : null;
@@ -1036,11 +1040,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             style={
               snapPreviewZone === 'maximize'
                 ? {
-                    top: 16,
-                    left: 16,
-                    width: 'calc(100vw - 32px)',
-                    height: 'calc(100vh - 116px)',
-                  } // Accounts for dock
+                    top: SNAP_LAYOUT_CONSTANTS.PADDING,
+                    left: SNAP_LAYOUT_CONSTANTS.PADDING,
+                    width: `calc(100vw - ${SNAP_LAYOUT_CONSTANTS.PADDING * 2}px)`,
+                    height: `calc(100vh - ${SNAP_LAYOUT_CONSTANTS.DOCK_HEIGHT + SNAP_LAYOUT_CONSTANTS.PADDING * 2}px)`,
+                  } // Accounts for dock and padding
                 : (() => {
                     const bounds = calculateSnapBounds(snapPreviewZone);
                     return {

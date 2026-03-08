@@ -1,10 +1,13 @@
 import { SnapZone } from '../config/snapLayouts';
 
+export const SNAP_LAYOUT_CONSTANTS = {
+  PADDING: 16, // Gap from edges of the screen
+  GAP: 12, // Gap between widgets (slightly larger for touch)
+  DOCK_HEIGHT: 100, // Reserved space for the bottom dock
+};
+
 export const calculateSnapBounds = (zone: SnapZone) => {
-  // Define safe area offsets
-  const PADDING = 16; // Gap from edges of the screen
-  const GAP = 12; // Gap between widgets (slightly larger for touch)
-  const DOCK_HEIGHT = 100; // Reserved space for the bottom dock
+  const { PADDING, GAP, DOCK_HEIGHT } = SNAP_LAYOUT_CONSTANTS;
 
   const safeWidth = window.innerWidth - PADDING * 2;
   const safeHeight = window.innerHeight - DOCK_HEIGHT - PADDING * 2;
