@@ -16,8 +16,6 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup
-      - name: Setup Environment
-        uses: ./.github/actions/setup
 
       - name: Run linter
         run: pnpm run lint
@@ -89,7 +87,7 @@ jobs:
 
       - name: Install Playwright OS Dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: sudo pnpm exec playwright install-deps
+        run: pnpm exec playwright install-deps
 
       - name: Run E2E tests
         run: pnpm run test:e2e
