@@ -1,0 +1,21 @@
+name: 'Setup Node.js and pnpm'
+description: 'Sets up Node.js, installs pnpm, and installs dependencies for the project.'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        cache-dependency-path: |
+          pnpm-lock.yaml
+          functions/pnpm-lock.yaml
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm run install:ci
