@@ -16,7 +16,7 @@ describe('sanitizePrompt', () => {
     const multiline = 'First line\nSecond line\rThird line\r\nFourth line';
     const sanitized = sanitizePrompt(multiline);
 
-    expect(sanitized).toBe('First line Second line Third line  Fourth line');
+    expect(sanitized).toBe('First line Second line Third line Fourth line');
   });
 
   it('trims whitespace', () => {

@@ -13,6 +13,6 @@ export const sanitizePrompt = (text?: string): string => {
     .replace(/\[/g, '&#91;')
     .replace(/\]/g, '&#93;')
     .replace(/`/g, '&#96;')
-    .replace(/[\n\r]/g, ' ')
+    .replace(/[\r\n]+/g, ' ')
     .trim();
 };
