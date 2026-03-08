@@ -119,6 +119,9 @@
     "undo": "Undo",
     "clearAll": "Clear All",
     "done": "Done",
+    "snapLayout": "Snap Layout",
+    "chooseLayout": "Choose Layout",
+    "snapTo": "Snap to",
     "clearEntireBoard": "Are you sure you want to clear the entire board?"
   },
   "login": {

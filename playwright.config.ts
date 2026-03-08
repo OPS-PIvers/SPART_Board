@@ -26,6 +26,11 @@ export default defineConfig({
     timeout: WEBSERVER_TIMEOUT,
     env: {
       VITE_FIREBASE_API_KEY: 'dummy',
+      VITE_FIREBASE_AUTH_DOMAIN: 'dummy',
+      VITE_FIREBASE_PROJECT_ID: 'dummy',
+      VITE_FIREBASE_STORAGE_BUCKET: 'dummy',
+      VITE_FIREBASE_MESSAGING_SENDER_ID: 'dummy',
+      VITE_FIREBASE_APP_ID: 'dummy',
       VITE_AUTH_BYPASS: 'true',
     },
   },

@@ -16,6 +16,13 @@ vi.mock('lucide-react', async (importOriginal) => {
     Settings: () => <span data-testid="settings-icon">Settings</span>,
     X: () => <span data-testid="close-icon">Close</span>,
     ChevronRight: () => <span data-testid="chevron-icon">Chevron</span>,
+    Columns: () => <span data-testid="columns-icon" />,
+    Grid2x2: () => <span data-testid="grid-icon" />,
+    Sidebar: () => <span data-testid="sidebar-icon" />,
+    LayoutColumns: () => <span data-testid="layout-columns-icon" />,
+    SquareSplitVertical: () => <span data-testid="split-icon" />,
+    LayoutTemplate: () => <span data-testid="layout-template-icon" />,
+    Layout: () => <span data-testid="priority-icon" />,
   };
 });
 
