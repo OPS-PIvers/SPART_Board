@@ -2,10 +2,13 @@ import React from 'react';
 import { ScoreboardTeam } from '../../types';
 import { Plus, Minus } from 'lucide-react';
 
-import { SCOREBOARD_COLORS as TEAM_COLORS } from '@/config/scoreboard';
+import {
+  SCOREBOARD_COLORS as TEAM_COLORS,
+  ScoreboardColor,
+} from '@/config/scoreboard';
 
 const COLOR_STYLES: Record<
-  string,
+  ScoreboardColor,
   { label: string; score: string; button: string }
 > = {
   'bg-blue-500': {
@@ -62,11 +65,7 @@ const COLOR_STYLES: Record<
 
 const getStyles = (colorClass: string) => {
   return (
-    COLOR_STYLES[colorClass] ?? {
-      label: 'text-slate-600',
-      score: 'text-slate-700',
-      button: 'text-slate-700',
-    }
+    COLOR_STYLES[colorClass as ScoreboardColor] ?? COLOR_STYLES['bg-blue-500']
   );
 };
 

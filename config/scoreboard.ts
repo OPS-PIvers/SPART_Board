@@ -9,4 +9,6 @@ export const SCOREBOARD_COLORS = [
   'bg-orange-500',
   'bg-teal-600',
   'bg-cyan-500',
-];
+] as const;
+
+export type ScoreboardColor = (typeof SCOREBOARD_COLORS)[number];
