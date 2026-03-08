@@ -40,7 +40,7 @@ describe('DashboardContext AI Security Helpers', () => {
       expect(
         (sanitized as unknown as Record<string, unknown>).html
       ).toBeUndefined();
-      expect(sanitized.url).toBe('https://example.com');
+      expect(sanitized.url).toBe('https://example.com/');
     });
 
     it('validates URLs in embed and qr widgets', () => {
@@ -58,7 +58,7 @@ describe('DashboardContext AI Security Helpers', () => {
           url: 'https://google.com',
         } as unknown as Partial<WidgetConfig>
       ) as EmbedConfig;
-      expect(safeEmbed.url).toBe('https://google.com');
+      expect(safeEmbed.url).toBe('https://google.com/');
 
       const maliciousQR = sanitizeAIConfig(
         'qr' as WidgetType,

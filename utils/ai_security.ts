@@ -60,14 +60,25 @@ export const sanitizeAIConfig = (
   // 2. URL validation for widgets that load external content
   if (type === 'embed' || type === 'qr') {
     const c = sanitized as unknown as Partial<EmbedConfig>;
-    if (typeof c.url === 'string' && c.url.trim() !== '') {
-      try {
-        const url = new URL(c.url);
-        if (!['http:', 'https:'].includes(url.protocol)) {
+    // Always normalize url to a string; non-strings and empty/whitespace become ''.
+    if (typeof c.url !== 'string') {
+      c.url = '';
+    } else {
+      const trimmed = c.url.trim();
+      if (trimmed === '') {
+        c.url = '';
+      } else {
+        try {
+          const url = new URL(trimmed);
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            c.url = '';
+          } else {
+            // Store back the normalized URL string
+            c.url = url.toString();
+          }
+        } catch {
           c.url = '';
         }
-      } catch {
-        c.url = '';
       }
     }
   }
@@ -76,8 +87,22 @@ export const sanitizeAIConfig = (
   if (type === 'text') {
     const c = sanitized as unknown as Partial<TextConfig>;
     if (typeof c.content !== 'string') c.content = '';
-    if (typeof c.fontSize === 'number') {
-      c.fontSize = Math.max(8, Math.min(120, c.fontSize));
+
+    const rawFontSize = c.fontSize;
+    let numericFontSize: number | null = null;
+    if (typeof rawFontSize === 'number' && Number.isFinite(rawFontSize)) {
+      numericFontSize = rawFontSize;
+    } else if (typeof rawFontSize === 'string') {
+      const parsed = parseFloat(rawFontSize);
+      if (Number.isFinite(parsed)) {
+        numericFontSize = parsed;
+      }
+    }
+
+    if (numericFontSize !== null) {
+      c.fontSize = Math.max(8, Math.min(120, numericFontSize));
+    } else {
+      delete c.fontSize;
     }
   }
 
@@ -108,6 +133,9 @@ export const sanitizeAIConfig = (
         };
         return pollOpt;
       });
+    } else if (typeof (c as Record<string, unknown>).options !== 'undefined') {
+      // If AI provided a non-array options value, remove it so defaults remain valid
+      delete (c as Record<string, unknown>).options;
     }
   }
 

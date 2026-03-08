@@ -1621,10 +1621,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           let maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
 
           // --- GRID SYSTEM CONSTANTS ---
-          // Base 16:9 canvas (1600x900).
-          // DraggableWindow scales these automatically if the screen is smaller.
-          const BOARD_W = 1600;
-          const BOARD_H = 900;
+          // Base 16:9 canvas (1600x900), clamped to the current viewport so
+          // smart-grid layouts remain visible on smaller screens.
+          const { boardW: BOARD_W, boardH: BOARD_H } = (() => {
+            const BASE_BOARD_W = 1600;
+            const BASE_BOARD_H = 900;
+            if (typeof window === 'undefined') {
+              return { boardW: BASE_BOARD_W, boardH: BASE_BOARD_H };
+            }
+            // Use window dimensions if available, otherwise fall back to base
+            // Clamping ensures that col 11 (at OFFSET_X + 11*COL_W) doesn't end up off-screen
+            const viewportWidth = window.innerWidth || BASE_BOARD_W;
+            const viewportHeight = window.innerHeight || BASE_BOARD_H;
+
+            return {
+              boardW: Math.min(BASE_BOARD_W, viewportWidth),
+              boardH: Math.min(BASE_BOARD_H, viewportHeight),
+            };
+          })();
           const COL_W = BOARD_W / 12;
           const ROW_H = BOARD_H / 12;
 

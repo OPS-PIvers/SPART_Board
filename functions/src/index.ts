@@ -6,6 +6,7 @@ import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
 import { GoogleGenAI, Content } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
+import { sanitizePrompt } from './sanitize';
 
 admin.initializeApp();
 
@@ -343,21 +344,6 @@ export const generateWithAI = functionsV1
       console.log(`AI Gen starting for type: ${genType}`);
 
       const ai = new GoogleGenAI({ apiKey });
-
-      const sanitizePrompt = (text?: string) => {
-        if (!text) return '';
-        // Escape characters used for prompt injection (like tags, delimiters, and control sequences)
-        return text
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\{/g, '&#123;')
-          .replace(/\}/g, '&#125;')
-          .replace(/\[/g, '&#91;')
-          .replace(/\]/g, '&#93;')
-          .replace(/`/g, '&#96;')
-          .replace(/[\n\r]/g, ' ')
-          .trim();
-      };
 
       const sanitizedUserInput = sanitizePrompt(data?.prompt);
 
