@@ -44,4 +44,6 @@ coverage/
 .env
 
 .gemini/
-gha-creds-*.jsoneslint-output.txt
+gha-creds-*.json
+eslint-output.txt
+*.pem

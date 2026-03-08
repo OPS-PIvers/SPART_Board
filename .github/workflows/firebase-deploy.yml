@@ -13,20 +13,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            functions/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm run install:ci
+      - name: Setup Environment
+        uses: ./.github/actions/setup
 
       - name: Run unit tests
         run: pnpm test
