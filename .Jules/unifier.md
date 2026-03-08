@@ -126,3 +126,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 2. Refactored `AnnouncementOverlay.tsx` to use the new `z-announcement-overlay` and `z-announcement-maximized` classes and inline `Z_INDEX` values.
 3. Updated `ClassRosterMenu.tsx` to use `Z_INDEX.modalNested` (10100).
 4. Updated `LiveControl.tsx` to use `Z_INDEX.modal` (10000).
+
+## 2026-03-07 - Micro-Typography Standardization
+
+**Drift:** Identified hardcoded font sizes (`text-[9px]`, `text-[10px]`, `text-[11px]`) across multiple components (DriveDisconnectBanner, TalkingToolConfigurationPanel, NextUpConfigurationPanel, CalendarConfigurationModal, ScheduleConfigurationPanel, MathToolWidget, Schedule/Settings, CalendarWidget), bypassing the design system's `text-xxs` and `text-xxxs` tokens.
+**Fix:** Refactored all remaining instances to use the standard Tailwind utility classes (`text-xxs` for 10px, `text-xxxs` for 8px) to enforce design system consistency and eliminate "snowflakes".
