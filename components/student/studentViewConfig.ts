@@ -36,7 +36,7 @@ export const STUDENT_VIEW_WIDGET_COMPATIBILITY: StudentViewWidgetCompatibilityCo
     ],
     // Widgets that function in student view but whose state changes
     // (if any) will not persist because update operations are no-ops.
-    limitedSupport: ['traffic', 'dice', 'random'],
+    limitedSupport: ['traffic', 'dice', 'random', 'miniApp'],
     // Widgets that fundamentally rely on user interaction and persistent
     // state updates, and are therefore not compatible with read-only view.
     notCompatible: [

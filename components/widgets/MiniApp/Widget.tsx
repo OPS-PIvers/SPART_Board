@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
   MiniAppItem,
   MiniAppConfig,
   GlobalMiniAppItem,
+  MiniAppGlobalConfig,
 } from '@/types';
 import {
   Plus,
@@ -40,21 +41,87 @@ import {
   setDoc,
   deleteDoc,
   writeBatch,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { useLiveSession } from '@/hooks/useLiveSession';
 import { SortableItem } from './components/SortableItem';
 import { GlobalAppRow } from './components/GlobalAppRow';
 import { MiniAppEditor } from './components/MiniAppEditor';
 import { useMiniAppSync } from './hooks/useMiniAppSync';
 
 // --- MAIN WIDGET COMPONENT ---
-export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const MiniAppWidget: React.FC<{
+  widget: WidgetData;
+  isStudentView?: boolean;
+}> = ({ widget, isStudentView }) => {
   const { updateWidget, addToast } = useDashboard();
   const { user } = useAuth();
+  const { studentId } = useLiveSession(undefined, 'student');
   const config = widget.config as MiniAppConfig;
   const { activeApp } = config;
 
   const { library, globalLibrary } = useMiniAppSync(addToast);
+
+  const [globalConfig, setGlobalConfig] = useState<MiniAppGlobalConfig | null>(
+    null
+  );
+
+  // 1. Fetch Global Config
+  useEffect(() => {
+    const fetchGlobal = async () => {
+      const snap = await getDoc(doc(db, 'feature_permissions', 'miniApp'));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.config) {
+          setGlobalConfig(data.config as MiniAppGlobalConfig);
+        }
+      }
+    };
+    void fetchGlobal();
+  }, []);
+
+  // 2. STUDENT LISTENER: Listen for iframe messages and POST to Apps Script
+  useEffect(() => {
+    if (
+      !isStudentView ||
+      !config.collectResults ||
+      !config.googleSheetId ||
+      !globalConfig?.submissionUrl
+    )
+      return;
+
+    const handleMessage = async (event: MessageEvent) => {
+      const data = event.data as { type?: string; payload?: unknown } | null;
+      if (data?.type === 'SPART_MINIAPP_RESULT') {
+        try {
+          await fetch(globalConfig.submissionUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sheetId: config.googleSheetId,
+              studentPin: studentId,
+              data: data.payload,
+            }),
+          });
+        } catch (error) {
+          console.error('Submission failed', error);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [
+    isStudentView,
+    config.collectResults,
+    config.googleSheetId,
+    globalConfig?.submissionUrl,
+    studentId,
+  ]);
 
   const [activeTab, setActiveTab] = useState<'personal' | 'global'>('personal');
   const [savingGlobalId, setSavingGlobalId] = useState<string | null>(null);
@@ -460,6 +527,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   if (view === 'editor') {
     return (
       <MiniAppEditor
+        widget={widget}
         editingId={editingId}
         editTitle={editTitle}
         setEditTitle={setEditTitle}

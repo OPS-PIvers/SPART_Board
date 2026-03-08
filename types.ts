@@ -687,6 +687,15 @@ export interface MiniAppConfig {
   activeApp: MiniAppItem | null;
   /** True when activeApp was created via smart-paste and has not yet been saved to the library */
   activeAppUnsaved?: boolean;
+  collectResults?: boolean; // Toggle switch state
+  googleSheetId?: string; // Extracted Sheet ID
+  googleSheetUrl?: string; // Original pasted URL for UI
+}
+
+// Add new Global Config type
+export interface MiniAppGlobalConfig {
+  submissionUrl: string;
+  botEmail: string;
 }
 
 export interface PdfItem {

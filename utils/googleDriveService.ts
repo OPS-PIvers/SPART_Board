@@ -515,4 +515,31 @@ export class GoogleDriveService {
   async getBackgroundImages(): Promise<DriveFile[]> {
     return this.listFiles("mimeType contains 'image/' and trashed = false");
   }
+
+  /**
+   * Automatically shares a Drive file with a specific email address as an Editor.
+   * `sendNotificationEmail=false` ensures the teacher isn't spammed.
+   */
+  async addEditorPermission(
+    fileId: string,
+    emailAddress: string
+  ): Promise<void> {
+    const url = `${DRIVE_API_URL}/files/${fileId}/permissions?sendNotificationEmail=false`;
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: {
+        ...this.headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'user',
+        role: 'writer',
+        emailAddress: emailAddress,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to grant permission: ${response.statusText}`);
+    }
+  }
 }
