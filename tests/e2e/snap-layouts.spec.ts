@@ -88,7 +88,7 @@ test('Snap Layouts verification', async ({ page }) => {
     // zone.w = 0.5 -> rawW = 624
     // gap calculation: rawW - GAP/2 = 624 - 6 = 618
     const x = Math.round(box.x);
-    const w = Math.round(box.w as number);
+    const w = Math.round(box.width);
     expect(x).toBe(16);
     expect(w).toBe(618);
   }
@@ -113,7 +113,7 @@ test('Snap Layouts verification', async ({ page }) => {
     // y = PADDING + 0.5*safeHeight + GAP/2 = 16 + 294 + 6 = 316
     // h = 294 - 6 = 288
     const y = Math.round(boxBottom.y);
-    const h = Math.round(boxBottom.h as number);
+    const h = Math.round(boxBottom.height);
     expect(y).toBe(316);
     expect(h).toBe(288);
   }
@@ -146,7 +146,7 @@ test('Snap Layouts verification', async ({ page }) => {
     // x = PADDING + 0.5*safeWidth + GAP/2 = 16 + 624 + 6 = 646
     // w = 624 - 6 = 618
     const x = Math.round(boxRight.x);
-    const w = Math.round(boxRight.w as number);
+    const w = Math.round(boxRight.width);
     expect(x).toBe(646);
     expect(w).toBe(618);
   }

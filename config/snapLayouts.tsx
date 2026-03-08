@@ -3,7 +3,7 @@ import {
   Columns,
   Grid2x2,
   Sidebar,
-  LayoutColumns,
+  Columns3,
   SquareSplitVertical,
   Layout,
 } from 'lucide-react';
@@ -65,7 +65,7 @@ export const SNAP_LAYOUTS: SnapLayout[] = [
   {
     id: 'three-columns',
     name: 'Three Columns',
-    icon: <LayoutColumns className="w-5 h-5" />,
+    icon: <Columns3 className="w-5 h-5" />,
     zones: [
       { id: 'left', x: 0, y: 0, w: 0.33, h: 1 },
       { id: 'center', x: 0.33, y: 0, w: 0.34, h: 1 },
