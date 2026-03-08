@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback } from 'react';
 import { X, Code2, Sparkles, Loader2, Save, Box } from 'lucide-react';
 import { WidgetLayout } from '../../WidgetLayout';
 import { useAuth } from '@/context/useAuth';
-import { MiniAppGlobalConfig, MiniAppConfig, WidgetData } from '@/types';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { MiniAppConfig, WidgetData } from '@/types';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { useDashboard } from '@/context/useDashboard';
 import { Toggle } from '@/components/common/Toggle';
+import { useMiniAppGlobalConfig } from '../hooks/useMiniAppGlobalConfig';
 
 interface MiniAppEditorProps {
   widget: WidgetData;
@@ -46,43 +45,15 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
   const { updateWidget, addToast } = useDashboard();
   const { driveService } = useGoogleDrive();
   const config = widget.config as MiniAppConfig;
+  const { globalConfig } = useMiniAppGlobalConfig();
 
-  const [globalConfig, setGlobalConfig] = useState<MiniAppGlobalConfig | null>(
-    null
-  );
+  const shareSheetWithBot = useCallback(
+    async (sheetId: string) => {
+      if (!driveService || !globalConfig?.botEmail || !sheetId) return;
 
-  // 1. Fetch Global Config
-  useEffect(() => {
-    const fetchGlobal = async () => {
-      const snap = await getDoc(doc(db, 'feature_permissions', 'miniApp'));
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.config) {
-          setGlobalConfig(data.config as MiniAppGlobalConfig);
-        }
-      }
-    };
-    void fetchGlobal();
-  }, []);
-
-  // 3. TEACHER HANDLERS: Auto-share the Google Sheet
-  const handleToggleCollect = async (checked: boolean) => {
-    updateWidget(widget.id, {
-      config: { ...config, collectResults: checked },
-    });
-
-    if (
-      checked &&
-      config.googleSheetId &&
-      globalConfig?.botEmail &&
-      driveService
-    ) {
       try {
-        await driveService.addEditorPermission(
-          config.googleSheetId,
-          globalConfig.botEmail
-        );
-        addToast('Sheet auto-shared with system!', 'success');
+        await driveService.addEditorPermission(sheetId, globalConfig.botEmail);
+        addToast('Sheet linked and shared with system!', 'success');
       } catch (e) {
         console.error(e);
         addToast(
@@ -90,6 +61,18 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
           'error'
         );
       }
+    },
+    [driveService, globalConfig, addToast]
+  );
+
+  // 3. TEACHER HANDLERS: Auto-share the Google Sheet
+  const handleToggleCollect = async (checked: boolean) => {
+    updateWidget(widget.id, {
+      config: { ...config, collectResults: checked },
+    });
+
+    if (checked && config.googleSheetId) {
+      await shareSheetWithBot(config.googleSheetId);
     }
   };
 
@@ -101,22 +84,8 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
       config: { ...config, googleSheetUrl: url, googleSheetId: sheetId },
     });
 
-    if (
-      config.collectResults &&
-      sheetId &&
-      globalConfig?.botEmail &&
-      driveService
-    ) {
-      try {
-        await driveService.addEditorPermission(sheetId, globalConfig.botEmail);
-        addToast('Sheet linked and shared!', 'success');
-      } catch (e) {
-        console.error(e);
-        addToast(
-          'Failed to share sheet. Check your drive permissions.',
-          'error'
-        );
-      }
+    if (config.collectResults && sheetId) {
+      await shareSheetWithBot(sheetId);
     }
   };
 

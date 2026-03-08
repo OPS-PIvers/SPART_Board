@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
   MiniAppItem,
   MiniAppConfig,
   GlobalMiniAppItem,
-  MiniAppGlobalConfig,
 } from '@/types';
 import {
   Plus,
@@ -41,7 +40,6 @@ import {
   setDoc,
   deleteDoc,
   writeBatch,
-  getDoc,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useLiveSession } from '@/hooks/useLiveSession';
@@ -49,6 +47,7 @@ import { SortableItem } from './components/SortableItem';
 import { GlobalAppRow } from './components/GlobalAppRow';
 import { MiniAppEditor } from './components/MiniAppEditor';
 import { useMiniAppSync } from './hooks/useMiniAppSync';
+import { useMiniAppGlobalConfig } from './hooks/useMiniAppGlobalConfig';
 
 // --- MAIN WIDGET COMPONENT ---
 export const MiniAppWidget: React.FC<{
@@ -62,38 +61,22 @@ export const MiniAppWidget: React.FC<{
   const { activeApp } = config;
 
   const { library, globalLibrary } = useMiniAppSync(addToast);
-
-  const [globalConfig, setGlobalConfig] = useState<MiniAppGlobalConfig | null>(
-    null
-  );
-
-  // 1. Fetch Global Config
-  useEffect(() => {
-    const fetchGlobal = async () => {
-      const snap = await getDoc(doc(db, 'feature_permissions', 'miniApp'));
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.config) {
-          setGlobalConfig(data.config as MiniAppGlobalConfig);
-        }
-      }
-    };
-    void fetchGlobal();
-  }, []);
+  const { globalConfig } = useMiniAppGlobalConfig();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // 2. STUDENT LISTENER: Listen for iframe messages and POST to Apps Script
-  useEffect(() => {
-    if (
-      !isStudentView ||
-      !config.collectResults ||
-      !config.googleSheetId ||
-      !globalConfig?.submissionUrl
-    )
-      return;
+  const handleMessage = useCallback(
+    async (event: MessageEvent) => {
+      // SECURITY: Verify that the message originated from the specific iframe managed by this widget instance.
+      // This prevents spoofing from other iframes or malicious scripts, and ensures that multiple
+      // widgets on the same dashboard don't trigger each other's submission logic.
+      if (event.source !== iframeRef.current?.contentWindow) return;
 
-    const handleMessage = async (event: MessageEvent) => {
       const data = event.data as { type?: string; payload?: unknown } | null;
-      if (data?.type === 'SPART_MINIAPP_RESULT') {
+      if (
+        data?.type === 'SPART_MINIAPP_RESULT' &&
+        globalConfig?.submissionUrl
+      ) {
         try {
           await fetch(globalConfig.submissionUrl, {
             method: 'POST',
@@ -111,7 +94,18 @@ export const MiniAppWidget: React.FC<{
           console.error('Submission failed', error);
         }
       }
-    };
+    },
+    [globalConfig?.submissionUrl, config.googleSheetId, studentId]
+  );
+
+  useEffect(() => {
+    if (
+      !isStudentView ||
+      !config.collectResults ||
+      !config.googleSheetId ||
+      !globalConfig?.submissionUrl
+    )
+      return;
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
@@ -120,7 +114,7 @@ export const MiniAppWidget: React.FC<{
     config.collectResults,
     config.googleSheetId,
     globalConfig?.submissionUrl,
-    studentId,
+    handleMessage,
   ]);
 
   const [activeTab, setActiveTab] = useState<'personal' | 'global'>('personal');
@@ -474,6 +468,7 @@ export const MiniAppWidget: React.FC<{
         content={
           <div className="w-full h-full flex flex-col relative overflow-hidden">
             <iframe
+              ref={iframeRef}
               srcDoc={activeApp.html}
               className="flex-1 w-full border-none bg-white" // Keep bg-white for iframe content visibility
               sandbox="allow-scripts allow-forms allow-popups allow-modals"

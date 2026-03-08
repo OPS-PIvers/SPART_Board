@@ -13,6 +13,7 @@ import {
   ExpectationsGlobalConfig,
   TalkingToolGlobalConfig,
   ToolMetadata,
+  MiniAppGlobalConfig,
 } from '@/types';
 import {
   Plus,
@@ -1162,14 +1163,19 @@ export const FeatureConfigurationPanel: React.FC<
       {tool.type === 'miniApp' && (
         <div className="space-y-3">
           {(() => {
-            const config = (permission.config ?? {
-              submissionUrl: '',
-              botEmail: '',
-            }) as unknown as Record<string, string>;
+            const config =
+              (permission.config as unknown as MiniAppGlobalConfig) ?? {
+                submissionUrl: '',
+                botEmail: '',
+              };
 
             const isUrlMalformed =
               config.submissionUrl &&
               !config.submissionUrl.startsWith('https://');
+
+            const isEmailMalformed =
+              config.botEmail &&
+              !/^[\S@]+@[\S@]+\.[\S@]+$/.test(config.botEmail);
 
             return (
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -1221,8 +1227,17 @@ export const FeatureConfigurationPanel: React.FC<
                           },
                         })
                       }
-                      className="w-full px-2 py-1.5 text-xs font-mono border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                      className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
+                        isEmailMalformed
+                          ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                          : 'border-slate-300 focus:ring-brand-blue-primary'
+                      }`}
                     />
+                    {isEmailMalformed && (
+                      <p className="text-xxs text-red-600 font-bold mt-1">
+                        Warning: Please enter a valid email address.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
