@@ -562,8 +562,8 @@ export const Dock: React.FC = () => {
         <div
           className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             isExpanded
-              ? 'scale-100 opacity-100 rotate-0'
-              : 'scale-50 opacity-0 pointer-events-none absolute translate-y-12 rotate-3'
+              ? 'scale-100 opacity-100'
+              : 'scale-50 opacity-0 pointer-events-none absolute translate-y-12'
           }`}
         >
           {/* Widget Library Modal (Triggered by button) */}
@@ -957,8 +957,8 @@ export const Dock: React.FC = () => {
         <div
           className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             !isExpanded
-              ? 'scale-100 opacity-100 rotate-0'
-              : 'scale-150 opacity-0 pointer-events-none absolute -rotate-180'
+              ? 'scale-100 opacity-100'
+              : 'scale-150 opacity-0 pointer-events-none absolute'
           }`}
         >
           {/* Compressed down to a single icon (plus quick access) */}
