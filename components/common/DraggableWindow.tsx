@@ -444,75 +444,90 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       console.warn('Failed to set pointer capture:', _err);
     }
 
+    let dragAnimationFrame: number | null = null;
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       // Only process the same pointer that started the drag
       if (moveEvent.pointerId !== e.pointerId) return;
 
-      dragDistanceRef.current = Math.sqrt(
-        Math.pow(moveEvent.clientX - initialMouseX, 2) +
-          Math.pow(moveEvent.clientY - initialMouseY, 2)
-      );
-
-      // Edge Detection Threshold for Large Touch Panels
-      const screenW = window.innerWidth;
-      const screenH = window.innerHeight;
-      const threshold = SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
-
-      const isLeftEdge = moveEvent.clientX <= threshold;
-      const isRightEdge = moveEvent.clientX >= screenW - threshold;
-      const isTopEdge = moveEvent.clientY <= threshold;
-      const isBottomEdge = moveEvent.clientY >= screenH - threshold;
-
-      let newZone: SnapZone | 'maximize' | null = null;
-
-      if (isLeftEdge && isTopEdge) {
-        newZone = topLeftZone;
-      } else if (isRightEdge && isTopEdge) {
-        newZone = topRightZone;
-      } else if (isLeftEdge && isBottomEdge) {
-        newZone = bottomLeftZone;
-      } else if (isRightEdge && isBottomEdge) {
-        newZone = bottomRightZone;
-      } else if (isLeftEdge) {
-        newZone = leftHalfZone;
-      } else if (isRightEdge) {
-        newZone = rightHalfZone;
-      } else if (isTopEdge) {
-        newZone = topHalfZone;
-      } else if (isBottomEdge) {
-        newZone = bottomHalfZone;
+      if (dragAnimationFrame !== null) {
+        cancelAnimationFrame(dragAnimationFrame);
       }
 
-      if (snapPreviewZoneRef.current !== newZone) {
-        snapPreviewZoneRef.current = newZone;
-        setSnapPreviewZone(newZone);
-      }
+      dragAnimationFrame = requestAnimationFrame(() => {
+        dragDistanceRef.current = Math.sqrt(
+          Math.pow(moveEvent.clientX - initialMouseX, 2) +
+            Math.pow(moveEvent.clientY - initialMouseY, 2)
+        );
 
-      // Calculate movements relative to initial position, scaled by current zoom
-      const deltaX = (moveEvent.clientX - initialMouseX) / zoom;
-      const deltaY = (moveEvent.clientY - initialMouseY) / zoom;
+        // Edge Detection Threshold for Large Touch Panels
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+        const threshold = SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
 
-      const newX = widget.x + deltaX;
-      const newY = widget.y + deltaY;
+        const isLeftEdge = moveEvent.clientX <= threshold;
+        const isRightEdge = moveEvent.clientX >= screenW - threshold;
+        const isTopEdge = moveEvent.clientY <= threshold;
+        const isBottomEdge = moveEvent.clientY >= screenH - threshold;
 
-      // OPTIMIZATION: If widget is not position-aware, update DOM directly and skip React render cycle
-      if (!POSITION_AWARE_WIDGETS.includes(widget.type) && windowRef.current) {
-        windowRef.current.style.left = `${newX}px`;
-        windowRef.current.style.top = `${newY}px`;
-        if (dragState.current) {
-          dragState.current.x = newX;
-          dragState.current.y = newY;
+        let newZone: SnapZone | 'maximize' | null = null;
+
+        if (isLeftEdge && isTopEdge) {
+          newZone = topLeftZone;
+        } else if (isRightEdge && isTopEdge) {
+          newZone = topRightZone;
+        } else if (isLeftEdge && isBottomEdge) {
+          newZone = bottomLeftZone;
+        } else if (isRightEdge && isBottomEdge) {
+          newZone = bottomRightZone;
+        } else if (isLeftEdge) {
+          newZone = leftHalfZone;
+        } else if (isRightEdge) {
+          newZone = rightHalfZone;
+        } else if (isTopEdge) {
+          newZone = topHalfZone;
+        } else if (isBottomEdge) {
+          newZone = bottomHalfZone;
         }
-      } else {
-        updateWidget(widget.id, {
-          x: newX,
-          y: newY,
-        });
-      }
+
+        if (snapPreviewZoneRef.current !== newZone) {
+          snapPreviewZoneRef.current = newZone;
+          setSnapPreviewZone(newZone);
+        }
+
+        // Calculate movements relative to initial position, scaled by current zoom
+        const deltaX = (moveEvent.clientX - initialMouseX) / zoom;
+        const deltaY = (moveEvent.clientY - initialMouseY) / zoom;
+
+        const newX = widget.x + deltaX;
+        const newY = widget.y + deltaY;
+
+        // OPTIMIZATION: If widget is not position-aware, update DOM directly and skip React render cycle
+        if (
+          !POSITION_AWARE_WIDGETS.includes(widget.type) &&
+          windowRef.current
+        ) {
+          windowRef.current.style.left = `${newX}px`;
+          windowRef.current.style.top = `${newY}px`;
+          if (dragState.current) {
+            dragState.current.x = newX;
+            dragState.current.y = newY;
+          }
+        } else {
+          updateWidget(widget.id, {
+            x: newX,
+            y: newY,
+          });
+        }
+      });
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
       if (upEvent.pointerId !== e.pointerId) return;
+
+      if (dragAnimationFrame !== null) {
+        cancelAnimationFrame(dragAnimationFrame);
+      }
 
       setIsDragging(false);
       document.body.classList.remove('is-dragging-widget');
@@ -586,62 +601,77 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       console.warn('Failed to set pointer capture:', _err);
     }
 
+    let resizeAnimationFrame: number | null = null;
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (moveEvent.pointerId !== e.pointerId) return;
 
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
-
-      let newW = startW;
-      let newH = startH;
-      let newX = startPosX;
-      let newY = startPosY;
-
-      if (direction.includes('e')) {
-        newW = Math.max(150, startW + dx);
-      }
-      if (direction.includes('w')) {
-        const potentialW = startW - dx;
-        if (potentialW >= 150) {
-          newW = potentialW;
-          newX = startPosX + dx;
-        }
-      }
-      if (direction.includes('s')) {
-        newH = Math.max(100, startH + dy);
-      }
-      if (direction.includes('n')) {
-        const potentialH = startH - dy;
-        if (potentialH >= 100) {
-          newH = potentialH;
-          newY = startPosY + dy;
-        }
+      if (resizeAnimationFrame !== null) {
+        cancelAnimationFrame(resizeAnimationFrame);
       }
 
-      // OPTIMIZATION: If widget is not position-aware, update DOM directly and skip React render cycle
-      if (!POSITION_AWARE_WIDGETS.includes(widget.type) && windowRef.current) {
-        windowRef.current.style.width = `${newW}px`;
-        windowRef.current.style.height = `${newH}px`;
-        windowRef.current.style.left = `${newX}px`;
-        windowRef.current.style.top = `${newY}px`;
-        if (dragState.current) {
-          dragState.current.w = newW;
-          dragState.current.h = newH;
-          dragState.current.x = newX;
-          dragState.current.y = newY;
+      resizeAnimationFrame = requestAnimationFrame(() => {
+        const dx = (moveEvent.clientX - startX) / zoom;
+        const dy = (moveEvent.clientY - startY) / zoom;
+
+        let newW = startW;
+        let newH = startH;
+        let newX = startPosX;
+        let newY = startPosY;
+
+        if (direction.includes('e')) {
+          newW = Math.max(150, startW + dx);
         }
-      } else {
-        updateWidget(widget.id, {
-          w: newW,
-          h: newH,
-          x: newX,
-          y: newY,
-        });
-      }
+        if (direction.includes('w')) {
+          const potentialW = startW - dx;
+          if (potentialW >= 150) {
+            newW = potentialW;
+            newX = startPosX + dx;
+          }
+        }
+        if (direction.includes('s')) {
+          newH = Math.max(100, startH + dy);
+        }
+        if (direction.includes('n')) {
+          const potentialH = startH - dy;
+          if (potentialH >= 100) {
+            newH = potentialH;
+            newY = startPosY + dy;
+          }
+        }
+
+        // OPTIMIZATION: If widget is not position-aware, update DOM directly and skip React render cycle
+        if (
+          !POSITION_AWARE_WIDGETS.includes(widget.type) &&
+          windowRef.current
+        ) {
+          windowRef.current.style.width = `${newW}px`;
+          windowRef.current.style.height = `${newH}px`;
+          windowRef.current.style.left = `${newX}px`;
+          windowRef.current.style.top = `${newY}px`;
+          if (dragState.current) {
+            dragState.current.w = newW;
+            dragState.current.h = newH;
+            dragState.current.x = newX;
+            dragState.current.y = newY;
+          }
+        } else {
+          updateWidget(widget.id, {
+            w: newW,
+            h: newH,
+            x: newX,
+            y: newY,
+          });
+        }
+      });
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
       if (upEvent.pointerId !== e.pointerId) return;
+
+      if (resizeAnimationFrame !== null) {
+        cancelAnimationFrame(resizeAnimationFrame);
+      }
 
       setIsResizing(false);
       document.body.classList.remove('is-dragging-widget');
@@ -898,6 +928,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       transparency={transparency}
+      disableBlur={isDragging || isResizing}
       allowInvisible={true}
       selected={isSelected}
       cornerRadius={isMaximized ? 'none' : undefined}
