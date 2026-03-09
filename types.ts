@@ -37,7 +37,8 @@ export type WidgetType =
   | 'mathTools'
   | 'mathTool'
   | 'nextUp'
-  | 'onboarding';
+  | 'onboarding'
+  | 'music';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -1114,6 +1115,23 @@ export interface NextUpSession {
   buildingId?: string; // For default settings
 }
 
+// Music widget types
+export interface MusicStation {
+  id: string;
+  title: string;
+  channel: string;
+  url: string;
+  thumbnail: string;
+  color: string;
+  isActive: boolean;
+  order: number;
+}
+
+export interface MusicConfig {
+  stationId: string;
+  syncWithTimeTool?: boolean;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -1154,7 +1172,8 @@ export type WidgetConfig =
   | MathToolsConfig
   | MathToolConfig
   | NextUpConfig
-  | OnboardingConfig;
+  | OnboardingConfig
+  | MusicConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1235,7 +1254,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                             ? NextUpConfig
                                                                             : T extends 'onboarding'
                                                                               ? OnboardingConfig
-                                                                              : never;
+                                                                              : T extends 'music'
+                                                                                ? MusicConfig
+                                                                                : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
