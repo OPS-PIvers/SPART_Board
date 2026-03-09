@@ -19,6 +19,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
   AddWidgetOverrides,
   NextUpConfig,
+  GridPosition,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -37,6 +38,7 @@ import {
 import { useRosters } from '../hooks/useRosters';
 import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import { DashboardContext } from './DashboardContextValue';
+import { validateGridConfig, sanitizeAIConfig } from '../utils/ai_security';
 
 // Helper to migrate legacy visibleTools to dockItems
 const migrateToDockItems = (
@@ -1603,7 +1605,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const addWidgets = useCallback(
-    (widgetsToAdd: { type: WidgetType; config?: WidgetConfig }[]) => {
+    (
+      widgetsToAdd: {
+        type: WidgetType;
+        config?: WidgetConfig;
+        gridConfig?: GridPosition;
+      }[]
+    ) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
 
@@ -1612,41 +1620,98 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           if (d.id !== activeId) return d;
           let maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
 
-          const START_X = 50;
-          const START_Y = 80;
-          const COL_WIDTH = 300 + 50; // Width + Gap
+          // --- GRID SYSTEM CONSTANTS ---
+          // Base 16:9 canvas (1600x900), clamped to the current viewport so
+          // smart-grid layouts remain visible on smaller screens.
+          const { boardW: BOARD_W, boardH: BOARD_H } = (() => {
+            const BASE_BOARD_W = 1600;
+            const BASE_BOARD_H = 900;
+            if (typeof window === 'undefined') {
+              return { boardW: BASE_BOARD_W, boardH: BASE_BOARD_H };
+            }
+            // Use window dimensions if available, otherwise fall back to base
+            // Clamping ensures that col 11 (at OFFSET_X + 11*COL_W) doesn't end up off-screen
+            const viewportWidth = window.innerWidth || BASE_BOARD_W;
+            const viewportHeight = window.innerHeight || BASE_BOARD_H;
+
+            return {
+              boardW: Math.min(BASE_BOARD_W, viewportWidth),
+              boardH: Math.min(BASE_BOARD_H, viewportHeight),
+            };
+          })();
+
+          // Margins to prevent widgets from hitting the exact edges of the screen
+          const OFFSET_X = 60;
+          const OFFSET_Y = 80;
+          const GRID_GAP = 16; // 16px gap between widgets
+
+          // Compute grid cell sizes from the usable area after subtracting margins.
+          // Clamp to at least GRID_GAP + 1 to avoid zero/negative widget sizes.
+          const usableBoardW = Math.max(BOARD_W - 2 * OFFSET_X, GRID_GAP + 1);
+          const usableBoardH = Math.max(BOARD_H - 2 * OFFSET_Y, GRID_GAP + 1);
+          const COL_W = usableBoardW / 12;
+          const ROW_H = usableBoardH / 12;
 
           const newWidgets = widgetsToAdd.map((item, index) => {
             const defaults = WIDGET_DEFAULTS[item.type] ?? {};
             const adminConfig = getAdminBuildingConfig(item.type);
             maxZ++;
 
-            // 3-Column Grid Layout
+            // Sanitize AI-provided config and grid positions
+            const sanitizedInputConfig = sanitizeAIConfig(
+              item.type,
+              item.config
+            );
+            const validatedGrid = item.gridConfig
+              ? validateGridConfig(item.gridConfig)
+              : null;
+
+            // Base config from defaults, admin settings, and global persistence
+            const baseConfig = {
+              ...(defaults.config ?? {}),
+              ...adminConfig,
+              ...(PERSISTED_WIDGET_TYPES.includes(item.type)
+                ? (savedWidgetConfigs?.[item.type] ?? {})
+                : {}),
+              ...sanitizedInputConfig,
+            } as WidgetConfig;
+
+            // 1. SMART LAYOUT: If AI provided spatial data
+            if (validatedGrid) {
+              const { col, row, colSpan, rowSpan } = validatedGrid;
+              return {
+                id: crypto.randomUUID(),
+                type: item.type,
+                flipped: false,
+                z: maxZ,
+                ...defaults,
+                x: col * COL_W + OFFSET_X,
+                y: row * ROW_H + OFFSET_Y,
+                w: Math.max(1, colSpan * COL_W - GRID_GAP),
+                h: Math.max(1, rowSpan * ROW_H - GRID_GAP),
+                config: baseConfig,
+              } as WidgetData;
+            }
+
+            // 2. FALLBACK LAYOUT: Legacy 3-column placement for missing gridConfigs
             const col = index % 3;
             const row = Math.floor(index / 3);
-
-            // Row height assumption
-            const ROW_HEIGHT = 250;
+            const START_X = 50;
+            const START_Y = 80;
+            const COL_WIDTH = 350;
+            const ROW_HEIGHT = 280;
 
             return {
               id: crypto.randomUUID(),
               type: item.type,
               x: START_X + col * COL_WIDTH,
               y: START_Y + row * ROW_HEIGHT,
-              w: defaults.w ?? 200,
-              h: defaults.h ?? 200,
+              w: defaults.w ?? 250,
+              h: defaults.h ?? 250,
               flipped: false,
               z: maxZ,
               ...defaults,
-              // Layer order: widget defaults → admin building defaults → saved global config → explicit item config
-              config: {
-                ...(defaults.config ?? {}),
-                ...adminConfig,
-                ...(PERSISTED_WIDGET_TYPES.includes(item.type)
-                  ? (savedWidgetConfigs?.[item.type] ?? {})
-                  : {}),
-                ...(item.config ?? {}),
-              },
+              config: baseConfig,
             } as WidgetData;
           });
 
