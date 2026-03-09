@@ -165,6 +165,37 @@ export const DashboardView: React.FC = () => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [zoomOrigin, setZoomOrigin] = React.useState({ x: 50, y: 50 });
 
+  const dashboardRef = React.useRef<HTMLDivElement>(null);
+
+  // Prevent iOS Safari viewport bounce on the board background.
+  // React's onTouchMove is passive by default, so we need a non-passive
+  // listener via useEffect to be able to call preventDefault().
+  // We walk up from the touch target to allow natural scrolling inside
+  // any widget content that is actually scrollable (e.g. schedule lists).
+  React.useEffect(() => {
+    const el = dashboardRef.current;
+    if (!el) return;
+
+    const handler = (e: TouchEvent) => {
+      let node = e.target as HTMLElement | null;
+      while (node && node !== el) {
+        const { overflowY, overflowX } = window.getComputedStyle(node);
+        const isScrollableY =
+          (overflowY === 'auto' || overflowY === 'scroll') &&
+          node.scrollHeight > node.clientHeight;
+        const isScrollableX =
+          (overflowX === 'auto' || overflowX === 'scroll') &&
+          node.scrollWidth > node.clientWidth;
+        if (isScrollableY || isScrollableX) return;
+        node = node.parentElement;
+      }
+      e.preventDefault();
+    };
+
+    el.addEventListener('touchmove', handler, { passive: false });
+    return () => el.removeEventListener('touchmove', handler);
+  }, []);
+
   // Gesture Tracking
   const gestureStart = React.useRef<{ x: number; y: number } | null>(null);
   const gestureCurrent = React.useRef<{ x: number; y: number } | null>(null);
@@ -663,6 +694,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div
+      ref={dashboardRef}
       id="dashboard-root"
       className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses} ${fontClass}`}
       style={backgroundStyles}
