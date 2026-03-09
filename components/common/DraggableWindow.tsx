@@ -228,6 +228,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const windowRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const snapMenuRef = useRef<HTMLDivElement>(null);
   const dragDistanceRef = useRef(0);
 
   // Gesture tracking for multi-touch actions
@@ -259,7 +260,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
   }, [setSelectedWidgetId]);
 
-  useClickOutside(menuRef, handleCloseTools, [windowRef]);
+  useClickOutside(menuRef, handleCloseTools, [windowRef, snapMenuRef]);
+  useClickOutside(snapMenuRef, () => setShowSnapMenu(false));
 
   // Ref specifically for the inner content we want to capture
   const contentRef = useRef<HTMLDivElement>(null);
@@ -1373,7 +1375,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     typeof document !== 'undefined' &&
                     createPortal(
                       <div
-                        className="fixed z-[10000] p-4 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-72 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        ref={snapMenuRef}
+                        className="fixed z-[10000] p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-48 animate-in slide-in-from-bottom-2 fade-in duration-200"
                         style={{
                           // Position above the button, centered horizontally
                           bottom: `${window.innerHeight - Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-y') ?? 0) + 12}px`,
@@ -1383,32 +1386,35 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         onClick={(e) => e.stopPropagation()}
                         onPointerDown={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center gap-2 mb-3">
-                          <LayoutTemplate className="w-5 h-5 text-indigo-500" />
-                          <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2 mb-2 px-1">
+                          <LayoutTemplate className="w-3.5 h-3.5 text-indigo-500" />
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                             {t('widgetWindow.chooseLayout')}
                           </span>
                         </div>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="grid grid-cols-2 gap-2">
                           {SNAP_LAYOUTS.map((layout) => (
                             <div
                               key={layout.id}
-                              className="group relative p-1.5 rounded-xl hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+                              className="group relative p-1 rounded-lg hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
                             >
-                              <div className="relative w-full h-16">
+                              <div className="relative w-full h-8 bg-slate-50 rounded-md overflow-hidden">
                                 {layout.zones.map((zone) => (
                                   <button
                                     key={zone.id}
-                                    onClick={() => handleSnapToZone(zone)}
-                                    // Touch targets are large and easily tappable
-                                    className="absolute bg-slate-300/80 hover:bg-indigo-500 hover:shadow-inner transition-all rounded-md border border-slate-400/20 active:scale-95"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSnapToZone(zone);
+                                    }}
+                                    className="absolute bg-slate-300 hover:bg-indigo-500 transition-all rounded-[2px] border border-white/50 active:scale-90"
                                     style={{
                                       left: `${zone.x * 100}%`,
                                       top: `${zone.y * 100}%`,
                                       width: `${zone.w * 100}%`,
                                       height: `${zone.h * 100}%`,
                                     }}
+                                    title={`${t('widgetWindow.snapTo')} ${t(`widgetWindow.layouts.${layout.nameKey}`)}`}
                                     aria-label={`${t('widgetWindow.snapTo')} ${t(`widgetWindow.layouts.${layout.nameKey}`)} - ${zone.id}`}
                                   />
                                 ))}
