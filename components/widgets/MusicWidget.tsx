@@ -476,7 +476,7 @@ declare global {
           height: string;
           width: string;
           videoId: string;
-          playerVars?: Record<string, number>;
+          playerVars?: Record<string, string | number | boolean>;
           events?: {
             onStateChange?: (event: { data: number }) => void;
             onReady?: () => void;
