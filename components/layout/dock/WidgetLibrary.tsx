@@ -38,73 +38,77 @@ interface WidgetLibraryProps {
   getToolLabel?: (type: WidgetType | InternalToolType) => string;
 }
 
-const SortableLibraryTool = ({
-  tool,
-  isActive,
-  isEditMode,
-  onToggle,
-  label,
-}: {
-  tool: (typeof TOOLS)[0];
-  isActive: boolean;
-  isEditMode: boolean;
-  onToggle: () => void;
-  label?: string;
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: tool.type });
+const SortableLibraryTool = React.memo(
+  ({
+    tool,
+    isActive,
+    isEditMode,
+    onToggle,
+    label,
+  }: {
+    tool: (typeof TOOLS)[0];
+    isActive: boolean;
+    isEditMode: boolean;
+    onToggle: (type: WidgetType | InternalToolType) => void;
+    label?: string;
+  }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: tool.type });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 100 : 1,
-  };
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      zIndex: isDragging ? 100 : 1,
+    };
 
-  return (
-    <button
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      onClick={(e) => {
-        // Prevent click if dragging happened
-        if (e.defaultPrevented) return;
-        onToggle();
-      }}
-      className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all group active:scale-95 border-2 ${
-        isActive
-          ? 'bg-white/80 border-brand-blue-primary shadow-md'
-          : 'bg-white/20 border-transparent opacity-100 hover:bg-white/30'
-      } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${isEditMode ? 'animate-jiggle' : ''}`}
-    >
-      <div
-        className={`${tool.color} p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform relative`}
+    return (
+      <button
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        onClick={(e) => {
+          // Prevent click if dragging happened
+          if (e.defaultPrevented) return;
+          onToggle(tool.type);
+        }}
+        className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all group active:scale-95 border-2 ${
+          isActive
+            ? 'bg-white/80 border-brand-blue-primary shadow-md'
+            : 'bg-white/20 border-transparent opacity-100 hover:bg-white/30'
+        } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${isEditMode ? 'animate-jiggle' : ''}`}
       >
-        <tool.icon className="w-6 h-6" />
-        {isEditMode && (
-          <div className="absolute -top-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm ring-2 ring-white">
-            <Plus className="w-2.5 h-2.5" />
-          </div>
-        )}
-        {!isEditMode && isActive && (
-          <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 shadow-sm">
-            <Plus className="w-2.5 h-2.5 rotate-45" />
-          </div>
-        )}
-      </div>
-      <span className="text-xxs font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
-        {label ?? tool.label}
-      </span>
-    </button>
-  );
-};
+        <div
+          className={`${tool.color} p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform relative`}
+        >
+          <tool.icon className="w-6 h-6" />
+          {isEditMode && (
+            <div className="absolute -top-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm ring-2 ring-white">
+              <Plus className="w-2.5 h-2.5" />
+            </div>
+          )}
+          {!isEditMode && isActive && (
+            <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 shadow-sm">
+              <Plus className="w-2.5 h-2.5 rotate-45" />
+            </div>
+          )}
+        </div>
+        <span className="text-xxs font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
+          {label ?? tool.label}
+        </span>
+      </button>
+    );
+  }
+);
+
+SortableLibraryTool.displayName = 'SortableLibraryTool';
 
 export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
   (
@@ -229,7 +233,7 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
                         tool={tool}
                         isActive={false} // They are always inactive now due to filtering
                         isEditMode={isEditMode}
-                        onToggle={() => onToggle(tool.type)}
+                        onToggle={onToggle}
                         label={
                           getToolLabel ? getToolLabel(tool.type) : undefined
                         }
