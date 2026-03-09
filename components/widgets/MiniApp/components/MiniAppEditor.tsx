@@ -1,9 +1,15 @@
-import React from 'react';
-import { X, Code2, Sparkles, Loader2, Save } from 'lucide-react';
+import React, { useCallback, useRef } from 'react';
+import { X, Code2, Sparkles, Loader2, Save, Box } from 'lucide-react';
 import { WidgetLayout } from '../../WidgetLayout';
 import { useAuth } from '@/context/useAuth';
+import { MiniAppConfig, WidgetData } from '@/types';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { useDashboard } from '@/context/useDashboard';
+import { Toggle } from '@/components/common/Toggle';
+import { useMiniAppGlobalConfig } from '../hooks/useMiniAppGlobalConfig';
 
 interface MiniAppEditorProps {
+  widget: WidgetData;
   editingId: string | null;
   editTitle: string;
   setEditTitle: (val: string) => void;
@@ -20,6 +26,7 @@ interface MiniAppEditorProps {
 }
 
 export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
+  widget,
   editingId,
   editTitle,
   setEditTitle,
@@ -35,6 +42,55 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
   onCancel,
 }) => {
   const { canAccessFeature } = useAuth();
+  const { updateWidget, addToast } = useDashboard();
+  const { driveService } = useGoogleDrive();
+  const config = widget.config as MiniAppConfig;
+  const { globalConfig } = useMiniAppGlobalConfig();
+  const lastSharedIdRef = useRef<string | null>(null);
+
+  const shareSheetWithBot = useCallback(
+    async (sheetId: string) => {
+      if (!driveService || !globalConfig?.botEmail || !sheetId) return;
+      if (lastSharedIdRef.current === sheetId) return;
+
+      try {
+        await driveService.addEditorPermission(sheetId, globalConfig.botEmail);
+        lastSharedIdRef.current = sheetId;
+        addToast('Sheet linked and shared with system!', 'success');
+      } catch (e) {
+        console.error(e);
+        addToast(
+          'Failed to share sheet. Check your drive permissions.',
+          'error'
+        );
+      }
+    },
+    [driveService, globalConfig, addToast]
+  );
+
+  // 3. TEACHER HANDLERS: Auto-share the Google Sheet
+  const handleToggleCollect = async (checked: boolean) => {
+    updateWidget(widget.id, {
+      config: { ...config, collectResults: checked },
+    });
+
+    if (checked && config.googleSheetId) {
+      await shareSheetWithBot(config.googleSheetId);
+    }
+  };
+
+  const handleUrlChange = async (url: string) => {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    const sheetId = match ? match[1] : '';
+
+    updateWidget(widget.id, {
+      config: { ...config, googleSheetUrl: url, googleSheetId: sheetId },
+    });
+
+    if (config.collectResults && sheetId) {
+      await shareSheetWithBot(sheetId);
+    }
+  };
 
   return (
     <WidgetLayout
@@ -145,6 +201,44 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
               spellCheck={false}
               placeholder="Paste your HTML, CSS, and JS here..."
             />
+          </div>
+
+          {/* Results Collection Section */}
+          <div className="bg-slate-50 border-t border-slate-200 p-4 shrink-0 flex flex-col gap-3 -mx-4 -mb-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+                Collect Live Results
+              </span>
+              <Toggle
+                checked={!!config.collectResults}
+                onChange={handleToggleCollect}
+              />
+            </div>
+
+            {config.collectResults && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <label className="block text-xxs font-bold uppercase text-slate-400 mb-1">
+                  Google Sheet URL
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3 text-slate-400 pointer-events-none">
+                    <Box size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    value={config.googleSheetUrl ?? ''}
+                    onChange={(e) => void handleUrlChange(e.target.value)}
+                    placeholder="Paste your Google Sheet link here..."
+                    className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-400 text-slate-700 font-bold"
+                  />
+                </div>
+                {config.googleSheetId && (
+                  <p className="text-xxs text-emerald-500 font-bold mt-1 uppercase tracking-wider">
+                    ✓ Sheet Connected & Ready
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       }

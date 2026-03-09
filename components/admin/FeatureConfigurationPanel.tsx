@@ -13,6 +13,7 @@ import {
   ExpectationsGlobalConfig,
   TalkingToolGlobalConfig,
   ToolMetadata,
+  MiniAppGlobalConfig,
 } from '@/types';
 import {
   Plus,
@@ -1156,6 +1157,92 @@ export const FeatureConfigurationPanel: React.FC<
               })
             }
           />
+        </div>
+      )}
+
+      {tool.type === 'miniApp' && (
+        <div className="space-y-3">
+          {(() => {
+            const config =
+              (permission.config as unknown as MiniAppGlobalConfig) ?? {
+                submissionUrl: '',
+                botEmail: '',
+              };
+
+            const isUrlMalformed =
+              config.submissionUrl &&
+              !config.submissionUrl.startsWith('https://');
+
+            const isEmailMalformed =
+              config.botEmail &&
+              !/^[\S@]+@[\S@]+\.[\S@]+$/.test(config.botEmail);
+
+            return (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h3 className="text-xs font-black text-slate-800 mb-3 uppercase tracking-widest">
+                  Mini App Collector Bot
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+                      Apps Script Web App URL
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="https://script.google.com/macros/s/.../exec"
+                      value={config.submissionUrl ?? ''}
+                      onChange={(e) =>
+                        updatePermission(tool.type, {
+                          config: {
+                            ...config,
+                            submissionUrl: e.target.value.trim(),
+                          },
+                        })
+                      }
+                      className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
+                        isUrlMalformed
+                          ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                          : 'border-slate-300 focus:ring-brand-blue-primary'
+                      }`}
+                    />
+                    {isUrlMalformed && (
+                      <p className="text-xxs text-red-600 font-bold mt-1">
+                        Warning: URL must start with https://
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+                      Bot Email Address
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. spart-bot@gmail.com"
+                      value={config.botEmail ?? ''}
+                      onChange={(e) =>
+                        updatePermission(tool.type, {
+                          config: {
+                            ...config,
+                            botEmail: e.target.value.trim(),
+                          },
+                        })
+                      }
+                      className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
+                        isEmailMalformed
+                          ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                          : 'border-slate-300 focus:ring-brand-blue-primary'
+                      }`}
+                    />
+                    {isEmailMalformed && (
+                      <p className="text-xxs text-red-600 font-bold mt-1">
+                        Warning: Please enter a valid email address.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

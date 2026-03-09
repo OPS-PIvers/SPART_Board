@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import {
-  WidgetData,
   MiniAppItem,
   MiniAppConfig,
   GlobalMiniAppItem,
+  WidgetComponentProps,
 } from '@/types';
 import {
   Plus,
@@ -46,15 +46,74 @@ import { SortableItem } from './components/SortableItem';
 import { GlobalAppRow } from './components/GlobalAppRow';
 import { MiniAppEditor } from './components/MiniAppEditor';
 import { useMiniAppSync } from './hooks/useMiniAppSync';
+import { useMiniAppGlobalConfig } from './hooks/useMiniAppGlobalConfig';
 
 // --- MAIN WIDGET COMPONENT ---
-export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
+  widget,
+  isStudentView,
+  studentPin,
+}) => {
   const { updateWidget, addToast } = useDashboard();
   const { user } = useAuth();
   const config = widget.config as MiniAppConfig;
   const { activeApp } = config;
 
   const { library, globalLibrary } = useMiniAppSync(addToast);
+  const { globalConfig } = useMiniAppGlobalConfig();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // 2. STUDENT LISTENER: Listen for iframe messages and POST to Apps Script
+  const handleMessage = useCallback(
+    async (event: MessageEvent) => {
+      // SECURITY: Verify that the message originated from the specific iframe managed by this widget instance.
+      // This prevents spoofing from other iframes or malicious scripts, and ensures that multiple
+      // widgets on the same dashboard don't trigger each other's submission logic.
+      if (event.source !== iframeRef.current?.contentWindow) return;
+
+      const data = event.data as { type?: string; payload?: unknown } | null;
+      if (
+        data?.type === 'SPART_MINIAPP_RESULT' &&
+        globalConfig?.submissionUrl
+      ) {
+        try {
+          await fetch(globalConfig.submissionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sheetId: config.googleSheetId,
+              studentPin: studentPin ?? 'Anonymous',
+              data: data.payload,
+            }),
+          });
+        } catch (error) {
+          console.error('Submission failed', error);
+        }
+      }
+    },
+    [globalConfig?.submissionUrl, config.googleSheetId, studentPin]
+  );
+
+  useEffect(() => {
+    if (
+      !isStudentView ||
+      !config.collectResults ||
+      !config.googleSheetId ||
+      !globalConfig?.submissionUrl
+    )
+      return;
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [
+    isStudentView,
+    config.collectResults,
+    config.googleSheetId,
+    globalConfig?.submissionUrl,
+    handleMessage,
+  ]);
 
   const [activeTab, setActiveTab] = useState<'personal' | 'global'>('personal');
   const [savingGlobalId, setSavingGlobalId] = useState<string | null>(null);
@@ -407,6 +466,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         content={
           <div className="w-full h-full flex flex-col relative overflow-hidden">
             <iframe
+              ref={iframeRef}
               srcDoc={activeApp.html}
               className="flex-1 w-full border-none bg-white" // Keep bg-white for iframe content visibility
               sandbox="allow-scripts allow-forms allow-popups allow-modals"
@@ -460,6 +520,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   if (view === 'editor') {
     return (
       <MiniAppEditor
+        widget={widget}
         editingId={editingId}
         editTitle={editTitle}
         setEditTitle={setEditTitle}
