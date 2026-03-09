@@ -223,7 +223,7 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       padding="p-0"
       content={
         <div
-          className={`w-full h-full rounded-2xl flex flex-col [@container(min-width:300px)]:flex-row items-center justify-center text-center [@container(min-width:300px)]:text-left overflow-hidden relative select-none transition-all duration-500 ${
+          className={`w-full h-full rounded-2xl flex flex-col [@container(orientation:landscape)]:flex-row items-center justify-center text-center [@container(orientation:landscape)]:text-left overflow-hidden relative select-none transition-all duration-500 ${
             !isTransparent ? 'shadow-inner' : ''
           }`}
           style={{
@@ -244,26 +244,28 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
 
           {/* Album art + Controls */}
-          <div className="relative shrink-0 group">
+          <div
+            className="relative shrink-0 group"
+            style={{
+              width: 'min(140px, 45cqmin)',
+              height: 'min(140px, 45cqmin)',
+            }}
+          >
             {activeStation.thumbnail ? (
               <img
                 src={activeStation.thumbnail}
                 alt={activeStation.title}
-                className={`rounded-3xl object-cover shadow-2xl transition-all duration-500 group-hover:scale-105 ${isPlaying ? 'animate-pulse-slow' : ''}`}
+                className={`w-full h-full rounded-3xl object-cover shadow-2xl transition-all duration-500 group-hover:scale-105 ${isPlaying ? 'animate-pulse-slow' : ''}`}
                 style={{
-                  width: 'min(140px, 45cqmin)',
-                  height: 'min(140px, 45cqmin)',
                   border: `min(4px, 1cqmin) solid ${activeStation.color || '#e2e8f0'}22`,
                 }}
               />
             ) : (
               <div
-                className={`rounded-3xl flex items-center justify-center shadow-2xl ${
+                className={`w-full h-full rounded-3xl flex items-center justify-center shadow-2xl ${
                   isTransparent ? 'bg-slate-800/50' : 'bg-slate-50'
                 }`}
                 style={{
-                  width: 'min(140px, 45cqmin)',
-                  height: 'min(140px, 45cqmin)',
                   border: `min(4px, 1cqmin) solid ${activeStation.color || '#e2e8f0'}44`,
                 }}
               >
@@ -279,7 +281,7 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               </div>
             )}
 
-            {/* Play/Pause overlay */}
+            {/* Play/Pause overlay - Scaled to thumbnail */}
             <div
               className={`absolute inset-0 rounded-3xl flex items-center justify-center transition-all duration-300 cursor-pointer ${
                 isPlaying
@@ -289,15 +291,42 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               onClick={togglePlay}
             >
               {!isPlayerReady ? (
-                <div className="bg-white/90 rounded-full p-2 shadow-xl backdrop-blur-sm">
-                  <div className="w-6 h-6 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+                <div
+                  className="bg-white/90 rounded-full shadow-xl backdrop-blur-sm flex items-center justify-center"
+                  style={{
+                    width: '35%',
+                    height: '35%',
+                  }}
+                >
+                  <div
+                    className="border-t-indigo-500 rounded-full animate-spin"
+                    style={{
+                      width: '60%',
+                      height: '60%',
+                      borderWidth: 'min(4px, 1cqmin)',
+                      borderColor: '#e2e8f0',
+                      borderTopColor: '#6366f1',
+                    }}
+                  />
                 </div>
               ) : (
-                <div className="bg-white/90 rounded-full p-4 shadow-xl backdrop-blur-sm transform transition-transform active:scale-90">
+                <div
+                  className="bg-white/90 rounded-full shadow-xl backdrop-blur-sm transform transition-transform active:scale-90 flex items-center justify-center"
+                  style={{
+                    width: '35%',
+                    height: '35%',
+                  }}
+                >
                   {isPlaying ? (
-                    <Pause className="text-slate-900 fill-current w-8 h-8" />
+                    <Pause
+                      className="text-slate-900 fill-current"
+                      style={{ width: '50%', height: '50%' }}
+                    />
                   ) : (
-                    <Play className="text-slate-900 fill-current w-8 h-8 ml-1" />
+                    <Play
+                      className="text-slate-900 fill-current"
+                      style={{ width: '50%', height: '50%', marginLeft: '10%' }}
+                    />
                   )}
                 </div>
               )}
@@ -305,9 +334,9 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
 
           {/* Station info */}
-          <div className="flex-1 flex flex-col items-center [@container(min-width:300px)]:items-start min-w-0">
+          <div className="flex-1 flex flex-col items-center [@container(orientation:landscape)]:items-start min-w-0">
             <div
-              className="flex items-center justify-center [@container(min-width:300px)]:justify-start w-full"
+              className="flex items-center justify-center [@container(orientation:landscape)]:justify-start w-full"
               style={{ gap: 'min(10px, 2.5cqmin)' }}
             >
               <h3
@@ -348,7 +377,7 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             {/* Status indicator for wide view */}
             {isPlayerReady && (
               <div
-                className="hidden [@container(min-width:300px)]:flex items-center gap-2 mt-auto"
+                className="hidden [@container(orientation:landscape)]:flex items-center gap-2 mt-auto"
                 style={{ marginTop: 'min(12px, 3cqmin)' }}
               >
                 <div
