@@ -227,8 +227,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             !isTransparent ? 'shadow-inner' : ''
           }`}
           style={{
-            padding: 'min(12px, 4cqmin)',
-            gap: 'min(12px, 4cqmin)',
+            padding: 'min(12px, 3cqh, 4cqw)',
+            gap: 'min(16px, 4cqh, 5cqw)',
             backgroundColor: bgColor,
           }}
         >
@@ -247,8 +247,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div
             className="relative shrink-0 group"
             style={{
-              width: 'min(140px, 75cqh, 40cqw)',
-              height: 'min(140px, 75cqh, 40cqw)',
+              width: 'min(160px, 85cqh, 80cqw)',
+              height: 'min(160px, 85cqh, 80cqw)',
             }}
           >
             {activeStation.thumbnail ? (
@@ -294,8 +294,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <div
                   className="bg-white/90 rounded-full shadow-xl backdrop-blur-sm flex items-center justify-center"
                   style={{
-                    width: '35%',
-                    height: '35%',
+                    width: '30%',
+                    height: '30%',
                   }}
                 >
                   <div
@@ -313,8 +313,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <div
                   className="bg-white/90 rounded-full shadow-xl backdrop-blur-sm transform transition-transform active:scale-90 flex items-center justify-center"
                   style={{
-                    width: '35%',
-                    height: '35%',
+                    width: '30%',
+                    height: '30%',
                   }}
                 >
                   {isPlaying ? (
@@ -337,12 +337,12 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="flex-1 flex flex-col items-center [@container(orientation:landscape)]:items-start min-w-0">
             <div
               className="flex items-center justify-center [@container(orientation:landscape)]:justify-start w-full"
-              style={{ gap: 'min(8px, 2cqmin)' }}
+              style={{ gap: 'min(8px, 2.5cqmin)' }}
             >
               <h3
                 className="font-black truncate max-w-[90%]"
                 style={{
-                  fontSize: 'min(32px, 10cqmin, 40cqh)',
+                  fontSize: 'min(32px, 35cqh, 12cqw)',
                   lineHeight: 1.1,
                   color: textColor,
                 }}
@@ -353,8 +353,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <Link
                   className="shrink-0"
                   style={{
-                    width: 'min(20px, 5cqmin, 25cqh)',
-                    height: 'min(20px, 5cqmin, 25cqh)',
+                    width: 'min(20px, 20cqh, 6cqw)',
+                    height: 'min(20px, 20cqh, 6cqw)',
                     color: textColor === '#ffffff' ? '#ffffff' : '#6366f1',
                     opacity: textColor === '#ffffff' ? 0.8 : 1,
                   }}
@@ -365,8 +365,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <p
               className="font-bold truncate max-w-[85%]"
               style={{
-                fontSize: 'min(18px, 6cqmin, 25cqh)',
-                marginTop: 'min(2px, 0.5cqmin)',
+                fontSize: 'min(18px, 25cqh, 9cqw)',
+                marginTop: 'min(4px, 1cqh, 1cqw)',
                 opacity: 0.7,
                 color: textColor,
               }}
@@ -377,15 +377,16 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             {/* Status indicator for wide view */}
             {isPlayerReady && (
               <div
-                className="hidden [@container(min-width:300px)]:flex items-center gap-2"
-                style={{ marginTop: 'min(8px, 2cqmin)' }}
+                className="hidden [@container(orientation:landscape)]:flex items-center gap-2"
+                style={{ marginTop: 'min(8px, 2cqh)' }}
               >
                 <div
-                  className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}
+                  className={`rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}
+                  style={{ width: 'min(6px, 8cqh)', height: 'min(6px, 8cqh)' }}
                 />
                 <span
-                  className="text-[9px] font-black uppercase tracking-widest opacity-40"
-                  style={{ color: textColor }}
+                  className="font-black uppercase tracking-widest opacity-40"
+                  style={{ color: textColor, fontSize: 'min(9px, 12cqh)' }}
                 >
                   {isPlaying ? 'Now Playing' : 'Paused'}
                 </span>
