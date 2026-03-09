@@ -25,7 +25,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Auto-migration: If no teams array, convert legacy A/B to teams
   useEffect(() => {
-    if (!config.teams) {
+    if (!Array.isArray(config.teams)) {
       const newTeams: ScoreboardTeam[] = [
         {
           id: 'team-a',
@@ -46,7 +46,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     }
   }, [config, widget.id, updateWidget]);
 
-  const teams = config.teams ?? DEFAULT_TEAMS;
+  const teams = Array.isArray(config.teams) ? config.teams : DEFAULT_TEAMS;
 
   // Keep a ref to the latest config to ensure handleUpdateScore is stable
   const configRef = useRef(config);
@@ -57,7 +57,9 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   const handleUpdateScore = useCallback(
     (teamId: string, delta: number) => {
       const currentConfig = configRef.current;
-      const currentTeams = currentConfig.teams ?? DEFAULT_TEAMS;
+      const currentTeams = Array.isArray(currentConfig.teams)
+        ? currentConfig.teams
+        : DEFAULT_TEAMS;
       const newTeams = currentTeams.map((t) =>
         t.id === teamId ? { ...t, score: Math.max(0, t.score + delta) } : t
       );

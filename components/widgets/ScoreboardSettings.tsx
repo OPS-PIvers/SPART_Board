@@ -51,7 +51,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     useDashboard();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const config = widget.config as ScoreboardConfig;
-  const teams = config.teams ?? [];
+  const teams = Array.isArray(config.teams) ? config.teams : [];
 
   // Find Random Widget
   const randomWidget = useMemo(

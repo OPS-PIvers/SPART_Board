@@ -30,7 +30,8 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as PollConfig & { _announcementId?: string };
-  const { question = 'Vote Now!', options = [], _announcementId } = config;
+  const { question = 'Vote Now!', _announcementId } = config;
+  const options = Array.isArray(config.options) ? config.options : [];
 
   // When rendered inside an announcement, votes are stored in Firestore
   // under /announcements/{id}/pollVotes/{optionIndex} so all users share
@@ -233,7 +234,8 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const { canAccessFeature } = useAuth();
   const config = (widget.config || {}) as PollConfig;
-  const { question = 'Vote Now!', options = [] } = config;
+  const { question = 'Vote Now!' } = config;
+  const options = Array.isArray(config.options) ? config.options : [];
 
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
