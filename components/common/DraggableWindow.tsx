@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,8 +21,11 @@ import {
   Undo2,
   Trash2,
   Highlighter,
+  LayoutTemplate,
 } from 'lucide-react';
 import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
+import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
+import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useDashboard } from '../../context/useDashboard';
 import { GlassCard } from './GlassCard';
@@ -123,6 +132,34 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
     widget.flipped
   );
+
+  const [showSnapMenu, setShowSnapMenu] = useState(false);
+  const [snapPreviewZone, setSnapPreviewZone] = useState<
+    SnapZone | 'maximize' | null
+  >(null);
+  const snapPreviewZoneRef = useRef<SnapZone | 'maximize' | null>(null);
+
+  // Pre-cached zones for edge detection optimization
+  const splitLayout = useMemo(
+    () => SNAP_LAYOUTS.find((l) => l.id === 'split-half'),
+    []
+  );
+  const leftHalfZone = useMemo(
+    () => splitLayout?.zones.find((z) => z.id === 'left-half') ?? null,
+    [splitLayout]
+  );
+  const rightHalfZone = useMemo(
+    () => splitLayout?.zones.find((z) => z.id === 'right-half') ?? null,
+    [splitLayout]
+  );
+
+  useEffect(() => {
+    if (!showTools && showSnapMenu) {
+      setShowSnapMenu(false);
+      setSnapPreviewZone(null);
+      snapPreviewZoneRef.current = null;
+    }
+  }, [showTools, showSnapMenu]);
 
   // OPTIMIZATION: Transient drag state for direct DOM manipulation
   // This allows us to update the DOM directly during drag/resize without triggering React re-renders for the whole tree
@@ -233,6 +270,25 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       bringToFront(widget.id);
     }
   }, [isMaximized, widget.id, updateWidget, bringToFront]);
+
+  const handleSnapToZone = useCallback(
+    (zone: SnapZone) => {
+      const { x, y, w, h } = calculateSnapBounds(zone);
+
+      updateWidget(widget.id, {
+        x,
+        y,
+        w,
+        h,
+        maximized: false, // Ensure we break out of maximize state
+        minimized: false,
+      });
+
+      setShowSnapMenu(false);
+      handleCloseTools();
+    },
+    [widget.id, updateWidget, handleCloseTools]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Stop propagation if we're in an input to prevent global shortcuts
@@ -362,6 +418,28 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
+      // Edge Detection Threshold for Large Touch Panels
+      const screenW = window.innerWidth;
+      const isLeftEdge =
+        moveEvent.clientX <= SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
+      const isRightEdge =
+        moveEvent.clientX >= screenW - SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
+      const isTopEdge =
+        moveEvent.clientY <= SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
+
+      const newZone = isLeftEdge
+        ? leftHalfZone
+        : isRightEdge
+          ? rightHalfZone
+          : isTopEdge
+            ? 'maximize'
+            : null;
+
+      if (snapPreviewZoneRef.current !== newZone) {
+        snapPreviewZoneRef.current = newZone;
+        setSnapPreviewZone(newZone);
+      }
+
       const newX = moveEvent.clientX - startX;
       const newY = moveEvent.clientY - startY;
 
@@ -398,16 +476,27 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         // Ignore capture release errors
       }
 
-      // Commit final position if using direct DOM manipulation
-      if (
-        !POSITION_AWARE_WIDGETS.includes(widget.type) &&
-        dragState.current &&
-        (dragState.current.x !== widget.x || dragState.current.y !== widget.y)
-      ) {
-        updateWidget(widget.id, {
-          x: dragState.current.x,
-          y: dragState.current.y,
-        });
+      const finalSnapZone = snapPreviewZoneRef.current;
+      if (finalSnapZone) {
+        if (finalSnapZone === 'maximize') {
+          handleMaximizeToggle();
+        } else {
+          handleSnapToZone(finalSnapZone);
+        }
+        setSnapPreviewZone(null);
+        snapPreviewZoneRef.current = null;
+      } else {
+        // Commit final position if using direct DOM manipulation
+        if (
+          !POSITION_AWARE_WIDGETS.includes(widget.type) &&
+          dragState.current &&
+          (dragState.current.x !== widget.x || dragState.current.y !== widget.y)
+        ) {
+          updateWidget(widget.id, {
+            x: dragState.current.x,
+            y: dragState.current.y,
+          });
+        }
       }
     };
 
@@ -967,6 +1056,30 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           />
         </div>
       </div>
+
+      {/* Drag-to-Edge Visual Preview Overlay */}
+      {snapPreviewZone &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            data-testid="snap-preview"
+            className="fixed z-[9998] bg-indigo-500/20 border-2 border-indigo-400/50 backdrop-blur-[2px] rounded-2xl transition-all duration-200 ease-out pointer-events-none"
+            style={
+              snapPreviewZone === 'maximize'
+                ? { top: 0, left: 0, width: '100vw', height: '100vh' }
+                : (() => {
+                    const bounds = calculateSnapBounds(snapPreviewZone);
+                    return {
+                      top: bounds.y,
+                      left: bounds.x,
+                      width: bounds.w,
+                      height: bounds.h,
+                    };
+                  })()
+            }
+          />,
+          document.body
+        )}
     </GlassCard>
   );
 
@@ -1149,6 +1262,63 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   size="sm"
                   variant="glass"
                 />
+
+                {/* NEW: Snap Layouts Button & Popover */}
+                <div className="relative flex items-center">
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSnapMenu(!showSnapMenu);
+                    }}
+                    icon={<LayoutTemplate className="w-3.5 h-3.5" />}
+                    label={t('widgetWindow.snapLayout')}
+                    size="sm"
+                    variant="glass"
+                    active={showSnapMenu}
+                  />
+
+                  {showSnapMenu && (
+                    <div
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 p-4 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl z-[9999] w-72 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <LayoutTemplate className="w-5 h-5 text-indigo-500" />
+                        <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                          {t('widgetWindow.chooseLayout')}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col gap-3">
+                        {SNAP_LAYOUTS.map((layout) => (
+                          <div
+                            key={layout.id}
+                            className="group relative p-1.5 rounded-xl hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+                          >
+                            <div className="relative w-full h-16">
+                              {layout.zones.map((zone) => (
+                                <button
+                                  key={zone.id}
+                                  onClick={() => handleSnapToZone(zone)}
+                                  // Touch targets are large and easily tappable
+                                  className="absolute bg-slate-300/80 hover:bg-indigo-500 hover:shadow-inner transition-all rounded-md border border-slate-400/20 active:scale-95"
+                                  style={{
+                                    left: `${zone.x * 100}%`,
+                                    top: `${zone.y * 100}%`,
+                                    width: `${zone.w * 100}%`,
+                                    height: `${zone.h * 100}%`,
+                                  }}
+                                  aria-label={`${t('widgetWindow.snapTo')} ${t(`widgetWindow.layouts.${layout.nameKey}`)} - ${zone.id}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <IconButton
                   onClick={handleMaximizeToggle}
                   icon={
