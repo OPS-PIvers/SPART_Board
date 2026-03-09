@@ -479,8 +479,8 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     padding: 0,
   },
   music: {
-    baseWidth: 340,
-    baseHeight: 120,
+    baseWidth: 280,
+    baseHeight: 280,
     canSpread: true,
     skipScaling: true,
     padding: 0,

@@ -109,6 +109,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           controls: 0,
           disablekb: 1,
           modestbranding: 1,
+          origin: window.location.origin,
+          enablejsapi: 1,
         },
         events: {
           onReady: () => {
@@ -146,7 +148,10 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [isTimeToolRunning, config.syncWithTimeTool, youtubeId, isPlayerReady]);
 
   const togglePlay = () => {
-    if (typeof playerRef.current?.playVideo !== 'function') return;
+    if (typeof playerRef.current?.playVideo !== 'function') {
+      console.warn('YouTube Player not ready yet.');
+      return;
+    }
     if (isPlaying) {
       playerRef.current.pauseVideo();
     } else {
@@ -176,13 +181,13 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <WidgetLayout
         padding="p-0"
         content={
-          <div className="w-full h-full overflow-hidden rounded-2xl">
+          <div className="w-full h-full overflow-hidden rounded-2xl bg-black">
             <iframe
               src={spotifyEmbedUrl}
               title={`Spotify: ${activeStation.title}`}
               width="100%"
               height="100%"
-              allow="encrypted-media"
+              allow="encrypted-media; autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               className="border-none w-full h-full"
             />
           </div>
@@ -213,8 +218,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       padding="p-0"
       content={
         <div
-          className="w-full h-full bg-slate-900 rounded-2xl flex items-center overflow-hidden relative shadow-inner"
-          style={{ padding: '0 min(12px, 3cqmin)', gap: 'min(12px, 3cqmin)' }}
+          className="w-full h-full bg-slate-900 rounded-2xl flex flex-col items-center justify-center text-center overflow-hidden relative shadow-inner select-none"
+          style={{ padding: 'min(20px, 6cqmin)', gap: 'min(12px, 4cqmin)' }}
         >
           {/* Hidden 1×1 iframe mount point */}
           <div className="absolute top-0 left-0 w-px h-px overflow-hidden opacity-0 pointer-events-none">
@@ -222,43 +227,55 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
 
           {/* Album art */}
-          {activeStation.thumbnail ? (
-            <img
-              src={activeStation.thumbnail}
-              alt={activeStation.title}
-              className="rounded-lg object-cover shadow-md shrink-0"
-              style={{
-                width: 'min(48px, 12cqmin)',
-                height: 'min(48px, 12cqmin)',
-              }}
-            />
-          ) : (
-            <div
-              className="rounded-lg bg-slate-800 flex items-center justify-center shrink-0"
-              style={{
-                width: 'min(48px, 12cqmin)',
-                height: 'min(48px, 12cqmin)',
-              }}
-            >
-              <Music
-                className="text-slate-500"
+          <div className="relative shrink-0 group">
+            {activeStation.thumbnail ? (
+              <img
+                src={activeStation.thumbnail}
+                alt={activeStation.title}
+                className="rounded-2xl object-cover shadow-2xl transition-transform duration-500 group-hover:scale-105"
                 style={{
-                  width: 'min(20px, 5cqmin)',
-                  height: 'min(20px, 5cqmin)',
+                  width: 'min(140px, 45cqmin)',
+                  height: 'min(140px, 45cqmin)',
                 }}
               />
-            </div>
-          )}
+            ) : (
+              <div
+                className="rounded-2xl bg-slate-800 flex items-center justify-center shadow-2xl"
+                style={{
+                  width: 'min(140px, 45cqmin)',
+                  height: 'min(140px, 45cqmin)',
+                }}
+              >
+                <Music
+                  className="text-slate-500"
+                  style={{
+                    width: 'min(60px, 20cqmin)',
+                    height: 'min(60px, 20cqmin)',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Play overlay on image */}
+            {!isPlaying && isPlayerReady && (
+              <div
+                className="absolute inset-0 bg-black/20 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={togglePlay}
+              >
+                <Play className="text-white fill-current w-1/3 h-1/3" />
+              </div>
+            )}
+          </div>
 
           {/* Station info */}
-          <div className="flex-1 min-w-0">
+          <div className="w-full flex flex-col items-center min-w-0">
             <div
-              className="flex items-center"
-              style={{ gap: 'min(6px, 1.5cqmin)' }}
+              className="flex items-center justify-center w-full"
+              style={{ gap: 'min(10px, 2cqmin)' }}
             >
               <h3
-                className="text-white font-bold truncate"
-                style={{ fontSize: 'min(14px, 5.5cqmin)' }}
+                className="text-white font-bold truncate max-w-[90%]"
+                style={{ fontSize: 'min(32px, 10cqmin)', lineHeight: 1.1 }}
               >
                 {activeStation.title}
               </h3>
@@ -266,51 +283,68 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <Link
                   className="text-indigo-400 shrink-0"
                   style={{
-                    width: 'min(12px, 3cqmin)',
-                    height: 'min(12px, 3cqmin)',
+                    width: 'min(20px, 5cqmin)',
+                    height: 'min(20px, 5cqmin)',
                   }}
                   aria-label="Synced with Time Tool"
                 />
               )}
             </div>
             <p
-              className="text-slate-400 truncate"
-              style={{ fontSize: 'min(12px, 4.5cqmin)' }}
+              className="text-slate-400 truncate max-w-[85%]"
+              style={{
+                fontSize: 'min(20px, 6cqmin)',
+                marginTop: 'min(4px, 1cqmin)',
+                opacity: 0.8,
+              }}
             >
               {activeStation.channel}
             </p>
           </div>
 
-          {/* Play / Pause */}
-          <button
-            onClick={togglePlay}
-            className="bg-white rounded-full flex items-center justify-center text-slate-900 hover:scale-105 transition-transform shadow-lg shrink-0"
-            style={{
-              width: 'min(40px, 10cqmin)',
-              height: 'min(40px, 10cqmin)',
-              marginRight: 'min(4px, 1cqmin)',
-            }}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
+          {/* Play / Pause / Loading */}
+          <div
+            className="flex items-center justify-center shrink-0"
+            style={{ marginTop: 'min(12px, 2cqmin)' }}
           >
-            {isPlaying ? (
-              <Pause
-                className="fill-current"
-                style={{
-                  width: 'min(20px, 5cqmin)',
-                  height: 'min(20px, 5cqmin)',
-                }}
-              />
+            {!isPlayerReady ? (
+              <div
+                className="text-slate-500 animate-pulse font-bold uppercase tracking-widest"
+                style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+              >
+                Initialising Player...
+              </div>
             ) : (
-              <Play
-                className="fill-current"
+              <button
+                onClick={togglePlay}
+                className="bg-white rounded-full flex items-center justify-center text-slate-900 hover:scale-110 active:scale-95 transition-all shadow-2xl"
                 style={{
-                  width: 'min(20px, 5cqmin)',
-                  height: 'min(20px, 5cqmin)',
-                  marginLeft: 'min(2px, 0.5cqmin)',
+                  width: 'min(80px, 22cqmin)',
+                  height: 'min(80px, 22cqmin)',
                 }}
-              />
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? (
+                  <Pause
+                    className="fill-current"
+                    style={{
+                      width: 'min(40px, 11cqmin)',
+                      height: 'min(40px, 11cqmin)',
+                    }}
+                  />
+                ) : (
+                  <Play
+                    className="fill-current"
+                    style={{
+                      width: 'min(40px, 11cqmin)',
+                      height: 'min(40px, 11cqmin)',
+                      marginLeft: 'min(5px, 1.5cqmin)',
+                    }}
+                  />
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </div>
       }
     />
