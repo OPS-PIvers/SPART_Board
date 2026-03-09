@@ -80,34 +80,34 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
     [t]
   );
 
-  const smartboardGestures: GestureRow[] = useMemo(
+  const touchscreenGestures: GestureRow[] = useMemo(
     () => [
       {
-        gesture: t('widgets.cheatSheet.gestures.switchBoards'),
+        gesture: t('widgets.cheatSheet.gestureNames.fourFingerSwipeLR'),
         description: t('widgets.cheatSheet.gestures.switchBoards'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestures.minimizeAll'),
+        gesture: t('widgets.cheatSheet.gestureNames.fourFingerSwipeDown'),
         description: t('widgets.cheatSheet.gestures.minimizeAll'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestures.restoreAll'),
+        gesture: t('widgets.cheatSheet.gestureNames.fourFingerSwipeUp'),
         description: t('widgets.cheatSheet.gestures.restoreAll'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestures.zoom'),
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerPinch'),
         description: t('widgets.cheatSheet.gestures.zoom'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestures.toggleAnnotation'),
+        gesture: t('widgets.cheatSheet.gestureNames.threeFingerSwipeUp'),
         description: t('widgets.cheatSheet.gestures.toggleAnnotation'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestures.screenshot'),
+        gesture: t('widgets.cheatSheet.gestureNames.threeFingerSwipeDown'),
         description: t('widgets.cheatSheet.gestures.screenshot'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestures.minimizeWidget'),
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerSwipeDown'),
         description: t('widgets.cheatSheet.gestures.minimizeWidget'),
       },
     ],
@@ -217,16 +217,16 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
             </ul>
           </div>
 
-          {/* Smartboard Gestures */}
+          {/* Touchscreen Gestures */}
           <div className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Hand className="w-4 h-4 text-emerald-400" />
               <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-xs">
-                {t('widgets.cheatSheet.smartboardGestures')}
+                {t('widgets.cheatSheet.touchscreenGestures')}
               </h3>
             </div>
             <ul className="space-y-3">
-              {smartboardGestures.map((row) => (
+              {touchscreenGestures.map((row) => (
                 <li key={row.description} className="flex items-start gap-3">
                   <span className="shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-700/40 text-emerald-300 text-xs font-medium whitespace-nowrap">
                     {row.gesture}

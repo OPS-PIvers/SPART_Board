@@ -130,5 +130,70 @@
     "es": "Español",
     "de": "Deutsch",
     "fr": "Français"
+  },
+  "widgets": {
+    "onboarding": {
+      "title": "Bien démarrer",
+      "allDone": "Tout est prêt !",
+      "footer": "Vous êtes prêt — fermez ce widget à tout moment !",
+      "tasks": {
+        "addWidget": {
+          "label": "Ajouter un widget depuis le Dock",
+          "hint": "Cliquez sur n'importe quelle icône de la barre d'outils en bas"
+        },
+        "openSettings": {
+          "label": "Ouvrir les paramètres d'un widget",
+          "hint": "Cliquez sur un widget, puis appuyez sur Alt+S ou cliquez sur l'icône d'engrenage"
+        },
+        "createBoard": {
+          "label": "Créer un deuxième tableau",
+          "hint": "Ouvrez la barre latérale et cliquez sur + Nouveau tableau"
+        },
+        "openCheatsheet": {
+          "label": "Ouvrir l'aide-mémoire",
+          "hint": "Appuyez sur Ctrl/⌘+/ ou cliquez sur le bouton ? en bas à droite"
+        }
+      }
+    },
+    "cheatSheet": {
+      "title": "Raccourcis et Gestes",
+      "keyboard": "Clavier",
+      "touchscreenGestures": "Gestes Tactiles",
+      "footer": "Appuyez sur <kbd>Ctrl/⌘</kbd> + <kbd>/</kbd> à tout moment pour ouvrir ce panneau",
+      "shortcuts": {
+        "openCheatSheet": "Ouvrir cet aide-mémoire",
+        "switchBoards": "Changer de tableau",
+        "widgetSettings": "Ouvrir / fermer les paramètres du widget",
+        "annotate": "Basculer le mode dessin",
+        "maximize": "Maximiser / restaurer le widget",
+        "resetSize": "Réinitialiser le widget à sa taille par défaut",
+        "minimizeFocused": "Réduire le widget focalisé",
+        "minimizeAll": "Réduire tous les widgets",
+        "closeFocused": "Fermer le widget focalisé",
+        "clearBoard": "Effacer tout le tableau"
+      },
+      "gestures": {
+        "switchBoards": "Changer de tableau",
+        "minimizeAll": "Tout réduire vers le dock",
+        "restoreAll": "Restaurer tous les widgets",
+        "zoom": "Zoomer / dézoomer le tableau",
+        "toggleAnnotation": "Basculer l'annotation",
+        "screenshot": "Prendre une capture d'écran",
+        "minimizeWidget": "Réduire le widget"
+      },
+      "gestureNames": {
+        "fourFingerSwipeLR": "Balayage à 4 doigts \u2190/\u2192",
+        "fourFingerSwipeDown": "Balayage à 4 doigts \u2193",
+        "fourFingerSwipeUp": "Balayage à 4 doigts \u2191",
+        "twoFingerPinch": "Pincement à 2 doigts",
+        "twoFingerSwipeDown": "Balayage à 2 doigts \u2193",
+        "threeFingerSwipeDown": "Balayage à 3 doigts \u2193",
+        "threeFingerSwipeUp": "Balayage à 3 doigts \u2191"
+      }
+    },
+    "dashboard": {
+      "emptyBoardHint": "Faites glisser des outils depuis le Dock ci-dessous pour commencer",
+      "switchBoardsHint": "Balayage à 4 doigts gauche/droite pour changer de tableau"
+    }
   }
 }

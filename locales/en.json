@@ -322,7 +322,7 @@
     "cheatSheet": {
       "title": "Shortcuts & Gestures",
       "keyboard": "Keyboard",
-      "smartboardGestures": "Smartboard Gestures",
+      "touchscreenGestures": "Touchscreen Gestures",
       "footer": "Press <kbd>Ctrl/⌘</kbd> + <kbd>/</kbd> anytime to open this panel",
       "shortcuts": {
         "openCheatSheet": "Open this cheat sheet",
@@ -338,12 +338,21 @@
       },
       "gestures": {
         "switchBoards": "Switch boards",
-        "minimizeAll": "Minimize all widgets to dock",
+        "minimizeAll": "Minimize all to dock",
         "restoreAll": "Restore all widgets",
-        "zoom": "Zoom the board in/out",
-        "toggleAnnotation": "Toggle annotation on a widget",
-        "screenshot": "Screenshot a widget",
-        "minimizeWidget": "Minimize a widget"
+        "zoom": "Zoom board in/out",
+        "toggleAnnotation": "Toggle annotation",
+        "screenshot": "Take screenshot",
+        "minimizeWidget": "Minimize widget"
+      },
+      "gestureNames": {
+        "fourFingerSwipeLR": "4-finger swipe \u2190/\u2192",
+        "fourFingerSwipeDown": "4-finger swipe \u2193",
+        "fourFingerSwipeUp": "4-finger swipe \u2191",
+        "twoFingerPinch": "2-finger pinch",
+        "twoFingerSwipeDown": "2-finger swipe \u2193",
+        "threeFingerSwipeDown": "3-finger swipe \u2193",
+        "threeFingerSwipeUp": "3-finger swipe \u2191"
       }
     },
     "dashboard": {

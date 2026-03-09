@@ -118,7 +118,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   ),
   mathTools: lazyNamed(() => import('./MathToolsWidget'), 'MathToolsWidget'),
   mathTool: lazyNamed(() => import('./MathToolWidget'), 'MathToolWidget'),
-  nextUp: lazyNamed(() => import('./NextUpWidget'), 'NextUpWidget'),
+  nextUp: lazyNamed(() => import('./NextUp/Widget'), 'NextUpWidget'),
   onboarding: lazyNamed(() => import('./OnboardingWidget'), 'OnboardingWidget'),
   music: lazyNamed(() => import('./MusicWidget'), 'MusicWidget'),
 };
@@ -187,7 +187,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   mathTools: lazyNamed(() => import('./MathToolsWidget'), 'MathToolsSettings'),
   mathTool: lazyNamed(() => import('./MathToolWidget'), 'MathToolSettings'),
-  nextUp: lazyNamed(() => import('./NextUpWidget'), 'NextUpSettings'),
+  nextUp: lazyNamed(() => import('./NextUp/Settings'), 'NextUpSettings'),
   // onboarding has no settings panel
   music: lazyNamed(() => import('./MusicWidget'), 'MusicSettings'),
 };

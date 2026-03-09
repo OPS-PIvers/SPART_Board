@@ -130,5 +130,70 @@
     "es": "Español",
     "de": "Deutsch",
     "fr": "Français"
+  },
+  "widgets": {
+    "onboarding": {
+      "title": "Erste Schritte",
+      "allDone": "Alles erledigt!",
+      "footer": "Sie sind bereit – schließen Sie dieses Widget jederzeit!",
+      "tasks": {
+        "addWidget": {
+          "label": "Widget aus dem Dock hinzufügen",
+          "hint": "Klicken Sie auf ein Symbol in der Symbolleiste unten"
+        },
+        "openSettings": {
+          "label": "Einstellungen eines Widgets öffnen",
+          "hint": "Klicken Sie auf ein Widget und drücken Sie Alt+S oder das Zahnrad-Symbol"
+        },
+        "createBoard": {
+          "label": "Zweite Tafel erstellen",
+          "hint": "Öffnen Sie die Seitenleiste und klicken Sie auf + Neue Tafel"
+        },
+        "openCheatsheet": {
+          "label": "Tastenkürzel öffnen",
+          "hint": "Drücken Sie Strg/⌘+/ oder klicken Sie auf das ?-Symbol unten rechts"
+        }
+      }
+    },
+    "cheatSheet": {
+      "title": "Tastenkürzel & Gesten",
+      "keyboard": "Tastatur",
+      "touchscreenGestures": "Touchscreen-Gesten",
+      "footer": "Drücken Sie jederzeit <kbd>Strg/⌘</kbd> + <kbd>/</kbd>, um dieses Panel zu öffnen",
+      "shortcuts": {
+        "openCheatSheet": "Diese Übersicht öffnen",
+        "switchBoards": "Tafeln wechseln",
+        "widgetSettings": "Widget-Einstellungen öffnen / schließen",
+        "annotate": "Anmerkungsmodus umschalten",
+        "maximize": "Widget maximieren / wiederherstellen",
+        "resetSize": "Widget auf Standardgröße zurücksetzen",
+        "minimizeFocused": "Fokussiertes Widget minimieren",
+        "minimizeAll": "Alle Widgets minimieren",
+        "closeFocused": "Fokussiertes Widget schließen",
+        "clearBoard": "Gesamte Tafel löschen"
+      },
+      "gestures": {
+        "switchBoards": "Tafeln wechseln",
+        "minimizeAll": "Alle zum Dock minimieren",
+        "restoreAll": "Alle Widgets wiederherstellen",
+        "zoom": "Tafel vergrößern/verkleinern",
+        "toggleAnnotation": "Anmerkung umschalten",
+        "screenshot": "Screenshot aufnehmen",
+        "minimizeWidget": "Widget minimieren"
+      },
+      "gestureNames": {
+        "fourFingerSwipeLR": "4-Finger-Wischen \u2190/\u2192",
+        "fourFingerSwipeDown": "4-Finger-Wischen \u2193",
+        "fourFingerSwipeUp": "4-Finger-Wischen \u2191",
+        "twoFingerPinch": "2-Finger-Pinch",
+        "twoFingerSwipeDown": "2-Finger-Wischen \u2193",
+        "threeFingerSwipeDown": "3-Finger-Wischen \u2193",
+        "threeFingerSwipeUp": "3-Finger-Wischen \u2191"
+      }
+    },
+    "dashboard": {
+      "emptyBoardHint": "Ziehen Sie Werkzeuge aus dem Dock unten, um zu beginnen",
+      "switchBoardsHint": "4-Finger-Wischen links/rechts, um Tafeln zu wechseln"
+    }
   }
 }

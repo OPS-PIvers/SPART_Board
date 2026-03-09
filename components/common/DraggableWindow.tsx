@@ -153,6 +153,42 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     [splitLayout]
   );
 
+  // Four Grid zones for corner snapping
+  const gridLayout = useMemo(
+    () => SNAP_LAYOUTS.find((l) => l.id === 'grid-2x2'),
+    []
+  );
+  const topLeftZone = useMemo(
+    () => gridLayout?.zones.find((z) => z.id === 'top-left') ?? null,
+    [gridLayout]
+  );
+  const topRightZone = useMemo(
+    () => gridLayout?.zones.find((z) => z.id === 'top-right') ?? null,
+    [gridLayout]
+  );
+  const bottomLeftZone = useMemo(
+    () => gridLayout?.zones.find((z) => z.id === 'bottom-left') ?? null,
+    [gridLayout]
+  );
+  const bottomRightZone = useMemo(
+    () => gridLayout?.zones.find((z) => z.id === 'bottom-right') ?? null,
+    [gridLayout]
+  );
+
+  // Top/Bottom half zones
+  const verticalSplitLayout = useMemo(
+    () => SNAP_LAYOUTS.find((l) => l.id === 'split-vertical'),
+    []
+  );
+  const topHalfZone = useMemo(
+    () => verticalSplitLayout?.zones.find((z) => z.id === 'top') ?? null,
+    [verticalSplitLayout]
+  );
+  const bottomHalfZone = useMemo(
+    () => verticalSplitLayout?.zones.find((z) => z.id === 'bottom') ?? null,
+    [verticalSplitLayout]
+  );
+
   useEffect(() => {
     if (!showTools && showSnapMenu) {
       setShowSnapMenu(false);
@@ -420,20 +456,33 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
       // Edge Detection Threshold for Large Touch Panels
       const screenW = window.innerWidth;
-      const isLeftEdge =
-        moveEvent.clientX <= SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
-      const isRightEdge =
-        moveEvent.clientX >= screenW - SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
-      const isTopEdge =
-        moveEvent.clientY <= SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
+      const screenH = window.innerHeight;
+      const threshold = SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
 
-      const newZone = isLeftEdge
-        ? leftHalfZone
-        : isRightEdge
-          ? rightHalfZone
-          : isTopEdge
-            ? 'maximize'
-            : null;
+      const isLeftEdge = moveEvent.clientX <= threshold;
+      const isRightEdge = moveEvent.clientX >= screenW - threshold;
+      const isTopEdge = moveEvent.clientY <= threshold;
+      const isBottomEdge = moveEvent.clientY >= screenH - threshold;
+
+      let newZone: SnapZone | 'maximize' | null = null;
+
+      if (isLeftEdge && isTopEdge) {
+        newZone = topLeftZone;
+      } else if (isRightEdge && isTopEdge) {
+        newZone = topRightZone;
+      } else if (isLeftEdge && isBottomEdge) {
+        newZone = bottomLeftZone;
+      } else if (isRightEdge && isBottomEdge) {
+        newZone = bottomRightZone;
+      } else if (isLeftEdge) {
+        newZone = leftHalfZone;
+      } else if (isRightEdge) {
+        newZone = rightHalfZone;
+      } else if (isTopEdge) {
+        newZone = topHalfZone;
+      } else if (isBottomEdge) {
+        newZone = bottomHalfZone;
+      }
 
       if (snapPreviewZoneRef.current !== newZone) {
         snapPreviewZoneRef.current = newZone;
@@ -1266,6 +1315,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 {/* NEW: Snap Layouts Button & Popover */}
                 <div className="relative flex items-center">
                   <IconButton
+                    ref={(el) => {
+                      if (el) {
+                        const rect = el.getBoundingClientRect();
+                        const menuX = rect.left + rect.width / 2;
+                        const menuY = rect.top;
+                        el.dataset.menuX = menuX.toString();
+                        el.dataset.menuY = menuY.toString();
+                      }
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowSnapMenu(!showSnapMenu);
@@ -1277,47 +1335,56 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     active={showSnapMenu}
                   />
 
-                  {showSnapMenu && (
-                    <div
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 p-4 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl z-[9999] w-72 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                      onClick={(e) => e.stopPropagation()}
-                      onPointerDown={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        <LayoutTemplate className="w-5 h-5 text-indigo-500" />
-                        <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">
-                          {t('widgetWindow.chooseLayout')}
-                        </span>
-                      </div>
+                  {showSnapMenu &&
+                    typeof document !== 'undefined' &&
+                    createPortal(
+                      <div
+                        className="fixed z-[10000] p-4 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-72 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        style={{
+                          // Position above the button, centered horizontally
+                          bottom: `${window.innerHeight - Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-y') ?? 0) + 12}px`,
+                          left: `${Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-x') ?? 0)}px`,
+                          transform: 'translateX(-50%)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <LayoutTemplate className="w-5 h-5 text-indigo-500" />
+                          <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                            {t('widgetWindow.chooseLayout')}
+                          </span>
+                        </div>
 
-                      <div className="flex flex-col gap-3">
-                        {SNAP_LAYOUTS.map((layout) => (
-                          <div
-                            key={layout.id}
-                            className="group relative p-1.5 rounded-xl hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
-                          >
-                            <div className="relative w-full h-16">
-                              {layout.zones.map((zone) => (
-                                <button
-                                  key={zone.id}
-                                  onClick={() => handleSnapToZone(zone)}
-                                  // Touch targets are large and easily tappable
-                                  className="absolute bg-slate-300/80 hover:bg-indigo-500 hover:shadow-inner transition-all rounded-md border border-slate-400/20 active:scale-95"
-                                  style={{
-                                    left: `${zone.x * 100}%`,
-                                    top: `${zone.y * 100}%`,
-                                    width: `${zone.w * 100}%`,
-                                    height: `${zone.h * 100}%`,
-                                  }}
-                                  aria-label={`${t('widgetWindow.snapTo')} ${t(`widgetWindow.layouts.${layout.nameKey}`)} - ${zone.id}`}
-                                />
-                              ))}
+                        <div className="flex flex-col gap-3">
+                          {SNAP_LAYOUTS.map((layout) => (
+                            <div
+                              key={layout.id}
+                              className="group relative p-1.5 rounded-xl hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+                            >
+                              <div className="relative w-full h-16">
+                                {layout.zones.map((zone) => (
+                                  <button
+                                    key={zone.id}
+                                    onClick={() => handleSnapToZone(zone)}
+                                    // Touch targets are large and easily tappable
+                                    className="absolute bg-slate-300/80 hover:bg-indigo-500 hover:shadow-inner transition-all rounded-md border border-slate-400/20 active:scale-95"
+                                    style={{
+                                      left: `${zone.x * 100}%`,
+                                      top: `${zone.y * 100}%`,
+                                      width: `${zone.w * 100}%`,
+                                      height: `${zone.h * 100}%`,
+                                    }}
+                                    aria-label={`${t('widgetWindow.snapTo')} ${t(`widgetWindow.layouts.${layout.nameKey}`)} - ${zone.id}`}
+                                  />
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                          ))}
+                        </div>
+                      </div>,
+                      document.body
+                    )}
                 </div>
                 <IconButton
                   onClick={handleMaximizeToggle}
