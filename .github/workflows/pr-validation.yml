@@ -87,7 +87,7 @@ jobs:
 
       - name: Install Playwright OS Dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps
+        run: sudo npx playwright install-deps
 
       - name: Run E2E tests
         run: pnpm run test:e2e
