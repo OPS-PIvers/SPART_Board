@@ -109,8 +109,11 @@ export const Sidebar: React.FC = () => {
       <GlassCard
         globalStyle={activeDashboard?.globalStyle}
         data-screenshot="exclude"
-        className="fixed left-6 z-dock flex items-center gap-2 p-2 rounded-full transition-all"
-        style={{ top: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}
+        className="fixed z-dock flex items-center gap-2 p-2 rounded-full transition-all"
+        style={{
+          top: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+          left: 'calc(1.5rem + env(safe-area-inset-left, 0px))',
+        }}
       >
         <IconButton
           onClick={() => setIsOpen(true)}

@@ -33,8 +33,11 @@ const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
     <div
-      className="fixed right-6 z-toast space-y-3 pointer-events-none"
-      style={{ top: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}
+      className="fixed z-toast space-y-3 pointer-events-none"
+      style={{
+        top: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+        right: 'calc(1.5rem + env(safe-area-inset-right, 0px))',
+      }}
     >
       {toasts.map((toast) => {
         const getStyles = () => {
@@ -830,8 +833,11 @@ export const DashboardView: React.FC = () => {
       {/* Reset Zoom Indicator */}
       {Math.abs(zoom - 1) > 0.01 && (
         <div
-          className="fixed right-6 z-toast animate-in fade-in zoom-in duration-200"
-          style={{ top: 'calc(5rem + env(safe-area-inset-top, 0px))' }}
+          className="fixed z-toast animate-in fade-in zoom-in duration-200"
+          style={{
+            top: 'calc(5rem + env(safe-area-inset-top, 0px))',
+            right: 'calc(1.5rem + env(safe-area-inset-right, 0px))',
+          }}
         >
           <button
             onClick={() => setZoom(1)}
