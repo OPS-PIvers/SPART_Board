@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '../../utils/layoutMath';
+import {
+  calculateSnapBounds,
+  SNAP_LAYOUT_CONSTANTS,
+} from '../../utils/layoutMath';
 import { SnapZone } from '@/config/snapLayouts';
 
 describe('layoutMath', () => {
-  let originalWindow: any;
-  let originalDocument: any;
+  let originalWindow: Window & typeof globalThis;
+  let originalDocument: Document;
 
   beforeEach(() => {
     // Save original global objects
@@ -38,7 +41,7 @@ describe('layoutMath', () => {
       w: 1,
       h: 1,
       type: 'full',
-    };
+    } as SnapZone;
 
     it('should return 0 bounds if window is undefined (SSR)', () => {
       // Remove window from global
@@ -51,7 +54,9 @@ describe('layoutMath', () => {
 
     it('should calculate bounds correctly without dock element (fallback height)', () => {
       // Document exists, but no dock element is found
-      vi.mocked(document.querySelector).mockReturnValue(null);
+      vi.stubGlobal('document', {
+        querySelector: vi.fn().mockReturnValue(null),
+      });
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -68,10 +73,12 @@ describe('layoutMath', () => {
 
     it('should use dock element height if present', () => {
       const mockDockElement = {
-        getBoundingClientRect: vi.fn().mockReturnValue({ top: 900 })
-      };
+        getBoundingClientRect: vi.fn().mockReturnValue({ top: 900 }),
+      } as unknown as Element;
 
-      vi.mocked(document.querySelector).mockReturnValue(mockDockElement as any);
+      vi.stubGlobal('document', {
+        querySelector: vi.fn().mockReturnValue(mockDockElement),
+      });
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -89,13 +96,15 @@ describe('layoutMath', () => {
 
     it('should use dock element by data-testid if data-role is not found', () => {
       const mockDockElement = {
-        getBoundingClientRect: vi.fn().mockReturnValue({ top: 800 })
-      };
+        getBoundingClientRect: vi.fn().mockReturnValue({ top: 800 }),
+      } as unknown as Element;
 
-      vi.mocked(document.querySelector).mockImplementation((selector) => {
-        if (selector === '[data-role="dock"]') return null;
-        if (selector === '[data-testid="dock"]') return mockDockElement;
-        return null;
+      vi.stubGlobal('document', {
+        querySelector: vi.fn().mockImplementation((selector) => {
+          if (selector === '[data-role="dock"]') return null;
+          if (selector === '[data-testid="dock"]') return mockDockElement;
+          return null;
+        }),
       });
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
@@ -114,10 +123,12 @@ describe('layoutMath', () => {
 
     it('should fall back to DOCK_HEIGHT if reserved height is <= 0', () => {
       const mockDockElement = {
-        getBoundingClientRect: vi.fn().mockReturnValue({ top: 1100 }) // Below viewport
-      };
+        getBoundingClientRect: vi.fn().mockReturnValue({ top: 1100 }), // Below viewport
+      } as unknown as Element;
 
-      vi.mocked(document.querySelector).mockReturnValue(mockDockElement as any);
+      vi.stubGlobal('document', {
+        querySelector: vi.fn().mockReturnValue(mockDockElement),
+      });
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -132,7 +143,7 @@ describe('layoutMath', () => {
       expect(bounds.h).toBe(expectedHeight);
     });
 
-    it('should return 0 bounds if document is undefined (SSR)', () => {
+    it('should calculate bounds using fallback height if document is undefined (SSR)', () => {
       vi.stubGlobal('document', undefined);
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
@@ -149,10 +160,24 @@ describe('layoutMath', () => {
     });
 
     it('should calculate bounds with gaps for half zones', () => {
-      vi.mocked(document.querySelector).mockReturnValue(null);
+      vi.stubGlobal('document', {
+        querySelector: vi.fn().mockReturnValue(null),
+      });
 
-      const leftZone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 0.5, h: 1 };
-      const rightZone: SnapZone = { ...defaultZone, x: 0.5, y: 0, w: 0.5, h: 1 };
+      const leftZone: SnapZone = {
+        ...defaultZone,
+        x: 0,
+        y: 0,
+        w: 0.5,
+        h: 1,
+      };
+      const rightZone: SnapZone = {
+        ...defaultZone,
+        x: 0.5,
+        y: 0,
+        w: 0.5,
+        h: 1,
+      };
 
       const leftBounds = calculateSnapBounds(leftZone);
       const rightBounds = calculateSnapBounds(rightZone);
@@ -162,12 +187,14 @@ describe('layoutMath', () => {
       const safeHeight = 1080 - DOCK_HEIGHT - PADDING * 2;
 
       // Left zone should have half a gap subtracted from its width
-      expect(leftBounds.w).toBe(Math.round((0.5 * safeWidth) - (GAP / 2)));
+      expect(leftBounds.w).toBe(Math.round(0.5 * safeWidth - GAP / 2));
 
       // Right zone should start after half a gap
-      expect(rightBounds.x).toBe(Math.round(PADDING + (0.5 * safeWidth) + (GAP / 2)));
+      expect(rightBounds.x).toBe(
+        Math.round(PADDING + 0.5 * safeWidth + GAP / 2)
+      );
       // Right zone should have half a gap subtracted from its width
-      expect(rightBounds.w).toBe(Math.round((0.5 * safeWidth) - (GAP / 2)));
+      expect(rightBounds.w).toBe(Math.round(0.5 * safeWidth - GAP / 2));
 
       // Height should be full safe height
       expect(leftBounds.h).toBe(safeHeight);
@@ -179,7 +206,9 @@ describe('layoutMath', () => {
         innerWidth: 10,
         innerHeight: 10,
       });
-      vi.mocked(document.querySelector).mockReturnValue(null);
+      vi.stubGlobal('document', {
+        querySelector: vi.fn().mockReturnValue(null),
+      });
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -194,10 +223,24 @@ describe('layoutMath', () => {
     });
 
     it('should subtract gaps from height for stacked zones', () => {
-      vi.mocked(document.querySelector).mockReturnValue(null);
+      vi.stubGlobal('document', {
+        querySelector: vi.fn().mockReturnValue(null),
+      });
 
-      const topZone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 0.5 };
-      const bottomZone: SnapZone = { ...defaultZone, x: 0, y: 0.5, w: 1, h: 0.5 };
+      const topZone: SnapZone = {
+        ...defaultZone,
+        x: 0,
+        y: 0,
+        w: 1,
+        h: 0.5,
+      };
+      const bottomZone: SnapZone = {
+        ...defaultZone,
+        x: 0,
+        y: 0.5,
+        w: 1,
+        h: 0.5,
+      };
 
       const topBounds = calculateSnapBounds(topZone);
       const bottomBounds = calculateSnapBounds(bottomZone);
@@ -206,12 +249,14 @@ describe('layoutMath', () => {
       const safeHeight = 1080 - DOCK_HEIGHT - PADDING * 2;
 
       // Top zone should have half a gap subtracted from its height
-      expect(topBounds.h).toBe(Math.round((0.5 * safeHeight) - (GAP / 2)));
+      expect(topBounds.h).toBe(Math.round(0.5 * safeHeight - GAP / 2));
 
       // Bottom zone should start after half a gap
-      expect(bottomBounds.y).toBe(Math.round(PADDING + (0.5 * safeHeight) + (GAP / 2)));
+      expect(bottomBounds.y).toBe(
+        Math.round(PADDING + 0.5 * safeHeight + GAP / 2)
+      );
       // Bottom zone should have half a gap subtracted from its height
-      expect(bottomBounds.h).toBe(Math.round((0.5 * safeHeight) - (GAP / 2)));
+      expect(bottomBounds.h).toBe(Math.round(0.5 * safeHeight - GAP / 2));
     });
   });
 });
