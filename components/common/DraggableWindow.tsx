@@ -1376,10 +1376,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     createPortal(
                       <div
                         ref={snapMenuRef}
-                        className="fixed z-[10000] p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-48 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        className="fixed z-[10000] p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-48 animate-in slide-in-from-top-2 fade-in duration-200"
                         style={{
-                          // Position above the button, centered horizontally
-                          bottom: `${window.innerHeight - Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-y') ?? 0) + 12}px`,
+                          // Position below the button, centered horizontally
+                          top: `${Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-y') ?? 0) + 40}px`,
                           left: `${Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-x') ?? 0)}px`,
                           transform: 'translateX(-50%)',
                         }}
