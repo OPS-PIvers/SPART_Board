@@ -14,15 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            functions/pnpm-lock.yaml
-      - run: pnpm run install:ci
+      - uses: ./.github/actions/setup
       - run: pnpm run lint
       - run: pnpm run format:check
 
@@ -30,30 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            functions/pnpm-lock.yaml
-      - run: pnpm run install:ci
+      - uses: ./.github/actions/setup
       - run: pnpm run type-check:all
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            functions/pnpm-lock.yaml
-      - run: pnpm run install:ci
+      - uses: ./.github/actions/setup
       - run: pnpm run test
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -71,15 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            functions/pnpm-lock.yaml
-      - run: pnpm run install:ci
+      - uses: ./.github/actions/setup
       
       - name: Create .env file for Vite and Firebase
         run: |
