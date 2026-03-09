@@ -20,7 +20,14 @@ const getDockReservedHeight = (fallbackHeight: number): number => {
   const rect = dockElement.getBoundingClientRect();
   // We reserve everything from the dock's top to the bottom of the viewport
   // to prevent widgets from overlapping any part of the dock area.
-  return window.innerHeight - rect.top || fallbackHeight;
+  const reservedHeight = window.innerHeight - rect.top;
+
+  // Clamp to fallback if reservedHeight is not usable (e.g. dock is off-screen)
+  if (reservedHeight <= 0) {
+    return fallbackHeight;
+  }
+
+  return reservedHeight;
 };
 
 export const calculateSnapBounds = (zone: SnapZone) => {
@@ -32,8 +39,9 @@ export const calculateSnapBounds = (zone: SnapZone) => {
   const { PADDING, GAP, DOCK_HEIGHT } = SNAP_LAYOUT_CONSTANTS;
   const dockHeight = getDockReservedHeight(DOCK_HEIGHT);
 
-  const safeWidth = window.innerWidth - PADDING * 2;
-  const safeHeight = window.innerHeight - dockHeight - PADDING * 2;
+  // Clamp safe dimensions to at least 0 to prevent negative bounds on tiny viewports
+  const safeWidth = Math.max(0, window.innerWidth - PADDING * 2);
+  const safeHeight = Math.max(0, window.innerHeight - dockHeight - PADDING * 2);
 
   // Calculate absolute positions
   const rawX = PADDING + zone.x * safeWidth;
@@ -46,10 +54,16 @@ export const calculateSnapBounds = (zone: SnapZone) => {
     x: Math.round(rawX + (zone.x > 0 ? GAP / 2 : 0)),
     y: Math.round(rawY + (zone.y > 0 ? GAP / 2 : 0)),
     w: Math.round(
-      rawW - (zone.x > 0 ? GAP / 2 : 0) - (zone.x + zone.w < 1 ? GAP / 2 : 0)
+      Math.max(
+        0,
+        rawW - (zone.x > 0 ? GAP / 2 : 0) - (zone.x + zone.w < 1 ? GAP / 2 : 0)
+      )
     ),
     h: Math.round(
-      rawH - (zone.y > 0 ? GAP / 2 : 0) - (zone.y + zone.h < 1 ? GAP / 2 : 0)
+      Math.max(
+        0,
+        rawH - (zone.y > 0 ? GAP / 2 : 0) - (zone.y + zone.h < 1 ? GAP / 2 : 0)
+      )
     ),
   };
 };

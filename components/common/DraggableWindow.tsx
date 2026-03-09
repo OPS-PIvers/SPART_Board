@@ -24,11 +24,8 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
-import { SNAP_LAYOUTS, SnapZone } from '../../config/snapLayouts';
-import {
-  calculateSnapBounds,
-  SNAP_LAYOUT_CONSTANTS,
-} from '../../utils/layoutMath';
+import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
+import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useDashboard } from '../../context/useDashboard';
 import { GlassCard } from './GlassCard';
