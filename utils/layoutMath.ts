@@ -7,41 +7,16 @@ export const SNAP_LAYOUT_CONSTANTS = {
   EDGE_THRESHOLD: 15, // Tightened threshold for less intrusive snapping
 };
 
-const getDockReservedHeight = (fallbackHeight: number): number => {
-  if (typeof document === 'undefined') {
-    return fallbackHeight;
-  }
-  const dockElement =
-    document.querySelector<HTMLElement>('[data-role="dock"]') ??
-    document.querySelector<HTMLElement>('[data-testid="dock"]');
-  if (!dockElement) {
-    return fallbackHeight;
-  }
-  const rect = dockElement.getBoundingClientRect();
-  // We reserve everything from the dock's top to the bottom of the viewport
-  // to prevent widgets from overlapping any part of the dock area.
-  const reservedHeight = window.innerHeight - rect.top;
-
-  // Clamp to fallback if reservedHeight is not usable (e.g. dock is off-screen)
-  if (reservedHeight <= 0) {
-    return fallbackHeight;
-  }
-
-  return reservedHeight;
-};
-
 export const calculateSnapBounds = (zone: SnapZone) => {
   // SSR Guard: return a safe fallback if window is not available
   if (typeof window === 'undefined') {
     return { x: 0, y: 0, w: 0, h: 0 };
   }
 
-  const { PADDING, GAP, DOCK_HEIGHT } = SNAP_LAYOUT_CONSTANTS;
-  const dockHeight = getDockReservedHeight(DOCK_HEIGHT);
-
-  // Clamp safe dimensions to at least 0 to prevent negative bounds on tiny viewports
+  const { PADDING, GAP } = SNAP_LAYOUT_CONSTANTS;
+  // Allow widgets to snap all the way to the bottom, with the dock floating above them
   const safeWidth = Math.max(0, window.innerWidth - PADDING * 2);
-  const safeHeight = Math.max(0, window.innerHeight - dockHeight - PADDING * 2);
+  const safeHeight = Math.max(0, window.innerHeight - PADDING * 2);
 
   // Calculate absolute positions
   const rawX = PADDING + zone.x * safeWidth;
