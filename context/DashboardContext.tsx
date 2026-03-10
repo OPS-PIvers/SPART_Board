@@ -234,7 +234,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // --- DRIVE WRAPPERS & CALLBACKS ---
 
   const saveDashboard = useCallback(
-    async (dashboard: Dashboard) => {
+    async (dashboard: Dashboard): Promise<number> => {
       // Always save to Firestore for real-time sync
       let driveFileId = dashboard.driveFileId;
 
@@ -273,7 +273,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch (e) {
           // Abort Firestore save to avoid losing PII when Drive is temporarily unavailable.
           console.error('[PII] Failed to save PII supplement to Drive:', e);
-          return;
+          // Return 0 to signal the save was aborted so callers skip updating refs.
+          return 0;
         }
       }
 
@@ -282,7 +283,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       // NEVER reach Firestore — they are preserved in Drive only.
       const scrubbed = scrubDashboardPII(dashboard);
 
-      await saveDashboardFirestore({
+      return saveDashboardFirestore({
         ...scrubbed,
         driveFileId,
       });
@@ -668,6 +669,41 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // First run after initial load OR after a dashboard switch: initialize save
+    // refs from the loaded data WITHOUT triggering a redundant Firestore write.
+    //
+    // Without this guard the first effect run (or post-switch run) would see
+    // lastSavedDataRef.current differing from currentData and schedule a write
+    // of the just-loaded Firestore data back to Firestore.  That write advances
+    // lastSavedAtRef.current to the current time, causing the isStaleSnapshot
+    // check in the onSnapshot handler to block ANY concurrent remote-control
+    // update whose Firestore updatedAt timestamp falls within the round-trip
+    // window — making the /remote URL appear to have no effect on the main board.
+    const isDashboardSwitch =
+      lastSavedDashboardIdRef.current !== null &&
+      lastSavedDashboardIdRef.current !== active.id;
+    if (lastSavedDataRef.current === '' || isDashboardSwitch) {
+      lastSavedDataRef.current = currentData;
+      lastSavedFieldsRef.current = {
+        widgets: JSON.stringify(active.widgets),
+        background: active.background,
+        name: active.name,
+        libraryOrder: JSON.stringify(active.libraryOrder ?? []),
+        settings: JSON.stringify(active.settings ?? {}),
+      };
+      lastWidgetCountRef.current = active.widgets.length;
+      lastSavedDashboardIdRef.current = active.id;
+      // Seed the stale-snapshot guard from the dashboard's own updatedAt so
+      // that any remote save with a more-recent timestamp is accepted immediately.
+      if (active.updatedAt) {
+        lastSavedAtRef.current = active.updatedAt;
+      }
+      if (pendingSaveCountRef.current === 0) {
+        setIsSaving(false);
+      }
+      return;
+    }
+
     // Detect structural changes (adding/removing widgets) for more aggressive saving
     const isStructuralChange =
       active.widgets.length !== lastWidgetCountRef.current;
@@ -696,12 +732,26 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
       saveDashboard(active)
-        .then(() => {
-          // Only update refs on success so failed saves are retried
-          const now = Date.now();
+        .then((savedUpdatedAt) => {
+          // savedUpdatedAt === 0 means the save was aborted (e.g. Drive PII
+          // upload failed).  Don't update refs so the next effect run retries.
+          if (savedUpdatedAt === 0) {
+            pendingSaveCountRef.current = Math.max(
+              0,
+              pendingSaveCountRef.current - 1
+            );
+            if (pendingSaveCountRef.current === 0) {
+              setIsSaving(false);
+            }
+            return;
+          }
+          // Use the timestamp that was actually written to Firestore (captured
+          // before the setDoc call) rather than Date.now() after the round-trip.
+          // This prevents the ~200 ms inflation that would otherwise cause the
+          // isStaleSnapshot check to block concurrent remote-control updates.
           lastSavedDataRef.current = savedData;
           lastSavedFieldsRef.current = savedFields;
-          lastSavedAtRef.current = now;
+          lastSavedAtRef.current = savedUpdatedAt;
           pendingSaveCountRef.current = Math.max(
             0,
             pendingSaveCountRef.current - 1
