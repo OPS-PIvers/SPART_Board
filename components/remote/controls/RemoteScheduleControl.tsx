@@ -126,7 +126,7 @@ export const RemoteScheduleControl: React.FC<RemoteScheduleControlProps> = ({
                 >
                   {item.task}
                 </div>
-                {(item.startTime || item.time) && (
+                {(item.startTime ?? item.time) && (
                   <div className="text-xs text-white/30 mt-0.5">
                     {item.startTime ?? item.time}
                     {item.endTime ? ` – ${item.endTime}` : ''}
