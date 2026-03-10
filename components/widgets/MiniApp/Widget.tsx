@@ -15,6 +15,8 @@ import {
   Globe,
   Save,
   X,
+  Cast,
+  Radio,
 } from 'lucide-react';
 import { generateMiniAppCode } from '@/utils/ai';
 import { WidgetLayout } from '../WidgetLayout';
@@ -34,6 +36,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useAuth } from '@/context/useAuth';
+import { useLiveSession } from '@/hooks/useLiveSession';
 import {
   collection,
   doc,
@@ -54,10 +57,16 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
   isStudentView,
   studentPin,
 }) => {
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addToast, activeDashboard } = useDashboard();
   const { user } = useAuth();
   const config = widget.config as MiniAppConfig;
   const { activeApp } = config;
+
+  const { session, startSession, endSession } = useLiveSession(
+    user?.uid,
+    'teacher'
+  );
+  const isLive = session?.isActive && session?.activeWidgetId === widget.id;
 
   const { library, globalLibrary } = useMiniAppSync(addToast);
   const { globalConfig } = useMiniAppGlobalConfig();
@@ -143,6 +152,25 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
   );
 
   // --- HANDLERS ---
+
+  const handleToggleLive = async () => {
+    try {
+      if (isLive) {
+        await endSession();
+      } else {
+        await startSession(
+          widget.id,
+          widget.type,
+          widget.config,
+          activeDashboard?.background
+        );
+        addToast('App is now live for students!', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to toggle live session:', error);
+      addToast('Failed to go live.', 'error');
+    }
+  };
 
   const handleRun = (app: MiniAppItem) => {
     updateWidget(widget.id, {
@@ -393,75 +421,127 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
       <WidgetLayout
         padding="p-0"
         header={
-          <div
-            className="w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/app-header"
-            style={{ height: 'min(16px, 3.5cqmin)' }}
-          >
+          !isStudentView ? (
             <div
-              className="bg-slate-300/50 rounded-full group-hover/app-header:bg-slate-400/80 transition-colors"
-              style={{
-                width: 'min(32px, 8cqmin)',
-                height: 'min(4px, 1cqmin)',
-              }}
-            />
-            <div className="absolute top-1 right-2 z-10 flex items-center gap-1">
-              {config.activeAppUnsaved && (
-                <>
+              className={`w-full ${isLive ? 'bg-indigo-600' : 'bg-slate-50/50'} flex items-center justify-center border-b border-slate-100/50 transition-all group/app-header relative`}
+              style={{ height: 'min(36px, 8cqmin)' }}
+            >
+              {/* Draggable Handle */}
+              <div
+                className={`rounded-full transition-colors cursor-move ${isLive ? 'bg-white/30 hover:bg-white/50' : 'bg-slate-300/50 hover:bg-slate-400/80'}`}
+                style={{
+                  width: 'min(32px, 8cqmin)',
+                  height: 'min(4px, 1cqmin)',
+                }}
+              />
+
+              {/* Left Actions: Live Status */}
+              <div className="absolute top-0 left-2 h-full flex items-center gap-2">
+                <button
+                  onClick={() => void handleToggleLive()}
+                  className={`flex items-center gap-1.5 font-black uppercase tracking-widest transition-all rounded-lg ${
+                    isLive
+                      ? 'bg-red-500 text-white shadow-lg animate-pulse'
+                      : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200 shadow-sm'
+                  }`}
+                  style={{
+                    padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
+                    fontSize: 'min(10px, 2.5cqmin)',
+                  }}
+                  title={isLive ? 'End Live Session' : 'Go Live for Students'}
+                >
+                  <Cast
+                    style={{
+                      width: 'min(12px, 3cqmin)',
+                      height: 'min(12px, 3cqmin)',
+                    }}
+                  />
+                  <span className="hidden sm:inline">
+                    {isLive ? 'Live' : 'Go Live'}
+                  </span>
+                </button>
+
+                {isLive && session?.code && (
                   <div
-                    className="bg-red-500 text-white font-black uppercase tracking-tighter rounded-lg shadow-sm animate-pulse flex items-center justify-center border border-red-400"
-                    style={{
-                      padding: 'min(2px, 0.5cqmin) min(6px, 1.5cqmin)',
-                      fontSize: 'min(8px, 2cqmin)',
-                    }}
+                    className="flex items-center gap-1.5 bg-indigo-900/40 backdrop-blur-md text-white px-2 py-1 rounded-lg border border-white/20 font-mono tracking-wider font-black"
+                    style={{ fontSize: 'min(12px, 3cqmin)' }}
                   >
-                    Unsaved
-                  </div>
-                  <button
-                    onClick={() => {
-                      setPendingSaveTitle(
-                        activeApp.title !== 'Untitled App'
-                          ? activeApp.title
-                          : ''
-                      );
-                      setShowSaveForm(true);
-                    }}
-                    className="bg-indigo-600/90 backdrop-blur-sm hover:bg-indigo-700 text-white rounded-lg uppercase tracking-wider flex items-center shadow-lg border border-indigo-500 font-black transition-all"
-                    title="Save to library"
-                    style={{
-                      padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
-                      fontSize: 'min(10px, 2.5cqmin)',
-                      gap: 'min(6px, 1.5cqmin)',
-                    }}
-                  >
-                    <Save
+                    <Radio
                       style={{
                         width: 'min(10px, 2.5cqmin)',
                         height: 'min(10px, 2.5cqmin)',
                       }}
+                      className="animate-pulse"
                     />
-                    Save
-                  </button>
-                </>
-              )}
-              <button
-                onClick={handleCloseActive}
-                className="bg-slate-900/80 backdrop-blur-sm hover:bg-slate-900 text-white rounded-lg uppercase tracking-wider flex items-center shadow-lg border border-slate-700 font-black transition-all"
-                style={{
-                  padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
-                  fontSize: 'min(10px, 2.5cqmin)',
-                  gap: 'min(6px, 1.5cqmin)',
-                }}
-              >
-                <LayoutGrid
+                    {session.code}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Actions: App Controls */}
+              <div className="absolute top-0 right-2 h-full flex items-center gap-1">
+                {config.activeAppUnsaved && (
+                  <>
+                    <div
+                      className="bg-red-500 text-white font-black uppercase tracking-tighter rounded-lg shadow-sm animate-pulse flex items-center justify-center border border-red-400"
+                      style={{
+                        padding: 'min(2px, 0.5cqmin) min(6px, 1.5cqmin)',
+                        fontSize: 'min(8px, 2cqmin)',
+                      }}
+                    >
+                      Unsaved
+                    </div>
+                    <button
+                      onClick={() => {
+                        setPendingSaveTitle(
+                          activeApp.title !== 'Untitled App'
+                            ? activeApp.title
+                            : ''
+                        );
+                        setShowSaveForm(true);
+                      }}
+                      className="bg-indigo-600/90 backdrop-blur-sm hover:bg-indigo-700 text-white rounded-lg uppercase tracking-wider flex items-center shadow-lg border border-indigo-500 font-black transition-all"
+                      title="Save to library"
+                      style={{
+                        padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
+                        fontSize: 'min(10px, 2.5cqmin)',
+                        gap: 'min(6px, 1.5cqmin)',
+                      }}
+                    >
+                      <Save
+                        style={{
+                          width: 'min(10px, 2.5cqmin)',
+                          height: 'min(10px, 2.5cqmin)',
+                        }}
+                      />
+                      <span className="hidden sm:inline">Save</span>
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={handleCloseActive}
+                  className={`${
+                    isLive
+                      ? 'bg-white/20 hover:bg-white/30 text-white'
+                      : 'bg-slate-900/80 hover:bg-slate-900 text-white'
+                  } backdrop-blur-sm rounded-lg uppercase tracking-wider flex items-center shadow-lg border border-white/10 font-black transition-all`}
                   style={{
-                    width: 'min(10px, 2.5cqmin)',
-                    height: 'min(10px, 2.5cqmin)',
+                    padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
+                    fontSize: 'min(10px, 2.5cqmin)',
+                    gap: 'min(6px, 1.5cqmin)',
                   }}
-                />{' '}
-                Library
-              </button>
+                >
+                  <LayoutGrid
+                    style={{
+                      width: 'min(10px, 2.5cqmin)',
+                      height: 'min(10px, 2.5cqmin)',
+                    }}
+                  />{' '}
+                  <span className="hidden sm:inline">Library</span>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : null
         }
         content={
           <div className="w-full h-full flex flex-col relative overflow-hidden">

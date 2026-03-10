@@ -358,6 +358,8 @@ export const generateWithAI = functionsV1
           1. Single File (embedded CSS/JS).
           2. Use Tailwind CDN.
           3. Return JSON: { "title": "...", "html": "..." }
+          4. IMPORTANT: If the app involves scoring, completion, or data entry, you MUST include JavaScript that sends results to the parent window using this EXACT format:
+             window.parent.postMessage({ type: 'SPART_MINIAPP_RESULT', payload: { score: number, data: any } }, '*');
         `,
           userPrompt: `User Request: <user_request>${sanitizedUserInput}</user_request>`,
         }),
