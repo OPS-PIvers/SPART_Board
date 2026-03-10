@@ -33,7 +33,8 @@ const ChecklistRow = React.memo<ChecklistRowProps>(
     return (
       <li
         onClick={() => onToggle(id)}
-        className="group/item flex items-start gap-3 cursor-pointer select-none"
+        className="group/item flex items-start cursor-pointer select-none"
+        style={{ gap: '0.5em' }}
       >
         <div className="shrink-0 transition-transform active:scale-90 flex items-center justify-center h-[1.2em]">
           {isCompleted ? (
@@ -178,6 +179,18 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
+  // Compute item-count-aware font size:
+  // - cqw-based: font shrinks when widget is narrow, preventing text wrapping
+  // - cqh-based: font shrinks when there are more items so they all fit vertically
+  // ~75cqh is available after header/footer; each item gets 50% of its share for font
+  const displayItemCount = Math.max(
+    mode === 'manual' ? items.length : students.length,
+    1
+  );
+  const heightCoeff =
+    Math.round(((75 / displayItemCount) * 0.5 * scaleMultiplier) * 10) / 10;
+  const dynamicFontSize = `min(${18 * scaleMultiplier}px, ${heightCoeff}cqh, ${6 * scaleMultiplier}cqw)`;
+
   if (!hasContent) {
     return (
       <WidgetLayout
@@ -217,9 +230,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
-          style={{
-            fontSize: `min(${20 * scaleMultiplier}px, ${5 * scaleMultiplier}cqmin)`,
-          }}
+          style={{ fontSize: dynamicFontSize }}
         >
           <div
             className="flex-1 overflow-y-auto custom-scrollbar"
