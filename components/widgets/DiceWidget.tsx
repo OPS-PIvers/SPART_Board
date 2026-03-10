@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
@@ -89,13 +89,29 @@ const DiceFace: React.FC<{
 import { WidgetLayout } from './WidgetLayout';
 
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { activeDashboard } = useDashboard();
+  const { activeDashboard, updateWidget } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as DiceConfig;
   const diceCount = config.count ?? 1;
 
-  const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
+  const [values, setValues] = useState<number[]>(() =>
+    config.lastRoll?.length === diceCount
+      ? config.lastRoll
+      : new Array<number>(diceCount).fill(1)
+  );
   const [isRolling, setIsRolling] = useState(false);
+  // Ref so the remote-sync effect can read the current isRolling without
+  // listing it as a dependency (avoids overwriting locally-rolled values
+  // when the local roll finishes and isRolling flips back to false).
+  const isRollingRef = useRef(false);
+  isRollingRef.current = isRolling;
+
+  // Sync board display when a remote roll is persisted to widget config
+  useEffect(() => {
+    if (!isRollingRef.current && config.lastRoll?.length === diceCount) {
+      setValues(config.lastRoll);
+    }
+  }, [config.lastRoll, diceCount]);
 
   const roll = async () => {
     if (isRolling) return;
@@ -114,6 +130,14 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       if (rolls >= maxRolls) {
         clearInterval(interval);
+        const finalValues = Array.from(
+          { length: diceCount },
+          () => Math.floor(Math.random() * 6) + 1
+        );
+        setValues(finalValues);
+        updateWidget(widget.id, {
+          config: { ...config, lastRoll: finalValues } as DiceConfig,
+        });
         setIsRolling(false);
       }
     }, 100);

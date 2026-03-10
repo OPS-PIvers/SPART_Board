@@ -1,4 +1,6 @@
 import React, { memo, Suspense, useMemo, useCallback } from 'react';
+import { Z_INDEX } from '@/config/zIndex';
+import { Minimize2 } from 'lucide-react';
 import {
   WidgetData,
   DrawingConfig,
@@ -72,6 +74,7 @@ interface WidgetRendererProps {
   globalStyle: GlobalStyle;
   dashboardBackground?: string;
   dashboardSettings?: DashboardSettings;
+  updateDashboardSettings?: (updates: Partial<DashboardSettings>) => void;
 }
 
 const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
@@ -92,8 +95,11 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   globalStyle,
   dashboardBackground,
   dashboardSettings,
+  updateDashboardSettings,
 }) => {
-  const windowSize = useWindowSize(!!widget.maximized);
+  const isRemoteMaximized = dashboardSettings?.maximizedWidgetId === widget.id;
+  const isSpotlighted = dashboardSettings?.spotlightWidgetId === widget.id;
+  const windowSize = useWindowSize(!!widget.maximized || isRemoteMaximized);
   const { canAccessFeature, featurePermissions } = useAuth();
 
   const handleToggleLive = async () => {
@@ -168,10 +174,15 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     widget.type === 'drawing' &&
     (widget.config as DrawingConfig).mode === 'overlay';
   const customStyle: React.CSSProperties = isDrawingOverlay
-    ? {
-        display: 'none',
-      }
-    : {};
+    ? { display: 'none' }
+    : isSpotlighted
+      ? {
+          zIndex: Z_INDEX.backdrop + 1,
+          outline: '3px solid #facc15', // yellow-400 ring
+          outlineOffset: '2px',
+          boxShadow: '0 0 32px 8px rgba(250,204,21,0.25)',
+        }
+      : {};
 
   const scaling = WIDGET_SCALING_CONFIG[widget.type];
   const effectiveWidth = widget.maximized ? windowSize.width : widget.w;
@@ -278,6 +289,40 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         }`}
       >
         {finalContent}
+      </div>
+    );
+  }
+
+  // Remote-controlled full-screen maximize (from DashboardSettings, not widget.maximized)
+  if (isRemoteMaximized) {
+    return (
+      <div
+        className="fixed inset-0 bg-slate-900/95 backdrop-blur-md flex items-center justify-center"
+        style={{ zIndex: Z_INDEX.maximized }}
+      >
+        <div
+          className="w-full h-full relative"
+          style={{ containerType: 'size' }}
+        >
+          <Suspense fallback={<LoadingFallback />}>
+            <WidgetLayoutWrapper
+              widget={{ ...widget, w: windowSize.width, h: windowSize.height }}
+              w={windowSize.width}
+              h={windowSize.height}
+              isStudentView={false}
+            />
+          </Suspense>
+          <button
+            onClick={() =>
+              updateDashboardSettings?.({ maximizedWidgetId: null })
+            }
+            className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white text-sm font-semibold backdrop-blur-sm transition-all"
+            aria-label="Exit full-screen"
+          >
+            <Minimize2 className="w-4 h-4" />
+            Exit Full Screen
+          </button>
+        </div>
       </div>
     );
   }

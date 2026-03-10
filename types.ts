@@ -246,6 +246,8 @@ export interface RandomConfig {
 
 export interface DiceConfig {
   count: number;
+  /** Last roll result persisted so remote rolls are reflected on the board. */
+  lastRoll?: number[];
 }
 
 export interface SoundConfig {
@@ -1346,6 +1348,10 @@ export type DockItem =
 export interface DashboardSettings {
   quickAccessWidgets?: (WidgetType | InternalToolType)[];
   disableCloseConfirmation?: boolean;
+  /** Remote control: widget to display full-screen. Cleared on dismiss. */
+  maximizedWidgetId?: string | null;
+  /** Remote control: widget to spotlight (dim all others). Cleared on dismiss. */
+  spotlightWidgetId?: string | null;
 }
 
 /**

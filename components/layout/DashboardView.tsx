@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Z_INDEX } from '@/config/zIndex';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '@/context/useDashboard';
 import { isExternalBackground } from '@/utils/backgrounds';
@@ -117,6 +118,7 @@ export const DashboardView: React.FC = () => {
     minimizeAllWidgets,
     deleteAllWidgets,
     setSelectedWidgetId,
+    updateDashboardSettings,
     zoom,
     setZoom,
   } = useDashboard();
@@ -778,6 +780,16 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
+      {/* Spotlight Dimming Overlay — dims everything except the spotlighted widget */}
+      {activeDashboard.settings?.spotlightWidgetId && (
+        <div
+          className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-all duration-500 ease-in-out"
+          style={{ zIndex: Z_INDEX.backdrop }}
+          onClick={() => updateDashboardSettings({ spotlightWidgetId: null })}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Dynamic Widget Surface */}
       <div
         key={activeDashboard.id}
@@ -820,6 +832,7 @@ export const DashboardView: React.FC = () => {
               globalStyle={globalStyle}
               dashboardBackground={activeDashboard.background}
               dashboardSettings={activeDashboard.settings}
+              updateDashboardSettings={updateDashboardSettings}
             />
           );
         })}
