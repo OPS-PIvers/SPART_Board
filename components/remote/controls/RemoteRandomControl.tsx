@@ -77,7 +77,7 @@ export const RemoteRandomControl: React.FC<RemoteRandomControlProps> = ({
       : firstPick !== null
         ? typeof firstPick === 'string'
           ? firstPick
-          : firstPick.names[0] ?? null
+          : (firstPick.names[0] ?? null)
         : null;
 
   return (
