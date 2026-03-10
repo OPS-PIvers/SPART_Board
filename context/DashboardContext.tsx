@@ -1410,6 +1410,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (activeId === id) {
         lastLocalUpdateAt.current = Date.now();
+        lastUpdateWasSettingsOnly.current = false;
       }
 
       saveDashboard(updated)
@@ -1644,6 +1645,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (type: WidgetType, overrides?: AddWidgetOverrides) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
 
       const adminConfig = getAdminBuildingConfig(type);
 
@@ -1691,6 +1693,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     ) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
 
       setDashboards((prev) =>
         prev.map((d) => {
@@ -1803,6 +1806,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) =>
           d.id === activeId
@@ -1818,6 +1822,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeId) return d;
@@ -1844,6 +1849,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (ids: string[]) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) =>
           d.id === activeId
@@ -1868,6 +1874,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const clearAllWidgets = useCallback(() => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
     );
@@ -1930,6 +1937,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (target && target.z < maxZ) {
         lastLocalUpdateAt.current = Date.now();
+        lastUpdateWasSettingsOnly.current = false;
         return prev.map((d) => {
           if (d.id !== activeIdRef.current) return d;
           return {
@@ -1972,6 +1980,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             widgets[idx].z = idx + 1;
             widgets[idx + 1].z = idx;
             lastLocalUpdateAt.current = Date.now();
+            lastUpdateWasSettingsOnly.current = false;
           } else {
             return prev;
           }
@@ -1982,6 +1991,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             widgets[idx].z = idx - 1;
             widgets[idx - 1].z = idx;
             lastLocalUpdateAt.current = Date.now();
+            lastUpdateWasSettingsOnly.current = false;
           } else {
             return prev;
           }
@@ -1998,6 +2008,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const minimizeAllWidgets = useCallback(() => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) =>
         d.id === activeId
@@ -2017,6 +2028,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteAllWidgets = useCallback(() => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
     );
@@ -2027,6 +2039,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeId) return d;
@@ -2051,6 +2064,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const setBackground = useCallback((bg: string) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) =>
         d.id === activeIdRef.current ? { ...d, background: bg } : d
@@ -2083,6 +2097,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateDashboard = useCallback((updates: Partial<Dashboard>) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) => (d.id === activeIdRef.current ? { ...d, ...updates } : d))
     );
@@ -2091,6 +2106,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const setGlobalStyle = useCallback((style: Partial<GlobalStyle>) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) =>
         d.id === activeIdRef.current
