@@ -10,6 +10,11 @@ import { StudentProvider } from './components/student/StudentContexts';
 
 // Lazy load heavy components for code splitting
 // Using named export pattern: import(...).then(module => ({ default: module.ExportName }))
+const MobileRemoteApp = lazy(() =>
+  import('./components/remote/MobileRemoteView').then((module) => ({
+    default: module.MobileRemoteView,
+  }))
+);
 const StudentApp = lazy(() =>
   import('./components/student/StudentApp').then((module) => ({
     default: module.StudentApp,
@@ -52,7 +57,9 @@ const FullPageLoader = () => (
   </div>
 );
 
-const AuthenticatedApp: React.FC = () => {
+const AuthenticatedApp: React.FC<{ isRemote?: boolean }> = ({
+  isRemote = false,
+}) => {
   const { user, isAdmin } = useAuth();
 
   if (!user) {
@@ -60,6 +67,16 @@ const AuthenticatedApp: React.FC = () => {
       <Suspense fallback={<FullPageLoader />}>
         <LoginScreen />
       </Suspense>
+    );
+  }
+
+  if (isRemote) {
+    return (
+      <DashboardProvider>
+        <Suspense fallback={<FullPageLoader />}>
+          <MobileRemoteApp />
+        </Suspense>
+      </DashboardProvider>
     );
   }
 
@@ -87,6 +104,8 @@ const App: React.FC = () => {
   const isQuizRoute = pathname === '/quiz' || pathname.startsWith('/quiz/');
   const isNextUpRoute =
     pathname === '/nextup' || pathname.startsWith('/nextup/');
+  const isRemoteRoute =
+    pathname === '/remote' || pathname.startsWith('/remote/');
 
   if (isStudentRoute) {
     return (
@@ -115,6 +134,15 @@ const App: React.FC = () => {
       <Suspense fallback={<FullPageLoader />}>
         <NextUpStudentApp />
       </Suspense>
+    );
+  }
+
+  // Mobile Remote Control — same auth requirements as the main teacher view
+  if (isRemoteRoute) {
+    return (
+      <AuthProvider>
+        <AuthenticatedApp isRemote={true} />
+      </AuthProvider>
     );
   }
 

@@ -1,0 +1,207 @@
+/**
+ * MobileRemoteView
+ *
+ * A mobile-optimised teacher remote for the active dashboard.
+ * Renders interactive widgets as swipeable full-screen cards so the
+ * teacher can control timers, scoreboards, dice etc. from their phone
+ * while the desktop board stays visible to students.
+ *
+ * View State Controls (Spotlight & Full Screen) write to DashboardSettings,
+ * which triggers an auto-save to Firestore and propagates in real-time to
+ * every open desktop tab subscribed to the same dashboard.
+ */
+
+import React, { useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ChevronLeft, ChevronRight, LayoutGrid, Loader2 } from 'lucide-react';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetType } from '@/types';
+import { RemoteWidgetCard } from './RemoteWidgetCard';
+
+/** Widget types that have interactive remote controls or benefit from display actions */
+const REMOTE_SUPPORTED_TYPES: WidgetType[] = [
+  'time-tool',
+  'scoreboard',
+  'dice',
+  'random',
+  'traffic',
+];
+
+/** Widget types that are always skipped on the remote (decorative / not interactive) */
+const REMOTE_SKIP_TYPES: WidgetType[] = [
+  'sticker',
+  'stickers',
+  'drawing',
+  'onboarding',
+];
+
+export const MobileRemoteView: React.FC = () => {
+  const { t } = useTranslation();
+  const {
+    activeDashboard,
+    updateWidget,
+    updateDashboardSettings,
+    loadDashboard,
+    dashboards,
+  } = useDashboard();
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const remoteWidgets = React.useMemo(() => {
+    if (!activeDashboard) return [];
+    return activeDashboard.widgets
+      .filter((w) => !REMOTE_SKIP_TYPES.includes(w.type))
+      .sort((a, b) => {
+        // Put actively controlled types first
+        const aSupported = REMOTE_SUPPORTED_TYPES.includes(a.type) ? 0 : 1;
+        const bSupported = REMOTE_SUPPORTED_TYPES.includes(b.type) ? 0 : 1;
+        return aSupported - bSupported || b.z - a.z;
+      });
+  }, [activeDashboard]);
+
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const safeIdx = Math.max(0, Math.min(index, remoteWidgets.length - 1));
+      setCurrentIndex(safeIdx);
+      el.scrollTo({ left: safeIdx * window.innerWidth, behavior: 'smooth' });
+    },
+    [remoteWidgets.length]
+  );
+
+  // Track current card via scroll position
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / window.innerWidth);
+    setCurrentIndex(idx);
+  }, []);
+
+  if (!activeDashboard) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (remoteWidgets.length === 0) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center gap-4 p-8 text-center">
+        <LayoutGrid className="w-12 h-12 text-white/20" />
+        <p className="text-white/60 font-semibold">
+          {t('widgets.dashboard.emptyBoardHint')}
+        </p>
+        <p className="text-white/40 text-sm">
+          Add widgets to your board to control them here.
+        </p>
+      </div>
+    );
+  }
+
+  const dashboardIndex = dashboards.findIndex(
+    (d) => d.id === activeDashboard.id
+  );
+
+  return (
+    <div className="h-screen w-screen bg-slate-950 flex flex-col overflow-hidden select-none">
+      {/* Top bar — Dashboard switcher */}
+      <div
+        className="flex items-center justify-between px-4 pt-safe shrink-0 bg-slate-950/80 backdrop-blur-md border-b border-white/5"
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)',
+          paddingBottom: '0.5rem',
+        }}
+      >
+        <button
+          onClick={() => {
+            if (dashboards.length > 1 && dashboardIndex > 0) {
+              loadDashboard(dashboards[dashboardIndex - 1].id);
+              setCurrentIndex(0);
+            }
+          }}
+          disabled={dashboardIndex <= 0}
+          className="p-2 text-white/40 disabled:opacity-20 hover:text-white transition-colors"
+          aria-label="Previous board"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-white font-black text-sm truncate max-w-40">
+            {activeDashboard.name}
+          </span>
+          <span className="text-white/40 text-xs">Remote Control</span>
+        </div>
+
+        <button
+          onClick={() => {
+            if (
+              dashboards.length > 1 &&
+              dashboardIndex < dashboards.length - 1
+            ) {
+              loadDashboard(dashboards[dashboardIndex + 1].id);
+              setCurrentIndex(0);
+            }
+          }}
+          disabled={dashboardIndex >= dashboards.length - 1}
+          className="p-2 text-white/40 disabled:opacity-20 hover:text-white transition-colors"
+          aria-label="Next board"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Swipeable Widget Carousel */}
+      <div
+        ref={scrollRef}
+        className="flex-1 flex overflow-x-auto overflow-y-hidden"
+        style={{
+          scrollSnapType: 'x mandatory',
+          scrollBehavior: 'smooth',
+          WebkitOverflowScrolling: 'touch',
+          // Hide scrollbar
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none',
+        }}
+        onScroll={handleScroll}
+      >
+        {remoteWidgets.map((widget) => (
+          <RemoteWidgetCard
+            key={widget.id}
+            widget={widget}
+            dashboardSettings={activeDashboard.settings}
+            updateWidget={updateWidget}
+            updateDashboardSettings={updateDashboardSettings}
+          />
+        ))}
+      </div>
+
+      {/* Bottom pagination dots */}
+      {remoteWidgets.length > 1 && (
+        <div
+          className="flex items-center justify-center gap-1.5 pb-safe shrink-0"
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)',
+            paddingTop: '0.5rem',
+          }}
+        >
+          {remoteWidgets.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => scrollToIndex(i)}
+              className={`rounded-full transition-all ${
+                i === currentIndex
+                  ? 'bg-blue-400 w-5 h-2'
+                  : 'bg-white/20 w-2 h-2 hover:bg-white/40'
+              }`}
+              aria-label={`Go to widget ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

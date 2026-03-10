@@ -54,6 +54,7 @@ const serializeDashboard = (d: Dashboard): string =>
     background: d.background,
     name: d.name,
     libraryOrder: d.libraryOrder,
+    settings: d.settings,
   });
 
 const PERSISTED_WIDGET_TYPES: WidgetType[] = [

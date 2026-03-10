@@ -117,6 +117,7 @@ export const DashboardView: React.FC = () => {
     minimizeAllWidgets,
     deleteAllWidgets,
     setSelectedWidgetId,
+    updateDashboardSettings,
     zoom,
     setZoom,
   } = useDashboard();
@@ -776,6 +777,16 @@ export const DashboardView: React.FC = () => {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Spotlight Dimming Overlay — dims everything except the spotlighted widget */}
+      {activeDashboard.settings?.spotlightWidgetId && (
+        <div
+          className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-all duration-500 ease-in-out"
+          style={{ zIndex: 9000 }}
+          onClick={() => updateDashboardSettings({ spotlightWidgetId: null })}
+          aria-hidden="true"
+        />
       )}
 
       {/* Dynamic Widget Surface */}
