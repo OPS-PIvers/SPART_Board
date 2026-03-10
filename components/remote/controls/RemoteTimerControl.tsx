@@ -34,14 +34,20 @@ export const RemoteTimerControl: React.FC<RemoteTimerControlProps> = ({
   const togglePlay = () => {
     const ts = Date.now();
     if (config.isRunning) {
-      const elapsed = config.startTime
-        ? config.elapsedTime + Math.floor((ts - config.startTime) / 1000)
-        : config.elapsedTime;
+      // Capture current display time before stopping so the widget resumes
+      // from the right position.  In timer mode elapsedTime counts DOWN (it
+      // IS the remaining seconds); in stopwatch mode it counts UP.
+      const delta = config.startTime
+        ? Math.floor((ts - config.startTime) / 1000)
+        : 0;
+      const timeToSave = isTimer
+        ? Math.max(0, config.elapsedTime - delta)
+        : config.elapsedTime + delta;
       updateWidget(widget.id, {
         config: {
           ...config,
           isRunning: false,
-          elapsedTime: elapsed,
+          elapsedTime: timeToSave,
           startTime: null,
         },
       });
@@ -53,36 +59,47 @@ export const RemoteTimerControl: React.FC<RemoteTimerControlProps> = ({
   };
 
   const resetTimer = () => {
-    updateWidget(widget.id, {
-      config: { ...config, isRunning: false, elapsedTime: 0, startTime: null },
-    });
-  };
-
-  const setPreset = (seconds: number) => {
+    // Timer mode: reset to duration (elapsedTime = remaining = duration).
+    // Stopwatch mode: reset to 0.
+    const resetTime = isTimer ? config.duration : 0;
     updateWidget(widget.id, {
       config: {
         ...config,
-        duration: seconds,
         isRunning: false,
-        elapsedTime: 0,
+        elapsedTime: resetTime,
         startTime: null,
       },
     });
   };
 
-  // Live elapsed calculation using the ticked `now` value (not a raw Date.now() call)
-  const currentElapsed =
-    config.isRunning && config.startTime
-      ? config.elapsedTime + Math.floor((now - config.startTime) / 1000)
-      : config.elapsedTime;
+  const setPreset = (seconds: number) => {
+    // elapsedTime stores remaining time in timer mode, so set it to the new duration.
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        duration: seconds,
+        isRunning: false,
+        elapsedTime: seconds,
+        startTime: null,
+      },
+    });
+  };
 
-  const remaining = isTimer
-    ? Math.max(0, config.duration - currentElapsed)
-    : currentElapsed;
+  // Live display time — timer counts DOWN, stopwatch counts UP.
+  // `now` is kept current by a 1 s interval (only runs while isRunning).
+  const delta =
+    config.isRunning && config.startTime
+      ? Math.floor((now - config.startTime) / 1000)
+      : 0;
+  const displayTime = isTimer
+    ? Math.max(0, config.elapsedTime - delta)
+    : config.elapsedTime + delta;
+
+  const remaining = displayTime;
 
   const progress =
     isTimer && config.duration > 0
-      ? Math.min(1, currentElapsed / config.duration)
+      ? Math.min(1, 1 - displayTime / config.duration)
       : 0;
 
   return (

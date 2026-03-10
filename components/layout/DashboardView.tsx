@@ -831,6 +831,7 @@ export const DashboardView: React.FC = () => {
               globalStyle={globalStyle}
               dashboardBackground={activeDashboard.background}
               dashboardSettings={activeDashboard.settings}
+              updateDashboardSettings={updateDashboardSettings}
             />
           );
         })}

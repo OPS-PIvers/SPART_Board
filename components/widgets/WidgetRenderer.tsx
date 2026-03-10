@@ -9,7 +9,6 @@ import {
   WidgetType,
   DashboardSettings,
 } from '@/types';
-import { useDashboard } from '@/context/useDashboard';
 import { DraggableWindow } from '../common/DraggableWindow';
 import { LiveControl } from './LiveControl';
 import { StickerItemWidget } from './stickers/StickerItemWidget';
@@ -74,6 +73,9 @@ interface WidgetRendererProps {
   globalStyle: GlobalStyle;
   dashboardBackground?: string;
   dashboardSettings?: DashboardSettings;
+  updateDashboardSettings?: (
+    updates: Partial<DashboardSettings>
+  ) => void;
 }
 
 const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
@@ -94,12 +96,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   globalStyle,
   dashboardBackground,
   dashboardSettings,
+  updateDashboardSettings,
 }) => {
   const isRemoteMaximized = dashboardSettings?.maximizedWidgetId === widget.id;
   const isSpotlighted = dashboardSettings?.spotlightWidgetId === widget.id;
   const windowSize = useWindowSize(!!widget.maximized || isRemoteMaximized);
   const { canAccessFeature, featurePermissions } = useAuth();
-  const { updateDashboardSettings } = useDashboard();
 
   const handleToggleLive = async () => {
     try {
@@ -312,7 +314,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
             />
           </Suspense>
           <button
-            onClick={() => updateDashboardSettings({ maximizedWidgetId: null })}
+            onClick={() =>
+              updateDashboardSettings?.({ maximizedWidgetId: null })
+            }
             className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white text-sm font-semibold backdrop-blur-sm transition-all"
             aria-label="Exit full-screen"
           >

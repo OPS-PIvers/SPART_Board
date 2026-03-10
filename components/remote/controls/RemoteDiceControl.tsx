@@ -64,7 +64,7 @@ export const RemoteDiceControl: React.FC<RemoteDiceControlProps> = ({
     if (isRolling) return;
     setIsRolling(true);
 
-    // Animate through random values for 500ms
+    // Animate through random values for 500ms, then persist final result
     let frames = 0;
     const interval = setInterval(() => {
       setValues(
@@ -73,10 +73,18 @@ export const RemoteDiceControl: React.FC<RemoteDiceControlProps> = ({
       frames++;
       if (frames >= 8) {
         clearInterval(interval);
+        const finalValues = Array.from(
+          { length: count },
+          () => Math.ceil(Math.random() * 6)
+        );
+        setValues(finalValues);
+        updateWidget(widget.id, {
+          config: { ...config, lastRoll: finalValues },
+        });
         setIsRolling(false);
       }
     }, 70);
-  }, [count, isRolling]);
+  }, [config, count, isRolling, updateWidget, widget.id]);
 
   const changeCount = (delta: number) => {
     const newCount = Math.min(6, Math.max(1, count + delta));

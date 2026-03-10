@@ -24,7 +24,7 @@ export const RemoteScheduleControl: React.FC<RemoteScheduleControlProps> = ({
   const config = widget.config as ScheduleConfig;
   const items = useMemo(() => getActiveItems(config), [config]);
 
-  const toggleItem = (itemId: string, index: number) => {
+  const toggleItem = (index: number) => {
     // Handle both schedules[] and legacy items[]
     if (config.schedules && config.schedules.length > 0) {
       const today = new Date().getDay();
@@ -103,7 +103,7 @@ export const RemoteScheduleControl: React.FC<RemoteScheduleControlProps> = ({
           {items.map((item, index) => (
             <button
               key={item.id ?? index}
-              onClick={() => toggleItem(item.id ?? '', index)}
+              onClick={() => toggleItem(index)}
               className={`flex items-start gap-3 w-full px-4 py-3 rounded-xl border text-left transition-all active:scale-[0.98] ${
                 item.done
                   ? 'bg-green-500/10 border-green-500/20 text-white/40'

@@ -26,6 +26,10 @@ export const RemoteRandomControl: React.FC<RemoteRandomControlProps> = ({
 }) => {
   const config = widget.config as RandomConfig;
   const [isPicking, setIsPicking] = useState(false);
+  // Local-only animated name shown during the picking animation.
+  // We only call updateWidget once (with the final pick) to avoid spamming
+  // Firestore and triggering re-renders on all connected clients.
+  const [animatedName, setAnimatedName] = useState<string | null>(null);
 
   const names = parseNames(config.firstNames ?? '', config.lastNames ?? '');
   const remaining = config.remainingStudents ?? names;
@@ -35,22 +39,17 @@ export const RemoteRandomControl: React.FC<RemoteRandomControlProps> = ({
     if (isPicking || remaining.length === 0) return;
     setIsPicking(true);
 
-    // Animate through a few random picks
     let frames = 0;
-    let tempResult = '';
     const pool = remaining.length > 0 ? remaining : names;
 
     const interval = setInterval(() => {
-      tempResult = pool[Math.floor(Math.random() * pool.length)];
-      updateWidget(widget.id, {
-        config: { ...config, lastResult: tempResult },
-      });
+      setAnimatedName(pool[Math.floor(Math.random() * pool.length)]);
       frames++;
       if (frames >= 10) {
         clearInterval(interval);
-        // Final pick: remove from remaining
         const finalPick = pool[Math.floor(Math.random() * pool.length)];
         const newRemaining = remaining.filter((n) => n !== finalPick);
+        // Single write to shared state — the final result only
         updateWidget(widget.id, {
           config: {
             ...config,
@@ -58,6 +57,7 @@ export const RemoteRandomControl: React.FC<RemoteRandomControlProps> = ({
             remainingStudents: newRemaining,
           },
         });
+        setAnimatedName(null);
         setIsPicking(false);
       }
     }, 60);
@@ -86,11 +86,11 @@ export const RemoteRandomControl: React.FC<RemoteRandomControlProps> = ({
         Random Picker
       </div>
 
-      {/* Result display */}
+      {/* Result display — shows local animation frame during picking, final result otherwise */}
       <div className="w-full min-h-24 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 px-4 py-6">
-        {pickedName ? (
+        {(isPicking ? animatedName : pickedName) ? (
           <span className="text-white font-black text-3xl text-center">
-            {pickedName}
+            {isPicking ? animatedName : pickedName}
           </span>
         ) : (
           <span className="text-white/30 text-base italic">

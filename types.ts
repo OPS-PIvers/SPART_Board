@@ -246,6 +246,8 @@ export interface RandomConfig {
 
 export interface DiceConfig {
   count: number;
+  /** Last roll result persisted so remote rolls are reflected on the board. */
+  lastRoll?: number[];
 }
 
 export interface SoundConfig {

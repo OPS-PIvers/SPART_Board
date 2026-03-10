@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { WidgetData, ClockConfig } from '@/types';
 
 interface RemoteClockControlProps {
@@ -46,8 +46,14 @@ export const RemoteClockControl: React.FC<RemoteClockControlProps> = ({
       config: { ...config, [field]: !config[field] },
     });
 
-  // Live time display
-  const now = new Date();
+  // Live time display — ticks so the preview stays current
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const intervalMs = config.showSeconds ? 1000 : 30000;
+    const id = setInterval(() => setNow(new Date()), intervalMs);
+    return () => clearInterval(id);
+  }, [config.showSeconds]);
+
   const h12 = now.getHours() % 12;
   const hours = config.format24 ? now.getHours() : h12 === 0 ? 12 : h12;
   const minutes = String(now.getMinutes()).padStart(2, '0');

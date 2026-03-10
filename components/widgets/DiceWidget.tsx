@@ -94,8 +94,21 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as DiceConfig;
   const diceCount = config.count ?? 1;
 
-  const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
+  const [values, setValues] = useState<number[]>(
+    () =>
+      config.lastRoll?.length === diceCount
+        ? config.lastRoll
+        : new Array(diceCount).fill(1)
+  );
   const [isRolling, setIsRolling] = useState(false);
+
+  // Sync board display when a remote roll is persisted to widget config
+  useEffect(() => {
+    if (!isRolling && config.lastRoll && config.lastRoll.length === diceCount) {
+      setValues(config.lastRoll);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.lastRoll]);
 
   const roll = async () => {
     if (isRolling) return;

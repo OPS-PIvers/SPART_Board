@@ -461,6 +461,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   currentActive.libraryOrder &&
                   JSON.stringify(currentActive.libraryOrder) !==
                     lastSavedFieldsRef.current.libraryOrder;
+                const settingsChangedLocally =
+                  JSON.stringify(currentActive.settings) !==
+                  lastSavedFieldsRef.current.settings;
 
                 return {
                   ...db,
@@ -473,6 +476,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   ...(nameChangedLocally && { name: currentActive.name }),
                   ...(libraryOrderChangedLocally && {
                     libraryOrder: currentActive.libraryOrder,
+                  }),
+                  ...(settingsChangedLocally && {
+                    settings: currentActive.settings,
                   }),
                 };
               }
@@ -572,7 +578,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     background: string;
     name: string;
     libraryOrder: string;
-  }>({ widgets: '', background: '', name: '', libraryOrder: '' });
+    settings: string;
+  }>({ widgets: '', background: '', name: '', libraryOrder: '', settings: '' });
 
   useEffect(() => {
     // Capture ref value for stable cleanup (react-hooks/exhaustive-deps)
@@ -617,6 +624,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         background: active.background,
         name: active.name,
         libraryOrder: JSON.stringify(active.libraryOrder),
+        settings: JSON.stringify(active.settings),
       };
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
