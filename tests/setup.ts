@@ -23,6 +23,13 @@ Element.prototype.setPointerCapture = vi.fn();
 Element.prototype.releasePointerCapture = vi.fn();
 Element.prototype.hasPointerCapture = vi.fn();
 
+// Mock ResizeObserver — jsdom does not implement it
+global.ResizeObserver = class ResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+};
+
 // Mock Canvas getContext
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string): any => {

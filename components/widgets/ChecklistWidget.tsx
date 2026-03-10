@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   ChecklistConfig,
@@ -21,14 +27,10 @@ import {
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { SettingsLabel } from '../common/SettingsLabel';
 
-// Tuning constant (cqh units): estimated portion of the container height available for item rows.
-// Not derived from layout — adjust if the header/footer/padding proportions change significantly.
-const CHECKLIST_CONTENT_HEIGHT_CQH = 75;
-// Fraction of each item's height slot used as the font size.
-const CHECKLIST_FONT_HEIGHT_FRACTION = 0.5;
-// Cap item count for font scaling: beyond this threshold items scroll rather
-// than forcing the font to become unreadably small.
-const CHECKLIST_MAX_ITEMS_FOR_FONT_SCALE = 15;
+// Minimum font size (px) — below this items scroll rather than become unreadable.
+const CHECKLIST_MIN_FONT_PX = 8;
+// Maximum font size (px) before scaleMultiplier is applied.
+const CHECKLIST_MAX_FONT_PX = 48;
 
 interface ChecklistRowProps {
   id: string;
@@ -199,27 +201,55 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
-  // Compute item-count-aware font size.
-  // cqw: font shrinks proportionally when the widget is narrow, preventing
-  //   text from wrapping and forcing the user to resize wide.
-  // cqh/itemCount: font shrinks to fit all items vertically; capped at
-  //   CHECKLIST_MAX_ITEMS_FOR_FONT_SCALE so the font stays readable in long
-  //   scrollable lists (items beyond the cap simply scroll into view).
-  // Note: cqw/cqh are intentional here — cqmin tracks the smaller axis and
-  //   stops responding to width changes once width exceeds height.
-  const rawItemCount = mode === 'manual' ? items.length : students.length;
-  const cappedItemCount = Math.min(
-    Math.max(rawItemCount, 1),
-    CHECKLIST_MAX_ITEMS_FOR_FONT_SCALE
-  );
-  const heightCoeff =
-    Math.round(
-      (CHECKLIST_CONTENT_HEIGHT_CQH / cappedItemCount) *
-        CHECKLIST_FONT_HEIGHT_FRACTION *
-        scaleMultiplier *
-        10
-    ) / 10;
-  const dynamicFontSize = `min(${18 * scaleMultiplier}px, ${heightCoeff}cqh, ${6 * scaleMultiplier}cqw)`;
+  // Refs for the scrollable container and the item list — used by the
+  // ResizeObserver to binary-search the largest font size that makes all
+  // items fit without scrolling.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [fontSize, setFontSize] = useState(14);
+
+  // Auto-fit: find the largest font size where every item fits in the
+  // available container height.  Runs whenever the container is resized
+  // (drag-to-resize) or the item list changes (add/remove/edit items).
+  useEffect(() => {
+    const container = containerRef.current;
+    const list = listRef.current;
+    if (!container || !list) return;
+
+    const fitText = () => {
+      const maxFontSize = CHECKLIST_MAX_FONT_PX * scaleMultiplier;
+      const cs = getComputedStyle(container);
+      const availableHeight =
+        container.clientHeight -
+        parseFloat(cs.paddingTop) -
+        parseFloat(cs.paddingBottom);
+
+      if (availableHeight <= 0) return;
+
+      // Binary search: 10 iterations → ~0.1 px precision
+      let lo = CHECKLIST_MIN_FONT_PX;
+      let hi = maxFontSize;
+      for (let i = 0; i < 10; i++) {
+        const mid = (lo + hi) / 2;
+        list.style.fontSize = `${mid}px`;
+        // Reading scrollHeight forces a synchronous layout reflow
+        if (list.scrollHeight <= availableHeight + 1) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      // Reset inline style; React will apply via state on next render
+      list.style.fontSize = '';
+      setFontSize(Math.round(lo * 10) / 10);
+    };
+
+    const observer = new ResizeObserver(fitText);
+    observer.observe(container);
+    fitText();
+
+    return () => observer.disconnect();
+  }, [items, students, mode, scaleMultiplier]);
 
   if (!hasContent) {
     return (
@@ -260,15 +290,19 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
-          style={{ fontSize: dynamicFontSize }}
         >
           <div
+            ref={containerRef}
             className="flex-1 overflow-y-auto custom-scrollbar"
             style={{
               padding: 'min(12px, 2.5cqmin) min(16px, 3.5cqmin)',
             }}
           >
-            <ul style={{ gap: '0.4em' }} className="flex flex-col">
+            <ul
+              ref={listRef}
+              style={{ gap: '0.4em', fontSize: `${fontSize}px` }}
+              className="flex flex-col"
+            >
               {mode === 'manual'
                 ? items.map((item) => (
                     <ChecklistRow
