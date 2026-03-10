@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { WidgetData, TimeToolConfig } from '@/types';
 
@@ -22,12 +22,20 @@ export const RemoteTimerControl: React.FC<RemoteTimerControlProps> = ({
   const config = widget.config as TimeToolConfig;
   const isTimer = config.mode === 'timer';
 
+  // Tick every second while running so the display stays live.
+  // `now` is updated via useEffect to keep Date.now() out of render.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!config.isRunning) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [config.isRunning]);
+
   const togglePlay = () => {
+    const ts = Date.now();
     if (config.isRunning) {
-      // Pause
       const elapsed = config.startTime
-        ? config.elapsedTime +
-          Math.floor((Date.now() - config.startTime) / 1000)
+        ? config.elapsedTime + Math.floor((ts - config.startTime) / 1000)
         : config.elapsedTime;
       updateWidget(widget.id, {
         config: {
@@ -38,9 +46,8 @@ export const RemoteTimerControl: React.FC<RemoteTimerControlProps> = ({
         },
       });
     } else {
-      // Start/resume
       updateWidget(widget.id, {
-        config: { ...config, isRunning: true, startTime: Date.now() },
+        config: { ...config, isRunning: true, startTime: ts },
       });
     }
   };
@@ -63,10 +70,10 @@ export const RemoteTimerControl: React.FC<RemoteTimerControlProps> = ({
     });
   };
 
-  // Live elapsed calculation
+  // Live elapsed calculation using the ticked `now` value (not a raw Date.now() call)
   const currentElapsed =
     config.isRunning && config.startTime
-      ? config.elapsedTime + Math.floor((Date.now() - config.startTime) / 1000)
+      ? config.elapsedTime + Math.floor((now - config.startTime) / 1000)
       : config.elapsedTime;
 
   const remaining = isTimer

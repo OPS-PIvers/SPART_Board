@@ -48,7 +48,8 @@ export const RemoteClockControl: React.FC<RemoteClockControlProps> = ({
 
   // Live time display
   const now = new Date();
-  const hours = config.format24 ? now.getHours() : now.getHours() % 12 || 12;
+  const h12 = now.getHours() % 12;
+  const hours = config.format24 ? now.getHours() : h12 === 0 ? 12 : h12;
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
   const ampm = !config.format24 ? (now.getHours() < 12 ? ' AM' : ' PM') : '';
