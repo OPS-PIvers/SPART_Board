@@ -1,0 +1,6 @@
+[
+  {
+    "comment_id": "2914557678",
+    "reply": "Good catch! I've updated the snap menu to explicitly use `zIndex: Z_INDEX.toolMenu + 1` inline instead of the `z-popover` utility class to guarantee it renders above the `toolMenu` layer as you suggested. I've also fixed the unrelated lint error in `components/widgets/MiniApp/Widget.tsx` that caused the CI to fail."
+  }
+]

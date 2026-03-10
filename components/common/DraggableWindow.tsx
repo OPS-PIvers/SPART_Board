@@ -1376,8 +1376,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     createPortal(
                       <div
                         ref={snapMenuRef}
-                        className="fixed z-popover p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-48 animate-in slide-in-from-top-2 fade-in duration-200"
+                        className="fixed p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-48 animate-in slide-in-from-top-2 fade-in duration-200"
                         style={{
+                          // Ensure the snap menu appears above the tool menu
+                          zIndex: Z_INDEX.toolMenu + 1,
                           // Position below the button, centered horizontally
                           top: `${Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-y') ?? 0) + 40}px`,
                           left: `${Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-x') ?? 0)}px`,
