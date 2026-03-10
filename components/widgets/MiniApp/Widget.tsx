@@ -62,7 +62,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
   const { updateWidget, addToast, activeDashboard } = useDashboard();
   const { user } = useAuth();
   const config = (widget.config || {}) as MiniAppConfig;
-  const activeApp = config.activeApp || null;
+  const activeApp = config.activeApp ?? null;
   const activeAppId = activeApp?.id;
 
   const { session, startSession, endSession } = useLiveSession(
