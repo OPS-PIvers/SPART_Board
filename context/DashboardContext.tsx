@@ -462,8 +462,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   JSON.stringify(currentActive.libraryOrder) !==
                     lastSavedFieldsRef.current.libraryOrder;
                 const settingsChangedLocally =
-                  JSON.stringify(currentActive.settings) !==
-                  lastSavedFieldsRef.current.settings;
+                  JSON.stringify(currentActive.settings ?? {}) !==
+                  (lastSavedFieldsRef.current.settings || '{}');
 
                 return {
                   ...db,
