@@ -1,5 +1,13 @@
-import React, { useCallback, useRef } from 'react';
-import { X, Code2, Sparkles, Loader2, Save, Box } from 'lucide-react';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  X,
+  Code2,
+  Sparkles,
+  Loader2,
+  Save,
+  FileSpreadsheet,
+  Globe,
+} from 'lucide-react';
 import { WidgetLayout } from '../../WidgetLayout';
 import { useAuth } from '@/context/useAuth';
 import { MiniAppConfig, WidgetData } from '@/types';
@@ -47,6 +55,7 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
   const config = widget.config as MiniAppConfig;
   const { globalConfig } = useMiniAppGlobalConfig();
   const lastSharedIdRef = useRef<string | null>(null);
+  const [isCreatingSheet, setIsCreatingSheet] = useState(false);
 
   const shareSheetWithBot = useCallback(
     async (sheetId: string) => {
@@ -59,36 +68,68 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
         addToast('Sheet linked and shared with system!', 'success');
       } catch (e) {
         console.error(e);
-        addToast(
-          'Failed to share sheet. Check your drive permissions.',
-          'error'
-        );
+        const errorMsg = e instanceof Error ? e.message : '';
+        if (errorMsg.includes('403') || errorMsg.includes('Authorization')) {
+          addToast(
+            `Automated sharing failed. Please manually share your sheet with ${globalConfig.botEmail} as an Editor.`,
+            'error'
+          );
+        } else {
+          addToast(
+            'Failed to share sheet. Check your drive permissions.',
+            'error'
+          );
+        }
       }
     },
     [driveService, globalConfig, addToast]
   );
 
-  // 3. TEACHER HANDLERS: Auto-share the Google Sheet
+  // 3. TEACHER HANDLERS: Auto-create/share the Google Sheet
   const handleToggleCollect = async (checked: boolean) => {
     updateWidget(widget.id, {
       config: { ...config, collectResults: checked },
     });
 
-    if (checked && config.googleSheetId) {
+    if (checked && !config.googleSheetId) {
+      await handleCreateNewSheet();
+    } else if (checked && config.googleSheetId) {
       await shareSheetWithBot(config.googleSheetId);
     }
   };
 
-  const handleUrlChange = async (url: string) => {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    const sheetId = match ? match[1] : '';
+  const handleCreateNewSheet = async () => {
+    if (!driveService || !globalConfig?.botEmail) {
+      addToast('Google Drive not connected or system bot not ready.', 'error');
+      return;
+    }
 
-    updateWidget(widget.id, {
-      config: { ...config, googleSheetUrl: url, googleSheetId: sheetId },
-    });
+    setIsCreatingSheet(true);
+    try {
+      const folderId = await driveService.getFolderPath('MiniApp Results');
+      const fileName = `${editTitle || 'Untitled App'} - Results`;
+      const sheet = await driveService.createSpreadsheet(fileName, folderId);
 
-    if (config.collectResults && sheetId) {
-      await shareSheetWithBot(sheetId);
+      // Successfully created! Update widget config
+      const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheet.id}/edit`;
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          googleSheetUrl: sheetUrl,
+          googleSheetId: sheet.id,
+          collectResults: true,
+        },
+      });
+
+      // Now share it (this should work because we created it)
+      await driveService.addEditorPermission(sheet.id, globalConfig.botEmail);
+      lastSharedIdRef.current = sheet.id;
+      addToast('New results sheet created and shared!', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to create sheet automatically.', 'error');
+    } finally {
+      setIsCreatingSheet(false);
     }
   };
 
@@ -217,25 +258,37 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
 
             {config.collectResults && (
               <div className="animate-in fade-in slide-in-from-top-2">
-                <label className="block text-xxs font-bold uppercase text-slate-400 mb-1">
-                  Google Sheet URL
-                </label>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 text-slate-400 pointer-events-none">
-                    <Box size={16} />
+                {isCreatingSheet ? (
+                  <div className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                    <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                    <span className="text-xs font-bold text-indigo-700 uppercase tracking-tight">
+                      Creating your results sheet...
+                    </span>
                   </div>
-                  <input
-                    type="text"
-                    value={config.googleSheetUrl ?? ''}
-                    onChange={(e) => void handleUrlChange(e.target.value)}
-                    placeholder="Paste your Google Sheet link here..."
-                    className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-400 text-slate-700 font-bold"
-                  />
-                </div>
-                {config.googleSheetId && (
-                  <p className="text-xxs text-emerald-500 font-bold mt-1 uppercase tracking-wider">
-                    ✓ Sheet Connected & Ready
-                  </p>
+                ) : config.googleSheetId ? (
+                  <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                      <span className="text-xs font-bold text-emerald-700 uppercase tracking-tight">
+                        Results Sheet Ready
+                      </span>
+                    </div>
+                    <a
+                      href={config.googleSheetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xxs font-black uppercase tracking-widest transition-all shadow-sm flex items-center gap-1.5"
+                    >
+                      <Globe className="w-3 h-3" />
+                      Open Sheet
+                    </a>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl">
+                    <p className="text-xxs text-slate-500 font-bold uppercase tracking-tight">
+                      Sheet will be created automatically.
+                    </p>
+                  </div>
                 )}
               </div>
             )}
