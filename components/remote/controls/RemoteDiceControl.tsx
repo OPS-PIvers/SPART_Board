@@ -73,9 +73,8 @@ export const RemoteDiceControl: React.FC<RemoteDiceControlProps> = ({
       frames++;
       if (frames >= 8) {
         clearInterval(interval);
-        const finalValues = Array.from(
-          { length: count },
-          () => Math.ceil(Math.random() * 6)
+        const finalValues = Array.from({ length: count }, () =>
+          Math.ceil(Math.random() * 6)
         );
         setValues(finalValues);
         updateWidget(widget.id, {

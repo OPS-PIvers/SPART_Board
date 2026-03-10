@@ -73,9 +73,7 @@ interface WidgetRendererProps {
   globalStyle: GlobalStyle;
   dashboardBackground?: string;
   dashboardSettings?: DashboardSettings;
-  updateDashboardSettings?: (
-    updates: Partial<DashboardSettings>
-  ) => void;
+  updateDashboardSettings?: (updates: Partial<DashboardSettings>) => void;
 }
 
 const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({

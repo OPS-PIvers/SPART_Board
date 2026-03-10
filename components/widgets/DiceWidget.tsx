@@ -94,11 +94,10 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as DiceConfig;
   const diceCount = config.count ?? 1;
 
-  const [values, setValues] = useState<number[]>(
-    () =>
-      config.lastRoll?.length === diceCount
-        ? config.lastRoll
-        : new Array(diceCount).fill(1)
+  const [values, setValues] = useState<number[]>(() =>
+    config.lastRoll?.length === diceCount
+      ? [...config.lastRoll]
+      : new Array(diceCount).fill(1)
   );
   const [isRolling, setIsRolling] = useState(false);
 
