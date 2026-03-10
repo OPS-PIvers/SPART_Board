@@ -34,6 +34,8 @@ export const Z_INDEX = {
   announcementOverlay: 9985, // Windowed announcements
   announcementMaximized: 9990, // Maximized announcements
   confirmOverlay: 9950, // Confirmation dialogs within widgets
+  snapPreview: 9998, // Snap layout preview zones
+  systemBanner: 9999, // System-level banners (e.g. Drive disconnect)
   modal: 10000, // Standard Modals (e.g. Settings, Reports)
   modalContent: 10001, // Content within modals (dropdowns etc)
   modalNested: 10100, // Modals on top of modals (e.g. Drive Picker, Library)
