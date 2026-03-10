@@ -21,7 +21,8 @@ import {
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { SettingsLabel } from '../common/SettingsLabel';
 
-// Available container height devoted to item rows (cqh units), after header/footer/padding.
+// Tuning constant (cqh units): estimated portion of the container height available for item rows.
+// Not derived from layout — adjust if the header/footer/padding proportions change significantly.
 const CHECKLIST_CONTENT_HEIGHT_CQH = 75;
 // Fraction of each item's height slot used as the font size.
 const CHECKLIST_FONT_HEIGHT_FRACTION = 0.5;
