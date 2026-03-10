@@ -1,19 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  calculateSnapBounds,
-  SNAP_LAYOUT_CONSTANTS,
-} from '../../utils/layoutMath';
+import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
 import { SnapZone } from '@/config/snapLayouts';
 
 describe('layoutMath', () => {
-  let originalWindow: Window & typeof globalThis;
-  let originalDocument: Document;
-
   beforeEach(() => {
-    // Save original global objects
-    originalWindow = global.window;
-    originalDocument = global.document;
-
     // Default mock setup for a standard desktop view
     vi.stubGlobal('window', {
       innerWidth: 1920,
@@ -29,8 +19,6 @@ describe('layoutMath', () => {
     // Restore global objects after each test
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
-    global.window = originalWindow;
-    global.document = originalDocument;
   });
 
   describe('calculateSnapBounds', () => {
@@ -40,8 +28,7 @@ describe('layoutMath', () => {
       y: 0,
       w: 1,
       h: 1,
-      type: 'full',
-    } as SnapZone;
+    };
 
     it('should return 0 bounds if window is undefined (SSR)', () => {
       // Remove window from global
