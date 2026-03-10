@@ -4,21 +4,13 @@ import { SnapZone } from '@/config/snapLayouts';
 
 describe('layoutMath', () => {
   beforeEach(() => {
-    // Default mock setup for a standard desktop view
-    vi.stubGlobal('window', {
-      innerWidth: 1920,
-      innerHeight: 1080,
-    });
-
-    vi.stubGlobal('document', {
-      querySelector: vi.fn(),
-    });
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1920);
+    vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1080);
   });
 
   afterEach(() => {
-    // Restore global objects after each test
-    vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   describe('calculateSnapBounds', () => {
@@ -31,19 +23,13 @@ describe('layoutMath', () => {
     };
 
     it('should return 0 bounds if window is undefined (SSR)', () => {
-      // Remove window from global
       vi.stubGlobal('window', undefined);
-
       const bounds = calculateSnapBounds(defaultZone);
-
       expect(bounds).toEqual({ x: 0, y: 0, w: 0, h: 0 });
     });
 
     it('should calculate bounds correctly without dock element (fallback height)', () => {
-      // Document exists, but no dock element is found
-      vi.stubGlobal('document', {
-        querySelector: vi.fn().mockReturnValue(null),
-      });
+      vi.spyOn(document, 'querySelector').mockReturnValue(null);
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -63,9 +49,7 @@ describe('layoutMath', () => {
         getBoundingClientRect: vi.fn().mockReturnValue({ top: 900 }),
       } as unknown as Element;
 
-      vi.stubGlobal('document', {
-        querySelector: vi.fn().mockReturnValue(mockDockElement),
-      });
+      vi.spyOn(document, 'querySelector').mockReturnValue(mockDockElement);
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -86,12 +70,10 @@ describe('layoutMath', () => {
         getBoundingClientRect: vi.fn().mockReturnValue({ top: 800 }),
       } as unknown as Element;
 
-      vi.stubGlobal('document', {
-        querySelector: vi.fn().mockImplementation((selector) => {
-          if (selector === '[data-role="dock"]') return null;
-          if (selector === '[data-testid="dock"]') return mockDockElement;
-          return null;
-        }),
+      vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
+        if (selector === '[data-role="dock"]') return null;
+        if (selector === '[data-testid="dock"]') return mockDockElement;
+        return null;
       });
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
@@ -113,9 +95,7 @@ describe('layoutMath', () => {
         getBoundingClientRect: vi.fn().mockReturnValue({ top: 1100 }), // Below viewport
       } as unknown as Element;
 
-      vi.stubGlobal('document', {
-        querySelector: vi.fn().mockReturnValue(mockDockElement),
-      });
+      vi.spyOn(document, 'querySelector').mockReturnValue(mockDockElement);
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -147,9 +127,7 @@ describe('layoutMath', () => {
     });
 
     it('should calculate bounds with gaps for half zones', () => {
-      vi.stubGlobal('document', {
-        querySelector: vi.fn().mockReturnValue(null),
-      });
+      vi.spyOn(document, 'querySelector').mockReturnValue(null);
 
       const leftZone: SnapZone = {
         ...defaultZone,
@@ -189,13 +167,9 @@ describe('layoutMath', () => {
     });
 
     it('should clamp safe dimensions to at least 0 on tiny viewports', () => {
-      vi.stubGlobal('window', {
-        innerWidth: 10,
-        innerHeight: 10,
-      });
-      vi.stubGlobal('document', {
-        querySelector: vi.fn().mockReturnValue(null),
-      });
+      vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(10);
+      vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(10);
+      vi.spyOn(document, 'querySelector').mockReturnValue(null);
 
       const zone: SnapZone = { ...defaultZone, x: 0, y: 0, w: 1, h: 1 };
       const bounds = calculateSnapBounds(zone);
@@ -210,9 +184,7 @@ describe('layoutMath', () => {
     });
 
     it('should subtract gaps from height for stacked zones', () => {
-      vi.stubGlobal('document', {
-        querySelector: vi.fn().mockReturnValue(null),
-      });
+      vi.spyOn(document, 'querySelector').mockReturnValue(null);
 
       const topZone: SnapZone = {
         ...defaultZone,
