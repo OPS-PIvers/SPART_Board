@@ -285,8 +285,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch (e) {
           // Abort Firestore save to avoid losing PII when Drive is temporarily unavailable.
           console.error('[PII] Failed to save PII supplement to Drive:', e);
-          // Return 0 to signal the save was aborted so callers skip updating refs.
-          return 0;
+          // Reject so callers treat this as a genuine failure rather than a
+          // silent success — prevents success toasts, ref updates, and
+          // localStorage removal in migration from happening on an aborted save.
+          throw new Error(
+            '[PII] Aborted dashboard save because PII supplement could not be saved to Drive'
+          );
         }
       }
 
@@ -573,16 +577,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             widgets: [],
             createdAt: Date.now(),
           };
-          void saveDashboard(defaultDb).then(() => {
-            setToasts((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                message: 'Welcome! Board created',
-                type: 'info' as const,
-              },
-            ]);
-          });
+          void saveDashboard(defaultDb)
+            .then(() => {
+              setToasts((prev) => [
+                ...prev,
+                {
+                  id: crypto.randomUUID(),
+                  message: 'Welcome! Board created',
+                  type: 'info' as const,
+                },
+              ]);
+            })
+            .catch(console.error);
         }
 
         setLoading(false);
@@ -734,18 +740,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       lastWidgetCountRef.current = active.widgets.length;
       saveDashboard(active)
         .then((savedUpdatedAt) => {
-          // savedUpdatedAt === 0 means the save was aborted (e.g. Drive PII
-          // upload failed).  Don't update refs so the next effect run retries.
-          if (savedUpdatedAt === 0) {
-            pendingSaveCountRef.current = Math.max(
-              0,
-              pendingSaveCountRef.current - 1
-            );
-            if (pendingSaveCountRef.current === 0) {
-              setIsSaving(false);
-            }
-            return;
-          }
           // Use the timestamp that was actually written to Firestore (captured
           // before the setDoc call) rather than Date.now() after the round-trip.
           // This prevents the ~200 ms inflation that would otherwise cause the
