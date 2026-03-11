@@ -68,8 +68,9 @@ const CarRiderProAdminConfig: React.FC = () => {
       );
     } catch (err) {
       console.error('Failed to save Car Rider Pro config', err);
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   return (
