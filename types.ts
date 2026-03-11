@@ -1130,18 +1130,28 @@ export interface SpecialistScheduleCycleDay {
   items: SpecialistScheduleItem[];
 }
 
-export interface SpecialistScheduleConfig {
+export interface SpecialistScheduleBuildingConfig {
   cycleLength: 6 | 10;
   startDate: string; // YYYY-MM-DD
   /** List of dates (YYYY-MM-DD) that are school days and should count in the rotation. */
   schoolDays: string[];
+  /** Custom label for "Day" (e.g., "Day" for Schumann, "Block" for Intermediate) */
+  dayLabel?: string;
+}
+
+export interface SpecialistScheduleGlobalConfig {
+  /** Building ID -> Config */
+  buildingDefaults: Record<string, SpecialistScheduleBuildingConfig>;
+}
+
+export interface SpecialistScheduleConfig {
+  /** The specific specialist class name for this teacher (e.g., "3A", "Mrs. Smith's Class") */
+  specialistClass?: string;
   /** Mapping of Day Number (1-based) to its schedule items. */
   cycleDays: SpecialistScheduleCycleDay[];
   fontFamily?: string;
   cardColor?: string;
   cardOpacity?: number;
-  /** Custom label for "Day" (e.g., "Day" for Schumann, "Block" for Intermediate) */
-  dayLabel?: string;
 }
 
 export interface NextUpSession {

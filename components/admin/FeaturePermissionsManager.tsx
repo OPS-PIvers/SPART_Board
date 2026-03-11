@@ -33,6 +33,7 @@ import { BetaUsersPanel } from '@/components/admin/BetaUsersPanel';
 import { InstructionalRoutinesManager } from '@/components/admin/InstructionalRoutinesManager';
 import { StickerLibraryModal } from '@/components/admin/StickerLibraryModal';
 import { CalendarConfigurationModal } from '@/components/admin/CalendarConfigurationModal';
+import { SpecialistScheduleConfigurationModal } from '@/components/admin/SpecialistScheduleConfigurationModal';
 import { MiniAppLibraryModal } from '@/components/admin/MiniAppLibraryModal';
 import { StickerGlobalConfig } from '@/types';
 
@@ -663,6 +664,13 @@ export const FeaturePermissionsManager: React.FC = () => {
 
       {activeModalTool?.type === 'calendar' && (
         <CalendarConfigurationModal
+          isOpen={true}
+          onClose={() => setActiveModalTool(null)}
+        />
+      )}
+
+      {activeModalTool?.type === 'specialist-schedule' && (
+        <SpecialistScheduleConfigurationModal
           isOpen={true}
           onClose={() => setActiveModalTool(null)}
         />

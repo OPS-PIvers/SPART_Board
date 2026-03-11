@@ -1,21 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import {
   WidgetData,
   SpecialistScheduleConfig,
   SpecialistScheduleItem,
+  SpecialistScheduleGlobalConfig,
 } from '@/types';
 import {
   Settings2,
   Clock,
   Plus,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   X,
   Type,
   Palette,
   Save,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 
@@ -30,72 +31,39 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
+  const { featurePermissions, selectedBuildings } = useAuth();
   const config = widget.config as SpecialistScheduleConfig;
+
+  // Fetch Global Configuration to know current cycleLength and dayLabel
+  const globalConfig = useMemo(() => {
+    const perm = featurePermissions.find(
+      (p) => p.widgetType === 'specialist-schedule'
+    );
+    return perm?.config as SpecialistScheduleGlobalConfig | undefined;
+  }, [featurePermissions]);
+
+  const buildingId = selectedBuildings[0] ?? 'schumann-elementary';
+  const buildingConfig = globalConfig?.buildingDefaults?.[buildingId] ?? {
+    cycleLength: 6,
+    dayLabel: 'Day',
+  };
+
+  const { cycleLength = 6, dayLabel = 'Day' } = buildingConfig;
+
   const {
-    cycleLength = 6,
-    schoolDays = [],
     cycleDays = [],
-    dayLabel = 'Day',
     fontFamily = 'global',
     cardColor = '#ffffff',
     cardOpacity = 1,
+    specialistClass = '',
   } = config;
 
-  const [activeTab, setActiveTab] = useState<
-    'general' | 'calendar' | 'schedules'
-  >('general');
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [activeTab, setActiveTab] = useState<'general' | 'schedules'>(
+    'general'
+  );
   const [selectedCycleDay, setSelectedCycleDay] = useState(1);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [tempItem, setTempItem] = useState<SpecialistScheduleItem | null>(null);
-
-  // Calendar Helpers
-  const daysInMonth = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-
-    const days = [];
-    // Padding for start of month
-    for (let i = 0; i < firstDay.getDay(); i++) {
-      days.push(null);
-    }
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      days.push(new Date(year, month, i));
-    }
-    return days;
-  }, [currentMonth]);
-
-  const toggleSchoolDay = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    const newSchoolDays = schoolDays.includes(dateStr)
-      ? schoolDays.filter((d) => d !== dateStr)
-      : [...schoolDays, dateStr];
-
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        schoolDays: newSchoolDays,
-      } as SpecialistScheduleConfig,
-    });
-  };
-
-  const handleCycleLengthChange = (length: 6 | 10) => {
-    const newCycleDays = Array.from({ length }, (_, i) => {
-      const existing = cycleDays.find((d) => d.dayNumber === i + 1);
-      return existing ?? { dayNumber: i + 1, items: [] };
-    });
-
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        cycleLength: length,
-        cycleDays: newCycleDays,
-      } as SpecialistScheduleConfig,
-    });
-    if (selectedCycleDay > length) setSelectedCycleDay(1);
-  };
 
   // Schedule Item Helpers
   const currentDayConfig = cycleDays.find(
@@ -129,7 +97,13 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     // Sort items by time
     newItems.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-    const newCycleDays = cycleDays.map((d) =>
+    // Ensure we have entries for all cycle days
+    const baseCycleDays = Array.from({ length: cycleLength }, (_, i) => {
+      const existing = cycleDays.find((d) => d.dayNumber === i + 1);
+      return existing ?? { dayNumber: i + 1, items: [] };
+    });
+
+    const newCycleDays = baseCycleDays.map((d) =>
       d.dayNumber === selectedCycleDay ? { ...d, items: newItems } : d
     );
 
@@ -156,38 +130,6 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const selectAllWeekdays = () => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const lastDay = new Date(year, month + 1, 0).getDate();
-
-    const newDates = [];
-    for (let i = 1; i <= lastDay; i++) {
-      const d = new Date(year, month, i);
-      const dayOfWeek = d.getDay();
-      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        newDates.push(d.toISOString().split('T')[0]);
-      }
-    }
-
-    // Merge with existing schoolDays, deduplicate
-    const merged = Array.from(new Set([...schoolDays, ...newDates]));
-    updateWidget(widget.id, {
-      config: { ...config, schoolDays: merged } as SpecialistScheduleConfig,
-    });
-  };
-
-  const clearMonth = () => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const monthPrefix = `${year}-${(month + 1).toString().padStart(2, '0')}-`;
-
-    const filtered = schoolDays.filter((d) => !d.startsWith(monthPrefix));
-    updateWidget(widget.id, {
-      config: { ...config, schoolDays: filtered } as SpecialistScheduleConfig,
-    });
-  };
-
   return (
     <div className="space-y-4">
       {/* Tabs */}
@@ -197,12 +139,6 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
           className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'general' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
         >
           General
-        </button>
-        <button
-          onClick={() => setActiveTab('calendar')}
-          className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'calendar' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-        >
-          Calendar
         </button>
         <button
           onClick={() => setActiveTab('schedules')}
@@ -216,46 +152,26 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-6 animate-in fade-in duration-200">
           <section className="space-y-3">
             <label className="text-xxs text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Settings2 className="w-3 h-3" /> Basic Config
+              <Users className="w-3 h-3" /> Class Config
             </label>
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-slate-700">
-                  Rotation Cycle
-                </span>
-                <div className="flex bg-white rounded-lg p-1 border border-slate-200">
-                  <button
-                    onClick={() => handleCycleLengthChange(6)}
-                    className={`px-3 py-1 text-xs font-bold rounded ${cycleLength === 6 ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                  >
-                    6-Day
-                  </button>
-                  <button
-                    onClick={() => handleCycleLengthChange(10)}
-                    className={`px-3 py-1 text-xs font-bold rounded ${cycleLength === 10 ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                  >
-                    10-Block
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">
-                  Label Style
+                  Specialist Class Name
                 </span>
                 <input
                   type="text"
-                  value={dayLabel}
+                  value={specialistClass}
                   onChange={(e) =>
                     updateWidget(widget.id, {
                       config: {
                         ...config,
-                        dayLabel: e.target.value,
+                        specialistClass: e.target.value,
                       } as SpecialistScheduleConfig,
                     })
                   }
-                  className="w-24 px-2 py-1 text-sm border border-slate-200 rounded-lg text-right"
-                  placeholder="e.g. Day"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                  placeholder="e.g. 3A, Smith's Class"
                 />
               </div>
             </div>
@@ -345,116 +261,13 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
               </div>
             </div>
           </section>
-        </div>
-      )}
 
-      {activeTab === 'calendar' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            {/* Calendar Header */}
-            <div className="bg-slate-50 p-3 flex items-center justify-between border-b border-slate-200">
-              <button
-                onClick={() =>
-                  setCurrentMonth(
-                    new Date(
-                      currentMonth.getFullYear(),
-                      currentMonth.getMonth() - 1,
-                      1
-                    )
-                  )
-                }
-                className="p-1 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-slate-600" />
-              </button>
-              <h4 className="font-bold text-slate-700">
-                {currentMonth.toLocaleDateString(undefined, {
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </h4>
-              <button
-                onClick={() =>
-                  setCurrentMonth(
-                    new Date(
-                      currentMonth.getFullYear(),
-                      currentMonth.getMonth() + 1,
-                      1
-                    )
-                  )
-                }
-                className="p-1 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-slate-600" />
-              </button>
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="p-2">
-              <div className="grid grid-cols-7 mb-1">
-                {['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'].map((d) => (
-                  <div
-                    key={d}
-                    className="text-center text-[10px] font-black text-slate-400 uppercase"
-                  >
-                    {d}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {daysInMonth.map((date, i) => {
-                  if (!date) return <div key={`pad-${i}`} />;
-                  const dateStr = date.toISOString().split('T')[0];
-                  const isSelected = schoolDays.includes(dateStr);
-                  const isToday =
-                    dateStr === new Date().toISOString().split('T')[0];
-
-                  return (
-                    <button
-                      key={dateStr}
-                      onClick={() => toggleSchoolDay(date)}
-                      className={`
-                        aspect-square flex items-center justify-center text-xs rounded-lg font-bold transition-all
-                        ${isSelected ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-100 text-slate-600'}
-                        ${isToday ? 'ring-2 ring-teal-200' : ''}
-                      `}
-                    >
-                      {date.getDate()}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              className="flex-1 text-[10px]"
-              onClick={selectAllWeekdays}
-            >
-              Select M-F
-            </Button>
-            <Button
-              variant="secondary"
-              className="flex-1 text-[10px]"
-              onClick={clearMonth}
-            >
-              Clear Month
-            </Button>
-          </div>
-
-          <p className="text-[11px] text-slate-500 italic text-center px-4">
-            Tap dates to toggle school days. The rotation skips non-school days.
-          </p>
-
-          <div className="bg-teal-50 p-3 rounded-xl border border-teal-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-teal-800">
-              Total School Days
-            </span>
-            <span className="bg-teal-600 text-white px-2 py-0.5 rounded-full text-xs font-black">
-              {schoolDays.length}
-            </span>
+          <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-3">
+            <Settings2 className="w-5 h-5 text-blue-500 shrink-0" />
+            <p className="text-[11px] text-blue-700 leading-tight">
+              <strong>Admin Config:</strong> The rotation ({cycleLength}-
+              {dayLabel}) and school days are managed by school administrators.
+            </p>
           </div>
         </div>
       )}

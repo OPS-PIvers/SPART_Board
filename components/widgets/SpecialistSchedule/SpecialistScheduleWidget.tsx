@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import {
   WidgetData,
   SpecialistScheduleConfig,
+  SpecialistScheduleGlobalConfig,
   ClockConfig,
   DEFAULT_GLOBAL_STYLE,
 } from '@/types';
@@ -40,19 +42,44 @@ const hexToRgba = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
 
+const toDateStr = (d: Date): string => {
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { activeDashboard } = useDashboard();
+  const { featurePermissions, selectedBuildings } = useAuth();
   const config = widget.config as SpecialistScheduleConfig;
+
+  // Fetch Global Configuration
+  const globalConfig = useMemo(() => {
+    const perm = featurePermissions.find(
+      (p) => p.widgetType === 'specialist-schedule'
+    );
+    return perm?.config as SpecialistScheduleGlobalConfig | undefined;
+  }, [featurePermissions]);
+
+  const buildingId = selectedBuildings[0] ?? 'schumann-elementary';
+  const buildingConfig = globalConfig?.buildingDefaults?.[buildingId] ?? {
+    cycleLength: 6,
+    startDate: toDateStr(new Date()),
+    schoolDays: [],
+    dayLabel: 'Day',
+  };
+
+  const { cycleLength = 6, schoolDays = [], dayLabel = 'Day' } = buildingConfig;
+
   const {
-    cycleLength = 6,
-    schoolDays = [],
     cycleDays = [],
-    dayLabel = 'Day',
     fontFamily = 'global',
     cardColor = '#ffffff',
     cardOpacity = 1,
+    specialistClass = '',
   } = config;
 
   const [now, setNow] = useState(new Date());
@@ -62,10 +89,7 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     return () => clearInterval(id);
   }, []);
 
-  const todayStr = useMemo(() => {
-    const d = new Date(now);
-    return d.toISOString().split('T')[0];
-  }, [now]);
+  const todayStr = useMemo(() => toDateStr(now), [now]);
 
   // Determine the current Day Number
   const { currentDayNumber, isSchoolDay } = useMemo(() => {
@@ -169,6 +193,14 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                 {isSchoolDay && currentDayNumber
                   ? `${dayLabel} ${currentDayNumber}`
                   : 'Non-School Day'}
+                {specialistClass && (
+                  <span
+                    className="ml-2 text-slate-400 font-bold"
+                    style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                  >
+                    ({specialistClass})
+                  </span>
+                )}
               </span>
             </div>
             <div
