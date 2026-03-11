@@ -37,7 +37,7 @@ import { MiniAppLibraryModal } from '@/components/admin/MiniAppLibraryModal';
 import { StickerGlobalConfig } from '@/types';
 
 export const FeaturePermissionsManager: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [permissions, setPermissions] = useState<
     Map<WidgetType | InternalToolType, FeaturePermission>
   >(new Map());

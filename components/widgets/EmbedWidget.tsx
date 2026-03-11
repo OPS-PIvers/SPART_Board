@@ -40,6 +40,21 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const embedUrl = convertToEmbedUrl(sanitizedUrl);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const isActuallyEmbeddable = React.useMemo(() => {
+    if (isEmbeddable) return true;
+    try {
+      const parsedUrl = new URL(embedUrl);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const allowListedDomains = new Set([
+        'www.carriderpro.com',
+        'carriderpro.com',
+      ]);
+      return allowListedDomains.has(hostname);
+    } catch (_e) {
+      return isEmbeddable;
+    }
+  }, [isEmbeddable, embedUrl]);
+
   useEffect(() => {
     if (refreshInterval <= 0) return;
 
@@ -66,6 +81,8 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           'vids.google.com',
           'www.youtube.com',
           'youtube.com',
+          'www.carriderpro.com',
+          'carriderpro.com',
         ]);
         if (allowSameOriginHosts.has(hostname)) {
           base += ' allow-same-origin';
@@ -145,7 +162,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
       content={
         <div className="w-full h-full bg-transparent flex flex-col overflow-hidden relative">
-          {mode === 'url' && isEmbeddable === false ? (
+          {mode === 'url' && isActuallyEmbeddable === false ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50">
               <div className="bg-amber-100 p-4 rounded-full mb-4">
                 <XCircle className="w-12 h-12 text-amber-600" />
@@ -208,10 +225,50 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   >('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
+  const isActuallyEmbeddable = React.useMemo(() => {
+    if (isEmbeddable) return true;
+    try {
+      const parsedUrl = new URL(ensureProtocol(url));
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const allowListedDomains = new Set([
+        'www.carriderpro.com',
+        'carriderpro.com',
+      ]);
+      return allowListedDomains.has(hostname);
+    } catch (_e) {
+      return isEmbeddable;
+    }
+  }, [isEmbeddable, url]);
+
   const handleVerify = async () => {
     if (!url) return;
     setIsVerifying(true);
     setVerifyStatus('idle');
+
+    // Skip verification for allow-listed domains
+    try {
+      const parsedUrl = new URL(ensureProtocol(url));
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const allowListedDomains = new Set([
+        'www.carriderpro.com',
+        'carriderpro.com',
+      ]);
+
+      if (allowListedDomains.has(hostname)) {
+        setVerifyStatus('success');
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            isEmbeddable: true,
+            blockedReason: '',
+          },
+        });
+        setIsVerifying(false);
+        return;
+      }
+    } catch (_e) {
+      // Proceed to normal verification if URL parsing fails
+    }
 
     try {
       const checkCompatibility = httpsCallable<
@@ -346,7 +403,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </p>
           </div>
 
-          {!isEmbeddable && verifyStatus === 'idle' && (
+          {!isActuallyEmbeddable && verifyStatus === 'idle' && (
             <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex gap-3">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xxs text-amber-800 leading-relaxed ">
