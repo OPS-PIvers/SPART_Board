@@ -235,12 +235,6 @@ export const DashboardView: React.FC = () => {
     };
   }, []);
 
-  // Gesture Tracking
-  const gestureStart = React.useRef<{ x: number; y: number } | null>(null);
-  const gestureCurrent = React.useRef<{ x: number; y: number } | null>(null);
-  const isFourFingerGesture = React.useRef(false);
-  const MIN_SWIPE_DISTANCE_PX = 100;
-
   // Background YouTube audio control
   const ytIframeRef = React.useRef<HTMLIFrameElement>(null);
   const [isBgMuted, setIsBgMuted] = React.useState(true);
@@ -388,87 +382,6 @@ export const DashboardView: React.FC = () => {
     deleteAllWidgets,
     t,
   ]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 4) {
-      isFourFingerGesture.current = true;
-      gestureStart.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-      };
-      gestureCurrent.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-      };
-    } else {
-      isFourFingerGesture.current = false;
-      gestureStart.current = null;
-      gestureCurrent.current = null;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (isFourFingerGesture.current && gestureStart.current) {
-      if (e.touches.length !== 4) {
-        isFourFingerGesture.current = false;
-        gestureStart.current = null;
-        gestureCurrent.current = null;
-        return;
-      }
-
-      e.preventDefault();
-      gestureCurrent.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-      };
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (
-      isFourFingerGesture.current &&
-      gestureStart.current &&
-      gestureCurrent.current
-    ) {
-      const deltaX = gestureCurrent.current.x - gestureStart.current.x;
-      const deltaY = gestureCurrent.current.y - gestureStart.current.y;
-      const absX = Math.abs(deltaX);
-      const absY = Math.abs(deltaY);
-
-      // Determine dominant direction
-      if (absY > absX && absY > MIN_SWIPE_DISTANCE_PX) {
-        // Vertical Swipe
-        if (deltaY > 0) {
-          // Swipe Down -> Minimize All to Dock
-          minimizeAllWidgets();
-        } else {
-          // Swipe Up -> Restore
-          setIsMinimized(false);
-        }
-      } else if (absX > absY && absX > MIN_SWIPE_DISTANCE_PX) {
-        // Horizontal Swipe (with wrapping)
-        if (deltaX < 0) {
-          // Swipe Left -> Next Board
-          if (dashboards.length > 1) {
-            const nextIdx = (currentIndex + 1) % dashboards.length;
-            loadDashboard(dashboards[nextIdx].id);
-          }
-        } else {
-          // Swipe Right -> Prev Board
-          if (dashboards.length > 1) {
-            const nextIdx =
-              (currentIndex - 1 + dashboards.length) % dashboards.length;
-            loadDashboard(dashboards[nextIdx].id);
-          }
-        }
-      }
-
-      // Reset
-      isFourFingerGesture.current = false;
-      gestureStart.current = null;
-      gestureCurrent.current = null;
-    }
-  };
 
   const handleDragOver = (e: React.DragEvent) => {
     if (
@@ -707,9 +620,6 @@ export const DashboardView: React.FC = () => {
       }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       {/* Ambient YouTube Video Layer */}
       {youTubeVideoId && (
