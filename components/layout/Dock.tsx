@@ -866,100 +866,102 @@ export const Dock: React.FC = () => {
                   )}
                 </DndContext>
 
-                {/* Separator and Live Info Button */}
-                {session?.isActive && (
-                  <>
-                    <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                {/* Extra Actions Separator */}
+                {(session?.isActive && canAccessFeature('live-session')) ||
+                canAccessFeature('remote-control') ? (
+                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                ) : null}
 
-                    {/* LIVE INFO BUTTON (Visible when active) */}
-                    <button
-                      ref={liveButtonRef}
-                      onClick={() => {
-                        if (showLiveInfo) {
-                          setShowLiveInfo(false);
-                        } else if (liveButtonRef.current) {
-                          const rect =
-                            liveButtonRef.current.getBoundingClientRect();
-                          setLivePopoverPos({
-                            left: rect.left + rect.width / 2,
-                            bottom: window.innerHeight - rect.top + 10,
-                          });
-                          setShowLiveInfo(true);
-                        }
-                      }}
-                      aria-label={t('dock.viewLiveSession')}
-                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
+                {/* LIVE INFO BUTTON (Visible when active) */}
+                {session?.isActive && canAccessFeature('live-session') && (
+                  <button
+                    ref={liveButtonRef}
+                    onClick={() => {
+                      if (showLiveInfo) {
+                        setShowLiveInfo(false);
+                      } else if (liveButtonRef.current) {
+                        const rect =
+                          liveButtonRef.current.getBoundingClientRect();
+                        setLivePopoverPos({
+                          left: rect.left + rect.width / 2,
+                          bottom: window.innerHeight - rect.top + 10,
+                        });
+                        setShowLiveInfo(true);
+                      }
+                    }}
+                    aria-label={t('dock.viewLiveSession')}
+                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
+                  >
+                    <DockIcon
+                      color="bg-red-500"
+                      className="flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 animate-pulse"
                     >
-                      <DockIcon
-                        color="bg-red-500"
-                        className="flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 animate-pulse"
-                      >
-                        <Cast className="w-5 h-5 md:w-6 md:h-6" />
-                      </DockIcon>
-                      <DockLabel>{t('sidebar.header.live')}</DockLabel>
-                    </button>
-
-                    {/* REMOTE CONTROL BUTTON */}
-                    {canAccessFeature('remote-control') && (
-                      <button
-                        onClick={() => window.open('/remote', '_blank')}
-                        aria-label="Open Remote Control"
-                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
-                      >
-                        <DockIcon
-                          color="bg-slate-800"
-                          className="flex items-center justify-center shadow-lg group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-slate-400 group-focus-visible:ring-offset-2"
-                        >
-                          <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                        </DockIcon>
-                        <DockLabel>Remote</DockLabel>
-                      </button>
-                    )}
-
-                    {/* LIVE POPOVER */}
-                    {showLiveInfo &&
-                      livePopoverPos &&
-                      createPortal(
-                        <GlassCard
-                          globalStyle={globalStyle}
-                          ref={livePopoverRef}
-                          style={{
-                            position: 'fixed',
-                            left: livePopoverPos.left,
-                            bottom: livePopoverPos.bottom,
-                            transform: 'translateX(-50%)',
-                            zIndex: Z_INDEX.popover,
-                          }}
-                          className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
-                        >
-                          {' '}
-                          <div className="p-4 flex flex-col items-center gap-2 text-center">
-                            <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
-                              {t('dock.liveSession')}
-                            </h3>
-                            <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
-                              {session.code}
-                            </div>
-                            <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
-                              {getJoinUrl()}
-                            </div>
-                            <div className="text-xxs text-slate-500 mt-2">
-                              {t('dock.provideCode')}
-                            </div>
-                          </div>
-                          <div className="p-2 border-t border-white/30">
-                            <button
-                              onClick={() => setShowLiveInfo(false)}
-                              className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
-                            >
-                              {t('common.close')}
-                            </button>
-                          </div>
-                        </GlassCard>,
-                        document.body
-                      )}
-                  </>
+                      <Cast className="w-5 h-5 md:w-6 md:h-6" />
+                    </DockIcon>
+                    <DockLabel>{t('sidebar.header.live')}</DockLabel>
+                  </button>
                 )}
+
+                {/* REMOTE CONTROL BUTTON */}
+                {canAccessFeature('remote-control') && (
+                  <button
+                    onClick={() => window.open('/remote', '_blank')}
+                    aria-label="Open Remote Control"
+                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
+                  >
+                    <DockIcon
+                      color="bg-slate-800"
+                      className="flex items-center justify-center shadow-lg group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-slate-400 group-focus-visible:ring-offset-2"
+                    >
+                      <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                    </DockIcon>
+                    <DockLabel>Remote</DockLabel>
+                  </button>
+                )}
+
+                {/* LIVE POPOVER */}
+                {showLiveInfo &&
+                  livePopoverPos &&
+                  session &&
+                  createPortal(
+                    <GlassCard
+                      globalStyle={globalStyle}
+                      ref={livePopoverRef}
+                      style={{
+                        position: 'fixed',
+                        left: livePopoverPos.left,
+                        bottom: livePopoverPos.bottom,
+                        transform: 'translateX(-50%)',
+                        zIndex: Z_INDEX.popover,
+                      }}
+                      className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+                    >
+                      {' '}
+                      <div className="p-4 flex flex-col items-center gap-2 text-center">
+                        <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
+                          {t('dock.liveSession')}
+                        </h3>
+                        <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
+                          {session.code}
+                        </div>
+                        <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
+                          {getJoinUrl()}
+                        </div>
+                        <div className="text-xxs text-slate-500 mt-2">
+                          {t('dock.provideCode')}
+                        </div>
+                      </div>
+                      <div className="p-2 border-t border-white/30">
+                        <button
+                          onClick={() => setShowLiveInfo(false)}
+                          className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
+                        >
+                          {t('common.close')}
+                        </button>
+                      </div>
+                    </GlassCard>,
+                    document.body
+                  )}
 
                 {/* Separator and More Button */}
                 <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
