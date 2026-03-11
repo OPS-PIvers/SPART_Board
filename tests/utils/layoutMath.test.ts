@@ -38,20 +38,6 @@ describe('layoutMath', () => {
       const expectedWidth = window.innerWidth - PADDING * 2;
       const expectedHeight = window.innerHeight - DOCK_HEIGHT - PADDING * 2;
 
-      if (bounds.h !== expectedHeight) {
-        const debugInfo = {
-          innerWidth: window.innerWidth,
-          innerHeight: window.innerHeight,
-          dockElement: document.querySelector('[data-role="dock"]'),
-          fallbackHeight: DOCK_HEIGHT,
-          bounds_h: bounds.h,
-          bounds_w: bounds.w,
-        };
-        expect(bounds.h).toBe(
-          `FAILED: expected ${expectedHeight}, but got ${bounds.h}. Debug info: ${JSON.stringify(debugInfo)}`
-        );
-      }
-
       expect(bounds.x).toBe(PADDING);
       expect(bounds.y).toBe(PADDING);
       expect(bounds.w).toBe(expectedWidth);
