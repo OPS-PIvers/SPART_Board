@@ -199,22 +199,35 @@ export const Dock: React.FC = () => {
   const [dragY, setDragY] = useState(0);
   const [isDraggingDown, setIsDraggingDown] = useState(false);
   const startY = useRef(0);
+  const startX = useRef(0);
+  const hasCaptured = useRef(false);
   const threshold = 80; // Distance to trigger collapse
 
   const handleDockPointerDown = (e: React.PointerEvent) => {
     if (!isExpanded || isEditMode) return;
-    // Don't drag if clicking a button or interactive element
-    if ((e.target as HTMLElement).closest('button')) return;
 
     setIsDraggingDown(true);
     startY.current = e.clientY;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    startX.current = e.clientX;
+    hasCaptured.current = false;
   };
 
   const handleDockPointerMove = (e: React.PointerEvent) => {
     if (!isDraggingDown) return;
     const deltaY = e.clientY - startY.current;
-    // Only allow dragging downwards
+    const deltaX = Math.abs(e.clientX - startX.current);
+
+    if (!hasCaptured.current) {
+      if (deltaX > 10 && deltaX > deltaY) {
+        setIsDraggingDown(false);
+        return;
+      }
+      if (deltaY > 10) {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        hasCaptured.current = true;
+      }
+    }
+
     if (deltaY > 0) {
       setDragY(deltaY);
     }
@@ -223,7 +236,15 @@ export const Dock: React.FC = () => {
   const handleDockPointerUp = (e: React.PointerEvent) => {
     if (!isDraggingDown) return;
     setIsDraggingDown(false);
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+
+    if (hasCaptured.current) {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch (_err) {
+        // Ignore errors if pointer is already released
+      }
+      hasCaptured.current = false;
+    }
 
     if (dragY > threshold) {
       setIsExpanded(false);
@@ -474,6 +495,7 @@ export const Dock: React.FC = () => {
       onPointerMove={handleDockPointerMove}
       onPointerUp={handleDockPointerUp}
       onPointerCancel={handleDockPointerUp}
+      onContextMenu={(e) => e.preventDefault()}
       data-role="dock"
       data-testid="dock"
       data-screenshot="exclude"
@@ -483,6 +505,7 @@ export const Dock: React.FC = () => {
       style={{
         transform: `translateX(-50%) translateY(${dragY}px) scale(${1 - Math.min(dragY / 500, 0.15)})`,
         opacity: 1 - Math.min(dragY / 400, 0.4),
+        touchAction: 'pan-x',
       }}
     >
       {showRosterMenu && (
@@ -865,7 +888,7 @@ export const Dock: React.FC = () => {
                         }
                       }}
                       aria-label={t('dock.viewLiveSession')}
-                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
+                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
                     >
                       <DockIcon
                         color="bg-red-500"
@@ -881,7 +904,7 @@ export const Dock: React.FC = () => {
                       <button
                         onClick={() => window.open('/remote', '_blank')}
                         aria-label="Open Remote Control"
-                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
+                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
                       >
                         <DockIcon
                           color="bg-slate-800"
@@ -944,7 +967,7 @@ export const Dock: React.FC = () => {
                 <button
                   ref={moreButtonRef}
                   onClick={() => setShowMoreMenu(!showMoreMenu)}
-                  className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                  className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x flex-shrink-0"
                   title={t('sidebar.header.moreWidgets')}
                 >
                   <DockIcon
