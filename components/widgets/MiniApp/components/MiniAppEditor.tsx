@@ -1,5 +1,14 @@
-import React, { useCallback, useRef } from 'react';
-import { X, Code2, Sparkles, Loader2, Save, Box } from 'lucide-react';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  X,
+  Code2,
+  Sparkles,
+  Loader2,
+  Save,
+  FileSpreadsheet,
+  Globe,
+  Info,
+} from 'lucide-react';
 import { WidgetLayout } from '../../WidgetLayout';
 import { useAuth } from '@/context/useAuth';
 import { MiniAppConfig, WidgetData } from '@/types';
@@ -47,6 +56,8 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
   const config = widget.config as MiniAppConfig;
   const { globalConfig } = useMiniAppGlobalConfig();
   const lastSharedIdRef = useRef<string | null>(null);
+  const [isCreatingSheet, setIsCreatingSheet] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const shareSheetWithBot = useCallback(
     async (sheetId: string) => {
@@ -59,36 +70,84 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
         addToast('Sheet linked and shared with system!', 'success');
       } catch (e) {
         console.error(e);
-        addToast(
-          'Failed to share sheet. Check your drive permissions.',
-          'error'
-        );
+        const errorMsg = e instanceof Error ? e.message : '';
+        if (
+          errorMsg.includes('403') ||
+          errorMsg.includes('Authorization') ||
+          errorMsg.includes('appNotAuthorizedToFile')
+        ) {
+          addToast(
+            `Permission denied. Please click 'Reset' to create a new sheet or manually share your existing sheet with ${globalConfig.botEmail} as an Editor.`,
+            'error'
+          );
+        } else {
+          addToast(
+            'Failed to share sheet. Check your drive permissions.',
+            'error'
+          );
+        }
       }
     },
     [driveService, globalConfig, addToast]
   );
 
-  // 3. TEACHER HANDLERS: Auto-share the Google Sheet
+  // 3. TEACHER HANDLERS: Auto-create/share the Google Sheet
   const handleToggleCollect = async (checked: boolean) => {
     updateWidget(widget.id, {
       config: { ...config, collectResults: checked },
     });
 
-    if (checked && config.googleSheetId) {
+    if (checked && !config.googleSheetId) {
+      await handleCreateNewSheet();
+    } else if (checked && config.googleSheetId) {
       await shareSheetWithBot(config.googleSheetId);
     }
   };
 
-  const handleUrlChange = async (url: string) => {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    const sheetId = match ? match[1] : '';
-
+  const handleUnlinkSheet = () => {
     updateWidget(widget.id, {
-      config: { ...config, googleSheetUrl: url, googleSheetId: sheetId },
+      config: {
+        ...config,
+        googleSheetUrl: undefined,
+        googleSheetId: undefined,
+      },
     });
+    lastSharedIdRef.current = null;
+    addToast('Sheet unlinked.', 'info');
+  };
 
-    if (config.collectResults && sheetId) {
-      await shareSheetWithBot(sheetId);
+  const handleCreateNewSheet = async () => {
+    if (!driveService || !globalConfig?.botEmail) {
+      addToast('Google Drive not connected or system bot not ready.', 'error');
+      return;
+    }
+
+    setIsCreatingSheet(true);
+    try {
+      const folderId = await driveService.getFolderPath('MiniApp Results');
+      const fileName = `${editTitle || 'Untitled App'} - Results`;
+      const sheet = await driveService.createSpreadsheet(fileName, folderId);
+
+      // Successfully created! Update widget config
+      const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheet.id}/edit`;
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          googleSheetUrl: sheetUrl,
+          googleSheetId: sheet.id,
+          collectResults: true,
+        },
+      });
+
+      // Now share it (this should work because we created it)
+      await driveService.addEditorPermission(sheet.id, globalConfig.botEmail);
+      lastSharedIdRef.current = sheet.id;
+      addToast('New results sheet created and shared!', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to create sheet automatically.', 'error');
+    } finally {
+      setIsCreatingSheet(false);
     }
   };
 
@@ -206,36 +265,104 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
           {/* Results Collection Section */}
           <div className="bg-slate-50 border-t border-slate-200 p-4 shrink-0 flex flex-col gap-3 -mx-4 -mb-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-widest text-slate-500">
-                Collect Live Results
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  Collect Live Results
+                </span>
+                <button
+                  onClick={() => setShowHelp(!showHelp)}
+                  className="p-1 text-slate-400 hover:text-indigo-500 transition-colors"
+                  title="How to use results collection"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <Toggle
                 checked={!!config.collectResults}
                 onChange={handleToggleCollect}
               />
             </div>
 
+            {showHelp && (
+              <div className="p-3 bg-white border border-indigo-100 rounded-xl space-y-2 animate-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xxs font-black text-indigo-600 uppercase tracking-widest">
+                    Developer Guide
+                  </h4>
+                  <button
+                    onClick={() => setShowHelp(false)}
+                    className="text-slate-300 hover:text-slate-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-600 leading-relaxed">
+                  To save data to your sheet, your app must send a message to
+                  the parent window. Include this code in your mini-app&apos;s
+                  JavaScript:
+                </p>
+                <pre className="p-2 bg-slate-900 rounded-lg text-[9px] text-emerald-400 font-mono overflow-x-auto">
+                  {`window.parent.postMessage({
+  type: 'SPART_MINIAPP_RESULT',
+  payload: {
+    score: 100,
+    item: 'Apple'
+  }
+}, '*');`}
+                </pre>
+                <p className="text-[9px] text-slate-400 italic">
+                  Note: The payload can be any JSON object.
+                </p>
+              </div>
+            )}
+
             {config.collectResults && (
               <div className="animate-in fade-in slide-in-from-top-2">
-                <label className="block text-xxs font-bold uppercase text-slate-400 mb-1">
-                  Google Sheet URL
-                </label>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 text-slate-400 pointer-events-none">
-                    <Box size={16} />
+                {isCreatingSheet ? (
+                  <div className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                    <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                    <span className="text-xs font-bold text-indigo-700 uppercase tracking-tight">
+                      Creating your results sheet...
+                    </span>
                   </div>
-                  <input
-                    type="text"
-                    value={config.googleSheetUrl ?? ''}
-                    onChange={(e) => void handleUrlChange(e.target.value)}
-                    placeholder="Paste your Google Sheet link here..."
-                    className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-400 text-slate-700 font-bold"
-                  />
-                </div>
-                {config.googleSheetId && (
-                  <p className="text-xxs text-emerald-500 font-bold mt-1 uppercase tracking-wider">
-                    ✓ Sheet Connected & Ready
-                  </p>
+                ) : config.googleSheetId ? (
+                  <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                        <span className="text-xs font-bold text-emerald-700 uppercase tracking-tight truncate">
+                          Results Linked
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-emerald-600/70 font-medium truncate">
+                        Google Sheet is connected
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={handleUnlinkSheet}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Unlink and use a different sheet"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <a
+                        href={config.googleSheetUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xxs font-black uppercase tracking-widest transition-all shadow-sm flex items-center gap-1.5"
+                      >
+                        <Globe className="w-3 h-3" />
+                        Open
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl">
+                    <p className="text-xxs text-slate-500 font-bold uppercase tracking-tight">
+                      Sheet will be created automatically.
+                    </p>
+                  </div>
                 )}
               </div>
             )}

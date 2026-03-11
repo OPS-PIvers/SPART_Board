@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutGrid, Users, Cast, Square } from 'lucide-react';
+import { LayoutGrid, Users, Cast, Square, Smartphone } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -562,8 +562,8 @@ export const Dock: React.FC = () => {
         <div
           className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             isExpanded
-              ? 'scale-100 opacity-100 rotate-0'
-              : 'scale-50 opacity-0 pointer-events-none absolute translate-y-12 rotate-3'
+              ? 'scale-100 opacity-100'
+              : 'scale-50 opacity-0 pointer-events-none absolute translate-y-12'
           }`}
         >
           {/* Widget Library Modal (Triggered by button) */}
@@ -876,6 +876,23 @@ export const Dock: React.FC = () => {
                       <DockLabel>{t('sidebar.header.live')}</DockLabel>
                     </button>
 
+                    {/* REMOTE CONTROL BUTTON */}
+                    {canAccessFeature('remote-control') && (
+                      <button
+                        onClick={() => window.open('/remote', '_blank')}
+                        aria-label="Open Remote Control"
+                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
+                      >
+                        <DockIcon
+                          color="bg-slate-800"
+                          className="flex items-center justify-center shadow-lg group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-slate-400 group-focus-visible:ring-offset-2"
+                        >
+                          <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                        </DockIcon>
+                        <DockLabel>Remote</DockLabel>
+                      </button>
+                    )}
+
                     {/* LIVE POPOVER */}
                     {showLiveInfo &&
                       livePopoverPos &&
@@ -957,8 +974,8 @@ export const Dock: React.FC = () => {
         <div
           className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             !isExpanded
-              ? 'scale-100 opacity-100 rotate-0'
-              : 'scale-150 opacity-0 pointer-events-none absolute -rotate-180'
+              ? 'scale-100 opacity-100'
+              : 'scale-150 opacity-0 pointer-events-none absolute'
           }`}
         >
           {/* Compressed down to a single icon (plus quick access) */}

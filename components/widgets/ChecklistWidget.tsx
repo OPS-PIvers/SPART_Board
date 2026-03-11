@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   ChecklistConfig,
@@ -21,6 +28,11 @@ import {
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { SettingsLabel } from '../common/SettingsLabel';
 
+// Minimum font size (px) — below this items scroll rather than become unreadable.
+const CHECKLIST_MIN_FONT_PX = 8;
+// Maximum font size (px) before scaleMultiplier is applied.
+const CHECKLIST_MAX_FONT_PX = 48;
+
 interface ChecklistRowProps {
   id: string;
   label: string;
@@ -30,10 +42,22 @@ interface ChecklistRowProps {
 
 const ChecklistRow = React.memo<ChecklistRowProps>(
   ({ id, label, isCompleted, onToggle }) => {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      // Prevent page scroll on Space; block key-repeat for both keys
+      if (e.key === ' ') e.preventDefault();
+      if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+        onToggle(id);
+      }
+    };
     return (
       <li
+        role="checkbox"
+        aria-checked={isCompleted}
+        tabIndex={0}
         onClick={() => onToggle(id)}
-        className="group/item flex items-start gap-3 cursor-pointer select-none"
+        onKeyDown={handleKeyDown}
+        className="group/item flex items-start cursor-pointer select-none"
+        style={{ gap: 'min(8px, 2cqmin)' }}
       >
         <div className="shrink-0 transition-transform active:scale-90 flex items-center justify-center h-[1.2em]">
           {isCompleted ? (
@@ -178,6 +202,67 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
+  // Refs for the scrollable container and the item list
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [fontSize, setFontSize] = useState(14);
+
+  // STABILITY FIX: Use debounced dimensions instead of ResizeObserver to avoid
+  // feedback loops.
+  const debouncedW = useDebounce(widget.w, 100);
+  const debouncedH = useDebounce(widget.h, 100);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const fitText = () => {
+      const itemCount = mode === 'manual' ? items.length : students.length;
+      if (itemCount === 0) return;
+
+      const cs = getComputedStyle(container);
+      const availableHeight =
+        container.clientHeight -
+        parseFloat(cs.paddingTop) -
+        parseFloat(cs.paddingBottom);
+
+      if (availableHeight <= 0) return;
+
+      // DETERMINISTIC CALCULATION:
+      // We want to fit N items into availableHeight.
+      // Each item is 1em (text) + 0.4em (gap) = 1.4em total height per item.
+      // Final item doesn't have a gap below it, so: Height = (N * 1.4em) - 0.4em
+      // fontSize = Height / (N * 1.4 - 0.4)
+      // We add a 5% safety margin to account for line-height variations.
+      const rawFontSize = (availableHeight * 0.95) / (itemCount * 1.4 - 0.4);
+
+      // Clamp to min/max
+      const maxFontSize = CHECKLIST_MAX_FONT_PX * scaleMultiplier;
+      const clampedSize = Math.min(
+        maxFontSize,
+        Math.max(CHECKLIST_MIN_FONT_PX, rawFontSize)
+      );
+
+      // Round DOWN to nearest 0.1px for consistency
+      const finalSize = Math.floor(clampedSize * 10) / 10;
+
+      setFontSize((current) => {
+        // Hysteresis: Only update if change > 0.5px to prevent jitter during resize
+        if (Math.abs(current - finalSize) < 0.5) return current;
+        return finalSize;
+      });
+    };
+
+    fitText();
+  }, [
+    debouncedW,
+    debouncedH,
+    items.length,
+    students.length,
+    mode,
+    scaleMultiplier,
+  ]);
+
   if (!hasContent) {
     return (
       <WidgetLayout
@@ -217,17 +302,19 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
-          style={{
-            fontSize: `min(${20 * scaleMultiplier}px, ${5 * scaleMultiplier}cqmin)`,
-          }}
         >
           <div
+            ref={containerRef}
             className="flex-1 overflow-y-auto custom-scrollbar"
             style={{
               padding: 'min(12px, 2.5cqmin) min(16px, 3.5cqmin)',
             }}
           >
-            <ul style={{ gap: '0.4em' }} className="flex flex-col">
+            <ul
+              ref={listRef}
+              style={{ gap: '0.4em', fontSize: `${fontSize}px` }}
+              className="flex flex-col"
+            >
               {mode === 'manual'
                 ? items.map((item) => (
                     <ChecklistRow

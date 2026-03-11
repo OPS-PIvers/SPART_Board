@@ -54,7 +54,20 @@ const serializeDashboard = (d: Dashboard): string =>
     background: d.background,
     name: d.name,
     libraryOrder: d.libraryOrder,
+    settings: d.settings,
   });
+
+/** Capture the serialized state used to populate lastSaved* refs. */
+const getDashboardSaveState = (d: Dashboard) => ({
+  serializedData: serializeDashboard(d),
+  fields: {
+    widgets: JSON.stringify(d.widgets),
+    background: d.background,
+    name: d.name,
+    libraryOrder: JSON.stringify(d.libraryOrder ?? []),
+    settings: JSON.stringify(d.settings ?? {}),
+  },
+});
 
 const PERSISTED_WIDGET_TYPES: WidgetType[] = [
   'schedule',
@@ -212,6 +225,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Refs to prevent race conditions
   const lastLocalUpdateAt = useRef<number>(0);
+  // True when the most recent dashboard change was a settings-only update
+  // (e.g. spotlight/maximize toggle).  Used to apply a faster Firestore
+  // write debounce for these small, high-priority changes.
+  const lastUpdateWasSettingsOnly = useRef<boolean>(false);
   // Counter (not boolean) to correctly track overlapping in-flight saves
   const pendingSaveCountRef = useRef<number>(0);
   // Tracks Drive file IDs for PII supplements per dashboard to enable in-place updates
@@ -230,7 +247,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // --- DRIVE WRAPPERS & CALLBACKS ---
 
   const saveDashboard = useCallback(
-    async (dashboard: Dashboard) => {
+    async (dashboard: Dashboard): Promise<number> => {
       // Always save to Firestore for real-time sync
       let driveFileId = dashboard.driveFileId;
 
@@ -269,7 +286,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch (e) {
           // Abort Firestore save to avoid losing PII when Drive is temporarily unavailable.
           console.error('[PII] Failed to save PII supplement to Drive:', e);
-          return;
+          // Reject so callers treat this as a genuine failure rather than a
+          // silent success — prevents success toasts, ref updates, and
+          // localStorage removal in migration from happening on an aborted save.
+          throw new Error(
+            '[PII] Aborted dashboard save because PII supplement could not be saved to Drive'
+          );
         }
       }
 
@@ -278,7 +300,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       // NEVER reach Firestore — they are preserved in Drive only.
       const scrubbed = scrubDashboardPII(dashboard);
 
-      await saveDashboardFirestore({
+      return saveDashboardFirestore({
         ...scrubbed,
         driveFileId,
       });
@@ -288,8 +310,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const saveDashboards = useCallback(
     async (dashboardsToSave: Dashboard[]) => {
-      // For plural saves (like reordering), we'll do Firestore first
-      await saveDashboardsFirestore(dashboardsToSave);
+      // For plural saves (like reordering), we'll do Firestore first.
+      // CRITICAL: Scrub PII from every dashboard before writing to Firestore.
+      await saveDashboardsFirestore(dashboardsToSave.map(scrubDashboardPII));
 
       // Then background sync to Drive
       if (!isAdmin && driveService) {
@@ -401,86 +424,136 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           });
         }
 
-        setDashboards((prev) => {
-          const now = Date.now();
-          const isRecentlyUpdatedLocally =
-            now - lastLocalUpdateAt.current < 5000;
+        // ---- Conflict-detection and merge ----
+        // All ref reads and writes happen here, OUTSIDE the setDashboards
+        // callback, because React StrictMode double-invokes state updater
+        // functions and any ref mutation inside that callback would corrupt
+        // the state on the second (committed) invocation — causing every
+        // second phone remote action to be silently rejected.
+        const currentActive = dashboardsRef.current.find(
+          (p) => p.id === activeIdRef.current
+        );
 
-          // Check if local state has unsaved changes by comparing against
-          // what was last saved. This prevents server data from overwriting
-          // local edits that haven't been flushed yet.
-          const currentActive = prev.find((p) => p.id === activeIdRef.current);
-          const hasUnsavedLocalChanges =
-            currentActive &&
-            lastSavedDataRef.current !== '' &&
-            serializeDashboard(currentActive) !== lastSavedDataRef.current;
+        // Initialize (or re-initialize on dashboard switch) saved-data refs
+        // from the CURRENT LOCAL STATE, not the incoming server snapshot.
+        // Initialising from the server snapshot would make hasUnsavedLocalChanges
+        // incorrectly true on the desktop, blocking every phone remote update.
+        // Re-initialize on dashboard switch so stale refs from the previous
+        // dashboard don't incorrectly flag unsaved changes on the new one.
+        if (
+          currentActive &&
+          (lastSavedDataRef.current === '' ||
+            currentActive.id !== lastSavedDashboardIdRef.current)
+        ) {
+          const { serializedData: initData, fields: initFields } =
+            getDashboardSaveState(currentActive);
+          lastSavedDataRef.current = initData;
+          lastSavedFieldsRef.current = initFields;
+          lastSavedDashboardIdRef.current = currentActive.id;
+        }
 
-          // Detect stale snapshots from Firestore latency compensation
-          const serverActive = migratedDashboards.find(
-            (d) => d.id === activeIdRef.current
-          );
-          // Use <= to handle cases where timestamps match exactly (fast echoes)
-          const isStaleSnapshot =
-            serverActive &&
-            (serverActive.updatedAt ?? 0) <= lastSavedAtRef.current;
+        const now = Date.now();
+        const isRecentlyUpdatedLocally = now - lastLocalUpdateAt.current < 5000;
 
-          if (
-            hasPendingWrites ||
-            isRecentlyUpdatedLocally ||
-            hasUnsavedLocalChanges ||
-            pendingSaveCountRef.current > 0 ||
-            isStaleSnapshot
-          ) {
-            return migratedDashboards.map((db) => {
-              if (db.id === activeIdRef.current && currentActive) {
-                // If we have pending writes, this snapshot is just a local echo of what we
-                // just did. Trust our current active state completely to avoid reverts.
-                if (hasPendingWrites) {
-                  return currentActive;
-                }
+        // Check if local state has unsaved changes by comparing against
+        // what was last saved. This prevents server data from overwriting
+        // local edits that haven't been flushed yet.
+        const hasUnsavedLocalChanges =
+          currentActive &&
+          lastSavedDataRef.current !== '' &&
+          serializeDashboard(currentActive) !== lastSavedDataRef.current;
 
-                // If the snapshot is stale (older than our last save), ignore it completely
-                // and keep our local state to prevent overwriting with old data.
-                if (isStaleSnapshot) {
-                  return currentActive;
-                }
+        // Detect stale snapshots from Firestore latency compensation
+        const serverActive = migratedDashboards.find(
+          (d) => d.id === activeIdRef.current
+        );
+        // Use <= to handle cases where timestamps match exactly (fast echoes)
+        const isStaleSnapshot =
+          serverActive &&
+          (serverActive.updatedAt ?? 0) <= lastSavedAtRef.current;
 
-                // SURGICAL MERGE: Start from server snapshot but only preserve
-                // locally-modified fields. Fields unchanged locally accept the
-                // server value, so remote edits (e.g. name change in another
-                // tab) aren't discarded when only widgets changed locally.
-                const localWidgets = JSON.stringify(currentActive.widgets);
-                const widgetsChangedLocally =
-                  localWidgets !== lastSavedFieldsRef.current.widgets;
-                const backgroundChangedLocally =
-                  currentActive.background !==
-                  lastSavedFieldsRef.current.background;
-                const nameChangedLocally =
-                  currentActive.name !== lastSavedFieldsRef.current.name;
-                const libraryOrderChangedLocally =
-                  currentActive.libraryOrder &&
-                  JSON.stringify(currentActive.libraryOrder) !==
-                    lastSavedFieldsRef.current.libraryOrder;
+        let newDashboards: Dashboard[];
 
-                return {
-                  ...db,
-                  ...(widgetsChangedLocally && {
-                    widgets: currentActive.widgets,
-                  }),
-                  ...(backgroundChangedLocally && {
-                    background: currentActive.background,
-                  }),
-                  ...(nameChangedLocally && { name: currentActive.name }),
-                  ...(libraryOrderChangedLocally && {
-                    libraryOrder: currentActive.libraryOrder,
-                  }),
-                };
+        if (
+          hasPendingWrites ||
+          isRecentlyUpdatedLocally ||
+          hasUnsavedLocalChanges ||
+          pendingSaveCountRef.current > 0 ||
+          isStaleSnapshot
+        ) {
+          newDashboards = migratedDashboards.map((db) => {
+            if (db.id === activeIdRef.current && currentActive) {
+              // If we have pending writes, this snapshot is just a local echo of what we
+              // just did. Trust our current active state completely to avoid reverts.
+              if (hasPendingWrites) {
+                return currentActive;
               }
-              return db;
-            });
+
+              // If the snapshot is stale (older than our last save), ignore it completely
+              // and keep our local state to prevent overwriting with old data.
+              if (isStaleSnapshot) {
+                return currentActive;
+              }
+
+              // SURGICAL MERGE: Start from server snapshot but only preserve
+              // locally-modified fields. Fields unchanged locally accept the
+              // server value, so remote edits (e.g. name change in another
+              // tab) aren't discarded when only widgets changed locally.
+              const localWidgetsJson = JSON.stringify(currentActive.widgets);
+              const widgetsChangedLocally =
+                localWidgetsJson !== lastSavedFieldsRef.current.widgets;
+              const backgroundChangedLocally =
+                currentActive.background !==
+                lastSavedFieldsRef.current.background;
+              const nameChangedLocally =
+                currentActive.name !== lastSavedFieldsRef.current.name;
+              const libraryOrderChangedLocally =
+                currentActive.libraryOrder &&
+                JSON.stringify(currentActive.libraryOrder) !==
+                  lastSavedFieldsRef.current.libraryOrder;
+              const settingsChangedLocally =
+                JSON.stringify(currentActive.settings ?? {}) !==
+                (lastSavedFieldsRef.current.settings ?? '{}');
+
+              return {
+                ...db,
+                widgets: widgetsChangedLocally
+                  ? currentActive.widgets
+                  : db.widgets,
+                background: backgroundChangedLocally
+                  ? currentActive.background
+                  : db.background,
+                name: nameChangedLocally ? currentActive.name : db.name,
+                libraryOrder: libraryOrderChangedLocally
+                  ? currentActive.libraryOrder
+                  : db.libraryOrder,
+                settings: settingsChangedLocally
+                  ? currentActive.settings
+                  : db.settings,
+              };
+            }
+            return db;
+          });
+        } else {
+          // No local conflicts — accept the server state. Sync all saved-data
+          // refs to match so that subsequent phone remote changes don't
+          // incorrectly trigger hasUnsavedLocalChanges on the desktop, and so
+          // the structural-change debounce baseline stays accurate.
+          if (serverActive) {
+            const { serializedData: serverData, fields: serverFields } =
+              getDashboardSaveState(serverActive);
+            lastSavedDataRef.current = serverData;
+            lastSavedFieldsRef.current = serverFields;
+            lastWidgetCountRef.current = serverActive.widgets.length;
+            lastSavedDashboardIdRef.current = serverActive.id;
+            if (serverActive.updatedAt) {
+              lastSavedAtRef.current = serverActive.updatedAt;
+            }
           }
-          return migratedDashboards;
-        });
+          newDashboards = migratedDashboards;
+        }
+
+        setDashboards(newDashboards);
 
         // Update libraryOrder state from active dashboard if it changed on server
         const activeOnServer = migratedDashboards.find(
@@ -505,16 +578,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             widgets: [],
             createdAt: Date.now(),
           };
-          void saveDashboard(defaultDb).then(() => {
-            setToasts((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                message: 'Welcome! Board created',
-                type: 'info' as const,
-              },
-            ]);
-          });
+          void saveDashboard(defaultDb)
+            .then(() => {
+              setToasts((prev) => [
+                ...prev,
+                {
+                  id: crypto.randomUUID(),
+                  message: 'Welcome! Board created',
+                  type: 'info' as const,
+                },
+              ]);
+            })
+            .catch(console.error);
         }
 
         setLoading(false);
@@ -565,6 +640,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const lastSavedDataRef = useRef<string>('');
   const lastSavedAtRef = useRef<number>(0);
   const lastWidgetCountRef = useRef<number>(0);
+  // Track which dashboard the saved-data refs correspond to so they can be
+  // re-initialised when the user switches dashboards.
+  const lastSavedDashboardIdRef = useRef<string | null>(null);
   // Track per-field last-saved state so the surgical merge can determine
   // which fields actually changed locally vs. which should accept server updates.
   const lastSavedFieldsRef = useRef<{
@@ -572,7 +650,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     background: string;
     name: string;
     libraryOrder: string;
-  }>({ widgets: '', background: '', name: '', libraryOrder: '' });
+    settings: string;
+  }>({ widgets: '', background: '', name: '', libraryOrder: '', settings: '' });
 
   useEffect(() => {
     // Capture ref value for stable cleanup (react-hooks/exhaustive-deps)
@@ -602,14 +681,53 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // First run after initial load OR after a dashboard switch: initialize save
+    // refs from the loaded data WITHOUT triggering a redundant Firestore write.
+    //
+    // Without this guard the first effect run (or post-switch run) would see
+    // lastSavedDataRef.current differing from currentData and schedule a write
+    // of the just-loaded Firestore data back to Firestore.  That write advances
+    // lastSavedAtRef.current to the current time, causing the isStaleSnapshot
+    // check in the onSnapshot handler to block ANY concurrent remote-control
+    // update whose Firestore updatedAt timestamp falls within the round-trip
+    // window — making the /remote URL appear to have no effect on the main board.
+    const isDashboardSwitch =
+      lastSavedDashboardIdRef.current !== null &&
+      lastSavedDashboardIdRef.current !== active.id;
+    if (lastSavedDataRef.current === '' || isDashboardSwitch) {
+      const { serializedData: initSavedData, fields: initSavedFields } =
+        getDashboardSaveState(active);
+      lastSavedDataRef.current = initSavedData;
+      lastSavedFieldsRef.current = initSavedFields;
+      lastWidgetCountRef.current = active.widgets.length;
+      lastSavedDashboardIdRef.current = active.id;
+      // Seed the stale-snapshot guard from the dashboard's own updatedAt so
+      // that any remote save with a more-recent timestamp is accepted immediately.
+      if (active.updatedAt) {
+        lastSavedAtRef.current = active.updatedAt;
+      }
+      if (pendingSaveCountRef.current === 0) {
+        setIsSaving(false);
+      }
+      return;
+    }
+
     // Detect structural changes (adding/removing widgets) for more aggressive saving
     const isStructuralChange =
       active.widgets.length !== lastWidgetCountRef.current;
-    const debounceMs = isStructuralChange ? 200 : 800; // 200ms for add/remove, 800ms for config/moving
+    // Settings-only changes (spotlight, maximize) are small and urgent —
+    // use a fast 100 ms debounce so the desktop board reflects remote-
+    // controlled presentation changes with minimal perceived delay.
+    const debounceMs = isStructuralChange
+      ? 200 // add/remove widget
+      : lastUpdateWasSettingsOnly.current
+        ? 100 // settings toggle (spotlight, maximize, etc.)
+        : 800; // widget config / position
 
     const showSavingTimer = setTimeout(() => setIsSaving(true), 0);
     auxTimers.add(showSavingTimer);
     saveTimerRef.current = setTimeout(() => {
+      lastUpdateWasSettingsOnly.current = false; // reset after consuming debounce
       const savedData = currentData;
       // Capture per-field state at save time for field-granular merge decisions
       const savedFields = {
@@ -617,16 +735,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         background: active.background,
         name: active.name,
         libraryOrder: JSON.stringify(active.libraryOrder),
+        settings: JSON.stringify(active.settings),
       };
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
       saveDashboard(active)
-        .then(() => {
-          // Only update refs on success so failed saves are retried
-          const now = Date.now();
+        .then((savedUpdatedAt) => {
+          // Use the timestamp that was actually written to Firestore (captured
+          // before the setDoc call) rather than Date.now() after the round-trip.
+          // This prevents the ~200 ms inflation that would otherwise cause the
+          // isStaleSnapshot check to block concurrent remote-control updates.
           lastSavedDataRef.current = savedData;
           lastSavedFieldsRef.current = savedFields;
-          lastSavedAtRef.current = now;
+          lastSavedAtRef.current = savedUpdatedAt;
           pendingSaveCountRef.current = Math.max(
             0,
             pendingSaveCountRef.current - 1
@@ -694,7 +815,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           lastExportedDataRef.current = currentData;
           // If we got a new ID (e.g. first sync), save it back to Firestore silently
           if (newFileId !== active.driveFileId) {
-            void saveDashboardFirestore({ ...active, driveFileId: newFileId });
+            // CRITICAL: Scrub PII before writing directly to Firestore.
+            void saveDashboardFirestore({
+              ...scrubDashboardPII(active),
+              driveFileId: newFileId,
+            });
           }
         })
         .catch((err: unknown) => {
@@ -1335,6 +1460,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (activeId === id) {
         lastLocalUpdateAt.current = Date.now();
+        lastUpdateWasSettingsOnly.current = false;
       }
 
       saveDashboard(updated)
@@ -1569,6 +1695,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (type: WidgetType, overrides?: AddWidgetOverrides) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
 
       const adminConfig = getAdminBuildingConfig(type);
 
@@ -1616,6 +1743,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     ) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
 
       setDashboards((prev) =>
         prev.map((d) => {
@@ -1728,6 +1856,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) =>
           d.id === activeId
@@ -1743,6 +1872,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeId) return d;
@@ -1769,6 +1899,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (ids: string[]) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) =>
           d.id === activeId
@@ -1793,6 +1924,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const clearAllWidgets = useCallback(() => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
     );
@@ -1803,6 +1935,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string, updates: Partial<WidgetData>) => {
       if (!activeIdRef.current) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeIdRef.current) return d;
@@ -1854,6 +1987,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (target && target.z < maxZ) {
         lastLocalUpdateAt.current = Date.now();
+        lastUpdateWasSettingsOnly.current = false;
         return prev.map((d) => {
           if (d.id !== activeIdRef.current) return d;
           return {
@@ -1896,6 +2030,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             widgets[idx].z = idx + 1;
             widgets[idx + 1].z = idx;
             lastLocalUpdateAt.current = Date.now();
+            lastUpdateWasSettingsOnly.current = false;
           } else {
             return prev;
           }
@@ -1906,6 +2041,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             widgets[idx].z = idx - 1;
             widgets[idx - 1].z = idx;
             lastLocalUpdateAt.current = Date.now();
+            lastUpdateWasSettingsOnly.current = false;
           } else {
             return prev;
           }
@@ -1922,6 +2058,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const minimizeAllWidgets = useCallback(() => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) =>
         d.id === activeId
@@ -1941,6 +2078,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteAllWidgets = useCallback(() => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
     );
@@ -1951,6 +2089,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeId) return d;
@@ -1975,6 +2114,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const setBackground = useCallback((bg: string) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) =>
         d.id === activeIdRef.current ? { ...d, background: bg } : d
@@ -1986,6 +2126,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (updates: Partial<Dashboard['settings']>) => {
       if (!activeIdRef.current) return;
       lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = true;
       setDashboards((prev) =>
         prev.map((d) =>
           d.id === activeIdRef.current
@@ -2006,6 +2147,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateDashboard = useCallback((updates: Partial<Dashboard>) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) => (d.id === activeIdRef.current ? { ...d, ...updates } : d))
     );
@@ -2014,6 +2156,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const setGlobalStyle = useCallback((style: Partial<GlobalStyle>) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
     setDashboards((prev) =>
       prev.map((d) =>
         d.id === activeIdRef.current

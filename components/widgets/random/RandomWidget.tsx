@@ -45,12 +45,15 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     lastNames = '',
     mode = 'single',
     soundEnabled = true,
-    remainingStudents = [],
     rosterMode = 'class',
     autoStartTimer = false,
     visualStyle = 'flash',
     groupSize = 3,
   } = config;
+
+  const remainingStudents = Array.isArray(config.remainingStudents)
+    ? config.remainingStudents
+    : [];
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<

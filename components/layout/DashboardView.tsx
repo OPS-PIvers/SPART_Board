@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Z_INDEX } from '@/config/zIndex';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '@/context/useDashboard';
 import { isExternalBackground } from '@/utils/backgrounds';
@@ -32,7 +33,13 @@ const EMPTY_STUDENTS: LiveStudent[] = [];
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
-    <div className="fixed top-6 right-6 z-toast space-y-3 pointer-events-none">
+    <div
+      className="fixed z-toast space-y-3 pointer-events-none"
+      style={{
+        top: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+        right: 'calc(1.5rem + env(safe-area-inset-right, 0px))',
+      }}
+    >
       {toasts.map((toast) => {
         const getStyles = () => {
           switch (toast.type) {
@@ -111,7 +118,7 @@ export const DashboardView: React.FC = () => {
     minimizeAllWidgets,
     deleteAllWidgets,
     setSelectedWidgetId,
-    zoom,
+    updateDashboardSettings,
     setZoom,
   } = useDashboard();
   const { uploadAndRegisterPdf } = useStorage();
@@ -163,14 +170,75 @@ export const DashboardView: React.FC = () => {
   const [animationClass, setAnimationClass] =
     React.useState<string>('animate-fade-in');
   const [isMinimized, setIsMinimized] = React.useState(false);
-  const [zoomOrigin, setZoomOrigin] = React.useState({ x: 50, y: 50 });
+
+  const dashboardRef = React.useRef<HTMLDivElement>(null);
+  // Cached per-gesture: did the touch start inside a scrollable widget?
+  const touchStartInScrollable = React.useRef(false);
+
+  // Prevent iOS Safari viewport bounce on the board background.
+  // Strategy:
+  //  - On touchstart: walk the DOM once (getComputedStyle is expensive) to
+  //    determine whether the touch originated inside a scrollable element.
+  //    Cache the result so touchmove is O(1).
+  //  - On touchmove: multi-touch (pinch / 4-finger gestures) always calls
+  //    preventDefault() so our custom zoom/swipe handlers win regardless of
+  //    where the fingers landed.  Single-touch only prevents the bounce if
+  //    the gesture did NOT start inside a scrollable widget.
+  //  - Guard every preventDefault() with e.cancelable (required by spec when
+  //    the listener is already in a non-cancelable scroll sequence).
+  React.useEffect(() => {
+    const el = dashboardRef.current;
+    if (!el) return;
+
+    const hasScrollableAncestor = (target: EventTarget | null): boolean => {
+      let node: Node | null = target as Node;
+      while (node && node !== el) {
+        if (node instanceof HTMLElement) {
+          const { overflowY, overflowX } = window.getComputedStyle(node);
+          const scrollableY =
+            (overflowY === 'auto' || overflowY === 'scroll') &&
+            node.scrollHeight > node.clientHeight;
+          const scrollableX =
+            (overflowX === 'auto' || overflowX === 'scroll') &&
+            node.scrollWidth > node.clientWidth;
+          if (scrollableY || scrollableX) return true;
+        }
+        node = (node as HTMLElement).parentElement;
+      }
+      return false;
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartInScrollable.current = hasScrollableAncestor(e.target);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!e.cancelable) return;
+      // Multi-touch gestures (pinch-zoom, 4-finger swipe) must always be
+      // intercepted so our custom handlers aren't bypassed by the browser.
+      if (e.touches.length > 1) {
+        e.preventDefault();
+        return;
+      }
+      // Single touch: allow the browser to handle it (so widget lists can
+      // scroll) only if the gesture started inside a scrollable ancestor.
+      if (!touchStartInScrollable.current) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
 
   // Gesture Tracking
   const gestureStart = React.useRef<{ x: number; y: number } | null>(null);
   const gestureCurrent = React.useRef<{ x: number; y: number } | null>(null);
   const isFourFingerGesture = React.useRef(false);
-  const initialPinchDistance = React.useRef<number | null>(null);
-  const initialZoom = React.useRef<number>(1);
   const MIN_SWIPE_DISTANCE_PX = 100;
 
   // Background YouTube audio control
@@ -332,28 +400,10 @@ export const DashboardView: React.FC = () => {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
       };
-    } else if (e.touches.length === 2) {
-      // Pinch tracking
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const dist = Math.hypot(
-        touch1.clientX - touch2.clientX,
-        touch1.clientY - touch2.clientY
-      );
-      initialPinchDistance.current = dist;
-      initialZoom.current = zoom;
-
-      // Set zoom origin to midpoint of the two fingers
-      const midX = (touch1.clientX + touch2.clientX) / 2;
-      const midY = (touch1.clientY + touch2.clientY) / 2;
-      const percentX = (midX / window.innerWidth) * 100;
-      const percentY = (midY / window.innerHeight) * 100;
-      setZoomOrigin({ x: percentX, y: percentY });
     } else {
       isFourFingerGesture.current = false;
       gestureStart.current = null;
       gestureCurrent.current = null;
-      initialPinchDistance.current = null;
     }
   };
 
@@ -371,21 +421,6 @@ export const DashboardView: React.FC = () => {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
       };
-    } else if (
-      e.touches.length === 2 &&
-      initialPinchDistance.current !== null
-    ) {
-      e.preventDefault();
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const dist = Math.hypot(
-        touch1.clientX - touch2.clientX,
-        touch1.clientY - touch2.clientY
-      );
-
-      const ratio = dist / initialPinchDistance.current;
-      const newZoom = Math.min(Math.max(0.5, initialZoom.current * ratio), 3);
-      setZoom(newZoom);
     }
   };
 
@@ -433,7 +468,6 @@ export const DashboardView: React.FC = () => {
       gestureStart.current = null;
       gestureCurrent.current = null;
     }
-    initialPinchDistance.current = null;
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -663,6 +697,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div
+      ref={dashboardRef}
       id="dashboard-root"
       className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses} ${fontClass}`}
       style={backgroundStyles}
@@ -707,17 +742,29 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
+      {/* Spotlight Dimming Overlay — dims everything except the spotlighted widget */}
+      {activeDashboard.settings?.spotlightWidgetId && (
+        <div
+          className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-all duration-500 ease-in-out"
+          style={{ zIndex: Z_INDEX.backdrop }}
+          onClick={() => updateDashboardSettings({ spotlightWidgetId: null })}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Dynamic Widget Surface */}
       <div
         key={activeDashboard.id}
         className={`relative w-full h-full ${animationClass} transition-all duration-500 ease-in-out`}
         style={{
-          transform: isMinimized
-            ? `translateY(80vh) scale(${zoom})`
-            : `scale(${zoom})`,
-          transformOrigin: isMinimized
-            ? 'bottom center'
-            : `${zoomOrigin.x}% ${zoomOrigin.y}%`,
+          // Only set transform when it actually changes something.
+          // transform: scale(1) still creates a CSS stacking context, which
+          // traps child z-indices and prevents the spotlighted widget from
+          // appearing above the backdrop overlay (z-index: 9900).
+          // When zoom === 1 and not minimized, omit the transform entirely so
+          // DraggableWindow z-indices participate in the root stacking context.
+          transform: isMinimized ? 'translateY(80vh)' : undefined,
+          transformOrigin: isMinimized ? 'bottom center' : 'center center',
           opacity: isMinimized ? 0 : 1,
           pointerEvents: isMinimized ? 'none' : 'auto',
         }}
@@ -749,6 +796,7 @@ export const DashboardView: React.FC = () => {
               globalStyle={globalStyle}
               dashboardBackground={activeDashboard.background}
               dashboardSettings={activeDashboard.settings}
+              updateDashboardSettings={updateDashboardSettings}
             />
           );
         })}
@@ -758,24 +806,6 @@ export const DashboardView: React.FC = () => {
       <Dock />
       <ToastContainer />
       <AnnouncementOverlay />
-
-      {/* Reset Zoom Indicator */}
-      {Math.abs(zoom - 1) > 0.01 && (
-        <div className="fixed top-20 right-6 z-toast animate-in fade-in zoom-in duration-200">
-          <button
-            onClick={() => setZoom(1)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-full text-white shadow-xl hover:bg-slate-800 transition-all group"
-          >
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-70 group-hover:opacity-100">
-              Zoom: {Math.round(zoom * 100)}%
-            </span>
-            <div className="w-px h-3 bg-white/20" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 group-hover:text-blue-300">
-              Reset
-            </span>
-          </button>
-        </div>
-      )}
 
       {/* Background YouTube Mute Toggle */}
       {youTubeVideoId && (

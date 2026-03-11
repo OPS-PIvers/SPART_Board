@@ -134,11 +134,10 @@ service cloud.firestore {
         // Student session records store only a PIN — no PII.
         // The student's anonymous auth UID is used as the document ID so that
         // Firestore rules can validate ownership without server-side logic.
-        // - Teacher (session owner) can read/write all student records
+        // - Authenticated users can read student records (to check for PIN duplicates)
         // - Students can create and update only their own record (for heartbeats/disconnects)
         // - Only teacher and admins can delete records
-        allow read: if request.auth != null &&
-          (request.auth.uid == userId || isAdmin());
+        allow read: if request.auth != null;
         allow create: if request.auth != null &&
           request.auth.uid == studentId;
         allow update: if request.auth != null &&
@@ -237,6 +236,18 @@ service cloud.firestore {
         allow read, delete: if request.auth != null && 
                             (isAdmin() || sessionId.matches(request.auth.uid + '_.*'));
       }
+    }
+
+    // AI Usage Tracking — users can increment their own daily count
+    match /ai_usage/{usageId} {
+      // Document ID is formatted as {uid}_{YYYY-MM-DD}
+      // Security rule replacement for startsWith: usageId >= prefix && usageId < prefix + '\uf8ff'
+      allow read: if request.auth != null && (
+        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff') || 
+        isAdmin()
+      );
+      allow write: if request.auth != null && 
+        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff');
     }
 
     // Default deny all other collections

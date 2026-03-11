@@ -160,6 +160,41 @@ export class GoogleDriveService {
   }
 
   /**
+   * Create a new Google Sheet in a specific Drive folder.
+   */
+  async createSpreadsheet(name: string, folderId?: string): Promise<DriveFile> {
+    const metadata: { name: string; mimeType: string; parents?: string[] } = {
+      name,
+      mimeType: 'application/vnd.google-apps.spreadsheet',
+    };
+    if (folderId) {
+      metadata.parents = [folderId];
+    }
+
+    const response = await this.fetchWithRetry(`${DRIVE_API_URL}/files`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(metadata),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(
+        '[GoogleDriveService.createSpreadsheet] Drive API error',
+        errorBody
+      );
+      throw new Error(`Failed to create spreadsheet: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as DriveFileCreateResponse;
+    return {
+      id: data.id,
+      name: data.name,
+      mimeType: 'application/vnd.google-apps.spreadsheet',
+    };
+  }
+
+  /**
    * Search for a folder by name within a parent folder.
    */
   async getOrCreateFolder(

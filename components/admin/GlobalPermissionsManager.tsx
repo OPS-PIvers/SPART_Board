@@ -20,6 +20,9 @@ import {
   Wand2,
   ClipboardCheck,
   BarChart,
+  Smartphone,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { Toggle } from '../common/Toggle';
 import { Toast } from '../common/Toast';
@@ -41,6 +44,13 @@ const GLOBAL_FEATURES: {
     label: 'Live Sessions',
     icon: Cast,
     description: 'Ability to host live sessions and sync with students.',
+  },
+  {
+    id: 'remote-control',
+    label: 'Remote Control',
+    icon: Smartphone,
+    description:
+      'Control your board from your phone while you move around the classroom.',
   },
   {
     id: 'dashboard-sharing',
@@ -75,6 +85,7 @@ const GLOBAL_FEATURES: {
 ];
 
 export const GlobalPermissionsManager: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [permissions, setPermissions] = useState<
     Map<string, GlobalFeaturePermission>
   >(new Map());
@@ -229,15 +240,218 @@ export const GlobalPermissionsManager: React.FC = () => {
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Header with View Toggle */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-slate-700">Global Settings</h2>
+        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-md transition-all ${
+              viewMode === 'grid'
+                ? 'bg-white text-brand-blue-primary shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+            title="Grid View"
+          >
+            <LayoutGrid size={20} />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-md transition-all ${
+              viewMode === 'list'
+                ? 'bg-white text-brand-blue-primary shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+            title="List View"
+          >
+            <List size={20} />
+          </button>
+        </div>
+      </div>
+
+      <div
+        className={
+          viewMode === 'grid'
+            ? 'grid grid-cols-1 md:grid-cols-2 gap-6'
+            : 'space-y-3'
+        }
+      >
         {GLOBAL_FEATURES.map((feature) => {
           const permission = getPermission(feature.id);
           const isSaving = saving.has(feature.id);
 
+          if (viewMode === 'list') {
+            return (
+              <div
+                key={feature.id}
+                className="bg-white border-2 border-slate-200 rounded-xl hover:border-brand-blue-light transition-colors overflow-hidden"
+              >
+                <div className="flex items-center gap-4 p-3">
+                  {/* Identity Section */}
+                  <div className="flex items-center gap-3 w-72 shrink-0">
+                    <div className="bg-brand-blue-lighter p-2 rounded-lg text-brand-blue-primary shrink-0">
+                      <feature.icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <h4 className="font-bold text-slate-800 text-sm truncate">
+                        {feature.label}
+                      </h4>
+                      <p className="text-xxs text-slate-500 truncate">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="w-px h-8 bg-slate-100 mx-2" />
+
+                  {/* Enabled Toggle */}
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xxs font-bold text-slate-400 uppercase">
+                      Enabled
+                    </span>
+                    <Toggle
+                      checked={permission.enabled}
+                      onChange={(checked) =>
+                        updatePermission(feature.id, {
+                          enabled: checked,
+                        })
+                      }
+                      size="sm"
+                    />
+                  </div>
+
+                  {/* Access Level Controls */}
+                  <div className="flex items-center gap-1 ml-4">
+                    {(['admin', 'beta', 'public'] as AccessLevel[]).map(
+                      (level) => (
+                        <button
+                          key={level}
+                          onClick={() =>
+                            updatePermission(feature.id, { accessLevel: level })
+                          }
+                          className={`px-2 py-1.5 rounded-md border text-xs font-medium flex items-center gap-1 transition-all ${
+                            permission.accessLevel === level
+                              ? getAccessLevelColor(level)
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {getAccessLevelIcon(level)}
+                          <span className="capitalize">{level}</span>
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  {/* Feature Specific Config (Gemini Limit) */}
+                  {feature.id === 'gemini-functions' && (
+                    <div className="flex items-center gap-2 ml-4 px-4 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
+                      <span className="text-xxs font-bold text-purple-700 uppercase tracking-tight">
+                        Daily Limit
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        value={(permission.config?.dailyLimit as number) ?? 20}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          updatePermission(feature.id, {
+                            config: {
+                              ...permission.config,
+                              dailyLimit: isNaN(val) ? 20 : val,
+                            },
+                          });
+                        }}
+                        className="w-16 px-2 py-0.5 border border-purple-200 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1" />
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-100">
+                    <button
+                      onClick={() => savePermission(feature.id)}
+                      disabled={isSaving}
+                      className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        unsavedChanges.has(feature.id)
+                          ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                          : 'text-slate-400 hover:bg-brand-blue-primary hover:text-white'
+                      }`}
+                      title={
+                        unsavedChanges.has(feature.id)
+                          ? 'Save Changes'
+                          : 'Save Settings'
+                      }
+                    >
+                      <Save className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Beta Users Panel */}
+                {permission.accessLevel === 'beta' && (
+                  <div className="border-t border-slate-100 bg-slate-50 p-4 text-left">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block">
+                      Beta Testers
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {permission.betaUsers.map((email) => (
+                        <div
+                          key={email}
+                          className="flex items-center gap-2 px-3 py-1 bg-white border border-blue-100 rounded-full group shadow-sm"
+                        >
+                          <span className="text-xs font-medium text-slate-700">
+                            {email}
+                          </span>
+                          <button
+                            onClick={() => removeBetaUser(feature.id, email)}
+                            className="text-red-500 hover:text-red-700 p-0.5 rounded-full transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2 max-w-md">
+                      <input
+                        type="email"
+                        placeholder="user@example.com"
+                        className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-primary bg-white shadow-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            addBetaUser(
+                              feature.id,
+                              (e.target as HTMLInputElement).value
+                            );
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={(e) => {
+                          const input = e.currentTarget
+                            .previousElementSibling as HTMLInputElement;
+                          addBetaUser(feature.id, input.value);
+                          input.value = '';
+                        }}
+                        className="p-1.5 bg-brand-blue-primary text-white rounded-lg hover:bg-brand-blue-dark transition-colors shadow-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <div
               key={feature.id}
-              className="bg-white border-2 border-slate-200 rounded-2xl p-6 hover:border-brand-blue-light transition-all"
+              className="bg-white border-2 border-slate-200 rounded-2xl p-6 hover:border-brand-blue-light transition-all text-left"
             >
               <div className="flex items-center gap-4 mb-6">
                 <div className="bg-brand-blue-lighter p-3 rounded-xl text-brand-blue-primary">

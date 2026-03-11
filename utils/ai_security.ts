@@ -7,6 +7,9 @@ import {
   EmbedConfig,
   TextConfig,
   PollConfig,
+  ScoreboardConfig,
+  ScoreboardTeam,
+  RandomConfig,
 } from '@/types';
 
 /** Validates and clamps grid coordinates to the 12x12 system */
@@ -136,6 +139,55 @@ export const sanitizeAIConfig = (
     } else if (typeof (c as Record<string, unknown>).options !== 'undefined') {
       // If AI provided a non-array options value, remove it so defaults remain valid
       delete (c as Record<string, unknown>).options;
+    }
+  }
+
+  if (type === 'scoreboard') {
+    const c = sanitized as unknown as Partial<ScoreboardConfig>;
+    if (Array.isArray(c.teams)) {
+      c.teams = (c.teams as unknown[]).map((team: unknown, idx: number) => {
+        let name = `Team ${idx + 1}`;
+        let score = 0;
+        let color = undefined;
+
+        if (typeof team === 'string') {
+          name = team;
+        } else if (team && typeof team === 'object') {
+          const t = team as Record<string, unknown>;
+          if (typeof t.name === 'string') name = t.name;
+          if (typeof t.score === 'number') score = t.score;
+          if (typeof t.color === 'string') color = t.color;
+        }
+
+        const scoreboardTeam: ScoreboardTeam = {
+          id: crypto.randomUUID(),
+          name,
+          score,
+          color,
+        };
+        return scoreboardTeam;
+      });
+    } else if (typeof (c as Record<string, unknown>).teams !== 'undefined') {
+      delete (c as Record<string, unknown>).teams;
+    }
+  }
+
+  if (type === 'random') {
+    const c = sanitized as unknown as Partial<RandomConfig>;
+    // Clear lastResult if it's not a simple string or array
+    if (
+      typeof c.lastResult !== 'undefined' &&
+      typeof c.lastResult !== 'string' &&
+      !Array.isArray(c.lastResult)
+    ) {
+      delete c.lastResult;
+    }
+    // Ensure remainingStudents is an array if present
+    if (
+      typeof c.remainingStudents !== 'undefined' &&
+      !Array.isArray(c.remainingStudents)
+    ) {
+      delete c.remainingStudents;
     }
   }
 
