@@ -6,7 +6,9 @@ import { WidgetLayout } from './WidgetLayout';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 
-export const CarRiderProWidget: React.FC<{ widget: WidgetData }> = () => {
+export const CarRiderProWidget: React.FC<{ widget: WidgetData }> = ({
+  widget: _widget,
+}) => {
   const [url, setUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -20,6 +22,14 @@ export const CarRiderProWidget: React.FC<{ widget: WidgetData }> = () => {
           setUrl('');
         }
         setIsLoading(false);
+      },
+      (error) => {
+        console.error(
+          'Failed to listen for Car Rider Pro config changes:',
+          error
+        );
+        setIsLoading(false);
+        setUrl('');
       }
     );
     return () => unsubscribe();
@@ -95,7 +105,9 @@ export const CarRiderProWidget: React.FC<{ widget: WidgetData }> = () => {
   );
 };
 
-export const CarRiderProSettings: React.FC<{ widget: WidgetData }> = () => {
+export const CarRiderProSettings: React.FC<{ widget: WidgetData }> = ({
+  widget: _widget,
+}) => {
   return (
     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-center flex flex-col items-center gap-3">
       <CarFront className="w-6 h-6 text-slate-400" />
