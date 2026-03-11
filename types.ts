@@ -38,6 +38,7 @@ export type WidgetType =
   | 'mathTool'
   | 'nextUp'
   | 'onboarding'
+  | 'car-rider-pro'
   | 'music';
 
 // --- ROSTER SYSTEM TYPES ---
