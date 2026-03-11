@@ -15,6 +15,7 @@ import {
   Trophy,
   CloudSun,
   Calendar,
+  CalendarDays,
   Utensils,
   BookOpen,
   AppWindow,
@@ -142,6 +143,12 @@ export const TOOLS: ToolMetadata[] = [
     color: 'bg-brand-blue-primary',
   },
   { type: 'music', icon: Music, label: 'Music', color: 'bg-emerald-500' },
+  {
+    type: 'specialist-schedule',
+    icon: CalendarDays,
+    label: 'Specialist',
+    color: 'bg-teal-700',
+  },
   { type: 'record', icon: RecordIcon, label: 'Record', color: 'bg-red-500' },
 
   {

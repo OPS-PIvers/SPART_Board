@@ -38,7 +38,8 @@ export type WidgetType =
   | 'mathTool'
   | 'nextUp'
   | 'onboarding'
-  | 'music';
+  | 'music'
+  | 'specialist-schedule';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -1114,6 +1115,35 @@ export interface OnboardingConfig {
   completedTasks: string[];
 }
 
+// --- SPECIALIST SCHEDULE TYPES ---
+
+export interface SpecialistScheduleItem {
+  id: string;
+  startTime: string; // HH:mm
+  endTime?: string; // HH:mm
+  task: string;
+  linkedWidgets?: WidgetType[];
+}
+
+export interface SpecialistScheduleCycleDay {
+  dayNumber: number; // 1 to cycleLength
+  items: SpecialistScheduleItem[];
+}
+
+export interface SpecialistScheduleConfig {
+  cycleLength: 6 | 10;
+  startDate: string; // YYYY-MM-DD
+  /** List of dates (YYYY-MM-DD) that are school days and should count in the rotation. */
+  schoolDays: string[];
+  /** Mapping of Day Number (1-based) to its schedule items. */
+  cycleDays: SpecialistScheduleCycleDay[];
+  fontFamily?: string;
+  cardColor?: string;
+  cardOpacity?: number;
+  /** Custom label for "Day" (e.g., "Day" for Schumann, "Block" for Intermediate) */
+  dayLabel?: string;
+}
+
 export interface NextUpSession {
   id: string; // widgetId
   teacherUid: string;
@@ -1185,7 +1215,8 @@ export type WidgetConfig =
   | MathToolConfig
   | NextUpConfig
   | OnboardingConfig
-  | MusicConfig;
+  | MusicConfig
+  | SpecialistScheduleConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1268,7 +1299,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                               ? OnboardingConfig
                                                                               : T extends 'music'
                                                                                 ? MusicConfig
-                                                                                : never;
+                                                                                : T extends 'specialist-schedule'
+                                                                                  ? SpecialistScheduleConfig
+                                                                                  : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

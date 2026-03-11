@@ -63,6 +63,7 @@ const PERSISTED_WIDGET_TYPES: WidgetType[] = [
   'weather',
   'instructionalRoutines',
   'nextUp',
+  'specialist-schedule',
 ];
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({

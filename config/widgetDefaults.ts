@@ -276,4 +276,24 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       syncWithTimeTool: false,
     },
   },
+  'specialist-schedule': {
+    w: 300,
+    h: 400,
+    config: {
+      cycleLength: 6,
+      startDate: new Date().toISOString().split('T')[0],
+      schoolDays: [],
+      cycleDays: [
+        { dayNumber: 1, items: [] },
+        { dayNumber: 2, items: [] },
+        { dayNumber: 3, items: [] },
+        { dayNumber: 4, items: [] },
+        { dayNumber: 5, items: [] },
+        { dayNumber: 6, items: [] },
+      ],
+      dayLabel: 'Day',
+      cardColor: '#ffffff',
+      cardOpacity: 1,
+    },
+  },
 };

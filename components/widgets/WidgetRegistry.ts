@@ -121,6 +121,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   nextUp: lazyNamed(() => import('./NextUp/Widget'), 'NextUpWidget'),
   onboarding: lazyNamed(() => import('./OnboardingWidget'), 'OnboardingWidget'),
   music: lazyNamed(() => import('./MusicWidget'), 'MusicWidget'),
+  'specialist-schedule': lazyNamed(
+    () => import('./SpecialistSchedule'),
+    'SpecialistScheduleWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -190,6 +194,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   nextUp: lazyNamed(() => import('./NextUp/Settings'), 'NextUpSettings'),
   // onboarding has no settings panel
   music: lazyNamed(() => import('./MusicWidget'), 'MusicSettings'),
+  'specialist-schedule': lazyNamed(
+    () => import('./SpecialistSchedule'),
+    'SpecialistScheduleSettings'
+  ),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
@@ -481,6 +489,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   music: {
     baseWidth: 400,
     baseHeight: 80,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'specialist-schedule': {
+    baseWidth: 300,
+    baseHeight: 400,
     canSpread: true,
     skipScaling: true,
     padding: 0,
