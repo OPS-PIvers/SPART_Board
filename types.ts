@@ -242,6 +242,7 @@ export interface RandomConfig {
   rosterMode?: 'class' | 'custom';
   autoStartTimer?: boolean;
   visualStyle?: 'flash' | 'slots' | 'wheel';
+  externalTrigger?: number;
 }
 
 export interface DiceConfig {
@@ -672,6 +673,7 @@ export interface TimeToolConfig {
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
   timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+  timerEndTriggerRandom?: boolean; // Whether to trigger random picker when timer ends
   themeColor?: string;
   glow?: boolean;
   fontFamily?: string;
