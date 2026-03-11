@@ -147,7 +147,11 @@ export const useTimeTool = (widget: WidgetData) => {
           }
 
           // Auto-pick next student in Randomizer
-          if (config.timerEndTriggerRandom && activeDashboard) {
+          if (
+            config.timerEndTriggerRandom &&
+            activeDashboard &&
+            config.duration > 0
+          ) {
             const randomWidget = activeDashboard.widgets.find(
               (w) => w.type === 'random'
             );
@@ -181,6 +185,7 @@ export const useTimeTool = (widget: WidgetData) => {
     config.timerEndVoiceLevel,
     config.timerEndTrafficColor,
     config.timerEndTriggerRandom,
+    config.duration,
     activeDashboard,
     updateWidget,
     handleStop,
