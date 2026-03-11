@@ -877,19 +877,21 @@ export const Dock: React.FC = () => {
                     </button>
 
                     {/* REMOTE CONTROL BUTTON */}
-                    <button
-                      onClick={() => window.open('/remote', '_blank')}
-                      aria-label="Open Remote Control"
-                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
-                    >
-                      <DockIcon
-                        color="bg-slate-800"
-                        className="flex items-center justify-center shadow-lg group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-slate-400 group-focus-visible:ring-offset-2"
+                    {canAccessFeature('remote-control') && (
+                      <button
+                        onClick={() => window.open('/remote', '_blank')}
+                        aria-label="Open Remote Control"
+                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
                       >
-                        <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                      </DockIcon>
-                      <DockLabel>Remote</DockLabel>
-                    </button>
+                        <DockIcon
+                          color="bg-slate-800"
+                          className="flex items-center justify-center shadow-lg group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-slate-400 group-focus-visible:ring-offset-2"
+                        >
+                          <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                        </DockIcon>
+                        <DockLabel>Remote</DockLabel>
+                      </button>
+                    )}
 
                     {/* LIVE POPOVER */}
                     {showLiveInfo &&

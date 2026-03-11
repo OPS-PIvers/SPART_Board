@@ -95,10 +95,6 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
         description: t('widgets.cheatSheet.gestures.restoreAll'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.twoFingerPinch'),
-        description: t('widgets.cheatSheet.gestures.zoom'),
-      },
-      {
         gesture: t('widgets.cheatSheet.gestureNames.threeFingerSwipeUp'),
         description: t('widgets.cheatSheet.gestures.toggleAnnotation'),
       },

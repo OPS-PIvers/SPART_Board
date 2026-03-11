@@ -1428,7 +1428,8 @@ export type GlobalFeature =
   | 'magic-layout'
   | 'smart-paste'
   | 'smart-poll'
-  | 'screen-recording';
+  | 'screen-recording'
+  | 'remote-control';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
