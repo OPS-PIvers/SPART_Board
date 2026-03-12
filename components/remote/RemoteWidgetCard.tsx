@@ -162,7 +162,6 @@ export const RemoteWidgetCard: React.FC<RemoteWidgetCardProps> = ({
   const handleSpotlight = () => {
     updateDashboardSettings({
       spotlightWidgetId: isSpotlighted ? null : widget.id,
-      maximizedWidgetId: null,
     });
   };
 

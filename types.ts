@@ -1355,8 +1355,6 @@ export type DockItem =
 export interface DashboardSettings {
   quickAccessWidgets?: (WidgetType | InternalToolType)[];
   disableCloseConfirmation?: boolean;
-  /** Remote control: widget to display full-screen. Cleared on dismiss. */
-  maximizedWidgetId?: string | null;
   /** Remote control: widget to spotlight (dim all others). Cleared on dismiss. */
   spotlightWidgetId?: string | null;
 }
