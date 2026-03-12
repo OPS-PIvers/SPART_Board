@@ -2111,26 +2111,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }, [activeId]);
 
-  const restoreAllWidgets = useCallback(() => {
-    if (!activeId) return;
-    lastLocalUpdateAt.current = Date.now();
-    lastUpdateWasSettingsOnly.current = false;
-    setDashboards((prev) =>
-      prev.map((d) =>
-        d.id === activeId
-          ? {
-              ...d,
-              widgets: d.widgets.map((w) => ({
-                ...w,
-                minimized: false,
-                flipped: false,
-              })),
-            }
-          : d
-      )
-    );
-  }, [activeId]);
-
   const deleteAllWidgets = useCallback(() => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
@@ -2258,7 +2238,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       bringToFront,
       moveWidgetLayer,
       minimizeAllWidgets,
-      restoreAllWidgets,
       deleteAllWidgets,
       resetWidgetSize,
       setBackground,
@@ -2325,7 +2304,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       bringToFront,
       moveWidgetLayer,
       minimizeAllWidgets,
-      restoreAllWidgets,
       deleteAllWidgets,
       resetWidgetSize,
       setBackground,

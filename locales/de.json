@@ -96,7 +96,7 @@
     "collapseToolbar": "Symbolleiste reduzieren",
     "screenshotSaved": "Screenshot gespeichert",
     "screenshotFailed": "Screenshot konnte nicht gespeichert werden",
-    "screenshotGestureProTip": "Pro-tip: Use a 3-finger swipe down to screenshot faster!",
+    "screenshotGestureProTip": "Pro-tip: Use a 2-finger swipe down to screenshot faster!",
     "eraser": "Radierer",
     "undo": "Rückgängig",
     "clearAll": "Alles löschen",
@@ -182,13 +182,15 @@
         "minimizeWidget": "Widget minimieren"
       },
       "gestureNames": {
-        "fourFingerSwipeLR": "4-Finger-Wischen \u2190/\u2192",
-        "fourFingerSwipeDown": "4-Finger-Wischen \u2193",
-        "fourFingerSwipeUp": "4-Finger-Wischen \u2191",
+        "oneFingerDoubleTap": "1-finger double tap",
+        "oneFingerLongPress": "1-finger long press",
+        "twoFingerSwipeLR": "4-Finger-Wischen \u2190/\u2192",
+        "twoFingerSwipeDown": "4-Finger-Wischen \u2193",
+        "twoFingerSwipeUp": "4-Finger-Wischen \u2191",
         "twoFingerPinch": "2-Finger-Pinch",
         "dragDownToDock": "Nach unten zum Dock ziehen \u2193",
-        "threeFingerSwipeDown": "3-Finger-Wischen \u2193",
-        "threeFingerSwipeUp": "3-Finger-Wischen \u2191"
+        "widgetTwoFingerSwipeDown": "3-Finger-Wischen \u2193",
+        "widgetTwoFingerSwipeUp": "3-Finger-Wischen \u2191"
       }
     },
     "dashboard": {

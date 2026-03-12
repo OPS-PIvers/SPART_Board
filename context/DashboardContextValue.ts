@@ -51,6 +51,7 @@ export interface DashboardContextValue {
   bringToFront: (id: string) => void;
   moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;
   minimizeAllWidgets: () => void;
+  restoreAllWidgets: () => void;
   deleteAllWidgets: () => void;
   resetWidgetSize: (id: string) => void;
   setBackground: (bg: string) => void;

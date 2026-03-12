@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useGesture } from '@use-gesture/react';
 import { Z_INDEX } from '@/config/zIndex';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '@/context/useDashboard';
@@ -189,7 +188,7 @@ export const DashboardView: React.FC = () => {
   //  - On touchstart: walk the DOM once (getComputedStyle is expensive) to
   //    determine whether the touch originated inside a scrollable element.
   //    Cache the result so touchmove is O(1).
-  //  - On touchmove: multi-touch (pinch / 2-finger gestures) always calls
+  //  - On touchmove: multi-touch (pinch / 4-finger gestures) always calls
   //    preventDefault() so our custom zoom/swipe handlers win regardless of
   //    where the fingers landed.  Single-touch only prevents the bounce if
   //    the gesture did NOT start inside a scrollable widget.
@@ -242,64 +241,6 @@ export const DashboardView: React.FC = () => {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
     };
-  }, []);
-
-  useGesture(
-    {
-      onPinch: ({ event, offset: [zoomVal], first }) => {
-        if (first && event.cancelable) event.preventDefault();
-        setZoom(zoomVal);
-      },
-      onDrag: ({
-        swipe: [swipeX, swipeY],
-        direction: [dirX, dirY],
-        touches,
-        initial: [x],
-      }) => {
-        if (touches === 2) {
-          if (swipeY > 0 && dirY > 0) {
-            minimizeAllWidgets();
-          } else if (swipeY < 0 && dirY < 0) {
-            restoreAllWidgets();
-          } else if (swipeX !== 0) {
-            if (swipeX > 0 && dirX > 0 && dashboards.length > 1) {
-              const nextIdx =
-                (currentIndex - 1 + dashboards.length) % dashboards.length;
-              loadDashboard(dashboards[nextIdx].id);
-            } else if (swipeX < 0 && dirX < 0 && dashboards.length > 1) {
-              const nextIdx = (currentIndex + 1) % dashboards.length;
-              loadDashboard(dashboards[nextIdx].id);
-            }
-          }
-        } else if (touches === 1) {
-          if (swipeX > 0 && dirX > 0 && x < 40) {
-            const customEvent = new CustomEvent('open-sidebar');
-            window.dispatchEvent(customEvent);
-          }
-        }
-      },
-      onPinchStart: ({ event }) => {
-        if (event.cancelable) event.preventDefault();
-      },
-    },
-    {
-      target: dashboardRef,
-      eventOptions: { passive: false },
-      pinch: { scaleBounds: { min: 0.1, max: 5 }, modifierKey: null },
-      drag: { swipe: { velocity: 0.5, distance: 50 } },
-    }
-  );
-
-  const handleDoubleTap = React.useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {
-        /* ignore */
-      });
-    } else {
-      document.exitFullscreen().catch(() => {
-        /* ignore */
-      });
-    }
   }, []);
 
   // Background YouTube audio control
@@ -687,7 +628,6 @@ export const DashboardView: React.FC = () => {
       }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onDoubleClick={handleDoubleTap}
     >
       {/* Ambient YouTube Video Layer */}
       {youTubeVideoId && (
