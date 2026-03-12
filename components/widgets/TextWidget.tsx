@@ -2,37 +2,15 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { STICKY_NOTE_COLORS } from '../../config/colors';
-import {
-  FileText,
-  MessageSquare,
-  ShieldCheck,
-  Star,
-  Type,
-  Palette,
-} from 'lucide-react';
+import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 import { sanitizeHtml } from '../../utils/security';
+import { getFontClass } from '../../utils/styles';
 
 import { WidgetLayout } from './WidgetLayout';
 import { SettingsLabel } from '../common/SettingsLabel';
+import { TypographySettings } from '../common/TypographySettings';
 
 const PLACEHOLDER_TEXT = 'Click to edit...';
-
-const FONTS = [
-  { id: 'global', label: 'Inherit', icon: 'G' },
-  { id: 'font-mono', label: 'Digital', icon: '01' },
-  { id: 'font-sans', label: 'Modern', icon: 'Aa' },
-  { id: 'font-handwritten', label: 'School', icon: '✏️' },
-];
-
-const FONT_COLORS = [
-  '#334155', // slate-700 (default)
-  '#1e293b', // slate-800
-  '#000000', // pure black
-  '#2d3f89', // brand-blue
-  '#ad2122', // brand-red
-  '#166534', // green-800
-  '#1e40af', // blue-800
-];
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -46,11 +24,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     fontColor = '#334155',
   } = config;
 
-  const getFontClass = () => {
-    if (fontFamily === 'global') return `font-${globalStyle.fontFamily}`;
-    if (fontFamily.startsWith('font-')) return fontFamily;
-    return `font-${fontFamily}`;
-  };
+  const fontClass = getFontClass(fontFamily, globalStyle.fontFamily);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef(false);
@@ -131,7 +105,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       padding="p-0"
       content={
         <div
-          className={`h-full w-full ${getFontClass()} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
+          className={`h-full w-full ${fontClass} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
           style={{ padding: 'min(16px, 3.5cqmin)', color: fontColor }}
         >
           {/* Background color overlay */}
@@ -162,7 +136,6 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
-  const { fontFamily = 'global', fontColor = '#334155' } = config;
 
   const colors = [
     { hex: STICKY_NOTE_COLORS.yellow, label: 'yellow' },
@@ -268,56 +241,11 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       <hr className="border-slate-100" />
 
-      {/* Typography */}
-      <div>
-        <SettingsLabel icon={Type}>Typography</SettingsLabel>
-        <div className="grid grid-cols-4 gap-2">
-          {FONTS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, fontFamily: f.id } as TextConfig,
-                })
-              }
-              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
-                fontFamily === f.id || (!fontFamily && f.id === 'global')
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-slate-100 hover:border-slate-200'
-              }`}
-            >
-              <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
-              <span className="text-xxxs uppercase text-slate-600 font-bold">
-                {f.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Font Color */}
-      <div>
-        <SettingsLabel icon={Palette}>Font Color</SettingsLabel>
-        <div className="flex flex-wrap gap-2 px-1">
-          {FONT_COLORS.map((color) => (
-            <button
-              key={color}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, fontColor: color } as TextConfig,
-                })
-              }
-              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${
-                fontColor === color
-                  ? 'border-slate-800 scale-110 shadow-sm'
-                  : 'border-transparent'
-              }`}
-              style={{ backgroundColor: color }}
-              title={color}
-            />
-          ))}
-        </div>
-      </div>
+      <TypographySettings
+        widgetId={widget.id}
+        config={config}
+        updateWidget={updateWidget}
+      />
     </div>
   );
 };
