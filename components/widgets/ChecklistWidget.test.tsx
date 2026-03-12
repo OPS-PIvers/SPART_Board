@@ -18,11 +18,14 @@ vi.mock('../common/RosterModeControl', () => ({
 vi.mock('lucide-react', () => ({
   CheckSquare: () => <div data-testid="check-square" />,
   Square: () => <div data-testid="square" />,
+  Circle: () => <div data-testid="circle" />,
+  CheckCircle2: () => <div data-testid="check-circle-2" />,
   ListPlus: () => <div data-testid="list-plus" />,
   Type: () => <div />,
   Users: () => <div />,
   RefreshCw: () => <div />,
   BookOpen: () => <div />,
+  Trash2: () => <div data-testid="trash-2" />,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -115,8 +118,8 @@ describe('ChecklistWidget', () => {
     expect(screen.getByText('Task 1')).toBeInTheDocument();
     expect(screen.getByText('Task 2')).toBeInTheDocument();
     // One checked, one unchecked
-    expect(screen.getByTestId('square')).toBeInTheDocument();
-    expect(screen.getByTestId('check-square')).toBeInTheDocument();
+    expect(screen.getByTestId('circle')).toBeInTheDocument();
+    expect(screen.getByTestId('check-circle-2')).toBeInTheDocument();
   });
 
   it('toggles item completion on click', () => {
