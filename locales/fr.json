@@ -96,7 +96,7 @@
     "collapseToolbar": "Réduire la barre",
     "screenshotSaved": "Capture d'écran enregistrée",
     "screenshotFailed": "Échec de la capture d'écran",
-    "screenshotGestureProTip": "Pro-tip: Use a 3-finger swipe down to screenshot faster!",
+    "screenshotGestureProTip": "Pro-tip: Use a 2-finger swipe down to screenshot faster!",
     "eraser": "Gomme",
     "undo": "Annuler",
     "clearAll": "Tout effacer",
@@ -182,13 +182,15 @@
         "minimizeWidget": "Réduire le widget"
       },
       "gestureNames": {
-        "fourFingerSwipeLR": "Balayage à 4 doigts \u2190/\u2192",
-        "fourFingerSwipeDown": "Balayage à 4 doigts \u2193",
-        "fourFingerSwipeUp": "Balayage à 4 doigts \u2191",
+        "oneFingerDoubleTap": "1-finger double tap",
+        "oneFingerLongPress": "1-finger long press",
+        "twoFingerSwipeLR": "Balayage à 4 doigts \u2190/\u2192",
+        "twoFingerSwipeDown": "Balayage à 4 doigts \u2193",
+        "twoFingerSwipeUp": "Balayage à 4 doigts \u2191",
         "twoFingerPinch": "Pincement à 2 doigts",
         "dragDownToDock": "Glisser vers le dock \u2193",
-        "threeFingerSwipeDown": "Balayage à 3 doigts \u2193",
-        "threeFingerSwipeUp": "Balayage à 3 doigts \u2191"
+        "widgetTwoFingerSwipeDown": "Balayage à 3 doigts \u2193",
+        "widgetTwoFingerSwipeUp": "Balayage à 3 doigts \u2191"
       }
     },
     "dashboard": {

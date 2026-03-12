@@ -101,7 +101,7 @@
     "screenshotSaved": "Captura guardada",
     "screenshotFailed": "Error al guardar la captura",
     "takeScreenshot": "Tomar Captura",
-    "screenshotGestureProTip": "Pro-tip: Use a 3-finger swipe down to screenshot faster!",
+    "screenshotGestureProTip": "Pro-tip: Use a 2-finger swipe down to screenshot faster!",
     "annotate": "Anotar",
     "duplicate": "Duplicar",
     "restore": "Restaurar",
@@ -302,13 +302,15 @@
         "minimizeWidget": "Minimizar widget"
       },
       "gestureNames": {
-        "fourFingerSwipeLR": "Deslizar 4 dedos \u2190/\u2192",
-        "fourFingerSwipeDown": "Deslizar 4 dedos \u2193",
-        "fourFingerSwipeUp": "Deslizar 4 dedos \u2191",
+        "oneFingerDoubleTap": "1-finger double tap",
+        "oneFingerLongPress": "1-finger long press",
+        "twoFingerSwipeLR": "Deslizar 4 dedos \u2190/\u2192",
+        "twoFingerSwipeDown": "Deslizar 4 dedos \u2193",
+        "twoFingerSwipeUp": "Deslizar 4 dedos \u2191",
         "twoFingerPinch": "Pellizcar 2 dedos",
         "dragDownToDock": "Arrastrar al dock \u2193",
-        "threeFingerSwipeDown": "Deslizar 3 dedos \u2193",
-        "threeFingerSwipeUp": "Deslizar 3 dedos \u2191"
+        "widgetTwoFingerSwipeDown": "Deslizar 3 dedos \u2193",
+        "widgetTwoFingerSwipeUp": "Deslizar 3 dedos \u2191"
       }
     },
     "dashboard": {

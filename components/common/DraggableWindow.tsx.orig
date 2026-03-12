@@ -7,7 +7,6 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { useGesture } from '@use-gesture/react';
 import {
   X,
   Settings,
@@ -57,9 +56,15 @@ const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle
 
 const TOUCH_GESTURE_BLOCKING_SELECTOR = `${DRAG_BLOCKING_SELECTOR}, ${SCROLLABLE_ELEMENTS_SELECTOR}`;
 
-// const MIN_GESTURE_SWIPE_DISTANCE = 100;
+const MIN_GESTURE_SWIPE_DISTANCE = 100;
 const DRAG_CLICK_THRESHOLD_PX = 25;
 const INVISIBLE_EDGE_PAD = 10; // px of invisible grab zone extending outside widget bounds
+
+const getPinchDistance = (touches: React.TouchList): number => {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+};
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -67,7 +72,6 @@ interface DraggableWindowProps {
   settings: React.ReactNode;
   title: string;
   style?: React.CSSProperties; // Added style prop
-  isSpotlighted?: boolean; // Added isSpotlighted prop
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
   globalStyle: GlobalStyle;
@@ -108,7 +112,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   settings,
   title,
   style,
-  isSpotlighted = false,
   skipCloseConfirmation = false,
   headerActions,
   globalStyle,
@@ -125,7 +128,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     selectedWidgetId,
     setSelectedWidgetId,
     zoom,
-    updateDashboardSettings,
   } = useDashboard();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -233,6 +235,28 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const snapMenuRef = useRef<HTMLDivElement>(null);
   const dragDistanceRef = useRef(0);
+
+  // Gesture tracking for multi-touch actions
+  const gestureStartRef = useRef<{
+    startY: number;
+    currentY: number;
+    touches: number;
+  } | null>(null);
+
+  // Pinch-to-resize tracking for 2-finger gestures on the widget window
+  const pinchStateRef = useRef<{
+    startDistance: number;
+    startW: number;
+    startH: number;
+    startX: number;
+    startY: number;
+    pinchMidX: number;
+    pinchMidY: number;
+    currentW: number;
+    currentH: number;
+    currentX: number;
+    currentY: number;
+  } | null>(null);
 
   const saveTitle = useCallback(() => {
     if (tempTitle.trim()) {
@@ -711,11 +735,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('pointercancel', onPointerUp);
   };
 
-  // Force 100% opacity when spotlighted so it stands out against the dimming overlay
-  // This prevents the "dimmed text" issue reported by users.
-  const transparency = isSpotlighted
-    ? 1
-    : (widget.transparency ?? globalStyle.windowTransparency);
+  const transparency = widget.transparency ?? globalStyle.windowTransparency;
   const isSelected =
     !isMaximized && (showTools || isDragging || isResizing || widget.flipped);
 
@@ -821,121 +841,183 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     handleCloseTools,
   ]);
 
-  useGesture(
-    {
-      onDrag: ({ swipe: [, swipeY], direction: [, dirY], touches, event }) => {
-        const target = event.target as HTMLElement;
-        if (target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) return;
-
-        // 2-finger swipe down
-        if (touches === 2 && swipeY > 0 && dirY > 0) {
-          if (isMaximized) {
-            updateDashboardSettings({ spotlightWidgetId: null });
-          } else {
-            updateWidget(widget.id, { minimized: true });
-          }
-          handleCloseTools();
-        }
-        // 2-finger swipe up
-        else if (touches === 2 && swipeY < 0 && dirY < 0) {
-          updateDashboardSettings({ spotlightWidgetId: widget.id });
-          handleCloseTools();
-        }
-      },
-      onPinch: ({ offset: [scale], first, last, event, memo }) => {
-        const target = event.target as HTMLElement;
-        if (target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) return;
-        if (isMaximized) return;
-
-        if (first) {
-          if (event.cancelable) event.preventDefault();
-          return {
-            startW: widget.w,
-            startH: widget.h,
-            startX: widget.x,
-            startY: widget.y,
-          };
-        }
-
-        if (event.cancelable) event.preventDefault();
-        const startState = memo as {
-          startW: number;
-          startH: number;
-          startX: number;
-          startY: number;
-        };
-        if (!startState) return memo as unknown;
-
-        const newW = Math.max(150, Math.round(startState.startW * scale));
-        const newH = Math.max(150, Math.round(startState.startH * scale));
-        const newX = startState.startX - (newW - startState.startW) / 2;
-        const newY = startState.startY - (newH - startState.startH) / 2;
-
-        if (windowRef.current && !last) {
-          windowRef.current.style.width = `${newW}px`;
-          windowRef.current.style.height = `${newH}px`;
-          windowRef.current.style.left = `${newX}px`;
-          windowRef.current.style.top = `${newY}px`;
-        }
-
-        if (last) {
-          updateWidget(widget.id, {
-            w: newW,
-            h: newH,
-            x: newX,
-            y: newY,
-          });
-          if (windowRef.current) {
-            windowRef.current.style.width = '';
-            windowRef.current.style.height = '';
-            windowRef.current.style.left = '';
-            windowRef.current.style.top = '';
-          }
-        }
-        return memo as unknown;
-      },
-    },
-    {
-      target: windowRef,
-      eventOptions: { passive: false },
-      pinch: { scaleBounds: { min: 0.5, max: 3 }, modifierKey: null },
-      drag: { swipe: { velocity: 0.5, distance: 50 } },
+  // --- MULTI-TOUCH GESTURE HANDLERS ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Scroll protection: Don't start gesture if touching scrollable/interactive element
+    if ((e.target as HTMLElement).closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) {
+      return;
     }
-  );
 
-  const doubleTapTimer = useRef<NodeJS.Timeout | null>(null);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    // Check computed style for scrollable elements (fallback for non-inline styles)
+    const target = e.target as HTMLElement;
+    const computedStyle = window.getComputedStyle(target);
+    const isScrollable =
+      ['auto', 'scroll'].includes(computedStyle.overflowY) ||
+      ['auto', 'scroll'].includes(computedStyle.overflow);
 
-  const handleWidgetPointerDown = (e: React.PointerEvent) => {
-    // 1-Finger Double-Tap (Annotation) & Long-Press (Screenshot)
-    if (e.pointerType !== 'mouse') {
-      if (doubleTapTimer.current) {
-        clearTimeout(doubleTapTimer.current);
-        doubleTapTimer.current = null;
-        // Double tap
+    if (isScrollable && target.scrollHeight > target.clientHeight) {
+      return;
+    }
+
+    if (e.touches.length < 2) return;
+
+    // Prevent default to avoid conflicts with pointer events (drag) and native scroll/zoom
+    // This ensures we have exclusive control for the gesture
+    e.preventDefault();
+
+    // Calculate average Y position of all touches
+    let totalY = 0;
+    for (let i = 0; i < e.touches.length; i++) {
+      totalY += e.touches[i].clientY;
+    }
+    const avgY = totalY / e.touches.length;
+
+    gestureStartRef.current = {
+      startY: avgY,
+      currentY: avgY,
+      touches: e.touches.length,
+    };
+
+    // Pinch-to-resize: track 2-finger pinch to resize the widget window itself
+    if (e.touches.length === 2 && !isMaximized) {
+      const startDistance = getPinchDistance(e.touches);
+      // Only start pinch tracking if we have a valid, non-zero distance
+      if (isFinite(startDistance) && startDistance > 0) {
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        pinchStateRef.current = {
+          startDistance,
+          startW: widget.w,
+          startH: widget.h,
+          startX: widget.x,
+          startY: widget.y,
+          pinchMidX: midX,
+          pinchMidY: midY,
+          currentW: widget.w,
+          currentH: widget.h,
+          currentX: widget.x,
+          currentY: widget.y,
+        };
+      } else {
+        pinchStateRef.current = null;
+      }
+    } else {
+      pinchStateRef.current = null;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Reset pinch state if finger count changes
+    if (pinchStateRef.current && e.touches.length !== 2) {
+      pinchStateRef.current = null;
+    }
+
+    if (!gestureStartRef.current) return;
+
+    // Validate touch count consistency
+    if (e.touches.length !== gestureStartRef.current.touches) {
+      gestureStartRef.current = null;
+      return;
+    }
+
+    // Prevent default to maintain exclusive control
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    // Update current Y (average of all touches)
+    let totalY = 0;
+    for (let i = 0; i < e.touches.length; i++) {
+      totalY += e.touches[i].clientY;
+    }
+    const avgY = totalY / e.touches.length;
+
+    gestureStartRef.current.currentY = avgY;
+
+    // Pinch-to-resize: scale widget window based on distance change between 2 fingers
+    if (e.touches.length === 2 && pinchStateRef.current && !isMaximized) {
+      const currentDistance = getPinchDistance(e.touches);
+      const scale = currentDistance / pinchStateRef.current.startDistance;
+      // Guard against invalid scale (NaN or non-positive) from malformed touch data
+      if (!isFinite(scale) || scale <= 0) return;
+
+      const newW = Math.max(
+        150,
+        Math.round(pinchStateRef.current.startW * scale)
+      );
+      const newH = Math.max(
+        100,
+        Math.round(pinchStateRef.current.startH * scale)
+      );
+
+      // Keep the pinch midpoint fixed relative to widget — widget grows/shrinks around it
+      const relMidX =
+        pinchStateRef.current.pinchMidX - pinchStateRef.current.startX;
+      const relMidY =
+        pinchStateRef.current.pinchMidY - pinchStateRef.current.startY;
+      const newX = pinchStateRef.current.pinchMidX - relMidX * scale;
+      const newY = pinchStateRef.current.pinchMidY - relMidY * scale;
+
+      pinchStateRef.current.currentW = newW;
+      pinchStateRef.current.currentH = newH;
+      pinchStateRef.current.currentX = newX;
+      pinchStateRef.current.currentY = newY;
+
+      // Direct DOM update for smooth 60fps performance (same pattern as drag/resize)
+      if (windowRef.current) {
+        windowRef.current.style.width = `${newW}px`;
+        windowRef.current.style.height = `${newH}px`;
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+      }
+    }
+  };
+
+  const handleTouchEnd = (_e: React.TouchEvent) => {
+    // Commit pinch resize to widget state
+    if (pinchStateRef.current) {
+      const { currentW, currentH, currentX, currentY, startW, startH } =
+        pinchStateRef.current;
+      if (currentW !== startW || currentH !== startH) {
+        updateWidget(widget.id, {
+          w: currentW,
+          h: currentH,
+          x: currentX,
+          y: currentY,
+        });
+      }
+      pinchStateRef.current = null;
+    }
+
+    if (!gestureStartRef.current) return;
+
+    // Use stored currentY which was updated in touchMove
+    const {
+      startY,
+      currentY: gestureCurrentY,
+      touches,
+    } = gestureStartRef.current;
+
+    // Reset immediately to avoid double triggers
+    gestureStartRef.current = null;
+
+    const deltaY = gestureCurrentY - startY;
+
+    if (Math.abs(deltaY) < MIN_GESTURE_SWIPE_DISTANCE) return;
+
+    if (touches === 3) {
+      if (deltaY > 0 && canScreenshot && !isCapturing) {
+        // 3-Finger Swipe Down: Screenshot
+        void takeScreenshot();
+        handleCloseTools();
+      } else if (deltaY < 0) {
+        // 3-Finger Swipe Up: Annotate
         setIsAnnotating((prev) => !prev);
         handleCloseTools();
-      } else {
-        doubleTapTimer.current = setTimeout(() => {
-          doubleTapTimer.current = null;
-        }, 300);
       }
-
-      longPressTimer.current = setTimeout(() => {
-        if (canScreenshot && !isCapturing) {
-          void takeScreenshot();
-          handleCloseTools();
-        }
-      }, 600);
     }
   };
-
-  const handleWidgetPointerUp = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
+  // ------------------------------------
 
   // Fallback to widget state if not dragging/resizing or if position-aware
   const shouldUseDragState =
@@ -952,8 +1034,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       onPointerDown={handlePointerDown}
       onClick={handleWidgetClick}
       onKeyDown={handleKeyDown}
-      onPointerDownCapture={handleWidgetPointerDown}
-      onPointerUpCapture={handleWidgetPointerUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       onContextMenu={(e) => e.preventDefault()}
       transparency={transparency}
       disableBlur={isDragging || isResizing}
@@ -1269,7 +1352,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   return (
     <>
-      {(isMaximized || isSpotlighted) && typeof document !== 'undefined'
+      {isMaximized && typeof document !== 'undefined'
         ? createPortal(content, document.body)
         : content}
 

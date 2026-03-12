@@ -1,0 +1,45 @@
+--- context/DashboardContext.tsx
++++ context/DashboardContext.tsx
+@@ -2110,6 +2110,26 @@
+       )
+     );
+   }, [activeId]);
+
++  const restoreAllWidgets = useCallback(() => {
++    if (!activeId) return;
++    lastLocalUpdateAt.current = Date.now();
++    lastUpdateWasSettingsOnly.current = false;
++    setDashboards((prev) =>
++      prev.map((d) =>
++        d.id === activeId
++          ? {
++              ...d,
++              widgets: d.widgets.map((w) => ({
++                ...w,
++                minimized: false,
++                flipped: false,
++              })),
++            }
++          : d
++      )
++    );
++  }, [activeId]);
++
+   const deleteAllWidgets = useCallback(() => {
+     if (!activeId) return;
+@@ -2238,6 +2258,7 @@
+       bringToFront,
+       moveWidgetLayer,
+       minimizeAllWidgets,
++      restoreAllWidgets,
+       deleteAllWidgets,
+       resetWidgetSize,
+       setBackground,
+@@ -2304,6 +2325,7 @@
+       bringToFront,
+       moveWidgetLayer,
+       minimizeAllWidgets,
++      restoreAllWidgets,
+       deleteAllWidgets,
+       resetWidgetSize,
+       setBackground,
