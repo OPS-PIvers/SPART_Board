@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Z_INDEX } from '@/config/zIndex';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '@/context/useDashboard';
@@ -659,15 +660,21 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* Spotlight Dimming Overlay — dims everything except the spotlighted widget */}
-      {activeDashboard.settings?.spotlightWidgetId && (
-        <div
-          className="absolute inset-0 bg-slate-900/80 transition-all duration-500 ease-in-out"
-          style={{ zIndex: Z_INDEX.backdrop }}
-          onClick={() => updateDashboardSettings({ spotlightWidgetId: null })}
-          aria-hidden="true"
-        />
-      )}
+      {/* Spotlight Dimming Overlay — rendered as a portal at document.body so it
+          sits in the root stacking context, clear of any will-change / container-type
+          stacking contexts inside the dashboard tree. The spotlighted widget uses
+          position:fixed (set via customStyle in WidgetRenderer) so it also
+          participates in the root stacking context and sits above this backdrop. */}
+      {activeDashboard.settings?.spotlightWidgetId &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-slate-900/80 transition-all duration-500 ease-in-out"
+            style={{ zIndex: Z_INDEX.backdrop }}
+            onClick={() => updateDashboardSettings({ spotlightWidgetId: null })}
+            aria-hidden="true"
+          />,
+          document.body
+        )}
 
       {/* Dynamic Widget Surface */}
       <div
