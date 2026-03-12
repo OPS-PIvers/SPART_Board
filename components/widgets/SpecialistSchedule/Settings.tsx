@@ -17,7 +17,6 @@ import {
   Type,
   Palette,
   Save,
-  Users,
   Calendar,
   Repeat,
 } from 'lucide-react';
@@ -81,7 +80,6 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     fontFamily = 'global',
     cardColor = '#ffffff',
     cardOpacity = 1,
-    specialistClass = '',
     recurringItems = [],
   } = config;
 
@@ -256,33 +254,6 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-6 animate-in fade-in duration-200">
           <section className="space-y-3">
             <label className="text-xxs text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Users className="w-3 h-3" /> Class Config
-            </label>
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-4">
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Specialist Class Name
-                </span>
-                <input
-                  type="text"
-                  value={specialistClass}
-                  onChange={(e) =>
-                    updateWidget(widget.id, {
-                      config: {
-                        ...config,
-                        specialistClass: e.target.value,
-                      } as SpecialistScheduleConfig,
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-                  placeholder="e.g. 3A, Smith's Class"
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <label className="text-xxs text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <Type className="w-3 h-3" /> Typography
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -373,7 +344,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
           {editingItemIndex === null ? (
             <>
               {/* Day Selector */}
-              <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2">
+              <div className="flex flex-wrap gap-2 pb-2">
                 {Array.from({ length: cycleLength }, (_, i) => i + 1).map(
                   (num) => {
                     const customName = customDayNames?.[num];
