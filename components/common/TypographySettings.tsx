@@ -30,7 +30,10 @@ export const TypographySettings = <
               key={f.id}
               onClick={() =>
                 updateWidget(widgetId, {
-                  config: { ...config, fontFamily: f.id } as unknown as WidgetConfig,
+                  config: {
+                    ...config,
+                    fontFamily: f.id,
+                  } as unknown as WidgetConfig,
                 })
               }
               className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
@@ -57,7 +60,10 @@ export const TypographySettings = <
               key={color}
               onClick={() =>
                 updateWidget(widgetId, {
-                  config: { ...config, fontColor: color } as unknown as WidgetConfig,
+                  config: {
+                    ...config,
+                    fontColor: color,
+                  } as unknown as WidgetConfig,
                 })
               }
               className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${
