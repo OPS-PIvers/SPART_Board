@@ -913,14 +913,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         doubleTapTimer.current = setTimeout(() => {
           doubleTapTimer.current = null;
         }, 300);
-      }
 
-      longPressTimer.current = setTimeout(() => {
-        if (canScreenshot && !isCapturing) {
-          void takeScreenshot();
-          handleCloseTools();
-        }
-      }, 600);
+        longPressTimer.current = setTimeout(() => {
+          if (canScreenshot && !isCapturing) {
+            void takeScreenshot();
+            handleCloseTools();
+          }
+        }, 600);
+      }
     }
   };
 
