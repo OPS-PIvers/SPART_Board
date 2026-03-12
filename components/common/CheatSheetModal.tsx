@@ -118,14 +118,14 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
       },
       {
         gesture: t('widgets.cheatSheet.gestureNames.widgetTwoFingerSwipeUp'),
-        description: t('widgets.cheatSheet.gestures.spotlight'),
+        description: t('widgets.cheatSheet.gestures.maximizeWidget'),
       },
       {
         gesture: t('widgets.cheatSheet.gestureNames.twoFingerPinch'),
         description: t('widgets.cheatSheet.gestures.resize'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.oneFingerDoubleTap'),
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerDoubleTap'),
         description: t('widgets.cheatSheet.gestures.toggleAnnotation'),
       },
       {

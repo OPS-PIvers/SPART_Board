@@ -68,6 +68,7 @@ interface DraggableWindowProps {
   title: string;
   style?: React.CSSProperties; // Added style prop
   isSpotlighted?: boolean; // Added isSpotlighted prop
+  updateDashboardSettings?: (updates: Partial<DashboardSettings>) => void;
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
   globalStyle: GlobalStyle;
@@ -109,6 +110,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   title,
   style,
   isSpotlighted = false,
+  updateDashboardSettings: propUpdateDashboardSettings,
   skipCloseConfirmation = false,
   headerActions,
   globalStyle,
@@ -125,8 +127,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     selectedWidgetId,
     setSelectedWidgetId,
     zoom,
-    updateDashboardSettings,
+    updateDashboardSettings: contextUpdateDashboardSettings,
   } = useDashboard();
+
+  const updateDashboardSettings =
+    propUpdateDashboardSettings ?? contextUpdateDashboardSettings;
 
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -424,6 +429,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (isAnnotating) return;
 
     clearLongPressTimer();
+    if (doubleTapTimer.current) {
+      clearTimeout(doubleTapTimer.current);
+      doubleTapTimer.current = null;
+    }
 
     // Close settings panel on drag start to prevent position desync
     // (panel position is based on widget.x/y which don't update during DOM-level drag)
@@ -588,6 +597,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     e.preventDefault();
 
     clearLongPressTimer();
+    if (doubleTapTimer.current) {
+      clearTimeout(doubleTapTimer.current);
+      doubleTapTimer.current = null;
+    }
 
     // Close settings panel on resize start to prevent position desync
     if (widget.flipped) {
@@ -841,7 +854,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         // 2-finger swipe down
         if (touches === 2 && swipeY > 0 && dirY > 0) {
           if (isMaximized) {
-            updateDashboardSettings({ spotlightWidgetId: null });
+            handleMaximizeToggle();
           } else {
             updateWidget(widget.id, { minimized: true });
           }
@@ -849,7 +862,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
         // 2-finger swipe up
         else if (touches === 2 && swipeY < 0 && dirY < 0) {
-          updateDashboardSettings({ spotlightWidgetId: widget.id });
+          if (!isMaximized) {
+            handleMaximizeToggle();
+          } else {
+            // If already maximized, spotlight this widget (dim others)
+            updateDashboardSettings({ spotlightWidgetId: widget.id });
+          }
           handleCloseTools();
         }
       },
@@ -916,29 +934,40 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const doubleTapTimer = useRef<NodeJS.Timeout | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const activeTouchCount = useRef(0);
 
   const handleWidgetPointerDown = (e: React.PointerEvent) => {
-    // 1-Finger Double-Tap (Annotation) & Long-Press (Screenshot)
     if (e.pointerType !== 'mouse') {
+      activeTouchCount.current++;
+
       const target = e.target as HTMLElement;
       if (target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) return;
 
-      if (doubleTapTimer.current) {
-        clearTimeout(doubleTapTimer.current);
-        doubleTapTimer.current = null;
-        // Double tap - clear long press from first tap
-        clearLongPressTimer();
-        setIsAnnotating((prev) => !prev);
-        handleCloseTools();
-      } else {
-        doubleTapTimer.current = setTimeout(() => {
+      // 2-Finger Double-Tap (Annotation Toggle)
+      if (activeTouchCount.current === 2) {
+        if (doubleTapTimer.current) {
+          clearTimeout(doubleTapTimer.current);
           doubleTapTimer.current = null;
-        }, 300);
+          // Clear long press if any (unlikely with 2 fingers but safe)
+          clearLongPressTimer();
+          setIsAnnotating((prev) => !prev);
+          handleCloseTools();
+        } else {
+          doubleTapTimer.current = setTimeout(() => {
+            doubleTapTimer.current = null;
+          }, 300);
+        }
+      }
 
+      // 1-Finger Long-Press (Screenshot)
+      if (activeTouchCount.current === 1) {
         longPressTimer.current = setTimeout(() => {
-          if (canScreenshot && !isCapturing) {
-            void takeScreenshot();
-            handleCloseTools();
+          // Verify still only 1 finger and hasn't started dragging
+          if (activeTouchCount.current === 1 && !isDragging) {
+            if (canScreenshot && !isCapturing) {
+              void takeScreenshot();
+              handleCloseTools();
+            }
           }
         }, 600);
       }
@@ -946,6 +975,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const handleWidgetPointerUp = () => {
+    activeTouchCount.current = Math.max(0, activeTouchCount.current - 1);
     clearLongPressTimer();
   };
 

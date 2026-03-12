@@ -1357,6 +1357,7 @@ export interface WidgetComponentProps {
   scale?: number;
   studentPin?: string | null;
   isSpotlighted?: boolean;
+  updateDashboardSettings?: (updates: Partial<DashboardSettings>) => void;
 }
 
 export interface WidgetLayout {
