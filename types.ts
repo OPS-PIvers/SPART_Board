@@ -679,6 +679,7 @@ export interface TimeToolConfig {
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
   timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
   timerEndTriggerRandom?: boolean; // Whether to trigger random picker when timer ends
+  timerEndTriggerNextUp?: boolean; // Whether to advance NextUp queue when timer ends
   themeColor?: string;
   glow?: boolean;
   fontFamily?: string;
@@ -1101,6 +1102,7 @@ export interface NextUpConfig {
   lastUpdated: number;
   displayCount: number;
   autoStartTimer?: boolean; // Nexus connection
+  externalTrigger?: number; // Nexus connection
   styling: {
     fontFamily: string;
     themeColor: string;
