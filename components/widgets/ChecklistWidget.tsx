@@ -105,22 +105,25 @@ const ChecklistCard = React.memo<ChecklistCardProps>(
       ? hexToRgba('#cbd5e1', cardOpacity) // slate-300
       : hexToRgba(cardColor, cardOpacity);
 
+    const borderColor = hexToRgba('#e2e8f0', cardOpacity); // slate-200
+
     return (
       <div role="listitem" className="flex-1 min-h-0 flex flex-col">
         <div
           role="checkbox"
           aria-checked={isCompleted}
-          aria-label={label}
+          onKeyPress={handleKeyDown}
           tabIndex={0}
           onClick={() => onToggle(id)}
           onKeyDown={handleKeyDown}
-          className={`w-full h-full flex items-start cursor-pointer select-none rounded-2xl border shadow-sm transition-all active:scale-[0.98] ${
-            isCompleted ? 'border-slate-200' : 'border-slate-200'
-          }`}
+          className="w-full h-full flex items-start cursor-pointer select-none rounded-2xl border shadow-sm transition-all active:scale-[0.98]"
           style={{
             gap: cardGap,
             padding: cardPadding,
             backgroundColor: bgColor,
+            borderColor: isCompleted
+              ? hexToRgba('#e2e8f0', cardOpacity * 0.5)
+              : borderColor,
           }}
         >
           <div className="shrink-0 transition-transform active:scale-90">
@@ -354,44 +357,49 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
             <div
               style={{
                 display: 'flex',
+                justifyContent: 'flex-end',
                 gap: 'min(8px, 1.8cqmin)',
                 marginTop: `min(${Math.round(4 * sm)}px, ${(1 * sm).toFixed(1)}cqmin)`, // Add small extra gap before buttons
               }}
             >
               <button
                 onClick={resetToday}
-                className="flex-1 flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95 shadow-indigo-500/5"
+                title="Reset Checks"
+                className="flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95 shadow-indigo-500/5"
                 style={{
-                  gap: 'min(6px, 1.5cqmin)',
-                  padding: 'min(8px, 2cqmin)',
-                  fontSize: 'min(11px, 3cqmin)',
+                  width: 'min(36px, 10cqmin)',
+                  height: 'min(36px, 10cqmin)',
+                  minWidth: '24px',
+                  minHeight: '24px',
                 }}
               >
                 <RefreshCw
                   style={{
-                    width: 'min(13px, 3.2cqmin)',
-                    height: 'min(13px, 3.2cqmin)',
+                    width: 'max(14px, min(18px, 5cqmin))',
+                    height: 'max(14px, min(18px, 5cqmin))',
                   }}
+                  strokeWidth={2.5}
                 />
-                Reset Checks
               </button>
               {mode === 'manual' && (
                 <button
                   onClick={removeCompleted}
-                  className="flex-1 flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-rose-500 uppercase tracking-wider hover:bg-rose-50 transition-all active:scale-95"
+                  title="Remove Completed"
+                  className="flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-rose-500 uppercase tracking-wider hover:bg-rose-50 transition-all active:scale-95"
                   style={{
-                    gap: 'min(6px, 1.5cqmin)',
-                    padding: 'min(8px, 2cqmin)',
-                    fontSize: 'min(11px, 3cqmin)',
+                    width: 'min(36px, 10cqmin)',
+                    height: 'min(36px, 10cqmin)',
+                    minWidth: '24px',
+                    minHeight: '24px',
                   }}
                 >
                   <Trash2
                     style={{
-                      width: 'min(13px, 3.2cqmin)',
-                      height: 'min(13px, 3.2cqmin)',
+                      width: 'max(14px, min(18px, 5cqmin))',
+                      height: 'max(14px, min(18px, 5cqmin))',
                     }}
+                    strokeWidth={2.5}
                   />
-                  Remove Completed
                 </button>
               )}
             </div>
