@@ -146,20 +146,22 @@ export const RemoteWidgetCard: React.FC<RemoteWidgetCardProps> = ({
   updateWidget,
   updateDashboardSettings,
 }) => {
-  const isMaximized = dashboardSettings?.maximizedWidgetId === widget.id;
+  // Maximize is driven by widget.maximized — the exact same field DraggableWindow uses.
+  // This ensures the remote and desktop share one maximize code path.
+  const isMaximized = widget.maximized ?? false;
   const isSpotlighted = dashboardSettings?.spotlightWidgetId === widget.id;
 
   const handleMaximize = () => {
-    updateDashboardSettings({
-      maximizedWidgetId: isMaximized ? null : widget.id,
-      spotlightWidgetId: null,
-    });
+    updateWidget(widget.id, { maximized: !isMaximized, flipped: false });
+    // Clear spotlight if we're entering maximize
+    if (!isMaximized) {
+      updateDashboardSettings({ spotlightWidgetId: null });
+    }
   };
 
   const handleSpotlight = () => {
     updateDashboardSettings({
       spotlightWidgetId: isSpotlighted ? null : widget.id,
-      maximizedWidgetId: null,
     });
   };
 
@@ -180,6 +182,7 @@ export const RemoteWidgetCard: React.FC<RemoteWidgetCardProps> = ({
           {/* Spotlight toggle */}
           <button
             onClick={handleSpotlight}
+            style={{ touchAction: 'manipulation' }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-bold transition-all active:scale-95 ${
               isSpotlighted
                 ? 'bg-yellow-400/20 border-yellow-400/60 text-yellow-300'
@@ -201,6 +204,7 @@ export const RemoteWidgetCard: React.FC<RemoteWidgetCardProps> = ({
           {/* Full Screen toggle */}
           <button
             onClick={handleMaximize}
+            style={{ touchAction: 'manipulation' }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-bold transition-all active:scale-95 ${
               isMaximized
                 ? 'bg-blue-500/20 border-blue-400/60 text-blue-300'
