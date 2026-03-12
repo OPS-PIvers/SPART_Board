@@ -2,7 +2,14 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { STICKY_NOTE_COLORS } from '../../config/colors';
-import { FileText, MessageSquare, ShieldCheck, Star, Type, Palette } from 'lucide-react';
+import {
+  FileText,
+  MessageSquare,
+  ShieldCheck,
+  Star,
+  Type,
+  Palette,
+} from 'lucide-react';
 import { sanitizeHtml } from '../../utils/security';
 
 import { WidgetLayout } from './WidgetLayout';
@@ -155,10 +162,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
-  const {
-    fontFamily = 'global',
-    fontColor = '#334155',
-  } = config;
+  const { fontFamily = 'global', fontColor = '#334155' } = config;
 
   const colors = [
     { hex: STICKY_NOTE_COLORS.yellow, label: 'yellow' },
