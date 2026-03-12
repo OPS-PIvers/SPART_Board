@@ -24,17 +24,15 @@ describe('widgetHelpers', () => {
 
     it('returns false for a React element', () => {
       const element = React.createElement('div', null, 'test content');
-      expect(isWidgetLayout(element as unknown as WidgetOutput)).toBe(false);
+      expect(isWidgetLayout(element)).toBe(false);
     });
 
     it('returns false for null', () => {
-      expect(isWidgetLayout(null as unknown as WidgetOutput)).toBe(false);
+      expect(isWidgetLayout(null)).toBe(false);
     });
 
     it('returns false for a string', () => {
-      expect(isWidgetLayout('just a string' as unknown as WidgetOutput)).toBe(
-        false
-      );
+      expect(isWidgetLayout('just a string')).toBe(false);
     });
 
     it('returns false for an object without content property', () => {
