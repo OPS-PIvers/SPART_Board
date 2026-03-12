@@ -38,6 +38,7 @@ export type WidgetType =
   | 'mathTool'
   | 'nextUp'
   | 'onboarding'
+  | 'car-rider-pro'
   | 'music';
 
 // --- ROSTER SYSTEM TYPES ---
@@ -224,6 +225,10 @@ export interface ChecklistConfig {
   firstNames?: string;
   lastNames?: string;
   completedNames?: string[]; // Tracks IDs or Names checked in roster mode
+  fontFamily?: string;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontColor?: string;
 }
 
 export interface RandomGroup {
@@ -242,10 +247,13 @@ export interface RandomConfig {
   rosterMode?: 'class' | 'custom';
   autoStartTimer?: boolean;
   visualStyle?: 'flash' | 'slots' | 'wheel';
+  externalTrigger?: number;
 }
 
 export interface DiceConfig {
   count: number;
+  /** Last roll result persisted so remote rolls are reflected on the board. */
+  lastRoll?: number[];
 }
 
 export interface SoundConfig {
@@ -630,7 +638,11 @@ export interface LunchMenuDay {
 }
 
 export interface LunchCountConfig {
-  schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
+  schoolSite:
+    | 'schumann-elementary'
+    | 'orono-intermediate-school'
+    | 'orono-middle-school'
+    | 'orono-high-school';
   cachedMenu?: LunchMenuDay | null;
   lastSyncDate?: string | null;
   isManualMode: boolean;
@@ -670,6 +682,7 @@ export interface TimeToolConfig {
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
   timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+  timerEndTriggerRandom?: boolean; // Whether to trigger random picker when timer ends
   themeColor?: string;
   glow?: boolean;
   fontFamily?: string;
@@ -809,6 +822,9 @@ export interface PdfConfig {
 export interface MaterialsConfig {
   selectedItems: string[];
   activeItems: string[];
+  title?: string;
+  titleFont?: string;
+  titleColor?: string;
 }
 
 export interface CatalystCategory {
@@ -1275,6 +1291,7 @@ export interface WidgetComponentProps {
   isStudentView?: boolean;
   scale?: number;
   studentPin?: string | null;
+  isSpotlighted?: boolean;
 }
 
 export interface WidgetLayout {
@@ -1337,7 +1354,7 @@ export interface DockFolder {
   items: (WidgetType | InternalToolType)[];
 }
 
-export type InternalToolType = 'record' | 'magic';
+export type InternalToolType = 'record' | 'magic' | 'remote';
 
 export type DockItem =
   | { type: 'tool'; toolType: WidgetType | InternalToolType }
@@ -1346,6 +1363,10 @@ export type DockItem =
 export interface DashboardSettings {
   quickAccessWidgets?: (WidgetType | InternalToolType)[];
   disableCloseConfirmation?: boolean;
+  /** Remote control: widget to spotlight (dim all others). Cleared on dismiss. */
+  spotlightWidgetId?: string | null;
+  /** Whether remote control is enabled for this dashboard. Default is usually true or false depending on the user. */
+  remoteControlEnabled?: boolean;
 }
 
 /**
@@ -1422,7 +1443,8 @@ export type GlobalFeature =
   | 'magic-layout'
   | 'smart-paste'
   | 'smart-poll'
-  | 'screen-recording';
+  | 'screen-recording'
+  | 'remote-control';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
@@ -1485,6 +1507,11 @@ export interface FeaturePermission {
   displayName?: string;
   /** Optional global configuration for the widget (e.g., API keys, target IDs). */
   config?: Record<string, unknown>;
+}
+
+export interface CarRiderProGlobalConfig {
+  /** District portal login URL for the Car Rider Pro dismissal widget */
+  url?: string;
 }
 
 export interface LunchCountGlobalConfig {

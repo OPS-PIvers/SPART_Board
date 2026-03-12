@@ -32,6 +32,8 @@ import {
   Ruler,
   ListOrdered,
   Music,
+  CarFront,
+  Smartphone,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -78,6 +80,12 @@ export const TOOLS: ToolMetadata[] = [
     color: 'bg-orange-600',
   },
   { type: 'classes', icon: Users, label: 'Class', color: 'bg-indigo-600' },
+  {
+    type: 'car-rider-pro',
+    icon: CarFront,
+    label: 'Car Rider',
+    color: 'bg-blue-500',
+  },
   {
     type: 'instructionalRoutines',
     icon: BookOpen,
@@ -150,4 +158,5 @@ export const TOOLS: ToolMetadata[] = [
     label: 'Magic',
     color: 'bg-gradient-to-br from-indigo-500 to-purple-600',
   },
+  { type: 'remote', icon: Smartphone, label: 'Remote', color: 'bg-slate-800' },
 ];

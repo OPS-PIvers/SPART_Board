@@ -92,7 +92,8 @@ export interface UseLiveSessionResult {
 export const useLiveSession = (
   userId: string | undefined,
   role: 'teacher' | 'student',
-  joinCode?: string
+  joinCode?: string,
+  canAccess: boolean = true
 ): UseLiveSessionResult => {
   const [session, setSession] = useState<LiveSession | null>(null);
   const [students, setStudents] = useState<LiveStudent[]>([]);
@@ -250,9 +251,10 @@ export const useLiveSession = (
     );
     // Reject duplicate PINs to prevent students from being indistinguishable
     // in the teacher's roster view during live sessions.
+    // Allow if the PIN is already in use by the CURRENT user (re-join scenario).
     const existingSnap = await getDocs(studentsRef);
     const pinInUse = existingSnap.docs.some(
-      (d) => (d.data() as { pin?: string }).pin === sanitizedPin
+      (d) => (d.data() as { pin?: string }).pin === sanitizedPin && d.id !== uid
     );
     if (pinInUse) {
       throw new Error(
@@ -412,6 +414,16 @@ export const useLiveSession = (
       await Promise.all(disconnectPromises);
     }
   }, [userId]);
+
+  // AUTO-END SESSION: If feature is disabled globally, end the session automatically
+  useEffect(() => {
+    if (role === 'teacher' && session?.isActive && !canAccess) {
+      console.warn(
+        '[LiveSession] Feature disabled globally. Ending session...'
+      );
+      void endSession();
+    }
+  }, [canAccess, session?.isActive, role, endSession]);
 
   const toggleFreezeStudent = useCallback(
     async (

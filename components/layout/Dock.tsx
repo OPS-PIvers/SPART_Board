@@ -42,6 +42,7 @@ import { getWidgetGradeLevels } from '@/config/widgetGradeLevels';
 import { AddWidgetOverrides } from '../../types';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
+import RemoteControlMenu from './RemoteControlMenu';
 import { GlassCard } from '../common/GlassCard';
 import { DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
@@ -184,6 +185,7 @@ export const Dock: React.FC = () => {
   const { session } = useLiveSession(user?.uid, 'teacher');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRosterMenu, setShowRosterMenu] = useState(false);
+  const [showRemoteMenu, setShowRemoteMenu] = useState(false);
   const [showLiveInfo, setShowLiveInfo] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); // Global Edit Mode State
   const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
@@ -199,22 +201,35 @@ export const Dock: React.FC = () => {
   const [dragY, setDragY] = useState(0);
   const [isDraggingDown, setIsDraggingDown] = useState(false);
   const startY = useRef(0);
+  const startX = useRef(0);
+  const hasCaptured = useRef(false);
   const threshold = 80; // Distance to trigger collapse
 
   const handleDockPointerDown = (e: React.PointerEvent) => {
     if (!isExpanded || isEditMode) return;
-    // Don't drag if clicking a button or interactive element
-    if ((e.target as HTMLElement).closest('button')) return;
 
     setIsDraggingDown(true);
     startY.current = e.clientY;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    startX.current = e.clientX;
+    hasCaptured.current = false;
   };
 
   const handleDockPointerMove = (e: React.PointerEvent) => {
     if (!isDraggingDown) return;
     const deltaY = e.clientY - startY.current;
-    // Only allow dragging downwards
+    const deltaX = Math.abs(e.clientX - startX.current);
+
+    if (!hasCaptured.current) {
+      if (deltaX > 10 && deltaX > deltaY) {
+        setIsDraggingDown(false);
+        return;
+      }
+      if (deltaY > 10) {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        hasCaptured.current = true;
+      }
+    }
+
     if (deltaY > 0) {
       setDragY(deltaY);
     }
@@ -223,7 +238,15 @@ export const Dock: React.FC = () => {
   const handleDockPointerUp = (e: React.PointerEvent) => {
     if (!isDraggingDown) return;
     setIsDraggingDown(false);
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+
+    if (hasCaptured.current) {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch (_err) {
+        // Ignore errors if pointer is already released
+      }
+      hasCaptured.current = false;
+    }
 
     if (dragY > threshold) {
       setIsExpanded(false);
@@ -315,9 +338,13 @@ export const Dock: React.FC = () => {
   }, [addWidget, addToast, canAccessFeature, processAndUploadImage, user]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
+  const remoteButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const [classesAnchorRect, setClassesAnchorRect] = useState<DOMRect | null>(
+    null
+  );
+  const [remoteAnchorRect, setRemoteAnchorRect] = useState<DOMRect | null>(
     null
   );
   const [livePopoverPos, setLivePopoverPos] = useState<{
@@ -356,6 +383,13 @@ export const Dock: React.FC = () => {
       setClassesAnchorRect(classesButtonRef.current.getBoundingClientRect());
     }
     setShowRosterMenu(!showRosterMenu);
+  };
+
+  const handleToggleRemoteMenu = () => {
+    if (!showRemoteMenu && remoteButtonRef.current) {
+      setRemoteAnchorRect(remoteButtonRef.current.getBoundingClientRect());
+    }
+    setShowRemoteMenu(!showRemoteMenu);
   };
 
   const handleLongPress = () => {
@@ -474,6 +508,7 @@ export const Dock: React.FC = () => {
       onPointerMove={handleDockPointerMove}
       onPointerUp={handleDockPointerUp}
       onPointerCancel={handleDockPointerUp}
+      onContextMenu={(e) => e.preventDefault()}
       data-role="dock"
       data-testid="dock"
       data-screenshot="exclude"
@@ -483,6 +518,7 @@ export const Dock: React.FC = () => {
       style={{
         transform: `translateX(-50%) translateY(${dragY}px) scale(${1 - Math.min(dragY / 500, 0.15)})`,
         opacity: 1 - Math.min(dragY / 400, 0.4),
+        touchAction: 'pan-x',
       }}
     >
       {showRosterMenu && (
@@ -490,6 +526,13 @@ export const Dock: React.FC = () => {
           onClose={() => setShowRosterMenu(false)}
           onOpenFullEditor={openClassEditor}
           anchorRect={classesAnchorRect}
+        />
+      )}
+
+      {showRemoteMenu && (
+        <RemoteControlMenu
+          onClose={() => setShowRemoteMenu(false)}
+          anchorRect={remoteAnchorRect}
         />
       )}
 
@@ -587,6 +630,8 @@ export const Dock: React.FC = () => {
                 if (type === 'record')
                   return canAccessFeature('screen-recording');
                 if (type === 'magic') return canAccessFeature('magic-layout');
+                if (type === 'remote')
+                  return canAccessFeature('remote-control');
                 return canAccessWidget(type as WidgetType);
               }}
               matchesUserBuilding={matchesUserBuilding}
@@ -734,6 +779,31 @@ export const Dock: React.FC = () => {
                           );
                         }
 
+                        // Handle "remote" as a tool with special popover logic
+                        if (item.toolType === 'remote') {
+                          if (!canAccessFeature('remote-control')) return null;
+                          return (
+                            <ToolDockItem
+                              key={tool.type}
+                              tool={tool}
+                              minimizedWidgets={[]}
+                              onAdd={handleToggleRemoteMenu}
+                              onRestore={() => undefined}
+                              onDelete={() => undefined}
+                              onDeleteAll={() => undefined}
+                              onRemoveFromDock={() =>
+                                toggleToolVisibility(tool.type)
+                              }
+                              isEditMode={isEditMode}
+                              onLongPress={handleLongPress}
+                              globalStyle={globalStyle}
+                              customLabel={getToolLabel(tool.type)}
+                              onClickOverride={handleToggleRemoteMenu}
+                              buttonRef={remoteButtonRef}
+                            />
+                          );
+                        }
+
                         const minimizedWidgets =
                           minimizedWidgetsByType[tool.type as WidgetType] ?? [];
                         return (
@@ -843,83 +913,80 @@ export const Dock: React.FC = () => {
                   )}
                 </DndContext>
 
-                {/* Separator and Live Info Button */}
-                {session?.isActive && (
-                  <>
-                    <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-
-                    {/* LIVE INFO BUTTON (Visible when active) */}
-                    <button
-                      ref={liveButtonRef}
-                      onClick={() => {
-                        if (showLiveInfo) {
-                          setShowLiveInfo(false);
-                        } else if (liveButtonRef.current) {
-                          const rect =
-                            liveButtonRef.current.getBoundingClientRect();
-                          setLivePopoverPos({
-                            left: rect.left + rect.width / 2,
-                            bottom: window.innerHeight - rect.top + 10,
-                          });
-                          setShowLiveInfo(true);
-                        }
-                      }}
-                      aria-label={t('dock.viewLiveSession')}
-                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
+                {/* Extra Actions Separator */}
+                {/* LIVE INFO BUTTON (Visible when active) */}
+                {session?.isActive && canAccessFeature('live-session') && (
+                  <button
+                    ref={liveButtonRef}
+                    onClick={() => {
+                      if (showLiveInfo) {
+                        setShowLiveInfo(false);
+                      } else if (liveButtonRef.current) {
+                        const rect =
+                          liveButtonRef.current.getBoundingClientRect();
+                        setLivePopoverPos({
+                          left: rect.left + rect.width / 2,
+                          bottom: window.innerHeight - rect.top + 10,
+                        });
+                        setShowLiveInfo(true);
+                      }
+                    }}
+                    aria-label={t('dock.viewLiveSession')}
+                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
+                  >
+                    <DockIcon
+                      color="bg-red-500"
+                      className="flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 animate-pulse"
                     >
-                      <DockIcon
-                        color="bg-red-500"
-                        className="flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 animate-pulse"
-                      >
-                        <Cast className="w-5 h-5 md:w-6 md:h-6" />
-                      </DockIcon>
-                      <DockLabel>{t('sidebar.header.live')}</DockLabel>
-                    </button>
-
-                    {/* LIVE POPOVER */}
-                    {showLiveInfo &&
-                      livePopoverPos &&
-                      createPortal(
-                        <GlassCard
-                          globalStyle={globalStyle}
-                          ref={livePopoverRef}
-                          style={{
-                            position: 'fixed',
-                            left: livePopoverPos.left,
-                            bottom: livePopoverPos.bottom,
-                            transform: 'translateX(-50%)',
-                            zIndex: Z_INDEX.popover,
-                          }}
-                          className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
-                        >
-                          {' '}
-                          <div className="p-4 flex flex-col items-center gap-2 text-center">
-                            <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
-                              {t('dock.liveSession')}
-                            </h3>
-                            <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
-                              {session.code}
-                            </div>
-                            <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
-                              {getJoinUrl()}
-                            </div>
-                            <div className="text-xxs text-slate-500 mt-2">
-                              {t('dock.provideCode')}
-                            </div>
-                          </div>
-                          <div className="p-2 border-t border-white/30">
-                            <button
-                              onClick={() => setShowLiveInfo(false)}
-                              className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
-                            >
-                              {t('common.close')}
-                            </button>
-                          </div>
-                        </GlassCard>,
-                        document.body
-                      )}
-                  </>
+                      <Cast className="w-5 h-5 md:w-6 md:h-6" />
+                    </DockIcon>
+                    <DockLabel>{t('sidebar.header.live')}</DockLabel>
+                  </button>
                 )}
+
+                {/* LIVE POPOVER */}
+                {showLiveInfo &&
+                  livePopoverPos &&
+                  session &&
+                  createPortal(
+                    <GlassCard
+                      globalStyle={globalStyle}
+                      ref={livePopoverRef}
+                      style={{
+                        position: 'fixed',
+                        left: livePopoverPos.left,
+                        bottom: livePopoverPos.bottom,
+                        transform: 'translateX(-50%)',
+                        zIndex: Z_INDEX.popover,
+                      }}
+                      className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+                    >
+                      {' '}
+                      <div className="p-4 flex flex-col items-center gap-2 text-center">
+                        <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
+                          {t('dock.liveSession')}
+                        </h3>
+                        <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
+                          {session.code}
+                        </div>
+                        <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
+                          {getJoinUrl()}
+                        </div>
+                        <div className="text-xxs text-slate-500 mt-2">
+                          {t('dock.provideCode')}
+                        </div>
+                      </div>
+                      <div className="p-2 border-t border-white/30">
+                        <button
+                          onClick={() => setShowLiveInfo(false)}
+                          className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
+                        >
+                          {t('common.close')}
+                        </button>
+                      </div>
+                    </GlassCard>,
+                    document.body
+                  )}
 
                 {/* Separator and More Button */}
                 <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
@@ -927,7 +994,7 @@ export const Dock: React.FC = () => {
                 <button
                   ref={moreButtonRef}
                   onClick={() => setShowMoreMenu(!showMoreMenu)}
-                  className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                  className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x flex-shrink-0"
                   title={t('sidebar.header.moreWidgets')}
                 >
                   <DockIcon

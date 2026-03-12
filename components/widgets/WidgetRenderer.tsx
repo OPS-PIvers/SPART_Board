@@ -1,4 +1,5 @@
 import React, { memo, Suspense, useMemo, useCallback } from 'react';
+import { Z_INDEX } from '@/config/zIndex';
 import {
   WidgetData,
   DrawingConfig,
@@ -72,6 +73,7 @@ interface WidgetRendererProps {
   globalStyle: GlobalStyle;
   dashboardBackground?: string;
   dashboardSettings?: DashboardSettings;
+  updateDashboardSettings?: (updates: Partial<DashboardSettings>) => void;
 }
 
 const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
@@ -93,6 +95,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   dashboardBackground,
   dashboardSettings,
 }) => {
+  const isSpotlighted = dashboardSettings?.spotlightWidgetId === widget.id;
   const windowSize = useWindowSize(!!widget.maximized);
   const { canAccessFeature, featurePermissions } = useAuth();
 
@@ -167,11 +170,23 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const isDrawingOverlay =
     widget.type === 'drawing' &&
     (widget.config as DrawingConfig).mode === 'overlay';
+  // When spotlighted we switch to position:fixed so the element escapes all
+  // parent stacking contexts (will-change:transform / container-type:size on
+  // DraggableWindow both create stacking contexts that would otherwise trap
+  // the widget below the backdrop overlay). position:fixed is relative to the
+  // viewport, and the dashboard is always full-screen, so widget.x / widget.y
+  // map 1:1 to viewport coordinates — the widget stays visually in place.
   const customStyle: React.CSSProperties = isDrawingOverlay
-    ? {
-        display: 'none',
-      }
-    : {};
+    ? { display: 'none' }
+    : isSpotlighted
+      ? {
+          position: 'fixed',
+          zIndex: Z_INDEX.backdrop + 1,
+          outline: '3px solid #facc15', // yellow-400 ring
+          outlineOffset: '2px',
+          boxShadow: '0 0 32px 8px rgba(250,204,21,0.25)',
+        }
+      : {};
 
   const scaling = WIDGET_SCALING_CONFIG[widget.type];
   const effectiveWidth = widget.maximized ? windowSize.width : widget.w;
@@ -202,6 +217,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
           scale={scale}
           isStudentView={isStudentView}
           studentPin={studentPin}
+          isSpotlighted={isSpotlighted}
         />
       );
     },
@@ -223,6 +239,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       widget.annotation,
       positionKey,
       isStudentView,
+      isSpotlighted,
     ]
   );
 
@@ -288,6 +305,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       title={getTitle(widget, permission)}
       settings={getWidgetSettings()}
       style={customStyle}
+      isSpotlighted={isSpotlighted}
       skipCloseConfirmation={
         widget.type === 'classes' || dashboardSettings?.disableCloseConfirmation
       }
@@ -333,6 +351,7 @@ interface InnerWidgetRendererProps {
   scale?: number;
   isStudentView: boolean;
   studentPin?: string | null;
+  isSpotlighted: boolean;
 }
 
 const InnerWidgetRenderer = memo(
@@ -343,6 +362,7 @@ const InnerWidgetRenderer = memo(
     scale,
     isStudentView,
     studentPin,
+    isSpotlighted,
   }: InnerWidgetRendererProps) {
     return (
       <WidgetLayoutWrapper
@@ -352,6 +372,7 @@ const InnerWidgetRenderer = memo(
         scale={scale}
         isStudentView={isStudentView}
         studentPin={studentPin}
+        isSpotlighted={isSpotlighted}
       />
     );
   },
@@ -362,6 +383,7 @@ const InnerWidgetRenderer = memo(
     if (prev.scale !== next.scale) return false;
     if (prev.isStudentView !== next.isStudentView) return false;
     if (prev.studentPin !== next.studentPin) return false;
+    if (prev.isSpotlighted !== next.isSpotlighted) return false;
 
     // Check widget props - explicitly ignoring x, y, z
     const pw = prev.widget;

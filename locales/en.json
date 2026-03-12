@@ -224,7 +224,11 @@
       "go": "Go",
       "backspace": "Backspace",
       "confirmTime": "Confirm time",
-      "closeKeypad": "Close keypad"
+      "closeKeypad": "Close keypad",
+      "autoPickRandomStudent": "Auto-Pick Random Student",
+      "addRandomizerTip": "Add a Randomizer widget to auto-pick the next student when the timer ends.",
+      "autoPickNext": "Auto-Pick Next",
+      "triggerRandomizerWhenTimerEnds": "Trigger Randomizer when timer ends"
     },
     "weather": {
       "actual": "Actual",
@@ -350,7 +354,7 @@
         "fourFingerSwipeDown": "4-finger swipe \u2193",
         "fourFingerSwipeUp": "4-finger swipe \u2191",
         "twoFingerPinch": "2-finger pinch",
-        "twoFingerSwipeDown": "2-finger swipe \u2193",
+        "dragDownToDock": "Drag down to dock \u2193",
         "threeFingerSwipeDown": "3-finger swipe \u2193",
         "threeFingerSwipeUp": "3-finger swipe \u2191"
       }

@@ -18,11 +18,15 @@ vi.mock('../common/RosterModeControl', () => ({
 vi.mock('lucide-react', () => ({
   CheckSquare: () => <div data-testid="check-square" />,
   Square: () => <div data-testid="square" />,
+  Circle: () => <div data-testid="circle" />,
+  CheckCircle2: () => <div data-testid="check-circle-2" />,
   ListPlus: () => <div data-testid="list-plus" />,
   Type: () => <div />,
   Users: () => <div />,
   RefreshCw: () => <div />,
   BookOpen: () => <div />,
+  Trash2: () => <div data-testid="trash-2" />,
+  Palette: () => <div data-testid="palette" />,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -115,8 +119,8 @@ describe('ChecklistWidget', () => {
     expect(screen.getByText('Task 1')).toBeInTheDocument();
     expect(screen.getByText('Task 2')).toBeInTheDocument();
     // One checked, one unchecked
-    expect(screen.getByTestId('square')).toBeInTheDocument();
-    expect(screen.getByTestId('check-square')).toBeInTheDocument();
+    expect(screen.getByTestId('circle')).toBeInTheDocument();
+    expect(screen.getByTestId('check-circle-2')).toBeInTheDocument();
   });
 
   it('toggles item completion on click', () => {
@@ -138,6 +142,102 @@ describe('ChecklistWidget', () => {
     });
   });
 
+  it('toggles item completion on Space keydown', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [{ id: '1', text: 'Task 1', completed: false }],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={itemsWidget} />);
+
+    const row = screen.getByRole('checkbox', { name: 'Task 1' });
+    fireEvent.keyDown(row, { key: ' ', repeat: false });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
+      config: expect.objectContaining({
+        items: [{ id: '1', text: 'Task 1', completed: true }],
+      }),
+    });
+  });
+
+  it('toggles item completion on Enter keydown', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [{ id: '1', text: 'Task 1', completed: false }],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={itemsWidget} />);
+
+    const row = screen.getByRole('checkbox', { name: 'Task 1' });
+    fireEvent.keyDown(row, { key: 'Enter', repeat: false });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
+      config: expect.objectContaining({
+        items: [{ id: '1', text: 'Task 1', completed: true }],
+      }),
+    });
+  });
+
+  it('does not toggle on repeated keydown events (key held)', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [{ id: '1', text: 'Task 1', completed: false }],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={itemsWidget} />);
+
+    const row = screen.getByRole('checkbox', { name: 'Task 1' });
+    fireEvent.keyDown(row, { key: ' ', repeat: true });
+    fireEvent.keyDown(row, { key: 'Enter', repeat: true });
+
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+
+  it('removes completed items when Remove Completed is clicked', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [
+          { id: '1', text: 'Task 1', completed: true },
+          { id: '2', text: 'Task 2', completed: false },
+          { id: '3', text: 'Task 3', completed: true },
+        ],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={itemsWidget} />);
+
+    fireEvent.click(screen.getByTitle('Remove Completed'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
+      config: expect.objectContaining({
+        items: [{ id: '2', text: 'Task 2', completed: false }],
+      }),
+    });
+  });
+
+  it('does not show Remove Completed button in roster mode', () => {
+    const rosterWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        mode: 'roster' as const,
+        completedNames: ['Alice'],
+        firstNames: 'Alice\nBob',
+        lastNames: '',
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={rosterWidget} />);
+
+    expect(screen.queryByTitle('Remove Completed')).not.toBeInTheDocument();
+  });
+
   it('resets all checks when reset button is clicked', () => {
     const itemsWidget = {
       ...mockWidget,
@@ -151,7 +251,7 @@ describe('ChecklistWidget', () => {
     };
     render(<ChecklistWidget widget={itemsWidget} />);
 
-    fireEvent.click(screen.getByText('Reset Checks'));
+    fireEvent.click(screen.getByTitle('Reset Checks'));
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
       config: expect.objectContaining({

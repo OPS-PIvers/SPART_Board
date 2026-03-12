@@ -10,63 +10,151 @@ import {
 import { useDebounce } from '../../hooks/useDebounce';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
-  CheckSquare,
-  Square,
   ListPlus,
   Type,
   Users,
   RefreshCw,
   BookOpen,
+  Circle,
+  CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { SettingsLabel } from '../common/SettingsLabel';
+import { WidgetLayout } from './WidgetLayout';
+import { Palette } from 'lucide-react';
 
-interface ChecklistRowProps {
+const FONTS = [
+  { id: 'global', label: 'Inherit', icon: 'G' },
+  { id: 'font-mono', label: 'Digital', icon: '01' },
+  { id: 'font-sans', label: 'Modern', icon: 'Aa' },
+  { id: 'font-handwritten', label: 'School', icon: '✏️' },
+];
+
+const PALETTE = [
+  '#ffffff', // Default white
+  '#f8fafc', // slate-50
+  '#f0f9ff', // sky-50
+  '#f5f3ff', // violet-50
+  '#fff7ed', // orange-50
+  '#f0fdf4', // green-50
+  '#fff1f2', // rose-50
+];
+
+const FONT_COLORS = [
+  '#334155', // slate-700 (default)
+  '#1e293b', // slate-800
+  '#000000', // pure black
+  '#2d3f89', // brand-blue
+  '#ad2122', // brand-red
+  '#166534', // green-800
+  '#1e40af', // blue-800
+];
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const clean = (hex ?? '#ffffff').replace('#', '');
+  const a =
+    typeof alpha === 'number' && !isNaN(alpha)
+      ? Math.max(0, Math.min(1, alpha))
+      : 1;
+  if (clean.length !== 6) return `rgba(255, 255, 255, ${a})`;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255, 255, 255, ${a})`;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+};
+
+interface ChecklistCardProps {
   id: string;
   label: string;
   isCompleted: boolean;
   onToggle: (id: string) => void;
+  textSize: string;
+  iconSize: string;
+  cardPadding: string;
+  cardGap: string;
+  cardColor: string;
+  cardOpacity: number;
+  fontColor: string;
 }
 
-const ChecklistRow = React.memo<ChecklistRowProps>(
-  ({ id, label, isCompleted, onToggle }) => {
+const ChecklistCard = React.memo<ChecklistCardProps>(
+  ({
+    id,
+    label,
+    isCompleted,
+    onToggle,
+    textSize,
+    iconSize,
+    cardPadding,
+    cardGap,
+    cardColor,
+    cardOpacity,
+    fontColor,
+  }) => {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === ' ') e.preventDefault();
+      if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+        onToggle(id);
+      }
+    };
+
+    // Use the user-selected card color. Completed items get a neutral gray tint.
+    const bgColor = isCompleted
+      ? hexToRgba('#cbd5e1', cardOpacity) // slate-300
+      : hexToRgba(cardColor, cardOpacity);
+
+    const borderColor = hexToRgba('#e2e8f0', cardOpacity); // slate-200
+
     return (
-      <li
-        onClick={() => onToggle(id)}
-        className="group/item flex items-start gap-3 cursor-pointer select-none"
-      >
-        <div className="shrink-0 transition-transform active:scale-90 flex items-center justify-center h-[1.2em]">
-          {isCompleted ? (
-            <CheckSquare
-              className="text-green-500 fill-green-50"
-              style={{
-                width: 'min(24px, 1.1em)',
-                height: 'min(24px, 1.1em)',
-              }}
-            />
-          ) : (
-            <Square
-              className="text-slate-300"
-              style={{
-                width: 'min(24px, 1.1em)',
-                height: 'min(24px, 1.1em)',
-              }}
-            />
-          )}
-        </div>
-        <span
-          className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
-          style={{ fontSize: '1em' }}
+      <div role="listitem" className="flex-1 min-h-0 flex flex-col">
+        <div
+          role="checkbox"
+          aria-checked={isCompleted}
+          onKeyPress={handleKeyDown}
+          tabIndex={0}
+          onClick={() => onToggle(id)}
+          onKeyDown={handleKeyDown}
+          className="w-full h-full flex items-start cursor-pointer select-none rounded-2xl border shadow-sm transition-all active:scale-[0.98]"
+          style={{
+            gap: cardGap,
+            padding: cardPadding,
+            backgroundColor: bgColor,
+            borderColor: isCompleted
+              ? hexToRgba('#e2e8f0', cardOpacity * 0.5)
+              : borderColor,
+          }}
         >
-          {label}
-        </span>
-      </li>
+          <div className="shrink-0 transition-transform active:scale-90">
+            {isCompleted ? (
+              <CheckCircle2
+                className="text-green-500"
+                style={{ width: iconSize, height: iconSize }}
+              />
+            ) : (
+              <Circle
+                className="text-indigo-300"
+                style={{ width: iconSize, height: iconSize }}
+              />
+            )}
+          </div>
+          <span
+            className={`font-bold leading-snug break-words min-w-0 flex-1 text-left transition-all`}
+            style={{
+              fontSize: textSize,
+              color: isCompleted ? '#94a3b8' : fontColor, // slate-400 for completed
+              textDecoration: isCompleted ? 'line-through' : 'none',
+            }}
+          >
+            {label}
+          </span>
+        </div>
+      </div>
     );
   }
 );
-ChecklistRow.displayName = 'ChecklistRow';
-
-import { WidgetLayout } from './WidgetLayout';
+ChecklistCard.displayName = 'ChecklistCard';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -83,16 +171,23 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     completedNames = [],
     scaleMultiplier = 1,
+    fontFamily = 'global',
+    cardColor = '#ffffff',
+    cardOpacity = 1,
+    fontColor = '#334155',
   } = config;
+
+  const getFontClass = () => {
+    if (fontFamily === 'global') return `font-${globalStyle.fontFamily}`;
+    if (fontFamily.startsWith('font-')) return fontFamily;
+    return `font-${fontFamily}`;
+  };
 
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
     [rosters, activeRosterId]
   );
 
-  // Process Roster Names — always returns { id, label } objects.
-  // In class mode, `id` is the student's UUID (keeps PII out of completedNames).
-  // In custom mode, `id` and `label` are both the entered name string.
   const students = useMemo((): { id: string; label: string }[] => {
     if (mode !== 'roster') return [];
 
@@ -120,8 +215,6 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     return combined;
   }, [firstNames, lastNames, mode, rosterMode, activeRoster]);
 
-  // Use refs to keep callback stable so we don't break memoization of children
-  // This allows toggleItem to be stable across renders even when state changes
   const latestState = useRef({
     items,
     completedNames,
@@ -176,7 +269,21 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
+  const removeCompleted = () => {
+    if (mode === 'manual') {
+      const remaining = items.filter((i) => !i.completed);
+      updateWidget(widget.id, { config: { ...config, items: remaining } });
+    }
+  };
+
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
+
+  // Scaled sizing values derived from scaleMultiplier
+  const sm = scaleMultiplier;
+  const textSize = `min(${Math.round(18 * sm)}px, ${(5 * sm).toFixed(1)}cqmin)`;
+  const iconSize = `min(${Math.round(28 * sm)}px, ${(7 * sm).toFixed(1)}cqmin)`;
+  const cardPadding = `min(${Math.round(10 * sm)}px, ${(2.2 * sm).toFixed(1)}cqmin) min(${Math.round(14 * sm)}px, ${(3 * sm).toFixed(1)}cqmin)`;
+  const cardGap = `min(${Math.round(10 * sm)}px, ${(2.2 * sm).toFixed(1)}cqmin)`;
 
   if (!hasContent) {
     return (
@@ -200,80 +307,103 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <WidgetLayout
       padding="p-0"
-      header={
-        <div
-          className="w-full flex items-center justify-center border-b border-slate-100/30 cursor-move hover:bg-slate-900/5 transition-colors group/checklist-header"
-          style={{ height: 'min(16px, 3.5cqmin)' }}
-        >
-          <div
-            className="bg-slate-400/30 rounded-full group-hover/checklist-header:bg-slate-400/50 transition-colors"
-            style={{
-              width: 'min(32px, 8cqmin)',
-              height: 'min(4px, 1cqmin)',
-            }}
-          />
-        </div>
-      }
       content={
         <div
           className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
-          style={{
-            fontSize: `min(${20 * scaleMultiplier}px, ${5 * scaleMultiplier}cqmin)`,
-          }}
         >
           <div
-            className="flex-1 overflow-y-auto custom-scrollbar"
+            role="list"
+            className={`flex-1 overflow-y-auto custom-scrollbar flex flex-col ${getFontClass()}`}
             style={{
-              padding: 'min(12px, 2.5cqmin) min(16px, 3.5cqmin)',
+              padding: 'min(10px, 2.2cqmin) min(12px, 2.5cqmin)',
+              gap: `min(${Math.round(8 * sm)}px, ${(1.8 * sm).toFixed(1)}cqmin)`,
             }}
           >
-            <ul style={{ gap: '0.4em' }} className="flex flex-col">
-              {mode === 'manual'
-                ? items.map((item) => (
-                    <ChecklistRow
-                      key={item.id}
-                      id={item.id}
-                      label={item.text}
-                      isCompleted={item.completed}
-                      onToggle={toggleItem}
-                    />
-                  ))
-                : students.map((student) => (
-                    <ChecklistRow
-                      key={student.id}
-                      id={student.id}
-                      label={student.label}
-                      isCompleted={completedNames.includes(student.id)}
-                      onToggle={toggleItem}
-                    />
-                  ))}
-            </ul>
-          </div>
-        </div>
-      }
-      footer={
-        <div
-          style={{
-            padding: '0 min(16px, 3.5cqmin) min(12px, 2.5cqmin)',
-          }}
-        >
-          <button
-            onClick={resetToday}
-            className="w-full flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95 shadow-indigo-500/5"
-            style={{
-              gap: 'min(8px, 2cqmin)',
-              padding: 'min(10px, 2.5cqmin)',
-              fontSize: 'min(11px, 3cqmin)',
-            }}
-          >
-            <RefreshCw
+            {mode === 'manual'
+              ? items.map((item) => (
+                  <ChecklistCard
+                    key={item.id}
+                    id={item.id}
+                    label={item.text}
+                    isCompleted={item.completed}
+                    onToggle={toggleItem}
+                    textSize={textSize}
+                    iconSize={iconSize}
+                    cardPadding={cardPadding}
+                    cardGap={cardGap}
+                    cardColor={cardColor}
+                    cardOpacity={cardOpacity}
+                    fontColor={fontColor}
+                  />
+                ))
+              : students.map((student) => (
+                  <ChecklistCard
+                    key={student.id}
+                    id={student.id}
+                    label={student.label}
+                    isCompleted={completedNames.includes(student.id)}
+                    onToggle={toggleItem}
+                    textSize={textSize}
+                    iconSize={iconSize}
+                    cardPadding={cardPadding}
+                    cardGap={cardGap}
+                    cardColor={cardColor}
+                    cardOpacity={cardOpacity}
+                    fontColor={fontColor}
+                  />
+                ))}
+
+            {/* Action Buttons - Moved inside scrollable area for consistent spacing */}
+            <div
               style={{
-                width: 'min(14px, 3.5cqmin)',
-                height: 'min(14px, 3.5cqmin)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 'min(8px, 1.8cqmin)',
+                marginTop: `min(${Math.round(4 * sm)}px, ${(1 * sm).toFixed(1)}cqmin)`, // Add small extra gap before buttons
               }}
-            />{' '}
-            Reset Checks
-          </button>
+            >
+              <button
+                onClick={resetToday}
+                title="Reset Checks"
+                className="flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95 shadow-indigo-500/5"
+                style={{
+                  width: 'min(36px, 10cqmin)',
+                  height: 'min(36px, 10cqmin)',
+                  minWidth: '24px',
+                  minHeight: '24px',
+                }}
+              >
+                <RefreshCw
+                  style={{
+                    width: 'max(14px, min(18px, 5cqmin))',
+                    height: 'max(14px, min(18px, 5cqmin))',
+                  }}
+                  strokeWidth={2.5}
+                />
+              </button>
+              {mode === 'manual' && (
+                <button
+                  onClick={removeCompleted}
+                  title="Remove Completed"
+                  className="flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-rose-500 uppercase tracking-wider hover:bg-rose-50 transition-all active:scale-95"
+                  style={{
+                    width: 'min(36px, 10cqmin)',
+                    height: 'min(36px, 10cqmin)',
+                    minWidth: '24px',
+                    minHeight: '24px',
+                  }}
+                >
+                  <Trash2
+                    style={{
+                      width: 'max(14px, min(18px, 5cqmin))',
+                      height: 'max(14px, min(18px, 5cqmin))',
+                    }}
+                    strokeWidth={2.5}
+                  />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       }
     />
@@ -292,6 +422,10 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     firstNames = '',
     lastNames = '',
     scaleMultiplier = 1,
+    fontFamily = 'global',
+    cardColor = '#ffffff',
+    cardOpacity = 1,
+    fontColor = '#334155',
   } = config;
 
   const [localText, setLocalText] = React.useState(
@@ -482,6 +616,126 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
           <span className="w-10 text-center font-mono  text-slate-700 text-xs">
             {scaleMultiplier}x
           </span>
+        </div>
+      </div>
+
+      <hr className="border-slate-100" />
+
+      {/* Typography */}
+      <div>
+        <SettingsLabel icon={Type}>Typography</SettingsLabel>
+        <div className="grid grid-cols-4 gap-2">
+          {FONTS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, fontFamily: f.id } as ChecklistConfig,
+                })
+              }
+              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
+                fontFamily === f.id || (!fontFamily && f.id === 'global')
+                  ? 'border-indigo-500 bg-indigo-50'
+                  : 'border-slate-100 hover:border-slate-200'
+              }`}
+            >
+              <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
+              <span className="text-xxxs uppercase text-slate-600 font-bold">
+                {f.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Font Color */}
+      <div>
+        <SettingsLabel icon={Palette}>Font Color</SettingsLabel>
+        <div className="flex flex-wrap gap-2 px-1">
+          {FONT_COLORS.map((color) => (
+            <button
+              key={color}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, fontColor: color } as ChecklistConfig,
+                })
+              }
+              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${
+                fontColor === color
+                  ? 'border-slate-800 scale-110 shadow-sm'
+                  : 'border-transparent'
+              }`}
+              style={{ backgroundColor: color }}
+              title={color}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Card Style */}
+      <div>
+        <SettingsLabel icon={Palette}>Card Style</SettingsLabel>
+        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-4">
+          {/* Card Color */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">
+                Card Color
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                {cardColor}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {PALETTE.map((color) => (
+                <button
+                  key={color}
+                  onClick={() =>
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        cardColor: color,
+                      } as ChecklistConfig,
+                    })
+                  }
+                  className={`w-6 h-6 rounded-md border transition-all hover:scale-110 ${
+                    cardColor === color
+                      ? 'border-indigo-500 ring-2 ring-indigo-200'
+                      : 'border-slate-200'
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Card Opacity */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">
+                Opacity
+              </span>
+              <span className="text-xs text-slate-500 tabular-nums font-bold">
+                {Math.round(cardOpacity * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={cardOpacity}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    cardOpacity: parseFloat(e.target.value),
+                  } as ChecklistConfig,
+                })
+              }
+              className="w-full accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
         </div>
       </div>
     </div>
