@@ -598,9 +598,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             lastSavedFieldsRef.current = serverFields;
             lastWidgetCountRef.current = serverActive.widgets.length;
             lastSavedDashboardIdRef.current = serverActive.id;
-            if (serverActive.updatedAt) {
-              lastSavedAtRef.current = serverActive.updatedAt;
-            }
           }
           newDashboards = migratedDashboards;
         }
@@ -690,7 +687,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // cleaned up when the effect re-runs or the component unmounts.
   const auxTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const lastSavedDataRef = useRef<string>('');
-  const lastSavedAtRef = useRef<number>(0);
   const lastWidgetCountRef = useRef<number>(0);
   // Track which dashboard the saved-data refs correspond to so they can be
   // re-initialised when the user switches dashboards.
@@ -737,12 +733,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     // refs from the loaded data WITHOUT triggering a redundant Firestore write.
     //
     // Without this guard the first effect run (or post-switch run) would see
-    // lastSavedDataRef.current differing from currentData and schedule a write
-    // of the just-loaded Firestore data back to Firestore.  That write advances
-    // lastSavedAtRef.current to the current time, causing the isStaleSnapshot
-    // check in the onSnapshot handler to block ANY concurrent remote-control
-    // update whose Firestore updatedAt timestamp falls within the round-trip
-    // window — making the /remote URL appear to have no effect on the main board.
+    // lastSavedDataRef.current differing from currentData and schedule a
+    // redundant write of the just-loaded Firestore data back to Firestore,
+    // incrementing pendingSaveCountRef and causing the onSnapshot merge path
+    // to discard concurrent remote-control updates during the round-trip window.
     const isDashboardSwitch =
       lastSavedDashboardIdRef.current !== null &&
       lastSavedDashboardIdRef.current !== active.id;
@@ -753,11 +747,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       lastSavedFieldsRef.current = initSavedFields;
       lastWidgetCountRef.current = active.widgets.length;
       lastSavedDashboardIdRef.current = active.id;
-      // Seed the stale-snapshot guard from the dashboard's own updatedAt so
-      // that any remote save with a more-recent timestamp is accepted immediately.
-      if (active.updatedAt) {
-        lastSavedAtRef.current = active.updatedAt;
-      }
       if (pendingSaveCountRef.current === 0) {
         setIsSaving(false);
       }
@@ -792,14 +781,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
       saveDashboard(active)
-        .then((savedUpdatedAt) => {
-          // Use the timestamp that was actually written to Firestore (captured
-          // before the setDoc call) rather than Date.now() after the round-trip.
-          // This prevents the ~200 ms inflation that would otherwise cause the
-          // isStaleSnapshot check to block concurrent remote-control updates.
+        .then(() => {
           lastSavedDataRef.current = savedData;
           lastSavedFieldsRef.current = savedFields;
-          lastSavedAtRef.current = savedUpdatedAt;
           pendingSaveCountRef.current = Math.max(
             0,
             pendingSaveCountRef.current - 1
