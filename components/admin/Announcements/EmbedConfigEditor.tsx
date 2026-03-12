@@ -62,6 +62,7 @@ export const EmbedConfigEditor: React.FC<{
     if (finalUrl !== currentUrl) {
       onChange({ ...config, url: finalUrl });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.mode, config.url, embedUrl, rawUrl, onChange]);
 
   const applyUrl = () => {

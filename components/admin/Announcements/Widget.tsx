@@ -296,14 +296,18 @@ function renderConfigEditor(
       return (
         <TextConfigEditor
           config={form.widgetConfig}
-          onChange={(config) => handleConfigChange(config as Record<string, unknown>)}
+          onChange={(config) =>
+            handleConfigChange(config as Record<string, unknown>)
+          }
         />
       );
     case 'embed':
       return (
         <EmbedConfigEditor
           config={form.widgetConfig}
-          onChange={(config) => handleConfigChange(config as Record<string, unknown>)}
+          onChange={(config) =>
+            handleConfigChange(config as Record<string, unknown>)
+          }
         />
       );
     case 'qr':
