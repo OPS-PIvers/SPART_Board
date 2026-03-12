@@ -213,7 +213,7 @@ describe('ChecklistWidget', () => {
     };
     render(<ChecklistWidget widget={itemsWidget} />);
 
-    fireEvent.click(screen.getByText('Remove Completed'));
+    fireEvent.click(screen.getByTitle('Remove Completed'));
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
       config: expect.objectContaining({
@@ -235,7 +235,7 @@ describe('ChecklistWidget', () => {
     };
     render(<ChecklistWidget widget={rosterWidget} />);
 
-    expect(screen.queryByText('Remove Completed')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Remove Completed')).not.toBeInTheDocument();
   });
 
   it('resets all checks when reset button is clicked', () => {
@@ -251,7 +251,7 @@ describe('ChecklistWidget', () => {
     };
     render(<ChecklistWidget widget={itemsWidget} />);
 
-    fireEvent.click(screen.getByText('Reset Checks'));
+    fireEvent.click(screen.getByTitle('Reset Checks'));
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
       config: expect.objectContaining({
