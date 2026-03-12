@@ -526,9 +526,8 @@ export const SpecialistScheduleConfigurationModal: React.FC<
                           Current Summary
                         </h4>
                         <p className="text-xs text-teal-700/70">
-                          {selectedBuildingId === 'schumann-elementary'
-                            ? 'Schumann Elementary'
-                            : 'Intermediate School'}{' '}
+                          {BUILDINGS.find((b) => b.id === selectedBuildingId)
+                            ?.name ?? 'Selected Building'}{' '}
                           is currently using a{' '}
                           <strong>
                             {currentBuildingConfig.cycleLength}-

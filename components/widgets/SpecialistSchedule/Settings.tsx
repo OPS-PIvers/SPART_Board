@@ -476,7 +476,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   </div>
                   <input
                     type="text"
-                    value={tempItem?.task}
+                    value={tempItem?.task ?? ''}
                     onChange={(e) =>
                       setTempItem((prev) =>
                         prev ? { ...prev, task: e.target.value } : null
@@ -494,7 +494,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     </label>
                     <input
                       type="time"
-                      value={tempItem?.startTime}
+                      value={tempItem?.startTime ?? ''}
                       onChange={(e) =>
                         setTempItem((prev) =>
                           prev ? { ...prev, startTime: e.target.value } : null
@@ -509,7 +509,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     </label>
                     <input
                       type="time"
-                      value={tempItem?.endTime}
+                      value={tempItem?.endTime ?? ''}
                       onChange={(e) =>
                         setTempItem((prev) =>
                           prev ? { ...prev, endTime: e.target.value } : null
@@ -725,7 +725,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   </label>
                   <input
                     type="text"
-                    value={tempItem?.task}
+                    value={tempItem?.task ?? ''}
                     onChange={(e) =>
                       setTempItem((prev) =>
                         prev ? { ...prev, task: e.target.value } : null
@@ -743,7 +743,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     </label>
                     <input
                       type="time"
-                      value={tempItem?.startTime}
+                      value={tempItem?.startTime ?? ''}
                       onChange={(e) =>
                         setTempItem((prev) =>
                           prev ? { ...prev, startTime: e.target.value } : null
@@ -758,7 +758,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     </label>
                     <input
                       type="time"
-                      value={tempItem?.endTime}
+                      value={tempItem?.endTime ?? ''}
                       onChange={(e) =>
                         setTempItem((prev) =>
                           prev ? { ...prev, endTime: e.target.value } : null
