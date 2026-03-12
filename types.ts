@@ -1419,7 +1419,7 @@ export interface DockFolder {
   items: (WidgetType | InternalToolType)[];
 }
 
-export type InternalToolType = 'record' | 'magic';
+export type InternalToolType = 'record' | 'magic' | 'remote';
 
 export type DockItem =
   | { type: 'tool'; toolType: WidgetType | InternalToolType }
@@ -1430,6 +1430,8 @@ export interface DashboardSettings {
   disableCloseConfirmation?: boolean;
   /** Remote control: widget to spotlight (dim all others). Cleared on dismiss. */
   spotlightWidgetId?: string | null;
+  /** Whether remote control is enabled for this dashboard. Default is usually true or false depending on the user. */
+  remoteControlEnabled?: boolean;
 }
 
 /**

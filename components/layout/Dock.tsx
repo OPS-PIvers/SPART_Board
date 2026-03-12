@@ -42,6 +42,7 @@ import { getWidgetGradeLevels } from '@/config/widgetGradeLevels';
 import { AddWidgetOverrides } from '../../types';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
+import RemoteControlMenu from './RemoteControlMenu';
 import { GlassCard } from '../common/GlassCard';
 import { DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
@@ -184,6 +185,7 @@ export const Dock: React.FC = () => {
   const { session } = useLiveSession(user?.uid, 'teacher');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRosterMenu, setShowRosterMenu] = useState(false);
+  const [showRemoteMenu, setShowRemoteMenu] = useState(false);
   const [showLiveInfo, setShowLiveInfo] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); // Global Edit Mode State
   const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
@@ -336,9 +338,13 @@ export const Dock: React.FC = () => {
   }, [addWidget, addToast, canAccessFeature, processAndUploadImage, user]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
+  const remoteButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const [classesAnchorRect, setClassesAnchorRect] = useState<DOMRect | null>(
+    null
+  );
+  const [remoteAnchorRect, setRemoteAnchorRect] = useState<DOMRect | null>(
     null
   );
   const [livePopoverPos, setLivePopoverPos] = useState<{
@@ -377,6 +383,13 @@ export const Dock: React.FC = () => {
       setClassesAnchorRect(classesButtonRef.current.getBoundingClientRect());
     }
     setShowRosterMenu(!showRosterMenu);
+  };
+
+  const handleToggleRemoteMenu = () => {
+    if (!showRemoteMenu && remoteButtonRef.current) {
+      setRemoteAnchorRect(remoteButtonRef.current.getBoundingClientRect());
+    }
+    setShowRemoteMenu(!showRemoteMenu);
   };
 
   const handleLongPress = () => {
@@ -516,6 +529,13 @@ export const Dock: React.FC = () => {
         />
       )}
 
+      {showRemoteMenu && (
+        <RemoteControlMenu
+          onClose={() => setShowRemoteMenu(false)}
+          anchorRect={remoteAnchorRect}
+        />
+      )}
+
       {smartPastePending !== null && (
         <SmartPastePickerModal
           text={smartPastePending}
@@ -610,6 +630,7 @@ export const Dock: React.FC = () => {
                 if (type === 'record')
                   return canAccessFeature('screen-recording');
                 if (type === 'magic') return canAccessFeature('magic-layout');
+                if (type === 'remote') return canAccessFeature('remote-control');
                 return canAccessWidget(type as WidgetType);
               }}
               matchesUserBuilding={matchesUserBuilding}
@@ -757,6 +778,29 @@ export const Dock: React.FC = () => {
                           );
                         }
 
+                        // Handle "remote" as a tool with special popover logic
+                        if (item.toolType === 'remote') {
+                          if (!canAccessFeature('remote-control')) return null;
+                          return (
+                            <ToolDockItem
+                              key={tool.type}
+                              tool={tool}
+                              minimizedWidgets={[]}
+                              onAdd={handleToggleRemoteMenu}
+                              onRestore={() => undefined}
+                              onDelete={() => undefined}
+                              onDeleteAll={() => undefined}
+                              onRemoveFromDock={() => toggleToolVisibility(tool.type)}
+                              isEditMode={isEditMode}
+                              onLongPress={handleLongPress}
+                              globalStyle={globalStyle}
+                              customLabel={getToolLabel(tool.type)}
+                              onClickOverride={handleToggleRemoteMenu}
+                              buttonRef={remoteButtonRef}
+                            />
+                          );
+                        }
+
                         const minimizedWidgets =
                           minimizedWidgetsByType[tool.type as WidgetType] ?? [];
                         return (
@@ -867,11 +911,6 @@ export const Dock: React.FC = () => {
                 </DndContext>
 
                 {/* Extra Actions Separator */}
-                {(session?.isActive && canAccessFeature('live-session')) ||
-                canAccessFeature('remote-control') ? (
-                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-                ) : null}
-
                 {/* LIVE INFO BUTTON (Visible when active) */}
                 {session?.isActive && canAccessFeature('live-session') && (
                   <button
@@ -899,23 +938,6 @@ export const Dock: React.FC = () => {
                       <Cast className="w-5 h-5 md:w-6 md:h-6" />
                     </DockIcon>
                     <DockLabel>{t('sidebar.header.live')}</DockLabel>
-                  </button>
-                )}
-
-                {/* REMOTE CONTROL BUTTON */}
-                {canAccessFeature('remote-control') && (
-                  <button
-                    onClick={() => window.open('/remote', '_blank')}
-                    aria-label="Open Remote Control"
-                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x relative focus-visible:outline-none"
-                  >
-                    <DockIcon
-                      color="bg-slate-800"
-                      className="flex items-center justify-center shadow-lg group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-slate-400 group-focus-visible:ring-offset-2"
-                    >
-                      <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                    </DockIcon>
-                    <DockLabel>Remote</DockLabel>
                   </button>
                 )}
 

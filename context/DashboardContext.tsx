@@ -535,6 +535,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 'flipped',
                 'maximized',
               ] as const;
+
+              const remoteControlEnabled =
+                currentActive.settings?.remoteControlEnabled ?? true;
+
               const mergedWidgets = db.widgets
                 .filter((sw) => {
                   // Exclude widgets deleted locally
@@ -551,10 +555,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   const layoutChangedLocally = LAYOUT_FIELDS.some(
                     (f) => lw[f] !== saved[f]
                   );
+
+                  // If remote control is OFF, do not accept incoming server
+                  // changes for existing widgets when resolving conflicts.
+                  const keepLocalConfig = configChangedLocally || !remoteControlEnabled;
+                  const keepLocalLayout = layoutChangedLocally || !remoteControlEnabled;
+
                   return {
                     ...sw,
-                    config: configChangedLocally ? lw.config : sw.config,
-                    ...(layoutChangedLocally
+                    config: keepLocalConfig ? lw.config : sw.config,
+                    ...(keepLocalLayout
                       ? LAYOUT_FIELDS.reduce(
                           (acc, field) => ({
                             ...acc,
