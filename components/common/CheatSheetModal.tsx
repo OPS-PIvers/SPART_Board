@@ -80,7 +80,7 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
     [t]
   );
 
-  const touchscreenGestures: GestureRow[] = useMemo(
+  const boardGestures: GestureRow[] = useMemo(
     () => [
       {
         gesture: t('widgets.cheatSheet.gestureNames.twoFingerSwipeLR'),
@@ -95,16 +95,42 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
         description: t('widgets.cheatSheet.gestures.restoreAll'),
       },
       {
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerPinch'),
+        description: t('widgets.cheatSheet.gestures.zoom'),
+      },
+      {
+        gesture: t('widgets.cheatSheet.gestureNames.oneFingerSwipeEdge'),
+        description: t('widgets.cheatSheet.gestures.openSidebar'),
+      },
+      {
+        gesture: t('widgets.cheatSheet.gestureNames.oneFingerDoubleTap'),
+        description: t('widgets.cheatSheet.gestures.fullscreen'),
+      },
+    ],
+    [t]
+  );
+
+  const widgetGestures: GestureRow[] = useMemo(
+    () => [
+      {
+        gesture: t('widgets.cheatSheet.gestureNames.widgetTwoFingerSwipeDown'),
+        description: t('widgets.cheatSheet.gestures.minimizeWidget'),
+      },
+      {
+        gesture: t('widgets.cheatSheet.gestureNames.widgetTwoFingerSwipeUp'),
+        description: t('widgets.cheatSheet.gestures.spotlight'),
+      },
+      {
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerPinch'),
+        description: t('widgets.cheatSheet.gestures.resize'),
+      },
+      {
         gesture: t('widgets.cheatSheet.gestureNames.oneFingerDoubleTap'),
         description: t('widgets.cheatSheet.gestures.toggleAnnotation'),
       },
       {
         gesture: t('widgets.cheatSheet.gestureNames.oneFingerLongPress'),
         description: t('widgets.cheatSheet.gestures.screenshot'),
-      },
-      {
-        gesture: t('widgets.cheatSheet.gestureNames.dragDownToDock'),
-        description: t('widgets.cheatSheet.gestures.minimizeWidget'),
       },
     ],
     [t]
@@ -221,18 +247,56 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
                 {t('widgets.cheatSheet.touchscreenGestures')}
               </h3>
             </div>
-            <ul className="space-y-3">
-              {touchscreenGestures.map((row) => (
-                <li key={row.description} className="flex items-start gap-3">
-                  <span className="shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-700/40 text-emerald-300 text-xs font-medium whitespace-nowrap">
-                    {row.gesture}
-                  </span>
-                  <span className="text-slate-300 text-xs leading-snug">
-                    {row.description}
-                  </span>
-                </li>
-              ))}
-            </ul>
+
+            <div className="space-y-6">
+              {/* Board Context */}
+              <section>
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span className="h-px bg-slate-800 flex-1" />
+                  {t('widgets.cheatSheet.boardGestures')}
+                  <span className="h-px bg-slate-800 flex-1" />
+                </h4>
+                <ul className="space-y-3">
+                  {boardGestures.map((row) => (
+                    <li
+                      key={row.description}
+                      className="flex items-start gap-3"
+                    >
+                      <span className="shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-700/40 text-emerald-300 text-xs font-medium whitespace-nowrap">
+                        {row.gesture}
+                      </span>
+                      <span className="text-slate-300 text-xs leading-snug">
+                        {row.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {/* Widget Context */}
+              <section>
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span className="h-px bg-slate-800 flex-1" />
+                  {t('widgets.cheatSheet.widgetGestures')}
+                  <span className="h-px bg-slate-800 flex-1" />
+                </h4>
+                <ul className="space-y-3">
+                  {widgetGestures.map((row) => (
+                    <li
+                      key={row.description}
+                      className="flex items-start gap-3"
+                    >
+                      <span className="shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-700/40 text-emerald-300 text-xs font-medium whitespace-nowrap">
+                        {row.gesture}
+                      </span>
+                      <span className="text-slate-300 text-xs leading-snug">
+                        {row.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
           </div>
         </div>
 
