@@ -38,6 +38,7 @@ export type WidgetType =
   | 'mathTool'
   | 'nextUp'
   | 'onboarding'
+  | 'car-rider-pro'
   | 'music';
 
 // --- ROSTER SYSTEM TYPES ---
@@ -242,6 +243,7 @@ export interface RandomConfig {
   rosterMode?: 'class' | 'custom';
   autoStartTimer?: boolean;
   visualStyle?: 'flash' | 'slots' | 'wheel';
+  externalTrigger?: number;
 }
 
 export interface DiceConfig {
@@ -632,7 +634,11 @@ export interface LunchMenuDay {
 }
 
 export interface LunchCountConfig {
-  schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
+  schoolSite:
+    | 'schumann-elementary'
+    | 'orono-intermediate-school'
+    | 'orono-middle-school'
+    | 'orono-high-school';
   cachedMenu?: LunchMenuDay | null;
   lastSyncDate?: string | null;
   isManualMode: boolean;
@@ -672,6 +678,7 @@ export interface TimeToolConfig {
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
   timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+  timerEndTriggerRandom?: boolean; // Whether to trigger random picker when timer ends
   themeColor?: string;
   glow?: boolean;
   fontFamily?: string;
@@ -1277,6 +1284,7 @@ export interface WidgetComponentProps {
   isStudentView?: boolean;
   scale?: number;
   studentPin?: string | null;
+  isSpotlighted?: boolean;
 }
 
 export interface WidgetLayout {
@@ -1348,8 +1356,6 @@ export type DockItem =
 export interface DashboardSettings {
   quickAccessWidgets?: (WidgetType | InternalToolType)[];
   disableCloseConfirmation?: boolean;
-  /** Remote control: widget to display full-screen. Cleared on dismiss. */
-  maximizedWidgetId?: string | null;
   /** Remote control: widget to spotlight (dim all others). Cleared on dismiss. */
   spotlightWidgetId?: string | null;
 }
@@ -1492,6 +1498,11 @@ export interface FeaturePermission {
   displayName?: string;
   /** Optional global configuration for the widget (e.g., API keys, target IDs). */
   config?: Record<string, unknown>;
+}
+
+export interface CarRiderProGlobalConfig {
+  /** District portal login URL for the Car Rider Pro dismissal widget */
+  url?: string;
 }
 
 export interface LunchCountGlobalConfig {
