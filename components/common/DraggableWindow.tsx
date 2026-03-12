@@ -24,7 +24,13 @@ import {
   Highlighter,
   LayoutTemplate,
 } from 'lucide-react';
-import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
+import {
+  WidgetData,
+  WidgetType,
+  GlobalStyle,
+  Path,
+  DashboardSettings,
+} from '../../types';
 import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
 import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
 import { useScreenshot } from '../../hooks/useScreenshot';
