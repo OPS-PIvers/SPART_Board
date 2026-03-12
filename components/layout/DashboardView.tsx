@@ -688,7 +688,15 @@ export const DashboardView: React.FC = () => {
       }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onDoubleClick={handleDoubleTap}
+      onDoubleClick={(e) => {
+        const nativeEvent = e.nativeEvent;
+        if (
+          'pointerType' in nativeEvent &&
+          (nativeEvent as PointerEvent).pointerType !== 'mouse'
+        ) {
+          handleDoubleTap();
+        }
+      }}
     >
       {/* Ambient YouTube Video Layer */}
       {youTubeVideoId && (
