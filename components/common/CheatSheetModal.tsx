@@ -83,23 +83,23 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
   const touchscreenGestures: GestureRow[] = useMemo(
     () => [
       {
-        gesture: t('widgets.cheatSheet.gestureNames.fourFingerSwipeLR'),
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerSwipeLR'),
         description: t('widgets.cheatSheet.gestures.switchBoards'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.fourFingerSwipeDown'),
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerSwipeDown'),
         description: t('widgets.cheatSheet.gestures.minimizeAll'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.fourFingerSwipeUp'),
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerSwipeUp'),
         description: t('widgets.cheatSheet.gestures.restoreAll'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.threeFingerSwipeUp'),
+        gesture: t('widgets.cheatSheet.gestureNames.oneFingerDoubleTap'),
         description: t('widgets.cheatSheet.gestures.toggleAnnotation'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.threeFingerSwipeDown'),
+        gesture: t('widgets.cheatSheet.gestureNames.oneFingerLongPress'),
         description: t('widgets.cheatSheet.gestures.screenshot'),
       },
       {
