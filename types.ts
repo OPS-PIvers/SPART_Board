@@ -823,6 +823,9 @@ export interface PdfConfig {
 export interface MaterialsConfig {
   selectedItems: string[];
   activeItems: string[];
+  title?: string;
+  titleFont?: string;
+  titleColor?: string;
 }
 
 export interface CatalystCategory {
