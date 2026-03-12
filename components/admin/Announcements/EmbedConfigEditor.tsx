@@ -16,9 +16,11 @@ import { useScreenRecord } from '@/hooks/useScreenRecord';
 import { convertToEmbedUrl } from '@/utils/urlHelpers';
 import { EmbedTab } from './types';
 
+import { EmbedConfig } from '@/types';
+
 export const EmbedConfigEditor: React.FC<{
-  config: Record<string, unknown>;
-  onChange: (config: Record<string, unknown>) => void;
+  config: Partial<EmbedConfig>;
+  onChange: (config: Partial<EmbedConfig>) => void;
 }> = ({ config, onChange }) => {
   const [activeTab, setActiveTab] = useState<EmbedTab>(() => {
     const mode = config.mode as EmbedTab | undefined;
@@ -29,7 +31,7 @@ export const EmbedConfigEditor: React.FC<{
 
   // Keep raw URL in local state so the input remains editable while typing.
   // The converted (embeddable) URL is only written to config on blur.
-  const [rawUrl, setRawUrl] = useState((config.url as string) ?? '');
+  const [rawUrl, setRawUrl] = useState(config.url ?? '');
   const [copied, setCopied] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,7 +47,7 @@ export const EmbedConfigEditor: React.FC<{
   useEffect(() => {
     if (config.url !== prevConfigUrl.current) {
       prevConfigUrl.current = config.url;
-      setRawUrl((config.url as string) ?? '');
+      setRawUrl(config.url ?? '');
     }
   }, [config.url]);
 
@@ -56,11 +58,11 @@ export const EmbedConfigEditor: React.FC<{
   useEffect(() => {
     if (config.mode === 'code') return;
     const finalUrl = embedUrl || rawUrl.trim();
-    const currentUrl = (config.url as string | undefined) ?? '';
+    const currentUrl = config.url ?? '';
     if (finalUrl !== currentUrl) {
       onChange({ ...config, url: finalUrl });
     }
-  }, [config, embedUrl, rawUrl, onChange]);
+  }, [config.mode, config.url, embedUrl, rawUrl, onChange]);
 
   const applyUrl = () => {
     const finalUrl = embedUrl || rawUrl.trim();
@@ -222,7 +224,7 @@ export const EmbedConfigEditor: React.FC<{
               Custom HTML / iframe Embed Code
             </label>
             <textarea
-              value={(config.html as string) ?? ''}
+              value={config.html ?? ''}
               onChange={(e) => onChange({ ...config, html: e.target.value })}
               className="w-full h-32 px-3 py-2 text-xs font-mono bg-slate-900 text-emerald-400 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
               placeholder={

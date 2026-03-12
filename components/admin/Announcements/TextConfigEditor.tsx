@@ -1,8 +1,10 @@
 import React from 'react';
 
+import { TextConfig } from '@/types';
+
 export const TextConfigEditor: React.FC<{
-  config: Record<string, unknown>;
-  onChange: (config: Record<string, unknown>) => void;
+  config: Partial<TextConfig>;
+  onChange: (config: Partial<TextConfig>) => void;
 }> = ({ config, onChange }) => (
   <div className="space-y-3">
     <div>
@@ -10,7 +12,7 @@ export const TextConfigEditor: React.FC<{
         Message Content
       </label>
       <textarea
-        value={(config.content as string) ?? ''}
+        value={config.content ?? ''}
         onChange={(e) => onChange({ ...config, content: e.target.value })}
         className="w-full h-28 px-3 py-2 text-sm border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
         placeholder="Enter announcement message…"
@@ -24,12 +26,12 @@ export const TextConfigEditor: React.FC<{
         <div className="flex items-center gap-2">
           <input
             type="color"
-            value={(config.bgColor as string) ?? '#ffeb3b'}
+            value={config.bgColor ?? '#ffeb3b'}
             onChange={(e) => onChange({ ...config, bgColor: e.target.value })}
             className="w-10 h-8 border border-slate-300 rounded cursor-pointer"
           />
           <span className="text-xs text-slate-500">
-            {(config.bgColor as string) ?? '#ffeb3b'}
+            {config.bgColor ?? '#ffeb3b'}
           </span>
         </div>
       </div>
@@ -41,7 +43,7 @@ export const TextConfigEditor: React.FC<{
           type="number"
           min={10}
           max={72}
-          value={(config.fontSize as number) ?? 18}
+          value={config.fontSize ?? 18}
           onChange={(e) => {
             const parsed = parseInt(e.target.value, 10);
             if (!Number.isFinite(parsed)) return;
