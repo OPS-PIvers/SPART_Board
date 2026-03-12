@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { WidgetData } from '@/types';
+import { WidgetData, CarRiderProGlobalConfig } from '@/types';
 import { CarFront, ExternalLink, Loader2 } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
@@ -17,7 +17,13 @@ export const CarRiderProWidget: React.FC<{ widget: WidgetData }> = ({
       doc(db, 'feature_permissions', 'car-rider-pro'),
       (docSnap) => {
         if (docSnap.exists()) {
-          setUrl(String(docSnap.data()?.config?.url ?? ''));
+          const data = docSnap.data() as {
+            config?: CarRiderProGlobalConfig;
+            url?: string;
+          };
+          // Prefer config.url (new shape); fall back to top-level url (legacy shape)
+          const resolved = data.config?.url ?? data.url ?? '';
+          setUrl(resolved);
         } else {
           setUrl('');
         }

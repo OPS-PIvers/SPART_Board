@@ -1499,6 +1499,11 @@ export interface FeaturePermission {
   config?: Record<string, unknown>;
 }
 
+export interface CarRiderProGlobalConfig {
+  /** District portal login URL for the Car Rider Pro dismissal widget */
+  url?: string;
+}
+
 export interface LunchCountGlobalConfig {
   /** Google Sheet ID for Schumann Elementary submissions */
   schumannSheetId?: string;

@@ -1,8 +1,5 @@
 import React from 'react';
-
-export interface CarRiderProGlobalConfig {
-  url?: string;
-}
+import { CarRiderProGlobalConfig } from '@/types';
 
 interface CarRiderConfigurationPanelProps {
   config: CarRiderProGlobalConfig;
@@ -15,10 +12,14 @@ export const CarRiderConfigurationPanel: React.FC<
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
+        <label
+          htmlFor="car-rider-pro-url"
+          className="text-xxs font-bold text-slate-500 uppercase mb-2 block"
+        >
           District Portal URL
         </label>
         <input
+          id="car-rider-pro-url"
           type="url"
           value={config.url ?? ''}
           onChange={(e) => onChange({ ...config, url: e.target.value })}
