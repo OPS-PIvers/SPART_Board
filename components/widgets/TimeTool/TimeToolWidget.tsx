@@ -562,6 +562,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
     timerEndVoiceLevel,
     timerEndTrafficColor,
     timerEndTriggerRandom,
+    timerEndTriggerNextUp,
     fontFamily = 'global',
     clockStyle = 'modern',
     themeColor = STANDARD_COLORS.slate,
@@ -578,6 +579,8 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
   const hasRandomizer = activeDashboard?.widgets.some(
     (w) => w.type === 'random'
   );
+
+  const hasNextUp = activeDashboard?.widgets.some((w) => w.type === 'nextUp');
 
   const fonts = [
     { id: 'global', label: t('widgets.clock.fonts.inherit'), icon: 'G' },
@@ -949,6 +952,41 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                 onChange={(checked) =>
                   updateWidget(widget.id, {
                     config: { ...config, timerEndTriggerRandom: checked },
+                  })
+                }
+                size="md"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Nexus Connection: NextUp Auto-Advance */}
+        <div className="pt-2 border-t border-slate-100 mt-4">
+          <p className="text-xxs font-bold text-slate-500 uppercase tracking-tight mb-2">
+            {t('widgets.timeTool.autoAdvanceNextUpQueue')}:
+          </p>
+          {!hasNextUp ? (
+            <div className="text-xs text-brand-blue-primary bg-brand-blue-lighter/20 p-3 rounded-xl border border-brand-blue-lighter/30 flex items-start gap-2">
+              <span className="text-lg mt-px">&#128161;</span>
+              <p className="font-medium leading-snug">
+                {t('widgets.timeTool.addNextUpTip')}
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm">
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-indigo-900">
+                  {t('widgets.timeTool.autoAdvanceNext')}
+                </p>
+                <p className="text-xxxs text-indigo-600 uppercase">
+                  {t('widgets.timeTool.advanceQueueOnEnd')}
+                </p>
+              </div>
+              <Toggle
+                checked={!!timerEndTriggerNextUp}
+                onChange={(checked) =>
+                  updateWidget(widget.id, {
+                    config: { ...config, timerEndTriggerNextUp: checked },
                   })
                 }
                 size="md"
