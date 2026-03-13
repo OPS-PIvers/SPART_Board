@@ -12,7 +12,7 @@ import { useAuth } from '@/context/useAuth';
 import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';
-import { AnnouncementsManager } from './AnnouncementsManager';
+import { AnnouncementsManager } from './Announcements';
 import { MusicManager } from './MusicManager';
 
 interface AdminSettingsProps {

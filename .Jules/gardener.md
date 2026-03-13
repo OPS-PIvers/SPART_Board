@@ -61,3 +61,9 @@
 **Plan:** Decomposed into `components/widgets/MiniApp/` with `Widget.tsx`, `components/SortableItem.tsx`, `components/GlobalAppRow.tsx`, `components/MiniAppEditor.tsx`, and extracted API logic to `hooks/useMiniAppSync.ts` hook.
 
 ## 2025-03-04 - [Refactor `generateWithAI` function] **Weed:** [Deeply nested if/else statements (Arrow code)] **Root Cause:** [The `generateWithAI` function had a long and repetitive `if / else if` chain defining system and user prompts depending on `genType`.] **Plan:** [Refactored to use a dictionary map (`promptMap`) mapping generation types to a lazy-evaluated function `() => ({ systemPrompt, userPrompt })`. This encapsulates the logic, scales well, and is immune to nullish properties on uncalled types.]
+
+## 2025-06-08 - Refactor AnnouncementsManager
+
+**Weed:** `AnnouncementsManager.tsx` was over 1700 lines, mixing UI components (`TextConfigEditor`, `EmbedConfigEditor`, `AnnouncementsManager`) and complex configuration types.
+**Root Cause:** "God Component" pattern where multiple distinct UI views and logic were co-located in a single file as the feature grew.
+**Plan:** Decomposed into `components/admin/Announcements/` directory with separate files for `Widget`, `TextConfigEditor`, `EmbedConfigEditor`, and `types`.
