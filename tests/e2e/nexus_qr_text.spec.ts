@@ -9,16 +9,9 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // 1. Load dashboard
   await page.goto('/');
 
-  // Wait for the app to initialize by waiting for the dock to be attached.
-  await page.waitForSelector('[data-role="dock"]', { state: 'attached' });
-
   // 2. Open Dock and Add Widgets
   // The dock button might need waiting or finding by title
-  const openToolsButton = page
-    .getByTitle('Open Tools')
-    .or(page.locator('button[aria-label="Open Tools"]'));
-  await expect(openToolsButton).toBeVisible({ timeout: 15000 });
-  await openToolsButton.click();
+  await page.getByTitle('Open Tools').click();
   // Wait for dock animation/stability
   await page.waitForTimeout(500);
 

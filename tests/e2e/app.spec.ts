@@ -16,15 +16,9 @@ test.describe(APP_NAME, () => {
   });
 
   test('can open sidebar and view widgets', async ({ page }) => {
-    // Wait for the app to initialize by waiting for the dock to be attached.
-    // This reduces flakiness when waiting for initial render before clicking tools.
-    await page.waitForSelector('[data-role="dock"]', { state: 'attached' });
-
     // Open sidebar
-    const menuButton = page
-      .getByTitle('Open Menu')
-      .or(page.locator('button[aria-label="Open Menu"]'));
-    await expect(menuButton).toBeVisible({ timeout: 15000 });
+    const menuButton = page.getByTitle('Open Menu');
+    await expect(menuButton).toBeVisible();
     await menuButton.click();
 
     // Verify sidebar header
@@ -35,14 +29,9 @@ test.describe(APP_NAME, () => {
   });
 
   test('can add a Clock widget', async ({ page }) => {
-    // Wait for the app to initialize by waiting for the dock to be attached.
-    await page.waitForSelector('[data-role="dock"]', { state: 'attached' });
-
     // Open Dock (it is minimized by default)
-    const openToolsButton = page
-      .getByTitle('Open Tools')
-      .or(page.locator('button[aria-label="Open Tools"]'));
-    await expect(openToolsButton).toBeVisible({ timeout: 15000 });
+    const openToolsButton = page.getByTitle('Open Tools');
+    await expect(openToolsButton).toBeVisible();
     await openToolsButton.click();
 
     // Wait for dock animation

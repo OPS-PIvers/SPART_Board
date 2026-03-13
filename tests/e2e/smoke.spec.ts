@@ -12,8 +12,5 @@ test('dashboard loads and shows sidebar button', async ({ page }) => {
   await page.goto('/');
 
   // Wait for the "Open Menu" button to be visible.
-  const menuButton = page
-    .getByTitle('Open Menu')
-    .or(page.locator('button[aria-label="Open Menu"]'));
-  await expect(menuButton).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTitle('Open Menu')).toBeVisible();
 });
