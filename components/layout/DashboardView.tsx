@@ -318,9 +318,9 @@ export const DashboardView: React.FC = () => {
           gestureFingerCount.current = touches;
         }
 
-        const widgetEl = (event.target as HTMLElement).closest?.(
+        const widgetEl = (event.target as HTMLElement).closest<HTMLElement>(
           '.widget'
-        ) as HTMLElement | null;
+        );
 
         if (!last) {
           // 1-finger drag on background while zoomed → pan.
