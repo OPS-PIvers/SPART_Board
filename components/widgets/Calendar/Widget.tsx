@@ -61,8 +61,16 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     const fetchPersonal = async () => {
       try {
         const now = new Date();
-        const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-        const timeMax = new Date(now.setDate(now.getDate() + 30)).toISOString();
+        const timeMin = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        ).toISOString();
+        const timeMax = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() + 30
+        ).toISOString();
 
         const allPromises = personalIds.map((id) =>
           calendarService.getEvents(id, timeMin, timeMax)
@@ -194,13 +202,13 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
               msOverflowStyle: 'none',
             }}
           >
-            {displayEvents.map((event, idx) => {
+            {displayEvents.map((event) => {
               const today = new Date().toISOString().split('T')[0];
               const isToday = event.date === today;
 
               return (
                 <div
-                  key={`${event.date}-${event.title}-${idx}`}
+                  key={`${event.date}-${event.title}`}
                   className="w-full flex flex-col rounded-xl transition-all relative shrink-0 overflow-hidden"
                   style={{
                     backgroundColor: bgColor,
