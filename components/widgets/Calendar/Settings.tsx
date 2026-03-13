@@ -35,6 +35,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
   );
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
   const [isAddingLocal, setIsAddingLocal] = useState(false);
 
   const [personalInput, setPersonalInput] = useState('');
@@ -59,11 +60,15 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
       updateWidget(widget.id, {
         config: {
           ...config,
-          events: [...events, { title: newTitle, date: newDate }],
+          events: [
+            ...events,
+            { title: newTitle, date: newDate, time: newTime || undefined },
+          ],
         } as CalendarConfig,
       });
       setNewTitle('');
       setNewDate('');
+      setNewTime('');
       setIsAddingLocal(false);
     }
   };
@@ -382,6 +387,13 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
               placeholder="Day/Date (e.g., Monday, 2024-10-12)"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+            <input
+              type="text"
+              placeholder="Time (Optional, e.g. 14:30 or 2:30 PM)"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
             <div className="flex gap-2">

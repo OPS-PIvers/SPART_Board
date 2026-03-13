@@ -7,7 +7,7 @@ import {
   CalendarEvent,
   DEFAULT_GLOBAL_STYLE,
 } from '@/types';
-import { Calendar as CalendarIcon, Ban } from 'lucide-react';
+import { Calendar as CalendarIcon, Ban, Timer } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { WidgetLayout } from '../WidgetLayout';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
@@ -15,10 +15,28 @@ import { useAuth } from '@/context/useAuth';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { GAP_STYLE, hexToRgba } from './constants';
 
+/** Parses a time string (e.g. "14:30", "2:30 PM") into seconds since midnight, or -1 if invalid. */
+const parseTimeSeconds = (t: string | undefined): number => {
+  if (!t || !t.includes(':')) return -1;
+  const parts = t.toLowerCase().split(':');
+  let h = parseInt(parts[0], 10);
+  const mStr = parts[1].replace(/[^0-9]/g, '');
+  const m = parseInt(mStr, 10);
+
+  const isPM = t.toLowerCase().includes('pm');
+  const isAM = t.toLowerCase().includes('am');
+
+  if (isPM && h < 12) h += 12;
+  if (isAM && h === 12) h = 0;
+
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return -1;
+  return h * 3600 + m * 60;
+};
+
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { activeDashboard } = useDashboard();
+  const { activeDashboard, addWidget } = useDashboard();
   const { selectedBuildings } = useAuth();
   const { subscribeToPermission } = useFeaturePermissions();
   const { calendarService, isConnected } = useGoogleCalendar();
@@ -165,6 +183,39 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     return `font-${fontFamily}`;
   };
 
+  const handleStartTimer = React.useCallback(
+    (event: CalendarEvent) => {
+      if (!event.time) return;
+
+      const startSeconds = parseTimeSeconds(event.time);
+      if (startSeconds < 0) return;
+
+      const now = new Date();
+      const nowSeconds =
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+      const remainingSeconds = Math.max(0, startSeconds - nowSeconds);
+      if (remainingSeconds === 0) return;
+
+      const spawnNow = Date.now();
+
+      addWidget('time-tool', {
+        x: widget.x + widget.w + 20,
+        y: widget.y,
+        config: {
+          mode: 'timer',
+          visualType: 'digital',
+          duration: remainingSeconds,
+          elapsedTime: remainingSeconds,
+          isRunning: true,
+          startTime: spawnNow,
+          selectedSound: 'Gong',
+        },
+      });
+    },
+    [addWidget, widget.x, widget.y, widget.w]
+  );
+
   const bgColor = hexToRgba(cardColor, cardOpacity);
 
   if (isBlocked) {
@@ -187,6 +238,9 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const nowSeconds =
+    now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
   return (
     <WidgetLayout
@@ -204,12 +258,20 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
               msOverflowStyle: 'none',
             }}
           >
-            {displayEvents.map((event) => {
+            {displayEvents.map((event, idx) => {
               const isToday = event.date === today;
+
+              let canStartTimer = false;
+              if (isToday && event.time) {
+                const startSeconds = parseTimeSeconds(event.time);
+                if (startSeconds >= 0) {
+                  canStartTimer = startSeconds > nowSeconds;
+                }
+              }
 
               return (
                 <div
-                  key={`${event.date}-${event.title}`}
+                  key={`${event.date}-${event.title}-${idx}`}
                   className="w-full flex flex-col rounded-xl transition-all relative shrink-0 overflow-hidden"
                   style={{
                     backgroundColor: bgColor,
@@ -250,6 +312,21 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                         >
                           · {event.time}
                         </span>
+                      )}
+                      {canStartTimer && (
+                        <button
+                          onClick={() => handleStartTimer(event)}
+                          className="text-slate-400 hover:text-indigo-500 transition-colors shrink-0"
+                          style={{ marginLeft: 'min(4px, 1cqmin)' }}
+                          title="Start countdown to event"
+                        >
+                          <Timer
+                            style={{
+                              width: 'min(14px, 3.5cqmin)',
+                              height: 'min(14px, 3.5cqmin)',
+                            }}
+                          />
+                        </button>
                       )}
                     </div>
                     <span
