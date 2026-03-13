@@ -237,6 +237,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       widget.isLive,
       widget.transparency,
       widget.annotation,
+      widget.scaleMultiplier,
       positionKey,
       isStudentView,
       isSpotlighted,
@@ -281,6 +282,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       canSpread={scalingConfig.canSpread ?? true}
       headerHeight={HEADER_HEIGHT}
       padding={scalingConfig.padding ?? PADDING}
+      contentScaleMultiplier={widget.scaleMultiplier}
     >
       {renderScalableContent}
     </ScalableWidget>

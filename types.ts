@@ -1399,6 +1399,7 @@ export interface WidgetData {
   isLive?: boolean;
   transparency?: number;
   annotation?: DrawingConfig;
+  scaleMultiplier?: number;
   config: WidgetConfig;
 }
 

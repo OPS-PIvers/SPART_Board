@@ -885,47 +885,41 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         if (first) {
           if (event.cancelable) event.preventDefault();
           return {
-            startW: widget.w,
-            startH: widget.h,
-            startX: widget.x,
-            startY: widget.y,
+            startScale: widget.scaleMultiplier ?? 1,
           };
         }
 
         if (event.cancelable) event.preventDefault();
         const startState = memo as {
-          startW: number;
-          startH: number;
-          startX: number;
-          startY: number;
+          startScale: number;
         };
         if (!startState) return memo as unknown;
 
-        const newW = Math.max(150, Math.round(startState.startW * scale));
-        const newH = Math.max(150, Math.round(startState.startH * scale));
-        const newX = startState.startX - (newW - startState.startW) / 2;
-        const newY = startState.startY - (newH - startState.startH) / 2;
+        // scale provided by onPinch is a multiplier based on gesture distance.
+        // E.g. zooming in -> scale > 1. zooming out -> scale < 1.
+        let newScaleMultiplier = startState.startScale * scale;
+        // Clamp it to reasonable bounds (0.5x to 3x)
+        newScaleMultiplier = Math.max(0.5, Math.min(newScaleMultiplier, 3));
+
+        // Provide real-time visual feedback using a CSS variable
+        // The relative scale for the gesture is applied on top of the current renderScale
+        // We use the clamped relative scale: newScaleMultiplier / startState.startScale
+        const relativeScale = newScaleMultiplier / startState.startScale;
 
         if (windowRef.current && !last) {
-          windowRef.current.style.width = `${newW}px`;
-          windowRef.current.style.height = `${newH}px`;
-          windowRef.current.style.left = `${newX}px`;
-          windowRef.current.style.top = `${newY}px`;
+          windowRef.current.style.setProperty(
+            '--transient-zoom',
+            relativeScale.toString()
+          );
         }
 
         if (last) {
-          updateWidget(widget.id, {
-            w: newW,
-            h: newH,
-            x: newX,
-            y: newY,
-          });
           if (windowRef.current) {
-            windowRef.current.style.width = '';
-            windowRef.current.style.height = '';
-            windowRef.current.style.left = '';
-            windowRef.current.style.top = '';
+            windowRef.current.style.removeProperty('--transient-zoom');
           }
+          updateWidget(widget.id, {
+            scaleMultiplier: newScaleMultiplier,
+          });
         }
         return memo as unknown;
       },

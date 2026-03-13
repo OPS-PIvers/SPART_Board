@@ -8,6 +8,7 @@ interface ScalableWidgetProps {
   canSpread?: boolean;
   padding?: number;
   headerHeight?: number;
+  contentScaleMultiplier?: number;
   children:
     | React.ReactNode
     | ((props: {
@@ -25,6 +26,7 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
   canSpread = true,
   padding = 0,
   headerHeight = 0,
+  contentScaleMultiplier = 1,
   children,
 }) => {
   const { scale, renderScale, internalW, internalH } = useMemo(() => {
@@ -33,22 +35,23 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
 
     if (baseWidth <= 0 || baseHeight <= 0) {
       return {
-        scale: 1,
-        renderScale: 1,
-        internalW: availableW,
-        internalH: availableH,
+        scale: 1 * contentScaleMultiplier,
+        renderScale: 1 * contentScaleMultiplier,
+        internalW: availableW / contentScaleMultiplier,
+        internalH: availableH / contentScaleMultiplier,
       };
     }
 
     const scaleX = availableW / baseWidth;
     const scaleY = availableH / baseHeight;
-    const scale = Math.min(scaleX, scaleY);
+    const baseScale = Math.min(scaleX, scaleY);
+    const scale = baseScale * contentScaleMultiplier;
 
     if (canSpread) {
-      // Cap the CSS transform at 1.0 to prevent upscaling blur.
-      // When scale >= 1, render at full available resolution with no transform.
-      // When scale < 1, render at larger virtual size and downscale (still crisp).
-      const renderScale = Math.min(scale, 1);
+      // Cap the CSS transform at 1.0 * contentScaleMultiplier to prevent upscaling blur.
+      // When baseScale >= 1, render at full available resolution with no transform.
+      // When baseScale < 1, render at larger virtual size and downscale (still crisp).
+      const renderScale = Math.min(baseScale, 1) * contentScaleMultiplier;
       return {
         scale,
         renderScale,
@@ -63,7 +66,16 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
       internalW: baseWidth,
       internalH: baseHeight,
     };
-  }, [width, height, baseWidth, baseHeight, canSpread, padding, headerHeight]);
+  }, [
+    width,
+    height,
+    baseWidth,
+    baseHeight,
+    canSpread,
+    padding,
+    headerHeight,
+    contentScaleMultiplier,
+  ]);
 
   const renderContent = () => {
     if (typeof children === 'function') {
@@ -91,7 +103,7 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
         style={{
           width: internalW,
           height: internalH,
-          transform: `scale(${renderScale})`,
+          transform: `scale(calc(${renderScale} * var(--transient-zoom, 1)))`,
           transformOrigin: 'center center',
           display: 'flex',
           flexDirection: 'column',
