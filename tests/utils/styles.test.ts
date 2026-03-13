@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getFontClass } from '../../utils/styles';
+import { getFontClass } from '@/utils/styles';
 
 describe('styles util', () => {
   describe('getFontClass', () => {
