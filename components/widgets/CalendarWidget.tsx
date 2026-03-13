@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Type,
   Palette,
+  Timer,
 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { WidgetLayout } from './WidgetLayout';
@@ -75,10 +76,28 @@ const extractCalendarId = (input: string): string => {
   return trimmed;
 };
 
+/** Parses a time string (e.g. "14:30", "2:30 PM") into seconds since midnight, or -1 if invalid. */
+const parseTimeSeconds = (t: string | undefined): number => {
+  if (!t || !t.includes(':')) return -1;
+  const parts = t.toLowerCase().split(':');
+  let h = parseInt(parts[0], 10);
+  const mStr = parts[1].replace(/[^0-9]/g, '');
+  const m = parseInt(mStr, 10);
+
+  const isPM = t.toLowerCase().includes('pm');
+  const isAM = t.toLowerCase().includes('am');
+
+  if (isPM && h < 12) h += 12;
+  if (isAM && h === 12) h = 0;
+
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return -1;
+  return h * 3600 + m * 60;
+};
+
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { activeDashboard } = useDashboard();
+  const { activeDashboard, addWidget } = useDashboard();
   const { selectedBuildings } = useAuth();
   const { subscribeToPermission } = useFeaturePermissions();
   const { calendarService, isConnected } = useGoogleCalendar();
@@ -217,7 +236,44 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     return `font-${fontFamily}`;
   };
 
+  const handleStartTimer = React.useCallback(
+    (event: CalendarEvent) => {
+      if (!event.time) return;
+
+      const startSeconds = parseTimeSeconds(event.time);
+      if (startSeconds < 0) return;
+
+      const now = new Date();
+      const nowSeconds =
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+      const remainingSeconds = Math.max(0, startSeconds - nowSeconds);
+      if (remainingSeconds === 0) return;
+
+      const spawnNow = Date.now();
+
+      addWidget('time-tool', {
+        x: widget.x + widget.w + 20,
+        y: widget.y,
+        config: {
+          mode: 'timer',
+          visualType: 'digital',
+          duration: remainingSeconds,
+          elapsedTime: remainingSeconds,
+          isRunning: true,
+          startTime: spawnNow,
+          selectedSound: 'Gong',
+        },
+      });
+    },
+    [addWidget, widget.x, widget.y, widget.w]
+  );
+
   const bgColor = hexToRgba(cardColor, cardOpacity);
+
+  const now = new Date();
+  const nowSeconds =
+    now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
   if (isBlocked) {
     return (
@@ -257,6 +313,14 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
             {displayEvents.map((event, idx) => {
               const today = new Date().toISOString().split('T')[0];
               const isToday = event.date === today;
+
+              let canStartTimer = false;
+              if (isToday && event.time) {
+                const startSeconds = parseTimeSeconds(event.time);
+                if (startSeconds >= 0) {
+                  canStartTimer = startSeconds > nowSeconds;
+                }
+              }
 
               return (
                 <div
@@ -300,6 +364,21 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                         >
                           · {event.time}
                         </span>
+                      )}
+                      {canStartTimer && (
+                        <button
+                          onClick={() => handleStartTimer(event)}
+                          className="text-slate-400 hover:text-indigo-500 transition-colors shrink-0"
+                          style={{ marginLeft: 'min(4px, 1cqmin)' }}
+                          title="Start countdown to event"
+                        >
+                          <Timer
+                            style={{
+                              width: 'min(14px, 3.5cqmin)',
+                              height: 'min(14px, 3.5cqmin)',
+                            }}
+                          />
+                        </button>
                       )}
                     </div>
                     <span
@@ -354,6 +433,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
   );
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
   const [isAddingLocal, setIsAddingLocal] = useState(false);
 
   const [personalInput, setPersonalInput] = useState('');
@@ -378,11 +458,15 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
       updateWidget(widget.id, {
         config: {
           ...config,
-          events: [...events, { title: newTitle, date: newDate }],
+          events: [
+            ...events,
+            { title: newTitle, date: newDate, time: newTime || undefined },
+          ],
         } as CalendarConfig,
       });
       setNewTitle('');
       setNewDate('');
+      setNewTime('');
       setIsAddingLocal(false);
     }
   };
@@ -701,6 +785,13 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
               placeholder="Day/Date (e.g., Monday, 2024-10-12)"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+            <input
+              type="text"
+              placeholder="Time (Optional, e.g. 14:30 or 2:30 PM)"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
             <div className="flex gap-2">
