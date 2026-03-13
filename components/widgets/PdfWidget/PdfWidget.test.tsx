@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, vi, expect, beforeEach, Mock } from 'vitest';
-import { PdfWidget, PdfSettings } from './PdfWidget';
+import { PdfWidget } from './PdfWidget';
+import { PdfSettings } from './Settings';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
 import { useStorage } from '@/hooks/useStorage';
