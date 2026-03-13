@@ -18,7 +18,8 @@ import { useScreenshot } from '../../../hooks/useScreenshot';
 import { useAuth } from '../../../context/useAuth';
 import { useLiveSession } from '../../../hooks/useLiveSession';
 import { Button } from '../../common/Button';
-import { WIDGET_PALETTE, STANDARD_COLORS } from '../../../config/colors';
+import { STANDARD_COLORS } from '../../../config/colors';
+import { DRAWING_DEFAULTS } from './constants';
 
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
@@ -53,11 +54,11 @@ export const DrawingWidget: React.FC<{
 
   const config = widget.config as DrawingConfig;
   const {
-    mode = 'window',
+    mode = DRAWING_DEFAULTS.MODE,
     color = STANDARD_COLORS.slate,
-    width = 4,
+    width = DRAWING_DEFAULTS.WIDTH,
     paths = [],
-    customColors = WIDGET_PALETTE.slice(0, 5),
+    customColors = DRAWING_DEFAULTS.CUSTOM_COLORS,
   } = config;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);

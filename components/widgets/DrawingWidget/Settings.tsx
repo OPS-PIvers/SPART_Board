@@ -2,16 +2,16 @@ import React from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { WidgetData, DrawingConfig } from '../../../types';
 import { Pencil, Palette, Minimize, Maximize } from 'lucide-react';
-import { WIDGET_PALETTE } from '../../../config/colors';
 import { SettingsLabel } from '../../common/SettingsLabel';
+import { DRAWING_DEFAULTS } from './constants';
 
 export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as DrawingConfig;
-  const width = config.width ?? 4;
-  const customColors = config.customColors ?? WIDGET_PALETTE.slice(0, 5);
+  const width = config.width ?? DRAWING_DEFAULTS.WIDTH;
+  const customColors = config.customColors ?? DRAWING_DEFAULTS.CUSTOM_COLORS;
 
   const handleColorChange = (index: number, newColor: string) => {
     const nextColors = [...customColors];
