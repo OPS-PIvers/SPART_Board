@@ -44,7 +44,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     const lines = debouncedText.split('\n');
     const newItems: ChecklistItem[] = lines
       .filter((line) => line.trim() !== '')
-      .map((line, idx) => {
+      .map((line) => {
         const trimmedLine = line.trim();
         const existing = items.find((i) => i.text === trimmedLine);
         return {
