@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { CalendarWidget } from '../components/widgets/CalendarWidget';
+import { CalendarWidget } from '../components/widgets/Calendar/Widget';
 import { expect, test, vi, describe } from 'vitest';
 import { WidgetData } from '../types';
 
