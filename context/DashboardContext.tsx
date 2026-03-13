@@ -539,29 +539,50 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               const remoteControlEnabled =
                 currentActive.settings?.remoteControlEnabled ?? true;
 
-              const mergedWidgets = db.widgets
-                .filter((sw) => {
-                  // Exclude widgets deleted locally
-                  // (present in lastSaved but absent from current local state)
-                  return !(lastSavedById.has(sw.id) && !localById.has(sw.id));
-                })
-                .map((sw) => {
-                  const lw = localById.get(sw.id);
-                  const saved = lastSavedById.get(sw.id);
-                  if (!lw) return sw; // new widget from server → accept
-                  if (!saved) return lw; // new widget locally → keep
-                  const configChangedLocally =
-                    JSON.stringify(lw.config) !== JSON.stringify(saved.config);
-                  const layoutChangedLocally = LAYOUT_FIELDS.some(
-                    (f) => lw[f] !== saved[f]
-                  );
+              // Pre-calculate merge decisions for all incoming server widgets
+              const widgetMergeDecisions = db.widgets.map((sw) => {
+                const lw = localById.get(sw.id);
+                const saved = lastSavedById.get(sw.id);
 
-                  // If remote control is OFF, do not accept incoming server
-                  // changes for existing widgets when resolving conflicts.
-                  const keepLocalConfig =
-                    configChangedLocally || !remoteControlEnabled;
-                  const keepLocalLayout =
-                    layoutChangedLocally || !remoteControlEnabled;
+                // Exclude widgets deleted locally (present in lastSaved but absent from current local state)
+                const isDeletedLocally = saved && !lw;
+
+                // If it's a new widget from server (!lw && !saved), accept entirely.
+                // If it's a new widget locally (!saved && lw), we keep local. (Though server widgets typically don't fall in this bucket unless IDs magically collide).
+                if (!lw || !saved) {
+                  return {
+                    sw,
+                    lw,
+                    saved,
+                    keepLocalConfig: false,
+                    keepLocalLayout: false,
+                    isDeletedLocally,
+                  };
+                }
+
+                const configChangedLocally =
+                  JSON.stringify(lw.config) !== JSON.stringify(saved.config);
+                const layoutChangedLocally = LAYOUT_FIELDS.some(
+                  (f) => lw[f] !== saved[f]
+                );
+
+                return {
+                  sw,
+                  lw,
+                  saved,
+                  isDeletedLocally,
+                  // If remote control is OFF, do not accept incoming server changes
+                  keepLocalConfig:
+                    configChangedLocally || !remoteControlEnabled,
+                  keepLocalLayout:
+                    layoutChangedLocally || !remoteControlEnabled,
+                };
+              });
+
+              const mergedWidgets = widgetMergeDecisions
+                .filter((d) => !d.isDeletedLocally)
+                .map(({ sw, lw, keepLocalConfig, keepLocalLayout }) => {
+                  if (!lw) return sw; // new widget from server -> accept
 
                   return {
                     ...sw,
@@ -577,6 +598,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                       : {}),
                   };
                 });
+
               // Append widgets added locally that aren't on the server yet
               const serverIds = new Set(db.widgets.map((w) => w.id));
               const localOnlyWidgets = currentActive.widgets.filter(
@@ -605,39 +627,28 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   db.settings ?? {}
                 );
               }
+
               // For widgets, construct the array of what we would have saved if we had
               // accepted the server's widget baseline for non-locally-modified widgets.
-              const nextLastSavedWidgets = db.widgets.map((sw) => {
-                const lw = localById.get(sw.id);
-                const saved = lastSavedById.get(sw.id);
-                if (!lw) return sw;
-                if (!saved) return sw;
+              const nextLastSavedWidgets = widgetMergeDecisions.map(
+                ({ sw, lw, saved, keepLocalConfig, keepLocalLayout }) => {
+                  if (!lw || !saved) return sw;
 
-                const configChangedLocally =
-                  JSON.stringify(lw.config) !== JSON.stringify(saved.config);
-                const layoutChangedLocally = LAYOUT_FIELDS.some(
-                  (f) => lw[f] !== saved[f]
-                );
-
-                const keepLocalConfig =
-                  configChangedLocally || !remoteControlEnabled;
-                const keepLocalLayout =
-                  layoutChangedLocally || !remoteControlEnabled;
-
-                return {
-                  ...sw,
-                  config: keepLocalConfig ? saved.config : sw.config,
-                  ...(keepLocalLayout
-                    ? LAYOUT_FIELDS.reduce(
-                        (acc, field) => ({
-                          ...acc,
-                          [field]: saved[field as keyof WidgetData],
-                        }),
-                        {}
-                      )
-                    : {}),
-                };
-              });
+                  return {
+                    ...sw,
+                    config: keepLocalConfig ? saved.config : sw.config,
+                    ...(keepLocalLayout
+                      ? LAYOUT_FIELDS.reduce(
+                          (acc, field) => ({
+                            ...acc,
+                            [field]: saved[field as keyof WidgetData],
+                          }),
+                          {}
+                        )
+                      : {}),
+                  };
+                }
+              );
               lastSavedFieldsRef.current.widgets =
                 JSON.stringify(nextLastSavedWidgets);
 
