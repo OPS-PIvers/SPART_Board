@@ -67,11 +67,15 @@
 **Weed:** `AnnouncementsManager.tsx` was over 1700 lines, mixing UI components (`TextConfigEditor`, `EmbedConfigEditor`, `AnnouncementsManager`) and complex configuration types.
 **Root Cause:** "God Component" pattern where multiple distinct UI views and logic were co-located in a single file as the feature grew.
 **Plan:** Decomposed into `components/admin/Announcements/` directory with separate files for `Widget`, `TextConfigEditor`, `EmbedConfigEditor`, and `types`.
+
 ## 2025-06-09 - Extracted hexToRgba
-**Weed:** The  function was duplicated exactly across four different widget files (`CalendarWidget`, `ChecklistWidget`, `ScheduleWidget`, `SpecialistScheduleWidget`).
+
+**Weed:** The function was duplicated exactly across four different widget files (`CalendarWidget`, `ChecklistWidget`, `ScheduleWidget`, `SpecialistScheduleWidget`).
 **Root Cause:** Developers copied and pasted the color conversion helper into new widgets instead of creating a shared utility.
-**Plan:** Extracted  to a new  file and updated all imports.
+**Plan:** Extracted to a new file and updated all imports.
+
 ## 2025-06-09 - Extracted hexToRgba
+
 **Weed:** The hexToRgba function was duplicated exactly across four different widget files (CalendarWidget, ChecklistWidget, ScheduleWidget, SpecialistScheduleWidget).
 **Root Cause:** Developers copied and pasted the color conversion helper into new widgets instead of creating a shared utility.
 **Plan:** Extracted hexToRgba to a new utils/colors.ts file and updated all imports.
