@@ -15,6 +15,7 @@ import {
   Trophy,
   CloudSun,
   Calendar,
+  CalendarDays,
   Utensils,
   BookOpen,
   AppWindow,
@@ -33,6 +34,7 @@ import {
   ListOrdered,
   Music,
   CarFront,
+  Smartphone,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -71,6 +73,12 @@ export const TOOLS: ToolMetadata[] = [
   },
   { type: 'weather', icon: CloudSun, label: 'Weather', color: 'bg-sky-400' },
   { type: 'schedule', icon: Calendar, label: 'Schedule', color: 'bg-teal-600' },
+  {
+    type: 'specialist-schedule',
+    icon: CalendarDays,
+    label: 'Specialist',
+    color: 'bg-teal-700',
+  },
   { type: 'calendar', icon: Calendar, label: 'Events', color: 'bg-rose-500' },
   {
     type: 'lunchCount',
@@ -157,4 +165,5 @@ export const TOOLS: ToolMetadata[] = [
     label: 'Magic',
     color: 'bg-gradient-to-br from-indigo-500 to-purple-600',
   },
+  { type: 'remote', icon: Smartphone, label: 'Remote', color: 'bg-slate-800' },
 ];

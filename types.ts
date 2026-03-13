@@ -39,7 +39,8 @@ export type WidgetType =
   | 'nextUp'
   | 'onboarding'
   | 'car-rider-pro'
-  | 'music';
+  | 'music'
+  | 'specialist-schedule';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -215,6 +216,8 @@ export interface TextConfig {
   content: string;
   bgColor: string;
   fontSize: number;
+  fontFamily?: string;
+  fontColor?: string;
 }
 
 export interface ChecklistConfig {
@@ -225,6 +228,10 @@ export interface ChecklistConfig {
   firstNames?: string;
   lastNames?: string;
   completedNames?: string[]; // Tracks IDs or Names checked in roster mode
+  fontFamily?: string;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontColor?: string;
 }
 
 export interface RandomGroup {
@@ -376,6 +383,8 @@ export interface WeatherConfig {
   showFeelsLike?: boolean;
   hideClothing?: boolean;
   syncBackground?: boolean;
+  fontFamily?: string;
+  fontColor?: string;
 }
 
 export interface WeatherTemperatureRange {
@@ -818,6 +827,9 @@ export interface PdfConfig {
 export interface MaterialsConfig {
   selectedItems: string[];
   activeItems: string[];
+  title?: string;
+  titleFont?: string;
+  titleColor?: string;
 }
 
 export interface CatalystCategory {
@@ -1123,6 +1135,58 @@ export interface OnboardingConfig {
   completedTasks: string[];
 }
 
+// --- SPECIALIST SCHEDULE TYPES ---
+
+export interface SpecialistScheduleItem {
+  id: string;
+  startTime: string; // HH:mm
+  endTime?: string; // HH:mm
+  task: string;
+  linkedWidgets?: WidgetType[];
+}
+
+export interface SpecialistScheduleRecurringItem extends SpecialistScheduleItem {
+  type: 'daily' | 'weekly';
+  dayOfWeek?: number; // 0-6 (Sunday-Saturday), only for 'weekly'
+}
+
+export interface SpecialistScheduleCycleDay {
+  dayNumber: number; // 1 to cycleLength
+  items: SpecialistScheduleItem[];
+}
+
+export interface SpecialistScheduleBuildingConfig {
+  cycleLength: 6 | 10;
+  startDate: string; // YYYY-MM-DD
+  /** List of dates (YYYY-MM-DD) that are school days and should count in the rotation. */
+  schoolDays: string[];
+  /** Custom label for "Day" (e.g., "Day" for Schumann, "Block" for Intermediate) */
+  dayLabel?: string;
+  /** Custom names for each day in the cycle (e.g., { 1: "Day 1", 2: "Music Day" }) */
+  customDayNames?: Record<number, string>;
+  /** Explicit date blocks for 10-block rotation (Intermediate School) */
+  blocks?: { dayNumber: number; startDate: string; endDate: string }[];
+  /** Predefined specialist options for this building (e.g., ["🎵 Music", "👟 PE"]) */
+  specialistOptions?: string[];
+}
+
+export interface SpecialistScheduleGlobalConfig {
+  /** Building ID -> Config */
+  buildingDefaults: Record<string, SpecialistScheduleBuildingConfig>;
+}
+
+export interface SpecialistScheduleConfig {
+  /** The specific specialist class name for this teacher (e.g., "3A", "Mrs. Smith's Class") */
+  specialistClass?: string;
+  /** Mapping of Day Number (1-based) to its schedule items. */
+  cycleDays: SpecialistScheduleCycleDay[];
+  /** Items that repeat every day or on specific days of the week */
+  recurringItems?: SpecialistScheduleRecurringItem[];
+  fontFamily?: string;
+  cardColor?: string;
+  cardOpacity?: number;
+}
+
 export interface NextUpSession {
   id: string; // widgetId
   teacherUid: string;
@@ -1151,6 +1215,12 @@ export interface MusicConfig {
   syncWithTimeTool?: boolean;
   bgColor?: string;
   textColor?: string;
+}
+
+export interface CarRiderProConfig {
+  iframeUrl?: string;
+  cardColor?: string;
+  cardOpacity?: number;
 }
 
 // Union of all widget configs
@@ -1194,7 +1264,9 @@ export type WidgetConfig =
   | MathToolConfig
   | NextUpConfig
   | OnboardingConfig
-  | MusicConfig;
+  | CarRiderProConfig
+  | MusicConfig
+  | SpecialistScheduleConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1275,15 +1347,21 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                             ? NextUpConfig
                                                                             : T extends 'onboarding'
                                                                               ? OnboardingConfig
-                                                                              : T extends 'music'
-                                                                                ? MusicConfig
-                                                                                : never;
+                                                                              : T extends 'car-rider-pro'
+                                                                                ? CarRiderProConfig
+                                                                                : T extends 'music'
+                                                                                  ? MusicConfig
+                                                                                  : T extends 'specialist-schedule'
+                                                                                    ? SpecialistScheduleConfig
+                                                                                    : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
   isStudentView?: boolean;
   scale?: number;
   studentPin?: string | null;
+  isSpotlighted?: boolean;
+  updateDashboardSettings?: (updates: Partial<DashboardSettings>) => void;
 }
 
 export interface WidgetLayout {
@@ -1325,6 +1403,12 @@ export interface WidgetData {
   isLive?: boolean;
   transparency?: number;
   annotation?: DrawingConfig;
+  /** Overall content scaling applied at the widget level (distinct from any per-config scaleMultiplier fields). */
+  contentScaleMultiplier?: number;
+  /** Content X offset (pan) when zoomed. */
+  contentOffsetX?: number;
+  /** Content Y offset (pan) when zoomed. */
+  contentOffsetY?: number;
   config: WidgetConfig;
 }
 
@@ -1346,7 +1430,7 @@ export interface DockFolder {
   items: (WidgetType | InternalToolType)[];
 }
 
-export type InternalToolType = 'record' | 'magic';
+export type InternalToolType = 'record' | 'magic' | 'remote';
 
 export type DockItem =
   | { type: 'tool'; toolType: WidgetType | InternalToolType }
@@ -1355,10 +1439,10 @@ export type DockItem =
 export interface DashboardSettings {
   quickAccessWidgets?: (WidgetType | InternalToolType)[];
   disableCloseConfirmation?: boolean;
-  /** Remote control: widget to display full-screen. Cleared on dismiss. */
-  maximizedWidgetId?: string | null;
   /** Remote control: widget to spotlight (dim all others). Cleared on dismiss. */
   spotlightWidgetId?: string | null;
+  /** Whether remote control is enabled for this dashboard. Default is usually true or false depending on the user. */
+  remoteControlEnabled?: boolean;
 }
 
 /**

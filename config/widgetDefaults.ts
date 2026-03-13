@@ -1,4 +1,4 @@
-import { WidgetData, WidgetType } from '../types';
+import { WidgetData, WidgetType, SpecialistScheduleConfig } from '@/types';
 import { STICKY_NOTE_COLORS } from './colors';
 
 export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
@@ -285,5 +285,15 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     w: 450,
     h: 600,
     config: {},
+  },
+  'specialist-schedule': {
+    w: 300,
+    h: 400,
+    config: {
+      cycleDays: [],
+      cardColor: '#ffffff',
+      cardOpacity: 1,
+      specialistClass: '',
+    } as SpecialistScheduleConfig,
   },
 };

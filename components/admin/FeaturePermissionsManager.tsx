@@ -33,6 +33,7 @@ import { BetaUsersPanel } from '@/components/admin/BetaUsersPanel';
 import { InstructionalRoutinesManager } from '@/components/admin/InstructionalRoutinesManager';
 import { StickerLibraryModal } from '@/components/admin/StickerLibraryModal';
 import { CalendarConfigurationModal } from '@/components/admin/CalendarConfigurationModal';
+import { SpecialistScheduleConfigurationModal } from '@/components/admin/SpecialistScheduleConfigurationModal';
 import { MiniAppLibraryModal } from '@/components/admin/MiniAppLibraryModal';
 import { StickerGlobalConfig } from '@/types';
 
@@ -668,14 +669,25 @@ export const FeaturePermissionsManager: React.FC = () => {
         />
       )}
 
+      {activeModalTool?.type === 'specialist-schedule' && (
+        <SpecialistScheduleConfigurationModal
+          isOpen={true}
+          onClose={() => setActiveModalTool(null)}
+        />
+      )}
+
       {activeModalTool?.type === 'miniApp' && (
         <MiniAppLibraryModal onClose={() => setActiveModalTool(null)} />
       )}
 
       {activeModalTool &&
-        !['instructionalRoutines', 'stickers', 'calendar', 'miniApp'].includes(
-          activeModalTool.type
-        ) && (
+        ![
+          'instructionalRoutines',
+          'stickers',
+          'calendar',
+          'specialist-schedule',
+          'miniApp',
+        ].includes(activeModalTool.type) && (
           <GenericConfigurationModal
             tool={activeModalTool}
             permission={getPermission(activeModalTool.type)}

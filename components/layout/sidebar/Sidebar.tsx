@@ -79,6 +79,15 @@ export const Sidebar: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleOpenSidebar = () => setIsOpen(true);
+    window.addEventListener('open-sidebar', handleOpenSidebar);
+
+    return () => {
+      window.removeEventListener('open-sidebar', handleOpenSidebar);
+    };
+  }, []);
+
   const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);

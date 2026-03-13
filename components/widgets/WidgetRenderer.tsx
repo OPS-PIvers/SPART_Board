@@ -1,6 +1,5 @@
 import React, { memo, Suspense, useMemo, useCallback } from 'react';
 import { Z_INDEX } from '@/config/zIndex';
-import { Minimize2 } from 'lucide-react';
 import {
   WidgetData,
   DrawingConfig,
@@ -95,11 +94,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   globalStyle,
   dashboardBackground,
   dashboardSettings,
-  updateDashboardSettings,
 }) => {
-  const isRemoteMaximized = dashboardSettings?.maximizedWidgetId === widget.id;
   const isSpotlighted = dashboardSettings?.spotlightWidgetId === widget.id;
-  const windowSize = useWindowSize(!!widget.maximized || isRemoteMaximized);
+  const windowSize = useWindowSize(!!widget.maximized);
   const { canAccessFeature, featurePermissions } = useAuth();
 
   const handleToggleLive = async () => {
@@ -173,10 +170,17 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const isDrawingOverlay =
     widget.type === 'drawing' &&
     (widget.config as DrawingConfig).mode === 'overlay';
+  // When spotlighted we switch to position:fixed so the element escapes all
+  // parent stacking contexts (will-change:transform / container-type:size on
+  // DraggableWindow both create stacking contexts that would otherwise trap
+  // the widget below the backdrop overlay). position:fixed is relative to the
+  // viewport, and the dashboard is always full-screen, so widget.x / widget.y
+  // map 1:1 to viewport coordinates — the widget stays visually in place.
   const customStyle: React.CSSProperties = isDrawingOverlay
     ? { display: 'none' }
     : isSpotlighted
       ? {
+          position: 'fixed',
           zIndex: Z_INDEX.backdrop + 1,
           outline: '3px solid #facc15', // yellow-400 ring
           outlineOffset: '2px',
@@ -187,6 +191,8 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const scaling = WIDGET_SCALING_CONFIG[widget.type];
   const effectiveWidth = widget.maximized ? windowSize.width : widget.w;
   const effectiveHeight = widget.maximized ? windowSize.height : widget.h;
+
+  const contentScaleMultiplier = widget.contentScaleMultiplier ?? 1;
 
   const permission = useMemo(
     () => featurePermissions.find((p) => p.widgetType === widget.type),
@@ -213,6 +219,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
           scale={scale}
           isStudentView={isStudentView}
           studentPin={studentPin}
+          isSpotlighted={isSpotlighted}
         />
       );
     },
@@ -232,8 +239,10 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       widget.isLive,
       widget.transparency,
       widget.annotation,
+      widget.contentScaleMultiplier,
       positionKey,
       isStudentView,
+      isSpotlighted,
     ]
   );
 
@@ -259,22 +268,42 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const finalContent = scalingConfig.skipScaling ? (
     <div
       className="h-full w-full relative"
-      style={{
-        padding: scalingConfig.padding ?? PADDING,
-        containerType: 'size',
-      }}
+      style={
+        {
+          padding: scalingConfig.padding ?? PADDING,
+          containerType: 'size',
+          '--transient-zoom': 1,
+          '--transient-pan-x': '0px',
+          '--transient-pan-y': '0px',
+          '--pinch-origin-x': '50%',
+          '--pinch-origin-y': '50%',
+        } as React.CSSProperties
+      }
     >
-      {getWidgetContentInternal(effectiveWidth, effectiveHeight)}
+      <div
+        className="h-full w-full"
+        style={{
+          transform: `translate(calc(${widget.contentOffsetX ?? 0}px + var(--transient-pan-x, 0px)), calc(${widget.contentOffsetY ?? 0}px + var(--transient-pan-y, 0px))) scale(calc(${contentScaleMultiplier} * var(--transient-zoom, 1)))`,
+          transformOrigin:
+            'var(--pinch-origin-x, 50%) var(--pinch-origin-y, 50%)',
+          willChange: 'transform',
+        }}
+      >
+        {getWidgetContentInternal(effectiveWidth, effectiveHeight)}
+      </div>
     </div>
   ) : (
     <ScalableWidget
       width={effectiveWidth}
       height={effectiveHeight}
-      baseWidth={scalingConfig.baseWidth}
-      baseHeight={scalingConfig.baseHeight}
+      baseWidth={scalingConfig.baseWidth ?? 400}
+      baseHeight={scalingConfig.baseHeight ?? 400}
       canSpread={scalingConfig.canSpread ?? true}
       headerHeight={HEADER_HEIGHT}
       padding={scalingConfig.padding ?? PADDING}
+      contentScaleMultiplier={contentScaleMultiplier}
+      contentOffsetX={widget.contentOffsetX}
+      contentOffsetY={widget.contentOffsetY}
     >
       {renderScalableContent}
     </ScalableWidget>
@@ -293,46 +322,13 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     );
   }
 
-  // Remote-controlled full-screen maximize (from DashboardSettings, not widget.maximized)
-  if (isRemoteMaximized) {
-    return (
-      <div
-        className="fixed inset-0 bg-slate-900/95 backdrop-blur-md flex items-center justify-center"
-        style={{ zIndex: Z_INDEX.maximized }}
-      >
-        <div
-          className="w-full h-full relative"
-          style={{ containerType: 'size' }}
-        >
-          <Suspense fallback={<LoadingFallback />}>
-            <WidgetLayoutWrapper
-              widget={{ ...widget, w: windowSize.width, h: windowSize.height }}
-              w={windowSize.width}
-              h={windowSize.height}
-              isStudentView={false}
-            />
-          </Suspense>
-          <button
-            onClick={() =>
-              updateDashboardSettings?.({ maximizedWidgetId: null })
-            }
-            className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white text-sm font-semibold backdrop-blur-sm transition-all"
-            aria-label="Exit full-screen"
-          >
-            <Minimize2 className="w-4 h-4" />
-            Exit Full Screen
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <DraggableWindow
       widget={widget}
       title={getTitle(widget, permission)}
       settings={getWidgetSettings()}
       style={customStyle}
+      isSpotlighted={isSpotlighted}
       skipCloseConfirmation={
         widget.type === 'classes' || dashboardSettings?.disableCloseConfirmation
       }
@@ -378,6 +374,7 @@ interface InnerWidgetRendererProps {
   scale?: number;
   isStudentView: boolean;
   studentPin?: string | null;
+  isSpotlighted: boolean;
 }
 
 const InnerWidgetRenderer = memo(
@@ -388,6 +385,7 @@ const InnerWidgetRenderer = memo(
     scale,
     isStudentView,
     studentPin,
+    isSpotlighted,
   }: InnerWidgetRendererProps) {
     return (
       <WidgetLayoutWrapper
@@ -397,6 +395,7 @@ const InnerWidgetRenderer = memo(
         scale={scale}
         isStudentView={isStudentView}
         studentPin={studentPin}
+        isSpotlighted={isSpotlighted}
       />
     );
   },
@@ -407,6 +406,7 @@ const InnerWidgetRenderer = memo(
     if (prev.scale !== next.scale) return false;
     if (prev.isStudentView !== next.isStudentView) return false;
     if (prev.studentPin !== next.studentPin) return false;
+    if (prev.isSpotlighted !== next.isSpotlighted) return false;
 
     // Check widget props - explicitly ignoring x, y, z
     const pw = prev.widget;

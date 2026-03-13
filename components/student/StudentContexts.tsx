@@ -123,6 +123,9 @@ const mockDashboard: DashboardContextValue = {
   minimizeAllWidgets: () => {
     // No-op
   },
+  restoreAllWidgets: () => {
+    // No-op
+  },
   deleteAllWidgets: () => {
     // No-op
   },
