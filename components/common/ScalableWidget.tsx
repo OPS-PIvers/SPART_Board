@@ -29,29 +29,34 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
   contentScaleMultiplier = 1,
   children,
 }) => {
+  const safeContentScaleMultiplier =
+    Number.isFinite(contentScaleMultiplier) && contentScaleMultiplier > 0
+      ? contentScaleMultiplier
+      : 1;
+
   const { scale, renderScale, internalW, internalH } = useMemo(() => {
     const availableW = Math.max(10, width - padding * 2);
     const availableH = Math.max(10, height - headerHeight - padding * 2);
 
     if (baseWidth <= 0 || baseHeight <= 0) {
       return {
-        scale: 1 * contentScaleMultiplier,
-        renderScale: 1 * contentScaleMultiplier,
-        internalW: availableW / contentScaleMultiplier,
-        internalH: availableH / contentScaleMultiplier,
+        scale: 1 * safeContentScaleMultiplier,
+        renderScale: 1 * safeContentScaleMultiplier,
+        internalW: availableW / safeContentScaleMultiplier,
+        internalH: availableH / safeContentScaleMultiplier,
       };
     }
 
     const scaleX = availableW / baseWidth;
     const scaleY = availableH / baseHeight;
     const baseScale = Math.min(scaleX, scaleY);
-    const scale = baseScale * contentScaleMultiplier;
+    const scale = baseScale * safeContentScaleMultiplier;
 
     if (canSpread) {
-      // Cap the CSS transform at 1.0 * contentScaleMultiplier to prevent upscaling blur.
+      // Cap the CSS transform at 1.0 * safeContentScaleMultiplier to prevent upscaling blur.
       // When baseScale >= 1, render at full available resolution with no transform.
       // When baseScale < 1, render at larger virtual size and downscale (still crisp).
-      const renderScale = Math.min(baseScale, 1) * contentScaleMultiplier;
+      const renderScale = Math.min(baseScale, 1) * safeContentScaleMultiplier;
       return {
         scale,
         renderScale,
@@ -74,7 +79,7 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
     canSpread,
     padding,
     headerHeight,
-    contentScaleMultiplier,
+    safeContentScaleMultiplier,
   ]);
 
   const renderContent = () => {

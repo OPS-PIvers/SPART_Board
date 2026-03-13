@@ -884,8 +884,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
         if (first) {
           if (event.cancelable) event.preventDefault();
+          const rawStartScale = widget.scaleMultiplier ?? 1;
+          const safeStartScale =
+            Number.isFinite(rawStartScale) && rawStartScale > 0
+              ? rawStartScale
+              : 1;
           return {
-            startScale: widget.scaleMultiplier ?? 1,
+            startScale: safeStartScale,
           };
         }
 
@@ -894,17 +899,29 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           startScale: number;
         };
         if (!startState) return memo as unknown;
+        const { startScale } = startState;
+
+        if (!Number.isFinite(startScale) || startScale <= 0) {
+          return memo as unknown;
+        }
+        if (!Number.isFinite(scale)) {
+          return memo as unknown;
+        }
 
         // scale provided by onPinch is a multiplier based on gesture distance.
         // E.g. zooming in -> scale > 1. zooming out -> scale < 1.
-        let newScaleMultiplier = startState.startScale * scale;
+        let newScaleMultiplier = startScale * scale;
         // Clamp it to reasonable bounds (0.5x to 3x)
         newScaleMultiplier = Math.max(0.5, Math.min(newScaleMultiplier, 3));
 
         // Provide real-time visual feedback using a CSS variable
         // The relative scale for the gesture is applied on top of the current renderScale
-        // We use the clamped relative scale: newScaleMultiplier / startState.startScale
-        const relativeScale = newScaleMultiplier / startState.startScale;
+        // We use the clamped relative scale: newScaleMultiplier / startScale
+        const relativeScale = newScaleMultiplier / startScale;
+
+        if (!Number.isFinite(relativeScale)) {
+          return memo as unknown;
+        }
 
         if (windowRef.current && !last) {
           windowRef.current.style.setProperty(
