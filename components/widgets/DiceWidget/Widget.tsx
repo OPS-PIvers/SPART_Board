@@ -24,6 +24,17 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const isRollingRef = useRef(false);
   isRollingRef.current = isRolling;
 
+  // Track the interval so we can clean it up on unmount
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
   // Sync board display when a remote roll is persisted to widget config
   useEffect(() => {
     if (!isRollingRef.current && config.lastRoll?.length === diceCount) {
@@ -41,13 +52,16 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     let rolls = 0;
     const maxRolls = 10;
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setValues((prev) => prev.map(() => Math.floor(Math.random() * 6) + 1));
       playRollSound();
       rolls++;
 
       if (rolls >= maxRolls) {
-        clearInterval(interval);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
         const finalValues = Array.from(
           { length: diceCount },
           () => Math.floor(Math.random() * 6) + 1
