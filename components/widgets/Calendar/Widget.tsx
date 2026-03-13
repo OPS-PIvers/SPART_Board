@@ -186,6 +186,8 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <WidgetLayout
       padding="p-0"
@@ -203,7 +205,6 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
             }}
           >
             {displayEvents.map((event) => {
-              const today = new Date().toISOString().split('T')[0];
               const isToday = event.date === today;
 
               return (
