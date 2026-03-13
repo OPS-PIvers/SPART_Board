@@ -516,3 +516,4 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     padding: 0,
   },
 };
+// Trigger CI re-run for E2E tests
