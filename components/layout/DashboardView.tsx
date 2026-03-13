@@ -33,6 +33,10 @@ import { extractYouTubeId } from '@/utils/url';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
+// Gesture constants
+const SWIPE_MIN_DISTANCE_PX = 60; // minimum travel to count as a deliberate swipe
+const SIDEBAR_EDGE_SWIPE_WIDTH_PX = 40; // left-edge zone that triggers sidebar open
+
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
@@ -342,9 +346,9 @@ export const DashboardView: React.FC = () => {
           // for direction detection.  Velocity-based `swipe` values are only
           // non-zero on the last frame, when `touches` is already 0 — making
           // them unreliable for multi-touch swipes.
-          const SWIPE_MIN_PX = 60;
           const isVertical =
-            Math.abs(my) > Math.abs(mx) && Math.abs(my) >= SWIPE_MIN_PX;
+            Math.abs(my) > Math.abs(mx) &&
+            Math.abs(my) >= SWIPE_MIN_DISTANCE_PX;
 
           if (isVertical) {
             if (my > 0) {
@@ -378,7 +382,7 @@ export const DashboardView: React.FC = () => {
           // Single-finger gesture: left-edge swipe → open sidebar.
           // Disabled while zoomed to avoid conflict with 1-finger pan.
           if (widgetEl) return;
-          if (zoom <= 1 && swipeX > 0 && dirX > 0 && initialX < 40) {
+          if (zoom <= 1 && swipeX > 0 && dirX > 0 && initialX < SIDEBAR_EDGE_SWIPE_WIDTH_PX) {
             window.dispatchEvent(new CustomEvent('open-sidebar'));
           }
         }
