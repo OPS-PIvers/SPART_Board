@@ -33,6 +33,7 @@ import {
 } from '../../types';
 import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
 import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
+import { calculatePinchScale } from '@/utils/widgetHelpers';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useDashboard } from '../../context/useDashboard';
 import { GlassCard } from './GlassCard';
@@ -879,50 +880,56 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       },
       onPinch: ({ offset: [scale], first, last, event, memo }) => {
         const target = event.target as HTMLElement;
-        if (target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) return;
-        if (isMaximized) return;
 
         if (first) {
+          const isBlocked = !!target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR);
+          // If the gesture starts over a blocked element or while maximized,
+          // record that we should ignore this pinch for all subsequent frames.
+          if (isBlocked || isMaximized) {
+            return {
+              allowPinch: false,
+            };
+          }
+
           if (event.cancelable) event.preventDefault();
-          const rawStartScale = widget.scaleMultiplier ?? 1;
+
+          const rawStartScale = widget.contentScaleMultiplier ?? 1;
           const safeStartScale =
             Number.isFinite(rawStartScale) && rawStartScale > 0
               ? rawStartScale
               : 1;
+
           return {
             startScale: safeStartScale,
+            allowPinch: true,
           };
         }
 
+        const startState = memo as
+          | {
+              startScale: number;
+              allowPinch: boolean;
+            }
+          | undefined;
+
+        // If we never initialized pinch state, or this gesture was marked as
+        // disallowed on the first frame, do nothing.
+        if (!startState || startState.allowPinch === false) {
+          return memo as unknown;
+        }
+
         if (event.cancelable) event.preventDefault();
-        const startState = memo as {
-          startScale: number;
-        };
-        if (!startState) return memo as unknown;
+
         const { startScale } = startState;
+        const pinchResult = calculatePinchScale(startScale, scale);
 
-        if (!Number.isFinite(startScale) || startScale <= 0) {
-          return memo as unknown;
-        }
-        if (!Number.isFinite(scale)) {
+        if (!pinchResult) {
           return memo as unknown;
         }
 
-        // scale provided by onPinch is a multiplier based on gesture distance.
-        // E.g. zooming in -> scale > 1. zooming out -> scale < 1.
-        let newScaleMultiplier = startScale * scale;
-        // Clamp it to reasonable bounds (0.5x to 3x)
-        newScaleMultiplier = Math.max(0.5, Math.min(newScaleMultiplier, 3));
+        const { newScaleMultiplier, relativeScale } = pinchResult;
 
         // Provide real-time visual feedback using a CSS variable
-        // The relative scale for the gesture is applied on top of the current renderScale
-        // We use the clamped relative scale: newScaleMultiplier / startScale
-        const relativeScale = newScaleMultiplier / startScale;
-
-        if (!Number.isFinite(relativeScale)) {
-          return memo as unknown;
-        }
-
         if (windowRef.current && !last) {
           windowRef.current.style.setProperty(
             '--transient-zoom',
@@ -935,7 +942,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             windowRef.current.style.removeProperty('--transient-zoom');
           }
           updateWidget(widget.id, {
-            scaleMultiplier: newScaleMultiplier,
+            contentScaleMultiplier: newScaleMultiplier,
           });
         }
         return memo as unknown;

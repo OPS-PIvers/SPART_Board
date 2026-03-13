@@ -50,15 +50,12 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
     const scaleX = availableW / baseWidth;
     const scaleY = availableH / baseHeight;
     const baseScale = Math.min(scaleX, scaleY);
-    const scale = baseScale * safeContentScaleMultiplier;
 
     if (canSpread) {
-      // Cap the CSS transform at 1.0 * safeContentScaleMultiplier to prevent upscaling blur.
-      // When baseScale >= 1, render at full available resolution with no transform.
-      // When baseScale < 1, render at larger virtual size and downscale (still crisp).
-      const renderScale = Math.min(baseScale, 1) * safeContentScaleMultiplier;
+      // Keep renderScale as just the fit-to-container factor (capped at 1)
+      const renderScale = Math.min(baseScale, 1);
       return {
-        scale,
+        scale: baseScale * safeContentScaleMultiplier,
         renderScale,
         internalW: availableW / renderScale,
         internalH: availableH / renderScale,
@@ -66,8 +63,8 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
     }
 
     return {
-      scale,
-      renderScale: scale,
+      scale: baseScale * safeContentScaleMultiplier,
+      renderScale: baseScale,
       internalW: baseWidth,
       internalH: baseHeight,
     };
@@ -108,13 +105,13 @@ const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
         style={{
           width: internalW,
           height: internalH,
-          transform: `scale(calc(${renderScale} * var(--transient-zoom, 1)))`,
+          transform: `scale(calc(${renderScale} * ${safeContentScaleMultiplier} * var(--transient-zoom, 1)))`,
           transformOrigin: 'center center',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
           willChange: 'transform',
-          overflow: 'auto',
+          overflow: 'visible',
         }}
       >
         {renderContent()}

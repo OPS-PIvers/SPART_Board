@@ -1,14 +1,80 @@
 import { describe, it, expect } from 'vitest';
-import { getTitle, getDefaultWidgetConfig } from './widgetHelpers';
+import React from 'react';
+import {
+  getTitle,
+  getDefaultWidgetConfig,
+  isWidgetLayout,
+  calculatePinchScale,
+} from './widgetHelpers';
 import {
   WidgetData,
   TimeToolConfig,
   WidgetType,
   ChecklistConfig,
   FeaturePermission,
+  WidgetOutput,
 } from '../types';
 
 describe('widgetHelpers', () => {
+  describe('isWidgetLayout', () => {
+    it('returns true for a valid layout object', () => {
+      const output: WidgetOutput = {
+        content: 'hello',
+        header: 'header',
+      };
+      expect(isWidgetLayout(output)).toBe(true);
+    });
+
+    it('returns false for React elements', () => {
+      const element = React.createElement('div', null, 'hello');
+      expect(isWidgetLayout(element as unknown as WidgetOutput)).toBe(false);
+    });
+
+    it('returns false for null/undefined/string', () => {
+      expect(isWidgetLayout(null as unknown as WidgetOutput)).toBe(false);
+      expect(isWidgetLayout('string' as unknown as WidgetOutput)).toBe(false);
+    });
+  });
+
+  describe('calculatePinchScale', () => {
+    it('returns null for invalid inputs', () => {
+      expect(calculatePinchScale(0, 1.5)).toBe(null);
+      expect(calculatePinchScale(-1, 1.5)).toBe(null);
+      expect(calculatePinchScale(1, NaN)).toBe(null);
+      expect(calculatePinchScale(1, Infinity)).toBe(null);
+    });
+
+    it('scales up and clamps at 3x', () => {
+      const result = calculatePinchScale(1, 4);
+      expect(result?.newScaleMultiplier).toBe(3);
+      expect(result?.relativeScale).toBe(3);
+    });
+
+    it('scales down and clamps at 0.5x', () => {
+      const result = calculatePinchScale(1, 0.2);
+      expect(result?.newScaleMultiplier).toBe(0.5);
+      expect(result?.relativeScale).toBe(0.5);
+    });
+
+    it('calculates relative scale correctly from 2x base', () => {
+      // Starting at 2x zoom, zoom in by another 1.2x -> 2.4x
+      const result = calculatePinchScale(2, 1.2);
+      expect(result?.newScaleMultiplier).toBe(2.4);
+      expect(result?.relativeScale).toBe(1.2);
+    });
+
+    it('handles clamping correctly when starting at bounds', () => {
+      // Already at 3x, zooming in more
+      const resultIn = calculatePinchScale(3, 1.5);
+      expect(resultIn?.newScaleMultiplier).toBe(3);
+      expect(resultIn?.relativeScale).toBe(1);
+
+      // Already at 0.5x, zooming out more
+      const resultOut = calculatePinchScale(0.5, 0.5);
+      expect(resultOut?.newScaleMultiplier).toBe(0.5);
+      expect(resultOut?.relativeScale).toBe(1);
+    });
+  });
   describe('getTitle', () => {
     it('returns custom title if present', () => {
       const widget = {

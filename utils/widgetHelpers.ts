@@ -58,6 +58,37 @@ export const getTitle = (
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 
+export interface PinchScaleResult {
+  newScaleMultiplier: number;
+  relativeScale: number;
+}
+
+/**
+ * Calculates the new content scale multiplier based on a pinch gesture.
+ */
+export function calculatePinchScale(
+  startScale: number,
+  gestureScale: number
+): PinchScaleResult | null {
+  if (!Number.isFinite(startScale) || startScale <= 0) {
+    return null;
+  }
+  if (!Number.isFinite(gestureScale)) {
+    return null;
+  }
+
+  let newScaleMultiplier = startScale * gestureScale;
+  // Clamp it to reasonable bounds (0.5x to 3x)
+  newScaleMultiplier = Math.max(0.5, Math.min(newScaleMultiplier, 3));
+
+  const relativeScale = newScaleMultiplier / startScale;
+  if (!Number.isFinite(relativeScale)) {
+    return null;
+  }
+
+  return { newScaleMultiplier, relativeScale };
+}
+
 /**
  * Get the default configuration for a widget type.
  * Returns an empty object for widgets that don't require configuration.

@@ -1399,7 +1399,8 @@ export interface WidgetData {
   isLive?: boolean;
   transparency?: number;
   annotation?: DrawingConfig;
-  scaleMultiplier?: number;
+  /** Overall content scaling applied at the widget level (distinct from any per-config scaleMultiplier fields). */
+  contentScaleMultiplier?: number;
   config: WidgetConfig;
 }
 
