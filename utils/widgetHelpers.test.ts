@@ -57,6 +57,11 @@ describe('widgetHelpers', () => {
       expect(getTitle(widget)).toBe('Notebook Viewer');
     });
 
+    it('returns "Bloom\'s Taxonomy" for blooms widget', () => {
+      const widget = { type: 'blooms' } as WidgetData;
+      expect(getTitle(widget)).toBe("Bloom's Taxonomy");
+    });
+
     it('returns capitalized type for other widgets', () => {
       const widget = { type: 'clock' } as WidgetData;
       expect(getTitle(widget)).toBe('Clock');
@@ -146,6 +151,7 @@ describe('widgetHelpers', () => {
         'instructionalRoutines',
         'time-tool',
         'miniApp',
+        'blooms',
       ];
       types.forEach((type) => {
         const config = getDefaultWidgetConfig(type);

@@ -65,5 +65,5 @@ export const getTitle = (
  */
 export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
   const config = WIDGET_DEFAULTS[type].config ?? {};
-  return structuredClone(config) as WidgetConfig;
+  return structuredClone(config);
 };

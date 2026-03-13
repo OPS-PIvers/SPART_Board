@@ -426,6 +426,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     canSpread: true,
     skipScaling: true,
   },
+  blooms: {
+    baseWidth: 400,
+    baseHeight: 400,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
   smartNotebook: {
     baseWidth: 600,
     baseHeight: 500,
