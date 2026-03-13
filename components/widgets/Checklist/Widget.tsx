@@ -60,7 +60,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     const combined: { id: string; label: string }[] = [];
     for (let i = 0; i < count; i++) {
       const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
-      if (name) combined.push({ id: name, label: name });
+      if (name) combined.push({ id: `${name}-${i}`, label: name });
     }
     return combined;
   }, [firstNames, lastNames, mode, rosterMode, activeRoster]);

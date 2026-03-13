@@ -49,7 +49,6 @@ export const ChecklistCard = React.memo<ChecklistCardProps>(
         <div
           role="checkbox"
           aria-checked={isCompleted}
-          onKeyPress={handleKeyDown}
           tabIndex={0}
           onClick={() => onToggle(id)}
           onKeyDown={handleKeyDown}

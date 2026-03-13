@@ -48,7 +48,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         const trimmedLine = line.trim();
         const existing = items.find((i) => i.text === trimmedLine);
         return {
-          id: existing?.id ?? `item-${idx}-${Date.now()}`,
+          id: existing?.id ?? crypto.randomUUID(),
           text: trimmedLine,
           completed: existing?.completed ?? false,
         };
