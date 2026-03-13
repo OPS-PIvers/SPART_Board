@@ -2,15 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { WidgetData, EmbedConfig } from '../../../types';
 import { Globe, ExternalLink, Code, XCircle } from 'lucide-react';
 import { ScaledEmptyState } from '../../common/ScaledEmptyState';
-import { convertToEmbedUrl } from '../../../utils/urlHelpers';
+import { convertToEmbedUrl, ensureProtocol } from '../../../utils/urlHelpers';
 import { WidgetLayout } from '../WidgetLayout';
-
-const ensureProtocol = (url: string) => {
-  if (!url) return '';
-  const trimmed = url.trim();
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-};
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as EmbedConfig;

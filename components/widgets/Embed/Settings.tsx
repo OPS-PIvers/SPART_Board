@@ -14,13 +14,7 @@ import {
 import { SettingsLabel } from '../../common/SettingsLabel';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../config/firebase';
-
-const ensureProtocol = (url: string) => {
-  if (!url) return '';
-  const trimmed = url.trim();
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-};
+import { ensureProtocol } from '../../../utils/urlHelpers';
 
 interface CompatibilityResult {
   isEmbeddable: boolean;
