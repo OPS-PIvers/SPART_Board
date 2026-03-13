@@ -1,8 +1,8 @@
 import React from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, DiceConfig } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, DiceConfig } from '@/types';
 import { Dices, Hash } from 'lucide-react';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as DiceConfig;

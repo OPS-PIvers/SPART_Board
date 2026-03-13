@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { RefreshCw } from 'lucide-react';
-import { WidgetLayout } from '../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { DiceFace } from './components/DiceFace';
 import { getDiceAudioCtx, playRollSound } from './utils/audio';
 
