@@ -1403,6 +1403,12 @@ export interface WidgetData {
   isLive?: boolean;
   transparency?: number;
   annotation?: DrawingConfig;
+  /** Overall content scaling applied at the widget level (distinct from any per-config scaleMultiplier fields). */
+  contentScaleMultiplier?: number;
+  /** Content X offset (pan) when zoomed. */
+  contentOffsetX?: number;
+  /** Content Y offset (pan) when zoomed. */
+  contentOffsetY?: number;
   config: WidgetConfig;
 }
 

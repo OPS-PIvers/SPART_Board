@@ -32,6 +32,10 @@ import {
 } from '../../types';
 import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
 import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
+import {
+  calculatePinchScale,
+  calculatePinchOrigin,
+} from '@/utils/widgetHelpers';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useDashboard } from '../../context/useDashboard';
 import { GlassCard } from './GlassCard';
@@ -423,6 +427,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleDragStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
+
+    // IMPORTANT: If zoomed in and using touch, bypass standard dragging to allow 1-finger pan via useGesture
+    const isZoomed = (widget.contentScaleMultiplier ?? 1) > 1;
+    if (isZoomed && e.pointerType !== 'mouse') {
+      return;
+    }
 
     // Don't drag if clicking interactive elements or resize handle
     const target = e.target as HTMLElement;
@@ -851,10 +861,66 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   useGesture(
     {
-      onDrag: ({ swipe: [, swipeY], direction: [, dirY], touches, event }) => {
+      onDrag: ({
+        offset: [x, y],
+        first,
+        last,
+        memo,
+        touches,
+        swipe: [, swipeY],
+        direction: [, dirY],
+        event,
+      }) => {
         const target = event.target as HTMLElement;
-        if (target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) return;
 
+        if (first) {
+          const isBlocked = !!target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR);
+          const isZoomed = (widget.contentScaleMultiplier ?? 1) > 1;
+
+          // Capture allow/block decision on first frame
+          if (isBlocked || isMaximized) {
+            return { allowPan: false };
+          }
+
+          // If zoomed in and 1 finger, it's a pan gesture
+          if (isZoomed && touches === 1) {
+            return {
+              allowPan: true,
+              startX: widget.contentOffsetX ?? 0,
+              startY: widget.contentOffsetY ?? 0,
+            };
+          }
+
+          return { allowPan: false };
+        }
+
+        const state = memo as
+          | { allowPan: boolean; startX: number; startY: number }
+          | undefined;
+
+        if (state?.allowPan) {
+          if (event.cancelable) event.preventDefault();
+
+          // Apply real-time pan using CSS variables
+          if (windowRef.current && !last) {
+            windowRef.current.style.setProperty('--transient-pan-x', `${x}px`);
+            windowRef.current.style.setProperty('--transient-pan-y', `${y}px`);
+          }
+
+          if (last) {
+            if (windowRef.current) {
+              windowRef.current.style.removeProperty('--transient-pan-x');
+              windowRef.current.style.removeProperty('--transient-pan-y');
+            }
+            updateWidget(widget.id, {
+              contentOffsetX: state.startX + x,
+              contentOffsetY: state.startY + y,
+            });
+          }
+          return memo as unknown;
+        }
+
+        // --- ORIGINAL SWIPE GESTURES ---
         // 2-finger swipe down
         if (touches === 2 && swipeY > 0 && dirY > 0) {
           if (isMaximized) {
@@ -874,56 +940,94 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           }
           handleCloseTools();
         }
+
+        return memo as unknown;
       },
       onPinch: ({ offset: [scale], first, last, event, memo }) => {
         const target = event.target as HTMLElement;
-        if (target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) return;
-        if (isMaximized) return;
 
         if (first) {
+          const isBlocked = !!target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR);
+          // If the gesture starts over a blocked element or while maximized,
+          // record that we should ignore this pinch for all subsequent frames.
+          if (isBlocked || isMaximized) {
+            return {
+              allowPinch: false,
+            };
+          }
+
           if (event.cancelable) event.preventDefault();
+
+          // Calculate pinch origin relative to widget
+          const rect = windowRef.current?.getBoundingClientRect();
+          const touchEvent = event as unknown as TouchEvent;
+          const origin =
+            rect && touchEvent.touches
+              ? calculatePinchOrigin(Array.from(touchEvent.touches), rect)
+              : { x: 50, y: 50 };
+
+          if (windowRef.current) {
+            windowRef.current.style.setProperty(
+              '--pinch-origin-x',
+              `${origin.x}%`
+            );
+            windowRef.current.style.setProperty(
+              '--pinch-origin-y',
+              `${origin.y}%`
+            );
+          }
+
+          const rawStartScale = widget.contentScaleMultiplier ?? 1;
+          const safeStartScale =
+            Number.isFinite(rawStartScale) && rawStartScale > 0
+              ? rawStartScale
+              : 1;
+
           return {
-            startW: widget.w,
-            startH: widget.h,
-            startX: widget.x,
-            startY: widget.y,
+            startScale: safeStartScale,
+            allowPinch: true,
           };
         }
 
+        const startState = memo as
+          | {
+              startScale: number;
+              allowPinch: boolean;
+            }
+          | undefined;
+
+        // If we never initialized pinch state, or this gesture was marked as
+        // disallowed on the first frame, do nothing.
+        if (!startState || startState.allowPinch === false) {
+          return memo as unknown;
+        }
+
         if (event.cancelable) event.preventDefault();
-        const startState = memo as {
-          startW: number;
-          startH: number;
-          startX: number;
-          startY: number;
-        };
-        if (!startState) return memo as unknown;
 
-        const newW = Math.max(150, Math.round(startState.startW * scale));
-        const newH = Math.max(150, Math.round(startState.startH * scale));
-        const newX = startState.startX - (newW - startState.startW) / 2;
-        const newY = startState.startY - (newH - startState.startH) / 2;
+        const { startScale } = startState;
+        const pinchResult = calculatePinchScale(startScale, scale);
 
+        if (!pinchResult) {
+          return memo as unknown;
+        }
+
+        const { newScaleMultiplier, relativeScale } = pinchResult;
+
+        // Provide real-time visual feedback using a CSS variable
         if (windowRef.current && !last) {
-          windowRef.current.style.width = `${newW}px`;
-          windowRef.current.style.height = `${newH}px`;
-          windowRef.current.style.left = `${newX}px`;
-          windowRef.current.style.top = `${newY}px`;
+          windowRef.current.style.setProperty(
+            '--transient-zoom',
+            relativeScale.toString()
+          );
         }
 
         if (last) {
-          updateWidget(widget.id, {
-            w: newW,
-            h: newH,
-            x: newX,
-            y: newY,
-          });
           if (windowRef.current) {
-            windowRef.current.style.width = '';
-            windowRef.current.style.height = '';
-            windowRef.current.style.left = '';
-            windowRef.current.style.top = '';
+            windowRef.current.style.removeProperty('--transient-zoom');
           }
+          updateWidget(widget.id, {
+            contentScaleMultiplier: newScaleMultiplier,
+          });
         }
         return memo as unknown;
       },
