@@ -166,6 +166,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const bgColor = hexToRgba(cardColor, cardOpacity);
+  const today = new Date().toISOString().split('T')[0];
 
   if (isBlocked) {
     return (
@@ -203,7 +204,6 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
             }}
           >
             {displayEvents.map((event) => {
-              const today = new Date().toISOString().split('T')[0];
               const isToday = event.date === today;
 
               return (
