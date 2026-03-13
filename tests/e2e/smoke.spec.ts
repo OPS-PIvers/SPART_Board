@@ -11,9 +11,6 @@ test('has title', async ({ page }) => {
 test('dashboard loads and shows sidebar button', async ({ page }) => {
   await page.goto('/');
 
-  // Wait for the app to initialize
-  await page.waitForSelector('.lucide-layout-grid', { state: 'attached' });
-
   // Wait for the "Open Menu" button to be visible.
   const menuButton = page
     .getByTitle('Open Menu')

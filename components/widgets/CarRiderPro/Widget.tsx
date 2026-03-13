@@ -29,7 +29,7 @@ export const CarRiderProWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  const isValidUrl = url?.startsWith('https://');
+  const isValidUrl = url.startsWith('https://');
 
   if (!url || !isValidUrl) {
     return (

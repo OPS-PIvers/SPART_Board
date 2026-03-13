@@ -11,6 +11,9 @@ test('Text Widget scaling verification', async ({ page }) => {
   // 1. Load dashboard
   await page.goto('/');
 
+  // Wait for the app to initialize by waiting for the dock to be attached.
+  await page.waitForSelector('[data-role="dock"]', { state: 'attached' });
+
   // 2. Open Dock and Add Text Widget
   const openToolsButton = page
     .getByTitle('Open Tools')

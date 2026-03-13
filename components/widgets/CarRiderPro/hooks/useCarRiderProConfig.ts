@@ -4,7 +4,7 @@ import { db } from '@/config/firebase';
 import { CarRiderProGlobalConfig } from '@/types';
 
 export const useCarRiderProConfig = () => {
-  const [url, setUrl] = useState<string | null>(null);
+  const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
