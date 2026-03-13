@@ -83,10 +83,6 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
   const boardGestures: GestureRow[] = useMemo(
     () => [
       {
-        gesture: t('widgets.cheatSheet.gestureNames.twoFingerSwipeLR'),
-        description: t('widgets.cheatSheet.gestures.switchBoards'),
-      },
-      {
         gesture: t('widgets.cheatSheet.gestureNames.twoFingerSwipeDown'),
         description: t('widgets.cheatSheet.gestures.minimizeAll'),
       },
@@ -95,8 +91,8 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
         description: t('widgets.cheatSheet.gestures.restoreAll'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.twoFingerPinch'),
-        description: t('widgets.cheatSheet.gestures.zoom'),
+        gesture: t('widgets.cheatSheet.gestureNames.oneFingerDrag'),
+        description: t('widgets.cheatSheet.gestures.panBoard'),
       },
       {
         gesture: t('widgets.cheatSheet.gestureNames.oneFingerSwipeEdge'),
@@ -121,11 +117,7 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
         description: t('widgets.cheatSheet.gestures.maximizeWidget'),
       },
       {
-        gesture: t('widgets.cheatSheet.gestureNames.twoFingerPinch'),
-        description: t('widgets.cheatSheet.gestures.resize'),
-      },
-      {
-        gesture: t('widgets.cheatSheet.gestureNames.twoFingerDoubleTap'),
+        gesture: t('widgets.cheatSheet.gestureNames.twoFingerLongPress'),
         description: t('widgets.cheatSheet.gestures.toggleAnnotation'),
       },
       {
