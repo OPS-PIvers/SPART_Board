@@ -12,7 +12,9 @@ test('Text Widget scaling verification', async ({ page }) => {
   await page.goto('/');
 
   // 2. Open Dock and Add Text Widget
-  const openToolsButton = page.getByTitle('Open Tools').or(page.locator('button[aria-label="Open Tools"]'));
+  const openToolsButton = page
+    .getByTitle('Open Tools')
+    .or(page.locator('button[aria-label="Open Tools"]'));
   await expect(openToolsButton).toBeVisible({ timeout: 15000 });
   await openToolsButton.click();
   // Wait for dock animation/stability

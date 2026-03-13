@@ -17,7 +17,9 @@ test.describe(APP_NAME, () => {
 
   test('can open sidebar and view widgets', async ({ page }) => {
     // Open sidebar
-    const menuButton = page.getByTitle('Open Menu').or(page.locator('button[aria-label="Open Menu"]'));
+    const menuButton = page
+      .getByTitle('Open Menu')
+      .or(page.locator('button[aria-label="Open Menu"]'));
     await expect(menuButton).toBeVisible({ timeout: 15000 });
     await menuButton.click();
 
@@ -30,7 +32,9 @@ test.describe(APP_NAME, () => {
 
   test('can add a Clock widget', async ({ page }) => {
     // Open Dock (it is minimized by default)
-    const openToolsButton = page.getByTitle('Open Tools').or(page.locator('button[aria-label="Open Tools"]'));
+    const openToolsButton = page
+      .getByTitle('Open Tools')
+      .or(page.locator('button[aria-label="Open Tools"]'));
     await expect(openToolsButton).toBeVisible({ timeout: 15000 });
     await openToolsButton.click();
 

@@ -15,6 +15,8 @@ test('dashboard loads and shows sidebar button', async ({ page }) => {
   await page.waitForSelector('.lucide-layout-grid', { state: 'attached' });
 
   // Wait for the "Open Menu" button to be visible.
-  const menuButton = page.getByTitle('Open Menu').or(page.locator('button[aria-label="Open Menu"]'));
+  const menuButton = page
+    .getByTitle('Open Menu')
+    .or(page.locator('button[aria-label="Open Menu"]'));
   await expect(menuButton).toBeVisible({ timeout: 15000 });
 });
