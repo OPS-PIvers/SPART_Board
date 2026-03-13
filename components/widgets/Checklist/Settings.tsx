@@ -7,9 +7,9 @@ import {
   InstructionalRoutinesConfig,
 } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
-import { RosterModeControl } from '../../common/RosterModeControl';
+import { RosterModeControl } from '@/components/common/RosterModeControl';
 import { ListPlus, Type, RefreshCw, BookOpen, Palette } from 'lucide-react';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { FONTS, PALETTE, FONT_COLORS } from './constants';
 
 export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({

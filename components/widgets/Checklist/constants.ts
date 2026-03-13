@@ -1,9 +1,4 @@
-export const FONTS = [
-  { id: 'global', label: 'Inherit', icon: 'G' },
-  { id: 'font-mono', label: 'Digital', icon: '01' },
-  { id: 'font-sans', label: 'Modern', icon: 'Aa' },
-  { id: 'font-handwritten', label: 'School', icon: '✏️' },
-];
+export { FONTS, FONT_COLORS } from '@/config/fonts';
 
 export const PALETTE = [
   '#ffffff', // Default white
@@ -13,16 +8,6 @@ export const PALETTE = [
   '#fff7ed', // orange-50
   '#f0fdf4', // green-50
   '#fff1f2', // rose-50
-];
-
-export const FONT_COLORS = [
-  '#334155', // slate-700 (default)
-  '#1e293b', // slate-800
-  '#000000', // pure black
-  '#2d3f89', // brand-blue
-  '#ad2122', // brand-red
-  '#166534', // green-800
-  '#1e40af', // blue-800
 ];
 
 export const hexToRgba = (hex: string, alpha: number): string => {
