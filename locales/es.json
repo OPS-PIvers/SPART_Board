@@ -101,6 +101,7 @@
     "screenshotSaved": "Captura guardada",
     "screenshotFailed": "Error al guardar la captura",
     "takeScreenshot": "Tomar Captura",
+    "takeScreenshotLongPress": "Tomar captura (mantener presionado)",
     "screenshotGestureProTip": "Consejo: ¡Mantén presionado un widget para tomar una captura de pantalla!",
     "annotate": "Anotar",
     "duplicate": "Duplicar",
@@ -299,11 +300,13 @@
         "zoom": "Acercar / alejar tablero",
         "toggleAnnotation": "Alternar anotación",
         "screenshot": "Tomar captura",
-        "minimizeWidget": "Minimizar widget"
+        "minimizeWidget": "Minimizar widget",
+        "panBoard": "Desplazar tablero"
       },
       "gestureNames": {
-        "oneFingerDoubleTap": "1-finger double tap",
-        "oneFingerLongPress": "1-finger long press",
+        "oneFingerDoubleTap": "Doble toque con 1 dedo",
+        "oneFingerLongPress": "Mantener presionado con 1 dedo",
+        "oneFingerDrag": "Arrastrar con 1 dedo sobre el fondo",
         "twoFingerSwipeLR": "Deslizar 2 dedos \u2190/\u2192",
         "twoFingerSwipeDown": "Deslizar 2 dedos \u2193",
         "twoFingerSwipeUp": "Deslizar 2 dedos \u2191",

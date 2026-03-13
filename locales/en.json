@@ -109,6 +109,7 @@
     "screenshotSaved": "Screenshot saved",
     "screenshotFailed": "Failed to save screenshot",
     "takeScreenshot": "Take Screenshot",
+    "takeScreenshotLongPress": "Take Screenshot (long press)",
     "screenshotGestureProTip": "Pro-tip: Long-press on a widget to take a screenshot!",
     "annotate": "Annotate",
     "duplicate": "Duplicate",

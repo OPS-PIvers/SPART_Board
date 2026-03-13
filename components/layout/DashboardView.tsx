@@ -323,9 +323,10 @@ export const DashboardView: React.FC = () => {
         );
 
         if (!last) {
-          // 1-finger drag on background while zoomed → pan.
-          // Much more reliable than 2-finger drag (which conflicts with pinch)
-          // and works even when widgets cover the whole viewport.
+          // 1-finger drag on empty background while zoomed → pan.
+          // Much more reliable than 2-finger drag (which conflicts with pinch).
+          // Disabled when the gesture starts on a widget to avoid interfering
+          // with widget interactions.
           if (gestureFingerCount.current === 1 && zoom > 1 && !widgetEl) {
             setPanOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
           }
@@ -378,9 +379,11 @@ export const DashboardView: React.FC = () => {
               }
             }
           }
-        } else {
-          // Single-finger gesture: left-edge swipe → open sidebar.
-          // Disabled while zoomed to avoid conflict with 1-finger pan.
+        } else if (peakFingers === 1) {
+          // Single touch (not a mouse drag): left-edge swipe → open sidebar.
+          // Gated to peakFingers === 1 so a desktop mouse drag near the left
+          // edge (peakFingers = 0) never accidentally opens the sidebar.
+          // Also disabled while zoomed to avoid conflict with 1-finger pan.
           if (widgetEl) return;
           if (
             zoom <= 1 &&
