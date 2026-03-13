@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, Trash2, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { PdfItem } from '../../../../types';
+import { PdfItem } from '@/types';
 
 interface SortableRowProps {
   pdf: PdfItem;

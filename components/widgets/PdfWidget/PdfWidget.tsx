@@ -24,13 +24,13 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { db } from '../../../config/firebase';
-import { useAuth } from '../../../context/useAuth';
-import { useDashboard } from '../../../context/useDashboard';
-import { useStorage, MAX_PDF_SIZE_BYTES } from '../../../hooks/useStorage';
-import { WidgetData, PdfItem, PdfConfig } from '../../../types';
-import { WidgetLayout } from '../WidgetLayout';
-import { ScaledEmptyState } from '../../common/ScaledEmptyState';
+import { db } from '@/config/firebase';
+import { useAuth } from '@/context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
+import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
+import { WidgetData, PdfItem, PdfConfig } from '@/types';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { SortableRow } from './components/SortableRow';
 
 export const PdfWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {

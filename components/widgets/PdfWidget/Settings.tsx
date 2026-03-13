@@ -1,6 +1,6 @@
 import React from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, PdfConfig } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, PdfConfig } from '@/types';
 
 export const PdfSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
