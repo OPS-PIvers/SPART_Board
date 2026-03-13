@@ -62,15 +62,11 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   onClick={() => {
                     const selectedIsSpotify =
                       buildSpotifyEmbedUrl(station.url) !== null;
-                    updateWidget(widget.id, {
-                      config: {
-                        ...config,
-                        stationId: station.id,
-                        ...(selectedIsSpotify && config.syncWithTimeTool
-                          ? { syncWithTimeTool: false }
-                          : {}),
-                      },
-                    });
+                    const newConfig = { ...config, stationId: station.id };
+                    if (selectedIsSpotify && config.syncWithTimeTool) {
+                      newConfig.syncWithTimeTool = false;
+                    }
+                    updateWidget(widget.id, { config: newConfig });
                   }}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
                     isActive
