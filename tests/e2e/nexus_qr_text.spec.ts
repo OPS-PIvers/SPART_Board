@@ -18,12 +18,12 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // Add Text Widget (Note)
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
   await expect(noteButton).toBeVisible();
-  await noteButton.click({ force: true });
+  await noteButton.evaluate((el) => (el as HTMLElement).click());
 
   // Add QR Widget
   const qrButton = page.getByRole('button', { name: /QR/i }).first();
   await expect(qrButton).toBeVisible();
-  await qrButton.click({ force: true });
+  await qrButton.evaluate((el) => (el as HTMLElement).click());
 
   // Close dock by clicking outside
   await page.mouse.click(0, 0);

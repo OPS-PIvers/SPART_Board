@@ -101,7 +101,8 @@ test('Snap Layouts verification', async ({ page }) => {
 
     await page.mouse.move(boxCurrent.x + 50, boxCurrent.y + 10);
     await page.mouse.down();
-    await page.mouse.move(1275, 300, { steps: 10 });
+    // Move closer to the edge (edge threshold is 40px)
+    await page.mouse.move(1279, 300, { steps: 10 });
 
     const preview = page.getByTestId('snap-preview');
     await expect(preview).toBeVisible();

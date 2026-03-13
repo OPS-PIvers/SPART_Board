@@ -17,7 +17,7 @@ test('Text Widget scaling verification', async ({ page }) => {
   await page.waitForTimeout(500);
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
   await expect(noteButton).toBeVisible();
-  await noteButton.click({ force: true });
+  await noteButton.evaluate((el) => (el as HTMLElement).click());
   // Close dock by clicking outside
   await page.mouse.click(0, 0);
 

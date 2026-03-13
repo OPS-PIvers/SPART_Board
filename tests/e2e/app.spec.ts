@@ -39,10 +39,10 @@ test.describe(APP_NAME, () => {
 
     // Click Clock widget in the Dock
     // The Dock renders buttons with the tool label.
-    // Use force: true to bypass potential animation stability checks
+    // Use evaluate to bypass dnd-kit pointer event interception
     const clockButton = page.getByRole('button', { name: /Clock/i }).first();
     await expect(clockButton).toBeVisible();
-    await clockButton.click({ force: true });
+    await clockButton.evaluate((el) => (el as HTMLElement).click());
 
     // Verify Clock widget is on the dashboard
     // The widget has class 'widget'.
