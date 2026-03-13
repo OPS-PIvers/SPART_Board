@@ -22,6 +22,7 @@ import {
   Trash2,
   Highlighter,
   LayoutTemplate,
+  RotateCcw,
 } from 'lucide-react';
 import {
   WidgetData,
@@ -144,6 +145,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [isPinching, setIsPinching] = useState(false);
+  const [transientZoom, setTransientZoom] = useState(1);
   const [showConfirm, setShowConfirm] = useState(false);
   const showTools = selectedWidgetId === widget.id;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -951,6 +954,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         const target = event.target as HTMLElement;
 
         if (first) {
+          setIsPinching(true);
           const isBlocked = !!target.closest(TOUCH_GESTURE_BLOCKING_SELECTOR);
           // If the gesture starts over a blocked element or while maximized,
           // record that we should ignore this pinch for all subsequent frames.
@@ -1016,6 +1020,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
 
         const { newScaleMultiplier, relativeScale } = pinchResult;
+        setTransientZoom(newScaleMultiplier);
 
         // Provide real-time visual feedback using a CSS variable
         if (windowRef.current && !last) {
@@ -1026,6 +1031,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
 
         if (last) {
+          setIsPinching(false);
           if (windowRef.current) {
             windowRef.current.style.removeProperty('--transient-zoom');
           }
@@ -1039,7 +1045,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     {
       target: windowRef,
       eventOptions: { passive: false },
-      pinch: { scaleBounds: { min: 1, max: 3 }, modifierKey: 'ctrlKey' },
+      pinch: {
+        scaleBounds: { min: 1, max: 3 },
+        modifierKey: 'ctrlKey',
+        wheelFactor: 0.05,
+      },
       drag: { swipe: { velocity: 0.5, distance: 50 } },
     }
   );
@@ -1187,6 +1197,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               >
                 {t('widgetWindow.close')}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Zoom Indicator Overlay */}
+        {isPinching && (
+          <div className="absolute inset-0 z-confirm-overlay flex items-center justify-center pointer-events-none">
+            <div className="bg-brand-blue-dark/80 backdrop-blur-md text-white px-4 py-2 rounded-2xl border border-white/20 shadow-2xl animate-in zoom-in-95 duration-150">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
+                  Scale
+                </span>
+                <span className="text-2xl font-black tabular-nums">
+                  {Math.round(transientZoom * 100)}%
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -1565,6 +1591,28 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   size="sm"
                   variant="glass"
                 />
+
+                {(widget.contentScaleMultiplier ?? 1) > 1 && (
+                  <div className="flex items-center gap-1 bg-indigo-50/50 rounded-full px-1 py-0.5 border border-indigo-100/50 animate-in zoom-in-95">
+                    <span className="text-[9px] font-black text-indigo-600 px-1 tabular-nums">
+                      {Math.round((widget.contentScaleMultiplier ?? 1) * 100)}%
+                    </span>
+                    <IconButton
+                      onClick={() =>
+                        updateWidget(widget.id, {
+                          contentScaleMultiplier: 1,
+                          contentOffsetX: 0,
+                          contentOffsetY: 0,
+                        })
+                      }
+                      icon={<RotateCcw className="w-3 h-3" />}
+                      label="Reset Zoom"
+                      size="sm"
+                      variant="ghost"
+                      className="!p-1 text-indigo-400 hover:text-indigo-600"
+                    />
+                  </div>
+                )}
 
                 {/* NEW: Snap Layouts Button & Popover */}
                 <div className="relative flex items-center">
