@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { SoundWidget } from './SoundWidget';
+import { SoundWidget } from './Widget';
 import {
   WidgetData,
   SoundConfig,
   Dashboard,
   ExpectationsConfig,
-} from '../../types';
-import { useDashboard } from '../../context/useDashboard';
+} from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 
 // Mock useDashboard
-vi.mock('../../context/useDashboard', () => ({
+vi.mock('@/context/useDashboard', () => ({
   useDashboard: vi.fn(),
 }));
 
