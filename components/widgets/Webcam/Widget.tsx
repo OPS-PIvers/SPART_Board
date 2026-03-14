@@ -18,19 +18,8 @@ import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
 import { extractTextWithGemini } from '@/utils/ai';
 import Tesseract from 'tesseract.js';
-
-interface CapturedItem {
-  id: string;
-  timestamp: number;
-  dataUrl: string;
-  status: 'captured' | 'processing' | 'error';
-}
-
-import { WidgetLayout } from './WidgetLayout';
-
-interface WebcamGlobalConfig {
-  ocrMode?: 'standard' | 'gemini';
-}
+import { WidgetLayout } from '../WidgetLayout';
+import { CapturedItem, WebcamGlobalConfig } from './types';
 
 export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   widget: _widget,
@@ -618,15 +607,5 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
     />
-  );
-};
-
-export const WebcamSettings: React.FC<{ widget: WidgetData }> = ({
-  widget: _widget,
-}) => {
-  return (
-    <div className="text-slate-500 italic text-sm">
-      Camera settings are managed automatically.
-    </div>
   );
 };
