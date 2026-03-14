@@ -72,13 +72,12 @@ export const RotationHandle: React.FC<RotationHandleProps> = ({
 
       const dx = e.clientX - startPos.current.x;
       const dy = e.clientY - startPos.current.y;
-      if (!hasDragged.current && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX)
-        return;
+      if (!hasDragged.current && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
       hasDragged.current = true;
       const rect = containerRef.current.getBoundingClientRect();
       const currentAngle = getAngleFromCenter(e.clientX, e.clientY, rect);
       const delta = currentAngle - startAngle.current;
-      const newRotation = ((startRotation.current + delta) % 360 + 360) % 360;
+      const newRotation = (((startRotation.current + delta) % 360) + 360) % 360;
       onRotate(Math.round(newRotation));
     },
     [containerRef, onRotate]
