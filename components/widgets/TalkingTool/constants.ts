@@ -1,7 +1,7 @@
-import React from 'react';
+import type { ElementType } from 'react';
 import { Ear, MessageCircle, BookOpen, MessageSquare } from 'lucide-react';
 
-export const ICON_MAP: Record<string, React.ElementType> = {
+export const ICON_MAP: Record<string, ElementType> = {
   Ear,
   MessageCircle,
   BookOpen,

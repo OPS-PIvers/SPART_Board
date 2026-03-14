@@ -5,7 +5,9 @@ import { useAuth } from '@/context/useAuth';
 import { DEFAULT_TALKING_TOOL_CATEGORIES } from '@/config/talkingToolData';
 import { getIcon } from './constants';
 
-export const TalkingToolWidget: React.FC<WidgetComponentProps> = () => {
+export const TalkingToolWidget: React.FC<WidgetComponentProps> = ({
+  widget: _widget,
+}) => {
   const { featurePermissions } = useAuth();
 
   // Get config from feature permissions
