@@ -12,7 +12,7 @@ import {
   isSafeIconUrl,
   mergeCatalystCategories,
   mergeCatalystRoutines,
-} from '../widgets/catalystHelpers';
+} from '@/components/widgets/Catalyst';
 import { CategoryEditor } from './catalyst/CategoryEditor';
 import { RoutineEditor } from './catalyst/RoutineEditor';
 import { useStorage } from '../../hooks/useStorage';
