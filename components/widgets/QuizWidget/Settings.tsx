@@ -68,5 +68,3 @@ export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
     </div>
   );
 };
-
-export default QuizWidgetSettings;

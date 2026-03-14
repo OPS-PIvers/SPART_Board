@@ -342,5 +342,3 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     />
   );
 };
-
-export default QuizWidget;
