@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ExpectationsWidget, ExpectationsSettings } from './ExpectationsWidget';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { WidgetData, ExpectationsConfig } from '../../types';
+import { ExpectationsWidget } from './Widget';
+import { ExpectationsSettings } from './Settings';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { WidgetData, ExpectationsConfig } from '@/types';
 
-vi.mock('../../context/useDashboard', () => ({
+vi.mock('@/context/useDashboard', () => ({
   useDashboard: vi.fn(),
 }));
 
-vi.mock('../../context/useAuth', () => ({
+vi.mock('@/context/useAuth', () => ({
   useAuth: vi.fn(),
 }));
 
