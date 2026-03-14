@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, RecessGearConfig, WeatherConfig } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, RecessGearConfig, WeatherConfig } from '@/types';
 import { Info } from 'lucide-react';
-import { Toggle } from '../../common/Toggle';
+import { Toggle } from '@/components/common/Toggle';
 
 export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
   widget,

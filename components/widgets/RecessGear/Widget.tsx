@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
   RecessGearConfig,
@@ -7,7 +7,7 @@ import {
   FeaturePermission,
   RecessGearGlobalConfig,
   GlobalWeatherData,
-} from '../../../types';
+} from '@/types';
 import {
   Shirt,
   Thermometer,
@@ -15,10 +15,10 @@ import {
   AlertCircle,
   CloudSun,
 } from 'lucide-react';
-import { ScaledEmptyState } from '../../common/ScaledEmptyState';
-import { useFeaturePermissions } from '../../../hooks/useFeaturePermissions';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../../config/firebase';
+import { db } from '@/config/firebase';
 
 interface GearItem {
   label: string;
@@ -27,7 +27,7 @@ interface GearItem {
   category: 'clothing' | 'footwear' | 'accessory';
 }
 
-import { WidgetLayout } from '../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
 export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
