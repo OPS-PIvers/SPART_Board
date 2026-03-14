@@ -172,7 +172,7 @@ function ToolContent({
   }
 }
 
-export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
+export const MathToolInstanceWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
@@ -292,7 +292,7 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
   );
 };
 
-export const MathToolSettings: React.FC<{ widget: WidgetData }> = ({
+export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
