@@ -51,11 +51,12 @@ export const OnboardingWidget: React.FC<WidgetComponentProps> = ({
       if (completedTasks.includes(taskId)) return;
       updateWidget(widget.id, {
         config: {
+          ...(widget.config as OnboardingConfig),
           completedTasks: [...completedTasks, taskId],
-        } as OnboardingConfig,
+        },
       });
     },
-    [completedTasks, updateWidget, widget.id]
+    [completedTasks, updateWidget, widget.id, widget.config]
   );
 
   useOnboardingDetectors(
