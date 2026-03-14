@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../../types';
-import { STICKY_NOTE_COLORS } from '../../../config/colors';
-import { sanitizeHtml } from '../../../utils/security';
-import { getFontClass } from '../../../utils/styles';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
+import { STICKY_NOTE_COLORS } from '@/config/colors';
+import { sanitizeHtml } from '@/utils/security';
+import { getFontClass } from '@/utils/styles';
 
-import { WidgetLayout } from '../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { PLACEHOLDER_TEXT } from './constants';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {

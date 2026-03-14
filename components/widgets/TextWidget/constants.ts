@@ -1,4 +1,4 @@
-import { STICKY_NOTE_COLORS } from '../../../config/colors';
+import { STICKY_NOTE_COLORS } from '@/config/colors';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 
 export const PLACEHOLDER_TEXT = 'Click to edit...';

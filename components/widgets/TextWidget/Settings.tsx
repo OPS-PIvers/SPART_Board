@@ -1,10 +1,10 @@
 import React from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, TextConfig } from '../../../types';
-import { sanitizeHtml } from '../../../utils/security';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, TextConfig } from '@/types';
+import { sanitizeHtml } from '@/utils/security';
 
-import { SettingsLabel } from '../../common/SettingsLabel';
-import { TypographySettings } from '../../common/TypographySettings';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { TypographySettings } from '@/components/common/TypographySettings';
 import { TEXT_WIDGET_COLORS, TEXT_WIDGET_TEMPLATES } from './constants';
 
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
