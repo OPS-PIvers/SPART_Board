@@ -13,7 +13,7 @@ import {
   MessagesSquare,
   CheckCircle2,
 } from 'lucide-react';
-import { WidgetLayout } from '../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import {
   VOLUME_OPTIONS,
   GROUP_OPTIONS,
