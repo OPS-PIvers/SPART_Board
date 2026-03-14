@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { WidgetData, MathToolsConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
-import { CSS_PPI } from '../math-tools/mathToolUtils';
+import { CSS_PPI } from '@/components/widgets/math-tools/mathToolUtils';
 
 export const MathToolsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,

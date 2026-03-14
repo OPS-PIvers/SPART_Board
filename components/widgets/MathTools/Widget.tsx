@@ -14,8 +14,8 @@ import {
   CSS_PPI,
   TOOL_SUB_ITEMS,
   ToolSubItem,
-} from '../math-tools/mathToolUtils';
-import { WidgetLayout } from '../WidgetLayout';
+} from '@/components/widgets/math-tools/mathToolUtils';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { GRADE_LABELS, PALETTE_SECTIONS } from './constants';
 
 export const MathToolsWidget: React.FC<{ widget: WidgetData }> = ({
