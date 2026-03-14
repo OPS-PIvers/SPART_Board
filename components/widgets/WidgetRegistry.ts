@@ -118,7 +118,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   ),
   mathTools: lazyNamed(() => import('./MathToolsWidget'), 'MathToolsWidget'),
   mathTool: lazyNamed(
-    () => import('./MathToolInstanceWidget'),
+    () => import('./MathToolInstance/index'),
     'MathToolInstanceWidget'
   ),
   nextUp: lazyNamed(() => import('./NextUp/Widget'), 'NextUpWidget'),
@@ -201,7 +201,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   mathTools: lazyNamed(() => import('./MathToolsWidget'), 'MathToolsSettings'),
   mathTool: lazyNamed(
-    () => import('./MathToolInstanceWidget'),
+    () => import('./MathToolInstance/index'),
     'MathToolInstanceSettings'
   ),
   nextUp: lazyNamed(() => import('./NextUp/Settings'), 'NextUpSettings'),
