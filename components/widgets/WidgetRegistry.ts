@@ -65,10 +65,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   drawing: lazyNamed(() => import('./DrawingWidget/Widget'), 'DrawingWidget'),
   qr: lazyNamed(() => import('./QRWidget'), 'QRWidget'),
   scoreboard: lazyNamed(() => import('./Scoreboard'), 'ScoreboardWidget'),
-  expectations: lazyNamed(
-    () => import('./ExpectationsWidget'),
-    'ExpectationsWidget'
-  ),
+  expectations: lazyNamed(() => import('./ExpectationsWidget'), 'Widget'),
   poll: lazyNamed(() => import('./PollWidget'), 'PollWidget'),
   weather: lazyNamed(() => import('./Weather/Widget'), 'WeatherWidget'),
   schedule: lazyNamed(() => import('./Schedule'), 'ScheduleWidget'),
@@ -102,7 +99,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     'CatalystVisualWidget'
   ),
   smartNotebook: lazyNamed(
-    () => import('./SmartNotebookWidget'),
+    () => import('./SmartNotebook'),
     'SmartNotebookWidget'
   ),
   recessGear: lazyNamed(
@@ -118,11 +115,11 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   ),
   mathTools: lazyNamed(() => import('./MathTools'), 'MathToolsWidget'),
   mathTool: lazyNamed(
-    () => import('./MathToolInstanceWidget'),
+    () => import('./MathToolInstance/index'),
     'MathToolInstanceWidget'
   ),
   nextUp: lazyNamed(() => import('./NextUp/Widget'), 'NextUpWidget'),
-  onboarding: lazyNamed(() => import('./OnboardingWidget'), 'OnboardingWidget'),
+  onboarding: lazyNamed(() => import('./Onboarding'), 'OnboardingWidget'),
   music: lazyNamed(() => import('./MusicWidget/index'), 'MusicWidget'),
   'car-rider-pro': lazyNamed(
     () => import('./CarRiderPro/Widget'),
@@ -183,10 +180,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
-  expectations: lazyNamed(
-    () => import('./ExpectationsWidget'),
-    'ExpectationsSettings'
-  ),
+  expectations: lazyNamed(() => import('./ExpectationsWidget'), 'Settings'),
   schedule: lazyNamed(() => import('./Schedule'), 'ScheduleSettings'),
   classes: DefaultSettings,
   recessGear: lazyNamed(
@@ -201,7 +195,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   mathTools: lazyNamed(() => import('./MathTools'), 'MathToolsSettings'),
   mathTool: lazyNamed(
-    () => import('./MathToolInstanceWidget'),
+    () => import('./MathToolInstance/index'),
     'MathToolInstanceSettings'
   ),
   nextUp: lazyNamed(() => import('./NextUp/Settings'), 'NextUpSettings'),
