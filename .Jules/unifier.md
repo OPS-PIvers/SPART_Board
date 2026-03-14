@@ -145,4 +145,4 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 ## 2026-03-13 - Z-Index Standardization **Drift:** Discovered multiple hardcoded z-index values (`z-50`) across components, creating inconsistent stacking contexts. **Fix:** Replaced `z-50` with corresponding tokens from `config/zIndex.ts` like `z-widget-internal-overlay`, `z-overlay`, `z-header`, `z-dropdown`, `z-controls`, `z-dock`, and `z-toast`.
 
-## 2023-10-27 - Standardized Z-Index Inline Styles **Drift:** Inline `zIndex` styles were mixed with tailwind utility classes. **Fix:** Replaced inline `style={{ zIndex: ... }}` with custom Tailwind utility classes from `tailwind.config.js` (`z-modal`, `z-critical`, `z-backdrop`).
+## 2026-03-14 - Standardized Z-Index Inline Styles **Drift:** Inline `zIndex` styles were mixed with tailwind utility classes. **Fix:** Replaced inline `style={{ zIndex: ... }}` with custom Tailwind utility classes from `tailwind.config.js` (`z-modal`, `z-critical`, `z-backdrop`).
