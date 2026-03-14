@@ -66,8 +66,8 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   qr: lazyNamed(() => import('./QRWidget'), 'QRWidget'),
   scoreboard: lazyNamed(() => import('./Scoreboard'), 'ScoreboardWidget'),
   expectations: lazyNamed(
-    () => import('./ExpectationsWidget/Widget'),
-    'ExpectationsWidget'
+    () => import('./ExpectationsWidget'),
+    'Widget'
   ),
   poll: lazyNamed(() => import('./PollWidget'), 'PollWidget'),
   weather: lazyNamed(() => import('./Weather/Widget'), 'WeatherWidget'),
@@ -184,8 +184,8 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
   expectations: lazyNamed(
-    () => import('./ExpectationsWidget/Settings'),
-    'ExpectationsSettings'
+    () => import('./ExpectationsWidget'),
+    'Settings'
   ),
   schedule: lazyNamed(() => import('./Schedule'), 'ScheduleSettings'),
   classes: DefaultSettings,
