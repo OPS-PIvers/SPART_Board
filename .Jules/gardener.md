@@ -79,3 +79,9 @@
 **Weed:** Monolithic files holding multiple components and settings (`ScoreboardWidget.tsx`, `ScoreboardItem.tsx`, `ScoreboardSettings.tsx` scattered in the root widgets folder).
 **Root Cause:** Fast iteration led to grouping disparate logic (main widget UI, individual items, settings panels) loosely in the same directory, violating separation of concerns.
 **Plan:** Created a `components/widgets/Scoreboard` directory. Moved the main widget, settings, and sub-components into this logical directory structure and created an `index.ts` to cleanly export the primary interfaces. Updated the WidgetRegistry to use the clean entry point.
+
+## 2025-06-08 - Refactored MathToolsWidget
+
+**Weed:** Monolithic Widget Structure (MathToolsWidget.tsx mixed widget, settings, and constants).
+**Root Cause:** Early development pattern of grouping all logic per widget into a single file, leading to poor separation of concerns and maintainability issues as widgets grow.
+**Plan:** Decompose the monolithic file into a modular directory structure (Widget.tsx, Settings.tsx, constants.ts, index.ts). Update WidgetRegistry.ts to load the separate files, preventing unnecessary bundling and improving readability.
