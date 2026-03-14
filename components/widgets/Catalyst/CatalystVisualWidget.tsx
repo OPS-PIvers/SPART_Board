@@ -10,7 +10,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 
-import { WidgetLayout } from '../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
 export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
