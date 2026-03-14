@@ -11,7 +11,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { RotateCcw } from 'lucide-react';
 
-import { WidgetLayout } from '../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();

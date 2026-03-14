@@ -11,10 +11,10 @@ import {
   Users,
   RefreshCw,
 } from 'lucide-react';
-import { Button } from '../../common/Button';
-import { MagicInput } from '../../common/MagicInput';
+import { Button } from '@/components/common/Button';
+import { MagicInput } from '@/components/common/MagicInput';
 import { generatePoll, GeneratedPoll } from '@/utils/ai';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 import { OptionInput } from './components/OptionInput';
 
