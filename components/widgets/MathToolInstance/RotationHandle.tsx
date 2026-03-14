@@ -130,8 +130,12 @@ export const RotationHandle: React.FC<RotationHandleProps> = ({
 
       {/* Circular grip */}
       <div
-        className="pointer-events-auto w-5 h-5 rounded-full bg-white border-2 border-indigo-500 shadow-md flex items-center justify-center select-none"
-        style={{ cursor: isActive ? 'grabbing' : 'grab' }}
+        className="pointer-events-auto rounded-full bg-white border-2 border-indigo-500 shadow-md flex items-center justify-center select-none"
+        style={{
+          cursor: isActive ? 'grabbing' : 'grab',
+          width: 'clamp(16px, 5cqmin, 20px)',
+          height: 'clamp(16px, 5cqmin, 20px)',
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -141,11 +145,10 @@ export const RotationHandle: React.FC<RotationHandleProps> = ({
       >
         {/* Arrow indicator */}
         <svg
-          width="10"
-          height="10"
           viewBox="0 0 10 10"
           fill="none"
           className="text-indigo-500"
+          style={{ width: 'min(10px, 2.5cqmin)', height: 'min(10px, 2.5cqmin)' }}
         >
           <path
             d="M5 1.5 A3.5 3.5 0 1 1 1.5 5"
