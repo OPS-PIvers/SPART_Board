@@ -2,7 +2,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ScoreboardWidget } from './Widget';
 import { ScoreboardSettings } from './Settings';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import * as ScoreboardItemModule from './components/ScoreboardItem';
 import {
@@ -11,9 +11,9 @@ import {
   RandomConfig,
   WidgetType,
   ScoreboardTeam,
-} from '../../../types';
+} from '@/types';
 
-vi.mock('../../../context/useDashboard');
+vi.mock('@/context/useDashboard');
 
 // Mock ScoreboardItem to spy on renders
 vi.mock('./components/ScoreboardItem', async (importOriginal) => {
