@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Download } from 'lucide-react';
@@ -68,19 +68,22 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = dashboards.findIndex((d) => d.id === active.id);
-      const newIndex = dashboards.findIndex((d) => d.id === over.id);
+      if (over && active.id !== over.id) {
+        const oldIndex = dashboards.findIndex((d) => d.id === active.id);
+        const newIndex = dashboards.findIndex((d) => d.id === over.id);
 
-      const newOrder = arrayMove(dashboards, oldIndex, newIndex).map(
-        (d) => d.id
-      );
-      reorderDashboards(newOrder);
-    }
-  };
+        const newOrder = arrayMove(dashboards, oldIndex, newIndex).map(
+          (d) => d.id
+        );
+        reorderDashboards(newOrder);
+      }
+    },
+    [dashboards, reorderDashboards]
+  );
 
   const handleShare = async (db?: Dashboard) => {
     if (!canAccessFeature('dashboard-sharing')) {
