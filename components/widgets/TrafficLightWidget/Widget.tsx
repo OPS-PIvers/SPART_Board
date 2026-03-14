@@ -1,8 +1,8 @@
 import React from 'react';
-import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, TrafficConfig } from '../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, TrafficConfig } from '@/types';
 
-import { WidgetLayout } from './WidgetLayout';
+import { WidgetLayout } from '../WidgetLayout';
 
 export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
   widget,

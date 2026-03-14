@@ -1,10 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { WidgetData, TrafficConfig } from '../../types';
-import { TrafficLightWidget } from './TrafficLightWidget';
+import { WidgetData, TrafficConfig } from '@/types';
+import { TrafficLightWidget } from './Widget';
 
-vi.mock('../../context/useDashboard');
+vi.mock('@/context/useDashboard');
 
 const mockUpdateWidget = vi.fn();
 

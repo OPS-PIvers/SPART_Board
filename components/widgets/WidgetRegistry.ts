@@ -55,7 +55,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     'TimeToolWidget'
   ),
   traffic: lazyNamed(
-    () => import('./TrafficLightWidget'),
+    () => import('./TrafficLightWidget/Widget'),
     'TrafficLightWidget'
   ),
   text: lazyNamed(() => import('./TextWidget'), 'TextWidget'),
