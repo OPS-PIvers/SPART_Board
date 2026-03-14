@@ -13,6 +13,11 @@ import { ThermometerView } from './components/ThermometerView';
 import { SpeedometerView } from './components/SpeedometerView';
 import { PopcornBallsView } from './components/PopcornBallsView';
 
+// Add type definition for webkitAudioContext
+interface CustomWindow extends Window {
+  webkitAudioContext: typeof AudioContext;
+}
+
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const [volume, setVolume] = useState(0);
@@ -22,11 +27,6 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const animationRef = useRef<number>(null);
 
   const { w, h } = widget;
-
-  // Add type definition for webkitAudioContext
-  interface CustomWindow extends Window {
-    webkitAudioContext: typeof AudioContext;
-  }
 
   const {
     sensitivity = 1,
