@@ -321,17 +321,20 @@ export const ScheduleConfigurationPanel: React.FC<
     [items, handleUpdateActiveItems]
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
+      if (over && active.id !== over.id) {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
 
-      const newItems = arrayMove(items, oldIndex, newIndex);
-      handleUpdateActiveItems(newItems);
-    }
-  };
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        handleUpdateActiveItems(newItems);
+      }
+    },
+    [items, handleUpdateActiveItems]
+  );
 
   return (
     <div className="space-y-6">
