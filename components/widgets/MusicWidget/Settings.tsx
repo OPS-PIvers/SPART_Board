@@ -4,7 +4,11 @@ import { WidgetData, MusicConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useMusicStations } from '@/hooks/useMusicStations';
 import { Toggle } from '@/components/common/Toggle';
-import { WIDGET_PALETTE, STANDARD_COLORS } from '@/config/colors';
+import {
+  WIDGET_PALETTE,
+  STANDARD_COLORS,
+  TRANSPARENT_BG_URL,
+} from '@/config/colors';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { buildSpotifyEmbedUrl } from './utils';
 
@@ -62,11 +66,15 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   onClick={() => {
                     const selectedIsSpotify =
                       buildSpotifyEmbedUrl(station.url) !== null;
-                    const newConfig = { ...config, stationId: station.id };
-                    if (selectedIsSpotify && config.syncWithTimeTool) {
-                      newConfig.syncWithTimeTool = false;
-                    }
-                    updateWidget(widget.id, { config: newConfig });
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        stationId: station.id,
+                        ...(selectedIsSpotify && config.syncWithTimeTool
+                          ? { syncWithTimeTool: false }
+                          : {}),
+                      },
+                    });
                   }}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
                     isActive
@@ -111,9 +119,11 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   bgColor === c.hex
                     ? 'border-indigo-500 scale-110 shadow-md'
                     : 'border-slate-200'
-                } ${c.hex === 'transparent' ? 'bg-[url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAACVJREFUGF5jYACC/wwMIAYDAwMIAIn///8DAxgDCAKEMDAwgAgABswNCv79YRAAAAAASUVORK5CYII=")]' : ''}`}
+                }`}
                 style={{
                   backgroundColor: c.hex !== 'transparent' ? c.hex : undefined,
+                  backgroundImage:
+                    c.hex === 'transparent' ? TRANSPARENT_BG_URL : undefined,
                 }}
                 title={c.label}
               />
