@@ -8,9 +8,11 @@ import {
   FileSpreadsheet,
   Globe,
   Info,
+  FileText,
 } from 'lucide-react';
 import { WidgetLayout } from '../../WidgetLayout';
 import { useAuth } from '@/context/useAuth';
+import { TextConfig } from '@/types';
 import { MiniAppConfig, WidgetData } from '@/types';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { useDashboard } from '@/context/useDashboard';
@@ -51,13 +53,34 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
   onCancel,
 }) => {
   const { canAccessFeature } = useAuth();
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addToast, activeDashboard } = useDashboard();
   const { driveService } = useGoogleDrive();
   const config = widget.config as MiniAppConfig;
   const { globalConfig } = useMiniAppGlobalConfig();
   const lastSharedIdRef = useRef<string | null>(null);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+
+  const importFromNotes = () => {
+    const textWidget = activeDashboard?.widgets.find((w) => w.type === 'text');
+    if (!textWidget) {
+      addToast('No Notes widget found on dashboard.', 'error');
+      return;
+    }
+    const textConfig = textWidget.config as TextConfig;
+    if (!textConfig.content) {
+      addToast('Notes widget is empty.', 'info');
+      return;
+    }
+
+    // Safely parse HTML to extract text without executing scripts
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(textConfig.content, 'text/html');
+    const plainText = doc.body.textContent || '';
+
+    setPrompt(plainText.trim());
+    addToast('Prompt imported from Notes!', 'success');
+  };
 
   const shareSheetWithBot = useCallback(
     async (sheetId: string) => {
@@ -196,6 +219,17 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest opacity-60">
                   Describe the mini-app you want to build.
                 </p>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={importFromNotes}
+                    className="text-xxs font-black uppercase text-indigo-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+                    title="Import prompt from a Notes widget on your dashboard"
+                  >
+                    <FileText className="w-3 h-3" /> Import from Notes
+                  </button>
+                </div>
+
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
