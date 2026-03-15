@@ -10,6 +10,7 @@ import {
   WidgetType,
   FeaturePermission,
   ScheduleGlobalConfig,
+  CalendarConfig,
 } from '../../../types';
 import {
   Type,
@@ -26,6 +27,7 @@ import {
   Settings2,
   ChevronRight,
   LayoutGrid,
+  CalendarDays,
 } from 'lucide-react';
 import { Toggle } from '../../common/Toggle';
 import { Button } from '../../common/Button';
@@ -85,7 +87,7 @@ const sortByTime = (items: ScheduleItem[]): ScheduleItem[] =>
 export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addToast, activeDashboard } = useDashboard();
   const { selectedBuildings } = useAuth();
   const { subscribeToPermission } = useFeaturePermissions();
   const config = widget.config as ScheduleConfig;
@@ -215,6 +217,46 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
     handleUpdateActiveItems(newItems);
   };
+  const handleImportFromCalendar = () => {
+    const calendarWidget = activeDashboard?.widgets.find(
+      (w) => w.type === 'calendar'
+    );
+    if (!calendarWidget) {
+      addToast('No Calendar widget found on this board.', 'error');
+      return;
+    }
+
+    const calendarConfig = calendarWidget.config as CalendarConfig;
+    const allEvents = calendarConfig.events ?? [];
+
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const todayEvents = allEvents.filter((e) => e.date === today);
+
+    if (todayEvents.length === 0) {
+      addToast("No events found for today in the Calendar widget.", 'info');
+      return;
+    }
+
+    const newItems: ScheduleItem[] = todayEvents.map((e) => ({
+      id: crypto.randomUUID(),
+      task: e.title,
+      startTime: e.time ?? '',
+      // Sync legacy `time` field from `startTime` for backward compatibility
+      time: e.time ?? '',
+      endTime: '',
+      mode: 'clock' as const,
+      done: false,
+      linkedWidgets: [],
+    }));
+
+    const merged = sortByTime([...items, ...newItems]);
+    handleUpdateActiveItems(merged);
+    addToast(
+      `Imported ${newItems.length.toString()} event${newItems.length === 1 ? '' : 's'} from Calendar.`,
+      'success'
+    );
+  };
+
   const handleAddSchedule = () => {
     const newSchedule: DailySchedule = {
       id: crypto.randomUUID(),
@@ -640,6 +682,13 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
             <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
               <Clock className="w-3 h-3" /> {activeSchedule?.name}
             </label>
+            <button
+              onClick={handleImportFromCalendar}
+              className="text-xs flex items-center gap-1 text-purple-600 hover:text-purple-700 font-medium"
+              title="Import today's events from the Calendar widget"
+            >
+              <CalendarDays className="w-3 h-3" /> Import
+            </button>
             <button
               onClick={handleStartAdd}
               className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"

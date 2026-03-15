@@ -48,7 +48,13 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 
 ## 2024-05-18 - [Auto-Rotation Loop] **Source:** Timer (Time Tool) **Destination:** NextUp Widget **Value:** Automates center rotations by advancing the student queue when the timer ends.
 
-## Planned Connections
+### Calendar -> Schedule (Import Today's Events)
+
+**Description:** Imports today's events from the Calendar widget directly into the active schedule, avoiding manual data entry.
+**Implementation:** `Schedule/Settings.tsx` provides an "Import" button in the schedule items view. `handleImportFromCalendar` queries `activeDashboard.widgets` to find the `calendar` widget, filters its `events` for today's date (ISO `YYYY-MM-DD`), maps them to `ScheduleItem`s, and appends them (sorted by start time) to the current schedule.
+**Configuration:** Manual trigger via the "Import" button in Schedule Settings (items view).
+
+
 
 ## WILL NOT IMPLEMENT
 
