@@ -118,6 +118,45 @@ Use these standardized components to maintain consistency:
 - **Location**: `tests/e2e/`.
 - **Interaction**: Use `user-event` patterns. For drag-and-drop (dnd-kit), you may need `.click({ force: true })` or specific drag steps.
 - **Selectors**: Use stable selectors like `data-testid` or accessible roles.
+- **Auth bypass**: Set `VITE_AUTH_BYPASS=true` so E2E tests skip the login screen entirely.
+- **Disable animations**: Inject `*, *::before, *::after { transition: none !important; animation: none !important; }` via `page.addStyleTag` in `beforeEach` to keep tests stable.
+
+### Verified UI Selectors (Playwright)
+
+These are the canonical, stable selectors for key interactive elements. **Do not guess or invent selectors** — use these.
+
+| Element | Selector | Notes |
+|---|---|---|
+| Open the widget dock (collapsed → expanded) | `page.getByTitle('Open Tools')` | The collapsed dock shows a single blue `LayoutGrid` icon button with `title="Open Tools"`. Click it to expand the full toolbar. |
+| Dock container (once expanded) | `page.locator('[data-testid="dock"]')` | The outer dock wrapper always present in the DOM. |
+| Sidebar / menu button | `page.getByTitle('Open Menu')` | Top-left hamburger/menu button. |
+| Add a specific widget | `page.getByRole('button', { name: /WidgetLabel/i }).first()` | After the dock is open. Use `.click({ force: true })` in case of animation overlap. |
+| A mounted widget on the board | `page.locator('.widget').first()` | Widgets receive a `.widget` class from `DraggableWindow`. |
+
+**Example — opening the dock and adding a Clock widget:**
+
+```ts
+// 1. Open the collapsed dock
+await page.getByTitle('Open Tools').click();
+await page.waitForTimeout(500); // let the expand animation finish
+
+// 2. Click the Clock tool button
+await page.getByRole('button', { name: /Clock/i }).first().click({ force: true });
+
+// 3. Assert widget appeared
+await expect(page.locator('.widget').first()).toBeVisible({ timeout: 10_000 });
+```
+
+### Frontend Verification Decision Tree
+
+When a Playwright selector fails, follow this order before asking a human:
+
+1. **Check `title` attribute** — many icon-only buttons use `title` (not `aria-label`). Try `page.getByTitle('...')`.
+2. **Check `data-testid`** — grep the source for `data-testid` on the element.
+3. **Check `data-role`** — some layout elements use `data-role` (e.g., `data-role="dock"`).
+4. **Check the locale file** — UI strings come from `locales/en.json`. If a label looks like a translation key, look it up there to find the rendered string.
+5. **Read the component source** — `components/layout/Dock.tsx`, `components/layout/Sidebar.tsx`, `components/layout/DashboardView.tsx` are the primary layout files. Read them before inventing a selector.
+6. **Skip visual E2E and proceed with code review** only if the element is genuinely inaccessible (e.g., requires a real camera/microphone). Document the skip reason in the PR.
 
 ---
 
