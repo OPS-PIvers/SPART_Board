@@ -148,7 +148,10 @@ export const RotationHandle: React.FC<RotationHandleProps> = ({
           viewBox="0 0 10 10"
           fill="none"
           className="text-indigo-500"
-          style={{ width: 'min(10px, 2.5cqmin)', height: 'min(10px, 2.5cqmin)' }}
+          style={{
+            width: 'min(10px, 2.5cqmin)',
+            height: 'min(10px, 2.5cqmin)',
+          }}
         >
           <path
             d="M5 1.5 A3.5 3.5 0 1 1 1.5 5"
