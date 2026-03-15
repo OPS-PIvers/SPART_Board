@@ -86,7 +86,7 @@ const sortByTime = (items: ScheduleItem[]): ScheduleItem[] =>
 export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addToast, activeDashboard } = useDashboard();
   const { selectedBuildings } = useAuth();
   const { subscribeToPermission } = useFeaturePermissions();
   const config = widget.config as ScheduleConfig;
@@ -158,7 +158,8 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
-    const calConfig = calendarWidget.config as import('../../../types').CalendarConfig;
+    const calConfig =
+      calendarWidget.config as import('../../../types').CalendarConfig;
     const events = calConfig.events ?? [];
     const today = new Date().toISOString().split('T')[0];
 
