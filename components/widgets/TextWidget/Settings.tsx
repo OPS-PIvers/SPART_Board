@@ -21,11 +21,13 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const handleImportRoster = () => {
     if (!activeRosterId) return;
-    const activeRoster = rosters.find(r => r.id === activeRosterId);
+    const activeRoster = rosters.find((r) => r.id === activeRosterId);
     if (!activeRoster || !activeRoster.students) return;
 
-    const listHtml = `<ul>${activeRoster.students.map(s => `<li>${s.firstName} ${s.lastName}</li>`).join('')}</ul>`;
-    const newContent = config.content ? `${config.content}<br>${listHtml}` : listHtml;
+    const listHtml = `<ul>${activeRoster.students.map((s) => `<li>${s.firstName} ${s.lastName}</li>`).join('')}</ul>`;
+    const newContent = config.content
+      ? `${config.content}<br>${listHtml}`
+      : listHtml;
 
     updateWidget(widget.id, {
       config: { ...config, content: sanitizeHtml(newContent) } as TextConfig,
@@ -39,7 +41,10 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <Button
           variant="secondary"
           onClick={handleImportRoster}
-          disabled={!activeRosterId || rosters.find(r => r.id === activeRosterId)?.students.length === 0}
+          disabled={
+            !activeRosterId ||
+            rosters.find((r) => r.id === activeRosterId)?.students.length === 0
+          }
           className="w-full flex items-center justify-center gap-2"
         >
           <Download className="w-4 h-4" />
