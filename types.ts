@@ -40,7 +40,8 @@ export type WidgetType =
   | 'onboarding'
   | 'car-rider-pro'
   | 'music'
-  | 'specialist-schedule';
+  | 'specialist-schedule'
+  | 'graphic-organizer';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -1219,6 +1220,19 @@ export interface MusicConfig {
   textColor?: string;
 }
 
+export interface OrganizerNode {
+  id: string;
+  text: string;
+  bgColor?: string;
+}
+
+export interface GraphicOrganizerConfig {
+  templateType: 'frayer' | 't-chart' | 'venn' | 'kwl' | 'cause-effect';
+  nodes: Record<string, OrganizerNode>;
+  fontFamily?: GlobalFontFamily;
+}
+
+
 export interface CarRiderProConfig {
   iframeUrl?: string;
   cardColor?: string;
@@ -1268,7 +1282,8 @@ export type WidgetConfig =
   | OnboardingConfig
   | CarRiderProConfig
   | MusicConfig
-  | SpecialistScheduleConfig;
+  | SpecialistScheduleConfig
+  | GraphicOrganizerConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1355,7 +1370,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                   ? MusicConfig
                                                                                   : T extends 'specialist-schedule'
                                                                                     ? SpecialistScheduleConfig
-                                                                                    : never;
+                                                                                    : T extends 'graphic-organizer'
+                                                                                      ? GraphicOrganizerConfig
+                                                                                      : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
