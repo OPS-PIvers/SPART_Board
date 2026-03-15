@@ -339,7 +339,11 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }
 
         // Nexus: Auto-Checkoff Logic
-        if (mode === 'single' && typeof syncResult === 'string' && activeDashboard) {
+        if (
+          mode === 'single' &&
+          typeof syncResult === 'string' &&
+          activeDashboard
+        ) {
           const checklistWidget = activeDashboard.widgets.find(
             (w) => w.type === 'checklist'
           );
@@ -358,7 +362,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 }
               }
 
-              const completedNames = checklistConfig.completedNames || [];
+              const completedNames = checklistConfig.completedNames ?? [];
               if (!completedNames.includes(studentId)) {
                 updateWidget(checklistWidget.id, {
                   config: {
@@ -366,10 +370,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     completedNames: [...completedNames, studentId],
                   } as unknown as WidgetConfig,
                 });
-                addToast(t('widgets.random.checkedOff', { name: syncResult }), 'success');
+                addToast(
+                  t('widgets.random.checkedOff', { name: syncResult }),
+                  'success'
+                );
               }
             } else if (checklistConfig.mode === 'manual') {
-              const items = checklistConfig.items || [];
+              const items = checklistConfig.items ?? [];
               const targetItem = items.find((i) => i.text === syncResult);
 
               if (targetItem && !targetItem.completed) {
@@ -382,7 +389,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     items: newItems,
                   } as unknown as WidgetConfig,
                 });
-                addToast(t('widgets.random.checkedOff', { name: syncResult }), 'success');
+                addToast(
+                  t('widgets.random.checkedOff', { name: syncResult }),
+                  'success'
+                );
               }
             }
           }
