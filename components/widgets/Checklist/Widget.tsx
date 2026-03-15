@@ -110,24 +110,24 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     [updateWidget]
   );
 
-  // ⚡ Bolt: Memoize button handlers to prevent unnecessary re-renders of child components
-  // These handlers are passed as props to the CheckListCards, so keeping their reference
-  // stable avoids cascading re-renders across the entire list when other widget state changes.
+  // ⚡ Bolt: Memoize button handlers to prevent them from being recreated on every render.
   const resetToday = useCallback(() => {
+    const { mode, items, config, widgetId } = latestState.current;
     if (mode === 'manual') {
       const reset = items.map((i) => ({ ...i, completed: false }));
-      updateWidget(widget.id, { config: { ...config, items: reset } });
+      updateWidget(widgetId, { config: { ...config, items: reset } });
     } else {
-      updateWidget(widget.id, { config: { ...config, completedNames: [] } });
+      updateWidget(widgetId, { config: { ...config, completedNames: [] } });
     }
-  }, [mode, items, updateWidget, widget.id, config]);
+  }, [updateWidget]);
 
   const removeCompleted = useCallback(() => {
+    const { mode, items, config, widgetId } = latestState.current;
     if (mode === 'manual') {
       const remaining = items.filter((i) => !i.completed);
-      updateWidget(widget.id, { config: { ...config, items: remaining } });
+      updateWidget(widgetId, { config: { ...config, items: remaining } });
     }
-  }, [mode, items, updateWidget, widget.id, config]);
+  }, [updateWidget]);
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
