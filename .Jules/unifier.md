@@ -148,5 +148,6 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 ## 2026-03-14 - Standardized Z-Index Inline Styles **Drift:** Inline `zIndex` styles were mixed with tailwind utility classes. **Fix:** Replaced inline `style={{ zIndex: ... }}` with custom Tailwind utility classes from `tailwind.config.js` (`z-modal`, `z-critical`, `z-backdrop`).
 
 ## 2026-03-15 - Standardized Card Containers
+
 **Drift:** Discovered multiple hardcoded instances of the pattern `bg-white rounded-2xl border border-slate-200 shadow-sm` acting as card containers across random widget settings, instructional routines, schedule settings, and sticker modals.
 **Fix:** Created `components/common/Card.tsx` and refactored several target files to use this new component to unify standard padding, border radius, and hover states.
