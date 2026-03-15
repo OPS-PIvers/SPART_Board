@@ -1,2 +1,2 @@
-export { ExpectationsWidget as Widget } from './Widget';
-export { ExpectationsSettings as Settings } from './Settings';
+export { ExpectationsWidget } from './Widget';
+export { ExpectationsSettings } from './Settings';

@@ -25,29 +25,23 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef(false);
   const lastExternalContent = useRef(content);
+  const didInit = useRef(false);
 
-  // Sync external content changes into the DOM only when not actively editing
-  // and only when the content actually changed externally (e.g. template applied)
+  // On first render, set initial content. On subsequent renders, sync external
+  // content changes into the DOM only when not actively editing and only when
+  // the content actually changed externally (e.g. template applied).
   useEffect(() => {
-    if (
-      editorRef.current &&
-      !isEditingRef.current &&
-      content !== lastExternalContent.current
-    ) {
+    if (!editorRef.current) return;
+    if (!didInit.current) {
+      didInit.current = true;
+      editorRef.current.innerHTML = content ? sanitizeHtml(content) : '';
+      return;
+    }
+    if (!isEditingRef.current && content !== lastExternalContent.current) {
       lastExternalContent.current = content;
       editorRef.current.innerHTML = content ? sanitizeHtml(content) : '';
     }
   }, [content]);
-
-  // Set initial content on mount only. The `content` dep is intentionally
-  // omitted — ongoing external changes are handled by the effect above,
-  // and including `content` here would overwrite the DOM during typing.
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = content ? sanitizeHtml(content) : '';
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const isPlaceholder = !content || content === PLACEHOLDER_TEXT;
 

@@ -33,7 +33,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             >
               <span className="text-xl ">{n}</span>
               <span className="text-xxxs  uppercase">
-                {n === 1 ? 'Dice' : 'Dice'}
+                {n === 1 ? 'Die' : 'Dice'}
               </span>
             </button>
           ))}

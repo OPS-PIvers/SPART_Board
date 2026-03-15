@@ -1,2 +1,2 @@
-export { DiceWidget as Widget } from './Widget';
-export { DiceSettings as Settings } from './Settings';
+export { DiceWidget } from './Widget';
+export { DiceSettings } from './Settings';

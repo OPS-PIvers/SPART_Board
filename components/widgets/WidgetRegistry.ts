@@ -58,14 +58,17 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   text: lazyNamed(() => import('./TextWidget'), 'TextWidget'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistWidget'),
   random: lazyNamed(() => import('./random/RandomWidget'), 'RandomWidget'),
-  dice: lazyNamed(() => import('./DiceWidget'), 'Widget'),
+  dice: lazyNamed(() => import('./DiceWidget'), 'DiceWidget'),
   sound: lazyNamed(() => import('./SoundWidget'), 'SoundWidget'),
   webcam: lazyNamed(() => import('./Webcam'), 'WebcamWidget'),
   embed: lazyNamed(() => import('./Embed'), 'EmbedWidget'),
   drawing: lazyNamed(() => import('./DrawingWidget/Widget'), 'DrawingWidget'),
   qr: lazyNamed(() => import('./QRWidget'), 'QRWidget'),
   scoreboard: lazyNamed(() => import('./Scoreboard'), 'ScoreboardWidget'),
-  expectations: lazyNamed(() => import('./ExpectationsWidget'), 'Widget'),
+  expectations: lazyNamed(
+    () => import('./ExpectationsWidget'),
+    'ExpectationsWidget'
+  ),
   poll: lazyNamed(() => import('./PollWidget'), 'PollWidget'),
   weather: lazyNamed(() => import('./Weather/Widget'), 'WeatherWidget'),
   schedule: lazyNamed(() => import('./Schedule'), 'ScheduleWidget'),
@@ -138,7 +141,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistSettings'),
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
-  dice: lazyNamed(() => import('./DiceWidget'), 'Settings'),
+  dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),
   sound: lazyNamed(() => import('./SoundWidget'), 'SoundSettings'),
   embed: lazyNamed(() => import('./Embed'), 'EmbedSettings'),
   drawing: lazyNamed(
@@ -180,7 +183,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
-  expectations: lazyNamed(() => import('./ExpectationsWidget'), 'Settings'),
+  expectations: lazyNamed(
+    () => import('./ExpectationsWidget'),
+    'ExpectationsSettings'
+  ),
   schedule: lazyNamed(() => import('./Schedule'), 'ScheduleSettings'),
   classes: DefaultSettings,
   recessGear: lazyNamed(

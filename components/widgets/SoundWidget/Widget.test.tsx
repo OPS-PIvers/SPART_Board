@@ -42,6 +42,7 @@ describe('SoundWidget', () => {
         frequencyBinCount: 128,
         getByteFrequencyData: mockGetByteFrequencyData,
       });
+      close = vi.fn().mockResolvedValue(undefined);
     } as unknown as typeof AudioContext;
 
     // Mock getUserMedia

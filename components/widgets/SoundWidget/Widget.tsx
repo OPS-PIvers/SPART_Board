@@ -25,6 +25,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const { w, h } = widget;
 
@@ -99,6 +100,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           window.AudioContext ||
           (window as unknown as CustomWindow).webkitAudioContext;
         const audioContext = new AudioContextClass();
+        audioContextRef.current = audioContext;
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
@@ -129,8 +131,10 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     };
     void startAudio();
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (animationRef.current !== null)
+        cancelAnimationFrame(animationRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      void audioContextRef.current?.close();
     };
   }, []);
 
