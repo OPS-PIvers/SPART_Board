@@ -13,23 +13,33 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [currentDialog, setCurrentDialog] = useState<DialogState | null>(null);
-  // Queue for dialogs requested while one is already showing
+  // Queue of pending dialogs. Always push here first; processQueue promotes one at a time.
   const queue = useRef<DialogState[]>([]);
+  // Ref flag prevents race: multiple enqueue() calls in the same tick
+  // can't all see currentDialog===null and overwrite each other.
+  const isShowingRef = useRef(false);
+
+  const processQueue = useCallback(() => {
+    if (isShowingRef.current || queue.current.length === 0) return;
+    const next = queue.current.shift();
+    if (next) {
+      isShowingRef.current = true;
+      setCurrentDialog(next);
+    }
+  }, []);
 
   const openNext = useCallback(() => {
-    const next = queue.current.shift();
-    setCurrentDialog(next ?? null);
-  }, []);
+    isShowingRef.current = false;
+    setCurrentDialog(null);
+    processQueue();
+  }, [processQueue]);
 
   const enqueue = useCallback(
     (dialog: DialogState) => {
-      if (currentDialog === null && queue.current.length === 0) {
-        setCurrentDialog(dialog);
-      } else {
-        queue.current.push(dialog);
-      }
+      queue.current.push(dialog);
+      processQueue();
     },
-    [currentDialog]
+    [processQueue]
   );
 
   const showAlert = useCallback(

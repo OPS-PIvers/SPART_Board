@@ -18,6 +18,7 @@ export interface ConfirmOptions {
 
 export interface PromptOptions {
   title?: string;
+  variant?: DialogVariant;
   placeholder?: string;
   defaultValue?: string;
   multiline?: boolean;
