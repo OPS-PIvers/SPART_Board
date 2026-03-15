@@ -132,7 +132,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SpecialistSchedule'),
     'SpecialistScheduleWidget'
   ),
-  'graphic-organizer': lazyNamed(() => import('./GraphicOrganizer/Widget'), 'GraphicOrganizerWidget'),
+  'graphic-organizer': lazyNamed(
+    () => import('./GraphicOrganizer/Widget'),
+    'GraphicOrganizerWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -216,7 +219,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./SpecialistSchedule'),
     'SpecialistScheduleSettings'
   ),
-  'graphic-organizer': lazyNamed(() => import('./GraphicOrganizer/Settings'), 'GraphicOrganizerSettings'),
+  'graphic-organizer': lazyNamed(
+    () => import('./GraphicOrganizer/Settings'),
+    'GraphicOrganizerSettings'
+  ),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {

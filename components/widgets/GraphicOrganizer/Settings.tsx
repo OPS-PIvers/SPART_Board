@@ -4,7 +4,9 @@ import { useDashboard } from '@/context/useDashboard';
 
 import { GlobalFontFamily } from '@/types';
 
-export const GraphicOrganizerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const GraphicOrganizerSettings: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as GraphicOrganizerConfig;
 
@@ -37,8 +39,18 @@ export const GraphicOrganizerSettings: React.FC<{ widget: WidgetData }> = ({ wid
       <div className="space-y-2">
         <label className="block text-sm font-medium">Font Family</label>
         <select
-          value={config.fontFamily || 'global'}
-          onChange={(e) => updateWidget(widget.id, { config: { ...config, fontFamily: e.target.value === 'global' ? undefined : (e.target.value as GlobalFontFamily) } })}
+          value={config.fontFamily ?? 'global'}
+          onChange={(e) =>
+            updateWidget(widget.id, {
+              config: {
+                ...config,
+                fontFamily:
+                  e.target.value === 'global'
+                    ? undefined
+                    : (e.target.value as GlobalFontFamily),
+              },
+            })
+          }
           className="w-full p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="global">Use Dashboard Default</option>

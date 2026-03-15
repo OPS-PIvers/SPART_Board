@@ -1232,7 +1232,6 @@ export interface GraphicOrganizerConfig {
   fontFamily?: GlobalFontFamily;
 }
 
-
 export interface CarRiderProConfig {
   iframeUrl?: string;
   cardColor?: string;

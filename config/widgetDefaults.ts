@@ -1,4 +1,9 @@
-import { WidgetData, WidgetType, SpecialistScheduleConfig, GraphicOrganizerConfig } from '@/types';
+import {
+  WidgetData,
+  WidgetType,
+  SpecialistScheduleConfig,
+  GraphicOrganizerConfig,
+} from '@/types';
 import { STICKY_NOTE_COLORS } from './colors';
 
 export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
