@@ -6,9 +6,11 @@ import { sanitizeHtml } from '@/utils/security';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { TypographySettings } from '@/components/common/TypographySettings';
 import { TEXT_WIDGET_COLORS, TEXT_WIDGET_TEMPLATES } from './constants';
+import { Button } from '@/components/common/Button';
+import { Download } from 'lucide-react';
 
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, rosters, activeRosterId } = useDashboard();
   const config = widget.config as TextConfig;
 
   const applyTemplate = (content: string) => {
@@ -17,8 +19,33 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
   };
 
+  const handleImportRoster = () => {
+    if (!activeRosterId) return;
+    const activeRoster = rosters.find(r => r.id === activeRosterId);
+    if (!activeRoster || !activeRoster.students) return;
+
+    const listHtml = `<ul>${activeRoster.students.map(s => `<li>${s.firstName} ${s.lastName}</li>`).join('')}</ul>`;
+    const newContent = config.content ? `${config.content}<br>${listHtml}` : listHtml;
+
+    updateWidget(widget.id, {
+      config: { ...config, content: sanitizeHtml(newContent) } as TextConfig,
+    });
+  };
+
   return (
     <div className="space-y-6">
+      <div>
+        <SettingsLabel>Import Data</SettingsLabel>
+        <Button
+          variant="secondary"
+          onClick={handleImportRoster}
+          disabled={!activeRosterId || rosters.find(r => r.id === activeRosterId)?.students.length === 0}
+          className="w-full flex items-center justify-center gap-2"
+        >
+          <Download className="w-4 h-4" />
+          Import Roster
+        </Button>
+      </div>
       <div>
         <SettingsLabel>Templates</SettingsLabel>
         <div className="grid grid-cols-2 gap-2">
