@@ -11,7 +11,10 @@ describe('SeatingChartSidebar', () => {
   const defaultProps = {
     mode: 'setup' as const,
     widgetId: 'test-widget',
-    config: { template: 'freeform', templateColumns: DEFAULT_TEMPLATE_COLUMNS } as SeatingChartConfig,
+    config: {
+      template: 'freeform',
+      templateColumns: DEFAULT_TEMPLATE_COLUMNS,
+    } as SeatingChartConfig,
     updateWidget: vi.fn(),
     template: 'freeform' as const,
     localTemplateColumns: String(DEFAULT_TEMPLATE_COLUMNS),
@@ -66,7 +69,7 @@ describe('SeatingChartSidebar', () => {
       render(<SeatingChartSidebar {...defaultProps} template="rows" />);
       const input = screen.getByRole('spinbutton');
       expect(input).toBeInTheDocument();
-      expect(input).toHaveValue(6);
+      expect(input).toHaveValue(DEFAULT_TEMPLATE_COLUMNS);
     });
 
     it('updates localTemplateColumns and config on valid column input', () => {
@@ -75,14 +78,17 @@ describe('SeatingChartSidebar', () => {
 
       // user.clear doesn't always trigger change properly on number inputs in JSDOM,
       // so we select all text first or use fireEvent.
-      fireEvent.change(input, { target: { value: String(TEST_COLUMN_COUNT_VALID) } });
+      fireEvent.change(input, {
+        target: { value: String(TEST_COLUMN_COUNT_VALID) },
+      });
 
-      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith(String(TEST_COLUMN_COUNT_VALID));
+      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith(
+        String(TEST_COLUMN_COUNT_VALID)
+      );
       expect(defaultProps.updateWidget).toHaveBeenCalledWith('test-widget', {
-        config: expect.objectContaining({ templateColumns: TEST_COLUMN_COUNT_VALID }) as Record<
-          string,
-          unknown
-        >,
+        config: expect.objectContaining({
+          templateColumns: TEST_COLUMN_COUNT_VALID,
+        }) as Record<string, unknown>,
       });
     });
 
@@ -98,7 +104,9 @@ describe('SeatingChartSidebar', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.tab(); // Blur
-      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith(String(DEFAULT_TEMPLATE_COLUMNS));
+      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith(
+        String(DEFAULT_TEMPLATE_COLUMNS)
+      );
     });
 
     it('calls applyTemplate when Apply Layout button is clicked', async () => {
