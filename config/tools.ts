@@ -79,6 +79,12 @@ export const TOOLS: ToolMetadata[] = [
     label: 'Specialist',
     color: 'bg-teal-700',
   },
+  {
+    type: 'graphic-organizer',
+    icon: LayoutGrid,
+    label: 'Organizer',
+    color: 'bg-indigo-500',
+  },
   { type: 'calendar', icon: Calendar, label: 'Events', color: 'bg-rose-500' },
   {
     type: 'lunchCount',

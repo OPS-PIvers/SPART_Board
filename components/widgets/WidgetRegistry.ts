@@ -132,6 +132,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SpecialistSchedule'),
     'SpecialistScheduleWidget'
   ),
+  'graphic-organizer': lazyNamed(
+    () => import('./GraphicOrganizer/Widget'),
+    'GraphicOrganizerWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -214,6 +218,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   'specialist-schedule': lazyNamed(
     () => import('./SpecialistSchedule'),
     'SpecialistScheduleSettings'
+  ),
+  'graphic-organizer': lazyNamed(
+    () => import('./GraphicOrganizer/Settings'),
+    'GraphicOrganizerSettings'
   ),
 };
 
@@ -519,6 +527,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   },
   'specialist-schedule': {
     baseWidth: 300,
+    baseHeight: 400,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'graphic-organizer': {
+    baseWidth: 600,
     baseHeight: 400,
     canSpread: true,
     skipScaling: true,

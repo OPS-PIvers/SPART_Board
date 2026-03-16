@@ -1,4 +1,9 @@
-import { WidgetData, WidgetType, SpecialistScheduleConfig } from '@/types';
+import {
+  WidgetData,
+  WidgetType,
+  SpecialistScheduleConfig,
+  GraphicOrganizerConfig,
+} from '@/types';
 import { STICKY_NOTE_COLORS } from './colors';
 
 export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
@@ -295,5 +300,13 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       cardOpacity: 1,
       specialistClass: '',
     } as SpecialistScheduleConfig,
+  },
+  'graphic-organizer': {
+    w: 8,
+    h: 6,
+    config: {
+      templateType: 'frayer',
+      nodes: {},
+    } as GraphicOrganizerConfig,
   },
 };
