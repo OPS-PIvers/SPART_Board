@@ -244,7 +244,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Card height: small enough that 4 always fit without clipping (short widgets),
   // but capped so taller widgets naturally show more than 4 events.
-  const rowHeight = `min(calc((100% - 3 * ${GAP_STYLE}) / 4), min(120px, 22cqmin))`;
+  const rowHeight = `min(calc((100% - min(30px, 6cqmin)) / 4), min(120px, 22cqmin))`;
 
   return (
     <WidgetLayout
