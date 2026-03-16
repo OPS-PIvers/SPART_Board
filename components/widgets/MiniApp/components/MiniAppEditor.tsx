@@ -62,16 +62,24 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
   const [showHelp, setShowHelp] = useState(false);
 
   const importFromNotes = () => {
-    const textWidget = activeDashboard?.widgets.find((w) => w.type === 'text');
-    if (!textWidget) {
-      addToast('No Notes widget found on dashboard.', 'error');
+    const textWidgetsWithContent =
+      activeDashboard?.widgets.filter(
+        (w) => w.type === 'text' && (w.config as TextConfig).content
+      ) ?? [];
+
+    if (textWidgetsWithContent.length === 0) {
+      addToast('No Notes widget with content found on dashboard.', 'error');
       return;
     }
-    const textConfig = textWidget.config as TextConfig;
-    if (!textConfig.content) {
-      addToast('Notes widget is empty.', 'info');
-      return;
-    }
+
+    // If multiple notes widgets have content, use the one with the most text as a heuristic.
+    textWidgetsWithContent.sort(
+      (a, b) =>
+        ((b.config as TextConfig).content?.length || 0) -
+        ((a.config as TextConfig).content?.length || 0)
+    );
+
+    const textConfig = textWidgetsWithContent[0].config as TextConfig;
 
     // Safely parse HTML to extract text without executing scripts
     const parser = new DOMParser();
