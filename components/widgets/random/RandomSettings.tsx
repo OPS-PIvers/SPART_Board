@@ -243,7 +243,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
       )}
 
       {mode === 'groups' && (
-        <Card padding="md" className="border-slate-100">
+        <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
           <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <Hash className="w-3 h-3" /> Group Size
           </label>
@@ -268,7 +268,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               {groupSize}
             </span>
           </div>
-        </Card>
+        </div>
       )}
 
       {rosterMode === 'custom' && (
