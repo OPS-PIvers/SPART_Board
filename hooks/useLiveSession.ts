@@ -164,19 +164,22 @@ export const useLiveSession = (
       // direct property comparison loop to prevent blocking the main thread during frequent live session updates.
       setStudents((prev) => {
         if (prev.length !== studentList.length) return studentList;
-        for (let i = 0; i < prev.length; i++) {
-          const a = prev[i];
-          const b = studentList[i];
+
+        const prevMap = new Map(prev.map((s) => [s.id, s]));
+
+        for (const newStudent of studentList) {
+          const prevStudent = prevMap.get(newStudent.id);
           if (
-            a.id !== b.id ||
-            a.pin !== b.pin ||
-            a.status !== b.status ||
-            a.joinedAt !== b.joinedAt ||
-            a.lastActive !== b.lastActive
+            !prevStudent ||
+            prevStudent.pin !== newStudent.pin ||
+            prevStudent.status !== newStudent.status ||
+            prevStudent.joinedAt !== newStudent.joinedAt ||
+            prevStudent.lastActive !== newStudent.lastActive
           ) {
             return studentList;
           }
         }
+
         return prev;
       });
     });
