@@ -8,6 +8,15 @@ import {
 import { STICKY_NOTE_COLORS } from './colors';
 
 export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
+  'hotspot-image': {
+    w: 500,
+    h: 400,
+    config: {
+      baseImageUrl: '',
+      hotspots: [],
+      popoverTheme: 'light',
+    },
+  },
   clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
   'time-tool': {
     w: 420,

@@ -43,7 +43,8 @@ export type WidgetType =
   | 'specialist-schedule'
   | 'graphic-organizer'
   | 'reveal-grid'
-  | 'numberLine';
+  | 'numberLine'
+  | 'hotspot-image';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -1184,6 +1185,22 @@ export interface NumberLineConfig {
   showArrows: boolean;
 }
 
+export interface ImageHotspot {
+  id: string;
+  xPct: number; // Use percentages so pins stay anchored if the widget scales
+  yPct: number;
+  title: string;
+  detailText: string;
+  icon: 'search' | 'info' | 'question' | 'star';
+  isViewed: boolean; // Syncs state so teachers know which ones they've covered
+}
+
+export interface HotspotImageConfig {
+  baseImageUrl: string;
+  hotspots: ImageHotspot[];
+  popoverTheme?: 'light' | 'dark' | 'glass';
+}
+
 export interface SpecialistScheduleBuildingConfig {
   cycleLength: 6 | 10;
   startDate: string; // YYYY-MM-DD
@@ -1323,7 +1340,8 @@ export type WidgetConfig =
   | SpecialistScheduleConfig
   | GraphicOrganizerConfig
   | RevealGridConfig
-  | NumberLineConfig;
+  | NumberLineConfig
+  | HotspotImageConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1416,7 +1434,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                         ? RevealGridConfig
                                                                                         : T extends 'numberLine'
                                                                                           ? NumberLineConfig
-                                                                                          : never;
+                                                                                          : T extends 'hotspot-image'
+                                                                                            ? HotspotImageConfig
+                                                                                            : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
