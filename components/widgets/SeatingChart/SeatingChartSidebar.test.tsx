@@ -3,15 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { SeatingChartSidebar } from './SeatingChartSidebar';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { SeatingChartConfig } from '@/types';
+import { DEFAULT_TEMPLATE_COLUMNS } from './constants';
+
+const TEST_COLUMN_COUNT_VALID = 8;
 
 describe('SeatingChartSidebar', () => {
   const defaultProps = {
     mode: 'setup' as const,
     widgetId: 'test-widget',
-    config: { template: 'freeform', templateColumns: 6 } as SeatingChartConfig,
+    config: { template: 'freeform', templateColumns: DEFAULT_TEMPLATE_COLUMNS } as SeatingChartConfig,
     updateWidget: vi.fn(),
     template: 'freeform' as const,
-    localTemplateColumns: '6',
+    localTemplateColumns: String(DEFAULT_TEMPLATE_COLUMNS),
     setLocalTemplateColumns: vi.fn(),
     studentCount: 20,
     applyTemplate: vi.fn(),
@@ -72,11 +75,11 @@ describe('SeatingChartSidebar', () => {
 
       // user.clear doesn't always trigger change properly on number inputs in JSDOM,
       // so we select all text first or use fireEvent.
-      fireEvent.change(input, { target: { value: '8' } });
+      fireEvent.change(input, { target: { value: String(TEST_COLUMN_COUNT_VALID) } });
 
-      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith('8');
+      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith(String(TEST_COLUMN_COUNT_VALID));
       expect(defaultProps.updateWidget).toHaveBeenCalledWith('test-widget', {
-        config: expect.objectContaining({ templateColumns: 8 }) as Record<
+        config: expect.objectContaining({ templateColumns: TEST_COLUMN_COUNT_VALID }) as Record<
           string,
           unknown
         >,
@@ -95,7 +98,7 @@ describe('SeatingChartSidebar', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.tab(); // Blur
-      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith('6');
+      expect(defaultProps.setLocalTemplateColumns).toHaveBeenCalledWith(String(DEFAULT_TEMPLATE_COLUMNS));
     });
 
     it('calls applyTemplate when Apply Layout button is clicked', async () => {
