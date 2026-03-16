@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useStorage } from '@/hooks/useStorage';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import { Card } from '../common/Card';
+import { Card } from '@/components/common/Card';
 import { GlobalSticker, GradeLevel } from '@/types';
 import { ALL_GRADE_LEVELS } from '@/config/widgetGradeLevels';
 import { useDialog } from '@/context/useDialog';

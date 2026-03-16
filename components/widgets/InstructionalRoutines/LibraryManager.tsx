@@ -38,7 +38,7 @@ import {
 } from '../../../utils/imageProcessing';
 import { PromptDialog } from './PromptDialog';
 import { Toast } from '../../common/Toast';
-import { Card } from '../../common/Card';
+import { Card } from '@/components/common/Card';
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 

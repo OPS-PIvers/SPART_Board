@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { Toggle } from '../../common/Toggle';
 import { Button } from '../../common/Button';
-import { Card } from '../../common/Card';
+import { Card } from '@/components/common/Card';
 
 const AVAILABLE_WIDGETS: { type: WidgetType; label: string }[] = [
   { type: 'time-tool', label: 'Timer' },

@@ -4,7 +4,7 @@ import { useDialog } from '@/context/useDialog';
 import { WidgetData, RandomConfig } from '../../../types';
 import { RosterModeControl } from '../../common/RosterModeControl';
 import { Toggle } from '../../common/Toggle';
-import { Card } from '../../common/Card';
+import { Card } from '@/components/common/Card';
 import {
   Users,
   UserPlus,

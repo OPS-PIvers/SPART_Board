@@ -33,8 +33,15 @@ export const Card: React.FC<CardProps> = ({
     '3xl': 'rounded-3xl',
   };
 
-  const computedClass =
-    `${baseStyles} ${paddingStyles[padding]} ${roundedStyles[rounded]}${hoverable ? ' hover:shadow-md transition-all' : ''} ${className}`.trim();
+  const computedClass = [
+    baseStyles,
+    paddingStyles[padding],
+    roundedStyles[rounded],
+    hoverable && 'hover:shadow-md transition-all',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={computedClass} {...props}>
