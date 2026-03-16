@@ -183,7 +183,12 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={item.id}
                     role="listitem"
-                    style={{ flex: '1 1 0', minHeight: 0 }}
+                    style={{
+                      flex: '1 1 0',
+                      minHeight: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
                   >
                     <ChecklistCard
                       id={item.id}
@@ -204,7 +209,12 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={student.id}
                     role="listitem"
-                    style={{ flex: '1 1 0', minHeight: 0 }}
+                    style={{
+                      flex: '1 1 0',
+                      minHeight: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
                   >
                     <ChecklistCard
                       id={student.id}
