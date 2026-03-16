@@ -107,7 +107,6 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             title: result.title,
             html: result.html,
             createdAt: Date.now(),
-            updatedAt: Date.now(),
           },
           activeAppUnsaved: true,
         } as Partial<MiniAppConfig>,
@@ -160,12 +159,13 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       content={
         <div className="w-full h-full bg-transparent flex flex-col overflow-hidden relative group/embed-content">
           {mode === 'url' && url && (
-            <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover/embed-content:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover/embed-content:opacity-100 focus-within:opacity-100 transition-opacity">
               <button
                 onClick={handleGenerateMiniApp}
                 disabled={isGeneratingApp}
                 className="bg-white/80 backdrop-blur-sm hover:bg-indigo-50 text-indigo-500 shadow-sm border border-indigo-200/50 rounded-lg p-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 title="Generate Interactive Mini App"
+                aria-label="Generate Interactive Mini App"
               >
                 {isGeneratingApp ? (
                   <Loader2
