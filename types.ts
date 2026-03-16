@@ -820,6 +820,18 @@ export interface MathToolConfig {
   stickerMode?: boolean;
   /** For manipulative piece stickers – identifies the specific piece (e.g. 'unit', 'rod', '1-2', 'hexagon') */
   stickerPiece?: string;
+  /** Place value columns */
+  placeValueColumns?: string[];
+  /** Place value blocks */
+  placeValueBlocks?: { id: string; type: '1' | '10' | '100' | '1000'; x: number; y: number }[];
+  /** Fraction area shape */
+  fractionAreaShape?: 'circle' | 'rectangle' | 'vertical-bar';
+  /** Fraction area denominator */
+  fractionAreaDenominator?: number;
+  /** Fraction area shaded slices */
+  fractionAreaShadedSlices?: number[];
+  /** Interactive 100s grid active cells */
+  grid100sActiveCells?: Record<number, string>;
 }
 
 export interface PdfConfig {
