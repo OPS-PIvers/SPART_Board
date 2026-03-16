@@ -12,7 +12,12 @@ const EditableNode: React.FC<{
   placeholder?: string;
 }> = ({ id, initialText, onUpdate, className, placeholder }) => {
   const contentEditableRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     if (
@@ -24,9 +29,18 @@ const EditableNode: React.FC<{
     }
   }, [initialText]);
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const triggerUpdate = () => {
-    if (contentEditableRef.current) {
-      onUpdate(id, contentEditableRef.current.innerText);
+    if (contentEditableRef.current && onUpdateRef.current) {
+      onUpdateRef.current(id, contentEditableRef.current.innerText);
     }
   };
 

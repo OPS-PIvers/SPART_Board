@@ -536,5 +536,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 600,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
+    padding: 0,
   },
 };
