@@ -257,13 +257,13 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div
           className={`flex flex-col items-center justify-center h-full w-full ${fontClass}`}
           style={{
-            gap: 'min(12px, 2.5cqmin)',
-            padding: 'min(8px, 2cqmin)',
+            gap: hideClothing ? '0.5cqh' : 'min(12px, 2.5cqmin)',
+            padding: hideClothing ? 0 : 'min(8px, 2cqmin)',
           }}
         >
           <div
             className="flex flex-col items-center justify-center w-full"
-            style={{ gap: 'min(4px, 1cqmin)' }}
+            style={{ gap: hideClothing ? '0.5cqh' : 'min(4px, 1cqmin)' }}
           >
             <div
               className="flex items-center justify-center w-full"

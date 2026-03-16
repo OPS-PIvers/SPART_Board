@@ -45,14 +45,14 @@ export const ChecklistCard = React.memo<ChecklistCardProps>(
     const borderColor = hexToRgba('#e2e8f0', cardOpacity); // slate-200
 
     return (
-      <div role="listitem" className="flex-1 min-h-0 flex flex-col">
+      <div role="listitem">
         <div
           role="checkbox"
           aria-checked={isCompleted}
           tabIndex={0}
           onClick={() => onToggle(id)}
           onKeyDown={handleKeyDown}
-          className="w-full min-h-full flex items-start cursor-pointer select-none rounded-2xl border shadow-sm transition-all active:scale-[0.98]"
+          className="w-full flex items-center cursor-pointer select-none rounded-2xl border shadow-sm transition-all active:scale-[0.98]"
           style={{
             gap: cardGap,
             padding: cardPadding,
