@@ -132,36 +132,20 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
-  // All items always visible — JS pixel math based on widget dims (reliable, no CQ unit issues)
-  const itemCount = mode === 'manual' ? items.length : students.length;
+  // CSS container query sizing — each card wrapper gets container-type: size,
+  // so cqh = 1% of that card's actual height. This scales continuously during
+  // resize (no pointer-release lag) and handles any item count correctly.
   const sm = scaleMultiplier;
-
-  const TITLE_BAR_H = 40;
-  const FOOTER_H = 44;
-  const LIST_PAD_V = 20;
-  const widgetH = Math.max(widget.h, 120);
-  const widgetW = Math.max(widget.w, 100);
-  const availH = widgetH - TITLE_BAR_H - FOOTER_H - LIST_PAD_V;
-  const gapPx = Math.max(
-    2,
-    Math.min(6 * sm, (4 * sm) / Math.max(itemCount / 4, 1))
-  );
-  const perCardH = Math.max(
-    16,
-    (availH - Math.max(0, itemCount - 1) * gapPx) / Math.max(itemCount, 1)
-  );
-
-  const fontSizePx = Math.max(8, Math.min(16 * sm, perCardH * 0.38));
-  const iconSizePx = Math.max(10, Math.min(22 * sm, perCardH * 0.55));
-  const cardPadVPx = Math.max(2, Math.min(8 * sm, perCardH * 0.12));
-  const cardPadHPx = Math.max(8, Math.min(14 * sm, widgetW * 0.05));
-  const cardGapPx = Math.max(6, Math.min(10 * sm, widgetW * 0.03));
-
-  const textSize = `${fontSizePx.toFixed(1)}px`;
-  const iconSize = `${iconSizePx.toFixed(1)}px`;
-  const cardPadding = `${cardPadVPx.toFixed(1)}px ${cardPadHPx.toFixed(1)}px`;
-  const listGap = `${gapPx.toFixed(1)}px`;
-  const cardGap = `${cardGapPx.toFixed(1)}px`;
+  const fontCqh = (25 * sm).toFixed(1);
+  const iconCqh = (42 * sm).toFixed(1);
+  const padVCqh = (6 * sm).toFixed(1);
+  const padHCqw = (2.5 * sm).toFixed(1);
+  const gapCqh = (3 * sm).toFixed(1);
+  const textSize = `clamp(10px, ${fontCqh}cqh, ${Math.round(28 * sm)}px)`;
+  const iconSize = `clamp(12px, ${iconCqh}cqh, ${Math.round(26 * sm)}px)`;
+  const cardPadding = `clamp(3px, ${padVCqh}cqh, ${Math.round(10 * sm)}px) clamp(6px, ${padHCqw}cqw, ${Math.round(14 * sm)}px)`;
+  const cardGap = `clamp(5px, ${gapCqh}cqh, 12px)`;
+  const listGap = 'min(6px, 2cqmin)';
 
   if (!hasContent) {
     return (
@@ -207,6 +191,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                       minHeight: 0,
                       display: 'flex',
                       flexDirection: 'column',
+                      containerType: 'size',
                     }}
                   >
                     <ChecklistCard
@@ -233,6 +218,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                       minHeight: 0,
                       display: 'flex',
                       flexDirection: 'column',
+                      containerType: 'size',
                     }}
                   >
                     <ChecklistCard
