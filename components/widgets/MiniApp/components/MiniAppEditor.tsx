@@ -81,12 +81,27 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
 
     const textConfig = textWidgetsWithContent[0].config as TextConfig;
 
-    // Safely parse HTML to extract text without executing scripts
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(textConfig.content, 'text/html');
-    const plainText = doc.body.textContent || '';
+    let plainText = '';
+    if (typeof DOMParser === 'undefined') {
+      // Non-browser environment: strip HTML tags with a simple regex
+      const rawContent = textConfig.content ?? '';
+      plainText = rawContent
+        .replace(/<\/?[^>]+(>|$)/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    } else {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(textConfig.content ?? '', 'text/html');
+      plainText = doc.body?.textContent?.trim() ?? '';
+    }
 
-    setPrompt(plainText.trim());
+    const trimmed = plainText.trim();
+    if (!trimmed) {
+      addToast('Notes widget has no readable text to import.', 'error');
+      return;
+    }
+
+    setPrompt(trimmed);
     addToast('Prompt imported from Notes!', 'success');
   };
 
