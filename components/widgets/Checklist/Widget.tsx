@@ -132,19 +132,12 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
-  // Scale text up when there are fewer items so they fill available card space
-  const itemCount = mode === 'manual' ? items.length : students.length;
-  const densityMultiplier = Math.max(
-    1,
-    Math.min(2, 4 / Math.max(itemCount, 2))
-  );
-
-  // Scaled sizing values derived from scaleMultiplier and item density
-  const sm = scaleMultiplier * densityMultiplier;
-  const textSize = `min(${Math.round(18 * sm)}px, ${(5 * sm).toFixed(1)}cqmin)`;
-  const iconSize = `min(${Math.round(28 * sm)}px, ${(7 * sm).toFixed(1)}cqmin)`;
-  const cardPadding = `min(${Math.round(10 * sm)}px, ${(2.2 * sm).toFixed(1)}cqmin) min(${Math.round(14 * sm)}px, ${(3 * sm).toFixed(1)}cqmin)`;
-  const cardGap = `min(${Math.round(10 * sm)}px, ${(2.2 * sm).toFixed(1)}cqmin)`;
+  // Scaled sizing values derived from scaleMultiplier only — no density inflation
+  const sm = scaleMultiplier;
+  const textSize = `min(${Math.round(16 * sm)}px, ${(5.5 * sm).toFixed(1)}cqmin)`;
+  const iconSize = `min(${Math.round(22 * sm)}px, ${(7 * sm).toFixed(1)}cqmin)`;
+  const cardPadding = `min(${Math.round(10 * sm)}px, ${(2.5 * sm).toFixed(1)}cqmin) min(${Math.round(14 * sm)}px, ${(3.5 * sm).toFixed(1)}cqmin)`;
+  const cardGap = `min(${Math.round(8 * sm)}px, ${(2 * sm).toFixed(1)}cqmin)`;
 
   if (!hasContent) {
     return (
