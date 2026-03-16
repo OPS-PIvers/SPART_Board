@@ -813,6 +813,13 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   function renderGlobalSettings() {
     const viewMode = config.viewMode ?? 'locked';
+
+    const handleViewModeChange = (mode: 'locked' | 'flex') => {
+      updateWidget(widget.id, {
+        config: { ...config, viewMode: mode } as ScheduleConfig,
+      });
+    };
+
     return (
       <>
         {/* Layout Mode */}
@@ -827,14 +834,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
           >
             <button
               type="button"
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    viewMode: 'locked',
-                  } as ScheduleConfig,
-                })
-              }
+              onClick={() => handleViewModeChange('locked')}
               className={`flex-1 p-2 border rounded-lg text-sm flex flex-col items-center gap-1 transition-colors ${
                 viewMode === 'locked'
                   ? 'bg-blue-50 border-blue-500 text-blue-700'
@@ -844,19 +844,12 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
             >
               <span className="font-bold text-xs">Locked</span>
               <span className="text-xxs text-slate-500 text-center leading-tight">
-                4 at a time, auto-scrolls
+                4 at a time, optional auto-scroll
               </span>
             </button>
             <button
               type="button"
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    viewMode: 'flex',
-                  } as ScheduleConfig,
-                })
-              }
+              onClick={() => handleViewModeChange('flex')}
               className={`flex-1 p-2 border rounded-lg text-sm flex flex-col items-center gap-1 transition-colors ${
                 viewMode === 'flex'
                   ? 'bg-blue-50 border-blue-500 text-blue-700'

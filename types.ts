@@ -625,8 +625,9 @@ export interface ScheduleConfig {
   cardOpacity?: number;
   /**
    * Controls how events are laid out in the widget.
-   * 'locked': Fixed-height rows, 4 visible at a time with auto-scroll support (default).
-   * 'flex': Natural-height rows, all events visible without forced scrolling.
+   * 'locked': Fixed-height rows, 4 visible at a time with optional auto-scroll support (default).
+   * 'flex': Natural-height rows; all events are visible when the widget is tall enough,
+   *         otherwise the list remains scrollable within the widget.
    */
   viewMode?: 'locked' | 'flex';
 }
