@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { MathToolConfig } from '@/types';
+import { MathToolConfig, PlaceValueBlock } from '@/types';
 
 interface PlaceValueToolProps {
   config: MathToolConfig;
@@ -112,14 +112,8 @@ export const PlaceValueTool: React.FC<PlaceValueToolProps> = ({
     'Tens',
     'Ones',
   ];
-  const blocks = React.useMemo(
-    () =>
-      (config.placeValueBlocks ?? []) as {
-        id: string;
-        type: '1' | '10' | '100' | '1000';
-        x: number;
-        y: number;
-      }[],
+  const blocks: PlaceValueBlock[] = React.useMemo(
+    () => config.placeValueBlocks ?? [],
     [config.placeValueBlocks]
   );
 
@@ -131,9 +125,8 @@ export const PlaceValueTool: React.FC<PlaceValueToolProps> = ({
 
   useEffect(() => {
     if (!draggingBlockId) {
-      setTimeout(() => {
-        setLocalBlocks((config.placeValueBlocks ?? []) as typeof blocks);
-      }, 0);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocalBlocks(config.placeValueBlocks ?? []);
     }
   }, [config.placeValueBlocks, draggingBlockId]);
 
@@ -261,7 +254,7 @@ export const PlaceValueTool: React.FC<PlaceValueToolProps> = ({
           ref={svgRef}
           viewBox="0 0 600 400"
           className="w-full h-full block"
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
         >
           {/* Column Backgrounds and Dividers */}
           {columns.map((col, i) => {

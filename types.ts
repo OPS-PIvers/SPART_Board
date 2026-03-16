@@ -790,6 +790,13 @@ export interface MathToolsConfig {
 /** Number line display mode */
 export type NumberLineMode = 'integers' | 'decimals' | 'fractions';
 
+export interface PlaceValueBlock {
+  id: string;
+  type: '1' | '10' | '100' | '1000';
+  x: number;
+  y: number;
+}
+
 /** Config for an individual mathTool widget instance */
 export interface MathToolConfig {
   /** Which math tool this instance displays */
@@ -823,12 +830,7 @@ export interface MathToolConfig {
   /** Place value columns */
   placeValueColumns?: string[];
   /** Place value blocks */
-  placeValueBlocks?: {
-    id: string;
-    type: '1' | '10' | '100' | '1000';
-    x: number;
-    y: number;
-  }[];
+  placeValueBlocks?: PlaceValueBlock[];
   /** Fraction area shape */
   fractionAreaShape?: 'circle' | 'rectangle' | 'vertical-bar';
   /** Fraction area denominator */
