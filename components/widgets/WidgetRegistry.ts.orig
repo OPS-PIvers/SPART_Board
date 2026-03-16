@@ -229,8 +229,8 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     'SpecialistScheduleSettings'
   ),
   'concept-web': lazyNamed(
-    () => import('./ConceptWeb/Settings'),
-    'ConceptWebSettings'
+    () => import('./ConceptWeb/Widget'),
+    'ConceptWebWidget'
   ),
   'graphic-organizer': lazyNamed(
     () => import('./GraphicOrganizer/Settings'),
@@ -546,13 +546,6 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   'specialist-schedule': {
     baseWidth: 300,
     baseHeight: 400,
-    canSpread: true,
-    skipScaling: true,
-    padding: 0,
-  },
-  'concept-web': {
-    baseWidth: 800,
-    baseHeight: 600,
     canSpread: true,
     skipScaling: true,
     padding: 0,
