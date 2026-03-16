@@ -735,9 +735,9 @@ export const FeaturePermissionsManager: React.FC = () => {
                       setPermissions((prev) =>
                         new Map(prev).set(toolType, data)
                       );
-                      setActiveModalTool(null);
                     } catch (err) {
                       console.error('Failed to revert permission', err);
+                    } finally {
                       setActiveModalTool(null);
                     }
                   } else {
