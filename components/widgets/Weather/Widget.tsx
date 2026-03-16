@@ -257,24 +257,24 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div
           className={`flex flex-col items-center justify-center h-full w-full ${fontClass}`}
           style={{
-            gap: hideClothing ? '2cqh' : 'min(12px, 2.5cqmin)',
-            padding: hideClothing ? '4cqh' : 'min(8px, 2cqmin)',
+            gap: 'min(12px, 2.5cqmin)',
+            padding: 'min(8px, 2cqmin)',
           }}
         >
           <div
             className="flex flex-col items-center justify-center w-full"
-            style={{ gap: hideClothing ? '1cqh' : 'min(4px, 1cqmin)' }}
+            style={{ gap: 'min(4px, 1cqmin)' }}
           >
             <div
               className="flex items-center justify-center w-full"
               style={{
-                gap: hideClothing ? '4cqw' : 'min(24px, 6cqmin)',
+                gap: hideClothing ? 'min(8px, 3cqmin)' : 'min(24px, 6cqmin)',
               }}
             >
               <div
                 style={{
                   fontSize: hideClothing
-                    ? 'min(60cqh, 30cqw)'
+                    ? 'min(60px, 20cqmin)'
                     : 'min(80px, 25cqmin)',
                 }}
               >
@@ -284,7 +284,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 className="font-black tabular-nums leading-none"
                 style={{
                   fontSize: hideClothing
-                    ? 'min(75cqh, 40cqw)'
+                    ? 'min(75px, 28cqmin)'
                     : 'clamp(32px, 35cqmin, 400px)',
                   color: fontColor,
                 }}
@@ -301,9 +301,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 className="font-black uppercase tracking-wider whitespace-nowrap leading-none text-center"
                 style={{
                   fontSize: hideClothing
-                    ? 'min(10cqh, 40cqw)'
+                    ? 'min(14px, 6cqmin)'
                     : 'min(14px, 5cqmin)',
-                  marginTop: hideClothing ? '1cqh' : 'min(2px, 0.5cqmin)',
+                  marginTop: 'min(2px, 0.5cqmin)',
                   color: fontColor,
                   opacity: 0.8,
                 }}
