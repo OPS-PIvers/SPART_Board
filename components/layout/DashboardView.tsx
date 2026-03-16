@@ -14,7 +14,6 @@ import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
 import { AnnouncementOverlay } from '@/components/announcements/AnnouncementOverlay';
 import { CheatSheetModal } from '@/components/common/CheatSheetModal';
 import { BoardZoomControl } from './BoardZoomControl';
-import { Button } from '@/components/common/Button';
 import {
   AlertCircle,
   CheckCircle2,
@@ -819,17 +818,6 @@ export const DashboardView: React.FC = () => {
         }
       }}
     >
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[9999] flex gap-2">
-        <Button id="test-confirm-btn" onClick={() => showConfirm('Test Confirm', 'Do you want to proceed?', 'Yes', 'No', 'danger')}>Test Confirm</Button>
-        <Button id="test-prompt-btn" onClick={async () => {
-          await showPrompt('Test Prompt', {
-            title: 'Test Title',
-            placeholder: 'Test Placeholder',
-            defaultValue: 'Test Default',
-            confirmLabel: 'Submit'
-          });
-        }}>Test Prompt</Button>
-      </div>
       {/* ZOOMABLE SURFACE: Contains background and widgets */}
       <div
         className={`absolute inset-0 transition-transform duration-300 ease-out ${backgroundClasses}`}
