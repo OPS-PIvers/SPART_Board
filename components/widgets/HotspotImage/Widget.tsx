@@ -23,13 +23,19 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
     e.stopPropagation();
     setActivePinId(id === activePinId ? null : id);
 
-    // Mark as viewed
-    const newHotspots = (config.hotspots ?? []).map((h) =>
-      h.id === id ? { ...h, isViewed: true } : h
-    );
-    updateWidget(widget.id, {
-      config: { ...config, hotspots: newHotspots },
-    });
+    // Find the hotspot that was clicked
+    const currentHotspots = config.hotspots ?? [];
+    const clickedHotspot = currentHotspots.find((h) => h.id === id);
+
+    // Mark as viewed only if it isn't already
+    if (clickedHotspot && !clickedHotspot.isViewed) {
+      const newHotspots = currentHotspots.map((h) =>
+        h.id === id ? { ...h, isViewed: true } : h
+      );
+      updateWidget(widget.id, {
+        config: { ...config, hotspots: newHotspots },
+      });
+    }
   };
 
   const handleClosePopover = (e: React.MouseEvent) => {
@@ -81,8 +87,9 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                     }}
                   >
                     <button
+                      aria-label={`Open hotspot: ${spot.title || 'Untitled'}`}
                       onClick={(e) => handlePinClick(spot.id, e)}
-                      className={`relative flex items-center justify-center rounded-full p-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400
+                      className={`relative flex items-center justify-center rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-400
                         ${
                           isActive
                             ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50 z-20'
@@ -91,6 +98,7 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                               : 'bg-emerald-500 text-white hover:bg-emerald-400 animate-pulse hover:animate-none shadow-md shadow-emerald-500/50'
                         }
                       `}
+                      style={{ padding: 'min(10px, 2.5cqmin)' }}
                     >
                       <IconComponent
                         style={{
@@ -103,8 +111,8 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                     {isActive && (
                       <div
                         style={{
-                          width: 'min(256px, 60cqw)',
-                          marginTop: 'min(12px, 2cqmin)',
+                          width: 'min(256px, 64cqmin)',
+                          marginTop: 'min(12px, 3cqmin)',
                           padding: 'min(16px, 4cqmin)',
                         }}
                         className={`absolute left-1/2 -translate-x-1/2 rounded-xl shadow-xl text-left cursor-default
@@ -129,6 +137,7 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                             {spot.title}
                           </h4>
                           <button
+                            aria-label="Close popover"
                             onClick={handleClosePopover}
                             className="text-slate-400 hover:text-slate-600 transition-colors"
                             style={{

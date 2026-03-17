@@ -84,11 +84,13 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
     const xPct = ((e.clientX - rect.left) / rect.width) * 100;
     const yPct = ((e.clientY - rect.top) / rect.height) * 100;
 
-    // Create new hotspot
+    // Create new hotspot, clamping to [0, 100]
+    const clampedXPct = Math.max(0, Math.min(100, xPct));
+    const clampedYPct = Math.max(0, Math.min(100, yPct));
     const newHotspot = {
       id: crypto.randomUUID(),
-      xPct,
-      yPct,
+      xPct: clampedXPct,
+      yPct: clampedYPct,
       title: 'New Hotspot',
       detailText: '',
       icon: 'info' as const,
@@ -198,6 +200,8 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
                 className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 relative"
               >
                 <button
+                  type="button"
+                  aria-label={`Delete hotspot ${spot.title || i + 1}`}
                   onClick={() => deleteHotspot(spot.id)}
                   className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors"
                 >
