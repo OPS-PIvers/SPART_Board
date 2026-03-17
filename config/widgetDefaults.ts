@@ -360,4 +360,14 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       showArrows: true,
     },
   },
+  'syntax-framer': {
+    w: 500,
+    h: 150,
+    config: {
+      mode: 'text',
+      tokens: [],
+      fontSize: 8,
+      alignment: 'center',
+    },
+  },
 };

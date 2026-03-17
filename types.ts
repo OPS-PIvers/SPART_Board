@@ -44,7 +44,8 @@ export type WidgetType =
   | 'graphic-organizer'
   | 'concept-web'
   | 'reveal-grid'
-  | 'numberLine';
+  | 'numberLine'
+  | 'syntax-framer';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -339,42 +340,6 @@ export interface ExpectationsConfig {
   layout?: 'secondary' | 'elementary';
 }
 
-export interface ExpectationsOptionOverride {
-  enabled: boolean;
-  customLabel?: string;
-  customSub?: string;
-}
-
-export interface ExpectationsBuildingConfig {
-  volumeOverrides?: Record<number, ExpectationsOptionOverride>;
-  groupOverrides?: Record<string, ExpectationsOptionOverride>;
-  interactionOverrides?: Record<string, ExpectationsOptionOverride>;
-  showVolume?: boolean;
-  showGroup?: boolean;
-  showInteraction?: boolean;
-}
-
-export interface ExpectationsGlobalConfig {
-  buildings: Record<string, ExpectationsBuildingConfig>;
-}
-
-export interface TalkingToolStem {
-  id: string;
-  text: string;
-}
-
-export interface TalkingToolCategory {
-  id: string;
-  label: string;
-  color: string;
-  icon: string;
-  stems: TalkingToolStem[];
-}
-
-export interface TalkingToolGlobalConfig {
-  categories?: TalkingToolCategory[];
-}
-
 export interface WeatherConfig {
   temp: number;
   condition: string;
@@ -391,146 +356,7 @@ export interface WeatherConfig {
   fontColor?: string;
 }
 
-export interface WeatherTemperatureRange {
-  id: string;
-  min: number;
-  max: number;
-  type?: 'range' | 'above' | 'below';
-  message: string;
-  imageUrl?: string;
-}
-
-export interface WeatherGlobalConfig {
-  fetchingStrategy: 'client' | 'admin_proxy';
-  updateFrequencyMinutes: number;
-  temperatureRanges: WeatherTemperatureRange[];
-  source?: 'openweather' | 'earth_networks';
-  city?: string;
-  showFeelsLike?: boolean;
-}
-
-export interface RecessGearTemperatureRange {
-  id: string;
-  min: number;
-  max: number;
-  type?: 'range' | 'above' | 'below';
-  label: string;
-  icon?: string;
-  imageUrl?: string;
-  category: 'clothing' | 'footwear' | 'accessory';
-}
-
-export interface RecessGearGlobalConfig {
-  fetchingStrategy: 'client' | 'admin_proxy';
-  updateFrequencyMinutes: number;
-  temperatureRanges: RecessGearTemperatureRange[];
-  source?: 'openweather' | 'earth_networks';
-  city?: string;
-  useFeelsLike?: boolean;
-}
-
-export interface GlobalWeatherData {
-  temp: number;
-  feelsLike?: number;
-  condition: string;
-  locationName: string;
-  updatedAt: number;
-  source?: string;
-}
-
-export interface WebcamGlobalConfig {
-  ocrMode?: 'standard' | 'gemini';
-}
-
-export interface BuildingScheduleDefaults {
-  buildingId: string;
-  items: ScheduleItem[];
-  schedules?: DailySchedule[];
-}
-
-export interface ScheduleGlobalConfig {
-  buildingDefaults: Record<string, BuildingScheduleDefaults>;
-}
-
-// --- Clock Global Config ---
-export interface BuildingClockDefaults {
-  buildingId: string;
-  format24?: boolean;
-  fontFamily?: string;
-  themeColor?: string;
-}
-
-export interface ClockGlobalConfig {
-  buildingDefaults: Record<string, BuildingClockDefaults>;
-}
-
-// --- TimeTool (Timer/Stopwatch) Global Config ---
-export interface BuildingTimeToolDefaults {
-  buildingId: string;
-  duration?: number; // in seconds
-  timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
-}
-
-export interface TimeToolGlobalConfig {
-  buildingDefaults: Record<string, BuildingTimeToolDefaults>;
-}
-
-// --- Checklist Global Config ---
-export interface ChecklistDefaultItem {
-  id: string;
-  text: string;
-}
-
-export interface BuildingChecklistDefaults {
-  buildingId: string;
-  items?: ChecklistDefaultItem[]; // Default item labels pre-populated on widget creation
-  scaleMultiplier?: number;
-}
-
-export interface ChecklistGlobalConfig {
-  buildingDefaults: Record<string, BuildingChecklistDefaults>;
-}
-
-// --- Sound Global Config ---
-export interface BuildingSoundDefaults {
-  buildingId: string;
-  visual?: 'thermometer' | 'speedometer' | 'line' | 'balls';
-  sensitivity?: number;
-}
-
-export interface SoundGlobalConfig {
-  buildingDefaults: Record<string, BuildingSoundDefaults>;
-}
-
-// --- Note (text) Global Config ---
-export interface BuildingNoteDefaults {
-  buildingId: string;
-  fontSize?: number;
-  bgColor?: string;
-}
-
-export interface NoteGlobalConfig {
-  buildingDefaults: Record<string, BuildingNoteDefaults>;
-}
-
-// --- Traffic Light Global Config ---
-export interface BuildingTrafficLightDefaults {
-  buildingId: string;
-  active?: 'red' | 'yellow' | 'green' | null;
-}
-
-export interface TrafficLightGlobalConfig {
-  buildingDefaults: Record<string, BuildingTrafficLightDefaults>;
-}
-
-// --- Random Global Config ---
-export interface BuildingRandomDefaults {
-  buildingId: string;
-  visualStyle?: 'flash' | 'slots' | 'wheel';
-  soundEnabled?: boolean;
-}
-
-export interface RandomGlobalConfig {
+export interface DiceGlobalConfig {
   buildingDefaults: Record<string, BuildingRandomDefaults>;
 }
 
@@ -540,11 +366,6 @@ export interface BuildingDiceDefaults {
   count?: number; // Default number of dice (1-6)
 }
 
-export interface DiceGlobalConfig {
-  buildingDefaults: Record<string, BuildingDiceDefaults>;
-}
-
-// --- Scoreboard Global Config ---
 export interface ScoreboardDefaultTeam {
   id: string;
   name: string;
@@ -1058,9 +879,7 @@ export interface QuizResponseAnswer {
   answeredAt: number;
   /**
    * Not written by the student (to prevent client-side forgery).
-   * Always recomputed from the question + answer using gradeAnswer() on the
-   * teacher / results side. Optional so existing Firestore documents with a
-   * stored value are still valid.
+   * Always recomputed from the logic on the teacher side.
    */
   isCorrect?: boolean;
 }
@@ -1354,7 +1173,22 @@ export type WidgetConfig =
   | GraphicOrganizerConfig
   | ConceptWebConfig
   | RevealGridConfig
-  | NumberLineConfig;
+  | NumberLineConfig
+  | SyntaxFramerConfig;
+
+export interface SyntaxToken {
+  id: string;
+  value: string; // the word, punctuation, or math operator
+  color?: string;
+  isMasked: boolean; // Renders as a blank underscore if true
+}
+
+export interface SyntaxFramerConfig {
+  mode: 'text' | 'math'; // Math mode adds an equation-style font
+  tokens: SyntaxToken[];
+  fontSize: number;
+  alignment: 'left' | 'center';
+}
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1449,7 +1283,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                           ? RevealGridConfig
                                                                                           : T extends 'numberLine'
                                                                                             ? NumberLineConfig
-                                                                                            : never;
+                                                                                            : T extends 'syntax-framer'
+                                                                                              ? SyntaxFramerConfig
+                                                                                              : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

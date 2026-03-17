@@ -91,6 +91,7 @@ export const WIDGET_GRADE_LEVELS: Record<
   'concept-web': ['k-2', '3-5', '6-8', '9-12'],
   'reveal-grid': ALL_GRADE_LEVELS,
   numberLine: ALL_GRADE_LEVELS,
+  'syntax-framer': ALL_GRADE_LEVELS,
 };
 
 /**
