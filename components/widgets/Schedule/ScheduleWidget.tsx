@@ -226,8 +226,6 @@ interface ScheduleRowProps {
   nowSeconds: number;
   /** Whether this is the currently active schedule item. */
   isActive: boolean;
-  /** Layout mode: 'locked' fixes 4 rows to fill the viewport; 'flex' sizes rows by content. */
-  viewMode: 'locked' | 'flex';
 }
 
 const areScheduleRowPropsEqual = (
@@ -237,7 +235,6 @@ const areScheduleRowPropsEqual = (
   // Check primitive/stable props equality
   if (prev.index !== next.index) return false;
   if (prev.isActive !== next.isActive) return false;
-  if (prev.viewMode !== next.viewMode) return false;
   if (prev.onToggle !== next.onToggle) return false;
   if (prev.onStartTimer !== next.onStartTimer) return false;
   if (prev.cardOpacity !== next.cardOpacity) return false;
@@ -293,7 +290,6 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
     format24,
     nowSeconds,
     isActive,
-    viewMode,
   }) => {
     const { t } = useTranslation();
 
@@ -305,23 +301,13 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
     // Show live countdown only when mode is 'timer', endTime is set, and item isn't done.
     const showCountdown = item.mode === 'timer' && !!item.endTime && !item.done;
 
-    // In 'locked' mode: fix each row to exactly 1/4 of the container height so
-    // precisely 4 events are visible at a time.
-    // In 'flex' mode: let the row size itself to its content so all events are
-    // visible when the widget is tall enough.
-    const lockedRowHeight = `calc((100% - 3 * ${GAP_STYLE}) / 4)`;
-    const rowStyle =
-      viewMode === 'flex'
-        ? {
-            flex: '0 0 auto',
-            minHeight: 'min(72px, 18cqmin)',
-            backgroundColor: bgColor,
-          }
-        : {
-            flex: `0 0 ${lockedRowHeight}`,
-            height: lockedRowHeight,
-            backgroundColor: bgColor,
-          };
+    // Rows size to their content so all events are visible when the widget is
+    // tall enough. Auto-scroll keeps the active item in view.
+    const rowStyle = {
+      flex: '0 0 auto',
+      minHeight: 'min(72px, 18cqmin)',
+      backgroundColor: bgColor,
+    };
 
     return (
       <div
@@ -462,7 +448,6 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     autoScroll = false,
     cardOpacity = 1,
     cardColor = '#ffffff',
-    viewMode = 'locked',
   } = config;
 
   useEffect(() => {
@@ -564,35 +549,22 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   }, [items, nowSeconds]);
 
   /**
-   * In "locked" (4-row) mode, scroll the list so that the previously-completed
-   * item is at the top, making the active item the second visible row.
-   * In this mode, each row is designed to be (100% height - 3 gaps) / 4 in size.
-   * In "flex" mode, rows are variable-height and auto-scroll is disabled.
+   * Scroll the list so that the previously-completed item is at the top,
+   * making the active item the second visible row. Uses each row's actual
+   * offsetTop so it works correctly with variable-height flex rows.
    */
   useLayoutEffect(() => {
-    if (
-      !autoScroll ||
-      viewMode === 'flex' ||
-      activeIndex < 0 ||
-      !scrollContainerRef.current
-    )
-      return;
+    if (!autoScroll || activeIndex < 0 || !scrollContainerRef.current) return;
     const el = scrollContainerRef.current;
 
-    // Improved calculation: Measure actual element height and gap for precision.
-    const firstRow = el.firstElementChild as HTMLElement;
-    if (!firstRow) return;
-
-    const rowHeight = firstRow.offsetHeight;
-    const gapPx = parseFloat(getComputedStyle(el).gap) || 0;
-
     // Show the completed item above the active one (activeIndex - 1).
-    const index = Math.max(0, activeIndex - 1);
-    const targetTop = index * (rowHeight + gapPx);
+    const targetIndex = Math.max(0, activeIndex - 1);
+    const targetRow = el.children[targetIndex] as HTMLElement;
+    if (!targetRow) return;
 
     // Optional chaining guards against jsdom (tests) and edge-case browsers.
-    el.scrollTo?.({ top: targetTop, behavior: 'smooth' });
-  }, [activeIndex, autoScroll, items.length, viewMode]);
+    el.scrollTo?.({ top: targetRow.offsetTop, behavior: 'smooth' });
+  }, [activeIndex, autoScroll, items.length]);
 
   // Find the clock widget on the board (if any) so we can mirror its time format.
   const clockWidget = useMemo(
@@ -855,7 +827,6 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                 format24={format24}
                 nowSeconds={nowSeconds}
                 isActive={i === activeIndex}
-                viewMode={viewMode}
               />
             ))}
             {items.length === 0 && (
