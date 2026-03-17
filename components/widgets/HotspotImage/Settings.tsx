@@ -1,9 +1,8 @@
 import React, { useRef } from 'react';
 import { useDashboard } from '@/context/useDashboard';
-import { WidgetData, HotspotImageConfig } from '@/types';
+import { WidgetData, HotspotImageConfig, ImageHotspot } from '@/types';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuth } from '@/context/useAuth';
-import { ImageHotspot } from '@/types';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { Button } from '@/components/common/Button';
 import {
@@ -105,10 +104,7 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const updateHotspot = (
-    id: string,
-    updates: Partial<(typeof config.hotspots)[0]>
-  ) => {
+  const updateHotspot = (id: string, updates: Partial<ImageHotspot>) => {
     updateWidget(widget.id, {
       config: {
         ...config,
