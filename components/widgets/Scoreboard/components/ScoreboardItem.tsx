@@ -146,17 +146,13 @@ export const ScoreboardItem = React.memo(
     // even if its content hasn't changed. By doing a shallow comparison of its
     // specific primitive properties instead of relying on default object equality,
     // we prevent all `ScoreboardItem`s from re-rendering when only a single team's score updates.
-    if (prevProps.onUpdateScore !== nextProps.onUpdateScore) return false;
-
-    const prevTeam = prevProps.team;
-    const nextTeam = nextProps.team;
-
-    if (prevTeam.id !== nextTeam.id) return false;
-    if (prevTeam.name !== nextTeam.name) return false;
-    if (prevTeam.score !== nextTeam.score) return false;
-    if (prevTeam.color !== nextTeam.color) return false;
-
-    return true;
+    return (
+      prevProps.onUpdateScore === nextProps.onUpdateScore &&
+      prevProps.team.id === nextProps.team.id &&
+      prevProps.team.name === nextProps.team.name &&
+      prevProps.team.score === nextProps.team.score &&
+      prevProps.team.color === nextProps.team.color
+    );
   }
 );
 
