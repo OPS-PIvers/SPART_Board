@@ -149,11 +149,19 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SyntaxFramer'),
     'SyntaxFramerWidget'
   ),
+  'hotspot-image': lazyNamed(
+    () => import('./HotspotImage'),
+    'HotspotImageWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
 > = {
+  'hotspot-image': lazyNamed(
+    () => import('./HotspotImage'),
+    'HotspotImageSettings'
+  ),
   clock: lazyNamed(() => import('./ClockWidget/Settings'), 'ClockSettings'),
   text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistSettings'),
@@ -282,6 +290,13 @@ export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
  *  - sticker   – Decorative overlay; fixed size, no DraggableWindow wrapper.
  */
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
+  'hotspot-image': {
+    baseWidth: 500,
+    baseHeight: 400,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
   clock: {
     baseWidth: 280,
     baseHeight: 140,

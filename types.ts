@@ -45,7 +45,8 @@ export type WidgetType =
   | 'concept-web'
   | 'reveal-grid'
   | 'numberLine'
-  | 'syntax-framer';
+  | 'syntax-framer'
+  | 'hotspot-image';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -469,6 +470,7 @@ export interface CalendarConfig {
 }
 
 export interface LunchMenuDay {
+  handledAt: number;
   hotLunch: string;
   bentoBox: string;
   date: string; // ISO String
@@ -1011,6 +1013,22 @@ export interface NumberLineConfig {
   showArrows: boolean;
 }
 
+export interface ImageHotspot {
+  id: string;
+  xPct: number; // Use percentages so pins stay anchored if the widget scales
+  yPct: number;
+  title: string;
+  detailText: string;
+  icon: 'search' | 'info' | 'question' | 'star';
+  isViewed: boolean; // Syncs state so teachers know which ones they've covered
+}
+
+export interface HotspotImageConfig {
+  baseImageUrl: string;
+  hotspots: ImageHotspot[];
+  popoverTheme?: 'light' | 'dark' | 'glass';
+}
+
 export interface SpecialistScheduleBuildingConfig {
   cycleLength: 6 | 10;
   startDate: string; // YYYY-MM-DD
@@ -1174,7 +1192,8 @@ export type WidgetConfig =
   | ConceptWebConfig
   | RevealGridConfig
   | NumberLineConfig
-  | SyntaxFramerConfig;
+  | SyntaxFramerConfig
+  | HotspotImageConfig;
 
 export interface SyntaxToken {
   id: string;
@@ -1285,7 +1304,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                             ? NumberLineConfig
                                                                                             : T extends 'syntax-framer'
                                                                                               ? SyntaxFramerConfig
-                                                                                              : never;
+                                                                                              : T extends 'hotspot-image'
+                                                                                                ? HotspotImageConfig
+                                                                                                : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
