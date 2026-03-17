@@ -3,6 +3,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, HotspotImageConfig } from '@/types';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuth } from '@/context/useAuth';
+import { ImageHotspot } from '@/types';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { Button } from '@/components/common/Button';
 import {
@@ -15,7 +16,11 @@ import {
   Star,
 } from 'lucide-react';
 
-const ICON_OPTIONS = [
+const ICON_OPTIONS: {
+  value: ImageHotspot['icon'];
+  label: string;
+  icon: React.ElementType;
+}[] = [
   { value: 'search', label: 'Search', icon: Search },
   { value: 'info', label: 'Info', icon: Info },
   { value: 'question', label: 'Question', icon: HelpCircle },
@@ -105,7 +110,7 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: {
         ...config,
-        hotspots: config.hotspots.map((h) =>
+        hotspots: (config.hotspots ?? []).map((h) =>
           h.id === id ? { ...h, ...updates } : h
         ),
       },
@@ -116,7 +121,7 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: {
         ...config,
-        hotspots: config.hotspots.filter((h) => h.id !== id),
+        hotspots: (config.hotspots ?? []).filter((h) => h.id !== id),
       },
     });
   };
@@ -238,11 +243,7 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
                         key={opt.value}
                         onClick={() =>
                           updateHotspot(spot.id, {
-                            icon: opt.value as
-                              | 'search'
-                              | 'info'
-                              | 'question'
-                              | 'star',
+                            icon: opt.value,
                           })
                         }
                         className={`p-2 rounded-md transition-colors border ${

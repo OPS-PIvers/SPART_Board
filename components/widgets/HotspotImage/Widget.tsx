@@ -2,6 +2,7 @@ import React from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, HotspotImageConfig } from '@/types';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { MapPin, Search, Info, HelpCircle, Star, X } from 'lucide-react';
 
 const ICON_MAP = {
@@ -23,7 +24,7 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
     setActivePinId(id === activePinId ? null : id);
 
     // Mark as viewed
-    const newHotspots = config.hotspots.map((h) =>
+    const newHotspots = (config.hotspots ?? []).map((h) =>
       h.id === id ? { ...h, isViewed: true } : h
     );
     updateWidget(widget.id, {
@@ -37,11 +38,11 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const emptyState = (
-    <div className="flex flex-col items-center justify-center h-full w-full text-slate-400 p-4 text-center">
-      <MapPin className="w-12 h-12 mb-3 text-slate-300" />
-      <p className="font-medium text-slate-500 mb-1">No Image Uploaded</p>
-      <p className="text-sm">Click Settings to upload a base image.</p>
-    </div>
+    <ScaledEmptyState
+      icon={MapPin}
+      title="No Image Uploaded"
+      subtitle="Click Settings to upload a base image."
+    />
   );
 
   return (
@@ -91,12 +92,22 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                         }
                       `}
                     >
-                      <IconComponent className="w-5 h-5" />
+                      <IconComponent
+                        style={{
+                          width: 'min(20px, 5cqmin)',
+                          height: 'min(20px, 5cqmin)',
+                        }}
+                      />
                     </button>
 
                     {isActive && (
                       <div
-                        className={`absolute left-1/2 -translate-x-1/2 mt-3 p-4 rounded-xl shadow-xl w-64 text-left cursor-default
+                        style={{
+                          width: 'min(256px, 60cqw)',
+                          marginTop: 'min(12px, 2cqmin)',
+                          padding: 'min(16px, 4cqmin)',
+                        }}
+                        className={`absolute left-1/2 -translate-x-1/2 rounded-xl shadow-xl text-left cursor-default
                           ${
                             config.popoverTheme === 'dark'
                               ? 'bg-slate-800 text-white border border-slate-700'
@@ -107,18 +118,37 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                         `}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-lg leading-tight pr-4">
+                        <div
+                          className="flex justify-between items-start"
+                          style={{ marginBottom: 'min(8px, 2cqmin)' }}
+                        >
+                          <h4
+                            className="font-bold leading-tight pr-4"
+                            style={{ fontSize: 'min(18px, 4.5cqmin)' }}
+                          >
                             {spot.title}
                           </h4>
                           <button
                             onClick={handleClosePopover}
-                            className="text-slate-400 hover:text-slate-600 transition-colors p-1 -mr-2 -mt-2"
+                            className="text-slate-400 hover:text-slate-600 transition-colors"
+                            style={{
+                              padding: 'min(4px, 1cqmin)',
+                              marginRight: 'min(-8px, -2cqmin)',
+                              marginTop: 'min(-8px, -2cqmin)',
+                            }}
                           >
-                            <X className="w-4 h-4" />
+                            <X
+                              style={{
+                                width: 'min(16px, 4cqmin)',
+                                height: 'min(16px, 4cqmin)',
+                              }}
+                            />
                           </button>
                         </div>
-                        <p className="text-sm opacity-90 leading-relaxed whitespace-pre-wrap">
+                        <p
+                          className="opacity-90 leading-relaxed whitespace-pre-wrap"
+                          style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                        >
                           {spot.detailText}
                         </p>
                       </div>
