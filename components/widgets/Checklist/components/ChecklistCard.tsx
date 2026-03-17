@@ -75,11 +75,16 @@ export const ChecklistCard = React.memo<ChecklistCardProps>(
           )}
         </div>
         <span
-          className={`font-bold leading-snug break-words min-w-0 flex-1 text-left transition-all`}
+          className={`font-bold leading-snug min-w-0 flex-1 text-left transition-all`}
           style={{
             fontSize: textSize,
             color: isCompleted ? '#94a3b8' : fontColor,
             textDecoration: isCompleted ? 'line-through' : 'none',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            wordBreak: 'break-word',
           }}
         >
           {label}

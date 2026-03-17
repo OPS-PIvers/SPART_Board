@@ -1,2 +1,5 @@
 export { HotspotImageWidget } from './Widget';
-export { HotspotImageSettings } from './Settings';
+export {
+  HotspotImageSettings,
+  HotspotImageAppearanceSettings,
+} from './Settings';

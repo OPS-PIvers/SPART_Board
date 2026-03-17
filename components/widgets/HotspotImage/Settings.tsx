@@ -268,38 +268,55 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
           </div>
         </div>
       )}
+    </div>
+  );
+};
 
-      {config.baseImageUrl && (
-        <div>
-          <SettingsLabel>Popover Theme</SettingsLabel>
-          <div className="flex gap-2">
-            {[
-              { value: 'light', label: 'Light' },
-              { value: 'dark', label: 'Dark' },
-              { value: 'glass', label: 'Glass' },
-            ].map((theme) => (
-              <button
-                key={theme.value}
-                onClick={() =>
-                  updateWidget(widget.id, {
-                    config: {
-                      ...config,
-                      popoverTheme: theme.value as 'light' | 'dark' | 'glass',
-                    },
-                  })
-                }
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all border ${
-                  (config.popoverTheme ?? 'light') === theme.value
-                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {theme.label}
-              </button>
-            ))}
-          </div>
+export const HotspotImageAppearanceSettings: React.FC<{
+  widget: WidgetData;
+}> = ({ widget }) => {
+  const { updateWidget } = useDashboard();
+  const config = widget.config as HotspotImageConfig;
+
+  if (!config.baseImageUrl) {
+    return (
+      <p className="text-sm text-slate-500 italic">
+        Upload an image first to configure appearance options.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <SettingsLabel>Popover Theme</SettingsLabel>
+        <div className="flex gap-2">
+          {[
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+            { value: 'glass', label: 'Glass' },
+          ].map((theme) => (
+            <button
+              key={theme.value}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    popoverTheme: theme.value as 'light' | 'dark' | 'glass',
+                  },
+                })
+              }
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all border ${
+                (config.popoverTheme ?? 'light') === theme.value
+                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {theme.label}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };

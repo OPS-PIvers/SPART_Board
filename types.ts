@@ -1294,6 +1294,7 @@ export interface RevealGridConfig {
   cards: RevealCard[];
   revealMode: 'flip' | 'fade';
   fontFamily?: GlobalFontFamily;
+  defaultCardColor?: string;
 }
 
 export interface ConceptNode {

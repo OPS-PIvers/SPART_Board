@@ -11,7 +11,7 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as RevealGridConfig;
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-  const [isXRayMode, setIsXRayMode] = useState(false);
+  const [isShowAnswersMode, setIsShowAnswersMode] = useState(false);
 
   // Fallback to defaults if needed
   const cards = config.cards ?? [];
@@ -33,10 +33,12 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
           <span className="font-bold text-gray-700">Vocabulary Review</span>
           {/* Local toggle, doesn't sync to the smartboard */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600 font-medium">X-Ray</span>
+            <span className="text-xs text-gray-600 font-medium">
+              Show Answers
+            </span>
             <Toggle
-              checked={isXRayMode}
-              onChange={() => setIsXRayMode(!isXRayMode)}
+              checked={isShowAnswersMode}
+              onChange={() => setIsShowAnswersMode(!isShowAnswersMode)}
               size="sm"
             />
           </div>
@@ -61,7 +63,8 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   className="absolute w-full h-full backface-hidden flex flex-col items-center justify-center rounded-xl border-2 shadow-sm"
                   style={{
-                    backgroundColor: card.bgColor ?? '#dbeafe',
+                    backgroundColor:
+                      card.bgColor ?? config.defaultCardColor ?? '#dbeafe',
                     borderColor: '#bfdbfe',
                   }}
                 >
@@ -76,7 +79,7 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
                   </span>
 
                   {/* THE MAGIC: X-Ray Answer Overlay */}
-                  {isXRayMode && !card.isRevealed && (
+                  {isShowAnswersMode && !card.isRevealed && (
                     <div
                       className="absolute bottom-2 left-2 right-2 bg-yellow-100/90 rounded border border-yellow-300 text-yellow-800 text-center shadow-sm z-10"
                       style={{

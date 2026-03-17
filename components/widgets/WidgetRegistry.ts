@@ -249,6 +249,67 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./HotspotImage'),
     'HotspotImageSettings'
   ),
+  'concept-web': lazyNamed(
+    () => import('./ConceptWeb/Settings'),
+    'ConceptWebSettings'
+  ),
+};
+
+export const WIDGET_APPEARANCE_COMPONENTS: Partial<
+  Record<WidgetType, SettingsComponent>
+> = {
+  // Populated per-widget in components/widgets/*/Settings.tsx
+  clock: lazyNamed(
+    () => import('./ClockWidget/Settings'),
+    'ClockAppearanceSettings'
+  ),
+  'time-tool': lazyNamed(
+    () => import('./TimeTool/TimeToolWidget'),
+    'TimeToolAppearanceSettings'
+  ),
+  text: lazyNamed(() => import('./TextWidget'), 'TextAppearanceSettings'),
+  checklist: lazyNamed(
+    () => import('./Checklist'),
+    'ChecklistAppearanceSettings'
+  ),
+  sound: lazyNamed(() => import('./SoundWidget'), 'SoundAppearanceSettings'),
+  weather: lazyNamed(
+    () => import('./Weather/Settings'),
+    'WeatherAppearanceSettings'
+  ),
+  schedule: lazyNamed(() => import('./Schedule'), 'ScheduleAppearanceSettings'),
+  calendar: lazyNamed(
+    () => import('./Calendar/Settings'),
+    'CalendarAppearanceSettings'
+  ),
+  instructionalRoutines: lazyNamed(
+    () => import('./InstructionalRoutines/Settings'),
+    'InstructionalRoutinesAppearanceSettings'
+  ),
+  music: lazyNamed(
+    () => import('./MusicWidget/index'),
+    'MusicAppearanceSettings'
+  ),
+  breathing: lazyNamed(
+    () => import('./Breathing/BreathingSettings'),
+    'BreathingAppearanceSettings'
+  ),
+  'concept-web': lazyNamed(
+    () => import('./ConceptWeb/Settings'),
+    'ConceptWebAppearanceSettings'
+  ),
+  'graphic-organizer': lazyNamed(
+    () => import('./GraphicOrganizer/Settings'),
+    'GraphicOrganizerAppearanceSettings'
+  ),
+  'hotspot-image': lazyNamed(
+    () => import('./HotspotImage'),
+    'HotspotImageAppearanceSettings'
+  ),
+  'reveal-grid': lazyNamed(
+    () => import('./RevealGrid'),
+    'RevealGridAppearanceSettings'
+  ),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
