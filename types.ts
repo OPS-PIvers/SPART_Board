@@ -341,6 +341,42 @@ export interface ExpectationsConfig {
   layout?: 'secondary' | 'elementary';
 }
 
+export interface ExpectationsOptionOverride {
+  enabled: boolean;
+  customLabel?: string;
+  customSub?: string;
+}
+
+export interface ExpectationsBuildingConfig {
+  volumeOverrides?: Record<number, ExpectationsOptionOverride>;
+  groupOverrides?: Record<string, ExpectationsOptionOverride>;
+  interactionOverrides?: Record<string, ExpectationsOptionOverride>;
+  showVolume?: boolean;
+  showGroup?: boolean;
+  showInteraction?: boolean;
+}
+
+export interface ExpectationsGlobalConfig {
+  buildings: Record<string, ExpectationsBuildingConfig>;
+}
+
+export interface TalkingToolStem {
+  id: string;
+  text: string;
+}
+
+export interface TalkingToolCategory {
+  id: string;
+  label: string;
+  color: string;
+  icon: string;
+  stems: TalkingToolStem[];
+}
+
+export interface TalkingToolGlobalConfig {
+  categories?: TalkingToolCategory[];
+}
+
 export interface WeatherConfig {
   temp: number;
   condition: string;
@@ -357,7 +393,146 @@ export interface WeatherConfig {
   fontColor?: string;
 }
 
-export interface DiceGlobalConfig {
+export interface WeatherTemperatureRange {
+  id: string;
+  min: number;
+  max: number;
+  type?: 'range' | 'above' | 'below';
+  message: string;
+  imageUrl?: string;
+}
+
+export interface WeatherGlobalConfig {
+  fetchingStrategy: 'client' | 'admin_proxy';
+  updateFrequencyMinutes: number;
+  temperatureRanges: WeatherTemperatureRange[];
+  source?: 'openweather' | 'earth_networks';
+  city?: string;
+  showFeelsLike?: boolean;
+}
+
+export interface RecessGearTemperatureRange {
+  id: string;
+  min: number;
+  max: number;
+  type?: 'range' | 'above' | 'below';
+  label: string;
+  icon?: string;
+  imageUrl?: string;
+  category: 'clothing' | 'footwear' | 'accessory';
+}
+
+export interface RecessGearGlobalConfig {
+  fetchingStrategy: 'client' | 'admin_proxy';
+  updateFrequencyMinutes: number;
+  temperatureRanges: RecessGearTemperatureRange[];
+  source?: 'openweather' | 'earth_networks';
+  city?: string;
+  useFeelsLike?: boolean;
+}
+
+export interface GlobalWeatherData {
+  temp: number;
+  feelsLike?: number;
+  condition: string;
+  locationName: string;
+  updatedAt: number;
+  source?: string;
+}
+
+export interface WebcamGlobalConfig {
+  ocrMode?: 'standard' | 'gemini';
+}
+
+export interface BuildingScheduleDefaults {
+  buildingId: string;
+  items: ScheduleItem[];
+  schedules?: DailySchedule[];
+}
+
+export interface ScheduleGlobalConfig {
+  buildingDefaults: Record<string, BuildingScheduleDefaults>;
+}
+
+// --- Clock Global Config ---
+export interface BuildingClockDefaults {
+  buildingId: string;
+  format24?: boolean;
+  fontFamily?: string;
+  themeColor?: string;
+}
+
+export interface ClockGlobalConfig {
+  buildingDefaults: Record<string, BuildingClockDefaults>;
+}
+
+// --- TimeTool (Timer/Stopwatch) Global Config ---
+export interface BuildingTimeToolDefaults {
+  buildingId: string;
+  duration?: number; // in seconds
+  timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+}
+
+export interface TimeToolGlobalConfig {
+  buildingDefaults: Record<string, BuildingTimeToolDefaults>;
+}
+
+// --- Checklist Global Config ---
+export interface ChecklistDefaultItem {
+  id: string;
+  text: string;
+}
+
+export interface BuildingChecklistDefaults {
+  buildingId: string;
+  items?: ChecklistDefaultItem[]; // Default item labels pre-populated on widget creation
+  scaleMultiplier?: number;
+}
+
+export interface ChecklistGlobalConfig {
+  buildingDefaults: Record<string, BuildingChecklistDefaults>;
+}
+
+// --- Sound Global Config ---
+export interface BuildingSoundDefaults {
+  buildingId: string;
+  visual?: 'thermometer' | 'speedometer' | 'line' | 'balls';
+  sensitivity?: number;
+}
+
+export interface SoundGlobalConfig {
+  buildingDefaults: Record<string, BuildingSoundDefaults>;
+}
+
+// --- Note (text) Global Config ---
+export interface BuildingNoteDefaults {
+  buildingId: string;
+  fontSize?: number;
+  bgColor?: string;
+}
+
+export interface NoteGlobalConfig {
+  buildingDefaults: Record<string, BuildingNoteDefaults>;
+}
+
+// --- Traffic Light Global Config ---
+export interface BuildingTrafficLightDefaults {
+  buildingId: string;
+  active?: 'red' | 'yellow' | 'green' | null;
+}
+
+export interface TrafficLightGlobalConfig {
+  buildingDefaults: Record<string, BuildingTrafficLightDefaults>;
+}
+
+// --- Random Global Config ---
+export interface BuildingRandomDefaults {
+  buildingId: string;
+  visualStyle?: 'flash' | 'slots' | 'wheel';
+  soundEnabled?: boolean;
+}
+
+export interface RandomGlobalConfig {
   buildingDefaults: Record<string, BuildingRandomDefaults>;
 }
 
@@ -367,6 +542,11 @@ export interface BuildingDiceDefaults {
   count?: number; // Default number of dice (1-6)
 }
 
+export interface DiceGlobalConfig {
+  buildingDefaults: Record<string, BuildingDiceDefaults>;
+}
+
+// --- Scoreboard Global Config ---
 export interface ScoreboardDefaultTeam {
   id: string;
   name: string;
@@ -470,7 +650,6 @@ export interface CalendarConfig {
 }
 
 export interface LunchMenuDay {
-  handledAt: number;
   hotLunch: string;
   bentoBox: string;
   date: string; // ISO String
@@ -658,18 +837,8 @@ export interface MathToolConfig {
   stickerMode?: boolean;
   /** For manipulative piece stickers – identifies the specific piece (e.g. 'unit', 'rod', '1-2', 'hexagon') */
   stickerPiece?: string;
-  /** Place value columns */
-  placeValueColumns?: string[];
-  /** Place value blocks */
   placeValueBlocks?: PlaceValueBlock[];
-  /** Fraction area shape */
-  fractionAreaShape?: 'circle' | 'rectangle' | 'vertical-bar';
-  /** Fraction area denominator */
-  fractionAreaDenominator?: number;
-  /** Fraction area shaded slices */
-  fractionAreaShadedSlices?: number[];
-  /** Interactive 100s grid active cells */
-  grid100sActiveCells?: Record<number, string>;
+  placeValueColumns?: string[];
 }
 
 export interface PdfConfig {
@@ -900,7 +1069,9 @@ export interface QuizResponseAnswer {
   answeredAt: number;
   /**
    * Not written by the student (to prevent client-side forgery).
-   * Always recomputed from the logic on the teacher side.
+   * Always recomputed from the question + answer using gradeAnswer() on the
+   * teacher / results side. Optional so existing Firestore documents with a
+   * stored value are still valid.
    */
   isCorrect?: boolean;
 }
@@ -1032,22 +1203,6 @@ export interface NumberLineConfig {
   showArrows: boolean;
 }
 
-export interface ImageHotspot {
-  id: string;
-  xPct: number; // Use percentages so pins stay anchored if the widget scales
-  yPct: number;
-  title: string;
-  detailText: string;
-  icon: 'search' | 'info' | 'question' | 'star';
-  isViewed: boolean; // Syncs state so teachers know which ones they've covered
-}
-
-export interface HotspotImageConfig {
-  baseImageUrl: string;
-  hotspots: ImageHotspot[];
-  popoverTheme?: 'light' | 'dark' | 'glass';
-}
-
 export interface SpecialistScheduleBuildingConfig {
   cycleLength: 6 | 10;
   startDate: string; // YYYY-MM-DD
@@ -1120,6 +1275,26 @@ export interface GraphicOrganizerConfig {
   nodes: Record<string, OrganizerNode>;
   fontFamily?: GlobalFontFamily;
 }
+export interface CarRiderProConfig {
+  iframeUrl?: string;
+  cardColor?: string;
+  cardOpacity?: number;
+}
+
+export interface RevealCard {
+  id: string;
+  frontContent: string;
+  backContent: string;
+  isRevealed: boolean; // Synced to Firebase: Triggers the 3D flip on all screens
+  bgColor?: string;
+}
+
+export interface RevealGridConfig {
+  columns: 2 | 3 | 4 | 5;
+  cards: RevealCard[];
+  revealMode: 'flip' | 'fade';
+  fontFamily?: GlobalFontFamily;
+}
 
 export interface ConceptNode {
   id: string;
@@ -1142,25 +1317,35 @@ export interface ConceptWebConfig {
   edges: ConceptEdge[];
   fontFamily?: GlobalFontFamily;
 }
-export interface CarRiderProConfig {
-  iframeUrl?: string;
-  cardColor?: string;
-  cardOpacity?: number;
-}
 
-export interface RevealCard {
+export interface SyntaxToken {
   id: string;
-  frontContent: string;
-  backContent: string;
-  isRevealed: boolean; // Synced to Firebase: Triggers the 3D flip on all screens
-  bgColor?: string;
+  value: string; // the word, punctuation, or math operator
+  color?: string;
+  isMasked: boolean; // Renders as a blank underscore if true
 }
 
-export interface RevealGridConfig {
-  columns: 2 | 3 | 4 | 5;
-  cards: RevealCard[];
-  revealMode: 'flip' | 'fade';
-  fontFamily?: GlobalFontFamily;
+export interface SyntaxFramerConfig {
+  mode: 'text' | 'math'; // Math mode adds an equation-style font
+  tokens: SyntaxToken[];
+  fontSize: number;
+  alignment: 'left' | 'center';
+}
+
+export interface ImageHotspot {
+  id: string;
+  xPct: number; // Use percentages so pins stay anchored if the widget scales
+  yPct: number;
+  title: string;
+  detailText: string;
+  icon: 'search' | 'info' | 'question' | 'star';
+  isViewed: boolean; // Syncs state so teachers know which ones they've covered
+}
+
+export interface HotspotImageConfig {
+  baseImageUrl: string;
+  hotspots: ImageHotspot[];
+  popoverTheme?: 'light' | 'dark' | 'glass';
 }
 
 // Union of all widget configs
@@ -1208,25 +1393,11 @@ export type WidgetConfig =
   | MusicConfig
   | SpecialistScheduleConfig
   | GraphicOrganizerConfig
-  | ConceptWebConfig
   | RevealGridConfig
   | NumberLineConfig
+  | ConceptWebConfig
   | SyntaxFramerConfig
   | HotspotImageConfig;
-
-export interface SyntaxToken {
-  id: string;
-  value: string; // the word, punctuation, or math operator
-  color?: string;
-  isMasked: boolean; // Renders as a blank underscore if true
-}
-
-export interface SyntaxFramerConfig {
-  mode: 'text' | 'math'; // Math mode adds an equation-style font
-  tokens: SyntaxToken[];
-  fontSize: number;
-  alignment: 'left' | 'center';
-}
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'

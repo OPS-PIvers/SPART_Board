@@ -36,21 +36,13 @@ import {
   CarFront,
   Smartphone,
   Layers,
-  Network,
   MapPin,
 } from 'lucide-react';
-
 import { ToolMetadata } from '../types';
 
 import { RecordIcon } from '../components/layout/dock/RecordIcon';
 
 export const TOOLS: ToolMetadata[] = [
-  {
-    type: 'hotspot-image',
-    icon: MapPin,
-    label: 'Hotspot Image',
-    color: 'bg-emerald-500',
-  },
   { type: 'clock', icon: Clock, label: 'Clock', color: 'bg-blue-500' },
   { type: 'time-tool', icon: Timer, label: 'Timer', color: 'bg-red-500' },
   {
@@ -88,12 +80,6 @@ export const TOOLS: ToolMetadata[] = [
     icon: CalendarDays,
     label: 'Specialist',
     color: 'bg-teal-700',
-  },
-  {
-    type: 'concept-web',
-    icon: Network,
-    label: 'Concept Web',
-    color: 'bg-purple-600',
   },
   {
     type: 'graphic-organizer',
@@ -205,5 +191,11 @@ export const TOOLS: ToolMetadata[] = [
     icon: Type,
     label: 'Syntax Framer',
     color: 'bg-indigo-500',
+  },
+  {
+    type: 'hotspot-image',
+    icon: MapPin,
+    label: 'Hotspot Image',
+    color: 'bg-emerald-500',
   },
 ];

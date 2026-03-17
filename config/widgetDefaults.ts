@@ -3,21 +3,11 @@ import {
   WidgetType,
   SpecialistScheduleConfig,
   GraphicOrganizerConfig,
-  ConceptWebConfig,
   RevealGridConfig,
 } from '@/types';
 import { STICKY_NOTE_COLORS } from './colors';
 
 export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
-  'hotspot-image': {
-    w: 500,
-    h: 400,
-    config: {
-      baseImageUrl: '',
-      hotspots: [],
-      popoverTheme: 'light',
-    },
-  },
   clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
   'time-tool': {
     w: 420,
@@ -312,14 +302,6 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       specialistClass: '',
     } as SpecialistScheduleConfig,
   },
-  'concept-web': {
-    w: 8,
-    h: 6,
-    config: {
-      nodes: [],
-      edges: [],
-    } as ConceptWebConfig,
-  },
   'graphic-organizer': {
     w: 8,
     h: 6,
@@ -357,10 +339,10 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     } as RevealGridConfig,
   },
   numberLine: {
-    w: 700,
-    h: 200,
+    w: 7,
+    h: 3,
     config: {
-      min: -10,
+      min: 0,
       max: 10,
       step: 1,
       displayMode: 'integers',
@@ -369,14 +351,31 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       showArrows: true,
     },
   },
+  'concept-web': {
+    w: 8,
+    h: 6,
+    config: {
+      nodes: [],
+      edges: [],
+    },
+  },
   'syntax-framer': {
-    w: 500,
-    h: 150,
+    w: 5,
+    h: 2,
     config: {
       mode: 'text',
       tokens: [],
       fontSize: 8,
       alignment: 'center',
+    },
+  },
+  'hotspot-image': {
+    w: 6,
+    h: 5,
+    config: {
+      baseImageUrl: '',
+      hotspots: [],
+      popoverTheme: 'light',
     },
   },
 };

@@ -132,10 +132,6 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SpecialistSchedule'),
     'SpecialistScheduleWidget'
   ),
-  'concept-web': lazyNamed(
-    () => import('./ConceptWeb/Widget'),
-    'ConceptWebWidget'
-  ),
   'graphic-organizer': lazyNamed(
     () => import('./GraphicOrganizer/Widget'),
     'GraphicOrganizerWidget'
@@ -158,10 +154,6 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
 > = {
-  'hotspot-image': lazyNamed(
-    () => import('./HotspotImage'),
-    'HotspotImageSettings'
-  ),
   clock: lazyNamed(() => import('./ClockWidget/Settings'), 'ClockSettings'),
   text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistSettings'),
@@ -240,10 +232,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./SpecialistSchedule'),
     'SpecialistScheduleSettings'
   ),
-  'concept-web': lazyNamed(
-    () => import('./ConceptWeb/Settings'),
-    'ConceptWebSettings'
-  ),
   'graphic-organizer': lazyNamed(
     () => import('./GraphicOrganizer/Settings'),
     'GraphicOrganizerSettings'
@@ -256,6 +244,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   'syntax-framer': lazyNamed(
     () => import('./SyntaxFramer'),
     'SyntaxFramerSettings'
+  ),
+  'hotspot-image': lazyNamed(
+    () => import('./HotspotImage'),
+    'HotspotImageSettings'
   ),
 };
 
@@ -290,23 +282,9 @@ export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
  *  - sticker   – Decorative overlay; fixed size, no DraggableWindow wrapper.
  */
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
-  'hotspot-image': {
-    baseWidth: 500,
-    baseHeight: 400,
-    canSpread: true,
-    skipScaling: true,
-    padding: 0,
-  },
   clock: {
     baseWidth: 280,
     baseHeight: 140,
-    canSpread: true,
-    skipScaling: true,
-    padding: 0,
-  },
-  'syntax-framer': {
-    baseWidth: 500,
-    baseHeight: 150,
     canSpread: true,
     skipScaling: true,
     padding: 0,
@@ -580,13 +558,6 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     skipScaling: true,
     padding: 0,
   },
-  'concept-web': {
-    baseWidth: 800,
-    baseHeight: 600,
-    canSpread: true,
-    skipScaling: true,
-    padding: 0,
-  },
   'graphic-organizer': {
     baseWidth: 600,
     baseHeight: 400,
@@ -604,6 +575,27 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   numberLine: {
     baseWidth: 700,
     baseHeight: 200,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'concept-web': {
+    baseWidth: 800,
+    baseHeight: 600,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'syntax-framer': {
+    baseWidth: 500,
+    baseHeight: 150,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'hotspot-image': {
+    baseWidth: 500,
+    baseHeight: 400,
     canSpread: true,
     skipScaling: true,
     padding: 0,
