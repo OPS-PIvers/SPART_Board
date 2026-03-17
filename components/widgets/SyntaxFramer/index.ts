@@ -1,2 +1,2 @@
-export { SyntaxFramerWidget as default } from './Widget';
-export { SyntaxFramerSettings as Settings } from './Settings';
+export { SyntaxFramerWidget } from './Widget';
+export { SyntaxFramerSettings } from './Settings';

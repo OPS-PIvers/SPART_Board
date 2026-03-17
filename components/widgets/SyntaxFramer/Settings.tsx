@@ -35,8 +35,6 @@ export const SyntaxFramerSettings: React.FC<SyntaxFramerSettingsProps> = ({
   const retokenize = (text: string, mode: 'text' | 'math'): SyntaxToken[] => {
     let newTokens: SyntaxToken[] = [];
     if (mode === 'text') {
-      // Split by spaces but keep punctuation attached or as separate tokens depending on needs.
-      // Simple split by whitespace for now
       const words = text.split(/\s+/).filter(Boolean);
       newTokens = words.map((w) => ({
         id: crypto.randomUUID(),
@@ -44,8 +42,6 @@ export const SyntaxFramerSettings: React.FC<SyntaxFramerSettingsProps> = ({
         isMasked: false,
       }));
     } else {
-      // Math mode: separate numbers, operators, variables
-      // Simple regex to split by math operators and spaces
       const parts = text
         .split(/([+\-*/=()^]|\s+)/)
         .filter((p) => p.trim() !== '');
@@ -56,14 +52,18 @@ export const SyntaxFramerSettings: React.FC<SyntaxFramerSettingsProps> = ({
       }));
     }
 
-    // Try to preserve existing colors/masks if the token value matches
+    // Track usage to allow duplicate tokens (e.g. multiple "x" variables) to map correctly in sequence
+    const usedExistingTokenIds = new Set<string>();
+
     return newTokens.map((newToken) => {
       const existingToken = config.tokens.find(
-        (t) => t.value === newToken.value
+        (t) => t.value === newToken.value && !usedExistingTokenIds.has(t.id)
       );
       if (existingToken) {
+        usedExistingTokenIds.add(existingToken.id);
         return {
           ...newToken,
+          id: existingToken.id, // Preserve ID to avoid unnecessary re-renders or DnD drops
           color: existingToken.color,
           isMasked: existingToken.isMasked,
         };

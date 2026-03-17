@@ -68,21 +68,41 @@ const SortableToken: React.FC<SortableTokenProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        onColorCycle(token.id);
+      } else {
+        onMaskToggle(token.id);
+      }
+    }
+  };
+
   return (
-    <div
+    <button
+      type="button"
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        padding: '1cqmin 2cqmin',
+        borderWidth: 'min(1px, 0.2cqmin)',
+        borderRadius: '1.5cqmin',
+      }}
       className={`
         syntax-token
-        relative px-4 py-2 border rounded-xl cursor-grab active:cursor-grabbing shadow-sm
+        relative cursor-grab active:cursor-grabbing shadow-sm
         transition-colors select-none whitespace-pre
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
         ${colorClass}
-        ${isMath ? 'font-math italic' : 'font-sans font-medium'}
+        ${isMath ? 'font-serif italic' : 'font-sans font-medium'}
       `}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       {...attributes}
       {...listeners}
       title="Click to mask/unmask. Shift+Click to change color. Drag to move."
+      aria-label={token.isMasked ? 'Masked token' : `Token: ${token.value}`}
     >
       {token.isMasked ? (
         <span className="opacity-50 inline-block px-1">
@@ -91,7 +111,7 @@ const SortableToken: React.FC<SortableTokenProps> = ({
       ) : (
         token.value
       )}
-    </div>
+    </button>
   );
 };
 
@@ -103,7 +123,7 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
   const {
     tokens = [],
     mode = 'text',
-    fontSize = 12,
+    fontSize = 2,
     alignment = 'center',
   } = config;
 
@@ -167,7 +187,8 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
     <WidgetLayout
       content={
         <div
-          className={`w-full h-full flex flex-wrap gap-3 content-center ${justifyClass}`}
+          className={`w-full h-full flex flex-wrap content-center ${justifyClass}`}
+          style={{ gap: '2cqmin' }}
         >
           <DndContext
             collisionDetection={closestCenter}

@@ -142,7 +142,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     'NumberLineWidget'
   ),
   'syntax-framer': lazyNamed(
-    () => import('./SyntaxFramer/Widget'),
+    () => import('./SyntaxFramer'),
     'SyntaxFramerWidget'
   ),
 };
@@ -238,7 +238,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     'NumberLineSettings'
   ),
   'syntax-framer': lazyNamed(
-    () => import('./SyntaxFramer/Settings'),
+    () => import('./SyntaxFramer'),
     'SyntaxFramerSettings'
   ),
 };
