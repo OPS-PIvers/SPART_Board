@@ -12,8 +12,9 @@ import {
 import {
   arrayMove,
   SortableContext,
-  horizontalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
+  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '@/context/useDashboard';
@@ -113,7 +114,10 @@ const SortableToken: React.FC<SortableTokenProps> = ({
       aria-label={token.isMasked ? 'Masked token' : `Token: ${token.value}`}
     >
       {token.isMasked ? (
-        <span className="opacity-50 inline-block px-1">
+        <span
+          className="opacity-50 inline-block"
+          style={{ padding: '0 0.5cqmin' }}
+        >
           {'_'.repeat(token.value.length || 3)}
         </span>
       ) : (
@@ -141,7 +145,9 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
         distance: 5,
       },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -214,7 +220,7 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
           >
             <SortableContext
               items={tokens.map((t) => t.id)}
-              strategy={horizontalListSortingStrategy}
+              strategy={rectSortingStrategy}
             >
               {tokens.map((token) => (
                 <SortableToken
