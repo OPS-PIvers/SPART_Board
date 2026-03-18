@@ -107,8 +107,6 @@ export const RevealGridSettings: React.FC<{ widget: WidgetData }> = ({
           'RevealGridSets'
         );
         fileId = driveFile.id;
-        // Ensure RevealGridSets folder exists
-        await driveService.getFolderPath('RevealGridSets');
 
         updateWidget(widget.id, {
           config: { ...config, activeDriveFileId: fileId, setName: fileName },
