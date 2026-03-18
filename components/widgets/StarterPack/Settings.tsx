@@ -96,4 +96,12 @@ export const StarterPackSettings = () => {
   );
 };
 
+export const StarterPackAppearanceSettings: React.FC = () => {
+  return (
+    <div className="text-slate-500 italic text-sm p-2 text-center">
+      No additional style settings available.
+    </div>
+  );
+};
+
 export default StarterPackSettings;
