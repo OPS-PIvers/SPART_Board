@@ -1289,6 +1289,9 @@ export interface RevealGridConfig {
   revealMode: 'flip' | 'fade';
   fontFamily?: GlobalFontFamily;
   defaultCardColor?: string;
+  defaultCardBackColor?: string;
+  activeDriveFileId?: string | null;
+  setName?: string;
 }
 
 export interface ConceptNode {
