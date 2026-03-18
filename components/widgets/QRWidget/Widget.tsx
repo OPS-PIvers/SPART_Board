@@ -1,8 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, QRConfig, TextConfig } from '../../../types';
+import {
+  WidgetData,
+  QRConfig,
+  TextConfig,
+  QRGlobalConfig,
+  FeaturePermission,
+} from '../../../types';
 import { Link } from 'lucide-react';
 import { WidgetLayout } from '../WidgetLayout';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useAuth } from '@/context/useAuth';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser === 'undefined') {
@@ -15,8 +23,41 @@ const stripHtml = (html: string) => {
 
 export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard, updateWidget } = useDashboard();
+  const { subscribeToPermission } = useFeaturePermissions();
+  const { selectedBuildings } = useAuth();
   const config = widget.config as QRConfig;
-  const url = config.url ?? 'https://google.com';
+  const [permission, setPermission] = useState<FeaturePermission | null>(null);
+
+  useEffect(() => {
+    return subscribeToPermission('qr', (p) => setPermission(p));
+  }, [subscribeToPermission]);
+
+  const globalConfig = permission?.config as unknown as
+    | QRGlobalConfig
+    | undefined;
+  const buildingId = selectedBuildings?.[0];
+  const defaults =
+    globalConfig && buildingId
+      ? globalConfig.buildingDefaults?.[buildingId]
+      : undefined;
+
+  const isValidHex = (hex: string) => /^[0-9a-fA-F]{6}$/.test(hex);
+
+  // Use config values if explicitly set, fallback to building defaults, then hardcoded defaults
+  const url = config.url || defaults?.defaultUrl || 'https://google.com'; // eslint-disable-line @typescript-eslint/prefer-nullish-coalescing
+
+  const rawColor = (config.qrColor ?? defaults?.qrColor ?? '#000000').replace(
+    /^#/,
+    ''
+  );
+  const rawBgColor = (
+    config.qrBgColor ??
+    defaults?.qrBgColor ??
+    '#ffffff'
+  ).replace(/^#/, '');
+
+  const qrColor: string = isValidHex(rawColor) ? rawColor : '000000';
+  const qrBgColor: string = isValidHex(rawBgColor) ? rawBgColor : 'ffffff';
 
   // Nexus Connection: Link Repeater (Text -> QR)
   useEffect(() => {
@@ -28,12 +69,17 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         if (plainText && plainText !== config.url) {
           updateWidget(widget.id, {
-            config: { url: plainText, syncWithTextWidget: true } as QRConfig,
+            config: {
+              ...config,
+              url: plainText,
+              syncWithTextWidget: true,
+            } as QRConfig,
           });
         }
       }
     }
   }, [
+    config,
     config.syncWithTextWidget,
     activeDashboard?.widgets,
     config.url,
@@ -44,7 +90,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // Use a simple public API for QR codes
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(
     url
-  )}`;
+  )}&color=${qrColor}&bgcolor=${qrBgColor}`;
 
   return (
     <WidgetLayout

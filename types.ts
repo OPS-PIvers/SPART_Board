@@ -284,8 +284,10 @@ export interface DrawingConfig {
 }
 
 export interface QRConfig {
-  url: string;
+  url?: string;
   syncWithTextWidget?: boolean;
+  qrColor?: string;
+  qrBgColor?: string;
 }
 
 export interface EmbedConfig {
@@ -585,6 +587,18 @@ export interface BuildingDrawingDefaults {
 
 export interface DrawingGlobalConfig {
   buildingDefaults: Record<string, BuildingDrawingDefaults>;
+}
+
+// --- QR Global Config ---
+export interface BuildingQRDefaults {
+  buildingId: string;
+  defaultUrl?: string;
+  qrColor?: string;
+  qrBgColor?: string;
+}
+
+export interface QRGlobalConfig {
+  buildingDefaults: Record<string, BuildingQRDefaults>;
 }
 
 // --- Materials Global Config ---

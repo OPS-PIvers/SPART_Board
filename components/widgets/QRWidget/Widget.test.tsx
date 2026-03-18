@@ -4,10 +4,20 @@ import { QRWidget } from './Widget';
 import { QRSettings } from './Settings';
 import { WidgetData, QRConfig, TextConfig } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useAuth } from '@/context/useAuth';
 
 // Mock the context using the standard pattern
 vi.mock('../../../context/useDashboard', () => ({
   useDashboard: vi.fn(),
+}));
+
+vi.mock('@/hooks/useFeaturePermissions', () => ({
+  useFeaturePermissions: vi.fn(),
+}));
+
+vi.mock('@/context/useAuth', () => ({
+  useAuth: vi.fn(),
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -39,6 +49,18 @@ describe('QRWidget', () => {
     (useDashboard as Mock).mockReturnValue({
       activeDashboard: mockActiveDashboard,
       updateWidget: mockUpdateWidget,
+    });
+    (useFeaturePermissions as Mock).mockReturnValue({
+      subscribeToPermission: vi.fn(
+        (_type: string, callback: (p: unknown) => void) => {
+          // Mock default permission empty
+          callback(null);
+          return vi.fn();
+        }
+      ),
+    });
+    (useAuth as Mock).mockReturnValue({
+      selectedBuildings: ['building-1'],
     });
   });
 
@@ -81,6 +103,76 @@ describe('QRWidget', () => {
       expect.stringContaining(encodeURIComponent(url))
     );
     expect(screen.getByText(url)).toBeInTheDocument();
+  });
+
+  it('applies global building defaults (url, color, bgcolor) when widget config lacks them', () => {
+    // Mock the permission hook to return global QR defaults
+    (useFeaturePermissions as Mock).mockReturnValue({
+      subscribeToPermission: vi.fn(
+        (_type: string, callback: (p: unknown) => void) => {
+          callback({
+            config: {
+              buildingDefaults: {
+                'building-1': {
+                  defaultUrl: 'https://school.edu',
+                  qrColor: '#123456',
+                  qrBgColor: '#abcdef',
+                },
+              },
+            },
+          });
+          return vi.fn();
+        }
+      ),
+    });
+
+    const widget = createMockWidget({ url: undefined }); // simulate empty url
+    render(<QRWidget widget={widget} />);
+
+    const img = screen.getByAltText('QR Code');
+    // Check fallback URL, color, and bgcolor
+    expect(img).toHaveAttribute(
+      'src',
+      expect.stringContaining(encodeURIComponent('https://school.edu'))
+    );
+    expect(img).toHaveAttribute('src', expect.stringContaining('color=123456'));
+    expect(img).toHaveAttribute(
+      'src',
+      expect.stringContaining('bgcolor=abcdef')
+    );
+    expect(screen.getByText('https://school.edu')).toBeInTheDocument();
+  });
+
+  it('falls back to default colors for invalid hex codes in admin config', () => {
+    // Mock the permission hook to return global QR defaults with invalid colors
+    (useFeaturePermissions as Mock).mockReturnValue({
+      subscribeToPermission: vi.fn(
+        (_type: string, callback: (p: unknown) => void) => {
+          callback({
+            config: {
+              buildingDefaults: {
+                'building-1': {
+                  qrColor: 'red', // Invalid hex
+                  qrBgColor: '#123', // Invalid hex (3 digits)
+                },
+              },
+            },
+          });
+          return vi.fn();
+        }
+      ),
+    });
+
+    const widget = createMockWidget();
+    render(<QRWidget widget={widget} />);
+
+    const img = screen.getByAltText('QR Code');
+    // Should fallback to 000000 and ffffff
+    expect(img).toHaveAttribute('src', expect.stringContaining('color=000000'));
+    expect(img).toHaveAttribute(
+      'src',
+      expect.stringContaining('bgcolor=ffffff')
+    );
   });
 
   it('shows linked badge when synced', () => {
