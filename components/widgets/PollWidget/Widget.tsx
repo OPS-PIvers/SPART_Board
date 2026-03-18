@@ -141,7 +141,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
             return (
               <button
-                key={i}
+                key={o.id ?? i}
                 onClick={() => {
                   vote(i);
                 }}

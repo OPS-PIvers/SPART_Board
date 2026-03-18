@@ -156,6 +156,7 @@ export interface ChecklistItem {
 }
 
 export interface PollOption {
+  id?: string;
   label: string;
   votes: number;
 }

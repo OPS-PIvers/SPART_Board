@@ -184,10 +184,10 @@ describe('PollSettings', () => {
       config: {
         question: 'Magic Question?',
         options: [
-          { label: 'Opt1', votes: 0 },
-          { label: 'Opt2', votes: 0 },
-          { label: 'Opt3', votes: 0 },
-          { label: 'Opt4', votes: 0 },
+          expect.objectContaining({ label: 'Opt1', votes: 0 }),
+          expect.objectContaining({ label: 'Opt2', votes: 0 }),
+          expect.objectContaining({ label: 'Opt3', votes: 0 }),
+          expect.objectContaining({ label: 'Opt4', votes: 0 }),
         ],
       },
     });
@@ -255,8 +255,8 @@ describe('PollSettings', () => {
       config: {
         question: 'Test',
         options: [
-          { label: 'Opt 1', votes: 0 },
-          { label: 'Option 2', votes: 0 },
+          expect.objectContaining({ label: 'Opt 1', votes: 0 }),
+          expect.objectContaining({ label: 'Option 2', votes: 0 }),
         ],
       },
     });
@@ -315,8 +315,8 @@ describe('PollSettings', () => {
       config: {
         question: 'Who is your favorite?',
         options: [
-          { label: 'John Doe', votes: 0 },
-          { label: 'Jane Smith', votes: 0 },
+          expect.objectContaining({ label: 'John Doe', votes: 0 }),
+          expect.objectContaining({ label: 'Jane Smith', votes: 0 }),
         ],
       },
     });

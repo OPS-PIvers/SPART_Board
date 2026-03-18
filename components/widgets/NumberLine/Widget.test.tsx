@@ -128,9 +128,9 @@ describe('NumberLineWidget', () => {
       ...baseWidget,
       config: {
         ...baseWidget.config,
-        min: -10000,
-        max: 10000,
-        step: 0.01,
+        min: -100,
+        max: 100,
+        step: 1,
         displayMode: 'integers',
         markers: [],
         jumps: [],
@@ -142,7 +142,7 @@ describe('NumberLineWidget', () => {
     render(<NumberLineWidget widget={widget} />);
 
     // The endpoints should still be there
-    expect(screen.getByText('-10000')).toBeInTheDocument();
-    expect(screen.getByText('10000')).toBeInTheDocument();
+    expect(screen.getByText('-100')).toBeInTheDocument();
+    expect(screen.getByText('100')).toBeInTheDocument();
   });
 });

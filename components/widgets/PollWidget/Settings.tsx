@@ -59,6 +59,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
 
     const newOptions = activeRoster.students.map((s) => ({
+      id: crypto.randomUUID(),
       label: `${s.firstName} ${s.lastName}`.trim(),
       votes: 0,
     }));
@@ -96,7 +97,11 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const addOption = () => {
-    const newOption = { label: `Option ${options.length + 1}`, votes: 0 };
+    const newOption = {
+      id: crypto.randomUUID(),
+      label: `Option ${options.length + 1}`,
+      votes: 0,
+    };
     updateWidget(widget.id, {
       config: { ...config, options: [...options, newOption] } as PollConfig,
     });
@@ -169,6 +174,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             onGenerate={generatePoll}
             onSuccess={(result) => {
               const newOptions = result.options.map((opt) => ({
+                id: crypto.randomUUID(),
                 label: opt,
                 votes: 0,
               }));
