@@ -296,6 +296,16 @@ export interface EmbedConfig {
   blockedReason?: string;
 }
 
+export interface BuildingPollDefaults {
+  buildingId: string;
+  question?: string;
+  options?: PollOption[];
+}
+
+export interface PollGlobalConfig {
+  buildingDefaults: Record<string, BuildingPollDefaults>;
+}
+
 export interface PollConfig {
   question: string;
   options: PollOption[];

@@ -1772,6 +1772,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             }));
           }
           break;
+        case 'poll':
+          if (typeof raw.question === 'string') out.question = raw.question;
+          if (Array.isArray(raw.options) && raw.options.length > 0) {
+            out.options = (raw.options as Array<{ label: string }>).map(
+              (opt) => ({
+                label: opt.label,
+                votes: 0,
+              })
+            );
+          }
+          break;
         case 'materials':
           if (Array.isArray(raw.selectedItems) && raw.selectedItems.length > 0)
             out.selectedItems = raw.selectedItems;
