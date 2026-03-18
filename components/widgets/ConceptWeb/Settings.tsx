@@ -36,10 +36,14 @@ export const ConceptWebSettings: React.FC<WidgetComponentProps> = ({
   return (
     <div className="space-y-4 p-4 text-slate-800">
       <div className="space-y-2">
-        <label className="block text-sm font-medium mb-1">
+        <label
+          htmlFor="defaultNodeWidth"
+          className="block text-sm font-medium mb-1"
+        >
           Default Node Width ({defaultWidth}%)
         </label>
         <input
+          id="defaultNodeWidth"
           type="range"
           min={5}
           max={50}
@@ -48,10 +52,14 @@ export const ConceptWebSettings: React.FC<WidgetComponentProps> = ({
           className="w-full"
         />
 
-        <label className="block text-sm font-medium mb-1">
+        <label
+          htmlFor="defaultNodeHeight"
+          className="block text-sm font-medium mb-1"
+        >
           Default Node Height ({defaultHeight}%)
         </label>
         <input
+          id="defaultNodeHeight"
           type="range"
           min={5}
           max={50}
@@ -61,7 +69,7 @@ export const ConceptWebSettings: React.FC<WidgetComponentProps> = ({
         />
 
         <div className="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50 flex items-center justify-center min-h-[150px] relative overflow-hidden">
-          {/* Note: In a real widget container context, these would use container queries (cqmin). We'll simulate it in preview by just sizing a percentage relative to the preview box. */}
+          {/* We simulate the visual result using container queries within the preview bounds to ensure the relative font sizes scale identically to the widget's render behavior. */}
           <div
             className="absolute shadow-sm border border-slate-300 flex flex-col items-center justify-center p-2 rounded-lg"
             style={{
