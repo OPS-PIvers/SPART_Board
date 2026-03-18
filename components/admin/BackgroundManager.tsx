@@ -16,7 +16,6 @@ import {
   orderBy,
   where,
   deleteField,
-  type UpdateData,
 } from 'firebase/firestore';
 import { db, storage } from '../../config/firebase';
 import { ref, deleteObject } from 'firebase/storage';
@@ -385,7 +384,7 @@ export const BackgroundManager: React.FC = () => {
 
   const updatePreset = async (
     id: string,
-    updates: UpdateData<BackgroundPreset>
+    updates: Partial<BackgroundPreset>
   ) => {
     try {
       await updateDoc(doc(db, 'admin_backgrounds', id), updates);
@@ -394,6 +393,24 @@ export const BackgroundManager: React.FC = () => {
       );
     } catch (error) {
       console.error('Error updating preset:', error);
+      showMessage('error', 'Failed to update background');
+    }
+  };
+
+  const clearPresetCategory = async (id: string) => {
+    try {
+      await updateDoc(doc(db, 'admin_backgrounds', id), {
+        category: deleteField(),
+      });
+      setPresets((prev) =>
+        prev.map((p) => {
+          if (p.id !== id) return p;
+          const { category: _removed, ...rest } = p;
+          return rest as BackgroundPreset;
+        })
+      );
+    } catch (error) {
+      console.error('Error clearing preset category:', error);
       showMessage('error', 'Failed to update background');
     }
   };
@@ -986,6 +1003,7 @@ export const BackgroundManager: React.FC = () => {
                 setEditingCategoryPresetId={setEditingCategoryPresetId}
                 setEditingCategoryValue={setEditingCategoryValue}
                 updatePreset={updatePreset}
+                clearPresetCategory={clearPresetCategory}
                 deletePreset={deletePreset}
                 addBetaUser={addBetaUser}
                 removeBetaUser={removeBetaUser}
@@ -1012,6 +1030,7 @@ export const BackgroundManager: React.FC = () => {
                 setEditingCategoryPresetId={setEditingCategoryPresetId}
                 setEditingCategoryValue={setEditingCategoryValue}
                 updatePreset={updatePreset}
+                clearPresetCategory={clearPresetCategory}
                 deletePreset={deletePreset}
                 addBetaUser={addBetaUser}
                 removeBetaUser={removeBetaUser}
@@ -1044,6 +1063,7 @@ interface PresetCardProps {
     id: string,
     updates: Partial<BackgroundPreset>
   ) => Promise<void>;
+  clearPresetCategory: (id: string) => Promise<void>;
   deletePreset: (preset: BackgroundPreset) => Promise<void>;
   addBetaUser: (presetId: string, email: string) => Promise<void>;
   removeBetaUser: (presetId: string, email: string) => Promise<void>;
@@ -1066,6 +1086,7 @@ const ListPresetRow: React.FC<PresetCardProps> = ({
   setEditingCategoryPresetId,
   setEditingCategoryValue,
   updatePreset,
+  clearPresetCategory,
   deletePreset,
   addBetaUser,
   removeBetaUser,
@@ -1206,12 +1227,11 @@ const ListPresetRow: React.FC<PresetCardProps> = ({
               <button
                 onClick={() => {
                   const trimmed = editingCategoryValue.trim();
-                  void updatePreset(
-                    preset.id,
-                    trimmed
-                      ? { category: trimmed }
-                      : { category: deleteField() }
-                  );
+                  if (trimmed) {
+                    void updatePreset(preset.id, { category: trimmed });
+                  } else {
+                    void clearPresetCategory(preset.id);
+                  }
                   setEditingCategoryPresetId(null);
                   setEditingCategoryValue('');
                 }}
@@ -1347,6 +1367,7 @@ const GridPresetCard: React.FC<PresetCardProps> = ({
   setEditingCategoryPresetId,
   setEditingCategoryValue,
   updatePreset,
+  clearPresetCategory,
   deletePreset,
   addBetaUser,
   removeBetaUser,
@@ -1501,12 +1522,11 @@ const GridPresetCard: React.FC<PresetCardProps> = ({
               <button
                 onClick={() => {
                   const trimmed = editingCategoryValue.trim();
-                  void updatePreset(
-                    preset.id,
-                    trimmed
-                      ? { category: trimmed }
-                      : { category: deleteField() }
-                  );
+                  if (trimmed) {
+                    void updatePreset(preset.id, { category: trimmed });
+                  } else {
+                    void clearPresetCategory(preset.id);
+                  }
                   setEditingCategoryPresetId(null);
                   setEditingCategoryValue('');
                 }}
