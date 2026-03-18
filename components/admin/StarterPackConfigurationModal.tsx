@@ -140,13 +140,37 @@ export const StarterPackConfigurationModal: React.FC<
     setTimeout(() => setMessage(null), 3000);
   };
 
+  const handleBack = useCallback(
+    async () => {
+      if (
+        formData.name ||
+        formData.description ||
+        formData.widgets.length > 0
+      ) {
+        const confirmed = await showConfirm(
+          'Discard unsaved changes to this pack?',
+          {
+            title: 'Discard Changes',
+            variant: 'warning',
+            confirmLabel: 'Discard',
+          }
+        );
+        if (!confirmed) return;
+      }
+      setView('list');
+      setEditingId(null);
+      setFormData(INITIAL_FORM);
+    },
+    [formData.name, formData.description, formData.widgets.length, showConfirm]
+  );
+
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') void handleBack();
     };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [handleBack]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -320,27 +344,6 @@ export const StarterPackConfigurationModal: React.FC<
       console.error('Error deleting pack:', err);
       showMessage('error', 'Failed to delete starter pack.');
     }
-  };
-
-  const handleBack = async () => {
-    if (
-      formData.name ||
-      formData.description ||
-      formData.widgets.length > 0
-    ) {
-      const confirmed = await showConfirm(
-        'Discard unsaved changes to this pack?',
-        {
-          title: 'Discard Changes',
-          variant: 'warning',
-          confirmLabel: 'Discard',
-        }
-      );
-      if (!confirmed) return;
-    }
-    setView('list');
-    setEditingId(null);
-    setFormData(INITIAL_FORM);
   };
 
   const PreviewIcon =
@@ -672,7 +675,9 @@ export const StarterPackConfigurationModal: React.FC<
                       setFormData((p) => ({ ...p, isLocked: !p.isLocked }))
                     }
                     className={`relative w-11 h-6 rounded-full transition-colors ${
-                      formData.isLocked ? 'bg-brand-blue-primary' : 'bg-slate-200'
+                      formData.isLocked
+                        ? 'bg-brand-blue-primary'
+                        : 'bg-slate-200'
                     }`}
                   >
                     <span
@@ -735,7 +740,10 @@ export const StarterPackConfigurationModal: React.FC<
                                   ['y', 'Y'],
                                   ['w', 'W'],
                                   ['h', 'H'],
-                                ] as [keyof typeof widget & ('x' | 'y' | 'w' | 'h'), string][]
+                                ] as [
+                                  keyof typeof widget & ('x' | 'y' | 'w' | 'h'),
+                                  string,
+                                ][]
                               ).map(([field, label]) => (
                                 <label
                                   key={field}
