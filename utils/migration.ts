@@ -20,18 +20,20 @@ const fixDimensions = (widget: WidgetData): WidgetData => {
     return widget;
   }
   const defaults = WIDGET_DEFAULTS[widget.type];
+  const defaultW = defaults?.w ?? 0;
+  const defaultH = defaults?.h ?? 0;
   return {
     ...widget,
     w:
       widget.w < MIN_WIDGET_DIMENSION_PX
-        ? (defaults?.w ?? 0) >= MIN_WIDGET_DIMENSION_PX
-          ? defaults!.w!
+        ? defaultW >= MIN_WIDGET_DIMENSION_PX
+          ? defaultW
           : 300
         : widget.w,
     h:
       widget.h < MIN_WIDGET_DIMENSION_PX
-        ? (defaults?.h ?? 0) >= MIN_WIDGET_DIMENSION_PX
-          ? defaults!.h!
+        ? defaultH >= MIN_WIDGET_DIMENSION_PX
+          ? defaultH
           : 300
         : widget.h,
   };
