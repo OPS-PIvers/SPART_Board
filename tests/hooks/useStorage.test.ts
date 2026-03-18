@@ -187,7 +187,7 @@ describe('useStorage', () => {
       );
       expect(mockDriveService.makePublic).toHaveBeenCalledWith(
         'hotspot-drive-id',
-        'school.edu'
+        undefined
       );
       expect(url).toBe('https://lh3.googleusercontent.com/d/hotspot-drive-id');
       expect(mockUploadBytes).not.toHaveBeenCalled();
