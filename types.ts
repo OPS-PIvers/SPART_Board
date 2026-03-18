@@ -1316,6 +1316,8 @@ export interface ConceptNode {
   text: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
   bgColor?: string;
 }
 
@@ -1331,6 +1333,8 @@ export interface ConceptWebConfig {
   nodes: ConceptNode[];
   edges: ConceptEdge[];
   fontFamily?: GlobalFontFamily;
+  defaultNodeWidth?: number;
+  defaultNodeHeight?: number;
 }
 
 export interface SyntaxToken {
