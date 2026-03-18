@@ -1347,7 +1347,6 @@ export interface SyntaxToken {
 export interface SyntaxFramerConfig {
   mode: 'text' | 'math'; // Math mode adds an equation-style font
   tokens: SyntaxToken[];
-  fontSize: number;
   alignment: 'left' | 'center';
 }
 
