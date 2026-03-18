@@ -2,13 +2,7 @@ import React, { useState } from 'react';
 import { WidgetData, SyntaxFramerConfig, SyntaxToken } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
-import {
-  Type,
-  Calculator,
-  AlignLeft,
-  AlignCenter,
-  ALargeSmall,
-} from 'lucide-react';
+import { Type, Calculator, AlignLeft, AlignCenter } from 'lucide-react';
 
 interface SyntaxFramerSettingsProps {
   widget: WidgetData;
@@ -160,25 +154,6 @@ export const SyntaxFramerAppearanceSettings: React.FC<
 
   return (
     <div className="space-y-4">
-      <div>
-        <SettingsLabel icon={ALargeSmall}>Font Size</SettingsLabel>
-        <div className="flex justify-between text-xs text-slate-500 mb-2">
-          <span>Size</span>
-          <span>{config.fontSize ?? 8}</span>
-        </div>
-        <input
-          type="range"
-          min="2"
-          max="24"
-          step="0.5"
-          value={config.fontSize ?? 8}
-          onChange={(e) =>
-            handleUpdate({ fontSize: parseFloat(e.target.value) })
-          }
-          className="w-full"
-        />
-      </div>
-
       <div>
         <SettingsLabel icon={AlignLeft}>Alignment</SettingsLabel>
         <div className="flex gap-2">
