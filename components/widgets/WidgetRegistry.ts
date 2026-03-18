@@ -326,6 +326,10 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
     () => import('./SyntaxFramer'),
     'SyntaxFramerAppearanceSettings'
   ),
+  'starter-pack': lazyNamed(
+    () => import('./StarterPack/Settings'),
+    'StarterPackAppearanceSettings'
+  ),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
