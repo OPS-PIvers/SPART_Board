@@ -9,7 +9,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
 COPY functions/package.json functions/pnpm-lock.yaml ./functions/
 # Install dependencies including devDependencies (needed for build)
-RUN pnpm run install:ci
+RUN pnpm install --frozen-lockfile && pnpm -C functions install --frozen-lockfile
 
 COPY . .
 
