@@ -68,8 +68,8 @@ describe('PollWidget', () => {
       config: {
         question: 'Favorite Color?',
         options: [
-          { label: 'Red', votes: 2 },
-          { label: 'Blue', votes: 3 },
+          { id: 'opt-1', label: 'Red', votes: 2 },
+          { id: 'opt-2', label: 'Blue', votes: 3 },
         ],
       },
     };
@@ -87,8 +87,8 @@ describe('PollWidget', () => {
       config: {
         question: 'Favorite Color?',
         options: [
-          { label: 'Red', votes: 3 },
-          { label: 'Blue', votes: 3 },
+          { id: 'opt-1', label: 'Red', votes: 3 },
+          { id: 'opt-2', label: 'Blue', votes: 3 },
         ],
       },
     });
@@ -107,8 +107,8 @@ describe('PollWidget', () => {
       config: {
         question: 'Test',
         options: [
-          { label: 'A', votes: 5 },
-          { label: 'B', votes: 10 },
+          { id: 'opt-1', label: 'A', votes: 5 },
+          { id: 'opt-2', label: 'B', votes: 10 },
         ],
       },
     };
@@ -123,8 +123,8 @@ describe('PollWidget', () => {
         config: {
           question: 'Test',
           options: [
-            { label: 'A', votes: 0 },
-            { label: 'B', votes: 0 },
+            { id: 'opt-1', label: 'A', votes: 0 },
+            { id: 'opt-2', label: 'B', votes: 0 },
           ],
         },
       })
@@ -184,10 +184,10 @@ describe('PollSettings', () => {
       config: {
         question: 'Magic Question?',
         options: [
-          { label: 'Opt1', votes: 0 },
-          { label: 'Opt2', votes: 0 },
-          { label: 'Opt3', votes: 0 },
-          { label: 'Opt4', votes: 0 },
+          expect.objectContaining({ label: 'Opt1', votes: 0 }),
+          expect.objectContaining({ label: 'Opt2', votes: 0 }),
+          expect.objectContaining({ label: 'Opt3', votes: 0 }),
+          expect.objectContaining({ label: 'Opt4', votes: 0 }),
         ],
       },
     });
@@ -241,7 +241,7 @@ describe('PollSettings', () => {
       flipped: false,
       config: {
         question: 'Test',
-        options: [{ label: 'Opt 1', votes: 0 }],
+        options: [{ id: 'opt-1', label: 'Opt 1', votes: 0 }],
       },
     };
 
@@ -255,8 +255,8 @@ describe('PollSettings', () => {
       config: {
         question: 'Test',
         options: [
-          { label: 'Opt 1', votes: 0 },
-          { label: 'Option 2', votes: 0 },
+          expect.objectContaining({ label: 'Opt 1', votes: 0 }),
+          expect.objectContaining({ label: 'Option 2', votes: 0 }),
         ],
       },
     });
@@ -315,8 +315,8 @@ describe('PollSettings', () => {
       config: {
         question: 'Who is your favorite?',
         options: [
-          { label: 'John Doe', votes: 0 },
-          { label: 'Jane Smith', votes: 0 },
+          expect.objectContaining({ label: 'John Doe', votes: 0 }),
+          expect.objectContaining({ label: 'Jane Smith', votes: 0 }),
         ],
       },
     });
@@ -338,7 +338,7 @@ describe('PollSettings', () => {
       flipped: false,
       config: {
         question: 'Test',
-        options: [{ label: 'Option 1', votes: 5 }],
+        options: [{ id: 'opt-1', label: 'Option 1', votes: 5 }],
       },
     };
 

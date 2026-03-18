@@ -131,6 +131,7 @@ export const sanitizeAIConfig = (
         }
 
         const pollOpt: PollOption = {
+          id: crypto.randomUUID(),
           label,
           votes: 0,
         };

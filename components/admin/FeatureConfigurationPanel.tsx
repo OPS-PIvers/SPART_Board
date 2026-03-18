@@ -41,6 +41,7 @@ import { MaterialsConfigurationPanel } from './MaterialsConfigurationPanel';
 import { MathToolsConfigurationPanel } from './MathToolsConfigurationPanel';
 import { NextUpConfigurationPanel } from './NextUpConfigurationPanel';
 import { CarRiderConfigurationPanel } from './CarRiderConfigurationPanel';
+import { PollConfigurationPanel } from './PollConfigurationPanel';
 import { Toggle } from '../common/Toggle';
 
 // Helper type guard
@@ -72,6 +73,7 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   mathTools: MathToolsConfigurationPanel as unknown as BuildingConfigPanel,
   nextUp: NextUpConfigurationPanel as unknown as BuildingConfigPanel,
   'car-rider-pro': CarRiderConfigurationPanel as unknown as BuildingConfigPanel,
+  poll: PollConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {

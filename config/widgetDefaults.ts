@@ -68,8 +68,8 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     config: {
       question: 'Vote now!',
       options: [
-        { label: 'Option A', votes: 0 },
-        { label: 'Option B', votes: 0 },
+        { id: 'opt-1', label: 'Option A', votes: 0 },
+        { id: 'opt-2', label: 'Option B', votes: 0 },
       ],
     },
   },

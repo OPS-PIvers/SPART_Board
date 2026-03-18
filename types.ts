@@ -156,6 +156,7 @@ export interface ChecklistItem {
 }
 
 export interface PollOption {
+  id: string;
   label: string;
   votes: number;
 }
@@ -294,6 +295,16 @@ export interface EmbedConfig {
   refreshInterval?: number;
   isEmbeddable?: boolean;
   blockedReason?: string;
+}
+
+export interface BuildingPollDefaults {
+  buildingId: string;
+  question?: string;
+  options?: PollOption[];
+}
+
+export interface PollGlobalConfig {
+  buildingDefaults: Record<string, BuildingPollDefaults>;
 }
 
 export interface PollConfig {
