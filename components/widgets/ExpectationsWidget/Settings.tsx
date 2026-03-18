@@ -81,11 +81,15 @@ export const ExpectationsSettings: React.FC<{ widget: WidgetData }> = ({
                   (w) =>
                     w.type === 'expectations' &&
                     w.id !== widget.id &&
-                    (w.config as import('@/types').ExpectationsConfig).syncSoundWidget
+                    (w.config as import('@/types').ExpectationsConfig)
+                      .syncSoundWidget
                 )
                 .forEach((w) => {
                   updateWidget(w.id, {
-                    config: { ...w.config, syncSoundWidget: false } as import('@/types').ExpectationsConfig,
+                    config: {
+                      ...w.config,
+                      syncSoundWidget: false,
+                    } as import('@/types').ExpectationsConfig,
                   });
                 });
             }
