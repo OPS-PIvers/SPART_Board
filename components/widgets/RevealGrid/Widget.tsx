@@ -101,9 +101,15 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
                 </div>
 
                 {/* BACK OF CARD (The actual reveal) */}
-                <div className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center bg-green-100 rounded-xl border-2 border-green-200 shadow-sm">
+                <div
+                  className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center rounded-xl border-2 shadow-sm"
+                  style={{
+                    backgroundColor: config.defaultCardBackColor ?? '#dcfce7',
+                    borderColor: 'rgba(0,0,0,0.1)',
+                  }}
+                >
                   <span
-                    className="text-center break-words w-full text-green-900 font-medium"
+                    className="text-center break-words w-full text-slate-800 font-medium"
                     style={{
                       fontSize: 'min(20px, 5cqmin)',
                       padding: 'min(16px, 4cqmin)',
