@@ -587,7 +587,7 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
               </div>
 
               {/* Code Editor */}
-              <div className="flex flex-col" style={{ minHeight: 240 }}>
+              <div className="flex flex-col min-h-[240px]">
                 <label className="block text-xxs font-black uppercase text-slate-400 tracking-widest mb-1">
                   <Code2 className="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" />
                   HTML Code
@@ -595,8 +595,7 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
                 <textarea
                   value={editCode}
                   onChange={(e) => setEditCode(e.target.value)}
-                  className="flex-1 w-full p-4 bg-slate-900 text-emerald-400 font-mono text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none leading-relaxed custom-scrollbar shadow-inner"
-                  style={{ minHeight: 240 }}
+                  className="flex-1 w-full p-4 bg-slate-900 text-emerald-400 font-mono text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none leading-relaxed custom-scrollbar shadow-inner min-h-[240px]"
                   spellCheck={false}
                   placeholder="Paste your HTML, CSS, and JS here…"
                 />

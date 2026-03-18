@@ -285,7 +285,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                   })
                 }
                 placeholder="Enter one student per line..."
-                className="w-full h-[180px] p-3 text-xs bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed"
+                className="w-full h-48 p-3 text-xs bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed"
               />
             </>
           ) : (

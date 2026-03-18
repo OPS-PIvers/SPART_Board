@@ -234,8 +234,7 @@ export const CatalystPermissionEditor: React.FC<
 
   return (
     <div
-      className="h-full flex flex-col bg-slate-50 rounded-lg border border-slate-200 overflow-hidden"
-      style={{ minHeight: '500px' }}
+      className="h-full flex flex-col bg-slate-50 rounded-lg border border-slate-200 overflow-hidden min-h-[500px]"
     >
       {/* Tab Nav */}
       <div className="flex gap-2 p-2 bg-white border-b border-slate-200">
