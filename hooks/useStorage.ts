@@ -44,7 +44,7 @@ export const useStorage = () => {
           'Assets/Backgrounds'
         );
         await driveService.makePublic(driveFile.id, userDomain);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        return `https://lh3.googleusercontent.com/d/${driveFile.id}`;
       } finally {
         setUploading(false);
       }
@@ -67,7 +67,7 @@ export const useStorage = () => {
           'Assets/Stickers'
         );
         await driveService.makePublic(driveFile.id, userDomain);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        return `https://lh3.googleusercontent.com/d/${driveFile.id}`;
       } finally {
         setUploading(false);
       }
@@ -93,7 +93,7 @@ export const useStorage = () => {
           'Assets/DisplayImages'
         );
         await driveService.makePublic(driveFile.id, userDomain);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        return `https://lh3.googleusercontent.com/d/${driveFile.id}`;
       } finally {
         setUploading(false);
       }
@@ -118,8 +118,10 @@ export const useStorage = () => {
           `hotspot-${Date.now()}-${file.name}`,
           'Assets/HotspotImages'
         );
-        await driveService.makePublic(driveFile.id, userDomain);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        // Pass undefined to force type:'anyone' sharing so the image URL is
+        // publicly renderable in all contexts (matches uploadBackgroundToDrive).
+        await driveService.makePublic(driveFile.id, undefined);
+        return `https://lh3.googleusercontent.com/d/${driveFile.id}`;
       } finally {
         setUploading(false);
       }
@@ -145,7 +147,7 @@ export const useStorage = () => {
           'Assets/Screenshots'
         );
         await driveService.makePublic(driveFile.id, userDomain);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        return `https://lh3.googleusercontent.com/d/${driveFile.id}`;
       } finally {
         setUploading(false);
       }

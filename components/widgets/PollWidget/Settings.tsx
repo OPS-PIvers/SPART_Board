@@ -59,6 +59,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
 
     const newOptions = activeRoster.students.map((s) => ({
+      id: crypto.randomUUID(),
       label: `${s.firstName} ${s.lastName}`.trim(),
       votes: 0,
     }));
@@ -96,7 +97,11 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const addOption = () => {
-    const newOption = { label: `Option ${options.length + 1}`, votes: 0 };
+    const newOption = {
+      id: crypto.randomUUID(),
+      label: `Option ${options.length + 1}`,
+      votes: 0,
+    };
     updateWidget(widget.id, {
       config: { ...config, options: [...options, newOption] } as PollConfig,
     });
@@ -169,6 +174,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             onGenerate={generatePoll}
             onSuccess={(result) => {
               const newOptions = result.options.map((opt) => ({
+                id: crypto.randomUUID(),
                 label: opt,
                 votes: 0,
               }));
@@ -207,9 +213,9 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <SettingsLabel>Options</SettingsLabel>
         <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
           {options.map((option, idx) => (
-            <div key={idx} className="flex gap-2 items-center">
+            <div key={option.id} className="flex gap-2 items-center">
               <OptionInput
-                key={`${option.label}-${idx}`} // Use label as key to reset internal state when external data changes
+                key={`${option.label}-${option.id}`} // Use label + id as key to reset internal state when external data changes
                 index={idx}
                 label={option.label}
                 onSave={updateOptionLabel}

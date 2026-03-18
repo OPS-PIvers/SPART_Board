@@ -25,7 +25,6 @@ import { Settings } from 'lucide-react';
 interface SortableTokenProps {
   token: SyntaxToken;
   mode: 'text' | 'math';
-  fontSize: number;
   onMaskToggle: (id: string) => void;
   onColorCycle: (id: string) => void;
 }
@@ -44,7 +43,6 @@ const WIDGET_COLORS = [
 const SortableToken: React.FC<SortableTokenProps> = ({
   token,
   mode,
-  fontSize,
   onMaskToggle,
   onColorCycle,
 }) => {
@@ -57,16 +55,21 @@ const SortableToken: React.FC<SortableTokenProps> = ({
     isDragging,
   } = useSortable({ id: token.id });
 
-  const style = {
+  const style: React.CSSProperties & Record<string, unknown> = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 1,
     opacity: isDragging ? 0.8 : 1,
-    fontSize: `min(100px, ${fontSize}cqmin)`,
+    flex: 'var(--char-count) 1 auto',
+    containerType: 'size',
+    minWidth: 0,
+    minHeight: 0,
+    '--char-count': token.value.length || 3,
   };
 
   const isMath = mode === 'math';
   const colorClass = token.color ?? 'bg-white text-slate-800 border-slate-200';
+  const FONT_SCALING_FACTOR = 1.5;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -94,12 +97,11 @@ const SortableToken: React.FC<SortableTokenProps> = ({
       ref={setNodeRef}
       style={{
         ...style,
-        padding: '1cqmin 2cqmin',
         borderWidth: 'min(1px, 0.2cqmin)',
         borderRadius: '1.5cqmin',
       }}
       className={`
-        syntax-token
+        syntax-token flex items-center justify-center
         relative cursor-grab active:cursor-grabbing shadow-sm
         transition-colors select-none whitespace-pre
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
@@ -113,16 +115,18 @@ const SortableToken: React.FC<SortableTokenProps> = ({
       title="Click to mask/unmask. Shift+Click to change color. Drag to move."
       aria-label={token.isMasked ? 'Masked token' : `Token: ${token.value}`}
     >
-      {token.isMasked ? (
-        <span
-          className="opacity-50 inline-block"
-          style={{ padding: '0 0.5cqmin' }}
-        >
-          {'_'.repeat(token.value.length || 3)}
-        </span>
-      ) : (
-        token.value
-      )}
+      <span
+        style={{
+          fontSize: `min(70cqh, calc(100cqw / max(1, var(--char-count)) * ${FONT_SCALING_FACTOR}))`,
+          lineHeight: 1,
+          padding: '0 5cqw',
+          overflow: 'hidden',
+          textOverflow: 'clip',
+        }}
+        className={token.isMasked ? 'opacity-50' : ''}
+      >
+        {token.isMasked ? '_'.repeat(token.value.length || 3) : token.value}
+      </span>
     </button>
   );
 };
@@ -132,12 +136,7 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
 }) => {
   const config = widget.config as SyntaxFramerConfig;
   const { updateWidget } = useDashboard();
-  const {
-    tokens = [],
-    mode = 'text',
-    fontSize = 8,
-    alignment = 'center',
-  } = config;
+  const { tokens = [], mode = 'text', alignment = 'center' } = config;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -210,8 +209,8 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
     <WidgetLayout
       content={
         <div
-          className={`w-full h-full flex flex-wrap content-center ${justifyClass}`}
-          style={{ gap: '2cqmin' }}
+          className={`w-full h-full flex flex-wrap content-stretch items-stretch ${justifyClass}`}
+          style={{ gap: '2cqmin', padding: '2cqmin' }}
         >
           <DndContext
             sensors={sensors}
@@ -227,7 +226,6 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
                   key={token.id}
                   token={token}
                   mode={mode}
-                  fontSize={fontSize}
                   onMaskToggle={handleMaskToggle}
                   onColorCycle={handleColorCycle}
                 />

@@ -156,6 +156,7 @@ export interface ChecklistItem {
 }
 
 export interface PollOption {
+  id: string;
   label: string;
   votes: number;
 }
@@ -283,8 +284,10 @@ export interface DrawingConfig {
 }
 
 export interface QRConfig {
-  url: string;
+  url?: string;
   syncWithTextWidget?: boolean;
+  qrColor?: string;
+  qrBgColor?: string;
 }
 
 export interface EmbedConfig {
@@ -294,6 +297,16 @@ export interface EmbedConfig {
   refreshInterval?: number;
   isEmbeddable?: boolean;
   blockedReason?: string;
+}
+
+export interface BuildingPollDefaults {
+  buildingId: string;
+  question?: string;
+  options?: PollOption[];
+}
+
+export interface PollGlobalConfig {
+  buildingDefaults: Record<string, BuildingPollDefaults>;
 }
 
 export interface PollConfig {
@@ -456,6 +469,17 @@ export interface ScheduleGlobalConfig {
   buildingDefaults: Record<string, BuildingScheduleDefaults>;
 }
 
+// --- Embed Global Config ---
+export interface BuildingEmbedDefaults {
+  buildingId: string;
+  hideUrlField?: boolean;
+  whitelistUrls?: string[];
+}
+
+export interface EmbedGlobalConfig {
+  buildingDefaults: Record<string, BuildingEmbedDefaults>;
+}
+
 // --- Clock Global Config ---
 export interface BuildingClockDefaults {
   buildingId: string;
@@ -574,6 +598,18 @@ export interface BuildingDrawingDefaults {
 
 export interface DrawingGlobalConfig {
   buildingDefaults: Record<string, BuildingDrawingDefaults>;
+}
+
+// --- QR Global Config ---
+export interface BuildingQRDefaults {
+  buildingId: string;
+  defaultUrl?: string;
+  qrColor?: string;
+  qrBgColor?: string;
+}
+
+export interface QRGlobalConfig {
+  buildingDefaults: Record<string, BuildingQRDefaults>;
 }
 
 // --- Materials Global Config ---
@@ -1314,8 +1350,10 @@ export interface RevealGridConfig {
 export interface ConceptNode {
   id: string;
   text: string;
-  x: number;
-  y: number;
+  x: number; // X position as a percentage of container
+  y: number; // Y position as a percentage of container
+  width?: number; // Width as a percentage of container
+  height?: number; // Height as a percentage of container
   bgColor?: string;
 }
 
@@ -1331,6 +1369,8 @@ export interface ConceptWebConfig {
   nodes: ConceptNode[];
   edges: ConceptEdge[];
   fontFamily?: GlobalFontFamily;
+  defaultNodeWidth?: number; // Width as a percentage of container
+  defaultNodeHeight?: number; // Height as a percentage of container
 }
 
 export interface SyntaxToken {
@@ -1343,7 +1383,6 @@ export interface SyntaxToken {
 export interface SyntaxFramerConfig {
   mode: 'text' | 'math'; // Math mode adds an equation-style font
   tokens: SyntaxToken[];
-  fontSize: number;
   alignment: 'left' | 'center';
 }
 
@@ -1357,10 +1396,20 @@ export interface ImageHotspot {
   isViewed: boolean; // Syncs state so teachers know which ones they've covered
 }
 
+export interface HotspotSavedItem {
+  id: string;
+  name: string;
+  baseImageUrl: string;
+  hotspots: ImageHotspot[];
+  popoverTheme?: 'light' | 'dark' | 'glass';
+  createdAt: number;
+}
+
 export interface HotspotImageConfig {
   baseImageUrl: string;
   hotspots: ImageHotspot[];
   popoverTheme?: 'light' | 'dark' | 'glass';
+  savedLibrary?: HotspotSavedItem[];
 }
 
 // Union of all widget configs

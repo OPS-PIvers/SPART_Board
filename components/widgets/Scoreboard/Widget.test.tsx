@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ScoreboardWidget } from './Widget';
 import { ScoreboardSettings } from './Settings';
 import { useDashboard } from '@/context/useDashboard';
@@ -230,6 +230,10 @@ describe('ScoreboardSettings', () => {
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       mockDashboardContext
     );
+
+    // Clear mock histories to prevent state leaking between tests
+    mockUpdateWidget.mockClear();
+    mockAddToast.mockClear();
   });
 
   it('imports groups from random widget', () => {
@@ -250,8 +254,8 @@ describe('ScoreboardSettings', () => {
       type: 'random' as WidgetType,
       config: {
         lastResult: [
-          { names: ['Alice', 'Bob'] },
-          { names: ['Charlie', 'Dave'] },
+          { id: 'group-1', names: ['Alice', 'Bob'] },
+          { id: 'group-2', names: ['Charlie', 'Dave'] },
         ],
       } as RandomConfig,
       x: 0,
@@ -266,6 +270,7 @@ describe('ScoreboardSettings', () => {
       ...mockDashboardContext,
       activeDashboard: {
         widgets: [randomWidget],
+        sharedGroups: [{ id: 'group-1', name: 'Custom Group Name 1' }],
       },
     });
 
@@ -279,7 +284,10 @@ describe('ScoreboardSettings', () => {
       expect.objectContaining({
         config: expect.objectContaining({
           teams: expect.arrayContaining([
-            expect.objectContaining({ name: 'Group 1' }),
+            expect.objectContaining({
+              name: 'Custom Group Name 1',
+              linkedGroupId: 'group-1',
+            }),
             expect.objectContaining({ name: 'Group 2' }),
           ]) as unknown,
         }) as unknown,
@@ -320,4 +328,210 @@ describe('ScoreboardSettings', () => {
       })
     );
   });
+});
+
+it('handles empty random result', () => {
+  const widget: WidgetData = {
+    id: 'scoreboard-id',
+    type: 'scoreboard',
+    config: { teams: [] } as ScoreboardConfig,
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100,
+    z: 1,
+    flipped: true,
+  };
+
+  const randomWidget: WidgetData = {
+    id: 'random-id',
+    type: 'random' as WidgetType,
+    config: {
+      lastResult: null,
+    } as RandomConfig,
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100,
+    z: 1,
+    flipped: false,
+  };
+
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    activeDashboard: {
+      widgets: [randomWidget],
+    },
+  });
+
+  render(<ScoreboardSettings widget={widget} />);
+  const importButton = screen.getByText('Import Groups');
+  fireEvent.click(importButton);
+
+  expect(mockAddToast).toHaveBeenCalledWith(
+    'Randomizer needs to have generated groups first.',
+    'info'
+  );
+});
+
+it('removes a team', () => {
+  const teams = [
+    { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
+  ];
+  const widget: WidgetData = {
+    id: 'scoreboard-id',
+    type: 'scoreboard',
+    config: { teams } as ScoreboardConfig,
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100,
+    z: 1,
+    flipped: true,
+  };
+
+  render(<ScoreboardSettings widget={widget} />);
+  const removeButton = screen.getByRole('button', { name: '' }); // The trash icon button
+  fireEvent.click(removeButton);
+
+  expect(mockUpdateWidget).toHaveBeenCalledWith(
+    'scoreboard-id',
+    expect.objectContaining({
+      config: expect.objectContaining({
+        teams: [],
+      }) as unknown,
+    })
+  );
+});
+
+it('cancels reset scores', () => {
+  const teams = [
+    { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
+  ];
+  const widget: WidgetData = {
+    id: 'scoreboard-id',
+    type: 'scoreboard',
+    config: { teams } as ScoreboardConfig,
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100,
+    z: 1,
+    flipped: true,
+  };
+
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+  });
+
+  render(<ScoreboardSettings widget={widget} />);
+
+  // Clear to ensure we don't pick up previous calls (like from auto-migration)
+  mockUpdateWidget.mockClear();
+
+  // Click "Reset Scores"
+  const resetButton = screen.getByText('Reset Scores');
+  fireEvent.click(resetButton);
+
+  // Confirm buttons should appear
+  expect(screen.getByText('Sure?')).toBeInTheDocument();
+
+  // Click "No"
+  const noButton = screen.getByText('No');
+  fireEvent.click(noButton);
+
+  expect(mockUpdateWidget).not.toHaveBeenCalled();
+  expect(screen.queryByText('Sure?')).not.toBeInTheDocument();
+});
+
+it('updates team name', () => {
+  vi.useFakeTimers();
+
+  const teams = [
+    {
+      id: '1',
+      name: 'Team One',
+      score: 10,
+      color: 'bg-blue-500',
+      linkedGroupId: 'linked-group-1',
+    },
+  ];
+  const widget: WidgetData = {
+    id: 'scoreboard-id',
+    type: 'scoreboard',
+    config: { teams } as ScoreboardConfig,
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100,
+    z: 1,
+    flipped: true,
+  };
+
+  const mockUpdateDashboard = vi.fn();
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    updateDashboard: mockUpdateDashboard,
+    activeDashboard: {
+      widgets: [],
+      sharedGroups: [{ id: 'linked-group-1', name: 'Old Name' }],
+    },
+  });
+
+  render(<ScoreboardSettings widget={widget} />);
+
+  // Clear to ensure we don't pick up previous calls
+  mockUpdateWidget.mockClear();
+
+  const input = screen.getByPlaceholderText('Team Name');
+  fireEvent.change(input, { target: { value: 'New Team Name' } });
+
+  act(() => {
+    vi.advanceTimersByTime(500);
+  }); // Advance debounce time
+
+  expect(mockUpdateWidget).toHaveBeenCalledWith(
+    'scoreboard-id',
+    expect.objectContaining({
+      config: expect.objectContaining({
+        teams: expect.arrayContaining([
+          expect.objectContaining({ id: '1', name: 'New Team Name' }),
+        ]),
+      }) as unknown,
+    })
+  );
+
+  expect(mockUpdateDashboard).toHaveBeenCalledWith({
+    sharedGroups: [{ id: 'linked-group-1', name: 'New Team Name' }],
+  });
+
+  vi.useRealTimers();
+});
+
+it('shows error if no random widget on import', () => {
+  const widget: WidgetData = {
+    id: 'scoreboard-id',
+    type: 'scoreboard',
+    config: { teams: [] } as ScoreboardConfig,
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100,
+    z: 1,
+    flipped: true,
+  };
+
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    activeDashboard: {
+      widgets: [],
+    },
+  });
+
+  // Clear to ensure we don't pick up previous calls
+  mockAddToast.mockClear();
+
+  render(<ScoreboardSettings widget={widget} />);
+  const importButton = screen.getByRole('button', { name: 'Import Groups' });
+  expect(importButton).toBeDisabled();
 });
