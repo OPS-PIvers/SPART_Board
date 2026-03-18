@@ -32,7 +32,7 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget, addToast } = useDashboard();
   const { user } = useAuth();
   const config = widget.config as HotspotImageConfig;
-  const { uploadFile, uploading } = useStorage();
+  const { uploadHotspotImage, uploading } = useStorage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -55,9 +55,7 @@ export const HotspotImageSettings: React.FC<{ widget: WidgetData }> = ({
 
     try {
       addToast('Uploading image...', 'info');
-      const timestamp = Date.now();
-      const path = `users/${user.uid}/hotspot_images/${timestamp}-${file.name}`;
-      const url = await uploadFile(path, file);
+      const url = await uploadHotspotImage(user.uid, file);
 
       updateWidget(widget.id, {
         config: {

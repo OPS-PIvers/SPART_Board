@@ -106,6 +106,32 @@ export const useStorage = () => {
     );
   };
 
+  const uploadHotspotImage = async (
+    userId: string,
+    file: File
+  ): Promise<string> => {
+    if (driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          file,
+          `hotspot-${Date.now()}-${file.name}`,
+          'Assets/HotspotImages'
+        );
+        await driveService.makePublic(driveFile.id, userDomain);
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    const timestamp = Date.now();
+    return uploadFile(
+      `users/${userId}/hotspot_images/${timestamp}-${file.name}`,
+      file
+    );
+  };
+
   const uploadScreenshot = async (
     userId: string,
     blob: Blob
@@ -254,6 +280,7 @@ export const useStorage = () => {
     uploadBackgroundImage,
     uploadSticker,
     uploadDisplayImage,
+    uploadHotspotImage,
     uploadScreenshot,
     deleteFile,
     uploadAdminBackground,
