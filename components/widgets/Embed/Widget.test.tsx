@@ -23,10 +23,14 @@ vi.mock('@/context/useAuth', () => ({
 vi.mock('@/hooks/useFeaturePermissions', () => ({
   useFeaturePermissions: vi.fn(() => ({
     subscribeToPermission: vi.fn(
+<<<<<<< HEAD
       (
         _type: string,
         callback: (perm: { config: EmbedGlobalConfig } | null) => void
       ) => {
+=======
+      (_type: string, callback: (data: unknown) => void) => {
+>>>>>>> 8c30d9c9 (fix(admin): resolve eslint errors in embed tests)
         callback({
           config: {
             buildingDefaults: {
@@ -38,9 +42,13 @@ vi.mock('@/hooks/useFeaturePermissions', () => ({
             },
           },
         });
+<<<<<<< HEAD
         return () => {
           // Mock unsubscribe
         };
+=======
+        return () => undefined;
+>>>>>>> 8c30d9c9 (fix(admin): resolve eslint errors in embed tests)
       }
     ),
     loading: false,
