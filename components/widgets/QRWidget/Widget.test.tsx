@@ -4,10 +4,20 @@ import { QRWidget } from './Widget';
 import { QRSettings } from './Settings';
 import { WidgetData, QRConfig, TextConfig } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useAuth } from '@/context/useAuth';
 
 // Mock the context using the standard pattern
 vi.mock('../../../context/useDashboard', () => ({
   useDashboard: vi.fn(),
+}));
+
+vi.mock('@/hooks/useFeaturePermissions', () => ({
+  useFeaturePermissions: vi.fn(),
+}));
+
+vi.mock('@/context/useAuth', () => ({
+  useAuth: vi.fn(),
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -39,6 +49,16 @@ describe('QRWidget', () => {
     (useDashboard as Mock).mockReturnValue({
       activeDashboard: mockActiveDashboard,
       updateWidget: mockUpdateWidget,
+    });
+    (useFeaturePermissions as Mock).mockReturnValue({
+      subscribeToPermission: vi.fn((_type, callback) => {
+        // Mock default permission empty
+        callback(null);
+        return () => {};
+      }),
+    });
+    (useAuth as Mock).mockReturnValue({
+      userProfile: { selectedBuildings: ['building-1'] },
     });
   });
 
