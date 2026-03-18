@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
-import { PollGlobalConfig, BuildingPollDefaults, PollOption } from '@/types';
+import {
+  PollGlobalConfig,
+  BuildingPollDefaults,
+  PollOption,
+  PollConfig,
+} from '@/types';
 import { Plus, Trash2, GripVertical, Type } from 'lucide-react';
 import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
 
@@ -9,13 +14,11 @@ interface PollConfigurationPanelProps {
   onChange: (newConfig: PollGlobalConfig) => void;
 }
 
-import { PollConfig } from '@/types';
-
 const pollDefaults = WIDGET_DEFAULTS.poll.config as PollConfig | undefined;
 const DEFAULT_QUESTION = pollDefaults?.question ?? 'Vote now!';
 const DEFAULT_OPTIONS = pollDefaults?.options ?? [
-  { label: 'Option A', votes: 0 },
-  { label: 'Option B', votes: 0 },
+  { id: 'opt-1', label: 'Option A', votes: 0 },
+  { id: 'opt-2', label: 'Option B', votes: 0 },
 ];
 
 export const PollConfigurationPanel: React.FC<PollConfigurationPanelProps> = ({
@@ -61,6 +64,7 @@ export const PollConfigurationPanel: React.FC<PollConfigurationPanelProps> = ({
       options: [
         ...options,
         {
+          id: crypto.randomUUID(),
           label: `Option ${options.length + 1}`,
           votes: 0,
         },
@@ -151,7 +155,7 @@ export const PollConfigurationPanel: React.FC<PollConfigurationPanelProps> = ({
           <div className="space-y-1.5 mb-3">
             {options.map((option, index) => (
               <div
-                key={index}
+                key={option.id}
                 className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex items-center gap-2 shadow-sm"
               >
                 <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />

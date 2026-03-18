@@ -1777,6 +1777,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           if (Array.isArray(raw.options) && raw.options.length > 0) {
             out.options = (raw.options as Array<{ label: string }>).map(
               (opt) => ({
+                id: crypto.randomUUID(),
                 label: opt.label,
                 votes: 0,
               })

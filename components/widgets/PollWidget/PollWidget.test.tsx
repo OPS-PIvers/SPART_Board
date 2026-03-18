@@ -68,8 +68,8 @@ describe('PollWidget', () => {
       config: {
         question: 'Favorite Color?',
         options: [
-          { label: 'Red', votes: 2 },
-          { label: 'Blue', votes: 3 },
+          { id: 'opt-1', label: 'Red', votes: 2 },
+          { id: 'opt-2', label: 'Blue', votes: 3 },
         ],
       },
     };
@@ -87,8 +87,8 @@ describe('PollWidget', () => {
       config: {
         question: 'Favorite Color?',
         options: [
-          { label: 'Red', votes: 3 },
-          { label: 'Blue', votes: 3 },
+          { id: 'opt-1', label: 'Red', votes: 3 },
+          { id: 'opt-2', label: 'Blue', votes: 3 },
         ],
       },
     });
@@ -107,8 +107,8 @@ describe('PollWidget', () => {
       config: {
         question: 'Test',
         options: [
-          { label: 'A', votes: 5 },
-          { label: 'B', votes: 10 },
+          { id: 'opt-1', label: 'A', votes: 5 },
+          { id: 'opt-2', label: 'B', votes: 10 },
         ],
       },
     };
@@ -123,8 +123,8 @@ describe('PollWidget', () => {
         config: {
           question: 'Test',
           options: [
-            { label: 'A', votes: 0 },
-            { label: 'B', votes: 0 },
+            { id: 'opt-1', label: 'A', votes: 0 },
+            { id: 'opt-2', label: 'B', votes: 0 },
           ],
         },
       })
@@ -241,7 +241,7 @@ describe('PollSettings', () => {
       flipped: false,
       config: {
         question: 'Test',
-        options: [{ label: 'Opt 1', votes: 0 }],
+        options: [{ id: 'opt-1', label: 'Opt 1', votes: 0 }],
       },
     };
 
@@ -338,7 +338,7 @@ describe('PollSettings', () => {
       flipped: false,
       config: {
         question: 'Test',
-        options: [{ label: 'Option 1', votes: 5 }],
+        options: [{ id: 'opt-1', label: 'Option 1', votes: 5 }],
       },
     };
 
