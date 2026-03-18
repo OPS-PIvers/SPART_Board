@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import {
   collection,
   doc,
@@ -9,6 +15,8 @@ import {
   query,
   orderBy,
   where,
+  deleteField,
+  type UpdateData,
 } from 'firebase/firestore';
 import { db, storage } from '../../config/firebase';
 import { ref, deleteObject } from 'firebase/storage';
@@ -18,7 +26,7 @@ import { useAuth } from '../../context/useAuth';
 import { useGoogleDrive } from '../../hooks/useGoogleDrive';
 import { DriveFile } from '../../utils/googleDriveService';
 import { extractYouTubeId } from '../../utils/url';
-import { BUILDINGS } from '../../config/buildings';
+import { BUILDINGS } from '@/config/buildings';
 import {
   Upload,
   Trash2,
@@ -377,7 +385,7 @@ export const BackgroundManager: React.FC = () => {
 
   const updatePreset = async (
     id: string,
-    updates: Partial<BackgroundPreset>
+    updates: UpdateData<BackgroundPreset>
   ) => {
     try {
       await updateDoc(doc(db, 'admin_backgrounds', id), updates);
@@ -477,39 +485,54 @@ export const BackgroundManager: React.FC = () => {
   };
 
   // Derive all unique categories from presets
-  const allCategories = Array.from(
-    new Set(presets.map((p) => p.category).filter(Boolean) as string[])
-  ).sort();
+  const allCategories = useMemo(
+    () =>
+      Array.from(
+        new Set(presets.flatMap((p) => (p.category ? [p.category] : [])))
+      ).sort(),
+    [presets]
+  );
 
   // Filtered & typed presets
-  const filteredPresets = presets.filter((preset) => {
-    const isVideo = Boolean(extractYouTubeId(preset.url));
-    if (mediaType === 'images' && isVideo) return false;
-    if (mediaType === 'videos' && !isVideo) return false;
-    if (filterActive === 'on' && !preset.active) return false;
-    if (filterActive === 'off' && preset.active) return false;
-    if (
-      filterAvailability !== 'all' &&
-      preset.accessLevel !== filterAvailability
-    )
-      return false;
-    if (filterCategory !== 'all') {
-      if (filterCategory === '__uncategorized__' && preset.category)
-        return false;
-      if (
-        filterCategory !== '__uncategorized__' &&
-        preset.category !== filterCategory
-      )
-        return false;
-    }
-    if (filterBuilding !== 'all') {
-      const buildingIds = preset.buildingIds ?? [];
-      // empty means all buildings, so passes filter
-      if (buildingIds.length > 0 && !buildingIds.includes(filterBuilding))
-        return false;
-    }
-    return true;
-  });
+  const filteredPresets = useMemo(
+    () =>
+      presets.filter((preset) => {
+        const isVideo = Boolean(extractYouTubeId(preset.url));
+        if (mediaType === 'images' && isVideo) return false;
+        if (mediaType === 'videos' && !isVideo) return false;
+        if (filterActive === 'on' && !preset.active) return false;
+        if (filterActive === 'off' && preset.active) return false;
+        if (
+          filterAvailability !== 'all' &&
+          preset.accessLevel !== filterAvailability
+        )
+          return false;
+        if (filterCategory !== 'all') {
+          if (filterCategory === '__uncategorized__' && preset.category)
+            return false;
+          if (
+            filterCategory !== '__uncategorized__' &&
+            preset.category !== filterCategory
+          )
+            return false;
+        }
+        if (filterBuilding !== 'all') {
+          const buildingIds = preset.buildingIds ?? [];
+          // empty means all buildings, so passes filter
+          if (buildingIds.length > 0 && !buildingIds.includes(filterBuilding))
+            return false;
+        }
+        return true;
+      }),
+    [
+      presets,
+      mediaType,
+      filterActive,
+      filterAvailability,
+      filterCategory,
+      filterBuilding,
+    ]
+  );
 
   if (loading) {
     return (
@@ -1182,9 +1205,13 @@ const ListPresetRow: React.FC<PresetCardProps> = ({
               </datalist>
               <button
                 onClick={() => {
-                  void updatePreset(preset.id, {
-                    category: editingCategoryValue.trim() || undefined,
-                  });
+                  const trimmed = editingCategoryValue.trim();
+                  void updatePreset(
+                    preset.id,
+                    trimmed
+                      ? { category: trimmed }
+                      : { category: deleteField() }
+                  );
                   setEditingCategoryPresetId(null);
                   setEditingCategoryValue('');
                 }}
@@ -1473,9 +1500,13 @@ const GridPresetCard: React.FC<PresetCardProps> = ({
               </datalist>
               <button
                 onClick={() => {
-                  void updatePreset(preset.id, {
-                    category: editingCategoryValue.trim() || undefined,
-                  });
+                  const trimmed = editingCategoryValue.trim();
+                  void updatePreset(
+                    preset.id,
+                    trimmed
+                      ? { category: trimmed }
+                      : { category: deleteField() }
+                  );
                   setEditingCategoryPresetId(null);
                   setEditingCategoryValue('');
                 }}
