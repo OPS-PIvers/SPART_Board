@@ -1,6 +1,6 @@
 import React from 'react';
-import { Music, Palette } from 'lucide-react';
-import { WidgetData, MusicConfig } from '@/types';
+import { LayoutGrid, Music, Palette } from 'lucide-react';
+import { WidgetData, MusicConfig, MusicLayout } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useMusicStations } from '@/hooks/useMusicStations';
 import { Toggle } from '@/components/common/Toggle';
@@ -13,6 +13,75 @@ import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { buildSpotifyEmbedUrl } from './utils';
 
 // ---------------------------------------------------------------------------
+// Layout option descriptor
+// ---------------------------------------------------------------------------
+
+const LAYOUT_OPTIONS: {
+  value: MusicLayout;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: 'default',
+    label: 'Default',
+    description: 'Thumbnail + info, adapts to widget size',
+    icon: (
+      <svg viewBox="0 0 36 24" className="w-9 h-6" fill="none">
+        <rect width="36" height="24" rx="3" fill="#f1f5f9" />
+        <rect x="3" y="3" width="12" height="18" rx="2" fill="#cbd5e1" />
+        <rect x="18" y="5" width="15" height="4" rx="1.5" fill="#94a3b8" />
+        <rect x="18" y="12" width="11" height="3" rx="1.5" fill="#cbd5e1" />
+      </svg>
+    ),
+  },
+  {
+    value: 'minimal',
+    label: 'Minimal',
+    description: 'Full-bleed thumbnail with centered play button',
+    icon: (
+      <svg viewBox="0 0 36 24" className="w-9 h-6" fill="none">
+        <rect width="36" height="24" rx="3" fill="#cbd5e1" />
+        <circle cx="18" cy="10" r="5" fill="white" fillOpacity="0.9" />
+        <polygon points="16,8 16,12 21,10" fill="#1e293b" />
+        <rect
+          x="0"
+          y="17"
+          width="36"
+          height="7"
+          rx="0 0 3 3"
+          fill="black"
+          fillOpacity="0.55"
+        />
+        <rect
+          x="3"
+          y="19"
+          width="14"
+          height="2"
+          rx="1"
+          fill="white"
+          fillOpacity="0.8"
+        />
+      </svg>
+    ),
+  },
+  {
+    value: 'small',
+    label: 'Small',
+    description:
+      'Compact horizontal bar — thumbnail left, scrolling title right',
+    icon: (
+      <svg viewBox="0 0 36 24" className="w-9 h-6" fill="none">
+        <rect width="36" height="24" rx="3" fill="#f1f5f9" />
+        <rect x="3" y="4" width="10" height="16" rx="2" fill="#cbd5e1" />
+        <rect x="16" y="8" width="17" height="3" rx="1.5" fill="#94a3b8" />
+        <rect x="16" y="14" width="12" height="2" rx="1" fill="#cbd5e1" />
+      </svg>
+    ),
+  },
+];
+
+// ---------------------------------------------------------------------------
 // MusicSettings — back face
 // ---------------------------------------------------------------------------
 
@@ -20,6 +89,7 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as MusicConfig;
   const { stations, isLoading } = useMusicStations();
+  const { layout = 'default' } = config;
 
   const activeStation = stations.find((s) => s.id === config.stationId);
   const isSpotify = activeStation?.url
@@ -28,9 +98,42 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="space-y-5">
-      {/* Station selector */}
+      {/* ── Layout selector ── */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <SettingsLabel icon={LayoutGrid}>Layout</SettingsLabel>
+        <div className="grid grid-cols-3 gap-2">
+          {LAYOUT_OPTIONS.map((opt) => {
+            const isActive = layout === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, layout: opt.value },
+                  })
+                }
+                title={opt.description}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all text-center ${
+                  isActive
+                    ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                    : 'border-slate-100 hover:border-slate-300 bg-white'
+                }`}
+              >
+                {opt.icon}
+                <span
+                  className={`text-xxs font-bold block w-full truncate ${isActive ? 'text-indigo-700' : 'text-slate-600'}`}
+                >
+                  {opt.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Station selector ── */}
+      <div className="space-y-2 pt-1 border-t border-slate-100">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider pt-4">
           Select a Station
         </p>
 
@@ -84,6 +187,11 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   <span className="text-xxs font-bold block w-full truncate text-slate-800">
                     {station.title}
                   </span>
+                  {station.genre && (
+                    <span className="text-xxs text-slate-400 font-normal truncate w-full">
+                      {station.genre}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -91,7 +199,7 @@ export const MusicSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      {/* Nexus sync toggle */}
+      {/* ── Nexus sync toggle ── */}
       <div className="pt-4 border-t border-slate-100">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-slate-700">
