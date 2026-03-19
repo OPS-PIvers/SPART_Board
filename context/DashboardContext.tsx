@@ -122,6 +122,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [zoom, setZoom] = useState<number>(1);
+  const [isDockInitialized, setIsDockInitialized] = useState<boolean>(() => {
+    return localStorage.getItem('classroom_dock_initialized') === 'true';
+  });
+
   const [visibleTools, setVisibleTools] = useState<
     (WidgetType | InternalToolType)[]
   >(() => {
@@ -133,7 +137,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error('Failed to parse saved tools', e);
       }
     }
-    return TOOLS.map((t) => t.type);
+    return [];
   });
 
   const [libraryOrder, setLibraryOrder] = useState<
@@ -172,7 +176,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error('Failed to migrate tools to dock items', e);
       }
     }
-    return migrateToDockItems(TOOLS.map((t) => t.type));
+    return [];
   });
 
   const [loading, setLoading] = useState(true);
@@ -212,6 +216,68 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     setGradeFilter(filter);
     localStorage.setItem('spartboard_gradeFilter', filter);
   }, []);
+
+  useEffect(() => {
+    if (isDockInitialized) return;
+
+    // Safety timeout: if we are stuck waiting for some reason after 5 seconds, fallback
+    const initTimer = setTimeout(() => {
+      if (!isDockInitialized) {
+        console.warn('Dock init timeout - falling back to default');
+        const fallbackTools: WidgetType[] = ['timer']; // fallback minimal set
+        const fallbackDock = migrateToDockItems(fallbackTools);
+        setDockItems(fallbackDock);
+        setVisibleTools(fallbackTools);
+        setIsDockInitialized(true);
+        localStorage.setItem('classroom_dock_initialized', 'true');
+        localStorage.setItem(
+          'classroom_dock_items',
+          JSON.stringify(fallbackDock)
+        );
+        localStorage.setItem(
+          'classroom_visible_tools',
+          JSON.stringify(fallbackTools)
+        );
+      }
+    }, 5000);
+
+    if (featurePermissions.length === 0) {
+      return; // Still loading permissions
+    }
+
+    // Determine building ID (if none, we might not have a perfect default, so fallback)
+    const defaultTools: (WidgetType | InternalToolType)[] = [];
+
+    if (selectedBuildings.length > 0) {
+      const buildingId = selectedBuildings[0]; // Primary building
+      featurePermissions.forEach((perm) => {
+        const dockDefaults = perm.config?.dockDefaults as
+          | Record<string, boolean>
+          | undefined;
+        if (dockDefaults && dockDefaults[buildingId] === true) {
+          defaultTools.push(perm.widgetType);
+        }
+      });
+    }
+
+    // Fallback if no specific building defaults were found
+    if (defaultTools.length === 0) {
+      defaultTools.push('timer'); // default essential tools
+    }
+
+    const defaultDock = migrateToDockItems(defaultTools);
+    setDockItems(defaultDock);
+    setVisibleTools(defaultTools);
+    setIsDockInitialized(true);
+    localStorage.setItem('classroom_dock_initialized', 'true');
+    localStorage.setItem('classroom_dock_items', JSON.stringify(defaultDock));
+    localStorage.setItem(
+      'classroom_visible_tools',
+      JSON.stringify(defaultTools)
+    );
+
+    clearTimeout(initTimer);
+  }, [isDockInitialized, featurePermissions, selectedBuildings]);
 
   // --- ROSTER LOGIC ---
   const {
