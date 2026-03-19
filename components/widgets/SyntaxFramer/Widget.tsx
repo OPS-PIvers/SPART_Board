@@ -62,14 +62,15 @@ const SortableToken: React.FC<SortableTokenProps> = ({
     opacity: isDragging ? 0.8 : 1,
     flex: 'var(--char-count) 1 auto',
     containerType: 'size',
-    minWidth: 'calc(var(--char-count) * 4cqmin)',
+    minWidth: 'calc(max(2, var(--char-count)) * 10cqmin)',
     minHeight: 0,
+    padding: '4cqmin',
     '--char-count': token.value.length || 3,
   };
 
   const isMath = mode === 'math';
   const colorClass = token.color ?? 'bg-white text-slate-800 border-slate-200';
-  const FONT_SCALING_FACTOR = 1.5;
+  const FONT_SCALING_FACTOR = 1.1;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -124,9 +125,8 @@ const SortableToken: React.FC<SortableTokenProps> = ({
     >
       <span
         style={{
-          fontSize: `min(70cqh, calc(100cqw / max(1, var(--char-count)) * ${FONT_SCALING_FACTOR}))`,
-          lineHeight: 1,
-          padding: '0 8cqw',
+          fontSize: `min(50cqh, calc(75cqw / max(1, var(--char-count)) * ${FONT_SCALING_FACTOR}))`,
+          lineHeight: 1.2,
           overflow: 'hidden',
           textOverflow: 'clip',
         }}
@@ -217,7 +217,7 @@ export const SyntaxFramerWidget: React.FC<WidgetComponentProps> = ({
       content={
         <div
           className={`w-full h-full flex flex-wrap content-stretch items-stretch ${justifyClass}`}
-          style={{ gap: '4cqmin', padding: '2cqmin' }}
+          style={{ gap: '10cqmin', padding: '2cqmin' }}
         >
           <DndContext
             sensors={sensors}
