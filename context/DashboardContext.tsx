@@ -224,7 +224,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const initTimer = setTimeout(() => {
       if (!isDockInitialized) {
         console.warn('Dock init timeout - falling back to default');
-        const fallbackTools: WidgetType[] = ['timer']; // fallback minimal set
+        const fallbackTools: WidgetType[] = ['time-tool']; // fallback minimal set
         const fallbackDock = migrateToDockItems(fallbackTools);
         setDockItems(fallbackDock);
         setVisibleTools(fallbackTools);
@@ -262,7 +262,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Fallback if no specific building defaults were found
     if (defaultTools.length === 0) {
-      defaultTools.push('timer'); // default essential tools
+      defaultTools.push('time-tool'); // default essential tools
     }
 
     const defaultDock = migrateToDockItems(defaultTools);
@@ -1742,7 +1742,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     if (defaultTools.length === 0) {
-      defaultTools.push('timer');
+      defaultTools.push('time-tool');
     }
 
     const defaultDock = migrateToDockItems(defaultTools);

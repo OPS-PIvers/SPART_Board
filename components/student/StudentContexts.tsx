@@ -93,6 +93,9 @@ const mockDashboard: DashboardContextValue = {
   setDefaultDashboard: () => {
     // No-op
   },
+  resetDockToDefaults: () => {
+    // No-op
+  },
   addWidget: () => {
     // No-op
   },
