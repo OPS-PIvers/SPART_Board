@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { LayoutGrid, Plus, X, FolderPlus } from 'lucide-react';
+import { LayoutGrid, Plus, X, FolderPlus, RotateCcw } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -21,6 +21,8 @@ import { IconButton } from '@/components/common/IconButton';
 import { TOOLS } from '../../../config/tools';
 import { WidgetType, GlobalStyle, InternalToolType } from '../../../types';
 import { useClickOutside } from '../../../hooks/useClickOutside';
+import { useDialog } from '../../../context/useDialog';
+import { useDashboard } from '../../../context/useDashboard';
 
 interface WidgetLibraryProps {
   onToggle: (type: WidgetType | InternalToolType) => void;
@@ -128,6 +130,9 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
     },
     ref
   ) => {
+    const { showConfirm } = useDialog();
+    const { resetDockToDefaults } = useDashboard();
+
     const sensors = useSensors(
       useSensor(PointerSensor, {
         activationConstraint: {
@@ -141,6 +146,22 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
       onClose,
       triggerRef ? [triggerRef] : []
     );
+
+    const handleResetDock = useCallback(async () => {
+      const confirmed = await showConfirm(
+        'Are you sure you want to reset your dock? This will remove your current dock layout and restore the default widgets for your building.',
+        {
+          title: 'Reset Dock to Defaults',
+          confirmLabel: 'Reset Dock',
+          cancelLabel: 'Cancel',
+        }
+      );
+
+      if (confirmed) {
+        resetDockToDefaults();
+        onClose();
+      }
+    }, [showConfirm, resetDockToDefaults, onClose]);
 
     // Merge any new TOOLS not yet tracked in libraryOrder (auto-discovery)
     const effectiveOrder = useMemo(() => {
@@ -258,7 +279,7 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
               </div>
             )}
           </div>
-          <div className="bg-slate-50/50 px-6 py-3 border-t border-white/30 text-center backdrop-blur-xl">
+          <div className="bg-slate-50/50 px-6 py-3 border-t border-white/30 text-center backdrop-blur-xl space-y-3">
             <p className="text-xxs font-bold text-slate-400 uppercase tracking-widest">
               {availableTools.length > 0
                 ? isEditMode
@@ -268,6 +289,14 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
                   ? 'All widgets are in your dock'
                   : 'No widgets available for your selected buildings'}
             </p>
+
+            <button
+              onClick={handleResetDock}
+              className="w-full max-w-xs mx-auto py-2 px-4 bg-white/50 border border-slate-200 text-slate-500 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-white hover:text-brand-red-primary hover:border-brand-red-light transition-all shadow-sm"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset Dock to Defaults
+            </button>
           </div>
         </GlassCard>
       </div>,

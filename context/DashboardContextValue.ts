@@ -35,6 +35,7 @@ export interface DashboardContextValue {
   loadDashboard: (id: string) => void;
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
+  resetDockToDefaults: () => void;
   addWidget: (type: WidgetType, overrides?: AddWidgetOverrides) => void;
   addWidgets: (
     widgetsToAdd: {

@@ -1726,6 +1726,37 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [user, dashboards, saveDashboards, addToast]
   );
 
+  const resetDockToDefaults = useCallback(() => {
+    const defaultTools: (WidgetType | InternalToolType)[] = [];
+
+    if (selectedBuildings.length > 0) {
+      const buildingId = selectedBuildings[0];
+      featurePermissions.forEach((perm) => {
+        const dockDefaults = perm.config?.dockDefaults as
+          | Record<string, boolean>
+          | undefined;
+        if (dockDefaults && dockDefaults[buildingId] === true) {
+          defaultTools.push(perm.widgetType);
+        }
+      });
+    }
+
+    if (defaultTools.length === 0) {
+      defaultTools.push('timer');
+    }
+
+    const defaultDock = migrateToDockItems(defaultTools);
+    setDockItems(defaultDock);
+    setVisibleTools(defaultTools);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(defaultDock));
+    localStorage.setItem(
+      'classroom_visible_tools',
+      JSON.stringify(defaultTools)
+    );
+
+    addToast('Dock reset to building defaults', 'success');
+  }, [selectedBuildings, featurePermissions, addToast]);
+
   const loadDashboard = useCallback(
     (id: string) => {
       setActiveId(id);
@@ -2407,6 +2438,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       loadDashboard,
       reorderDashboards,
       setDefaultDashboard,
+      resetDockToDefaults,
       addWidget,
       addWidgets,
       removeWidget,
@@ -2474,6 +2506,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       loadDashboard,
       reorderDashboards,
       setDefaultDashboard,
+      resetDockToDefaults,
       addWidget,
       addWidgets,
       removeWidget,
