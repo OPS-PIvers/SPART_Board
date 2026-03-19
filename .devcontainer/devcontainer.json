@@ -6,15 +6,14 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  // AUTO-INSTALLATION
-  // Using corepack (pre-installed in the image) to handle pnpm
-  "postCreateCommand": "bash .devcontainer/setup.sh",
-  // AUTO-START
-  // Automatically clears the terminal and starts Gemini
-  "postAttachCommand": "clear && echo 'Welcome to SPART Board AI! Starting Gemini...' && gemini",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/usr/local/bin:/home/vscode/.local/bin"
+  },
 
-  // PORT FORWARDING
-  // Automatically forwards the Vite dev server port and labels it
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "postAttachCommand": "clear && echo 'Welcome to SPART Board AI! Type \"gemini\" to start.'",
+
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
@@ -26,7 +25,6 @@
   "customizations": {
     "vscode": {
       "settings": {
-        // SIMPLIFIED INTERFACE
         "workbench.activityBar.location": "hidden",
         "workbench.statusBar.visible": true,
         "editor.minimap.enabled": false,
@@ -35,8 +33,6 @@
         "terminal.integrated.defaultLocation": "editor",
         "files.autoSave": "afterDelay",
         "workbench.startupEditor": "none",
-
-        // Hides files that non-coders don't need to worry about
         "files.exclude": {
           "**/.git": true,
           "**/.ds_store": true,
@@ -69,7 +65,6 @@
           "typescriptreact": "javascript"
         }
       },
-      // Installs useful extensions silently
       "extensions": [
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
