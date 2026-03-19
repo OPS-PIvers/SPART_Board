@@ -51,11 +51,31 @@ export function useCatalystSets() {
         } else {
           // Empty, so fallback to fetching the old routines to keep them visible for users
           // until an admin opens the config and permanently migrates them.
-          let initialSets: CatalystSet[] = [
-            { id: 'set-1', title: 'Set 1', routines: [], createdAt: Date.now() },
-            { id: 'set-2', title: 'Set 2', routines: [], createdAt: Date.now() },
-            { id: 'set-3', title: 'Set 3', routines: [], createdAt: Date.now() },
-            { id: 'set-4', title: 'Set 4', routines: [], createdAt: Date.now() },
+          const initialSets: CatalystSet[] = [
+            {
+              id: 'set-1',
+              title: 'Set 1',
+              routines: [],
+              createdAt: Date.now(),
+            },
+            {
+              id: 'set-2',
+              title: 'Set 2',
+              routines: [],
+              createdAt: Date.now(),
+            },
+            {
+              id: 'set-3',
+              title: 'Set 3',
+              routines: [],
+              createdAt: Date.now(),
+            },
+            {
+              id: 'set-4',
+              title: 'Set 4',
+              routines: [],
+              createdAt: Date.now(),
+            },
           ];
 
           try {

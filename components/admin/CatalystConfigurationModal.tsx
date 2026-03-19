@@ -134,18 +134,38 @@ export const CatalystConfigurationModal: React.FC<
           snap.forEach((d) =>
             items.push({ ...d.data(), id: d.id } as CatalystSet)
           );
-          // Ensure we always have exactly 4 sets by padding or truncating if necessary, 
+          // Ensure we always have exactly 4 sets by padding or truncating if necessary,
           // though we assume the admin only ever sees 4.
           items.sort((a, b) => a.id.localeCompare(b.id));
           setSets(items);
           setLoading(false);
         } else {
           // Attempt migration
-          let initialSets: CatalystSet[] = [
-            { id: 'set-1', title: 'Set 1', routines: [], createdAt: Date.now() },
-            { id: 'set-2', title: 'Set 2', routines: [], createdAt: Date.now() },
-            { id: 'set-3', title: 'Set 3', routines: [], createdAt: Date.now() },
-            { id: 'set-4', title: 'Set 4', routines: [], createdAt: Date.now() },
+          const initialSets: CatalystSet[] = [
+            {
+              id: 'set-1',
+              title: 'Set 1',
+              routines: [],
+              createdAt: Date.now(),
+            },
+            {
+              id: 'set-2',
+              title: 'Set 2',
+              routines: [],
+              createdAt: Date.now(),
+            },
+            {
+              id: 'set-3',
+              title: 'Set 3',
+              routines: [],
+              createdAt: Date.now(),
+            },
+            {
+              id: 'set-4',
+              title: 'Set 4',
+              routines: [],
+              createdAt: Date.now(),
+            },
           ];
 
           try {
