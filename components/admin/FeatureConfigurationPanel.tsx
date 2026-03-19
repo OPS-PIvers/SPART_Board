@@ -12,6 +12,7 @@ import {
   CatalystGlobalConfig,
   ExpectationsGlobalConfig,
   TalkingToolGlobalConfig,
+  BloomsGlobalConfig,
   ToolMetadata,
 } from '@/types';
 import {
@@ -37,6 +38,7 @@ import { DiceConfigurationPanel } from './DiceConfigurationPanel';
 import { ScoreboardConfigurationPanel } from './ScoreboardConfigurationPanel';
 import { DrawingConfigurationPanel } from './DrawingConfigurationPanel';
 import { TalkingToolConfigurationPanel } from './TalkingToolConfigurationPanel';
+import { BloomsConfigurationPanel } from './BloomsConfigurationPanel';
 import { MaterialsConfigurationPanel } from './MaterialsConfigurationPanel';
 import { MathToolsConfigurationPanel } from './MathToolsConfigurationPanel';
 import { NextUpConfigurationPanel } from './NextUpConfigurationPanel';
@@ -1157,6 +1159,23 @@ export const FeatureConfigurationPanel: React.FC<
             config={
               (permission.config as TalkingToolGlobalConfig | undefined) ?? {
                 categories: [],
+              }
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
+      {tool.type === 'blooms' && (
+        <div className="space-y-4">
+          <BloomsConfigurationPanel
+            config={
+              (permission.config as BloomsGlobalConfig | undefined) ?? {
+                levels: [],
               }
             }
             onChange={(newConfig) =>

@@ -1332,11 +1332,18 @@ export interface CarRiderProConfig {
 export interface BloomsLevel {
   level: string;
   starters: string[];
+  color?: string;
+  icon?: string;
 }
 
 export interface BloomsConfig {
+  activeLevel?: string | null; // Currently selected level
+  /** Optional overrides for this specific widget instance */
   customStarters?: BloomsLevel[];
-  activeLevel?: string | null; // Currently selected level for the drawer/detail view
+}
+
+export interface BloomsGlobalConfig {
+  levels: BloomsLevel[];
 }
 
 export interface RevealCard {

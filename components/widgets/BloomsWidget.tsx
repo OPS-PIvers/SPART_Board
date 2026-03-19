@@ -1,163 +1,219 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import * as LucideIcons from 'lucide-react';
+import {
+  WidgetComponentProps,
+  BloomsConfig,
+  BloomsGlobalConfig,
+  BloomsLevel,
+} from '@/types';
 import { useDashboard } from '@/context/useDashboard';
-import { WidgetData, BloomsConfig } from '@/types';
+import { useAuth } from '@/context/useAuth';
 import { BLOOMS_DATA } from '@/config/bloomsData';
-import { ChevronRight, Settings2, Trash2, Plus, Info } from 'lucide-react';
 
-const LEVELS = [
-  { id: 'level-6', label: 'Evaluation', color: 'rgba(157, 78, 221, 0.6)' },
-  {
-    id: 'level-5',
-    label: 'Synthesis or Create',
-    color: 'rgba(114, 9, 183, 0.6)',
-  },
-  { id: 'level-4', label: 'Analysis', color: 'rgba(72, 12, 168, 0.6)' },
-  { id: 'level-3', label: 'Application', color: 'rgba(63, 55, 201, 0.6)' },
-  {
-    id: 'level-2',
-    label: 'Understanding/Comprehension',
-    color: 'rgba(72, 149, 239, 0.6)',
-  },
-  {
-    id: 'level-1',
-    label: 'Recall/Knowledge/Memory',
-    color: 'rgba(76, 201, 240, 0.6)',
-  },
-].reverse(); // Pyramid base is level 1
+const DEFAULT_LEVELS: BloomsLevel[] = BLOOMS_DATA.questionStarters.map(
+  (d, i) => ({
+    level: d.level,
+    starters: d.starters,
+    color:
+      ['#4cc9f0', '#4895ef', '#3f37c9', '#480ca8', '#7209b7', '#9d4ede'][i] ??
+      '#3b82f6',
+    icon: 'HelpCircle',
+  })
+);
 
-export const BloomsWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+const LucideIconsRecord = LucideIcons as unknown as Record<
+  string,
+  React.ElementType
+>;
+
+export const BloomsWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
+  const { featurePermissions } = useAuth();
   const config = widget.config as BloomsConfig;
 
-  const activeLevelId = config.activeLevel;
+  // 1. Get Global Config from Feature Permissions
+  const permission = featurePermissions.find((p) => p.widgetType === 'blooms');
+  const globalConfig = permission?.config as BloomsGlobalConfig | undefined;
 
-  // Merge custom starters with defaults
-  const levelsData = useMemo(() => {
-    return BLOOMS_DATA.questionStarters.map((d, i) => {
-      const custom = config.customStarters?.find((c) => c.level === d.level);
-      return {
-        level: d.level,
-        starters: custom ? custom.starters : d.starters,
-        index: i + 1,
-      };
-    });
-  }, [config.customStarters]);
+  // 2. Resolve Levels (Custom Instance Overrides > Global Config > Hardcoded Defaults)
+  const levels = config.customStarters?.length
+    ? config.customStarters
+    : globalConfig?.levels?.length
+      ? globalConfig.levels
+      : DEFAULT_LEVELS;
 
-  const activeLevelData = levelsData.find(
-    (d) => `level-${d.index}` === activeLevelId
+  const [activeTab, setActiveTab] = useState<string>(
+    config.activeLevel ?? levels[0]?.level ?? ''
   );
 
-  const handleLevelClick = (levelId: string) => {
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        activeLevel: activeLevelId === levelId ? null : levelId,
-      },
-    });
+  const activeLevel = levels.find((l) => l.level === activeTab) ?? levels[0];
+
+  if (!activeLevel) return null;
+
+  const getIcon = (name: string) => {
+    return LucideIconsRecord[name] ?? LucideIcons.HelpCircle;
   };
 
   return (
-    <div className="h-full w-full flex flex-col relative overflow-hidden bg-slate-50/30">
-      {/* 2D Pyramid Container */}
-      <div className="flex-1 relative flex items-center justify-center p-8">
-        <div className="w-full max-w-[320px] aspect-square relative flex flex-col-reverse items-center">
-          {LEVELS.map((level, idx) => (
-            <button
-              key={level.id}
-              onClick={() => handleLevelClick(level.id)}
-              className={`
-                w-full transition-all duration-300 relative group
-                flex items-center justify-center border-b border-white/20
-                hover:brightness-110 active:scale-[0.98]
-                ${activeLevelId === level.id ? 'brightness-125 z-10 shadow-lg' : 'opacity-90 hover:opacity-100'}
-              `}
-              style={{
-                height: `${100 / 6}%`,
-                backgroundColor: level.color,
-                clipPath: `polygon(${idx * 8.33}% 100%, ${100 - idx * 8.33}% 100%, ${100 - (idx + 1) * 8.33}% 0%, ${(idx + 1) * 8.33}% 0%)`,
-                marginTop: '-1px',
-              }}
-            >
-              <span className="text-[10px] md:text-xs text-white font-bold text-center px-4 drop-shadow-md select-none group-hover:scale-110 transition-transform">
-                {level.label}
-              </span>
-
-              {activeLevelId === level.id && (
-                <div className="absolute inset-0 border-2 border-white/40 pointer-events-none" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Detail Panel / Drawer */}
+    <div className="flex h-full w-full bg-white select-none overflow-hidden rounded-lg">
+      {/* Sidebar Navigation */}
       <div
-        className={`
-          absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 
-          transition-all duration-500 ease-in-out z-20 overflow-hidden
-          ${activeLevelId ? 'h-[60%]' : 'h-0'}
-        `}
+        className="flex flex-col border-r border-slate-200 bg-slate-50 shrink-0"
+        style={{ width: 'min(140px, 35cqw)' }}
       >
-        {activeLevelData && (
-          <div className="p-4 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                {activeLevelData.level}
-              </h3>
-              <button
-                onClick={() => activeLevelId && handleLevelClick(activeLevelId)}
-                className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 rotate-90" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-1 gap-2 pb-4">
-                {activeLevelData.starters.map((starter, i) => (
-                  <div
-                    key={i}
-                    className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600 hover:bg-indigo-50 hover:border-indigo-100 transition-colors cursor-default"
-                  >
-                    {starter}
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div
+          className="border-b border-slate-200 bg-white"
+          style={{ padding: 'min(12px, 3cqmin)' }}
+        >
+          <label
+            className="font-black uppercase text-slate-400 tracking-widest block"
+            style={{
+              fontSize: 'min(9px, 2.2cqmin)',
+              marginBottom: 'min(4px, 1cqmin)',
+            }}
+          >
+            Bloom&apos;s Taxonomy
+          </label>
+          <div
+            className="flex items-center text-slate-700 font-bold uppercase tracking-tight"
+            style={{ gap: 'min(6px, 1.5cqmin)', fontSize: 'min(12px, 3cqmin)' }}
+          >
+            <LucideIcons.Triangle
+              className="text-slate-400"
+              style={{
+                width: 'min(14px, 3.5cqmin)',
+                height: 'min(14px, 3.5cqmin)',
+              }}
+            />
+            Starters
           </div>
-        )}
+        </div>
+
+        <div
+          className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar"
+          style={{ padding: 'min(8px, 2cqmin)' }}
+        >
+          {levels.map((level) => {
+            const isActive = activeTab === level.level;
+            const IconComp = getIcon(level.icon ?? 'HelpCircle');
+
+            return (
+              <button
+                key={level.level}
+                onClick={() => setActiveTab(level.level)}
+                className={`w-full flex flex-col items-center justify-center transition-all border ${
+                  isActive
+                    ? 'shadow-md text-white scale-100'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100 scale-95'
+                }`}
+                style={{
+                  padding: 'min(12px, 3cqmin)',
+                  borderRadius: 'min(12px, 3cqmin)',
+                  marginBottom: 'min(8px, 2cqmin)',
+                  ...(isActive
+                    ? { backgroundColor: level.color, borderColor: level.color }
+                    : {
+                        borderBottomColor: level.color,
+                        borderBottomWidth: '3px',
+                      }),
+                }}
+              >
+                <IconComp
+                  className="mb-2"
+                  style={{
+                    width: 'min(22px, 5.5cqmin)',
+                    height: 'min(22px, 5.5cqmin)',
+                    color: isActive ? '#ffffff' : level.color,
+                  }}
+                />
+                <span
+                  className="font-bold text-center leading-tight uppercase tracking-tight"
+                  style={{ fontSize: 'min(9px, 2.4cqmin)' }}
+                >
+                  {level.level.split(':').pop()?.trim() ?? level.level}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Instructions if nothing selected */}
-      {!activeLevelId && (
-        <div className="absolute bottom-4 left-0 right-0 text-center animate-pulse pointer-events-none">
-          <span className="text-[10px] text-slate-400 bg-white/80 px-3 py-1.5 rounded-full shadow-sm">
-            Click a level to see question starters
-          </span>
+      {/* Main Content Area */}
+      <div
+        className="flex-1 overflow-y-auto bg-white custom-scrollbar"
+        style={{ padding: 'min(20px, 5cqmin)' }}
+      >
+        <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+          <h3
+            className="font-black mb-4 uppercase tracking-tight flex items-center"
+            style={{
+              color: activeLevel.color,
+              fontSize: 'min(18px, 4.5cqmin)',
+              gap: 'min(8px, 2cqmin)',
+              marginBottom: 'min(16px, 4cqmin)',
+            }}
+          >
+            {React.createElement(getIcon(activeLevel.icon ?? 'HelpCircle'), {
+              style: {
+                width: 'min(20px, 5cqmin)',
+                height: 'min(20px, 5cqmin)',
+              },
+            })}
+            {activeLevel.level}
+          </h3>
+          <ul className="flex flex-col" style={{ gap: 'min(12px, 3cqmin)' }}>
+            {activeLevel.starters.map((starter, i) => (
+              <li
+                key={i}
+                className="font-medium text-slate-700 border-l-4 leading-relaxed shadow-sm bg-slate-50 rounded-r-lg"
+                style={{
+                  borderLeftColor: activeLevel.color,
+                  fontSize: 'min(14px, 3.5cqmin)',
+                  paddingLeft: 'min(16px, 4cqmin)',
+                  paddingTop: 'min(8px, 2cqmin)',
+                  paddingBottom: 'min(8px, 2cqmin)',
+                }}
+              >
+                {starter}
+              </li>
+            ))}
+          </ul>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export const BloomsSettings: React.FC<{ widget: WidgetData }> = ({
-  widget,
-}) => {
+export const BloomsSettings: React.FC<WidgetComponentProps> = ({ widget }) => {
   const config = widget.config as BloomsConfig;
   const { updateWidget } = useDashboard();
+  const { featurePermissions } = useAuth();
   const [editingLevel, setEditingLevel] = useState<string | null>(null);
 
-  const customStarters = config.customStarters ?? [];
+  // Resolve what levels we are looking at (local vs global vs default)
+  const permission = featurePermissions.find((p) => p.widgetType === 'blooms');
+  const globalConfig = permission?.config as BloomsGlobalConfig | undefined;
+  const baseLevels = globalConfig?.levels?.length
+    ? globalConfig.levels
+    : DEFAULT_LEVELS;
+
+  const currentLevels = config.customStarters ?? baseLevels;
 
   const handleUpdateStarters = (levelName: string, starters: string[]) => {
-    const existing = customStarters.find((s) => s.level === levelName);
+    const existing = (config.customStarters ?? []).find(
+      (s) => s.level === levelName
+    );
     let newCustom;
     if (existing) {
-      newCustom = customStarters.map((s) =>
+      newCustom = (config.customStarters ?? []).map((s) =>
         s.level === levelName ? { ...s, starters } : s
       );
     } else {
-      newCustom = [...customStarters, { level: levelName, starters }];
+      const baseLevel =
+        baseLevels.find((l) => l.level === levelName) ?? baseLevels[0];
+      newCustom = [
+        ...(config.customStarters ?? []),
+        { ...baseLevel, starters },
+      ];
     }
     updateWidget(widget.id, {
       config: { ...config, customStarters: newCustom },
@@ -168,7 +224,9 @@ export const BloomsSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: {
         ...config,
-        customStarters: customStarters.filter((s) => s.level !== levelName),
+        customStarters: (config.customStarters ?? []).filter(
+          (s) => s.level !== levelName
+        ),
       },
     });
   };
@@ -176,7 +234,7 @@ export const BloomsSettings: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="space-y-4">
       <div className="p-3 bg-indigo-50 rounded-xl flex items-start gap-3 border border-indigo-100">
-        <Info className="w-4 h-4 text-indigo-500 mt-0.5" />
+        <LucideIcons.Info className="w-4 h-4 text-indigo-500 mt-0.5" />
         <p className="text-[10px] text-indigo-700 leading-relaxed">
           Customize the question starters for each level of Bloom&apos;s
           Taxonomy. Changes will only apply to this widget instance.
@@ -184,10 +242,10 @@ export const BloomsSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-        {BLOOMS_DATA.questionStarters.map((level) => {
+        {baseLevels.map((level) => {
           const isEditing = editingLevel === level.level;
           const currentData =
-            customStarters.find((s) => s.level === level.level) ?? level;
+            currentLevels.find((s) => s.level === level.level) ?? level;
 
           return (
             <div
@@ -202,12 +260,14 @@ export const BloomsSettings: React.FC<{ widget: WidgetData }> = ({
                   {level.level}
                 </span>
                 <div className="flex items-center gap-2">
-                  {customStarters.find((s) => s.level === level.level) && (
+                  {(config.customStarters ?? []).find(
+                    (s) => s.level === level.level
+                  ) && (
                     <span className="text-[8px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded uppercase font-bold">
                       Custom
                     </span>
                   )}
-                  <Settings2
+                  <LucideIcons.Settings2
                     className={`w-4 h-4 text-slate-400 transition-transform ${isEditing ? 'rotate-90' : ''}`}
                   />
                 </div>
@@ -237,7 +297,7 @@ export const BloomsSettings: React.FC<{ widget: WidgetData }> = ({
                           }}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <LucideIcons.Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
@@ -250,7 +310,7 @@ export const BloomsSettings: React.FC<{ widget: WidgetData }> = ({
                       }}
                       className="w-full flex items-center justify-center gap-2 p-2 text-[10px] text-indigo-600 hover:bg-indigo-100 rounded-lg border border-dashed border-indigo-200 transition-colors mt-2"
                     >
-                      <Plus className="w-3 h-3" /> Add Starter
+                      <LucideIcons.Plus className="w-3 h-3" /> Add Starter
                     </button>
                   </div>
 
