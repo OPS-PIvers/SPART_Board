@@ -187,7 +187,12 @@ describe('SeatingChartWidget', () => {
     if (!desk1) throw new Error('Desks not found');
 
     // 1. Select item normally
-    fireEvent.pointerDown(desk1, { bubbles: true, clientX: 100, clientY: 100, button: 0 });
+    fireEvent.pointerDown(desk1, {
+      bubbles: true,
+      clientX: 100,
+      clientY: 100,
+      button: 0,
+    });
     fireEvent.pointerUp(window);
     fireEvent.click(desk1);
 
@@ -201,7 +206,11 @@ describe('SeatingChartWidget', () => {
     fireEvent.click(rotateLeftBtn);
 
     expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
-    const updates = (mockUpdateWidget as Mock).mock.lastCall[1].config.furniture;
+    const lastCall = (mockUpdateWidget as Mock).mock.lastCall as [
+      string,
+      { config: SeatingChartConfig },
+    ];
+    const updates = lastCall[1].config.furniture;
 
     // The rotated item should be 315 (-45 = 315)
     expect(updates[0].rotation).toBe(315);
@@ -217,7 +226,12 @@ describe('SeatingChartWidget', () => {
     if (!desk1) throw new Error('Desk not found');
 
     // Select the item
-    fireEvent.pointerDown(desk1, { clientX: 100, clientY: 100, button: 0, bubbles: true });
+    fireEvent.pointerDown(desk1, {
+      clientX: 100,
+      clientY: 100,
+      button: 0,
+      bubbles: true,
+    });
     fireEvent.pointerUp(window);
     fireEvent.click(desk1);
 
@@ -229,7 +243,11 @@ describe('SeatingChartWidget', () => {
     fireEvent.click(deleteBtn);
 
     expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
-    const updates = (mockUpdateWidget as Mock).mock.lastCall[1].config.furniture;
+    const lastCall = (mockUpdateWidget as Mock).mock.lastCall as [
+      string,
+      { config: SeatingChartConfig },
+    ];
+    const updates = lastCall[1].config.furniture;
 
     // Furniture array should be empty
     expect(updates.length).toBe(0);
@@ -255,7 +273,11 @@ describe('SeatingChartWidget', () => {
     fireEvent.click(applyBtn);
 
     expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
-    const updates = (mockUpdateWidget as Mock).mock.lastCall[1].config.furniture;
+    const lastCall = (mockUpdateWidget as Mock).mock.lastCall as [
+      string,
+      { config: SeatingChartConfig },
+    ];
+    const updates = lastCall[1].config.furniture;
 
     // 4 students should generate 4 desks
     expect(updates.length).toBe(4);
