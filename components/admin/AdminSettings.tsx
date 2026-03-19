@@ -137,14 +137,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               aria-labelledby="tab-features"
               className="animate-in fade-in slide-in-from-bottom-2 duration-300"
             >
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-2">
-                  Widget Permissions
-                </h3>
-                <p className="text-slate-600">
-                  Control individual widget availability and access levels.
-                </p>
-              </div>
+              <p className="text-slate-600 mb-3">
+                Control individual widget availability and access levels.
+              </p>
               <FeaturePermissionsManager />
             </div>
           )}
