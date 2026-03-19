@@ -194,13 +194,13 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = () => {
               height: 100%;
               width: 100%;
             }
-            @container widget (aspect-ratio >= 1.5) {
+            @container (aspect-ratio >= 1.5) {
               .catalyst-sets-grid { grid-template-columns: repeat(4, 1fr); grid-template-rows: 1fr; }
             }
-            @container widget (aspect-ratio <= 0.7) {
+            @container (aspect-ratio <= 0.7) {
               .catalyst-sets-grid { grid-template-columns: 1fr; grid-template-rows: repeat(4, 1fr); }
             }
-            @container widget (aspect-ratio > 0.7) and (aspect-ratio < 1.5) {
+            @container (aspect-ratio > 0.7) and (aspect-ratio < 1.5) {
               .catalyst-sets-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
             }
           `}</style>
