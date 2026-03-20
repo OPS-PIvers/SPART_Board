@@ -1280,6 +1280,22 @@ export interface NextUpSession {
 }
 
 // Music widget types
+export type MusicLayout = 'default' | 'minimal' | 'small';
+
+export const MUSIC_GENRES = [
+  'Lo-fi / Chill',
+  'Classical / Instrumental',
+  'Nature / Ambient',
+  'Pop / Top 40',
+  'Jazz',
+  'Rock',
+  'Focus / Study',
+  'Holiday',
+  'Other',
+] as const;
+
+export type MusicGenre = (typeof MUSIC_GENRES)[number];
+
 export interface MusicStation {
   id: string;
   title: string;
@@ -1289,6 +1305,13 @@ export interface MusicStation {
   color: string;
   isActive: boolean;
   order: number;
+  /** Predefined genre tag for the station */
+  genre?: MusicGenre;
+  /**
+   * Building IDs this station is visible to.
+   * Empty array or undefined means visible to all buildings.
+   */
+  buildingIds?: string[];
 }
 
 export interface MusicConfig {
@@ -1296,6 +1319,8 @@ export interface MusicConfig {
   syncWithTimeTool?: boolean;
   bgColor?: string;
   textColor?: string;
+  /** Widget display layout */
+  layout?: MusicLayout;
 }
 
 export interface OrganizerNode {

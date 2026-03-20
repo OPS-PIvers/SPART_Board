@@ -14,17 +14,78 @@ import {
 } from './utils';
 
 // ---------------------------------------------------------------------------
+// Shared play/pause overlay button
+// ---------------------------------------------------------------------------
+
+interface PlayButtonProps {
+  isPlayerReady: boolean;
+  isPlaying: boolean;
+  onClick: () => void;
+  /** Size of the button as a CSS dimension string, e.g. "30%" or "min(56px, 18cqmin)" */
+  size?: string;
+}
+
+const PlayButton: React.FC<PlayButtonProps> = ({
+  isPlayerReady,
+  isPlaying,
+  onClick,
+  size = '30%',
+}) => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Stop bubbling so a parent overlay with the same onClick doesn't fire twice.
+    e.stopPropagation();
+    onClick();
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={isPlaying ? 'Pause' : 'Play'}
+      className="rounded-full shadow-xl backdrop-blur-sm bg-white/90 flex items-center justify-center transform transition-transform active:scale-90"
+      style={{ width: size, height: size }}
+      onClick={handleClick}
+    >
+      {!isPlayerReady ? (
+        <div
+          className="rounded-full animate-spin"
+          style={{
+            width: '60%',
+            height: '60%',
+            borderWidth: 'min(3px, 0.8cqmin)',
+            borderColor: '#e2e8f0',
+            borderTopColor: '#6366f1',
+            borderStyle: 'solid',
+          }}
+        />
+      ) : isPlaying ? (
+        <Pause
+          className="text-slate-900 fill-current"
+          style={{ width: '50%', height: '50%' }}
+        />
+      ) : (
+        <Play
+          className="text-slate-900 fill-current"
+          style={{ width: '50%', height: '50%', marginLeft: '10%' }}
+        />
+      )}
+    </button>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // MusicWidget — front face
 // ---------------------------------------------------------------------------
 
 export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard } = useDashboard();
   const config = widget.config as MusicConfig;
-  const { bgColor = '#ffffff', textColor = STANDARD_COLORS.slate } = config;
+  const {
+    bgColor = '#ffffff',
+    textColor = STANDARD_COLORS.slate,
+    layout = 'default',
+  } = config;
   const { stations } = useMusicStations();
   const [isPlaying, setIsPlaying] = useState(false);
-  // isPlayerReady ensures the sync effect only fires after the YT player
-  // has initialised, preventing missed play/pause commands.
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
 
@@ -38,7 +99,6 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const activeStation = stations.find((s) => s.id === config.stationId);
   const youtubeId = activeStation ? extractYouTubeId(activeStation.url) : null;
 
-  // Validate the Spotify URL at render time so malicious schemes are rejected.
   const spotifyEmbedUrl = activeStation?.url
     ? buildSpotifyEmbedUrl(activeStation.url)
     : null;
@@ -86,9 +146,7 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     };
   }, [youtubeId, widget.id]);
 
-  // Nexus sync: play/pause with Time Tool.
-  // isPlayerReady is in the dep array so this re-runs once the player is
-  // available, applying any state change that arrived before init completed.
+  // Nexus sync: play/pause with Time Tool
   useEffect(() => {
     if (!config.syncWithTimeTool || !youtubeId || !isPlayerReady) return;
     if (typeof playerRef.current?.playVideo !== 'function') return;
@@ -111,6 +169,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
+  // ---------- empty / unsupported states ----------
+
   if (!activeStation) {
     return (
       <WidgetLayout
@@ -126,8 +186,6 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
-  // Spotify fallback — embed iframe (cannot be API-controlled cross-origin).
-  // spotifyEmbedUrl is non-null here because isSpotify === (spotifyEmbedUrl !== null).
   if (isSpotify && spotifyEmbedUrl) {
     return (
       <WidgetLayout
@@ -148,7 +206,6 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
-  // Station URL is neither valid Spotify nor a recognised YouTube URL.
   if (!youtubeId) {
     return (
       <WidgetLayout
@@ -164,9 +221,237 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
+  // Hidden YouTube player mount point (shared across all layouts)
+  const hiddenPlayer = (
+    <div className="absolute top-0 left-0 w-px h-px overflow-hidden opacity-0 pointer-events-none">
+      <div id={`yt-player-${widget.id}`} />
+    </div>
+  );
+
   const isTransparent = bgColor === 'transparent';
 
-  // YouTube chromeless player
+  // ---------- MINIMAL layout ----------
+  // Thumbnail fills widget, play/pause centred, gradient + title/artist at bottom
+  if (layout === 'minimal') {
+    return (
+      <WidgetLayout
+        padding="p-0"
+        content={
+          <div className="w-full h-full relative overflow-hidden rounded-2xl select-none">
+            {hiddenPlayer}
+
+            {/* Background thumbnail */}
+            {activeStation.thumbnail ? (
+              <img
+                src={activeStation.thumbnail}
+                alt={activeStation.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ backgroundColor: bgColor }}
+              >
+                <Music
+                  className="text-slate-300"
+                  style={{
+                    width: 'min(64px, 25cqmin)',
+                    height: 'min(64px, 25cqmin)',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Darken overlay while playing */}
+            <div
+              className={`absolute inset-0 transition-opacity duration-500 ${isPlaying ? 'opacity-10' : 'opacity-20'} bg-black`}
+            />
+
+            {/* Centered play/pause button */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <PlayButton
+                isPlayerReady={isPlayerReady}
+                isPlaying={isPlaying}
+                onClick={togglePlay}
+                size="min(56px, 20cqmin)"
+              />
+            </div>
+
+            {/* Gradient + title overlay at bottom */}
+            <div
+              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent"
+              style={{
+                padding:
+                  'min(20px, 5cqmin) min(12px, 3cqmin) min(10px, 2.5cqmin)',
+              }}
+            >
+              <p
+                className="font-black truncate leading-tight text-white"
+                style={{ fontSize: 'min(16px, 6cqmin)' }}
+              >
+                {activeStation.title}
+              </p>
+              <p
+                className="truncate text-white/70 font-medium"
+                style={{
+                  fontSize: 'min(12px, 4cqmin)',
+                  marginTop: 'min(2px, 0.5cqmin)',
+                }}
+              >
+                {activeStation.channel}
+              </p>
+            </div>
+          </div>
+        }
+      />
+    );
+  }
+
+  // ---------- SMALL layout ----------
+  // Always horizontal: thumbnail left, scrolling title + artist right
+  if (layout === 'small') {
+    return (
+      <WidgetLayout
+        padding="p-0"
+        content={
+          <div
+            className={`w-full h-full flex flex-row items-center overflow-hidden rounded-2xl relative select-none ${!isTransparent ? 'shadow-inner' : ''}`}
+            style={{
+              gap: 'min(10px, 3cqmin)',
+              padding: 'min(8px, 2.5cqmin)',
+              backgroundColor: bgColor,
+            }}
+          >
+            {hiddenPlayer}
+
+            {/* Top accent bar */}
+            <div
+              className="absolute top-0 left-0 w-full h-0.5 opacity-80"
+              style={{ backgroundColor: activeStation.color || '#2d3f89' }}
+            />
+
+            {/* Thumbnail with play button overlay */}
+            <div
+              className="relative shrink-0 group"
+              style={{
+                width: 'min(56px, 16cqmin)',
+                height: 'min(56px, 16cqmin)',
+              }}
+            >
+              {activeStation.thumbnail ? (
+                <img
+                  src={activeStation.thumbnail}
+                  alt={activeStation.title}
+                  className={`w-full h-full rounded-xl object-cover shadow-lg transition-all duration-500 ${isPlaying ? 'animate-pulse-slow' : ''}`}
+                />
+              ) : (
+                <div
+                  className={`w-full h-full rounded-xl flex items-center justify-center shadow-lg ${isTransparent ? 'bg-slate-800/50' : 'bg-slate-50'}`}
+                >
+                  <Music
+                    className={
+                      isTransparent ? 'text-slate-400' : 'text-slate-300'
+                    }
+                    style={{ width: '50%', height: '50%' }}
+                  />
+                </div>
+              )}
+              {/* Play/pause overlay on thumbnail */}
+              <div
+                className={`absolute inset-0 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  isPlaying
+                    ? 'bg-black/0 opacity-0 hover:bg-black/20 hover:opacity-100'
+                    : 'bg-black/10 opacity-100'
+                }`}
+                onClick={togglePlay}
+              >
+                <PlayButton
+                  isPlayerReady={isPlayerReady}
+                  isPlaying={isPlaying}
+                  onClick={togglePlay}
+                  size="40%"
+                />
+              </div>
+            </div>
+
+            {/* Station info — scrolling title */}
+            <div className="flex-1 flex flex-col justify-center min-w-0 overflow-hidden">
+              <div className="overflow-hidden relative">
+                <p
+                  className={`font-black whitespace-nowrap ${isPlaying ? 'animate-marquee' : 'truncate'}`}
+                  style={{
+                    fontSize: 'min(15px, 8cqmin)',
+                    lineHeight: 1.2,
+                    color: textColor,
+                  }}
+                >
+                  {activeStation.title}
+                  {/* Duplicate for seamless scroll */}
+                  {isPlaying && (
+                    <span aria-hidden className="ml-8">
+                      {activeStation.title}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <p
+                className="truncate font-bold"
+                style={{
+                  fontSize: 'min(11px, 5.5cqmin)',
+                  marginTop: 'min(2px, 1cqmin)',
+                  opacity: 0.65,
+                  color: textColor,
+                }}
+              >
+                {activeStation.channel}
+              </p>
+              {/* Status dot */}
+              {isPlayerReady && (
+                <div
+                  className="flex items-center"
+                  style={{
+                    gap: 'min(4px, 1.5cqmin)',
+                    marginTop: 'min(3px, 1.2cqmin)',
+                  }}
+                >
+                  <div
+                    className={`rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}
+                    style={{
+                      width: 'min(5px, 2cqmin)',
+                      height: 'min(5px, 2cqmin)',
+                    }}
+                  />
+                  <span
+                    className="font-black uppercase tracking-widest opacity-40"
+                    style={{ color: textColor, fontSize: 'min(9px, 4.5cqmin)' }}
+                  >
+                    {isPlaying ? 'Now Playing' : 'Paused'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Sync icon */}
+            {config.syncWithTimeTool && (
+              <Link
+                className="shrink-0"
+                style={{
+                  width: 'min(14px, 5cqmin)',
+                  height: 'min(14px, 5cqmin)',
+                  color: textColor === '#ffffff' ? '#ffffff' : '#6366f1',
+                  opacity: 0.8,
+                }}
+                aria-label="Synced with Time Tool"
+              />
+            )}
+          </div>
+        }
+      />
+    );
+  }
+
+  // ---------- DEFAULT layout ----------
+  // Original layout: portrait stacks, landscape goes side-by-side
   return (
     <WidgetLayout
       padding="p-0"
@@ -187,10 +472,7 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             style={{ backgroundColor: activeStation.color || '#2d3f89' }}
           />
 
-          {/* Hidden 1×1 iframe mount point */}
-          <div className="absolute top-0 left-0 w-px h-px overflow-hidden opacity-0 pointer-events-none">
-            <div id={`yt-player-${widget.id}`} />
-          </div>
+          {hiddenPlayer}
 
           {/* Album art + Controls */}
           <div
@@ -230,7 +512,7 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               </div>
             )}
 
-            {/* Play/Pause overlay - Scaled to thumbnail */}
+            {/* Play/Pause overlay */}
             <div
               className={`absolute inset-0 rounded-2xl flex items-center justify-center transition-all duration-300 cursor-pointer ${
                 isPlaying
@@ -239,46 +521,12 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               }`}
               onClick={togglePlay}
             >
-              {!isPlayerReady ? (
-                <div
-                  className="bg-white/90 rounded-full shadow-xl backdrop-blur-sm flex items-center justify-center"
-                  style={{
-                    width: '30%',
-                    height: '30%',
-                  }}
-                >
-                  <div
-                    className="border-t-indigo-500 rounded-full animate-spin"
-                    style={{
-                      width: '60%',
-                      height: '60%',
-                      borderWidth: 'min(3px, 0.8cqmin)',
-                      borderColor: '#e2e8f0',
-                      borderTopColor: '#6366f1',
-                    }}
-                  />
-                </div>
-              ) : (
-                <div
-                  className="bg-white/90 rounded-full shadow-xl backdrop-blur-sm transform transition-transform active:scale-90 flex items-center justify-center"
-                  style={{
-                    width: '30%',
-                    height: '30%',
-                  }}
-                >
-                  {isPlaying ? (
-                    <Pause
-                      className="text-slate-900 fill-current"
-                      style={{ width: '50%', height: '50%' }}
-                    />
-                  ) : (
-                    <Play
-                      className="text-slate-900 fill-current"
-                      style={{ width: '50%', height: '50%', marginLeft: '10%' }}
-                    />
-                  )}
-                </div>
-              )}
+              <PlayButton
+                isPlayerReady={isPlayerReady}
+                isPlaying={isPlaying}
+                onClick={togglePlay}
+                size="30%"
+              />
             </div>
           </div>
 

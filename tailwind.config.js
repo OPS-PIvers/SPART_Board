@@ -149,11 +149,16 @@ export default {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'spin-slow': 'spin-slow 12s linear infinite',
         jiggle: 'jiggle 0.5s ease-in-out infinite',
         shimmer: 'shimmer 1.5s infinite',
+        marquee: 'marquee 12s linear infinite',
       },
     },
   },
