@@ -439,7 +439,23 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   );
   const activeSchedule = resolved?.schedule ?? null;
 
-  const items = useMemo(() => activeSchedule?.items ?? [], [activeSchedule]);
+  // currentDay is used as a stable daily trigger; new Date() is intentionally
+  // not listed as a dep since it's a global — we just need to recompute once/day.
+  const todayDateStr = useMemo(
+    () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+    [currentDay] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const items = useMemo(
+    () =>
+      (activeSchedule?.items ?? []).filter(
+        (item) => !item.oneOffDate || item.oneOffDate === todayDateStr
+      ),
+    [activeSchedule, todayDateStr]
+  );
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
 
   const {
