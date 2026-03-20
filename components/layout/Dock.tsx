@@ -43,7 +43,7 @@ import { AddWidgetOverrides } from '../../types';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 import RemoteControlMenu from './RemoteControlMenu';
-import { CatalystSetPickerPopover } from '../widgets/Catalyst/CatalystSetPickerPopover';
+import { CatalystSetPickerPopover } from '@/components/widgets/Catalyst/CatalystSetPickerPopover';
 import { GlassCard } from '../common/GlassCard';
 import { DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
@@ -837,7 +837,11 @@ export const Dock: React.FC = () => {
                               onLongPress={handleLongPress}
                               globalStyle={globalStyle}
                               customLabel={getToolLabel(tool.type)}
-                              onClickOverride={handleToggleCatalystPicker}
+                              onClickOverride={
+                                minimizedCatalyst.length === 0
+                                  ? handleToggleCatalystPicker
+                                  : undefined
+                              }
                               buttonRef={catalystButtonRef}
                             />
                           );

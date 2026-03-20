@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDashboard } from '@/context/useDashboard';
-import { WidgetData } from '@/types';
+import { CatalystConfig, WidgetData } from '@/types';
 import { useCatalystSets } from '@/hooks/useCatalystSets';
 import { isSafeIconUrl } from './catalystHelpers';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
@@ -13,11 +13,13 @@ import {
 import confetti from 'canvas-confetti';
 import { CatalystSettings } from './CatalystSettings';
 
-export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
   const { addWidget, deleteAllWidgets } = useDashboard();
   const { sets, loading, executeRoutine } = useCatalystSets();
   const [activeSetId, setActiveSetId] = useState<string | null>(
-    widget.config.initialSetId ?? null
+    (widget.config as CatalystConfig).initialSetId ?? null
   );
 
   const activeSet = sets.find((s) => s.id === activeSetId);

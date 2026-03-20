@@ -5,7 +5,7 @@ import { useCatalystSets } from '@/hooks/useCatalystSets';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { GlassCard } from '@/components/common/GlassCard';
 import { GlobalStyle } from '@/types';
-import { isSafeIconUrl } from './catalystHelpers';
+import { isSafeIconUrl } from '@/components/widgets/Catalyst/catalystHelpers';
 import { Z_INDEX } from '@/config/zIndex';
 
 interface Props {
@@ -50,7 +50,7 @@ export const CatalystSetPickerPopover: React.FC<Props> = ({
         </span>
       </div>
 
-      <div className="p-2">
+      <div className="p-2 overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center w-64 h-20 text-slate-500 text-xs">
             Loading…
@@ -72,7 +72,6 @@ export const CatalystSetPickerPopover: React.FC<Props> = ({
                 key={set.id}
                 onClick={() => {
                   onSelectSet(set.id);
-                  onClose();
                 }}
                 disabled={set.routines.length === 0 && !set.title}
                 className="relative rounded-xl overflow-hidden flex flex-col items-stretch text-left shadow-md hover:scale-[1.04] hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1 bg-slate-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
