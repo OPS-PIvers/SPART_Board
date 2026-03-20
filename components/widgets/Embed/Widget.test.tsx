@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { EmbedWidget, EmbedSettings } from './index';
 import { WidgetData, EmbedConfig, EmbedGlobalConfig } from '@/types';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { User } from 'firebase/auth';
 import '@testing-library/jest-dom';
 import * as aiModule from '@/utils/ai';
 import { useEmbedConfig } from './hooks/useEmbedConfig';
