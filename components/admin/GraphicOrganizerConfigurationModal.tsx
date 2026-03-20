@@ -19,6 +19,7 @@ import {
 } from '@/types';
 import { Toast } from '../common/Toast';
 import { Button } from '../common/Button';
+import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 
 interface GraphicOrganizerConfigurationModalProps {
   isOpen: boolean;
@@ -87,6 +88,7 @@ export const GraphicOrganizerConfigurationModal: React.FC<
   );
   const [currentTemplateDraft, setCurrentTemplateDraft] =
     useState<GraphicOrganizerTemplate | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Initialize config from permission
   useEffect(() => {
@@ -112,11 +114,7 @@ export const GraphicOrganizerConfigurationModal: React.FC<
         config: globalConfig as unknown as Record<string, unknown>,
       });
       setToastMessage('Configuration applied locally');
-
-      // Close modal after a short delay so user sees success toast
-      setTimeout(() => {
-        onClose();
-      }, 1000);
+      onClose();
     } catch (error) {
       console.error('Error applying config:', error);
       setToastMessage('Error applying configuration');
@@ -175,17 +173,21 @@ export const GraphicOrganizerConfigurationModal: React.FC<
   };
 
   const deleteTemplate = (templateId: string) => {
-    if (window.confirm('Are you sure you want to delete this template?')) {
-      const config = getBuildingConfig(selectedBuilding);
-      setBuildingConfig(selectedBuilding, {
-        ...config,
-        templates: config.templates.filter((t) => t.id !== templateId),
-      });
-      if (editingTemplateId === templateId) {
-        setEditingTemplateId(null);
-        setCurrentTemplateDraft(null);
-      }
+    setDeleteConfirmId(templateId);
+  };
+
+  const confirmDeleteTemplate = () => {
+    if (!deleteConfirmId) return;
+    const config = getBuildingConfig(selectedBuilding);
+    setBuildingConfig(selectedBuilding, {
+      ...config,
+      templates: config.templates.filter((t) => t.id !== deleteConfirmId),
+    });
+    if (editingTemplateId === deleteConfirmId) {
+      setEditingTemplateId(null);
+      setCurrentTemplateDraft(null);
     }
+    setDeleteConfirmId(null);
   };
 
   const saveTemplateDraft = () => {
@@ -529,6 +531,16 @@ export const GraphicOrganizerConfigurationModal: React.FC<
           </div>
         </div>
       </div>
+      {deleteConfirmId && (
+        <ConfirmDialog
+          title="Delete Template"
+          message="Are you sure you want to delete this template? This cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={confirmDeleteTemplate}
+          onCancel={() => setDeleteConfirmId(null)}
+        />
+      )}
     </div>
   );
 };
