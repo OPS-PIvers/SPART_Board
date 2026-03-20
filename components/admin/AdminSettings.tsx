@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Settings,
-  X,
   Shield,
   Image as ImageIcon,
   Zap,
@@ -89,7 +88,10 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
             </button>
             <div className="flex items-center gap-2 min-w-0">
               <Settings className="w-4 h-4 text-white/70 shrink-0" />
-              <h2 id="admin-settings-title" className="text-lg font-bold truncate">
+              <h2
+                id="admin-settings-title"
+                className="text-lg font-bold truncate"
+              >
                 Admin Settings
               </h2>
             </div>
