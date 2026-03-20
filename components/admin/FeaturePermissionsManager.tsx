@@ -36,6 +36,7 @@ import { InstructionalRoutinesManager } from '@/components/admin/InstructionalRo
 import { StickerLibraryModal } from '@/components/admin/StickerLibraryModal';
 import { CalendarConfigurationModal } from '@/components/admin/CalendarConfigurationModal';
 import { SpecialistScheduleConfigurationModal } from '@/components/admin/SpecialistScheduleConfigurationModal';
+import { GraphicOrganizerConfigurationModal } from '@/components/admin/GraphicOrganizerConfigurationModal';
 import { MiniAppLibraryModal } from '@/components/admin/MiniAppLibraryModal';
 import { StarterPackConfigurationModal } from '@/components/admin/StarterPackConfigurationModal';
 import { MusicLibraryModal } from '@/components/admin/MusicLibraryModal';
@@ -815,6 +816,15 @@ export const FeaturePermissionsManager: React.FC = () => {
         />
       )}
 
+      {activeModalTool?.type === 'graphic-organizer' && (
+        <GraphicOrganizerConfigurationModal
+          isOpen={true}
+          onClose={() => setActiveModalTool(null)}
+          permission={getPermission('graphic-organizer')}
+          onSave={(updates) => updatePermission('graphic-organizer', updates)}
+        />
+      )}
+
       {activeModalTool?.type === 'miniApp' && (
         <MiniAppLibraryModal onClose={() => setActiveModalTool(null)} />
       )}
@@ -843,6 +853,7 @@ export const FeaturePermissionsManager: React.FC = () => {
           'stickers',
           'calendar',
           'specialist-schedule',
+          'graphic-organizer',
           'miniApp',
           'starter-pack',
           'music',
