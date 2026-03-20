@@ -1850,6 +1850,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const out: Record<string, unknown> = {};
       switch (type) {
+        case 'breathing':
+          if (raw.pattern) out.pattern = raw.pattern;
+          if (raw.visual) out.visual = raw.visual;
+          if (raw.color) out.color = raw.color;
+          break;
         case 'clock':
           if (raw.format24 !== undefined) out.format24 = raw.format24;
           if (raw.fontFamily) out.fontFamily = raw.fontFamily;

@@ -42,6 +42,7 @@ import { CarRiderConfigurationPanel } from './CarRiderConfigurationPanel';
 import { PollConfigurationPanel } from './PollConfigurationPanel';
 import { QRConfigurationPanel } from './QRConfigurationPanel';
 import { EmbedConfigurationPanel } from './EmbedConfigurationPanel';
+import { BreathingConfigurationPanel } from './BreathingConfigurationPanel';
 import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
@@ -54,6 +55,7 @@ type BuildingConfigPanel = React.ComponentType<{
 // Map from widget/tool type to its building-defaults configuration panel.
 // Catalyst is excluded here because it requires additional props.
 const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
+  breathing: BreathingConfigurationPanel as unknown as BuildingConfigPanel,
   schedule: ScheduleConfigurationPanel as unknown as BuildingConfigPanel,
   clock: ClockConfigurationPanel as unknown as BuildingConfigPanel,
   'time-tool': TimeToolConfigurationPanel as unknown as BuildingConfigPanel,
