@@ -83,6 +83,13 @@ const GLOBAL_FEATURES: {
     icon: BarChart,
     description: 'AI-assisted poll question and option generation.',
   },
+  {
+    id: 'embed-mini-app',
+    label: 'Embed: Generate Mini App',
+    icon: Wand2,
+    description:
+      'AI button inside Embed widgets that generates an interactive mini app from the embedded content.',
+  },
 ];
 
 export const GlobalPermissionsManager: React.FC = () => {
@@ -137,10 +144,12 @@ export const GlobalPermissionsManager: React.FC = () => {
   }, [loadPermissions]);
 
   const getPermission = (featureId: GlobalFeature): GlobalFeaturePermission => {
+    const defaultAccessLevel: AccessLevel =
+      featureId === 'embed-mini-app' ? 'admin' : 'public';
     return (
       permissions.get(featureId) ?? {
         featureId,
-        accessLevel: 'public',
+        accessLevel: defaultAccessLevel,
         betaUsers: [],
         enabled: true,
         config: featureId === 'gemini-functions' ? { dailyLimit: 20 } : {},
@@ -238,7 +247,9 @@ export const GlobalPermissionsManager: React.FC = () => {
     return sorted.filter((feature) => {
       const perm = permissions.get(feature.id) ?? {
         featureId: feature.id,
-        accessLevel: 'public' as AccessLevel,
+        accessLevel: (feature.id === 'embed-mini-app'
+          ? 'admin'
+          : 'public') as AccessLevel,
         betaUsers: [] as string[],
         enabled: true,
         config: feature.id === 'gemini-functions' ? { dailyLimit: 20 } : {},
