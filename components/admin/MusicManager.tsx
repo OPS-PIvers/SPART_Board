@@ -51,10 +51,14 @@ const isValidStationUrl = (url: string): boolean => {
   }
 };
 
-// Accepts a valid https image URL, a data URI (base64), or empty string (optional).
+// Accepts a valid https image URL, a (bounded) data URI (base64), or empty string (optional).
+const MAX_DATA_URI_LENGTH = 2048;
 const isValidImageUrl = (url: string): boolean => {
   if (!url) return true;
-  if (url.startsWith('data:image/')) return true;
+  if (url.startsWith('data:image/')) {
+    // Guard against very large data URIs being stored in Firestore documents.
+    return url.length <= MAX_DATA_URI_LENGTH;
+  }
   try {
     const parsed = new URL(url);
     return parsed.protocol === 'https:';

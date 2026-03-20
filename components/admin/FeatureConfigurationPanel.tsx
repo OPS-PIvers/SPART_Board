@@ -42,6 +42,7 @@ import { CarRiderConfigurationPanel } from './CarRiderConfigurationPanel';
 import { PollConfigurationPanel } from './PollConfigurationPanel';
 import { QRConfigurationPanel } from './QRConfigurationPanel';
 import { EmbedConfigurationPanel } from './EmbedConfigurationPanel';
+import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
 // Shared prop shape for all "building-defaults" config panels
@@ -83,8 +84,6 @@ interface FeatureConfigurationPanelProps {
   showMessage: (type: 'success' | 'error', text: string) => void;
   uploadWeatherImage: (rangeId: string, file: File) => Promise<string>;
 }
-
-import { DockDefaultsPanel } from './DockDefaultsPanel';
 
 export const FeatureConfigurationPanel: React.FC<
   FeatureConfigurationPanelProps

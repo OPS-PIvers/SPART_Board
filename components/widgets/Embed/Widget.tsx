@@ -11,17 +11,23 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
-import { convertToEmbedUrl, ensureProtocol } from '@/utils/urlHelpers';
+import {
+  convertToEmbedUrl,
+  ensureProtocol,
+  extractGoogleFileId,
+} from '@/utils/urlHelpers';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { useDashboard } from '@/context/useDashboard';
 import { generateMiniAppCode } from '@/utils/ai';
 import { useEmbedConfig } from './hooks/useEmbedConfig';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 const NEW_WIDGET_SPACING = 20;
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { addWidget, addToast, updateWidget } = useDashboard();
   const { config: globalConfig } = useEmbedConfig();
+  const { getDriveFileTextContent } = useGoogleDrive();
   const [isGeneratingApp, setIsGeneratingApp] = useState(false);
   const config = widget.config as EmbedConfig;
   const {
@@ -35,10 +41,13 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   } = config;
 
   const ZOOM_STEPS = [0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1.0];
-  const currentZoomIndex =
-    ZOOM_STEPS.indexOf(zoom) !== -1
-      ? ZOOM_STEPS.indexOf(zoom)
-      : ZOOM_STEPS.length - 1;
+  const effectiveZoom = ZOOM_STEPS.reduce(
+    (closest, step) => {
+      return Math.abs(step - zoom) < Math.abs(closest - zoom) ? step : closest;
+    },
+    ZOOM_STEPS[ZOOM_STEPS.length - 1]
+  );
+  const currentZoomIndex = ZOOM_STEPS.indexOf(effectiveZoom);
   const canZoomOut = currentZoomIndex > 0;
   const canZoomIn = currentZoomIndex < ZOOM_STEPS.length - 1;
 
@@ -125,10 +134,32 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     setIsGeneratingApp(true);
     try {
+      const resourceContent = displayMode === 'url' ? sanitizedUrl : html;
+      let prompt = `Create an interactive educational mini app based on this content/resource: ${resourceContent}`;
+
+      // Try to extract text from Google Drive if it's a Drive URL
+      if (displayMode === 'url') {
+        const fileId = extractGoogleFileId(sanitizedUrl);
+        if (fileId) {
+          addToast('Reading Google Drive file content...', 'info');
+          const fileText = await getDriveFileTextContent(fileId);
+          if (fileText) {
+            // Trim to avoid hitting Gemini context limits (though Flash is generous, this keeps it focused)
+            const trimmedText = fileText.substring(0, 30000);
+            prompt = `Create an interactive educational mini app based on the following content extracted from a user's resource:\n\n${trimmedText}`;
+          } else {
+            addToast(
+              'Could not access Google Drive content. Please ensure the file is shared or you have permission to read it.',
+              'error'
+            );
+            setIsGeneratingApp(false);
+            return;
+          }
+        }
+      }
+
       addToast('Analyzing content and generating Mini App...', 'info');
 
-      const resourceContent = displayMode === 'url' ? sanitizedUrl : html;
-      const prompt = `Create an interactive educational mini app based on this content/resource: ${resourceContent}`;
       const result = await generateMiniAppCode(prompt);
 
       // Create new Mini App widget next to this embed
@@ -220,7 +251,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     textAlign: 'center',
                   }}
                 >
-                  {Math.round(zoom * 100)}%
+                  {Math.round(effectiveZoom * 100)}%
                 </span>
                 <button
                   onClick={handleZoomIn}
@@ -337,21 +368,24 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               </a>
             </div>
           ) : (
-            <iframe
-              key={refreshKey}
-              title="Embed Content"
-              src={displayMode === 'url' ? embedUrl : undefined}
-              srcDoc={displayMode === 'code' ? html : undefined}
-              className="flex-1 border-none block"
-              style={{
-                zoom: zoom,
-                width: `${100 / zoom}%`,
-                height: `${100 / zoom}%`,
-              }}
-              sandbox={sandbox}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
+            <div className="flex-1 relative overflow-hidden">
+              <iframe
+                key={refreshKey}
+                title="Embed Content"
+                src={displayMode === 'url' ? embedUrl : undefined}
+                srcDoc={displayMode === 'code' ? html : undefined}
+                className="absolute top-0 left-0 border-none block"
+                style={{
+                  transform: `scale(${effectiveZoom})`,
+                  transformOrigin: 'top left',
+                  width: `${100 / effectiveZoom}%`,
+                  height: `${100 / effectiveZoom}%`,
+                }}
+                sandbox={sandbox}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
           )}
         </div>
       }

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getOriginUrl, getJoinUrl, convertToEmbedUrl } from './urlHelpers';
+import {
+  getOriginUrl,
+  getJoinUrl,
+  convertToEmbedUrl,
+  extractGoogleFileId,
+} from './urlHelpers';
 
 describe('urlHelpers', () => {
   const originalWindow = global.window;
@@ -8,6 +13,46 @@ describe('urlHelpers', () => {
     // Restore window after each test
     global.window = originalWindow;
     vi.restoreAllMocks();
+  });
+
+  describe('extractGoogleFileId', () => {
+    it('extracts ID from Google Docs URL', () => {
+      const url = 'https://docs.google.com/document/d/1abc123_XYZ/edit';
+      expect(extractGoogleFileId(url)).toBe('1abc123_XYZ');
+    });
+
+    it('extracts ID from Google Sheets URL', () => {
+      const url = 'https://docs.google.com/spreadsheets/d/sheet-id/edit';
+      expect(extractGoogleFileId(url)).toBe('sheet-id');
+    });
+
+    it('extracts ID from Google Slides URL', () => {
+      const url = 'https://docs.google.com/presentation/d/preso-id/preview';
+      expect(extractGoogleFileId(url)).toBe('preso-id');
+    });
+
+    it('extracts ID from Google Vids URL', () => {
+      const url = 'https://vids.google.com/vids/vid-id/preview';
+      expect(extractGoogleFileId(url)).toBe('vid-id');
+    });
+
+    it('extracts ID from Google Drive file URL', () => {
+      const url = 'https://drive.google.com/file/d/drive-id/view';
+      expect(extractGoogleFileId(url)).toBe('drive-id');
+    });
+
+    it('extracts ID from Google Drive open?id= URL', () => {
+      const url = 'https://drive.google.com/open?id=open-id';
+      expect(extractGoogleFileId(url)).toBe('open-id');
+    });
+
+    it('returns null for non-Google URLs', () => {
+      expect(extractGoogleFileId('https://example.com')).toBeNull();
+    });
+
+    it('returns null for empty input', () => {
+      expect(extractGoogleFileId('')).toBeNull();
+    });
   });
 
   describe('getOriginUrl', () => {

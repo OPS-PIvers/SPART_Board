@@ -620,4 +620,56 @@ export class GoogleDriveService {
       throw new Error(message);
     }
   }
+
+  /**
+   * Get metadata for a specific file ID.
+   */
+  async getFileMetadata(fileId: string): Promise<DriveFile> {
+    const response = await this.fetchWithRetry(
+      `${DRIVE_API_URL}/files/${fileId}?fields=id,name,mimeType,webViewLink,webContentLink`,
+      {
+        headers: this.headers,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get file metadata: ${response.statusText}`);
+    }
+
+    return (await response.json()) as DriveFile;
+  }
+
+  /**
+   * Export or download a file's content as text.
+   */
+  async exportFileText(fileId: string, mimeType: string): Promise<string> {
+    let exportMimeType = '';
+    let isExport = true;
+
+    if (mimeType === 'application/vnd.google-apps.document') {
+      exportMimeType = 'text/plain';
+    } else if (mimeType === 'application/vnd.google-apps.presentation') {
+      exportMimeType = 'text/plain';
+    } else if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+      exportMimeType = 'text/csv';
+    } else if (mimeType.startsWith('text/')) {
+      isExport = false;
+    } else {
+      throw new Error('Unsupported file type for text extraction.');
+    }
+
+    const url = isExport
+      ? `${DRIVE_API_URL}/files/${fileId}/export?mimeType=${exportMimeType}`
+      : `${DRIVE_API_URL}/files/${fileId}?alt=media`;
+
+    const response = await this.fetchWithRetry(url, {
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to extract text: ${response.statusText}`);
+    }
+
+    return response.text();
+  }
 }

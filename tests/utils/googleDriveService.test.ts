@@ -407,4 +407,90 @@ describe('GoogleDriveService', () => {
       expect(result).toEqual(mockImages);
     });
   });
+
+  describe('getFileMetadata', () => {
+    it('should fetch file metadata correctly', async () => {
+      const mockMetadata = {
+        id: 'file-123',
+        name: 'Test Doc',
+        mimeType: 'application/vnd.google-apps.document',
+      };
+      const fetchSpy = mockFetch({
+        json: () => Promise.resolve(mockMetadata),
+      });
+
+      const result = await service.getFileMetadata('file-123');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '/files/file-123?fields=id,name,mimeType,webViewLink,webContentLink'
+        ),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: `Bearer ${accessToken}`,
+          }),
+        })
+      );
+      expect(result).toEqual(mockMetadata);
+    });
+  });
+
+  describe('exportFileText', () => {
+    it('should export Google Doc as plain text', async () => {
+      const mockText = 'Extracted text content';
+      const fetchSpy = mockFetch({
+        text: () => Promise.resolve(mockText),
+      });
+
+      const result = await service.exportFileText(
+        'file-123',
+        'application/vnd.google-apps.document'
+      );
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/files/file-123/export?mimeType=text/plain'),
+        expect.anything()
+      );
+      expect(result).toBe(mockText);
+    });
+
+    it('should export Google Spreadsheet as CSV', async () => {
+      const mockText = 'col1,col2\nval1,val2';
+      const fetchSpy = mockFetch({
+        text: () => Promise.resolve(mockText),
+      });
+
+      const result = await service.exportFileText(
+        'file-123',
+        'application/vnd.google-apps.spreadsheet'
+      );
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/files/file-123/export?mimeType=text/csv'),
+        expect.anything()
+      );
+      expect(result).toBe(mockText);
+    });
+
+    it('should download plain text files directly', async () => {
+      const mockText = 'Raw text content';
+      const fetchSpy = mockFetch({
+        text: () => Promise.resolve(mockText),
+      });
+
+      const result = await service.exportFileText('file-123', 'text/plain');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/files/file-123?alt=media'),
+        expect.anything()
+      );
+      expect(result).toBe(mockText);
+    });
+
+    it('should throw error for unsupported mime types', async () => {
+      await expect(
+        service.exportFileText('file-123', 'application/pdf')
+      ).rejects.toThrow('Unsupported file type for text extraction.');
+    });
+  });
 });

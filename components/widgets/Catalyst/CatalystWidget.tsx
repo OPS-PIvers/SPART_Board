@@ -19,7 +19,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   const { addWidget, deleteAllWidgets } = useDashboard();
   const { sets, loading, executeRoutine } = useCatalystSets();
   const [activeSetId, setActiveSetId] = useState<string | null>(
-    (widget.config as CatalystConfig).initialSetId ?? null
+    (widget.config as CatalystConfig | undefined)?.initialSetId ?? null
   );
 
   const activeSet = sets.find((s) => s.id === activeSetId);

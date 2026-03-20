@@ -1,7 +1,25 @@
 /**
- * Get the current origin URL safely, handling SSR contexts where window may be undefined.
- * @returns The origin URL (e.g., 'https://example.com') or an empty string if window is unavailable
+ * Extracts a Google Drive file ID from various Google URLs (Docs, Sheets, Slides, Drive).
+ * @param url The URL to parse
+ * @returns The extracted file ID, or null if not found
  */
+export const extractGoogleFileId = (url: string): string | null => {
+  if (!url) return null;
+  const trimmedUrl = url.trim();
+
+  // Match /d/{id} or ?id={id}
+  const fileIdMatch = /\/(?:d|vids|file\/d)\/([a-zA-Z0-9_-]+)/.exec(trimmedUrl);
+  if (fileIdMatch) {
+    return fileIdMatch[1];
+  }
+
+  const idParamMatch = /[?&]id=([a-zA-Z0-9_-]+)/.exec(trimmedUrl);
+  if (idParamMatch) {
+    return idParamMatch[1];
+  }
+
+  return null;
+};
 export const getOriginUrl = (): string => {
   return typeof window !== 'undefined' ? window.location.origin : '';
 };

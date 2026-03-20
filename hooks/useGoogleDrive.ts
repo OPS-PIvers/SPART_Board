@@ -77,6 +77,27 @@ export const useGoogleDrive = () => {
     return files.map((f) => `https://lh3.googleusercontent.com/d/${f.id}`);
   }, [driveService]);
 
+  /**
+   * Attempts to extract text content from a Google Drive file if it is a supported type (Docs, Slides, Sheets, Text).
+   */
+  const getDriveFileTextContent = useCallback(
+    async (fileId: string): Promise<string | null> => {
+      if (!driveService) return null;
+      try {
+        const metadata = await driveService.getFileMetadata(fileId);
+        const text = await driveService.exportFileText(
+          fileId,
+          metadata.mimeType
+        );
+        return text;
+      } catch (error) {
+        console.error('Failed to extract text from Drive file:', error);
+        return null;
+      }
+    },
+    [driveService]
+  );
+
   return {
     driveService,
     isConnected,
@@ -85,5 +106,6 @@ export const useGoogleDrive = () => {
     userDomain,
     uploadBackgroundToDrive,
     getUserBackgroundsFromDrive,
+    getDriveFileTextContent,
   };
 };
