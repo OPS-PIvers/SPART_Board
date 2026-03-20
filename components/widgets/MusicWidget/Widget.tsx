@@ -449,12 +449,6 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 gap: 'min(16px, 8cqh, 5cqw)',
               }}
             >
-              {/* Background Branding Accent */}
-              <div
-                className="absolute top-0 left-0 w-full h-1 opacity-80"
-                style={{ backgroundColor: activeStation.color || '#2d3f89' }}
-              />
-
               {/* Album art + Controls */}
               <div
                 className="relative shrink-0 group"
