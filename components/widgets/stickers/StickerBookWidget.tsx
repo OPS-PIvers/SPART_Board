@@ -434,12 +434,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       const visibleUrls = reorderedVisible.map((s) => s.url);
 
       // Find where visible items are in the base array
-      const indices = [];
-      for (let i = 0; i < newOrder.length; i++) {
-        if (unifiedStickers.some((s) => s.url === newOrder[i])) {
-          indices.push(i);
-        }
-      }
+      const visibleUrlsBeforeMove = new Set(unifiedStickers.map((s) => s.url));
+      const indices = newOrder
+        .map((url, index) => (visibleUrlsBeforeMove.has(url) ? index : -1))
+        .filter((index) => index !== -1);
 
       // Replace at those indices with the new ordered visible URLs
       for (let i = 0; i < indices.length; i++) {
