@@ -1246,6 +1246,15 @@ export interface NumberLineConfig {
   showArrows: boolean;
 }
 
+export type BuildingNumberLineDefaults = Pick<
+  NumberLineConfig,
+  'min' | 'max' | 'step' | 'displayMode' | 'showArrows'
+>;
+
+export interface NumberLineGlobalConfig {
+  buildingDefaults?: BuildingNumberLineDefaults;
+}
+
 export interface SpecialistScheduleBuildingConfig {
   cycleLength: 6 | 10;
   startDate: string; // YYYY-MM-DD

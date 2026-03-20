@@ -1850,6 +1850,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const out: Record<string, unknown> = {};
       switch (type) {
+        case 'numberLine':
+          if (raw.min !== undefined) out.min = raw.min;
+          if (raw.max !== undefined) out.max = raw.max;
+          if (raw.step !== undefined) out.step = raw.step;
+          if (raw.displayMode !== undefined) out.displayMode = raw.displayMode;
+          if (raw.showArrows !== undefined) out.showArrows = raw.showArrows;
+          break;
         case 'clock':
           if (raw.format24 !== undefined) out.format24 = raw.format24;
           if (raw.fontFamily) out.fontFamily = raw.fontFamily;
