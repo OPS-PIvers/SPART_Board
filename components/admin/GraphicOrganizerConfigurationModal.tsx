@@ -20,6 +20,7 @@ import {
 import { Toast } from '../common/Toast';
 import { Button } from '../common/Button';
 import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
+import { DockDefaultsPanel } from './DockDefaultsPanel';
 
 interface GraphicOrganizerConfigurationModalProps {
   isOpen: boolean;
@@ -78,6 +79,7 @@ export const GraphicOrganizerConfigurationModal: React.FC<
   );
   const [globalConfig, setGlobalConfig] =
     useState<GraphicOrganizerGlobalConfig>({ buildings: {} });
+  const [dockDefaults, setDockDefaults] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -93,9 +95,11 @@ export const GraphicOrganizerConfigurationModal: React.FC<
   // Initialize config from permission
   useEffect(() => {
     if (permission.config) {
-      setGlobalConfig(
-        permission.config as unknown as GraphicOrganizerGlobalConfig
+      const rawConfig = permission.config as unknown as Record<string, unknown>;
+      setDockDefaults(
+        (rawConfig.dockDefaults as Record<string, boolean>) ?? {}
       );
+      setGlobalConfig(rawConfig as unknown as GraphicOrganizerGlobalConfig);
     }
     setIsLoading(false);
   }, [permission.config]);
@@ -111,7 +115,10 @@ export const GraphicOrganizerConfigurationModal: React.FC<
     setIsSaving(true);
     try {
       onSave({
-        config: globalConfig as unknown as Record<string, unknown>,
+        config: {
+          ...(globalConfig as unknown as Record<string, unknown>),
+          dockDefaults,
+        },
       });
       setToastMessage('Configuration applied locally');
       onClose();
@@ -285,6 +292,16 @@ export const GraphicOrganizerConfigurationModal: React.FC<
             </div>
           ) : (
             <div className="flex flex-1 flex-col overflow-y-auto bg-slate-50 p-6">
+              {/* Dock Defaults */}
+              <DockDefaultsPanel
+                config={{ dockDefaults }}
+                onChange={(newConfig) =>
+                  setDockDefaults(
+                    (newConfig.dockDefaults as Record<string, boolean>) ?? {}
+                  )
+                }
+              />
+
               <div className="mb-6 flex space-x-2 border-b border-slate-200 pb-2">
                 {BUILDINGS.map((building) => (
                   <button

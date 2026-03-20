@@ -24,6 +24,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { Toast } from '../common/Toast';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { DockDefaultsPanel } from './DockDefaultsPanel';
 
 interface CalendarConfigurationModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const CalendarConfigurationModal: React.FC<
     buildingDefaults: {},
     updateFrequencyHours: 4,
   });
+  const [dockDefaults, setDockDefaults] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -62,7 +64,11 @@ export const CalendarConfigurationModal: React.FC<
       if (snap.exists()) {
         const data = snap.data() as FeaturePermission;
         if (data.config) {
-          setConfig(data.config as unknown as CalendarGlobalConfig);
+          const rawConfig = data.config as unknown as Record<string, unknown>;
+          setDockDefaults(
+            (rawConfig.dockDefaults as Record<string, boolean>) ?? {}
+          );
+          setConfig(rawConfig as unknown as CalendarGlobalConfig);
         }
       }
     } catch (err) {
@@ -87,10 +93,13 @@ export const CalendarConfigurationModal: React.FC<
         docRef,
         {
           type: 'calendar',
-          config: (updatedConfig ?? config) as unknown as Record<
-            string,
-            unknown
-          >,
+          config: {
+            ...((updatedConfig ?? config) as unknown as Record<
+              string,
+              unknown
+            >),
+            dockDefaults,
+          },
           updatedAt: Date.now(),
         },
         { merge: true }
@@ -253,6 +262,16 @@ export const CalendarConfigurationModal: React.FC<
             </div>
           ) : (
             <>
+              {/* Dock Defaults */}
+              <DockDefaultsPanel
+                config={{ dockDefaults }}
+                onChange={(newConfig) =>
+                  setDockDefaults(
+                    (newConfig.dockDefaults as Record<string, boolean>) ?? {}
+                  )
+                }
+              />
+
               {/* Proxy Sync Controls */}
               <section className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">

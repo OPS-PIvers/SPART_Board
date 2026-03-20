@@ -21,6 +21,7 @@ import { db, isAuthBypass } from '@/config/firebase';
 import { Toast } from '../common/Toast';
 import { Button } from '../common/Button';
 import { Card } from '@/components/common/Card';
+import { DockDefaultsPanel } from './DockDefaultsPanel';
 
 interface SpecialistScheduleConfigurationModalProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export const SpecialistScheduleConfigurationModal: React.FC<
   const [config, setConfig] = useState<SpecialistScheduleGlobalConfig>({
     buildingDefaults: {},
   });
+  const [dockDefaults, setDockDefaults] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -77,7 +79,11 @@ export const SpecialistScheduleConfigurationModal: React.FC<
       if (snap.exists()) {
         const data = snap.data() as FeaturePermission;
         if (data.config) {
-          setConfig(data.config as unknown as SpecialistScheduleGlobalConfig);
+          const rawConfig = data.config as unknown as Record<string, unknown>;
+          setDockDefaults(
+            (rawConfig.dockDefaults as Record<string, boolean>) ?? {}
+          );
+          setConfig(rawConfig as unknown as SpecialistScheduleGlobalConfig);
         }
       }
     } catch (err) {
@@ -102,10 +108,13 @@ export const SpecialistScheduleConfigurationModal: React.FC<
         docRef,
         {
           type: 'specialist-schedule',
-          config: (updatedConfig ?? config) as unknown as Record<
-            string,
-            unknown
-          >,
+          config: {
+            ...((updatedConfig ?? config) as unknown as Record<
+              string,
+              unknown
+            >),
+            dockDefaults,
+          },
           updatedAt: Date.now(),
         },
         { merge: true }
@@ -327,6 +336,16 @@ export const SpecialistScheduleConfigurationModal: React.FC<
             </div>
           ) : (
             <>
+              {/* Dock Defaults */}
+              <DockDefaultsPanel
+                config={{ dockDefaults }}
+                onChange={(newConfig) =>
+                  setDockDefaults(
+                    (newConfig.dockDefaults as Record<string, boolean>) ?? {}
+                  )
+                }
+              />
+
               {/* Building Selector */}
               <section className="space-y-4">
                 <div>
