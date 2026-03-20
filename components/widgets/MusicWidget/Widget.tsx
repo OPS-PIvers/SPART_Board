@@ -334,8 +334,8 @@ export const MusicWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <div
               className="relative shrink-0 group"
               style={{
-                width: 'min(56px, 90cqmin)',
-                height: 'min(56px, 90cqmin)',
+                width: 'min(56px, 16cqmin)',
+                height: 'min(56px, 16cqmin)',
               }}
             >
               {activeStation.thumbnail ? (
