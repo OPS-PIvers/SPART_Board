@@ -43,7 +43,7 @@ export const sanitizeAIConfig = (
   if (!config || typeof config !== 'object') return {};
 
   // Deep clone to avoid mutating original
-  const sanitized = JSON.parse(JSON.stringify(config)) as Record<
+  const sanitized = structuredClone(config) as Record<
     string,
     unknown
   >;
