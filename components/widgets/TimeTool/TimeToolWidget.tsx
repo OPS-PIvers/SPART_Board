@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WidgetData, DEFAULT_GLOBAL_STYLE } from '../../../types';
+import { WidgetData, DEFAULT_GLOBAL_STYLE, TimeToolConfig } from '@/types';
 import { useDashboard } from '../../../context/useDashboard';
 import { useTimeTool } from './useTimeTool';
 import { Play, Pause, RotateCcw, Check, Delete } from 'lucide-react';
@@ -279,7 +279,9 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
     handleStop,
     handleReset,
     setTime,
-  } = useTimeTool(widget);
+  } = useTimeTool(widget) as ReturnType<typeof useTimeTool> & {
+    config: TimeToolConfig;
+  };
 
   const [isEditing, setIsEditing] = useState(false);
 

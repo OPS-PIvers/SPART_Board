@@ -1,10 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { TimeToolConfig, WidgetData } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
-import { WIDGET_PALETTE, STANDARD_COLORS } from '../../../config/colors';
-import { SettingsLabel } from '../../common/SettingsLabel';
-import { Toggle } from '../../common/Toggle';
+import { TimeToolConfig, WidgetData } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
+import { WIDGET_PALETTE, STANDARD_COLORS } from '@/config/colors';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { Toggle } from '@/components/common/Toggle';
 import {
   Bell,
   Sun,
