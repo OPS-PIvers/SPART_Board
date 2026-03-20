@@ -1,6 +1,29 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, Trash2, Loader2, Eraser, MousePointer2 } from 'lucide-react';
+import {
+  Upload,
+  Trash2,
+  Loader2,
+  Eraser,
+  MousePointer2,
+  Heart,
+  GripHorizontal,
+} from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { WidgetData, StickerBookConfig, StickerGlobalConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
@@ -23,6 +46,120 @@ const DEFAULT_STICKERS = [
 
 import { WidgetLayout } from '../WidgetLayout';
 
+const SortableSticker: React.FC<{
+  sticker: { id: string; url: string; type: 'default' | 'global' | 'custom' };
+  isFavorite: boolean;
+  toggleFavorite: (e: React.MouseEvent, url: string) => void;
+  onStickerClick: (url: string) => void;
+  onDragStart: (e: React.DragEvent, url: string) => void;
+  onDeleteCustom?: () => void;
+}> = ({
+  sticker,
+  isFavorite,
+  toggleFavorite,
+  onStickerClick,
+  onDragStart,
+  onDeleteCustom,
+}) => {
+  const { t } = useTranslation();
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: sticker.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 'auto',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      draggable
+      data-no-drag="true"
+      onDragStart={(e) => {
+        // Native drag for adding to board
+        onDragStart(e, sticker.url);
+      }}
+      onClick={() => onStickerClick(sticker.url)}
+      className={`group relative aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-100 hover:border-blue-200 cursor-pointer ${isDragging ? 'opacity-50 ring-2 ring-blue-500 z-10' : ''}`}
+      title={t('widgets.stickers.dragOrClick')}
+    >
+      {/* Drag handle for reorganizing */}
+      <div
+        {...attributes}
+        {...listeners}
+        onPointerDown={(e) => {
+          // Allow dnd-kit to handle sorting via pointer events on this handle
+          listeners?.onPointerDown?.(e);
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-all p-1 z-20 bg-white/80 rounded"
+        title={t('widgets.stickers.reorganizeSticker', 'Reorder')}
+      >
+        <GripHorizontal
+          style={{
+            width: 'min(14px, 3.5cqmin)',
+            height: 'min(14px, 3.5cqmin)',
+          }}
+        />
+      </div>
+
+      <img
+        src={sticker.url}
+        alt="Sticker"
+        className="w-full h-full object-contain pointer-events-none group-hover:scale-110 group-hover:rotate-12 transition-transform"
+        style={{
+          padding:
+            sticker.type === 'custom'
+              ? 'min(10px, 2.5cqmin)'
+              : 'min(4px, 1cqmin)',
+          width: sticker.type === 'custom' ? '100%' : 'min(40px, 10cqmin)',
+          height: sticker.type === 'custom' ? '100%' : 'min(40px, 10cqmin)',
+        }}
+      />
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()} // prevent sorting drag
+        onClick={(e) => toggleFavorite(e, sticker.url)}
+        className="absolute -bottom-1.5 -right-1.5 bg-white text-slate-400 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md hover:text-red-500 z-10 p-1 scale-75 group-hover:scale-100"
+        title={t('widgets.stickers.favoriteSticker', 'Favorite')}
+      >
+        <Heart
+          className={isFavorite ? 'fill-red-500 text-red-500' : ''}
+          style={{ width: 'min(16px, 4cqmin)', height: 'min(16px, 4cqmin)' }}
+        />
+      </button>
+
+      {sticker.type === 'custom' && onDeleteCustom && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteCustom();
+          }}
+          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
+          style={{ padding: 'min(6px, 1.5cqmin)' }}
+          title={t('widgets.stickers.deleteSticker')}
+        >
+          <Trash2
+            style={{ width: 'min(12px, 3cqmin)', height: 'min(12px, 3cqmin)' }}
+          />
+        </button>
+      )}
+    </div>
+  );
+};
+
 export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -38,6 +175,12 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
     () => config.uploadedUrls ?? [],
     [config.uploadedUrls]
   );
+  const favorites = React.useMemo(
+    () => config.favorites ?? [],
+    [config.favorites]
+  );
+
+  const [filter, setFilter] = useState<'all' | 'favorites' | 'mine'>('all');
 
   const globalStickers = React.useMemo(() => {
     const stickerPermission = featurePermissions.find(
@@ -62,9 +205,83 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       .map((s) => s.url);
   }, [featurePermissions, userGradeLevels]);
 
-  const removeCustomSticker = (index: number) => {
-    const next = [...customStickers];
-    next.splice(index, 1);
+  const unifiedStickers = React.useMemo(() => {
+    // Collect all unique stickers
+    const allStickersSet = new Set<string>();
+    const allStickers: {
+      id: string;
+      url: string;
+      type: 'default' | 'global' | 'custom';
+    }[] = [];
+
+    DEFAULT_STICKERS.forEach((url) => {
+      if (!allStickersSet.has(url)) {
+        allStickersSet.add(url);
+        allStickers.push({ id: url, url, type: 'default' });
+      }
+    });
+    globalStickers.forEach((url) => {
+      if (!allStickersSet.has(url)) {
+        allStickersSet.add(url);
+        allStickers.push({ id: url, url, type: 'global' });
+      }
+    });
+    customStickers.forEach((url) => {
+      if (!allStickersSet.has(url)) {
+        allStickersSet.add(url);
+        allStickers.push({ id: url, url, type: 'custom' });
+      }
+    });
+
+    // Reorder based on config.stickerOrder if present
+    const order = config.stickerOrder ?? [];
+    const orderedStickers: typeof allStickers = [];
+    const unlistedStickers: typeof allStickers = [];
+
+    const stickersMap = new Map(allStickers.map((s) => [s.url, s]));
+
+    order.forEach((url) => {
+      const sticker = stickersMap.get(url);
+      if (sticker) {
+        orderedStickers.push(sticker);
+        stickersMap.delete(url);
+      }
+    });
+
+    // Add any stickers not in the order array to the end
+    stickersMap.forEach((sticker) => {
+      unlistedStickers.push(sticker);
+    });
+
+    const finalOrderedList = [...orderedStickers, ...unlistedStickers];
+
+    // Filter the list based on state
+    return finalOrderedList.filter((sticker) => {
+      if (filter === 'favorites') {
+        return favorites.includes(sticker.url);
+      }
+      if (filter === 'mine') {
+        return sticker.type === 'custom';
+      }
+      return true;
+    });
+  }, [globalStickers, customStickers, config.stickerOrder, favorites, filter]);
+
+  const toggleFavorite = (e: React.MouseEvent, url: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const isFav = favorites.includes(url);
+    const newFavorites = isFav
+      ? favorites.filter((u) => u !== url)
+      : [...favorites, url];
+
+    updateWidget(widget.id, {
+      config: { ...config, favorites: newFavorites },
+    });
+  };
+
+  const removeCustomSticker = (url: string) => {
+    const next = customStickers.filter((u) => u !== url);
     updateWidget(widget.id, {
       config: { ...config, uploadedUrls: next },
     });
@@ -175,6 +392,66 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
     addToast(t('widgets.stickers.stickerAdded'), 'success');
   };
 
+  // Configure dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Requires moving 5px before drag starts
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id && over) {
+      const oldIndex = unifiedStickers.findIndex((s) => s.id === active.id);
+      const newIndex = unifiedStickers.findIndex((s) => s.id === over.id);
+
+      const reorderedVisible = arrayMove(unifiedStickers, oldIndex, newIndex);
+
+      // We need to merge this back into the overall stickerOrder
+      // A simple way is to take the previous stickerOrder (or implicitly all unique URLs),
+      // remove the visible ones from it, and insert the reordered visible ones back in
+      // where the first visible one was, or simply overwrite the order of all visible elements.
+
+      const currentOrder = config.stickerOrder ?? [];
+
+      // Ensure all current items exist in the order list before manipulating it
+      const fullOrderList = new Set(currentOrder);
+      // Collect all known stickers into the list to be safe
+      DEFAULT_STICKERS.forEach((url) => fullOrderList.add(url));
+      globalStickers.forEach((url) => fullOrderList.add(url));
+      customStickers.forEach((url) => fullOrderList.add(url));
+
+      const baseArray = Array.from(fullOrderList);
+
+      // For simplicity: when reordering the filtered list, we update the main order
+      // We can just create a new full order where the currently visible items are placed
+      // in their new sorted order, while the invisible items stay in their relative positions.
+
+      const newOrder = [...baseArray];
+      const visibleUrls = reorderedVisible.map((s) => s.url);
+
+      // Find where visible items are in the base array
+      const indices = [];
+      for (let i = 0; i < newOrder.length; i++) {
+        if (unifiedStickers.some((s) => s.url === newOrder[i])) {
+          indices.push(i);
+        }
+      }
+
+      // Replace at those indices with the new ordered visible URLs
+      for (let i = 0; i < indices.length; i++) {
+        newOrder[indices[i]] = visibleUrls[i];
+      }
+
+      updateWidget(widget.id, {
+        config: { ...config, stickerOrder: newOrder },
+      });
+    }
+  };
+
   return (
     <WidgetLayout
       padding="p-0"
@@ -247,9 +524,49 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       }
       content={
         <div
-          className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
+          className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30 flex flex-col"
           style={{ padding: 'min(16px, 3.5cqmin)' }}
         >
+          {/* Filter Toggle */}
+          <div
+            className="flex bg-slate-200/50 p-1 rounded-xl w-full max-w-sm mx-auto shadow-inner"
+            style={{ marginBottom: 'min(16px, 3.5cqmin)' }}
+          >
+            <button
+              type="button"
+              onClick={() => setFilter('all')}
+              className={`flex-1 text-center font-bold uppercase tracking-widest rounded-lg transition-all ${filter === 'all' ? 'bg-white text-slate-700 shadow-sm scale-100' : 'text-slate-500 hover:text-slate-600 hover:bg-white/50 scale-95'}`}
+              style={{
+                fontSize: 'min(10px, 2.5cqmin)',
+                padding: 'min(8px, 2cqmin)',
+              }}
+            >
+              {t('widgets.stickers.filterAll', 'All')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('favorites')}
+              className={`flex-1 text-center font-bold uppercase tracking-widest rounded-lg transition-all ${filter === 'favorites' ? 'bg-white text-slate-700 shadow-sm scale-100' : 'text-slate-500 hover:text-slate-600 hover:bg-white/50 scale-95'}`}
+              style={{
+                fontSize: 'min(10px, 2.5cqmin)',
+                padding: 'min(8px, 2cqmin)',
+              }}
+            >
+              {t('widgets.stickers.filterFavorites', 'Favorites')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('mine')}
+              className={`flex-1 text-center font-bold uppercase tracking-widest rounded-lg transition-all ${filter === 'mine' ? 'bg-white text-slate-700 shadow-sm scale-100' : 'text-slate-500 hover:text-slate-600 hover:bg-white/50 scale-95'}`}
+              style={{
+                fontSize: 'min(10px, 2.5cqmin)',
+                padding: 'min(8px, 2cqmin)',
+              }}
+            >
+              {t('widgets.stickers.filterMine', 'Mine')}
+            </button>
+          </div>
+
           {/* Drop/Paste Zone - Integrated and obvious */}
           <div
             onDragOver={handleDragOver}
@@ -305,142 +622,39 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             )}
           </div>
 
-          {/* Defaults */}
-          <div className="mb-8">
-            <h4
-              className="font-black text-slate-400 uppercase tracking-widest"
-              style={{
-                fontSize: 'min(10px, 2.5cqmin)',
-                marginBottom: 'min(16px, 3.5cqmin)',
-                padding: '0 min(4px, 1cqmin)',
-              }}
-            >
-              {t('widgets.stickers.essentials')}
-            </h4>
-            <div
-              className="grid grid-cols-4"
-              style={{ gap: 'min(16px, 3.5cqmin)' }}
-            >
-              {DEFAULT_STICKERS.map((url, i) => (
-                <div
-                  key={i}
-                  draggable
-                  data-no-drag="true"
-                  onDragStart={(e) => handleDragStart(e, url)}
-                  onClick={() => handleStickerClick(url)}
-                  className="aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200 group"
-                  title={t('widgets.stickers.dragOrClick')}
-                >
-                  <img
-                    src={url}
-                    alt="Sticker"
-                    className="object-contain pointer-events-none group-hover:rotate-12 transition-transform"
-                    style={{
-                      width: 'min(40px, 10cqmin)',
-                      height: 'min(40px, 10cqmin)',
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Global Collection (admin-uploaded stickers) */}
-          {globalStickers.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
             <div className="mb-8">
-              <h4
-                className="font-black text-slate-400 uppercase tracking-widest"
-                style={{
-                  fontSize: 'min(10px, 2.5cqmin)',
-                  marginBottom: 'min(16px, 3.5cqmin)',
-                  padding: '0 min(4px, 1cqmin)',
-                }}
+              <SortableContext
+                items={unifiedStickers}
+                strategy={rectSortingStrategy}
               >
-                {t('widgets.stickers.globalCollection')}
-              </h4>
-              <div
-                className="grid grid-cols-4"
-                style={{ gap: 'min(16px, 3.5cqmin)' }}
-              >
-                {globalStickers.map((url) => (
-                  <div
-                    key={url}
-                    draggable
-                    data-no-drag="true"
-                    onDragStart={(e) => handleDragStart(e, url)}
-                    onClick={() => handleStickerClick(url)}
-                    className="aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200 group"
-                    title={t('widgets.stickers.dragOrClick')}
-                  >
-                    <img
-                      src={url}
-                      alt="Global Sticker"
-                      className="object-contain pointer-events-none group-hover:rotate-12 transition-transform"
-                      style={{
-                        width: 'min(40px, 10cqmin)',
-                        height: 'min(40px, 10cqmin)',
-                      }}
+                <div
+                  className="grid grid-cols-4"
+                  style={{ gap: 'min(16px, 3.5cqmin)' }}
+                >
+                  {unifiedStickers.map((sticker) => (
+                    <SortableSticker
+                      key={sticker.id}
+                      sticker={sticker}
+                      isFavorite={favorites.includes(sticker.url)}
+                      toggleFavorite={toggleFavorite}
+                      onStickerClick={handleStickerClick}
+                      onDragStart={handleDragStart}
+                      onDeleteCustom={
+                        sticker.type === 'custom'
+                          ? () => removeCustomSticker(sticker.url)
+                          : undefined
+                      }
                     />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </SortableContext>
             </div>
-          )}
-
-          {/* Custom */}
-          {customStickers.length > 0 && (
-            <div>
-              <h4
-                className="font-black text-slate-400 uppercase tracking-widest"
-                style={{
-                  fontSize: 'min(10px, 2.5cqmin)',
-                  marginBottom: 'min(16px, 3.5cqmin)',
-                  padding: '0 min(4px, 1cqmin)',
-                }}
-              >
-                {t('widgets.stickers.myCollection')}
-              </h4>
-              <div
-                className="grid grid-cols-4"
-                style={{ gap: 'min(16px, 3.5cqmin)' }}
-              >
-                {customStickers.map((url, i) => (
-                  <div
-                    key={i}
-                    draggable
-                    data-no-drag="true"
-                    onDragStart={(e) => handleDragStart(e, url)}
-                    onClick={() => handleStickerClick(url)}
-                    className="group relative aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200"
-                    title={t('widgets.stickers.dragOrClick')}
-                  >
-                    <img
-                      src={url}
-                      alt="Custom Sticker"
-                      className="w-full h-full object-contain pointer-events-none"
-                      style={{ padding: 'min(10px, 2.5cqmin)' }}
-                    />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeCustomSticker(i);
-                      }}
-                      className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
-                      style={{ padding: 'min(6px, 1.5cqmin)' }}
-                      title={t('widgets.stickers.deleteSticker')}
-                    >
-                      <Trash2
-                        style={{
-                          width: 'min(12px, 3cqmin)',
-                          height: 'min(12px, 3cqmin)',
-                        }}
-                      />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          </DndContext>
         </div>
       }
       footer={
