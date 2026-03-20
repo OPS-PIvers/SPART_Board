@@ -59,3 +59,5 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 ## 2024-05-20 - [Event Countdown] **Source:** Calendar **Destination:** Timer (Time Tool) **Value:** Launches a timer that counts down to the start of a calendar event.
 
 ## 2024-05-21 - [Generate Mini App] **Source:** Embed **Destination:** Mini App **Value:** Automatically generates an interactive mini app based on an embedded resource.
+
+## 2026-03-20 - [Generate Mini App] **Source:** Text **Destination:** Mini App **Value:** Automatically generates an interactive mini app based on user-provided text content.
