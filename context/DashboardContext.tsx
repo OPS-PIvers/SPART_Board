@@ -1855,6 +1855,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           if (raw.fontFamily) out.fontFamily = raw.fontFamily;
           if (raw.themeColor) out.themeColor = raw.themeColor;
           break;
+        case 'breathing':
+          if (raw.pattern) out.pattern = raw.pattern;
+          if (raw.visual) out.visual = raw.visual;
+          if (raw.color) out.color = raw.color;
+          break;
         case 'time-tool':
           if (typeof raw.duration === 'number') {
             out.duration = raw.duration;
