@@ -43,6 +43,7 @@ import { PollConfigurationPanel } from './PollConfigurationPanel';
 import { QRConfigurationPanel } from './QRConfigurationPanel';
 import { EmbedConfigurationPanel } from './EmbedConfigurationPanel';
 import { BreathingConfigurationPanel } from './BreathingConfigurationPanel';
+import { NumberLineConfigurationPanel } from './NumberLineConfigurationPanel';
 import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
@@ -74,6 +75,7 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   qr: QRConfigurationPanel as unknown as BuildingConfigPanel,
   embed: EmbedConfigurationPanel as unknown as BuildingConfigPanel,
   breathing: BreathingConfigurationPanel as unknown as BuildingConfigPanel,
+  numberLine: NumberLineConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {

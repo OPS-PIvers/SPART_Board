@@ -82,7 +82,11 @@
 -- `displayCount`: Default number of items to show in queue.
 -- `fontFamily`: Default UI font.
 -- `themeColor`: Default brand color.
-[ ] Number Line - No admin config.
+[X] Number Line - Default User-Level Settings
+-- `min`, `max`, `step`: Default number line range and intervals.
+-- `displayMode`: Default visual mode ('integers', 'decimals', 'fractions').
+-- `showArrows`: Default toggle for end arrows. - Admin-Only Settings
+-- None.
 [ ] Onboarding - No admin config.
 [ ] PDF - No admin config.
 [X] Poll - Default User-Level Settings

@@ -862,6 +862,7 @@ export const FeaturePermissionsManager: React.FC = () => {
           'starter-pack',
           'music',
           'catalyst',
+          'numberLine',
         ].includes(activeModalTool.type) && (
           <GenericConfigurationModal
             tool={activeModalTool}
