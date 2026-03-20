@@ -8,8 +8,13 @@
         -- [Description]"
 
 ## Widgets:
-[ ] Breathing
-    - No admin config.
+[X] Breathing
+    - Default User-Level Settings
+        -- `pattern`: Default breathing pattern.
+        -- `visual`: Default visual style.
+        -- `color`: Default color theme.
+    - Admin-Only Settings
+        -- None.
 [X] Calendar
     - Default User-Level Settings
         -- `events`: Pre-populated building events.
