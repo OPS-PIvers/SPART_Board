@@ -20,7 +20,7 @@ const mockUpdateWidget = vi.fn();
 describe('ClockSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as any).mockReturnValue({
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       updateWidget: mockUpdateWidget,
     });
   });
@@ -48,7 +48,7 @@ describe('ClockSettings', () => {
     fireEvent.click(formatButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('clock-1', {
-      config: expect.objectContaining({ format24: false }),
+      config: expect.objectContaining({ format24: false }) as unknown,
     });
   });
 
@@ -60,7 +60,7 @@ describe('ClockSettings', () => {
     fireEvent.click(secondsButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('clock-1', {
-      config: expect.objectContaining({ showSeconds: false }),
+      config: expect.objectContaining({ showSeconds: false }) as unknown,
     });
   });
 });
@@ -68,7 +68,7 @@ describe('ClockSettings', () => {
 describe('ClockAppearanceSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as any).mockReturnValue({
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       updateWidget: mockUpdateWidget,
     });
   });
@@ -97,7 +97,7 @@ describe('ClockAppearanceSettings', () => {
     fireEvent.click(modernFontButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('clock-1', {
-      config: expect.objectContaining({ fontFamily: 'font-sans' }),
+      config: expect.objectContaining({ fontFamily: 'font-sans' }) as unknown,
     });
   });
 
@@ -109,7 +109,7 @@ describe('ClockAppearanceSettings', () => {
     fireEvent.click(lcdStyleButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('clock-1', {
-      config: expect.objectContaining({ clockStyle: 'lcd' }),
+      config: expect.objectContaining({ clockStyle: 'lcd' }) as unknown,
     });
   });
 
@@ -125,7 +125,9 @@ describe('ClockAppearanceSettings', () => {
     fireEvent.click(colorButtons[0]);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('clock-1', {
-      config: expect.objectContaining({ themeColor: expect.any(String) }),
+      config: expect.objectContaining({
+        themeColor: expect.any(String) as unknown,
+      }) as unknown,
     });
   });
 
@@ -137,7 +139,7 @@ describe('ClockAppearanceSettings', () => {
     fireEvent.click(glowButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('clock-1', {
-      config: expect.objectContaining({ glow: true }),
+      config: expect.objectContaining({ glow: true }) as unknown,
     });
   });
 });
