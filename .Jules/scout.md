@@ -10,4 +10,4 @@
 
 ## 2026-03-15 - ClassesWidget branch coverage gaps\n\n**Gap:** Lines testing classLinkLoading conditional className, and confirmDeleteId conditional exist but are difficult to safely test without bad mock leaking or anti-patterns since React naturally prevents the negative case (button renders only when id exists).\n**Fix:** Accepted slightly less than 100% (95%) on branch coverage for these defensive idioms to avoid writing brittle tests that test implementation details.
 
-## 2025-05-18 - SeatingChart Widget Tests\n\n**Gap:** Multi-select pointer events dropping and failing to update selectedIds in JSDOM.\n**Fix:** Wait for state updates with await screen.findByText and mock microtask delays, and use mockClear before executing final target function testing.
+## 2026-03-20 - SeatingChart Widget Tests\n\n**Gap:** Multi-select pointer events dropping and failing to update selectedIds in JSDOM.\n**Fix:** Wait for state updates with await screen.findByText and mock microtask delays, and use mockClear before executing final target function testing.
