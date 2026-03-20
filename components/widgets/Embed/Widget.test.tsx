@@ -13,11 +13,47 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 import * as aiModule from '@/utils/ai';
 import { useEmbedConfig } from './hooks/useEmbedConfig';
+import { useAuth } from '@/context/useAuth';
 
 vi.mock('@/context/useAuth', () => ({
   useAuth: vi.fn(() => ({
-    user: { uid: 'test-uid' },
+    user: {
+      uid: 'test-uid',
+      displayName: 'Test User',
+      email: 'test@example.com',
+      getIdToken: vi.fn(),
+      getIdTokenResult: vi.fn(),
+      reload: vi.fn(),
+      toJSON: vi.fn(),
+      delete: vi.fn(),
+      emailVerified: true,
+      isAnonymous: false,
+      metadata: {},
+      phoneNumber: null,
+      photoURL: null,
+      providerData: [],
+      providerId: 'firebase',
+      refreshToken: 'test-refresh-token',
+      tenantId: null,
+    } as unknown as User,
+    googleAccessToken: 'test-token',
+    loading: false,
+    isAdmin: false,
+    featurePermissions: [],
+    globalPermissions: [],
+    canAccessWidget: vi.fn(() => true),
+    canAccessFeature: vi.fn(() => true),
+    signInWithGoogle: vi.fn(),
+    signOut: vi.fn(),
     selectedBuildings: ['schumann-elementary'],
+    userGradeLevels: [],
+    setSelectedBuildings: vi.fn(),
+    language: 'en',
+    setLanguage: vi.fn(),
+    refreshGoogleToken: vi.fn(),
+    connectGoogleDrive: vi.fn(),
+    savedWidgetConfigs: {},
+    saveWidgetConfig: vi.fn(),
   })),
 }));
 
@@ -297,6 +333,54 @@ describe('EmbedWidget', () => {
       });
 
       expect(mockAddWidget).not.toHaveBeenCalled();
+    });
+
+    it('does not render the generate button if feature is inaccessible', () => {
+      vi.mocked(useAuth).mockReturnValueOnce({
+        user: {
+          uid: 'test-uid',
+          displayName: 'Test User',
+          email: 'test@example.com',
+          getIdToken: vi.fn(),
+          getIdTokenResult: vi.fn(),
+          reload: vi.fn(),
+          toJSON: vi.fn(),
+          delete: vi.fn(),
+          emailVerified: true,
+          isAnonymous: false,
+          metadata: {},
+          phoneNumber: null,
+          photoURL: null,
+          providerData: [],
+          providerId: 'firebase',
+          refreshToken: 'test-refresh-token',
+          tenantId: null,
+        } as unknown as User,
+        googleAccessToken: 'test-token',
+        loading: false,
+        isAdmin: false,
+        featurePermissions: [],
+        globalPermissions: [],
+        canAccessWidget: vi.fn(() => true),
+        canAccessFeature: vi.fn(() => false),
+        signInWithGoogle: vi.fn(),
+        signOut: vi.fn(),
+        selectedBuildings: ['schumann-elementary'],
+        userGradeLevels: [],
+        setSelectedBuildings: vi.fn(),
+        language: 'en',
+        setLanguage: vi.fn(),
+        refreshGoogleToken: vi.fn(),
+        connectGoogleDrive: vi.fn(),
+        savedWidgetConfigs: {},
+        saveWidgetConfig: vi.fn(),
+      });
+
+      render(<EmbedWidget widget={validWidget} />);
+      const btn = screen.queryByRole('button', {
+        name: /generate interactive mini app/i,
+      });
+      expect(btn).not.toBeInTheDocument();
     });
   });
 });
