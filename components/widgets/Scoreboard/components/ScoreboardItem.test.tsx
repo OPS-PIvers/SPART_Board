@@ -3,6 +3,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScoreboardItem } from './ScoreboardItem';
 import { ScoreboardTeam } from '@/types';
 
+const plusSpy = vi.fn();
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('lucide-react')>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Plus: (props: any) => {
+      plusSpy(props);
+      return <div data-testid="plus-icon" />;
+    },
+  };
+});
+
 describe('ScoreboardItem', () => {
   const mockTeam: ScoreboardTeam = {
     id: 'team-1',
@@ -15,6 +28,7 @@ describe('ScoreboardItem', () => {
 
   beforeEach(() => {
     mockOnUpdateScore.mockClear();
+    plusSpy.mockClear();
   });
 
   it('renders team name and score', () => {
@@ -75,5 +89,35 @@ describe('ScoreboardItem', () => {
     const teamName = screen.getByText('Delta');
     expect(teamName).toBeInTheDocument();
     expect(teamName).toHaveClass('text-blue-600');
+  });
+  it('does not re-render if props are equal, but does if linkedGroupId changes', () => {
+    const onUpdateScore = vi.fn();
+    const team1: ScoreboardTeam = {
+      id: 'team-1',
+      name: 'Alpha',
+      score: 10,
+      color: 'bg-blue-500',
+    };
+
+    const { rerender } = render(
+      <ScoreboardItem team={team1} onUpdateScore={onUpdateScore} />
+    );
+
+    // First render
+    expect(plusSpy).toHaveBeenCalledTimes(1);
+
+    // Rerender with the EXACT same props (cloned object)
+    const team2 = { ...team1 };
+    rerender(<ScoreboardItem team={team2} onUpdateScore={onUpdateScore} />);
+
+    // Memoization works: render is skipped, call count remains 1
+    expect(plusSpy).toHaveBeenCalledTimes(1);
+
+    // Rerender with a change to linkedGroupId
+    const team3 = { ...team1, linkedGroupId: 'new-group-id' };
+    rerender(<ScoreboardItem team={team3} onUpdateScore={onUpdateScore} />);
+
+    // Memoization busts: render occurs, call count becomes 2
+    expect(plusSpy).toHaveBeenCalledTimes(2);
   });
 });
