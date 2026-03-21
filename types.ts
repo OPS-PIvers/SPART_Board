@@ -1467,6 +1467,17 @@ export interface SyntaxToken {
   isMasked: boolean; // Renders as a blank underscore if true
 }
 
+export interface BuildingConceptWebDefaults {
+  buildingId: string;
+  defaultNodeWidth?: number;
+  defaultNodeHeight?: number;
+  fontFamily?: GlobalFontFamily;
+}
+
+export interface ConceptWebGlobalConfig {
+  buildingDefaults: Record<string, BuildingConceptWebDefaults>;
+}
+
 export interface SyntaxFramerConfig {
   mode: 'text' | 'math'; // Math mode adds an equation-style font
   tokens: SyntaxToken[];

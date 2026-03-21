@@ -1986,6 +1986,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }
           break;
+        case 'concept-web':
+          if (raw.defaultNodeWidth !== undefined)
+            out.defaultNodeWidth = raw.defaultNodeWidth;
+          if (raw.defaultNodeHeight !== undefined)
+            out.defaultNodeHeight = raw.defaultNodeHeight;
+          if (raw.fontFamily) out.fontFamily = raw.fontFamily;
+          break;
         case 'hotspot-image':
           if (raw.popoverTheme) out.popoverTheme = raw.popoverTheme;
           break;

@@ -13,6 +13,7 @@
 ## Widgets:
 
 [X] Breathing
+
 - **User-level Defaults:**
   - `pattern`: Default breathing pattern.
   - `visual`: Default visual style.
@@ -21,6 +22,7 @@
   - None.
 
 [X] Calendar
+
 - **User-level Defaults:**
   - `events`: Pre-populated building events.
 - **Admin-only Settings:**
@@ -30,6 +32,7 @@
   - `dockDefaults`: Visibility in the building dock.
 
 [X] Car Rider Pro
+
 - **User-level Defaults:**
   - `iframeUrl`: The URL of the Car Rider Pro dashboard.
   - `cardColor`: Default background color.
@@ -38,12 +41,14 @@
   - `url`: Global district portal URL.
 
 [X] Catalyst
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
   - `dockDefaults`: Visibility in the building dock.
 
 [X] Checklist
+
 - **User-level Defaults:**
   - `items`: Default checklist items pre-populated on creation.
   - `scaleMultiplier`: Default font scaling.
@@ -53,6 +58,7 @@
 [ ] Classes - No admin config.
 
 [X] Clock
+
 - **User-level Defaults:**
   - `format24`: Toggle 24-hour time format.
   - `fontFamily`: Default clock font.
@@ -60,15 +66,24 @@
 - **Admin-only Settings:**
   - None.
 
-[ ] Concept Web - No admin config.
+[X] Concept Web
+
+- **User-level Defaults:**
+  - `fontFamily`: Default custom font.
+  - `defaultNodeWidth`: Default width as percentage.
+  - `defaultNodeHeight`: Default height as percentage.
+- **Admin-only Settings:**
+  - None.
 
 [X] Dice
+
 - **User-level Defaults:**
   - `count`: Default number of dice (1-6).
 - **Admin-only Settings:**
   - None.
 
 [X] Drawing
+
 - **User-level Defaults:**
   - `mode`: Default mode ('window' or 'overlay').
   - `width`: Default pen width.
@@ -77,6 +92,7 @@
   - None.
 
 [X] Embed
+
 - **User-level Defaults:**
   - `hideUrlField`: Prevents teachers from changing the URL.
   - `whitelistUrls`: Restricted list of allowed URLs.
@@ -84,6 +100,7 @@
   - None.
 
 [X] Expectations
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -93,6 +110,7 @@
   - `showVolume/Group/Interaction`: Visibility toggles for categories.
 
 [X] Graphic Organizer
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -102,12 +120,14 @@
 [ ] Hotspot Image - No admin config.
 
 [X] Instructional Routines
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
   - Global Library: CRUD management of routines available to all buildings.
 
 [X] Lunch Count
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -116,12 +136,14 @@
   - `submissionUrl`: Apps Script URL for data POSTing.
 
 [X] Materials
+
 - **User-level Defaults:**
   - `selectedItems`: Default material IDs selected on creation.
 - **Admin-only Settings:**
   - None.
 
 [X] Math Tools
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -129,6 +151,7 @@
   - `dpiCalibration`: Global pixel-per-inch calibration for building hardware.
 
 [X] Mini App
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -137,12 +160,14 @@
   - Global Library: CRUD management of mini-apps by building/grade.
 
 [X] Music
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
   - Global Library: CRUD management of stations (YouTube/Spotify) by building.
 
 [X] Next Up
+
 - **User-level Defaults:**
   - `displayCount`: Default number of items to show in queue.
   - `fontFamily`: Default UI font.
@@ -151,6 +176,7 @@
   - None.
 
 [X] Number Line
+
 - **User-level Defaults:**
   - `min`, `max`, `step`: Default number line range and intervals.
   - `displayMode`: Default visual mode ('integers', 'decimals', 'fractions').
@@ -161,6 +187,7 @@
 [ ] Onboarding - No admin config.
 
 [X] PDF
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -168,6 +195,7 @@
   - `dockDefaults`: Visibility in the building dock.
 
 [X] Poll
+
 - **User-level Defaults:**
   - `question`: Pre-populated default question.
   - `options`: Pre-populated default options.
@@ -175,6 +203,7 @@
   - None.
 
 [X] QR
+
 - **User-level Defaults:**
   - `defaultUrl`: Initial URL for generated QR codes.
   - `qrColor`: Default foreground color.
@@ -183,12 +212,14 @@
   - None.
 
 [X] Quiz
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
   - `dockDefaults`: Visibility in the building dock.
 
 [X] Random
+
 - **User-level Defaults:**
   - `visualStyle`: Default picker style ('flash', 'slots', 'wheel').
   - `soundEnabled`: Toggle sound effects on/off.
@@ -196,6 +227,7 @@
   - None.
 
 [X] Recess Gear
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -207,6 +239,7 @@
   - `useFeelsLike`: Toggle feels-like temperature usage.
 
 [X] Reveal Grid
+
 - **User-level Defaults:**
   - `columns`: Default column count.
   - `revealMode`: Default reveal mode ('flip' or 'fade').
@@ -217,6 +250,7 @@
   - `dockDefaults`: Visibility in the building dock.
 
 [X] Schedule
+
 - **User-level Defaults:**
   - `items`: Default schedule items.
   - `schedules`: Pre-defined building-level schedules.
@@ -224,6 +258,7 @@
   - None.
 
 [X] Scoreboard
+
 - **User-level Defaults:**
   - `teams`: Pre-defined team names and colors.
 - **Admin-only Settings:**
@@ -234,6 +269,7 @@
 [ ] Smart Notebook - No admin config.
 
 [X] Sound
+
 - **User-level Defaults:**
   - `visual`: Default visualizer style.
   - `sensitivity`: Initial mic sensitivity level.
@@ -241,6 +277,7 @@
   - None.
 
 [X] Specialist Schedule
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -254,6 +291,7 @@
   - `dockDefaults`: Visibility in the building dock.
 
 [X] Starter Pack
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -261,6 +299,7 @@
   - `dockDefaults`: Visibility in the building dock.
 
 [X] Stickers (Book)
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -269,12 +308,14 @@
 [ ] Syntax Framer - No admin config.
 
 [X] Talking Tool
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
   - Global Library: CRUD management of categories and sentence stems.
 
 [X] Text
+
 - **User-level Defaults:**
   - `fontSize`: Default text size.
   - `bgColor`: Default background color.
@@ -282,6 +323,7 @@
   - None.
 
 [X] Time Tool
+
 - **User-level Defaults:**
   - `duration`: Initial timer duration in seconds.
   - `timerEndTrafficColor`: Linked traffic light color on timer end.
@@ -289,12 +331,14 @@
   - None.
 
 [X] Traffic
+
 - **User-level Defaults:**
   - `active`: The initial light state ('red', 'yellow', 'green').
 - **Admin-only Settings:**
   - None.
 
 [X] Weather
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
@@ -306,6 +350,7 @@
   - `showFeelsLike`: Toggle feels-like temperature display.
 
 [X] Webcam
+
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
