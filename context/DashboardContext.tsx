@@ -1968,6 +1968,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }
           break;
+        case 'breathing':
+          if (raw.pattern) out.pattern = raw.pattern;
+          if (raw.visual) out.visual = raw.visual;
+          if (raw.color) out.color = raw.color;
+          break;
         default:
           break;
       }
