@@ -8,7 +8,7 @@ import {
   RandomGroup,
 } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Plus, Trash2, Users, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Users, RefreshCw, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { SCOREBOARD_COLORS as TEAM_COLORS } from '@/config/scoreboard';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
@@ -47,7 +47,7 @@ const TeamNameInput: React.FC<{
 export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, updateDashboard, activeDashboard, addToast } =
+  const { updateWidget, updateDashboard, activeDashboard, addToast, rosters, activeRosterId } =
     useDashboard();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const config = widget.config as ScoreboardConfig;
@@ -58,6 +58,39 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     () => activeDashboard?.widgets.find((w) => w.type === 'random'),
     [activeDashboard]
   );
+
+  // Active Roster
+  const activeRoster = useMemo(
+    () => rosters.find((r) => r.id === activeRosterId),
+    [rosters, activeRosterId]
+  );
+
+  const importFromClasses = () => {
+    if (!activeRoster) {
+      addToast('No active class selected in the Classes widget.', 'error');
+      return;
+    }
+
+    if (!activeRoster.students || activeRoster.students.length === 0) {
+      addToast('Active class has no students.', 'info');
+      return;
+    }
+
+    const newTeams: ScoreboardTeam[] = activeRoster.students.map((s, i) => {
+      const name = `${s.firstName} ${s.lastName}`.trim();
+      return {
+        id: crypto.randomUUID(),
+        name: name || `Student ${i + 1}`,
+        score: 0,
+        color: TEAM_COLORS[i % TEAM_COLORS.length],
+      };
+    });
+
+    updateWidget(widget.id, {
+      config: { ...config, teams: newTeams },
+    });
+    addToast(`Imported ${newTeams.length} students as teams!`, 'success');
+  };
 
   const importFromRandom = () => {
     if (!randomWidget) {
@@ -169,32 +202,64 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
-      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2 text-indigo-900">
-            <Users className="w-4 h-4" />
-            <span className="text-xs font-black uppercase tracking-wider">
-              Import from Randomizer
-            </span>
+      <div className="flex gap-4">
+        <div className="flex-1 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-indigo-900">
+              <Users className="w-4 h-4 shrink-0" />
+              <span className="text-xs font-black uppercase tracking-wider line-clamp-1">
+                From Randomizer
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={importFromRandom}
+              disabled={!randomWidget}
+              title={
+                !randomWidget ? 'Add a Randomizer widget first' : 'Import Groups'
+              }
+              icon={<RefreshCw className="w-3 h-3 shrink-0" />}
+              className="w-full text-xs"
+            >
+              Import Groups
+            </Button>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={importFromRandom}
-            disabled={!randomWidget}
-            title={
-              !randomWidget ? 'Add a Randomizer widget first' : 'Import Groups'
-            }
-            icon={<RefreshCw className="w-3 h-3" />}
-          >
-            Import Groups
-          </Button>
+          {!randomWidget && (
+            <div className="text-xxs text-indigo-400 font-medium">
+              Tip: Add a Randomizer widget and create groups first.
+            </div>
+          )}
         </div>
-        {!randomWidget && (
-          <div className="text-xxs text-indigo-400 font-medium">
-            Tip: Add a Randomizer widget and create groups to import them here.
+
+        <div className="flex-1 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-emerald-900">
+              <GraduationCap className="w-4 h-4 shrink-0" />
+              <span className="text-xs font-black uppercase tracking-wider line-clamp-1">
+                From Classes
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={importFromClasses}
+              disabled={!activeRoster}
+              title={
+                !activeRoster ? 'Select an active class in the Classes widget first' : 'Import Students'
+              }
+              icon={<RefreshCw className="w-3 h-3 shrink-0" />}
+              className="w-full text-xs"
+            >
+              Import Students
+            </Button>
           </div>
-        )}
+          {!activeRoster && (
+            <div className="text-xxs text-emerald-500 font-medium">
+              Tip: Select an active class in the Classes widget.
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
