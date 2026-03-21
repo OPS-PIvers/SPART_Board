@@ -1460,6 +1460,17 @@ export interface ConceptWebConfig {
   defaultNodeHeight?: number; // Height as a percentage of container
 }
 
+export interface BuildingConceptWebDefaults {
+  buildingId: string;
+  defaultNodeWidth?: number;
+  defaultNodeHeight?: number;
+  fontFamily?: GlobalFontFamily;
+}
+
+export interface ConceptWebGlobalConfig {
+  buildingDefaults: Record<string, BuildingConceptWebDefaults>;
+}
+
 export interface SyntaxToken {
   id: string;
   value: string; // the word, punctuation, or math operator

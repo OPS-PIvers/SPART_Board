@@ -122,14 +122,14 @@ Config: `components/admin/ClockConfigurationPanel.tsx` _(dedicated panel via `BU
 ---
 
 [X] Concept Web — Type: `concept-web` | Label: "Concept Web"
-Config: No dedicated file. `dockDefaults` only — handled automatically by `DockDefaultsPanel` inside
-`FeatureConfigurationPanel.tsx`. To add building-level defaults, create
-`components/admin/ConceptWebConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
+Config: `components/admin/ConceptWebConfigurationPanel.tsx` _(dedicated panel via `BUILDING_CONFIG_PANELS`)_
 
-- **User-level Defaults:**
-  - None.
-- **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
+- [Default User-Level Settings]
+  -- [defaultNodeWidth: Default width for new nodes.]
+  -- [defaultNodeHeight: Default height for new nodes.]
+  -- [fontFamily: Default custom font.]
+- [Admin-Only Settings]
+  -- [dockDefaults: Per-building dock visibility.]
 
 ---
 
