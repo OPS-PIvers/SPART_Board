@@ -793,6 +793,18 @@ export interface BreathingConfig {
   color: string;
 }
 
+// --- Breathing Global Config ---
+export interface BuildingBreathingDefaults {
+  buildingId: string;
+  pattern?: '4-4-4-4' | '4-7-8' | '5-5';
+  visual?: 'circle' | 'lotus' | 'wave';
+  color?: string;
+}
+
+export interface BreathingGlobalConfig {
+  buildingDefaults: Record<string, BuildingBreathingDefaults>;
+}
+
 // --- MATH TOOLS TYPES ---
 
 /** All individual math manipulative types available in the Math Tools suite */

@@ -8,7 +8,11 @@
 
 ## Widgets:
 
-[ ] Breathing - No admin config.
+[x] Breathing - [Default User-Level Settings]
+-- Default breathing pattern pre-selected on widget creation.
+-- Default visual style (sphere, lotus, ripple).
+-- Default color theme. - [Admin-Only Settings]
+-- None.
 [X] Calendar - Default User-Level Settings
 -- `events`: Pre-populated building events.
 -- `googleCalendarIds`: Default Google Calendar IDs for the building. - Admin-Only Settings
