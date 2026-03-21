@@ -76,7 +76,7 @@ export const useAppVersion = (checkIntervalMs = 60000) => {
       // Initial check to set current version
       const abortController = new AbortController();
 
-      const performInitialFetch = async () => {
+      void (async () => {
         try {
           const version = await fetchVersion(abortController.signal);
           if (isMountedRef.current && version) {
@@ -86,9 +86,7 @@ export const useAppVersion = (checkIntervalMs = 60000) => {
           if (err instanceof Error && err.name === 'AbortError') return;
           console.error('Failed to initial fetch version:', err);
         }
-      };
-
-      void performInitialFetch();
+      })();
 
       return () => {
         isMountedRef.current = false;
