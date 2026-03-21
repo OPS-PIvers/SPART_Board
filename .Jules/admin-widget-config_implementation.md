@@ -112,11 +112,9 @@ Config: `components/admin/ChecklistConfigurationPanel.tsx` _(dedicated panel via
 
 ---
 
-[x] Classes
-    - [Default User-Level Settings]
-        -- None.
-    - [Admin-Only Settings]
-        -- `classLinkEnabled`: Toggle to enable/disable ClassLink sync for the building.
+[x] Classes - [Default User-Level Settings]
+-- None. - [Admin-Only Settings]
+-- `classLinkEnabled`: Toggle to enable/disable ClassLink sync for the building.
 
 ---
 
