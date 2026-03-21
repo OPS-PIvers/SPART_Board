@@ -942,6 +942,8 @@ export interface StickerConfig {
 
 export interface StickerBookConfig {
   uploadedUrls?: string[];
+  favorites?: string[];
+  stickerOrder?: string[];
 }
 
 export interface GlobalSticker {
