@@ -2,32 +2,44 @@
 
 ## Legend
 
-- `[X]` — Admin configuration is implemented.
-- `[ ]` — No admin configuration exists or is needed.
-- **Type:** The `WidgetType` string used in code (`types.ts`, Firestore, `WidgetData.type`).
-- **Label:** The display name shown in the admin UI (from `config/tools.ts`).
-- **Config:** File path(s) for the admin panel/modal. Three patterns exist:
-  1. **Dedicated panel** — A `*ConfigurationPanel.tsx` file registered in `BUILDING_CONFIG_PANELS` inside `components/admin/FeatureConfigurationPanel.tsx`, rendered via `GenericConfigurationModal`.
-  2. **Inline** — Settings rendered directly inside `components/admin/FeatureConfigurationPanel.tsx` with no dedicated file. The component file may still exist but is instantiated inline rather than through `BUILDING_CONFIG_PANELS`.
-  3. **Separate modal** — A full dedicated modal opened by `FeaturePermissionsManager.tsx`, bypassing `GenericConfigurationModal` entirely.
-- **`dockDefaults`** — Every widget that passes through `GenericConfigurationModal` →
-  `FeatureConfigurationPanel.tsx` automatically gets per-building dock visibility toggles via
-  `DockDefaultsPanel.tsx`. Separate modals only have `dockDefaults` if they import and render
-  `DockDefaultsPanel` themselves (confirmed per file: Calendar, Catalyst, Graphic Organizer, PDF,
-  Specialist Schedule, Starter Pack). Separate modals without it: Instructional Routines, Mini Apps,
-  Music, Stickers.
+- `[X]` — A **dedicated** admin configuration panel or modal is implemented (beyond the generic
+  per-widget dock-defaults row that every widget receives automatically). This is the AI agent's
+  completion signal — do not re-implement these.
+- `[ ]` — **No dedicated admin config panel exists yet.** These are the AI agent's implementation
+  targets. Read the widget's `Settings.tsx` to identify user-facing settings to expose as building
+  defaults, then follow the skill file to implement.
+- `[-]` — Intentionally excluded. No admin configuration is needed or applicable for this widget.
+
+> **Generic dockDefaults note:** Every widget that passes through `GenericConfigurationModal` →
+> `FeatureConfigurationPanel.tsx` automatically receives per-building dock visibility toggles via
+> `DockDefaultsPanel.tsx`. This is **not** counted as a dedicated admin config panel. Separate modals
+> only have `dockDefaults` if they explicitly import and render `DockDefaultsPanel` themselves
+> (confirmed: Calendar, Catalyst, Graphic Organizer, PDF, Specialist Schedule, Starter Pack).
 
 ---
 
-## Required Structure
+## Architecture: Three Implementation Patterns
+
+1. **Dedicated panel** — A `*ConfigurationPanel.tsx` or `*ConfigurationModal.tsx` file registered in
+   `BUILDING_CONFIG_PANELS` inside `components/admin/FeatureConfigurationPanel.tsx`, rendered via
+   `GenericConfigurationModal`. Receives typed `config` + `onChange` props per building.
+2. **Inline** — Settings rendered directly inside `components/admin/FeatureConfigurationPanel.tsx`
+   with no separate file (or a component file instantiated inline rather than registered in
+   `BUILDING_CONFIG_PANELS`).
+3. **Separate modal** — A full dedicated modal opened by `FeaturePermissionsManager.tsx`, bypassing
+   `GenericConfigurationModal` entirely. Used for library-style or complex multi-step admin UIs.
+
+---
+
+## Required Entry Structure
 
 ```
 [X] Widget Display Name — Type: `widget-type` | Label: "Admin UI Label"
-Config: `components/admin/ExampleConfigurationPanel.tsx` (pattern)
+Config: `components/admin/ExampleConfigurationPanel.tsx` (pattern description)
 
 - **User-level Defaults:** (admin pre-configures per building; teachers can override in widget settings)
   - `setting`: description
-- **Admin-only Settings:** (admin-controlled only; teachers cannot change)
+- **Admin-only Settings:** (admin-controlled only; teachers cannot change or see these)
   - `setting`: description
 ```
 
@@ -79,8 +91,11 @@ Config: `components/admin/CarRiderConfigurationPanel.tsx` _(dedicated panel via 
 [X] Catalyst — Type: `catalyst` | Label: "Catalyst"
 Config: `components/admin/CatalystConfigurationModal.tsx` _(separate modal; includes `DockDefaultsPanel`)_
 
+Note: Catalyst has no user-facing settings panel — `CatalystSettings.tsx` explicitly renders an
+"Admin Managed" placeholder. The dedicated modal exists and is complete as dockDefaults-only.
+
 - **User-level Defaults:**
-  - None.
+  - None. Widget content is entirely admin-managed.
 - **Admin-only Settings:**
   - `dockDefaults`: Per-building dock visibility.
 
@@ -97,15 +112,19 @@ Config: `components/admin/ChecklistConfigurationPanel.tsx` _(dedicated panel via
 
 ---
 
-[X] Classes — Type: `classes` | Label: "Class"
-Config: No dedicated file. `dockDefaults` only — handled automatically by `DockDefaultsPanel` inside
-`FeatureConfigurationPanel.tsx`. To add building-level defaults, create
-`components/admin/ClassesConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
+[ ] Classes — Type: `classes` | Label: "Class"
+Config: `components/admin/ClassesConfigurationPanel.tsx` _(does not exist yet — create and register
+in `BUILDING_CONFIG_PANELS`)_
+
+Note: `ClassesWidget.tsx` has no `Settings.tsx`. The widget manages rosters internally via
+`RosterEditor.tsx`. Admin config opportunities are admin-only (no user-level defaults to expose).
 
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
+  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
+  - Investigate additional admin-only opportunities (e.g., default roster source, grade-level
+    visibility) before implementing.
 
 ---
 
@@ -121,15 +140,18 @@ Config: `components/admin/ClockConfigurationPanel.tsx` _(dedicated panel via `BU
 
 ---
 
-[X] Concept Web — Type: `concept-web` | Label: "Concept Web"
-Config: No dedicated file. `dockDefaults` only — handled automatically by `DockDefaultsPanel` inside
-`FeatureConfigurationPanel.tsx`. To add building-level defaults, create
-`components/admin/ConceptWebConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
+[ ] Concept Web — Type: `concept-web` | Label: "Concept Web"
+Config: `components/admin/ConceptWebConfigurationPanel.tsx` _(does not exist yet — create and
+register in `BUILDING_CONFIG_PANELS`)_
+
+User-facing settings are in `components/widgets/ConceptWeb/Settings.tsx`.
 
 - **User-level Defaults:**
-  - None.
+  - `defaultNodeWidth`: Default node width (percent of canvas).
+  - `defaultNodeHeight`: Default node height (percent of canvas).
+  - `fontFamily`: Default font family for node labels.
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
+  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
 
 ---
 
@@ -217,8 +239,7 @@ Config: `components/admin/InstructionalRoutinesManager.tsx` _(separate modal; do
 
 [X] Lunch Count — Type: `lunchCount` | Label: "Lunch"
 Config: Inline in `components/admin/FeatureConfigurationPanel.tsx` — no dedicated file. To extract,
-create `components/admin/LunchCountConfigurationPanel.tsx` and add a case to the inline block or
-register in `BUILDING_CONFIG_PANELS`.
+create `components/admin/LunchCountConfigurationPanel.tsx` and register in `BUILDING_CONFIG_PANELS`.
 
 - **User-level Defaults:**
   - None.
@@ -311,8 +332,9 @@ Config: `components/admin/NumberLineConfigurationPanel.tsx` _(dedicated panel vi
 
 ---
 
-[ ] Onboarding — Type: `onboarding` | Label: N/A
-Not present in `config/tools.ts` — no admin panel row exists. No admin configuration.
+[-] Onboarding — Type: `onboarding` | Label: N/A
+
+Not present in `config/tools.ts` — no admin panel row exists. No admin configuration needed.
 
 ---
 
@@ -350,15 +372,19 @@ Config: `components/admin/QRConfigurationPanel.tsx` _(dedicated panel via `BUILD
 
 ---
 
-[X] Quiz — Type: `quiz` | Label: "Quiz"
-Config: No dedicated file. `dockDefaults` only — handled automatically by `DockDefaultsPanel` inside
-`FeatureConfigurationPanel.tsx`. To add building-level defaults, create
-`components/admin/QuizConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
+[ ] Quiz — Type: `quiz` | Label: "Quiz"
+Config: `components/admin/QuizConfigurationPanel.tsx` _(does not exist yet — create and register in
+`BUILDING_CONFIG_PANELS`)_
+
+Note: `QuizWidget/Settings.tsx` exposes only `customTitle` (not a meaningful building default). Admin
+config opportunity is primarily admin-only (e.g., a global quiz library). Investigate admin-only
+settings before implementing.
 
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
+  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
+  - Investigate: global quiz library, default quiz source/integration settings.
 
 ---
 
@@ -375,8 +401,7 @@ Config: `components/admin/RandomConfigurationPanel.tsx` _(dedicated panel via `B
 
 [X] Recess Gear — Type: `recessGear` | Label: "Recess Gear"
 Config: Inline in `components/admin/FeatureConfigurationPanel.tsx` — no dedicated file. To extract,
-create `components/admin/RecessGearConfigurationPanel.tsx` and add a case to the inline block or
-register in `BUILDING_CONFIG_PANELS`.
+create `components/admin/RecessGearConfigurationPanel.tsx` and register in `BUILDING_CONFIG_PANELS`.
 
 - **User-level Defaults:**
   - None.
@@ -391,20 +416,20 @@ register in `BUILDING_CONFIG_PANELS`.
 
 ---
 
-[X] Reveal Grid — Type: `reveal-grid` | Label: "Reveal"
-Config: No dedicated file. Currently `dockDefaults` only — handled automatically by `DockDefaultsPanel`
-inside `FeatureConfigurationPanel.tsx`. Planned building-level defaults below are **not yet
-implemented** in the admin panel. To implement, create
-`components/admin/RevealGridConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
+[ ] Reveal Grid — Type: `reveal-grid` | Label: "Reveal"
+Config: `components/admin/RevealGridConfigurationPanel.tsx` _(does not exist yet — create and
+register in `BUILDING_CONFIG_PANELS`)_
 
-- **User-level Defaults:** _(planned — not yet admin-configurable)_
+User-facing settings are in `components/widgets/RevealGrid/Settings.tsx`.
+
+- **User-level Defaults:**
   - `columns`: Default column count.
   - `revealMode`: Default reveal mode (`'flip'` or `'fade'`).
   - `fontFamily`: Default custom font.
   - `defaultCardColor`: Default front card color.
   - `defaultCardBackColor`: Default back card color.
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
+  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
 
 ---
 
@@ -429,31 +454,35 @@ Config: `components/admin/ScoreboardConfigurationPanel.tsx` _(dedicated panel vi
 
 ---
 
-[X] Seating Chart — Type: `seating-chart` | Label: "Seating"
-Config: No dedicated file. `dockDefaults` only — handled automatically by `DockDefaultsPanel` inside
-`FeatureConfigurationPanel.tsx`. To add building-level defaults, create
-`components/admin/SeatingChartConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
+[ ] Seating Chart — Type: `seating-chart` | Label: "Seating"
+Config: `components/admin/SeatingChartConfigurationPanel.tsx` _(does not exist yet — create and
+register in `BUILDING_CONFIG_PANELS`)_
+
+User-facing settings are in `components/widgets/SeatingChart/Settings.tsx`.
+
+- **User-level Defaults:**
+  - `rosterMode`: Default roster source (`'class'` or `'custom'`).
+- **Admin-only Settings:**
+  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
+
+---
+
+[ ] Smart Notebook — Type: `smartNotebook` | Label: "Notebook"
+Config: `components/admin/SmartNotebookConfigurationPanel.tsx` _(does not exist yet — create and
+register in `BUILDING_CONFIG_PANELS`)_
+
+Note: `SmartNotebook` has no `Settings.tsx`. The widget manages notebook state internally. Admin
+config opportunities are admin-only. Investigate before implementing.
 
 - **User-level Defaults:**
   - None.
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
+  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
+  - Investigate: default notebook template, AI feature toggles, storage limits.
 
 ---
 
-[X] Smart Notebook — Type: `smartNotebook` | Label: "Notebook"
-Config: No dedicated file. `dockDefaults` only — handled automatically by `DockDefaultsPanel` inside
-`FeatureConfigurationPanel.tsx`. To add building-level defaults, create
-`components/admin/SmartNotebookConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
-
-- **User-level Defaults:**
-  - None.
-- **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
-
----
-
-[X] Sound — Type: `sound` | Label: "Noise"
+[X] Sound / Noise — Type: `sound` | Label: "Noise"
 Config: `components/admin/SoundConfigurationPanel.tsx` _(dedicated panel via `BUILDING_CONFIG_PANELS`)_
 
 - **User-level Defaults:**
@@ -484,9 +513,10 @@ Config: `components/admin/SpecialistScheduleConfigurationModal.tsx` _(separate m
 
 [X] Starter Pack — Type: `starter-pack` | Label: "Starter Packs"
 Config: `components/admin/StarterPackConfigurationModal.tsx` _(separate modal; includes `DockDefaultsPanel`)_
-**Note:** `components/admin/StarterPackConfigModal.tsx` also exists — `FeaturePermissionsManager.tsx`
-imports `StarterPackConfigurationModal` (the longer name). Verify `StarterPackConfigModal.tsx` is not
-a stale duplicate before editing either file.
+
+**Note:** `components/admin/StarterPackConfigModal.tsx` also exists —
+`FeaturePermissionsManager.tsx` imports `StarterPackConfigurationModal` (the longer name). Verify
+`StarterPackConfigModal.tsx` is not a stale duplicate before editing either file.
 
 - **User-level Defaults:**
   - None.
@@ -507,15 +537,17 @@ Config: `components/admin/StickerLibraryModal.tsx` _(separate modal; does **not*
 
 ---
 
-[X] Syntax Framer — Type: `syntax-framer` | Label: "Syntax Framer"
-Config: No dedicated file. `dockDefaults` only — handled automatically by `DockDefaultsPanel` inside
-`FeatureConfigurationPanel.tsx`. To add building-level defaults, create
-`components/admin/SyntaxFramerConfigurationPanel.tsx` and register it in `BUILDING_CONFIG_PANELS`.
+[ ] Syntax Framer — Type: `syntax-framer` | Label: "Syntax Framer"
+Config: `components/admin/SyntaxFramerConfigurationPanel.tsx` _(does not exist yet — create and
+register in `BUILDING_CONFIG_PANELS`)_
+
+User-facing settings are in `components/widgets/SyntaxFramer/Settings.tsx`.
 
 - **User-level Defaults:**
-  - None.
+  - `mode`: Default input mode (`'text'` or `'math'`).
+  - `alignment`: Default token alignment (`'left'`, `'center'`).
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility.
+  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
 
 ---
 
@@ -554,8 +586,7 @@ Config: `components/admin/TrafficLightConfigurationPanel.tsx` _(dedicated panel 
 
 [X] Weather — Type: `weather` | Label: "Weather"
 Config: Inline in `components/admin/FeatureConfigurationPanel.tsx` — no dedicated file. To extract,
-create `components/admin/WeatherConfigurationPanel.tsx` and add a case to the inline block or register
-in `BUILDING_CONFIG_PANELS`.
+create `components/admin/WeatherConfigurationPanel.tsx` and register in `BUILDING_CONFIG_PANELS`.
 
 - **User-level Defaults:**
   - None.
@@ -572,8 +603,7 @@ in `BUILDING_CONFIG_PANELS`.
 
 [X] Webcam — Type: `webcam` | Label: "Camera"
 Config: Inline in `components/admin/FeatureConfigurationPanel.tsx` — no dedicated file. To extract,
-create `components/admin/WebcamConfigurationPanel.tsx` and add a case to the inline block or register
-in `BUILDING_CONFIG_PANELS`.
+create `components/admin/WebcamConfigurationPanel.tsx` and register in `BUILDING_CONFIG_PANELS`.
 
 - **User-level Defaults:**
   - None.
