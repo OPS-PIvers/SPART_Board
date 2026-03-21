@@ -268,6 +268,34 @@ export const useStorage = () => {
     return { url, storagePath };
   };
 
+  const uploadAdminPdf = async (
+    file: File
+  ): Promise<{ url: string; storagePath: string }> => {
+    if (driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          file,
+          `pdf-${Date.now()}-${file.name}`,
+          'Assets/PDFs'
+        );
+        await driveService.makePublic(driveFile.id, userDomain);
+        const previewUrl = `https://drive.google.com/file/d/${driveFile.id}/preview`;
+        return {
+          url: previewUrl,
+          storagePath: driveFile.webViewLink ?? previewUrl,
+        };
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    const timestamp = Date.now();
+    const storagePath = `global_pdfs/${timestamp}-${file.name}`;
+    const url = await uploadFile(storagePath, file);
+    return { url, storagePath };
+  };
+
   const uploadAndRegisterPdf = async (
     userId: string,
     file: File
@@ -301,6 +329,7 @@ export const useStorage = () => {
     uploadAdminSticker,
     uploadCatalystImage,
     uploadPdf,
+    uploadAdminPdf,
     uploadAndRegisterPdf,
   };
 };

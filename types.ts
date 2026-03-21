@@ -172,6 +172,7 @@ export interface ScheduleItem {
   mode?: 'clock' | 'timer';
   linkedWidgets?: WidgetType[];
   spawnedWidgetIds?: string[];
+  oneOffDate?: string; // YYYY-MM-DD: if set, item only shows on this specific date
 }
 
 export interface DailySchedule {
@@ -481,6 +482,18 @@ export interface EmbedGlobalConfig {
   buildingDefaults: Record<string, BuildingEmbedDefaults>;
 }
 
+// --- Breathing Global Config ---
+export interface BuildingBreathingDefaults {
+  buildingId: string;
+  pattern?: '4-4-4-4' | '4-7-8' | '5-5';
+  visual?: 'circle' | 'lotus' | 'wave';
+  color?: string;
+}
+
+export interface BreathingGlobalConfig {
+  buildingDefaults: Record<string, BuildingBreathingDefaults>;
+}
+
 // --- Clock Global Config ---
 export interface BuildingClockDefaults {
   buildingId: string;
@@ -787,6 +800,16 @@ export interface PdfItem {
   uploadedAt: number;
   order?: number;
 }
+
+export interface GlobalPdfItem extends PdfItem {
+  buildings?: string[];
+  createdAt?: number;
+}
+
+export interface PdfGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 export interface BreathingConfig {
   pattern: '4-4-4-4' | '4-7-8' | '5-5';
   visual: 'circle' | 'lotus' | 'wave';
@@ -941,6 +964,8 @@ export interface StickerConfig {
 
 export interface StickerBookConfig {
   uploadedUrls?: string[];
+  favorites?: string[];
+  stickerOrder?: string[];
 }
 
 export interface GlobalSticker {
@@ -1131,6 +1156,11 @@ export interface QuizResponse {
   tabSwitchWarnings?: number;
 }
 
+/** Global admin configuration for the Quiz widget */
+export interface QuizGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 /** Widget configuration for the quiz widget (teacher side) */
 export interface QuizConfig {
   view: 'manager' | 'import' | 'editor' | 'preview' | 'results' | 'monitor';
@@ -1244,6 +1274,15 @@ export interface NumberLineConfig {
   markers: NumberLineMarker[];
   jumps: NumberLineJump[];
   showArrows: boolean;
+}
+
+export type BuildingNumberLineDefaults = Pick<
+  NumberLineConfig,
+  'min' | 'max' | 'step' | 'displayMode' | 'showArrows'
+>;
+
+export interface NumberLineGlobalConfig {
+  buildingDefaults?: Record<string, BuildingNumberLineDefaults>;
 }
 
 export interface SpecialistScheduleBuildingConfig {
@@ -1451,6 +1490,15 @@ export interface HotspotSavedItem {
   hotspots: ImageHotspot[];
   popoverTheme?: 'light' | 'dark' | 'glass';
   createdAt: number;
+}
+
+export interface BuildingHotspotImageDefaults {
+  buildingId: string;
+  popoverTheme?: 'light' | 'dark' | 'glass';
+}
+
+export interface HotspotImageGlobalConfig {
+  buildingDefaults: Record<string, BuildingHotspotImageDefaults>;
 }
 
 export interface HotspotImageConfig {

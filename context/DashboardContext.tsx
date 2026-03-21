@@ -1850,10 +1850,28 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const out: Record<string, unknown> = {};
       switch (type) {
+        case 'numberLine':
+          if (raw.min !== undefined) out.min = raw.min;
+          if (raw.max !== undefined) out.max = raw.max;
+          if (raw.step !== undefined) out.step = raw.step;
+          if (raw.displayMode !== undefined) out.displayMode = raw.displayMode;
+          if (raw.showArrows !== undefined) out.showArrows = raw.showArrows;
+          break;
         case 'clock':
           if (raw.format24 !== undefined) out.format24 = raw.format24;
           if (raw.fontFamily) out.fontFamily = raw.fontFamily;
           if (raw.themeColor) out.themeColor = raw.themeColor;
+          break;
+        case 'breathing':
+          if (typeof raw.pattern === 'string' && raw.pattern.trim() !== '') {
+            out.pattern = raw.pattern;
+          }
+          if (typeof raw.visual === 'string' && raw.visual.trim() !== '') {
+            out.visual = raw.visual;
+          }
+          if (typeof raw.color === 'string' && raw.color.trim() !== '') {
+            out.color = raw.color;
+          }
           break;
         case 'time-tool':
           if (typeof raw.duration === 'number') {
@@ -1967,6 +1985,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               };
             }
           }
+          break;
+        case 'hotspot-image':
+          if (raw.popoverTheme) out.popoverTheme = raw.popoverTheme;
           break;
         default:
           break;
