@@ -3,6 +3,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScoreboardItem } from './ScoreboardItem';
 import { ScoreboardTeam } from '@/types';
 
+const plusSpy = vi.fn();
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('lucide-react')>();
+  return {
+    ...actual,
+    Plus: (props: any) => {
+      plusSpy(props);
+      return <div data-testid="plus-icon" />;
+    },
+  };
+});
+
 describe('ScoreboardItem', () => {
   const mockTeam: ScoreboardTeam = {
     id: 'team-1',
@@ -15,6 +27,7 @@ describe('ScoreboardItem', () => {
 
   beforeEach(() => {
     mockOnUpdateScore.mockClear();
+    plusSpy.mockClear();
   });
 
   it('renders team name and score', () => {
@@ -85,26 +98,25 @@ describe('ScoreboardItem', () => {
       color: 'bg-blue-500',
     };
 
-    const { rerender, container } = render(
+    const { rerender } = render(
       <ScoreboardItem team={team1} onUpdateScore={onUpdateScore} />
     );
 
     // First render
-    const firstHtml = container.innerHTML;
+    expect(plusSpy).toHaveBeenCalledTimes(1);
 
     // Rerender with the EXACT same props (cloned object)
     const team2 = { ...team1 };
     rerender(<ScoreboardItem team={team2} onUpdateScore={onUpdateScore} />);
-    expect(container.innerHTML).toBe(firstHtml);
+
+    // Memoization works: render is skipped, call count remains 1
+    expect(plusSpy).toHaveBeenCalledTimes(1);
 
     // Rerender with a change to linkedGroupId
     const team3 = { ...team1, linkedGroupId: 'new-group-id' };
     rerender(<ScoreboardItem team={team3} onUpdateScore={onUpdateScore} />);
 
-    // Note: React Testing Library doesn't trivially spy on functional component renders out of the box
-    // unless we mock it or use Profiler. However, we're executing the `prevProps.team.linkedGroupId === nextProps.team.linkedGroupId` branch
-    // in the custom comparator, which is what we need for coverage.
-    // The DOM might not visually change if linkedGroupId isn't displayed, but React will process the update.
-    expect(container.innerHTML).toBe(firstHtml); // visually identical
+    // Memoization busts: render occurs, call count becomes 2
+    expect(plusSpy).toHaveBeenCalledTimes(2);
   });
 });
