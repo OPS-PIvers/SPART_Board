@@ -45,6 +45,7 @@ import { EmbedConfigurationPanel } from './EmbedConfigurationPanel';
 import { BreathingConfigurationPanel } from './BreathingConfigurationPanel';
 import { NumberLineConfigurationPanel } from './NumberLineConfigurationPanel';
 import { HotspotImageConfigurationPanel } from './HotspotImageConfigurationPanel';
+import { ClassesConfigurationPanel } from './ClassesConfigurationPanel';
 import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
@@ -79,6 +80,7 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   numberLine: NumberLineConfigurationPanel as unknown as BuildingConfigPanel,
   'hotspot-image':
     HotspotImageConfigurationPanel as unknown as BuildingConfigPanel,
+  classes: ClassesConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {
@@ -1240,6 +1242,7 @@ export const FeatureConfigurationPanel: React.FC<
         'miniApp',
         'expectations',
         'talking-tool',
+        'classes',
         ...Object.keys(BUILDING_CONFIG_PANELS),
       ].includes(tool.type) && (
         <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl bg-white">

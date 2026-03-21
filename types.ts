@@ -727,6 +727,15 @@ export interface LunchCountConfig {
 
 export type ClassesConfig = Record<string, never>;
 
+export interface BuildingClassesDefaults {
+  buildingId: string;
+  defaultRosterSource?: 'classlink' | 'manual';
+}
+
+export interface ClassesGlobalConfig {
+  buildingDefaults: Record<string, BuildingClassesDefaults>;
+}
+
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
   customSteps: RoutineStep[];
