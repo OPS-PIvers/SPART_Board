@@ -47,8 +47,14 @@ const TeamNameInput: React.FC<{
 export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, updateDashboard, activeDashboard, addToast, rosters, activeRosterId } =
-    useDashboard();
+  const {
+    updateWidget,
+    updateDashboard,
+    activeDashboard,
+    addToast,
+    rosters,
+    activeRosterId,
+  } = useDashboard();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const config = widget.config as ScoreboardConfig;
   const teams = Array.isArray(config.teams) ? config.teams : [];
@@ -217,7 +223,9 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
               onClick={importFromRandom}
               disabled={!randomWidget}
               title={
-                !randomWidget ? 'Add a Randomizer widget first' : 'Import Groups'
+                !randomWidget
+                  ? 'Add a Randomizer widget first'
+                  : 'Import Groups'
               }
               icon={<RefreshCw className="w-3 h-3 shrink-0" />}
               className="w-full text-xs"
@@ -246,7 +254,9 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
               onClick={importFromClasses}
               disabled={!activeRoster}
               title={
-                !activeRoster ? 'Select an active class in the Classes widget first' : 'Import Students'
+                !activeRoster
+                  ? 'Select an active class in the Classes widget first'
+                  : 'Import Students'
               }
               icon={<RefreshCw className="w-3 h-3 shrink-0" />}
               className="w-full text-xs"

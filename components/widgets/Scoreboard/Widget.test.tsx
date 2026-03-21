@@ -336,8 +336,8 @@ describe('ScoreboardSettings', () => {
   });
 });
 
-  it('handles empty random result', () => {
-    const widget: WidgetData = {
+it('handles empty random result', () => {
+  const widget: WidgetData = {
     id: 'scoreboard-id',
     type: 'scoreboard',
     config: { teams: [] } as ScoreboardConfig,
@@ -360,30 +360,30 @@ describe('ScoreboardSettings', () => {
     w: 100,
     h: 100,
     z: 1,
-      flipped: false,
-    };
+    flipped: false,
+  };
 
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      ...mockDashboardContext,
-      activeDashboard: {
-        widgets: [randomWidget],
-      },
-      rosters: [],
-      activeRosterId: null,
-    });
-
-    render(<ScoreboardSettings widget={widget} />);
-    const importButton = screen.getByText('Import Groups');
-    fireEvent.click(importButton);
-
-    expect(mockAddToast).toHaveBeenCalledWith(
-      'Randomizer needs to have generated groups first.',
-      'info'
-    );
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    activeDashboard: {
+      widgets: [randomWidget],
+    },
+    rosters: [],
+    activeRosterId: null,
   });
 
-  it('removes a team', () => {
-    const teams = [
+  render(<ScoreboardSettings widget={widget} />);
+  const importButton = screen.getByText('Import Groups');
+  fireEvent.click(importButton);
+
+  expect(mockAddToast).toHaveBeenCalledWith(
+    'Randomizer needs to have generated groups first.',
+    'info'
+  );
+});
+
+it('removes a team', () => {
+  const teams = [
     { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
   ];
   const widget: WidgetData = {
@@ -394,26 +394,26 @@ describe('ScoreboardSettings', () => {
     y: 0,
     w: 100,
     h: 100,
-      z: 1,
-      flipped: true,
-    };
+    z: 1,
+    flipped: true,
+  };
 
-    render(<ScoreboardSettings widget={widget} />);
-    const removeButton = screen.getByRole('button', { name: '' }); // The trash icon button
-    fireEvent.click(removeButton);
+  render(<ScoreboardSettings widget={widget} />);
+  const removeButton = screen.getByRole('button', { name: '' }); // The trash icon button
+  fireEvent.click(removeButton);
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'scoreboard-id',
-      expect.objectContaining({
-        config: expect.objectContaining({
-          teams: [],
-        }) as unknown,
-      })
-    );
-  });
+  expect(mockUpdateWidget).toHaveBeenCalledWith(
+    'scoreboard-id',
+    expect.objectContaining({
+      config: expect.objectContaining({
+        teams: [],
+      }) as unknown,
+    })
+  );
+});
 
-  it('cancels reset scores', () => {
-    const teams = [
+it('cancels reset scores', () => {
+  const teams = [
     { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
   ];
   const widget: WidgetData = {
@@ -424,40 +424,40 @@ describe('ScoreboardSettings', () => {
     y: 0,
     w: 100,
     h: 100,
-      z: 1,
-      flipped: true,
-    };
+    z: 1,
+    flipped: true,
+  };
 
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      ...mockDashboardContext,
-      rosters: [],
-      activeRosterId: null,
-    });
-
-    render(<ScoreboardSettings widget={widget} />);
-
-    // Clear to ensure we don't pick up previous calls (like from auto-migration)
-    mockUpdateWidget.mockClear();
-
-    // Click "Reset Scores"
-    const resetButton = screen.getByText('Reset Scores');
-    fireEvent.click(resetButton);
-
-    // Confirm buttons should appear
-    expect(screen.getByText('Sure?')).toBeInTheDocument();
-
-    // Click "No"
-    const noButton = screen.getByText('No');
-    fireEvent.click(noButton);
-
-    expect(mockUpdateWidget).not.toHaveBeenCalled();
-    expect(screen.queryByText('Sure?')).not.toBeInTheDocument();
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    rosters: [],
+    activeRosterId: null,
   });
 
-  it('updates team name', () => {
-    vi.useFakeTimers();
+  render(<ScoreboardSettings widget={widget} />);
 
-    const teams = [
+  // Clear to ensure we don't pick up previous calls (like from auto-migration)
+  mockUpdateWidget.mockClear();
+
+  // Click "Reset Scores"
+  const resetButton = screen.getByText('Reset Scores');
+  fireEvent.click(resetButton);
+
+  // Confirm buttons should appear
+  expect(screen.getByText('Sure?')).toBeInTheDocument();
+
+  // Click "No"
+  const noButton = screen.getByText('No');
+  fireEvent.click(noButton);
+
+  expect(mockUpdateWidget).not.toHaveBeenCalled();
+  expect(screen.queryByText('Sure?')).not.toBeInTheDocument();
+});
+
+it('updates team name', () => {
+  vi.useFakeTimers();
+
+  const teams = [
     {
       id: '1',
       name: 'Team One',
@@ -476,52 +476,52 @@ describe('ScoreboardSettings', () => {
     h: 100,
     z: 1,
     flipped: true,
-    };
+  };
 
-    const mockUpdateDashboard = vi.fn();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      ...mockDashboardContext,
-      updateDashboard: mockUpdateDashboard,
-      activeDashboard: {
-        widgets: [],
-        sharedGroups: [{ id: 'linked-group-1', name: 'Old Name' }],
-      },
-      rosters: [],
-      activeRosterId: null,
-    });
-
-    render(<ScoreboardSettings widget={widget} />);
-
-    // Clear to ensure we don't pick up previous calls
-    mockUpdateWidget.mockClear();
-
-    const input = screen.getByPlaceholderText('Team Name');
-    fireEvent.change(input, { target: { value: 'New Team Name' } });
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    }); // Advance debounce time
-
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'scoreboard-id',
-      expect.objectContaining({
-        config: expect.objectContaining({
-          teams: expect.arrayContaining([
-            expect.objectContaining({ id: '1', name: 'New Team Name' }),
-          ]),
-        }) as unknown,
-      })
-    );
-
-    expect(mockUpdateDashboard).toHaveBeenCalledWith({
-      sharedGroups: [{ id: 'linked-group-1', name: 'New Team Name' }],
-    });
-
-    vi.useRealTimers();
+  const mockUpdateDashboard = vi.fn();
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    updateDashboard: mockUpdateDashboard,
+    activeDashboard: {
+      widgets: [],
+      sharedGroups: [{ id: 'linked-group-1', name: 'Old Name' }],
+    },
+    rosters: [],
+    activeRosterId: null,
   });
 
-  it('shows error if no random widget on import', () => {
-    const widget: WidgetData = {
+  render(<ScoreboardSettings widget={widget} />);
+
+  // Clear to ensure we don't pick up previous calls
+  mockUpdateWidget.mockClear();
+
+  const input = screen.getByPlaceholderText('Team Name');
+  fireEvent.change(input, { target: { value: 'New Team Name' } });
+
+  act(() => {
+    vi.advanceTimersByTime(500);
+  }); // Advance debounce time
+
+  expect(mockUpdateWidget).toHaveBeenCalledWith(
+    'scoreboard-id',
+    expect.objectContaining({
+      config: expect.objectContaining({
+        teams: expect.arrayContaining([
+          expect.objectContaining({ id: '1', name: 'New Team Name' }),
+        ]),
+      }) as unknown,
+    })
+  );
+
+  expect(mockUpdateDashboard).toHaveBeenCalledWith({
+    sharedGroups: [{ id: 'linked-group-1', name: 'New Team Name' }],
+  });
+
+  vi.useRealTimers();
+});
+
+it('shows error if no random widget on import', () => {
+  const widget: WidgetData = {
     id: 'scoreboard-id',
     type: 'scoreboard',
     config: { teams: [] } as ScoreboardConfig,
@@ -530,22 +530,22 @@ describe('ScoreboardSettings', () => {
     w: 100,
     h: 100,
     z: 1,
-      flipped: true,
-    };
+    flipped: true,
+  };
 
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      ...mockDashboardContext,
-      activeDashboard: {
-        widgets: [],
-      },
-      rosters: [],
-      activeRosterId: null,
-    });
-
-    // Clear to ensure we don't pick up previous calls
-    mockAddToast.mockClear();
-
-    render(<ScoreboardSettings widget={widget} />);
-    const importButton = screen.getByRole('button', { name: 'Import Groups' });
-    expect(importButton).toBeDisabled();
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    activeDashboard: {
+      widgets: [],
+    },
+    rosters: [],
+    activeRosterId: null,
   });
+
+  // Clear to ensure we don't pick up previous calls
+  mockAddToast.mockClear();
+
+  render(<ScoreboardSettings widget={widget} />);
+  const importButton = screen.getByRole('button', { name: 'Import Groups' });
+  expect(importButton).toBeDisabled();
+});
