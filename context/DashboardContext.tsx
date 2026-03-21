@@ -1989,6 +1989,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         case 'hotspot-image':
           if (raw.popoverTheme) out.popoverTheme = raw.popoverTheme;
           break;
+        case 'concept-web':
+          if (typeof raw.defaultNodeWidth === 'number') out.defaultNodeWidth = raw.defaultNodeWidth;
+          if (typeof raw.defaultNodeHeight === 'number') out.defaultNodeHeight = raw.defaultNodeHeight;
+          if (typeof raw.fontFamily === 'string') out.fontFamily = raw.fontFamily;
+          break;
         default:
           break;
       }

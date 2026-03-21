@@ -140,11 +140,8 @@ Config: `components/admin/ClockConfigurationPanel.tsx` _(dedicated panel via `BU
 
 ---
 
-[ ] Concept Web — Type: `concept-web` | Label: "Concept Web"
-Config: `components/admin/ConceptWebConfigurationPanel.tsx` _(does not exist yet — create and
-register in `BUILDING_CONFIG_PANELS`)_
-
-User-facing settings are in `components/widgets/ConceptWeb/Settings.tsx`.
+[X] Concept Web — Type: `concept-web` | Label: "Concept Web"
+Config: `components/admin/ConceptWebConfigurationPanel.tsx` _(dedicated panel via `BUILDING_CONFIG_PANELS`)_
 
 - **User-level Defaults:**
   - `defaultNodeWidth`: Default node width (percent of canvas).
