@@ -1986,6 +1986,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }
           break;
+        case 'hotspot-image':
+          if (raw.popoverTheme) out.popoverTheme = raw.popoverTheme;
+          break;
         default:
           break;
       }

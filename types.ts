@@ -1482,6 +1482,15 @@ export interface HotspotSavedItem {
   createdAt: number;
 }
 
+export interface BuildingHotspotImageDefaults {
+  buildingId: string;
+  popoverTheme?: 'light' | 'dark' | 'glass';
+}
+
+export interface HotspotImageGlobalConfig {
+  buildingDefaults: Record<string, BuildingHotspotImageDefaults>;
+}
+
 export interface HotspotImageConfig {
   baseImageUrl: string;
   hotspots: ImageHotspot[];
