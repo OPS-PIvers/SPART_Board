@@ -787,6 +787,17 @@ export interface PdfItem {
   uploadedAt: number;
   order?: number;
 }
+export interface BuildingBreathingDefaults {
+  buildingId: string;
+  pattern?: '4-4-4-4' | '4-7-8' | '5-5';
+  visual?: 'circle' | 'lotus' | 'wave';
+  color?: string;
+}
+
+export interface BreathingGlobalConfig {
+  buildingDefaults: Record<string, BuildingBreathingDefaults>;
+}
+
 export interface BreathingConfig {
   pattern: '4-4-4-4' | '4-7-8' | '5-5';
   visual: 'circle' | 'lotus' | 'wave';
