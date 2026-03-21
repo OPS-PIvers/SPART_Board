@@ -80,7 +80,7 @@
 -- `themeColor`: Default brand color.
 [X] Number Line - Default User-Level Settings
 -- `min`, `max`, `step`: Default number line range and intervals.
--- `displayMode`: Default visual mode ('ticks', 'intervals', 'empty').
+-- `displayMode`: Default visual mode ('integers', 'decimals', 'fractions').
 -- `showArrows`: Default toggle for end arrows. - Admin-Only Settings
 -- None.
 [ ] Onboarding - No admin config.

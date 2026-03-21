@@ -1252,7 +1252,8 @@ export type BuildingNumberLineDefaults = Pick<
 >;
 
 export interface NumberLineGlobalConfig {
-  buildingDefaults?: BuildingNumberLineDefaults;
+  /** Per-building defaults keyed by buildingId. */
+  buildingDefaults?: Record<string, BuildingNumberLineDefaults>;
 }
 
 export interface SpecialistScheduleBuildingConfig {

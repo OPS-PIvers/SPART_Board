@@ -1,102 +1,53 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../context/useAuth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import React from 'react';
+import { useAuth } from '@/context/useAuth';
 import {
   NumberLineGlobalConfig,
   BuildingNumberLineDefaults,
   NumberLineMode,
-} from '../../types';
-import { Save, Loader2, Info } from 'lucide-react';
-import { Toggle } from '../common/Toggle';
+} from '@/types';
+import { Info } from 'lucide-react';
+import { Toggle } from '@/components/common/Toggle';
 
-export const NumberLineConfigurationPanel: React.FC = () => {
-  const { selectedBuildings, featurePermissions } = useAuth();
+interface NumberLineConfigurationPanelProps {
+  config?: NumberLineGlobalConfig;
+  onChange: (config: NumberLineGlobalConfig) => void;
+}
+
+export const NumberLineConfigurationPanel: React.FC<
+  NumberLineConfigurationPanelProps
+> = ({ config, onChange }) => {
+  const { selectedBuildings } = useAuth();
   const buildingId = selectedBuildings[0] ?? 'global';
-  const permission = featurePermissions?.find(
-    (p) => p.widgetType === 'numberLine'
-  );
 
-  const [config, setConfig] = useState<BuildingNumberLineDefaults>({
+  // Ensure config structure exists
+  const safeConfig: NumberLineGlobalConfig = config ?? {
+    buildingDefaults: {},
+  };
+
+  // Extract defaults for the active building
+  const buildingDefaults: BuildingNumberLineDefaults = safeConfig
+    .buildingDefaults?.[buildingId] ?? {
     min: 0,
     max: 10,
     step: 1,
     displayMode: 'integers',
     showArrows: true,
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    const fetchConfig = async () => {
-      setLoading(true);
-      try {
-        const docRef = doc(
-          db,
-          'configurations',
-          `widget_numberLine_${buildingId}`
-        );
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data() as NumberLineGlobalConfig;
-          if (data.buildingDefaults) {
-            setConfig((prev) => ({ ...prev, ...data.buildingDefaults }));
-          }
-        } else if (permission?.config) {
-          const configObj = permission.config as NumberLineGlobalConfig;
-          if (configObj.buildingDefaults) {
-            // Fallback to permission config if it exists
-            setConfig((prev) => ({
-              ...prev,
-              ...configObj.buildingDefaults,
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching Number Line config:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchConfig();
-  }, [buildingId, permission]);
-
-  const handleSave = async () => {
-    if (!buildingId) return;
-    setSaving(true);
-    setSaveMessage(null);
-
-    try {
-      const docRef = doc(
-        db,
-        'configurations',
-        `widget_numberLine_${buildingId}`
-      );
-      const newConfig: NumberLineGlobalConfig = {
-        buildingDefaults: config,
-      };
-
-      await setDoc(docRef, newConfig, { merge: true });
-      setSaveMessage('Settings saved successfully!');
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (error) {
-      console.error('Error saving Number Line config:', error);
-      setSaveMessage('Failed to save settings.');
-    } finally {
-      setSaving(false);
-    }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-      </div>
-    );
-  }
+  const handleUpdate = (updates: Partial<BuildingNumberLineDefaults>) => {
+    const updatedDefaults = {
+      ...buildingDefaults,
+      ...updates,
+    };
+
+    onChange({
+      ...safeConfig,
+      buildingDefaults: {
+        ...(safeConfig.buildingDefaults ?? {}),
+        [buildingId]: updatedDefaults,
+      },
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -117,10 +68,8 @@ export const NumberLineConfigurationPanel: React.FC = () => {
             </label>
             <input
               type="number"
-              value={config.min}
-              onChange={(e) =>
-                setConfig({ ...config, min: Number(e.target.value) })
-              }
+              value={buildingDefaults.min}
+              onChange={(e) => handleUpdate({ min: Number(e.target.value) })}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -130,10 +79,8 @@ export const NumberLineConfigurationPanel: React.FC = () => {
             </label>
             <input
               type="number"
-              value={config.max}
-              onChange={(e) =>
-                setConfig({ ...config, max: Number(e.target.value) })
-              }
+              value={buildingDefaults.max}
+              onChange={(e) => handleUpdate({ max: Number(e.target.value) })}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -147,10 +94,8 @@ export const NumberLineConfigurationPanel: React.FC = () => {
             type="number"
             step="0.1"
             min="0.1"
-            value={config.step}
-            onChange={(e) =>
-              setConfig({ ...config, step: Number(e.target.value) })
-            }
+            value={buildingDefaults.step}
+            onChange={(e) => handleUpdate({ step: Number(e.target.value) })}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
@@ -160,12 +105,9 @@ export const NumberLineConfigurationPanel: React.FC = () => {
             Default Display Mode
           </label>
           <select
-            value={config.displayMode}
+            value={buildingDefaults.displayMode}
             onChange={(e) =>
-              setConfig({
-                ...config,
-                displayMode: e.target.value as NumberLineMode,
-              })
+              handleUpdate({ displayMode: e.target.value as NumberLineMode })
             }
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
@@ -185,36 +127,10 @@ export const NumberLineConfigurationPanel: React.FC = () => {
             </span>
           </div>
           <Toggle
-            checked={config.showArrows}
-            onChange={(checked) =>
-              setConfig({ ...config, showArrows: checked })
-            }
+            checked={buildingDefaults.showArrows}
+            onChange={(checked) => handleUpdate({ showArrows: checked })}
           />
         </div>
-      </div>
-
-      <div className="pt-6 border-t border-slate-200 flex items-center justify-between">
-        <p
-          className={`text-sm ${
-            saveMessage?.includes('successfully')
-              ? 'text-green-600'
-              : 'text-red-600'
-          }`}
-        >
-          {saveMessage}
-        </p>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-        >
-          {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          Save Default Settings
-        </button>
       </div>
     </div>
   );

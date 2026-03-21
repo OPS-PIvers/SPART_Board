@@ -1851,11 +1851,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       const out: Record<string, unknown> = {};
       switch (type) {
         case 'numberLine':
-          if (raw.min !== undefined) out.min = raw.min;
-          if (raw.max !== undefined) out.max = raw.max;
-          if (raw.step !== undefined) out.step = raw.step;
-          if (raw.displayMode !== undefined) out.displayMode = raw.displayMode;
-          if (raw.showArrows !== undefined) out.showArrows = raw.showArrows;
+          if (typeof raw.min === 'number') out.min = raw.min;
+          if (typeof raw.max === 'number') out.max = raw.max;
+          if (typeof raw.step === 'number') out.step = raw.step;
+          if (
+            typeof raw.displayMode === 'string' &&
+            ['integers', 'decimals', 'fractions'].includes(raw.displayMode)
+          ) {
+            out.displayMode = raw.displayMode;
+          }
+          if (typeof raw.showArrows === 'boolean') {
+            out.showArrows = raw.showArrows;
+          }
           break;
         case 'clock':
           if (raw.format24 !== undefined) out.format24 = raw.format24;
