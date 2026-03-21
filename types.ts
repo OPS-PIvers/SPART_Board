@@ -482,6 +482,18 @@ export interface EmbedGlobalConfig {
   buildingDefaults: Record<string, BuildingEmbedDefaults>;
 }
 
+// --- Breathing Global Config ---
+export interface BuildingBreathingDefaults {
+  buildingId: string;
+  pattern?: '4-4-4-4' | '4-7-8' | '5-5';
+  visual?: 'circle' | 'lotus' | 'wave';
+  color?: string;
+}
+
+export interface BreathingGlobalConfig {
+  buildingDefaults: Record<string, BuildingBreathingDefaults>;
+}
+
 // --- Clock Global Config ---
 export interface BuildingClockDefaults {
   buildingId: string;
