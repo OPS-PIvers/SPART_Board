@@ -45,7 +45,7 @@ export const PdfLibraryModal: React.FC<PdfLibraryModalProps> = ({
   onClose,
 }) => {
   const { showConfirm } = useDialog();
-  const { uploadPdf, deleteFile } = useStorage();
+  const { uploadAdminPdf, deleteFile } = useStorage();
   const [pdfs, setPdfs] = useState<GlobalPdfItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('list');
@@ -200,7 +200,7 @@ export const PdfLibraryModal: React.FC<PdfLibraryModalProps> = ({
 
       if (editFile) {
         showMessage('success', 'Uploading PDF...');
-        const { url, storagePath } = await uploadPdf('admin', editFile);
+        const { url, storagePath } = await uploadAdminPdf(editFile);
         finalUrl = url;
         finalPath = storagePath;
         finalSize = editFile.size;

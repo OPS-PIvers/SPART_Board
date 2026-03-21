@@ -1282,7 +1282,7 @@ export type BuildingNumberLineDefaults = Pick<
 >;
 
 export interface NumberLineGlobalConfig {
-  buildingDefaults?: BuildingNumberLineDefaults;
+  buildingDefaults?: Record<string, BuildingNumberLineDefaults>;
 }
 
 export interface SpecialistScheduleBuildingConfig {

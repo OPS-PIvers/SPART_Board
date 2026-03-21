@@ -578,6 +578,107 @@ describe('ScheduleSettings', () => {
     );
   });
 
+  describe('one-off schedule items', () => {
+    it('hides a one-off item with a future date', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          { id: 'r1', time: '08:00', task: 'Daily Class', done: false },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: 'Future Event',
+            done: false,
+            oneOffDate: '2026-03-25',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+      expect(screen.getByText('Daily Class')).toBeInTheDocument();
+      expect(screen.queryByText('Future Event')).not.toBeInTheDocument();
+    });
+
+    it('hides a one-off item with an expired (past) date', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          { id: 'r1', time: '08:00', task: 'Daily Class', done: false },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: 'Past Event',
+            done: false,
+            oneOffDate: '2026-03-20',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+      expect(screen.getByText('Daily Class')).toBeInTheDocument();
+      expect(screen.queryByText('Past Event')).not.toBeInTheDocument();
+    });
+
+    it('displays a one-off item when its date matches today', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          { id: 'r1', time: '08:00', task: 'Daily Class', done: false },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: "Today's Special",
+            done: false,
+            oneOffDate: '2026-03-21',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+      expect(screen.getByText('Daily Class')).toBeInTheDocument();
+      expect(screen.getByText("Today's Special")).toBeInTheDocument();
+    });
+
+    it('preserves hidden one-off items when toggling a visible item done', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          {
+            id: 'r1',
+            time: '08:00',
+            startTime: '08:00',
+            task: 'Daily Class',
+            done: false,
+            mode: 'clock' as const,
+            linkedWidgets: [],
+          },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: 'Future Event',
+            done: false,
+            oneOffDate: '2026-03-25',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+
+      // Click the visible item's circle to toggle it done
+      const circles = screen.getAllByTestId('circle-icon');
+      fireEvent.click(circles[0]);
+
+      // updateWidget should preserve both items, including the hidden one-off
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        'schedule-1',
+        expect.objectContaining({
+          config: expect.objectContaining({
+            items: expect.arrayContaining([
+              expect.objectContaining({ id: 'r1' }),
+              expect.objectContaining({ id: 'o1', oneOffDate: '2026-03-25' }),
+            ]),
+          }),
+        })
+      );
+    });
+  });
+
   it('adds a new item inline when Add Event is clicked after expanding a schedule', () => {
     // Start with one item at 10:00.
     const widget = createWidget({

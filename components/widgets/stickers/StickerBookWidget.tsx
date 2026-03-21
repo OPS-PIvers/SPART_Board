@@ -132,6 +132,7 @@ const SortableSticker: React.FC<{
         onClick={(e) => toggleFavorite(e, sticker.url)}
         className="absolute -bottom-1.5 -right-1.5 bg-white text-slate-400 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md hover:text-red-500 z-10 p-1 scale-75 group-hover:scale-100"
         title={t('widgets.stickers.favoriteSticker', 'Favorite')}
+        aria-label={t('widgets.stickers.favoriteSticker', 'Favorite')}
       >
         <Heart
           className={isFavorite ? 'fill-red-500 text-red-500' : ''}
@@ -150,6 +151,7 @@ const SortableSticker: React.FC<{
           className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
           style={{ padding: 'min(6px, 1.5cqmin)' }}
           title={t('widgets.stickers.deleteSticker')}
+          aria-label={t('widgets.stickers.deleteSticker')}
         >
           <Trash2
             style={{ width: 'min(12px, 3cqmin)', height: 'min(12px, 3cqmin)' }}
