@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
+import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
 import {
   SyntaxFramerGlobalConfig,
   BuildingSyntaxFramerDefaults,
+  SyntaxFramerConfig,
 } from '@/types';
 import { Calculator, Type, AlignLeft, AlignCenter } from 'lucide-react';
 
@@ -18,13 +20,18 @@ export const SyntaxFramerConfigurationPanel: React.FC<
     BUILDINGS[0].id
   );
 
+  const defaultFramerConfig = WIDGET_DEFAULTS['syntax-framer']
+    ?.config as SyntaxFramerConfig;
+  const defaultMode = defaultFramerConfig?.mode ?? 'text';
+  const defaultAlignment = defaultFramerConfig?.alignment ?? 'center';
+
   const buildingDefaults = config.buildingDefaults ?? {};
   const currentBuildingConfig: BuildingSyntaxFramerDefaults = buildingDefaults[
     selectedBuildingId
   ] ?? {
     buildingId: selectedBuildingId,
-    mode: 'text',
-    alignment: 'center',
+    mode: defaultMode,
+    alignment: defaultAlignment,
   };
 
   const handleUpdate = (updates: Partial<BuildingSyntaxFramerDefaults>) => {
@@ -68,8 +75,7 @@ export const SyntaxFramerConfigurationPanel: React.FC<
             <button
               type="button"
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-bold transition-colors ${
-                currentBuildingConfig.mode === 'text' ||
-                !currentBuildingConfig.mode
+                (currentBuildingConfig.mode ?? defaultMode) === 'text'
                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
@@ -81,7 +87,7 @@ export const SyntaxFramerConfigurationPanel: React.FC<
             <button
               type="button"
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-bold transition-colors ${
-                currentBuildingConfig.mode === 'math'
+                (currentBuildingConfig.mode ?? defaultMode) === 'math'
                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
@@ -108,7 +114,7 @@ export const SyntaxFramerConfigurationPanel: React.FC<
             <button
               type="button"
               className={`flex-1 flex items-center justify-center py-2 px-3 rounded-lg border transition-colors ${
-                currentBuildingConfig.alignment === 'left'
+                (currentBuildingConfig.alignment ?? defaultAlignment) === 'left'
                   ? 'bg-slate-100 border-slate-300 text-slate-900 shadow-sm'
                   : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
@@ -120,8 +126,8 @@ export const SyntaxFramerConfigurationPanel: React.FC<
             <button
               type="button"
               className={`flex-1 flex items-center justify-center py-2 px-3 rounded-lg border transition-colors ${
-                currentBuildingConfig.alignment === 'center' ||
-                !currentBuildingConfig.alignment
+                (currentBuildingConfig.alignment ?? defaultAlignment) ===
+                'center'
                   ? 'bg-slate-100 border-slate-300 text-slate-900 shadow-sm'
                   : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
