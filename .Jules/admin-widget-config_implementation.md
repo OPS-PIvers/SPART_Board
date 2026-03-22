@@ -532,17 +532,14 @@ Config: `components/admin/StickerLibraryModal.tsx` _(separate modal; does **not*
 
 ---
 
-[ ] Syntax Framer — Type: `syntax-framer` | Label: "Syntax Framer"
-Config: `components/admin/SyntaxFramerConfigurationPanel.tsx` _(does not exist yet — create and
-register in `BUILDING_CONFIG_PANELS`)_
-
-User-facing settings are in `components/widgets/SyntaxFramer/Settings.tsx`.
+[X] Syntax Framer — Type: `syntax-framer` | Label: "Syntax Framer"
+Config: `components/admin/SyntaxFramerConfigurationPanel.tsx` _(dedicated panel via `BUILDING_CONFIG_PANELS`)_
 
 - **User-level Defaults:**
   - `mode`: Default input mode (`'text'` or `'math'`).
   - `alignment`: Default token alignment (`'left'`, `'center'`).
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
+  - `dockDefaults`: Per-building dock visibility.
 
 ---
 

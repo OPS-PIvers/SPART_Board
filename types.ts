@@ -1484,6 +1484,16 @@ export interface SyntaxFramerConfig {
   alignment: 'left' | 'center';
 }
 
+export interface BuildingSyntaxFramerDefaults {
+  buildingId: string;
+  mode?: 'text' | 'math';
+  alignment?: 'left' | 'center';
+}
+
+export interface SyntaxFramerGlobalConfig {
+  buildingDefaults: Record<string, BuildingSyntaxFramerDefaults>;
+}
+
 export interface ImageHotspot {
   id: string;
   xPct: number; // Use percentages so pins stay anchored if the widget scales
