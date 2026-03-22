@@ -142,8 +142,9 @@ export const NewUserSetup: React.FC = () => {
       }));
       reorderDockItems(dockItems);
       await completeSetup();
-    } catch {
+    } catch (error) {
       // completeSetup failing is non-fatal — dashboard will still render
+      console.error('NewUserSetup: handleFinish failed', error);
       setFinishing(false);
     }
   };

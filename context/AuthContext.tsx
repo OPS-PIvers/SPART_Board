@@ -505,6 +505,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     let isCancelled = false;
 
     const loadProfile = async () => {
+      // Reset stale state from the previous user before loading new profile
+      setProfileLoaded(false);
+      setSetupCompletedState(false);
+
       if (!user) {
         setSelectedBuildingsState([]);
         setProfileLoaded(true);
