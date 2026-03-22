@@ -80,18 +80,14 @@ const JoinAndPlay: React.FC = () => {
     completeActivity,
   } = useVideoActivitySessionStudent();
 
-  // Track answered timestamps for anti-skip enforcement in VideoPlayer
-  const answeredTimestamps = React.useMemo(() => {
-    const questionsById = new Map(
-      (session?.questions ?? []).map((q) => [q.id, q])
-    );
-    return (
-      myResponse?.answers.map((a) => {
-        const q = questionsById.get(a.questionId);
-        return q?.timestamp ?? 0;
-      }) ?? []
-    );
-  }, [myResponse?.answers, session?.questions]);
+  // Track answered question IDs for anti-skip enforcement in VideoPlayer
+  const answeredQuestionIds = React.useMemo(
+    () =>
+      new Set<string>(
+        (myResponse?.answers ?? []).map((answer) => answer.questionId)
+      ),
+    [myResponse?.answers]
+  );
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,14 +219,8 @@ const JoinAndPlay: React.FC = () => {
   if (videoEnded || myResponse?.completedAt) {
     const answeredCount = myResponse?.answers.length ?? 0;
     const totalQuestions = session?.questions.length ?? 0;
-    const questionsById = new Map(
-      (session?.questions ?? []).map((q) => [q.id, q])
-    );
     const correct =
-      myResponse?.answers.filter((a) => {
-        const q = questionsById.get(a.questionId);
-        return q ? q.correctAnswer === a.answer : false;
-      }).length ?? 0;
+      myResponse?.answers.filter((a) => a.isCorrect === true).length ?? 0;
 
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
@@ -305,7 +295,7 @@ const JoinAndPlay: React.FC = () => {
         <VideoPlayer
           youtubeUrl={session?.youtubeUrl ?? ''}
           questions={sortedQuestions}
-          answeredTimestamps={answeredTimestamps}
+          answeredQuestionIds={answeredQuestionIds}
           onQuestionTrigger={handleQuestionTrigger}
           onVideoEnd={handleVideoEnd}
           questionVisible={activeQuestion !== null}

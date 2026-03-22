@@ -120,15 +120,15 @@ export const Editor: React.FC<EditorProps> = ({ activity, onBack, onSave }) => {
   };
 
   const handleSave = async () => {
-    // Validate timestamps are in ascending order
-    const sorted = [...questions].sort((a, b) => a.timestamp - b.timestamp);
-    const isOrdered = questions.every(
-      (q, i) => q.timestamp === sorted[i]?.timestamp
+    // Validate timestamps are strictly increasing (no duplicates)
+    const hasStrictlyIncreasingTimestamps = questions.every(
+      (q, index, arr) =>
+        index === 0 || q.timestamp > (arr[index - 1]?.timestamp ?? -1)
     );
 
-    if (!isOrdered) {
+    if (!hasStrictlyIncreasingTimestamps) {
       setError(
-        'Questions must be in ascending timestamp order. Re-order them or adjust timestamps.'
+        'Questions must have unique, strictly increasing timestamps. Re-order them or adjust timestamps.'
       );
       return;
     }

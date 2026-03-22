@@ -23,8 +23,8 @@ import { VideoActivityQuestion } from '@/types';
 interface VideoPlayerProps {
   youtubeUrl: string;
   questions: VideoActivityQuestion[];
-  /** Timestamps of already-answered questions (in seconds). */
-  answeredTimestamps: number[];
+  /** IDs of already-answered questions — used for anti-skip enforcement. */
+  answeredQuestionIds: Set<string>;
   /** Fired when the playhead first reaches a question's timestamp. */
   onQuestionTrigger: (question: VideoActivityQuestion) => void;
   /** Fired when the video ends (after all questions answered). */
@@ -40,7 +40,7 @@ const POLL_INTERVAL_MS = 250;
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   youtubeUrl,
   questions,
-  answeredTimestamps,
+  answeredQuestionIds,
   onQuestionTrigger,
   onVideoEnd,
   questionVisible,
@@ -53,23 +53,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Derive the max time the student may seek to
   const maxAllowedTime = React.useMemo(() => {
-    if (answeredTimestamps.length === 0) {
-      // Allow up to the first question's timestamp
-      const firstQ = [...questions].sort(
-        (a, b) => a.timestamp - b.timestamp
-      )[0];
-      return firstQ ? firstQ.timestamp + SEEK_TOLERANCE_SECONDS : Infinity;
-    }
-    const maxAnswered = Math.max(...answeredTimestamps);
-    // Find the next unanswered question after the last answered one
-    const unanswered = questions
-      .filter((q) => !answeredTimestamps.includes(q.timestamp))
+    const sortedUnanswered = questions
+      .filter((q) => !answeredQuestionIds.has(q.id))
       .sort((a, b) => a.timestamp - b.timestamp);
-    const next = unanswered[0];
-    return next
-      ? next.timestamp + SEEK_TOLERANCE_SECONDS
-      : maxAnswered + SEEK_TOLERANCE_SECONDS;
-  }, [answeredTimestamps, questions]);
+    const nextUnanswered = sortedUnanswered[0];
+    if (nextUnanswered) {
+      return nextUnanswered.timestamp + SEEK_TOLERANCE_SECONDS;
+    }
+    // All questions answered (or no questions at all)
+    if (questions.length === 0) return Infinity;
+    const maxAnswered = Math.max(
+      ...questions
+        .filter((q) => answeredQuestionIds.has(q.id))
+        .map((q) => q.timestamp)
+    );
+    return maxAnswered + SEEK_TOLERANCE_SECONDS;
+  }, [answeredQuestionIds, questions]);
 
   // Refs used inside RAF/callbacks — synced via useLayoutEffect so they are
   // always up-to-date before the next paint without triggering extra renders.
@@ -81,10 +80,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   useLayoutEffect(() => {
     unansweredRef.current = questions
-      .filter((q) => !answeredTimestamps.includes(q.timestamp))
+      .filter((q) => !answeredQuestionIds.has(q.id))
       .sort((a, b) => a.timestamp - b.timestamp);
     maxAllowedRef.current = maxAllowedTime;
-  }, [questions, answeredTimestamps, maxAllowedTime]);
+  }, [questions, answeredQuestionIds, maxAllowedTime]);
 
   useLayoutEffect(() => {
     questionVisibleRef.current = questionVisible;

@@ -65,15 +65,22 @@ export const Creator: React.FC<CreatorProps> = ({
     sourceUrl: string
   ): VideoActivityData => {
     const now = Date.now();
-    const questions: VideoActivityQuestion[] = generated.questions.map((q) => ({
-      id: crypto.randomUUID(),
-      text: q.text,
-      type: 'MC' as const,
-      correctAnswer: q.correctAnswer ?? '',
-      incorrectAnswers: q.incorrectAnswers ?? [],
-      timeLimit: q.timeLimit ?? 30,
-      timestamp: q.timestamp ?? 0,
-    }));
+    const questions: VideoActivityQuestion[] = generated.questions.map((q) => {
+      const base = (q.incorrectAnswers ?? []).slice(0, 3);
+      const incorrectAnswers =
+        base.length === 3
+          ? base
+          : [...base, ...Array<string>(3 - base.length).fill('')];
+      return {
+        id: crypto.randomUUID(),
+        text: q.text,
+        type: 'MC' as const,
+        correctAnswer: q.correctAnswer ?? '',
+        incorrectAnswers,
+        timeLimit: q.timeLimit ?? 30,
+        timestamp: q.timestamp ?? 0,
+      };
+    });
 
     return {
       id: crypto.randomUUID(),

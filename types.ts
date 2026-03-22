@@ -1278,17 +1278,15 @@ export interface VideoActivitySession {
 export interface VideoActivityAnswer {
   questionId: string;
   answer: string;
-  /**
-   * @deprecated Not stored from the client — compute correctness server-side
-   * using activity.questions[].correctAnswer vs this answer field.
-   */
+  /** Whether the answer was correct — computed client-side at submission time. */
   isCorrect?: boolean;
   answeredAt: number;
 }
 
 /**
  * Per-student response document in Firestore.
- * Stored at /video_activity_sessions/{sessionId}/responses/{pin}
+ * Stored at /video_activity_sessions/{sessionId}/responses/{studentUid}
+ * The document ID is the student's Firebase auth UID (prevents PIN-claiming attacks).
  */
 export interface VideoActivityResponse {
   pin: string;

@@ -108,7 +108,7 @@ export const QuestionOverlay: React.FC<QuestionOverlayProps> = ({
 
             return (
               <button
-                key={option}
+                key={`${i}-${option}`}
                 disabled={submitted}
                 onClick={() => setSelected(option)}
                 className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all ${style} flex items-center gap-3`}

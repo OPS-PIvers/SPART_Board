@@ -5,8 +5,8 @@
  * (join and submit answers). Mirrors the pattern in useQuizSession.ts.
  *
  * Firestore structure:
- *   /video_activity_sessions/{sessionId}          — VideoActivitySession
- *   /video_activity_sessions/{sessionId}/responses/{pin} — VideoActivityResponse
+ *   /video_activity_sessions/{sessionId}              — VideoActivitySession
+ *   /video_activity_sessions/{sessionId}/responses/{studentUid} — VideoActivityResponse
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -166,7 +166,8 @@ export const useVideoActivitySessionStudent =
     const [joinStatus, setJoinStatus] = useState<StudentJoinStatus>('idle');
     const [error, setError] = useState<string | null>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
-    const [pin, setPin] = useState<string | null>(null);
+    // responseDocId is the student's Firebase auth UID (used as the Firestore document ID)
+    const [responseDocId, setResponseDocId] = useState<string | null>(null);
 
     // Listen to session document
     useEffect(() => {
@@ -192,10 +193,16 @@ export const useVideoActivitySessionStudent =
 
     // Listen to own response document
     useEffect(() => {
-      if (!sessionId || !pin) return;
+      if (!sessionId || !responseDocId) return;
 
       const unsub = onSnapshot(
-        doc(db, SESSIONS_COLLECTION, sessionId, RESPONSES_SUBCOLLECTION, pin),
+        doc(
+          db,
+          SESSIONS_COLLECTION,
+          sessionId,
+          RESPONSES_SUBCOLLECTION,
+          responseDocId
+        ),
         (snap) => {
           if (snap.exists()) {
             setMyResponse(snap.data() as VideoActivityResponse);
@@ -210,7 +217,7 @@ export const useVideoActivitySessionStudent =
       );
 
       return unsub;
-    }, [sessionId, pin]);
+    }, [sessionId, responseDocId]);
 
     const joinSession = useCallback(
       async (
@@ -256,15 +263,20 @@ export const useVideoActivitySessionStudent =
             return;
           }
 
-          const studentUid = auth.currentUser?.uid ?? studentPin;
+          const studentUid = auth.currentUser?.uid;
+          if (!studentUid) {
+            setJoinStatus('error');
+            setError('Authentication required. Please refresh and try again.');
+            return;
+          }
 
-          // Create or retrieve response document (pin is the document ID)
+          // Response document ID is the student's auth UID (prevents PIN-claiming attacks)
           const responseRef = doc(
             db,
             SESSIONS_COLLECTION,
             targetSessionId,
             RESPONSES_SUBCOLLECTION,
-            studentPin
+            studentUid
           );
           const existingSnap = await getDoc(responseRef);
 
@@ -282,7 +294,7 @@ export const useVideoActivitySessionStudent =
           }
 
           setSessionId(targetSessionId);
-          setPin(studentPin);
+          setResponseDocId(studentUid);
           setSession(sessionData);
           setJoinStatus('joined');
         } catch (err) {
@@ -299,16 +311,21 @@ export const useVideoActivitySessionStudent =
 
     const submitAnswer = useCallback(
       async (questionId: string, answer: string): Promise<void> => {
-        if (!sessionId || !pin) return;
+        if (!sessionId || !responseDocId) return;
 
         // Prevent duplicate answers for the same question
         if (myResponse?.answers.some((a) => a.questionId === questionId)) {
           return;
         }
 
+        // Compute correctness client-side from session data
+        const question = session?.questions.find((q) => q.id === questionId);
+        const isCorrect = question ? question.correctAnswer === answer : false;
+
         const answerEntry: VideoActivityAnswer = {
           questionId,
           answer,
+          isCorrect,
           answeredAt: Date.now(),
         };
 
@@ -317,31 +334,31 @@ export const useVideoActivitySessionStudent =
           SESSIONS_COLLECTION,
           sessionId,
           RESPONSES_SUBCOLLECTION,
-          pin
+          responseDocId
         );
 
         await updateDoc(responseRef, {
           answers: arrayUnion(answerEntry),
         });
       },
-      [sessionId, pin, myResponse?.answers]
+      [sessionId, responseDocId, myResponse?.answers, session?.questions]
     );
 
     const completeActivity = useCallback(async (): Promise<void> => {
-      if (!sessionId || !pin) return;
+      if (!sessionId || !responseDocId) return;
 
       const responseRef = doc(
         db,
         SESSIONS_COLLECTION,
         sessionId,
         RESPONSES_SUBCOLLECTION,
-        pin
+        responseDocId
       );
 
       await updateDoc(responseRef, {
         completedAt: Date.now(),
       });
-    }, [sessionId, pin]);
+    }, [sessionId, responseDocId]);
 
     return {
       session,
