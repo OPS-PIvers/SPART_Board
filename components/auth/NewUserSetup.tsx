@@ -154,7 +154,7 @@ export const NewUserSetup: React.FC = () => {
   const firstName = user?.displayName?.split(' ')[0] ?? 'there';
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-slate-900 flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 z-critical bg-slate-900 flex flex-col items-center justify-center p-4">
       {/* Card */}
       <div className="w-full max-w-2xl bg-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-700">
         {/* Header */}
@@ -441,6 +441,8 @@ const StepAppearance: React.FC<{
               key={c.value}
               onClick={() => update({ dockTextColor: c.value })}
               title={c.label}
+              aria-label={c.label}
+              aria-pressed={style.dockTextColor === c.value}
               className={`w-9 h-9 rounded-full border-2 transition-all ${
                 style.dockTextColor === c.value
                   ? 'border-blue-400 scale-110'

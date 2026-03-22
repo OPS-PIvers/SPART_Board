@@ -511,6 +511,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (!user) {
         setSelectedBuildingsState([]);
+        setSavedWidgetConfigs({});
         setProfileLoaded(true);
         return;
       }
@@ -521,6 +522,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (isCancelled) return;
         if (!profileDoc.exists()) {
           setSelectedBuildingsState([]);
+          setSavedWidgetConfigs({});
           setProfileLoaded(true);
           return;
         }
