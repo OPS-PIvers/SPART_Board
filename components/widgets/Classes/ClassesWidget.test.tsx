@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import ClassesWidget from './ClassesWidget';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import { classLinkService } from '@/utils/classlinkService';
 
 vi.mock('@/context/useDashboard');
+vi.mock('@/context/useAuth');
 vi.mock('@/utils/classlinkService');
 
 describe('ClassesWidget RosterEditor', () => {
@@ -33,6 +35,21 @@ describe('ClassesWidget RosterEditor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (useAuth as Mock).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'classes',
+          config: {
+            buildingDefaults: {
+              'schumann-elementary': {
+                defaultRosterSource: 'manual',
+              },
+            },
+          },
+        },
+      ],
+      selectedBuildings: ['schumann-elementary'],
+    });
     (useDashboard as Mock).mockReturnValue(defaultDashboardMock);
   });
 

@@ -112,10 +112,14 @@ Config: `components/admin/ChecklistConfigurationPanel.tsx` _(dedicated panel via
 
 ---
 
-[x] Classes - [Default User-Level Settings]
--- None (Widget uses no user-facing configurable settings) - [Admin-Only Settings]
--- Per-building default roster source (ClassLink Integration vs Manual Lists)
--- Per-building dock visibility toggle
+[X] Classes — Type: `classes` | Label: "Classes"
+Config: `components/admin/ClassesConfigurationPanel.tsx` _(dedicated panel via `BUILDING_CONFIG_PANELS`)_
+
+- **User-level Defaults:**
+  - None. Widget uses no user-facing configurable settings.
+- **Admin-only Settings:**
+  - `defaultRosterSource`: Per-building default roster source (ClassLink Integration vs Manual Lists).
+  - `dockDefaults`: Per-building dock visibility.
 
 ---
 

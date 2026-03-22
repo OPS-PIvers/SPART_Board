@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { WidgetData, Student, ClassLinkClass, ClassLinkStudent } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import { Plus, Trash2, Star, Edit2, RefreshCw } from 'lucide-react';
 import { classLinkService } from '@/utils/classlinkService';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
@@ -20,6 +21,20 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
     setActiveRoster,
     addToast,
   } = useDashboard();
+  const { featurePermissions, selectedBuildings } = useAuth();
+
+  const globalConfig = React.useMemo(() => {
+    const perm = featurePermissions.find((p) => p.widgetType === 'classes');
+    return perm?.config;
+  }, [featurePermissions]);
+
+  const defaultRosterSource = React.useMemo(() => {
+    const buildingId = selectedBuildings[0] ?? 'schumann-elementary';
+    const buildingDefaults = globalConfig?.buildingDefaults as
+      | Record<string, { defaultRosterSource?: string }>
+      | undefined;
+    return buildingDefaults?.[buildingId]?.defaultRosterSource ?? 'classlink';
+  }, [globalConfig, selectedBuildings]);
 
   const [view, setView] = useState<'list' | 'edit' | 'classlink'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -95,45 +110,91 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
           header={
             <div style={{ padding: 'min(12px, 2.5cqmin)' }}>
               <div className="flex" style={{ gap: 'min(8px, 2cqmin)' }}>
-                <button
-                  onClick={() => {
-                    setEditingId(null);
-                    setView('edit');
-                  }}
-                  className="flex-1 bg-blue-600 text-white rounded-xl font-black flex items-center justify-center hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all"
-                  style={{
-                    padding: 'min(10px, 2cqmin)',
-                    gap: 'min(8px, 2cqmin)',
-                    fontSize: 'min(12px, 3cqmin)',
-                  }}
-                >
-                  <Plus
-                    style={{
-                      width: 'min(16px, 4cqmin)',
-                      height: 'min(16px, 4cqmin)',
-                    }}
-                  />{' '}
-                  Create New Class
-                </button>
-                <button
-                  onClick={handleFetchClassLink}
-                  className="bg-white text-slate-700 border border-slate-200 rounded-xl font-black flex items-center justify-center hover:bg-slate-50 shadow-sm transition-all"
-                  style={{
-                    padding: 'min(10px, 2cqmin)',
-                    gap: 'min(8px, 2cqmin)',
-                    fontSize: 'min(12px, 3cqmin)',
-                  }}
-                  title="Sync from ClassLink"
-                >
-                  <RefreshCw
-                    className={classLinkLoading ? 'animate-spin' : ''}
-                    style={{
-                      width: 'min(16px, 4cqmin)',
-                      height: 'min(16px, 4cqmin)',
-                    }}
-                  />
-                  ClassLink
-                </button>
+                {defaultRosterSource === 'manual' ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                        setView('edit');
+                      }}
+                      className="flex-1 bg-blue-600 text-white rounded-xl font-black flex items-center justify-center hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all"
+                      style={{
+                        padding: 'min(10px, 2cqmin)',
+                        gap: 'min(8px, 2cqmin)',
+                        fontSize: 'min(12px, 3cqmin)',
+                      }}
+                    >
+                      <Plus
+                        style={{
+                          width: 'min(16px, 4cqmin)',
+                          height: 'min(16px, 4cqmin)',
+                        }}
+                      />{' '}
+                      Create New Class
+                    </button>
+                    <button
+                      onClick={handleFetchClassLink}
+                      className="bg-white text-slate-700 border border-slate-200 rounded-xl font-black flex items-center justify-center hover:bg-slate-50 shadow-sm transition-all"
+                      style={{
+                        padding: 'min(10px, 2cqmin)',
+                        gap: 'min(8px, 2cqmin)',
+                        fontSize: 'min(12px, 3cqmin)',
+                      }}
+                      title="Sync from ClassLink"
+                    >
+                      <RefreshCw
+                        className={classLinkLoading ? 'animate-spin' : ''}
+                        style={{
+                          width: 'min(16px, 4cqmin)',
+                          height: 'min(16px, 4cqmin)',
+                        }}
+                      />
+                      ClassLink
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleFetchClassLink}
+                      className="flex-1 bg-blue-600 text-white rounded-xl font-black flex items-center justify-center hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all"
+                      style={{
+                        padding: 'min(10px, 2cqmin)',
+                        gap: 'min(8px, 2cqmin)',
+                        fontSize: 'min(12px, 3cqmin)',
+                      }}
+                    >
+                      <RefreshCw
+                        className={classLinkLoading ? 'animate-spin' : ''}
+                        style={{
+                          width: 'min(16px, 4cqmin)',
+                          height: 'min(16px, 4cqmin)',
+                        }}
+                      />{' '}
+                      Import via ClassLink
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                        setView('edit');
+                      }}
+                      className="bg-white text-slate-700 border border-slate-200 rounded-xl font-black flex items-center justify-center hover:bg-slate-50 shadow-sm transition-all"
+                      style={{
+                        padding: 'min(10px, 2cqmin)',
+                        gap: 'min(8px, 2cqmin)',
+                        fontSize: 'min(12px, 3cqmin)',
+                      }}
+                      title="Create Custom List"
+                    >
+                      <Plus
+                        style={{
+                          width: 'min(16px, 4cqmin)',
+                          height: 'min(16px, 4cqmin)',
+                        }}
+                      />
+                      Manual List
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           }
