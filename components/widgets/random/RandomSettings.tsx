@@ -29,12 +29,14 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     useDashboard();
   const { showConfirm } = useDialog();
 
+  const config = widget.config as RandomConfig;
+
   const activeRoster = React.useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
     [rosters, activeRosterId]
   );
 
-  const importFromRoster = () => {
+  const importFromRoster = React.useCallback(() => {
     if (!activeRoster) return;
 
     const students = activeRoster.students;
@@ -50,8 +52,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
         remainingStudents: [],
       },
     });
-  };
-  const config = widget.config as RandomConfig;
+  }, [activeRoster, config, updateWidget, widget.id]);
   const {
     firstNames = '',
     lastNames = '',

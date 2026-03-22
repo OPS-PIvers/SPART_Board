@@ -13,23 +13,31 @@ async def verify():
         # We can bypass the UI dock entirely and trigger the widget open via state or evaluating in the browser context if possible.
         # Another option is to use the global testing hooks if they exist, or just use the UI that is visible.
 
-        # Wait for app to load
-        await page.wait_for_timeout(3000)
+        # Wait for app to load and the dock button to be ready
+        open_tools_button = page.get_by_role("button", name="Open Tools")
+        await open_tools_button.wait_for()
 
         # Let's open the dock
-        await page.get_by_role("button", name="Open Tools").click(force=True)
-        await page.wait_for_timeout(1000)
+        await open_tools_button.click()
 
-        # Let's click "Random" which IS visible on the dock right now.
+        # Wait for the Random button to be visible in the dock
+        random_button = page.get_by_text("RANDOM")
+        await random_button.wait_for()
+
+        # Let's click "Random"
         print("Adding Random...")
-        # from screenshot we know the Random button is visible and says "RANDOM" in all caps
-        await page.get_by_text("RANDOM").click(force=True)
-        await page.wait_for_timeout(1000)
+        await random_button.click()
+
+        # Wait for the new widget's settings button to appear
+        settings_button = page.locator("button:has(svg.lucide-settings)").last
+        await settings_button.wait_for()
 
         # Open the Random settings
         print("Opening Random Settings...")
-        await page.locator("button:has(svg.lucide-settings)").last.click(force=True)
-        await page.wait_for_timeout(1000)
+        await settings_button.click()
+
+        # Wait for an element in the settings panel to ensure it's loaded.
+        await page.get_by_text("Operation Mode").wait_for()
 
         print("Taking final screenshot...")
         await page.screenshot(path="/home/jules/verification/debug_random_settings.png")
