@@ -1231,15 +1231,16 @@ export const FeatureConfigurationPanel: React.FC<
       })()}
 
       {![
-        'lunchCount',
-        'weather',
-        'instructionalRoutines',
-        'webcam',
-        'stickers',
         'calendar',
-        'miniApp',
         'expectations',
+        'instructionalRoutines',
+        'lunchCount',
+        'miniApp',
+        'quiz',
+        'stickers',
         'talking-tool',
+        'weather',
+        'webcam',
         ...Object.keys(BUILDING_CONFIG_PANELS),
       ].includes(tool.type) && (
         <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl bg-white">
