@@ -449,16 +449,14 @@ Config: `components/admin/ScoreboardConfigurationPanel.tsx` _(dedicated panel vi
 
 ---
 
-[ ] Seating Chart — Type: `seating-chart` | Label: "Seating"
-Config: `components/admin/SeatingChartConfigurationPanel.tsx` _(does not exist yet — create and
-register in `BUILDING_CONFIG_PANELS`)_
+[x] Seating Chart — Type: `seating-chart` | Label: "Seating"
+Config: `components/admin/SeatingChartConfigurationPanel.tsx` _(dedicated panel via `BUILDING_CONFIG_PANELS`)_
 
-User-facing settings are in `components/widgets/SeatingChart/Settings.tsx`.
-
-- **User-level Defaults:**
-  - `rosterMode`: Default roster source (`'class'` or `'custom'`).
-- **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
+- [Default User-Level Settings]
+  -- `rosterMode`: Default roster source (`'class'` or `'custom'`).
+  -- `names`: Default custom roster names.
+- [Admin-Only Settings]
+  -- `dockDefaults`: Per-building dock visibility.
 
 ---
 

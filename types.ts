@@ -990,6 +990,16 @@ export interface FurnitureItem {
 
 export type SeatingChartTemplate = 'freeform' | 'rows' | 'horseshoe' | 'pods';
 
+export interface BuildingSeatingChartDefaults {
+  buildingId: string;
+  rosterMode?: 'class' | 'custom';
+  names?: string;
+}
+
+export interface SeatingChartGlobalConfig {
+  buildingDefaults?: Record<string, BuildingSeatingChartDefaults>;
+}
+
 export interface SeatingChartConfig {
   furniture: FurnitureItem[];
   assignments: Record<string, string>; // studentId -> furnitureId

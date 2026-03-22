@@ -1850,6 +1850,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const out: Record<string, unknown> = {};
       switch (type) {
+        case 'seating-chart':
+          if (raw.rosterMode !== undefined) out.rosterMode = raw.rosterMode;
+          if (raw.names !== undefined) out.names = raw.names;
+          break;
         case 'numberLine':
           if (raw.min !== undefined) out.min = raw.min;
           if (raw.max !== undefined) out.max = raw.max;
