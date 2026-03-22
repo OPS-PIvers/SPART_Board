@@ -20,9 +20,7 @@ export const ConceptWebConfigurationPanel: React.FC<Props> = ({
     buildingId: activeBuildingId,
   };
 
-  const updateBuildingConfig = (
-    updates: Partial<typeof buildingConfig>
-  ) => {
+  const updateBuildingConfig = (updates: Partial<typeof buildingConfig>) => {
     onChange({
       ...config,
       buildingDefaults: {
@@ -60,7 +58,8 @@ export const ConceptWebConfigurationPanel: React.FC<Props> = ({
             Default Node Dimensions
           </h3>
           <p className="text-xs text-slate-500 mb-4 font-bold">
-            Set the default width and height (as a percentage of the widget) for new nodes created in this building.
+            Set the default width and height (as a percentage of the widget) for
+            new nodes created in this building.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -75,7 +74,9 @@ export const ConceptWebConfigurationPanel: React.FC<Props> = ({
                 onChange={(e) => {
                   const value = e.target.valueAsNumber;
                   updateBuildingConfig({
-                    defaultNodeWidth: Number.isFinite(value) ? Math.max(5, Math.min(50, Math.round(value))) : undefined,
+                    defaultNodeWidth: Number.isFinite(value)
+                      ? Math.max(5, Math.min(50, Math.round(value)))
+                      : undefined,
                   });
                 }}
                 className="w-full px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue-primary outline-none"
@@ -93,7 +94,9 @@ export const ConceptWebConfigurationPanel: React.FC<Props> = ({
                 onChange={(e) => {
                   const value = e.target.valueAsNumber;
                   updateBuildingConfig({
-                    defaultNodeHeight: Number.isFinite(value) ? Math.max(5, Math.min(50, Math.round(value))) : undefined,
+                    defaultNodeHeight: Number.isFinite(value)
+                      ? Math.max(5, Math.min(50, Math.round(value)))
+                      : undefined,
                   });
                 }}
                 className="w-full px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue-primary outline-none"
@@ -114,7 +117,9 @@ export const ConceptWebConfigurationPanel: React.FC<Props> = ({
             onChange={(e) => {
               const selected = e.target.value;
               const fontFamily =
-                selected === 'global' ? undefined : (selected as GlobalFontFamily);
+                selected === 'global'
+                  ? undefined
+                  : (selected as GlobalFontFamily);
               updateBuildingConfig({ fontFamily });
             }}
             className="w-full px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue-primary outline-none"
