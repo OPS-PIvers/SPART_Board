@@ -10,7 +10,13 @@ interface SeatingChartConfigurationPanelProps {
 export const SeatingChartConfigurationPanel: React.FC<
   SeatingChartConfigurationPanelProps
 > = ({ config, onChange }) => {
-  const [activeBuildingId, setActiveBuildingId] = useState(BUILDINGS[0].id);
+  const [activeBuildingId, setActiveBuildingId] = useState(BUILDINGS[0]?.id);
+
+  if (!activeBuildingId) {
+    return (
+      <div className="p-4 text-sm text-slate-500">No buildings configured.</div>
+    );
+  }
 
   // Cast the generic config to our specific type
   const globalConfig = config as unknown as SeatingChartGlobalConfig;
@@ -72,11 +78,16 @@ export const SeatingChartConfigurationPanel: React.FC<
               </label>
               <select
                 value={currentDefaults.rosterMode ?? 'class'}
-                onChange={(e) =>
-                  updateCurrentDefaults({
-                    rosterMode: e.target.value as 'class' | 'custom',
-                  })
-                }
+                onChange={(e) => {
+                  const newRosterMode = e.target.value as 'class' | 'custom';
+                  const updates: Partial<typeof currentDefaults> = {
+                    rosterMode: newRosterMode,
+                  };
+                  if (newRosterMode === 'class') {
+                    updates.names = undefined;
+                  }
+                  updateCurrentDefaults(updates);
+                }}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue-primary outline-none font-bold bg-white"
               >
                 <option value="class">ClassLink Roster</option>
