@@ -48,24 +48,39 @@ export const SyntaxFramerConfigurationPanel: React.FC<
   return (
     <div className="space-y-4">
       {/* Building Tabs */}
-      <div className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto hide-scrollbar">
-        {BUILDINGS.map((building) => (
-          <button
-            key={building.id}
-            type="button"
-            className={`flex-1 min-w-[120px] px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-              selectedBuildingId === building.id
-                ? 'bg-white text-brand-blue-primary shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-            }`}
-            onClick={() => setSelectedBuildingId(building.id)}
-          >
-            {building.name}
-          </button>
-        ))}
+      <div
+        className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto hide-scrollbar"
+        role="tablist"
+        aria-label="Select building for Syntax Framer defaults"
+      >
+        {BUILDINGS.map((building) => {
+          const isSelected = selectedBuildingId === building.id;
+          return (
+            <button
+              key={building.id}
+              id={`syntax-framer-building-tab-${building.id}`}
+              type="button"
+              role="tab"
+              aria-selected={isSelected}
+              tabIndex={isSelected ? 0 : -1}
+              className={`flex-1 min-w-[120px] px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                isSelected
+                  ? 'bg-white text-brand-blue-primary shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+              }`}
+              onClick={() => setSelectedBuildingId(building.id)}
+            >
+              {building.name}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 space-y-6">
+      <div
+        className="bg-slate-50 rounded-2xl border border-slate-200 p-5 space-y-6"
+        role="tabpanel"
+        aria-labelledby={`syntax-framer-building-tab-${selectedBuildingId}`}
+      >
         <div>
           <label className="text-sm font-black text-slate-700 uppercase tracking-widest block mb-3 flex items-center gap-2">
             <Calculator className="w-4 h-4 text-slate-400" />
@@ -120,6 +135,10 @@ export const SyntaxFramerConfigurationPanel: React.FC<
               }`}
               onClick={() => handleUpdate({ alignment: 'left' })}
               title="Align Left"
+              aria-label="Align Left"
+              aria-pressed={
+                (currentBuildingConfig.alignment ?? defaultAlignment) === 'left'
+              }
             >
               <AlignLeft className="w-5 h-5" />
             </button>
@@ -133,6 +152,11 @@ export const SyntaxFramerConfigurationPanel: React.FC<
               }`}
               onClick={() => handleUpdate({ alignment: 'center' })}
               title="Align Center"
+              aria-label="Align Center"
+              aria-pressed={
+                (currentBuildingConfig.alignment ?? defaultAlignment) ===
+                'center'
+              }
             >
               <AlignCenter className="w-5 h-5" />
             </button>

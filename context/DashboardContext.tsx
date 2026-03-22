@@ -1858,8 +1858,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           if (raw.showArrows !== undefined) out.showArrows = raw.showArrows;
           break;
         case 'syntax-framer':
-          if (raw.mode !== undefined) out.mode = raw.mode;
-          if (raw.alignment !== undefined) out.alignment = raw.alignment;
+          if (
+            typeof raw.mode === 'string' &&
+            (raw.mode === 'text' || raw.mode === 'math')
+          ) {
+            out.mode = raw.mode;
+          }
+          if (
+            typeof raw.alignment === 'string' &&
+            (raw.alignment === 'left' || raw.alignment === 'center')
+          ) {
+            out.alignment = raw.alignment;
+          }
           break;
         case 'clock':
           if (raw.format24 !== undefined) out.format24 = raw.format24;
