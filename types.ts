@@ -993,7 +993,6 @@ export type SeatingChartTemplate = 'freeform' | 'rows' | 'horseshoe' | 'pods';
 export interface BuildingSeatingChartDefaults {
   buildingId: string;
   rosterMode?: 'class' | 'custom';
-  names?: string;
 }
 
 export interface SeatingChartGlobalConfig {
