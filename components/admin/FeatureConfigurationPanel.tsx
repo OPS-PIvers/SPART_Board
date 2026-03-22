@@ -47,6 +47,7 @@ import { NumberLineConfigurationPanel } from './NumberLineConfigurationPanel';
 import { HotspotImageConfigurationPanel } from './HotspotImageConfigurationPanel';
 import { ConceptWebConfigurationPanel } from './ConceptWebConfigurationPanel';
 import { SyntaxFramerConfigurationPanel } from './SyntaxFramerConfigurationPanel';
+import { SeatingChartConfigurationPanel } from './SeatingChartConfigurationPanel';
 import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
@@ -84,6 +85,8 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   'concept-web': ConceptWebConfigurationPanel as unknown as BuildingConfigPanel,
   'syntax-framer':
     SyntaxFramerConfigurationPanel as unknown as BuildingConfigPanel,
+  'seating-chart':
+    SeatingChartConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {
