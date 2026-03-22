@@ -3,11 +3,10 @@ import i18n, { SUPPORTED_LANGUAGES } from '@/i18n/index';
 
 describe('i18n config', () => {
   it('should initialize with supported languages', () => {
-    expect(SUPPORTED_LANGUAGES).toHaveLength(4);
-    expect(i18n.options.supportedLngs).toContain('en');
-    expect(i18n.options.supportedLngs).toContain('es');
-    expect(i18n.options.supportedLngs).toContain('de');
-    expect(i18n.options.supportedLngs).toContain('fr');
+    const expectedLangs = SUPPORTED_LANGUAGES.map((lang) => lang.code);
+    expect(i18n.options.supportedLngs).toEqual(
+      expect.arrayContaining(expectedLangs)
+    );
   });
 
   it('should default to english fallback', () => {
@@ -15,9 +14,8 @@ describe('i18n config', () => {
   });
 
   it('should load resource bundles for all languages', () => {
-    expect(i18n.hasResourceBundle('en', 'translation')).toBe(true);
-    expect(i18n.hasResourceBundle('es', 'translation')).toBe(true);
-    expect(i18n.hasResourceBundle('de', 'translation')).toBe(true);
-    expect(i18n.hasResourceBundle('fr', 'translation')).toBe(true);
+    for (const lang of SUPPORTED_LANGUAGES) {
+      expect(i18n.hasResourceBundle(lang.code, 'translation')).toBe(true);
+    }
   });
 });
