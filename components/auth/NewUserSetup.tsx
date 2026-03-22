@@ -143,7 +143,10 @@ export const NewUserSetup: React.FC = () => {
       reorderDockItems(dockItems);
       await completeSetup();
     } catch (error) {
-      // completeSetup failing is non-fatal — dashboard will still render
+      // AuthContext persists changes optimistically: completeSetup / setSelectedBuildings
+      // update React state first and swallow Firestore errors internally, so they
+      // will not reach here under normal operation. If something else in this block
+      // throws unexpectedly, log it and reset the spinner so the user can retry.
       console.error('NewUserSetup: handleFinish failed', error);
       setFinishing(false);
     }
@@ -283,6 +286,7 @@ const StepBuildings: React.FC<{
         <button
           key={b.id}
           onClick={() => onToggle(b.id)}
+          aria-pressed={isSelected}
           className={`relative flex flex-col items-start p-5 rounded-2xl border-2 text-left transition-all ${
             isSelected
               ? 'border-blue-500 bg-blue-500/10'
@@ -463,6 +467,7 @@ const StepDock: React.FC<{
   dockTypes: WidgetType[];
   onToggle: (type: WidgetType) => void;
 }> = ({ dockTypes, onToggle }) => {
+  const { canAccessWidget } = useAuth();
   const toolMap = new Map(TOOLS.map((t) => [t.type, t]));
 
   return (
@@ -479,7 +484,7 @@ const StepDock: React.FC<{
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {cat.types.map((type) => {
               const tool = toolMap.get(type);
-              if (!tool) return null;
+              if (!tool || !canAccessWidget(type)) return null;
               const Icon = tool.icon;
               const isSelected = dockTypes.includes(type);
               return (

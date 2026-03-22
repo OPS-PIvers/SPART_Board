@@ -98,10 +98,13 @@ const AuthenticatedApp: React.FC<{ isRemote?: boolean }> = ({
 /** Rendered inside DashboardProvider so it can access both auth and dashboard context. */
 const AppContent: React.FC = () => {
   const { isAdmin, profileLoaded, setupCompleted } = useAuth();
-  const { loading: dashLoading } = useDashboard();
+  const { loading: dashLoading, activeDashboard } = useDashboard();
 
   // Wait for the user's profile and first dashboard load before deciding what to show.
-  if (!profileLoaded || dashLoading) {
+  // Also wait for an active dashboard: DashboardContext can emit loading=false before
+  // the default board has been created (async saveDashboard on first sign-in), and the
+  // setup wizard's setGlobalStyle() is a no-op when activeDashboard is null.
+  if (!profileLoaded || dashLoading || !activeDashboard) {
     return <FullPageLoader />;
   }
 

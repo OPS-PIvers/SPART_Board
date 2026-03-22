@@ -508,6 +508,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Reset stale state from the previous user before loading new profile
       setProfileLoaded(false);
       setSetupCompletedState(false);
+      setSavedWidgetConfigs({});
 
       if (!user) {
         setSelectedBuildingsState([]);
@@ -571,16 +572,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             );
           }
 
-          // Load setupCompleted
-          if ('setupCompleted' in data && data.setupCompleted === true) {
-            setSetupCompletedState(true);
-          }
+          // Load setupCompleted. The field is only written by the wizard on new
+          // accounts, so its absence from an existing profile doc means the user
+          // pre-dates the wizard — treat them as having completed setup already.
+          setSetupCompletedState(
+            !('setupCompleted' in data) || data.setupCompleted === true
+          );
 
           setProfileLoaded(true);
           return;
         }
-        // Profile exists but has no valid data; clear any previous selection
+        // Profile exists but has no valid data; clear any previous selection.
+        // Doc existence implies the user pre-dates or completed setup already.
         setSelectedBuildingsState([]);
+        setSetupCompletedState(true);
         setProfileLoaded(true);
       } catch (error) {
         if (!isCancelled) {
