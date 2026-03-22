@@ -81,14 +81,17 @@ const JoinAndPlay: React.FC = () => {
   } = useVideoActivitySessionStudent();
 
   // Track answered timestamps for anti-skip enforcement in VideoPlayer
-  const answeredTimestamps = React.useMemo(
-    () =>
+  const answeredTimestamps = React.useMemo(() => {
+    const questionsById = new Map(
+      (session?.questions ?? []).map((q) => [q.id, q])
+    );
+    return (
       myResponse?.answers.map((a) => {
-        const q = session?.questions.find((q) => q.id === a.questionId);
+        const q = questionsById.get(a.questionId);
         return q?.timestamp ?? 0;
-      }) ?? [],
-    [myResponse?.answers, session?.questions]
-  );
+      }) ?? []
+    );
+  }, [myResponse?.answers, session?.questions]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,10 +221,16 @@ const JoinAndPlay: React.FC = () => {
   // ── Completion screen ─────────────────────────────────────────────────────
 
   if (videoEnded || myResponse?.completedAt) {
-    const score = myResponse?.score ?? null;
     const answeredCount = myResponse?.answers.length ?? 0;
     const totalQuestions = session?.questions.length ?? 0;
-    const correct = myResponse?.answers.filter((a) => a.isCorrect).length ?? 0;
+    const questionsById = new Map(
+      (session?.questions ?? []).map((q) => [q.id, q])
+    );
+    const correct =
+      myResponse?.answers.filter((a) => {
+        const q = questionsById.get(a.questionId);
+        return q ? q.correctAnswer === a.answer : false;
+      }).length ?? 0;
 
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
@@ -243,10 +252,10 @@ const JoinAndPlay: React.FC = () => {
                 !
               </p>
 
-              {score !== null && (
+              {totalQuestions > 0 && (
                 <div className="bg-brand-blue-lighter/30 rounded-2xl p-5">
                   <p className="text-5xl font-black text-brand-blue-dark">
-                    {score}%
+                    {Math.round((correct / totalQuestions) * 100)}%
                   </p>
                   <p className="text-brand-blue-primary/70 text-sm font-medium mt-1">
                     {correct} of {totalQuestions} correct

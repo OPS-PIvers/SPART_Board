@@ -117,7 +117,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         const currentTime = player.getCurrentTime();
 
         // Anti-skip: if student seeked past allowed time, seek back
-        if (currentTime > maxAllowedRef.current + SEEK_TOLERANCE_SECONDS) {
+        if (currentTime > maxAllowedRef.current) {
           player.seekTo(maxAllowedRef.current, true);
           rafRef.current = requestAnimationFrame(tick);
           return;

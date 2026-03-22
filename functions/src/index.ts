@@ -1247,13 +1247,10 @@ Return JSON:
             {
               role: 'user',
               parts: [
-                {
-                  fileData: {
-                    mimeType: 'video/mp4',
-                    fileUri: `https://www.youtube.com/watch?v=${videoId}`,
-                  },
-                },
                 { text: systemPrompt },
+                {
+                  text: `Video URL: https://www.youtube.com/watch?v=${videoId}`,
+                },
               ],
             },
           ],
