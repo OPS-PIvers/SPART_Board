@@ -47,7 +47,8 @@ export type WidgetType =
   | 'numberLine'
   | 'syntax-framer'
   | 'hotspot-image'
-  | 'starter-pack';
+  | 'starter-pack'
+  | 'video-activity';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -172,6 +173,7 @@ export interface ScheduleItem {
   mode?: 'clock' | 'timer';
   linkedWidgets?: WidgetType[];
   spawnedWidgetIds?: string[];
+  oneOffDate?: string; // YYYY-MM-DD: if set, item only shows on this specific date
 }
 
 export interface DailySchedule {
@@ -481,6 +483,32 @@ export interface EmbedGlobalConfig {
   buildingDefaults: Record<string, BuildingEmbedDefaults>;
 }
 
+// --- Reveal Grid Global Config ---
+export interface BuildingRevealGridDefaults {
+  buildingId: string;
+  columns?: 2 | 3 | 4 | 5;
+  revealMode?: 'flip' | 'fade';
+  fontFamily?: GlobalFontFamily;
+  defaultCardColor?: string;
+  defaultCardBackColor?: string;
+}
+
+export interface RevealGridGlobalConfig {
+  buildingDefaults: Record<string, BuildingRevealGridDefaults>;
+}
+
+// --- Breathing Global Config ---
+export interface BuildingBreathingDefaults {
+  buildingId: string;
+  pattern?: '4-4-4-4' | '4-7-8' | '5-5';
+  visual?: 'circle' | 'lotus' | 'wave';
+  color?: string;
+}
+
+export interface BreathingGlobalConfig {
+  buildingDefaults: Record<string, BuildingBreathingDefaults>;
+}
+
 // --- Clock Global Config ---
 export interface BuildingClockDefaults {
   buildingId: string;
@@ -712,7 +740,18 @@ export interface LunchCountConfig {
   gradeLevel?: string;
 }
 
-export type ClassesConfig = Record<string, never>;
+export interface BuildingClassesDefaults {
+  buildingId: string;
+  classLinkEnabled?: boolean;
+}
+
+export interface ClassesGlobalConfig {
+  buildingDefaults: Record<string, BuildingClassesDefaults>;
+}
+
+export interface ClassesConfig {
+  classLinkEnabled?: boolean;
+}
 
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
@@ -787,6 +826,16 @@ export interface PdfItem {
   uploadedAt: number;
   order?: number;
 }
+
+export interface GlobalPdfItem extends PdfItem {
+  buildings?: string[];
+  createdAt?: number;
+}
+
+export interface PdfGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 export interface BreathingConfig {
   pattern: '4-4-4-4' | '4-7-8' | '5-5';
   visual: 'circle' | 'lotus' | 'wave';
@@ -941,6 +990,8 @@ export interface StickerConfig {
 
 export interface StickerBookConfig {
   uploadedUrls?: string[];
+  favorites?: string[];
+  stickerOrder?: string[];
 }
 
 export interface GlobalSticker {
@@ -964,6 +1015,15 @@ export interface FurnitureItem {
 }
 
 export type SeatingChartTemplate = 'freeform' | 'rows' | 'horseshoe' | 'pods';
+
+export interface BuildingSeatingChartDefaults {
+  buildingId: string;
+  rosterMode?: 'class' | 'custom';
+}
+
+export interface SeatingChartGlobalConfig {
+  buildingDefaults?: Record<string, BuildingSeatingChartDefaults>;
+}
 
 export interface SeatingChartConfig {
   furniture: FurnitureItem[];
@@ -1131,6 +1191,11 @@ export interface QuizResponse {
   tabSwitchWarnings?: number;
 }
 
+/** Global admin configuration for the Quiz widget */
+export interface QuizGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 /** Widget configuration for the quiz widget (teacher side) */
 export interface QuizConfig {
   view: 'manager' | 'import' | 'editor' | 'preview' | 'results' | 'monitor';
@@ -1140,6 +1205,99 @@ export interface QuizConfig {
   activeLiveSessionCode: string | null;
   /** Quiz session ID for viewing historical results */
   resultsSessionId: string | null;
+}
+
+// --- VIDEO ACTIVITY TYPES ---
+
+/**
+ * A quiz question that is tied to a specific timestamp in a YouTube video.
+ * Only MC question type is supported in V1.
+ */
+export interface VideoActivityQuestion extends QuizQuestion {
+  /** Seconds into the video when this question should trigger. */
+  timestamp: number;
+}
+
+/** Full video activity data stored in Google Drive as JSON. */
+export interface VideoActivityData {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  /** Total video duration in seconds, populated after the first player load. */
+  videoDuration?: number;
+  questions: VideoActivityQuestion[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Lightweight metadata stored in Firestore (avoids Drive API on every list). */
+export interface VideoActivityMetadata {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  driveFileId: string;
+  questionCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type VideoActivityView = 'manager' | 'create' | 'editor' | 'results';
+
+/** Widget configuration for the video activity widget (teacher side). */
+export interface VideoActivityConfig {
+  view: VideoActivityView;
+  selectedActivityId: string | null;
+  selectedActivityTitle: string | null;
+  /** Session ID for the most recently created/viewed session. */
+  resultsSessionId: string | null;
+}
+
+/**
+ * A Firestore session document giving students access to an activity.
+ * Stored at /video_activity_sessions/{sessionId}
+ */
+export interface VideoActivitySession {
+  id: string;
+  activityId: string;
+  activityTitle: string;
+  teacherUid: string;
+  youtubeUrl: string;
+  /** Full questions including correctAnswer — used server-side for grading. */
+  questions: VideoActivityQuestion[];
+  /**
+   * Roster PINs allowed to join. Teacher sets this when assigning to a class.
+   * Empty array means any PIN is accepted.
+   */
+  allowedPins: string[];
+  createdAt: number;
+  /** Optional Unix timestamp when the session link expires. */
+  expiresAt?: number;
+}
+
+/** A single answer submitted by a student for a video activity question. */
+export interface VideoActivityAnswer {
+  questionId: string;
+  answer: string;
+  /** Whether the answer was correct. Not written by the student client; derived from
+   *  authoritative question data (correctAnswer) when displaying teacher results. */
+  isCorrect?: boolean;
+  answeredAt: number;
+}
+
+/**
+ * Per-student response document in Firestore.
+ * Stored at /video_activity_sessions/{sessionId}/responses/{studentUid}
+ * The document ID is the student's Firebase auth UID (prevents PIN-claiming attacks).
+ */
+export interface VideoActivityResponse {
+  pin: string;
+  name: string;
+  /** Firebase auth UID of the student who created this response. Used for Firestore ownership rules. */
+  studentUid: string;
+  joinedAt: number;
+  answers: VideoActivityAnswer[];
+  completedAt: number | null;
+  score: number | null;
 }
 
 export type TalkingToolConfig = Record<string, never>;
@@ -1244,6 +1402,15 @@ export interface NumberLineConfig {
   markers: NumberLineMarker[];
   jumps: NumberLineJump[];
   showArrows: boolean;
+}
+
+export type BuildingNumberLineDefaults = Pick<
+  NumberLineConfig,
+  'min' | 'max' | 'step' | 'displayMode' | 'showArrows'
+>;
+
+export interface NumberLineGlobalConfig {
+  buildingDefaults?: Record<string, BuildingNumberLineDefaults>;
 }
 
 export interface SpecialistScheduleBuildingConfig {
@@ -1421,6 +1588,17 @@ export interface ConceptWebConfig {
   defaultNodeHeight?: number; // Height as a percentage of container
 }
 
+export interface BuildingConceptWebDefaults {
+  buildingId: string;
+  defaultNodeWidth?: number;
+  defaultNodeHeight?: number;
+  fontFamily?: GlobalFontFamily;
+}
+
+export interface ConceptWebGlobalConfig {
+  buildingDefaults: Record<string, BuildingConceptWebDefaults>;
+}
+
 export interface SyntaxToken {
   id: string;
   value: string; // the word, punctuation, or math operator
@@ -1432,6 +1610,16 @@ export interface SyntaxFramerConfig {
   mode: 'text' | 'math'; // Math mode adds an equation-style font
   tokens: SyntaxToken[];
   alignment: 'left' | 'center';
+}
+
+export interface BuildingSyntaxFramerDefaults {
+  buildingId: string;
+  mode?: 'text' | 'math';
+  alignment?: 'left' | 'center';
+}
+
+export interface SyntaxFramerGlobalConfig {
+  buildingDefaults: Record<string, BuildingSyntaxFramerDefaults>;
 }
 
 export interface ImageHotspot {
@@ -1451,6 +1639,15 @@ export interface HotspotSavedItem {
   hotspots: ImageHotspot[];
   popoverTheme?: 'light' | 'dark' | 'glass';
   createdAt: number;
+}
+
+export interface BuildingHotspotImageDefaults {
+  buildingId: string;
+  popoverTheme?: 'light' | 'dark' | 'glass';
+}
+
+export interface HotspotImageGlobalConfig {
+  buildingDefaults: Record<string, BuildingHotspotImageDefaults>;
 }
 
 export interface HotspotImageConfig {
@@ -1510,7 +1707,8 @@ export type WidgetConfig =
   | ConceptWebConfig
   | SyntaxFramerConfig
   | HotspotImageConfig
-  | StarterPackConfig;
+  | StarterPackConfig
+  | VideoActivityConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1611,7 +1809,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                                 ? HotspotImageConfig
                                                                                                 : T extends 'starter-pack'
                                                                                                   ? StarterPackConfig
-                                                                                                  : never;
+                                                                                                  : T extends 'video-activity'
+                                                                                                    ? VideoActivityConfig
+                                                                                                    : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
@@ -1708,6 +1908,8 @@ export interface UserProfile {
   language?: string;
   /** Global saved widget configs for complex widgets */
   savedWidgetConfigs?: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
+  /** True after the user has completed the first-time setup wizard */
+  setupCompleted?: boolean;
 }
 
 export interface SharedGroup {
@@ -1773,7 +1975,8 @@ export type GlobalFeature =
   | 'smart-poll'
   | 'screen-recording'
   | 'remote-control'
-  | 'embed-mini-app';
+  | 'embed-mini-app'
+  | 'video-activity-audio-transcription';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;

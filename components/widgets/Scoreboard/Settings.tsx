@@ -60,6 +60,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
   );
 
   const importFromRandom = () => {
+    // We already check this in the onClick, but keeping it here for safety
     if (!randomWidget) {
       addToast('No Randomizer widget found!', 'error');
       return;
@@ -182,6 +183,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
             variant="secondary"
             onClick={importFromRandom}
             disabled={!randomWidget}
+            data-testid="import-groups-btn"
             title={
               !randomWidget ? 'Add a Randomizer widget first' : 'Import Groups'
             }

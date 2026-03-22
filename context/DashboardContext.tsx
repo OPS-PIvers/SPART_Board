@@ -530,6 +530,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards(
       (updatedDashboards, hasPendingWrites) => {
+        // Cancel the loading timer — in bypass mode the mock store fires the
+        // callback synchronously (before the 0ms timer fires), so without this
+        // the timer would override setLoading(false) and lock the UI on the
+        // full-page loader indefinitely. Safe to call after the timer has fired.
+        clearTimeout(timer);
+
         // Sort dashboards: default first, then by order, then by createdAt
         const sortedDashboards = [...updatedDashboards].sort((a, b) => {
           if (a.isDefault && !b.isDefault) return -1;
@@ -1850,11 +1856,120 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const out: Record<string, unknown> = {};
       switch (type) {
+        case 'seating-chart': {
+          let validRosterMode: 'class' | 'custom' | undefined;
+          if (typeof raw.rosterMode === 'string') {
+            if (raw.rosterMode === 'class' || raw.rosterMode === 'custom') {
+              validRosterMode = raw.rosterMode;
+              out.rosterMode = validRosterMode;
+            }
+          }
+          break;
+        }
+        case 'reveal-grid': {
+          const validRevealModes = ['flip', 'fade'] as const;
+          const validRevealFonts = [
+            'sans',
+            'serif',
+            'mono',
+            'handwritten',
+            'rounded',
+            'fun',
+            'comic',
+            'slab',
+            'retro',
+            'marker',
+            'cursive',
+          ] as const;
+          const validColumns = [2, 3, 4, 5] as const;
+          if (
+            typeof raw.columns === 'number' &&
+            (validColumns as readonly number[]).includes(raw.columns)
+          )
+            out.columns = raw.columns;
+          if (
+            typeof raw.revealMode === 'string' &&
+            (validRevealModes as readonly string[]).includes(raw.revealMode)
+          )
+            out.revealMode = raw.revealMode;
+          if (
+            typeof raw.fontFamily === 'string' &&
+            (validRevealFonts as readonly string[]).includes(raw.fontFamily)
+          )
+            out.fontFamily = raw.fontFamily;
+          if (
+            typeof raw.defaultCardColor === 'string' &&
+            raw.defaultCardColor.trim() !== ''
+          )
+            out.defaultCardColor = raw.defaultCardColor;
+          if (
+            typeof raw.defaultCardBackColor === 'string' &&
+            raw.defaultCardBackColor.trim() !== ''
+          )
+            out.defaultCardBackColor = raw.defaultCardBackColor;
+          break;
+        }
+        case 'numberLine': {
+          const validDisplayModes = [
+            'integers',
+            'decimals',
+            'fractions',
+          ] as const;
+          if (typeof raw.min === 'number' && Number.isFinite(raw.min))
+            out.min = raw.min;
+          if (typeof raw.max === 'number' && Number.isFinite(raw.max))
+            out.max = raw.max;
+          if (
+            typeof raw.step === 'number' &&
+            Number.isFinite(raw.step) &&
+            raw.step > 0
+          )
+            out.step = raw.step;
+          if (
+            typeof raw.displayMode === 'string' &&
+            (validDisplayModes as readonly string[]).includes(raw.displayMode)
+          )
+            out.displayMode = raw.displayMode;
+          if (typeof raw.showArrows === 'boolean')
+            out.showArrows = raw.showArrows;
+          break;
+        }
+        case 'syntax-framer':
+          if (
+            typeof raw.mode === 'string' &&
+            (raw.mode === 'text' || raw.mode === 'math')
+          ) {
+            out.mode = raw.mode;
+          }
+          if (
+            typeof raw.alignment === 'string' &&
+            (raw.alignment === 'left' || raw.alignment === 'center')
+          ) {
+            out.alignment = raw.alignment;
+          }
+          break;
         case 'clock':
           if (raw.format24 !== undefined) out.format24 = raw.format24;
           if (raw.fontFamily) out.fontFamily = raw.fontFamily;
           if (raw.themeColor) out.themeColor = raw.themeColor;
           break;
+        case 'breathing': {
+          const validPatterns = ['4-4-4-4', '4-7-8', '5-5'] as const;
+          const validVisuals = ['circle', 'lotus', 'wave'] as const;
+          if (
+            typeof raw.pattern === 'string' &&
+            (validPatterns as readonly string[]).includes(raw.pattern)
+          )
+            out.pattern = raw.pattern;
+          if (
+            typeof raw.visual === 'string' &&
+            (validVisuals as readonly string[]).includes(raw.visual)
+          )
+            out.visual = raw.visual;
+          if (typeof raw.color === 'string' && raw.color.trim() !== '')
+            out.color = raw.color;
+          break;
+        }
         case 'time-tool':
           if (typeof raw.duration === 'number') {
             out.duration = raw.duration;
@@ -1966,6 +2081,36 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   : {}),
               };
             }
+          }
+          break;
+        case 'hotspot-image':
+          if (raw.popoverTheme) out.popoverTheme = raw.popoverTheme;
+          break;
+        case 'concept-web':
+          if (
+            typeof raw.defaultNodeWidth === 'number' &&
+            Number.isFinite(raw.defaultNodeWidth)
+          ) {
+            out.defaultNodeWidth = Math.max(
+              5,
+              Math.min(50, Math.round(raw.defaultNodeWidth))
+            );
+          }
+          if (
+            typeof raw.defaultNodeHeight === 'number' &&
+            Number.isFinite(raw.defaultNodeHeight)
+          ) {
+            out.defaultNodeHeight = Math.max(
+              5,
+              Math.min(50, Math.round(raw.defaultNodeHeight))
+            );
+          }
+          if (typeof raw.fontFamily === 'string')
+            out.fontFamily = raw.fontFamily;
+          break;
+        case 'classes':
+          if (typeof raw.classLinkEnabled === 'boolean') {
+            out.classLinkEnabled = raw.classLinkEnabled;
           }
           break;
         default:

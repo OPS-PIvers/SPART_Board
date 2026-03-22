@@ -12,3 +12,8 @@
 
 **Learning:** Evaluating `JSON.stringify` inside a `useMemo` block that lacks an adequate conditional guard can cause severe performance degradation during high-frequency events (like dragging or resizing widgets). If the object reference changes on every frame, the `useMemo` cache is bypassed, forcing synchronous string serialization on the main thread even when the output is ultimately discarded or unused (e.g., when not in a live session).
 **Action:** When using `useMemo` to serialize configuration objects for debounced sync or comparison, ensure the logic includes an early exit condition (like `isLive ? JSON.stringify(...) : null`) and adds that condition to the dependency array.
+
+## 2025-02-28 - Unnecessary Multiple Array Passes During Render
+
+**Learning:** When computing summary data (like counts or expression parts) and grouped display data (like rectangles or lists) from an array in a React component, doing multiple consecutive `.filter()` or `.map()` calls can lead to `O(N*M)` or higher complexity. This can cause significant main thread blocking on each re-render, especially during rapid state updates (like drag-and-drop or continuous tile additions).
+**Action:** Consolidate multiple passes into a single grouping loop inside a `useMemo` block. Gather counts, generate derived strings (like expressions), and build UI representations (like grouped rectangles) in one go, caching the results against the dependency array. This reduces complexity back down to O(N) and prevents layout thrashing.

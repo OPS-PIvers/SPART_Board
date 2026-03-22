@@ -59,6 +59,7 @@ vi.mock('lucide-react', () => ({
   Copy: () => <div>Copy Icon</div>,
   Link: () => <div>Link Icon</div>,
   ArrowUpDown: () => <div>ArrowUpDown Icon</div>,
+  CalendarPlus: () => <div>CalendarPlus Icon</div>,
   Ban: () => <div>Ban Icon</div>,
 }));
 
@@ -539,6 +540,8 @@ describe('ScheduleSettings', () => {
   it('renders settings controls', () => {
     render(<ScheduleSettings widget={createWidget()} />);
 
+    // Options section is collapsed by default; expand it first.
+    fireEvent.click(screen.getByRole('button', { name: /options/i }));
     expect(screen.getByText(/auto-checkoff/i)).toBeInTheDocument();
   });
 
@@ -550,11 +553,16 @@ describe('ScheduleSettings', () => {
 
   it('renders the Auto-Scroll View toggle', () => {
     render(<ScheduleSettings widget={createWidget()} />);
+    // Options section is collapsed by default; expand it first.
+    fireEvent.click(screen.getByRole('button', { name: /options/i }));
     expect(screen.getByText('Auto-Scroll View')).toBeInTheDocument();
   });
 
   it('saves autoScroll:true when the Auto-Scroll View toggle is clicked', () => {
     render(<ScheduleSettings widget={createWidget({ autoScroll: false })} />);
+
+    // Options section is collapsed by default; expand it to reveal the toggles.
+    fireEvent.click(screen.getByRole('button', { name: /options/i }));
 
     // The settings panel contains three role="switch" toggles in order:
     // 0 = Auto-Complete Items, 1 = Auto-Scroll View, 2 = Sync Building Schedule.
@@ -568,6 +576,107 @@ describe('ScheduleSettings', () => {
         config: expect.objectContaining({ autoScroll: true }),
       })
     );
+  });
+
+  describe('one-off schedule items', () => {
+    it('hides a one-off item with a future date', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          { id: 'r1', time: '08:00', task: 'Daily Class', done: false },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: 'Future Event',
+            done: false,
+            oneOffDate: '2026-03-25',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+      expect(screen.getByText('Daily Class')).toBeInTheDocument();
+      expect(screen.queryByText('Future Event')).not.toBeInTheDocument();
+    });
+
+    it('hides a one-off item with an expired (past) date', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          { id: 'r1', time: '08:00', task: 'Daily Class', done: false },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: 'Past Event',
+            done: false,
+            oneOffDate: '2026-03-20',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+      expect(screen.getByText('Daily Class')).toBeInTheDocument();
+      expect(screen.queryByText('Past Event')).not.toBeInTheDocument();
+    });
+
+    it('displays a one-off item when its date matches today', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          { id: 'r1', time: '08:00', task: 'Daily Class', done: false },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: "Today's Special",
+            done: false,
+            oneOffDate: '2026-03-21',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+      expect(screen.getByText('Daily Class')).toBeInTheDocument();
+      expect(screen.getByText("Today's Special")).toBeInTheDocument();
+    });
+
+    it('preserves hidden one-off items when toggling a visible item done', () => {
+      vi.setSystemTime(new Date('2026-03-21T10:00:00'));
+      const widget = createWidget({
+        items: [
+          {
+            id: 'r1',
+            time: '08:00',
+            startTime: '08:00',
+            task: 'Daily Class',
+            done: false,
+            mode: 'clock' as const,
+            linkedWidgets: [],
+          },
+          {
+            id: 'o1',
+            time: '09:00',
+            task: 'Future Event',
+            done: false,
+            oneOffDate: '2026-03-25',
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+
+      // Click the visible item's circle to toggle it done
+      const circles = screen.getAllByTestId('circle-icon');
+      fireEvent.click(circles[0]);
+
+      // updateWidget should preserve both items, including the hidden one-off
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        'schedule-1',
+        expect.objectContaining({
+          config: expect.objectContaining({
+            items: expect.arrayContaining([
+              expect.objectContaining({ id: 'r1' }),
+              expect.objectContaining({ id: 'o1', oneOffDate: '2026-03-25' }),
+            ]),
+          }),
+        })
+      );
+    });
   });
 
   it('adds a new item inline when Add Event is clicked after expanding a schedule', () => {
@@ -587,14 +696,8 @@ describe('ScheduleSettings', () => {
     });
     render(<ScheduleSettings widget={widget} />);
 
-    // Expand the default schedule accordion (the card is a div, not a button;
-    // click the cursor-pointer wrapper since the inner input stops propagation).
-    const scheduleNameInput = screen.getByDisplayValue(/default schedule/i);
-    const accordionCard = scheduleNameInput.closest('.cursor-pointer');
-    if (!accordionCard) throw new Error('Accordion card not found');
-    fireEvent.click(accordionCard);
-
-    // Click "Add Event" to append a new blank item.
+    // With items present the schedule is shown directly — no accordion to expand.
+    // Click the "Add event" button (aria-label set on the inline Add button).
     fireEvent.click(screen.getByRole('button', { name: /add event/i }));
 
     // updateWidget should have been called with the existing item + a new blank one.

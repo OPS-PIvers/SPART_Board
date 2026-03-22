@@ -42,6 +42,14 @@ import { CarRiderConfigurationPanel } from './CarRiderConfigurationPanel';
 import { PollConfigurationPanel } from './PollConfigurationPanel';
 import { QRConfigurationPanel } from './QRConfigurationPanel';
 import { EmbedConfigurationPanel } from './EmbedConfigurationPanel';
+import { BreathingConfigurationPanel } from './BreathingConfigurationPanel';
+import { NumberLineConfigurationPanel } from './NumberLineConfigurationPanel';
+import { ClassesConfigurationPanel } from './ClassesConfigurationPanel';
+import { HotspotImageConfigurationPanel } from './HotspotImageConfigurationPanel';
+import { ConceptWebConfigurationPanel } from './ConceptWebConfigurationPanel';
+import { SyntaxFramerConfigurationPanel } from './SyntaxFramerConfigurationPanel';
+import { SeatingChartConfigurationPanel } from './SeatingChartConfigurationPanel';
+import { RevealGridConfigurationPanel } from './RevealGridConfigurationPanel';
 import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
@@ -72,6 +80,17 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   poll: PollConfigurationPanel as unknown as BuildingConfigPanel,
   qr: QRConfigurationPanel as unknown as BuildingConfigPanel,
   embed: EmbedConfigurationPanel as unknown as BuildingConfigPanel,
+  breathing: BreathingConfigurationPanel as unknown as BuildingConfigPanel,
+  numberLine: NumberLineConfigurationPanel as unknown as BuildingConfigPanel,
+  'hotspot-image':
+    HotspotImageConfigurationPanel as unknown as BuildingConfigPanel,
+  'concept-web': ConceptWebConfigurationPanel as unknown as BuildingConfigPanel,
+  'syntax-framer':
+    SyntaxFramerConfigurationPanel as unknown as BuildingConfigPanel,
+  'seating-chart':
+    SeatingChartConfigurationPanel as unknown as BuildingConfigPanel,
+  'reveal-grid': RevealGridConfigurationPanel as unknown as BuildingConfigPanel,
+  classes: ClassesConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {
@@ -1224,15 +1243,16 @@ export const FeatureConfigurationPanel: React.FC<
       })()}
 
       {![
-        'lunchCount',
-        'weather',
-        'instructionalRoutines',
-        'webcam',
-        'stickers',
         'calendar',
-        'miniApp',
         'expectations',
+        'instructionalRoutines',
+        'lunchCount',
+        'miniApp',
+        'quiz',
+        'stickers',
         'talking-tool',
+        'weather',
+        'webcam',
         ...Object.keys(BUILDING_CONFIG_PANELS),
       ].includes(tool.type) && (
         <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl bg-white">

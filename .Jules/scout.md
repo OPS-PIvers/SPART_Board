@@ -8,6 +8,17 @@
 **Gap:** While increasing coverage in `TextWidget.tsx`, lines 44 and 62 (defensive null checks for `editorRef.current`) remained uncovered because the ref is unconditionally rendered and thus never null during those effects in standard execution.
 **Fix:** Instead of using brittle anti-patterns (like spying on `useRef` or reading internal `__reactProps`) to force 100% branch coverage, I left the defensive checks uncovered and focused strictly on behavioral tests for external content updates, ensuring tests test the "what" and not the "how".
 
-## 2026-03-15 - ClassesWidget branch coverage gaps\n\n**Gap:** Lines testing classLinkLoading conditional className, and confirmDeleteId conditional exist but are difficult to safely test without bad mock leaking or anti-patterns since React naturally prevents the negative case (button renders only when id exists).\n**Fix:** Accepted slightly less than 100% (95%) on branch coverage for these defensive idioms to avoid writing brittle tests that test implementation details.
+## 2026-03-15 - ClassesWidget branch coverage gaps
 
-## 2026-03-20 - SeatingChart Widget Tests\n\n**Gap:** Multi-select pointer events dropping and failing to update selectedIds in JSDOM.\n**Fix:** Wait for state updates with await screen.findByText and mock microtask delays, and use mockClear before executing final target function testing.
+**Gap:** Lines testing classLinkLoading conditional className, and confirmDeleteId conditional exist but are difficult to safely test without bad mock leaking or anti-patterns since React naturally prevents the negative case (button renders only when id exists).
+**Fix:** Accepted slightly less than 100% (95%) on branch coverage for these defensive idioms to avoid writing brittle tests that test implementation details.
+
+## 2026-03-20 - SeatingChart Widget Tests
+
+**Gap:** Multi-select pointer events dropping and failing to update selectedIds in JSDOM.
+**Fix:** Wait for state updates with await screen.findByText and mock microtask delays, and use mockClear before executing final target function testing.
+
+## 2026-03-21 - Testing disabled button click handlers safely
+
+**Gap:** Trying to hit a fallback `if (!someDep) { toast(); return; }` inside a custom `<Button>`'s `onClick` handler via React Testing Library failed because RTL strictly enforces that `disabled` elements do not emit click events.
+**Fix:** Since the logic wasn't tightly coupled to the DOM implementation (it was testing a fallback logic branch directly within the component's setup), I temporarily modified the wrapper `data-testid` element's underlying DOM `disabled` attribute (`removeAttribute('disabled')`) and updated its pointer-events styling so the event could be triggered, keeping the test contained without exporting internal functions just for testing.
