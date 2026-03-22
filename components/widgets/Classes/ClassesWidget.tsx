@@ -92,7 +92,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
   };
 
   const editingRoster = rosters.find((r) => r.id === editingId) ?? null;
-  const config = _widget.config as unknown as ClassesConfig;
+  const config = _widget.config as ClassesConfig;
   const classLinkEnabled = config.classLinkEnabled !== false;
 
   return (

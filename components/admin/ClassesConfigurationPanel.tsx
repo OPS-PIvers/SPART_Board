@@ -13,8 +13,8 @@ export const ClassesConfigurationPanel: React.FC<
 > = ({ config, onChange }) => {
   const [activeTab, setActiveTab] = useState(BUILDINGS[0].id);
 
-  const globalConfig = config as unknown as ClassesGlobalConfig;
-  const buildingDefaults = globalConfig.buildingDefaults || {};
+  const buildingDefaults =
+    (config as unknown as ClassesGlobalConfig)?.buildingDefaults ?? {};
   const activeConfig: BuildingClassesDefaults = buildingDefaults[activeTab] || {
     buildingId: activeTab,
     classLinkEnabled: true,
