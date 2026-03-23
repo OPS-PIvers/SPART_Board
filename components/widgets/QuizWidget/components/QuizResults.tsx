@@ -463,15 +463,17 @@ const QuestionsTab: React.FC<{
   // uses a single O(R*A) pass with O(Q) rendering.
   const questionStats = React.useMemo(() => {
     const stats: Record<string, { answered: number; correct: number }> = {};
+    const questionsById: Record<string, QuizQuestion> = {};
 
     questions.forEach((q) => {
       stats[q.id] = { answered: 0, correct: 0 };
+      questionsById[q.id] = q;
     });
 
     responses.forEach((r) => {
       r.answers.forEach((a) => {
         const qStats = stats[a.questionId];
-        const q = questions.find((qn) => qn.id === a.questionId);
+        const q = questionsById[a.questionId];
 
         if (qStats && q) {
           qStats.answered++;
