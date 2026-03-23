@@ -739,6 +739,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
                   return {
                     ...sw,
+                    version: keepLocalConfig ? lw.version : sw.version,
                     config: keepLocalConfig ? lw.config : sw.config,
                     ...(keepLocalLayout
                       ? LAYOUT_FIELDS.reduce(
@@ -789,6 +790,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
                   return {
                     ...sw,
+                    version: keepLocalConfig ? saved.version : sw.version,
                     config: keepLocalConfig ? saved.config : sw.config,
                     ...(keepLocalLayout
                       ? LAYOUT_FIELDS.reduce(
