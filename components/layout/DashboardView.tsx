@@ -195,7 +195,7 @@ export const DashboardView: React.FC = () => {
         updateWidgetRef.current(id, { x: newX, y: newY });
       }
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally stable; reads refs
+  }, []); // stable: reads refs, never needs to re-register
 
   // Run rescue when the active dashboard changes (covers cross-screen load).
   React.useEffect(() => {
@@ -218,7 +218,7 @@ export const DashboardView: React.FC = () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', onResize);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- rescueWidgets is stable by design
+  }, []); // stable: rescueWidgets is stable by design, registered once
 
   const { canAccessFeature } = useAuth();
 
