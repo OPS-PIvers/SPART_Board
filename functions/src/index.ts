@@ -929,7 +929,6 @@ export const generateVideoActivity = functionsV1
       // Fetch transcript
       let transcriptItems: TranscriptResponse[] = [];
       try {
-        // @ts-expect-error -- youtube-transcript is an ESM-only package; imported dynamically at runtime, types provided via local TranscriptResponse interface
         const { fetchTranscript } = (await import('youtube-transcript')) as {
           fetchTranscript: (videoId: string) => Promise<TranscriptResponse[]>;
         };
