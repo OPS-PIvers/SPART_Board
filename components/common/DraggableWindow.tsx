@@ -3,6 +3,7 @@ import React, {
   useRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -781,13 +782,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   // TOOL MENU POSITIONING
+  // useLayoutEffect runs synchronously after the DOM is mutated but before paint,
+  // guaranteeing offsetHeight/offsetWidth are final when we read them.
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (showTools && windowRef.current) {
       const updatePosition = () => {
         const rect = windowRef.current?.getBoundingClientRect();
-        if (!rect) return;
+        const menuEl = menuRef.current;
+        if (!rect || !menuEl) return;
 
         if (isMaximized) {
           setMenuStyle({
@@ -799,21 +803,41 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           return;
         }
 
+        const MARGIN = 8;
+        const menuHeight = menuEl.offsetHeight;
+        const menuWidth = menuEl.offsetWidth;
+
+        // Vertical: prefer above; flip below only when space above is tight AND
+        // there is room below. If neither side fits, pick whichever has more space
+        // and clamp to keep the toolbar on-screen.
         const spaceAbove = rect.top;
-        const menuHeight = 56; // approximate height including spacing
-        const shouldShowBelow = spaceAbove < menuHeight + 20;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const showBelow =
+          spaceAbove < menuHeight + MARGIN && spaceBelow >= spaceAbove;
+        const rawTopPos = showBelow
+          ? rect.bottom + MARGIN
+          : rect.top - menuHeight - MARGIN;
+        const clampedTop = Math.max(
+          MARGIN,
+          Math.min(rawTopPos, window.innerHeight - menuHeight - MARGIN)
+        );
+
+        // Horizontal: center on widget, clamp so toolbar never overflows viewport
+        const idealLeft = rect.left + rect.width / 2 - menuWidth / 2;
+        const clampedLeft = Math.max(
+          MARGIN,
+          Math.min(idealLeft, window.innerWidth - menuWidth - MARGIN)
+        );
 
         setMenuStyle({
           position: 'fixed',
-          top: shouldShowBelow ? rect.bottom + 12 : rect.top - 56,
-          left: rect.left + rect.width / 2,
-          transform: 'translateX(-50%)',
+          top: clampedTop,
+          left: clampedLeft,
           zIndex: Z_INDEX.toolMenu,
         });
       };
 
       updatePosition();
-      // Update on scroll or resize just in case, though widgets are absolute
       window.addEventListener('resize', updatePosition);
       return () => window.removeEventListener('resize', updatePosition);
     }
