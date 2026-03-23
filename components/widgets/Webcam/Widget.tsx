@@ -33,7 +33,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   );
   const config = (webcamPermission?.config ?? {}) as WebcamGlobalConfig;
   const ocrMode = config.ocrMode ?? 'standard';
-  const widgetConfig = _widget.config as WebcamConfig;
+  const widgetConfig = (_widget.config || {}) as WebcamConfig;
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isMirrored, setIsMirrored] = useState(true);
