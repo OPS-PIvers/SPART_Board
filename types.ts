@@ -1044,6 +1044,10 @@ export interface NotebookItem {
   createdAt: number;
 }
 
+export interface SmartNotebookGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 export interface SmartNotebookConfig {
   activeNotebookId: string | null;
 }
