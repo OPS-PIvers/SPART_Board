@@ -1,92 +1,17 @@
-Great! I will copy the time parsing logic and build `handleStartTimer` in `CalendarWidget.tsx`.
+1. **Optimize QuizLiveMonitor `options.map` loop**
+   - The `options.map` loop in `MCDistribution` re-filters `responses` multiple times (once for every option) to count answers. This is `O(N*M)` where `N` is options and `M` is responses.
+   - We can precompute the answer counts using a map/dictionary before the loop, making it `O(N+M)`.
 
-1. **Add Time Parsing Utilities in `CalendarWidget.tsx`**:
+2. **Optimize QuizResults `buckets.map` loop**
+   - The `buckets.map` loop in `OverviewTab` calls `getResponseScore(r, questions)` inside a `filter` for every bucket. Since `getResponseScore` loops over all answers and all questions, this is very inefficient.
+   - We should pre-calculate the scores for all completed responses once (e.g., using `useMemo` or just a simple array map since it's inside a component) before bucket filtering, changing it from `O(B*R*Q)` to `O(R*Q + B*R)`.
+   - Also, `OverviewTab` calls `completed.map` inside `buckets.map`? Wait, let's just precalculate `completedScores = completed.map(r => getResponseScore(r, questions))` and then bucket them.
 
-```typescript
-const parseTimeSeconds = (t: string | undefined): number => {
-  if (!t || !t.includes(':')) return -1;
-  const parts = t.split(':');
-  let h = parseInt(parts[0], 10);
-  const mStr = parts[1].replace(/[^0-9]/g, '');
-  let m = parseInt(mStr, 10);
+3. **Run Pre-Commit Checks**
+   - Complete pre commit steps to make sure proper testing, verifications, reviews and reflections are done.
+4. **Optimize QuizResults `questions.map` loop**
+   - The `questions.map` loop in `QuestionsTab` iterates over `responses.filter` and inside that does `.some` over answers, making it `O(Q*R*A)`.
+   - We can pre-calculate the counts of "answered" and "correct" per question by iterating over all responses once and reducing the counts into a dictionary `O(R*A)`, then simply using `map` `O(Q)`.
 
-  const isPM = t.toLowerCase().includes('pm');
-  const isAM = t.toLowerCase().includes('am');
-
-  if (isPM && h < 12) h += 12;
-  if (isAM && h === 12) h = 0;
-
-  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return -1;
-  return h * 3600 + m * 60;
-};
-```
-
-2. **Add `handleStartTimer` inside `CalendarWidget`**:
-
-```typescript
-const handleStartTimer = useCallback(
-  (event: CalendarEvent) => {
-    if (!event.time) return;
-
-    const startSeconds = parseTimeSeconds(event.time);
-    if (startSeconds < 0) return;
-
-    const now = new Date();
-    const nowSeconds =
-      now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-
-    const remainingSeconds = Math.max(0, startSeconds - nowSeconds);
-    if (remainingSeconds === 0) return; // Event already started
-
-    const spawnNow = Date.now();
-
-    addWidget('time-tool', {
-      x: widget.x + widget.w + 20,
-      y: widget.y,
-      config: {
-        mode: 'timer',
-        visualType: 'digital',
-        duration: remainingSeconds,
-        elapsedTime: remainingSeconds,
-        isRunning: true,
-        startTime: spawnNow,
-        selectedSound: 'Gong',
-      },
-    });
-  },
-  [addWidget, widget.x, widget.y, widget.w]
-);
-```
-
-3. **Add Button in `displayEvents.map`**:
-
-```tsx
-// ... existing code inside map ...
-const isToday = event.date === today;
-let canStartTimer = false;
-if (isToday && event.time) {
-  const startSeconds = parseTimeSeconds(event.time);
-  const now = new Date();
-  const nowSeconds =
-    now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-  canStartTimer = startSeconds > nowSeconds;
-}
-
-// then inside the event row, render the button if `canStartTimer`:
-<div className="...">
-  // existing rendering
-  {canStartTimer && (
-    <button
-      onClick={() => handleStartTimer(event)}
-      className="text-slate-400 hover:text-indigo-500 transition-colors"
-      title="Start countdown to event"
-    >
-      <Timer className="w-4 h-4" />
-    </button>
-  )}
-</div>;
-```
-
-4. Add `Timer` to imports from `lucide-react`.
-
-5. Provide plan for review.
+5. **Submit PR**
+   - Wait for pre-commit tests to pass. Submit with performance comments and standard PR message structure.
