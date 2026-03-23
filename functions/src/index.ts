@@ -7,6 +7,7 @@ import * as CryptoJS from 'crypto-js';
 import { GoogleGenAI, Content } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
 import { sanitizePrompt } from './sanitize';
+import type { TranscriptResponse } from 'youtube-transcript';
 
 // Local mirror of youtube-transcript's TranscriptResponse to avoid depending on
 // an ESM-only package at the type level (dynamic import used at runtime instead).
