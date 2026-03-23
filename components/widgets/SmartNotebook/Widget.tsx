@@ -81,17 +81,13 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     config,
   ]);
 
-  // Adjusting state while rendering: clamp currentPage when the active notebook shrinks
+  // Clamp currentPage when the active notebook shrinks or the notebook changes
   const pageCount = activeNotebook?.pageUrls.length ?? 0;
-  const [prevPageCount, setPrevPageCount] = useState(pageCount);
-  const [prevNotebookId, setPrevNotebookId] = useState(activeNotebookId);
-  if (activeNotebookId !== prevNotebookId || pageCount !== prevPageCount) {
-    setPrevNotebookId(activeNotebookId);
-    setPrevPageCount(pageCount);
+  useEffect(() => {
     if (activeNotebook && currentPage >= pageCount) {
       setCurrentPage(Math.max(0, pageCount - 1));
     }
-  }
+  }, [activeNotebookId, pageCount, activeNotebook, currentPage]);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

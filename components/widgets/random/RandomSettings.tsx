@@ -68,9 +68,6 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
 
   const [localFirstNames, setLocalFirstNames] = useState(firstNames);
   const [localLastNames, setLocalLastNames] = useState(lastNames);
-  // Track the last external value to detect when it changes from outside (e.g. roster import)
-  const [prevFirstNames, setPrevFirstNames] = useState(firstNames);
-  const [prevLastNames, setPrevLastNames] = useState(lastNames);
   const firstNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -84,15 +81,13 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidgetRef.current = updateWidget;
   }, [updateWidget]);
 
-  // Adjusting state while rendering: sync local inputs when external value changes
-  if (firstNames !== prevFirstNames) {
-    setPrevFirstNames(firstNames);
+  // Sync local inputs when the external value changes (e.g. roster import)
+  useEffect(() => {
     setLocalFirstNames(firstNames);
-  }
-  if (lastNames !== prevLastNames) {
-    setPrevLastNames(lastNames);
+  }, [firstNames]);
+  useEffect(() => {
     setLocalLastNames(lastNames);
-  }
+  }, [lastNames]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

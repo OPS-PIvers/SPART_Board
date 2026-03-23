@@ -219,9 +219,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // OPTIMIZATION: Lazy initialization of settings
   // Latch to true once the widget is flipped for the first time so the settings
   // chunk is never unmounted after being loaded (prevents re-mount cost).
-  if (widget.flipped && !shouldRenderSettings) {
-    setShouldRenderSettings(true);
-  }
+  useEffect(() => {
+    if (widget.flipped && !shouldRenderSettings) {
+      setShouldRenderSettings(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.flipped]);
 
   // Annotation state
   const [isAnnotating, setIsAnnotating] = useState(false);
@@ -412,12 +415,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
   };
 
-  const clearLongPressTimer = useCallback(() => {
+  const clearLongPressTimer = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-  }, []);
+  };
 
   const handleDragStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
@@ -891,7 +894,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       if (activeTouchCount.current === 1) {
         longPressStartPos.current = { x: e.clientX, y: e.clientY };
         longPressMoved.current = 0;
-        // eslint-disable-next-line react-hooks/immutability -- intentional ref mutation in event handler
         longPressTimer.current = setTimeout(() => {
           longPressTimer.current = null;
           const LONG_PRESS_MOVE_TOLERANCE_PX = 15;
