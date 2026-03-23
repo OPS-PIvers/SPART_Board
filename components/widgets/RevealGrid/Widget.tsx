@@ -10,6 +10,15 @@ import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { Toggle } from '@/components/common/Toggle';
 import { getFontClass } from '@/utils/styles';
 
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
 export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -19,15 +28,15 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
   const [isShowAnswersMode, setIsShowAnswersMode] = useState(false);
 
   // Fallback to defaults if needed
-  const cards = config.cards ?? [];
+  const configCards = config.cards;
+  const cards = React.useMemo(() => configCards ?? [], [configCards]);
   const columns = config.columns ?? 3;
   const fontFamily = config.fontFamily ?? 'global';
   const fontClass = getFontClass(fontFamily, globalStyle.fontFamily);
 
   // Auto-flip unmatched memory cards after 2 seconds
   useEffect(() => {
-    const isMemoryMode = config.isMemoryMode;
-    const memoryCards = config.memoryCards;
+    const { isMemoryMode, memoryCards } = config;
 
     if (!isMemoryMode || !memoryCards) return;
 
@@ -52,8 +61,7 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
     }
 
     return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.isMemoryMode, config.memoryCards, updateWidget, widget.id]);
+  }, [config, updateWidget, widget.id]);
 
   const handleCardClick = (cardId: string) => {
     const updatedCards = cards.map((card) =>
@@ -62,12 +70,12 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, cards: updatedCards } });
   };
 
-  const handleStartMemoryGame = () => {
+  const handleStartMemoryGame = React.useCallback(() => {
     // Collect all valid cards (must have both front and back)
     const validCards = cards.filter((c) => c.frontContent && c.backContent);
 
     // We shuffle them to ensure randomness
-    const shuffledValid = [...validCards].sort(() => Math.random() - 0.5);
+    const shuffledValid = shuffleArray(validCards);
 
     const memoryDeck: MemoryCard[] = [];
     shuffledValid.forEach((card) => {
@@ -92,11 +100,11 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
     });
 
     // Shuffle the final deck
-    const shuffledDeck = memoryDeck.sort(() => Math.random() - 0.5);
+    const shuffledDeck = shuffleArray(memoryDeck);
     updateWidget(widget.id, {
       config: { ...config, memoryCards: shuffledDeck },
     });
-  };
+  }, [cards, config, updateWidget, widget.id]);
 
   const handleMemoryCardClick = (cardId: string) => {
     if (!config.memoryCards) return;
@@ -150,8 +158,7 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
     if (isMemoryMode && config.memoryCards === undefined) {
       handleStartMemoryGame();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMemoryMode, config.memoryCards]);
+  }, [isMemoryMode, config.memoryCards, handleStartMemoryGame]);
 
   return (
     <WidgetLayout
