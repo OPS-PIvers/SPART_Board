@@ -60,10 +60,14 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     setPrevTeams(teams);
   }
 
+  // Keep a ref to the latest config to ensure handleUpdateScore is stable
+  const configRef = useRef(config);
+
   // Safe to write to ref during effect (not render)
   useEffect(() => {
     latestTeamsRef.current = localTeams;
-  }, [localTeams]);
+    configRef.current = config;
+  }, [localTeams, config]);
 
   const handleUpdateScore = useCallback(
     (teamId: string, delta: number) => {
@@ -79,10 +83,10 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 
       // Fire the side-effect to sync back to global state outside of the React updater function
       updateWidget(widget.id, {
-        config: { ...config, teams: newTeams },
+        config: { ...configRef.current, teams: newTeams },
       });
     },
-    [widget.id, updateWidget, config]
+    [widget.id, updateWidget]
   );
 
   return (
