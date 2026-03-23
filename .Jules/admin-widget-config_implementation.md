@@ -451,18 +451,12 @@ Config: `components/admin/SeatingChartConfigurationPanel.tsx` _(dedicated panel 
 
 ---
 
-[ ] Smart Notebook — Type: `smartNotebook` | Label: "Notebook"
-Config: `components/admin/SmartNotebookConfigurationPanel.tsx` _(does not exist yet — create and
-register in `BUILDING_CONFIG_PANELS`)_
-
-Note: `SmartNotebook` has no `Settings.tsx`. The widget manages notebook state internally. Admin
-config opportunities are admin-only. Investigate before implementing.
-
-- **User-level Defaults:**
-  - None.
-- **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
-  - Investigate: default notebook template, AI feature toggles, storage limits.
+[x] Smart Notebook
+    - [Default User-Level Settings]
+        -- None
+    - [Admin-Only Settings]
+        -- maxFileSizeMB: Maximum allowed file size for importing notebooks
+        -- dockDefaults: Per-building dock visibility
 
 ---
 

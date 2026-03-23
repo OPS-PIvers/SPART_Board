@@ -1856,6 +1856,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const out: Record<string, unknown> = {};
       switch (type) {
+        case 'smartNotebook': {
+          if (typeof raw.maxFileSizeMB === 'number') {
+            out.maxFileSizeMB = raw.maxFileSizeMB;
+          }
+          break;
+        }
         case 'seating-chart': {
           let validRosterMode: 'class' | 'custom' | undefined;
           if (typeof raw.rosterMode === 'string') {

@@ -1044,8 +1044,17 @@ export interface NotebookItem {
   createdAt: number;
 }
 
+export interface SmartNotebookBuildingDefaults {
+  maxFileSizeMB?: number;
+}
+
+export interface SmartNotebookGlobalConfig {
+  buildingDefaults?: Record<string, SmartNotebookBuildingDefaults>;
+}
+
 export interface SmartNotebookConfig {
   activeNotebookId: string | null;
+  maxFileSizeMB?: number;
 }
 
 export interface RecessGearConfig {
