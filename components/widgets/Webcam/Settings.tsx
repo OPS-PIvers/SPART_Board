@@ -18,9 +18,7 @@ export const WebcamSettings: React.FC<{ widget: WidgetData }> = ({
         </p>
         <div className="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm">
           <div className="space-y-0.5">
-            <p className="text-xs font-bold text-indigo-900">
-              OCR to Notes
-            </p>
+            <p className="text-xs font-bold text-indigo-900">OCR to Notes</p>
             <p className="text-xxxs text-indigo-600 uppercase">
               Instantly convert captured text into a Notes widget.
             </p>
