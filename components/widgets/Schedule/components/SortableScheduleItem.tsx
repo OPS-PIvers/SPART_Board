@@ -79,9 +79,7 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
           <input
             type="text"
             value={item.task}
-            onChange={(e) =>
-              onUpdate(item.id, { task: e.target.value })
-            }
+            onChange={(e) => onUpdate(item.id, { task: e.target.value })}
             placeholder="Task name"
             className="flex-1 px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-400 outline-none min-w-0"
           />
@@ -134,9 +132,7 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
           <input
             type="time"
             value={item.endTime ?? ''}
-            onChange={(e) =>
-              onUpdate(item.id, { endTime: e.target.value })
-            }
+            onChange={(e) => onUpdate(item.id, { endTime: e.target.value })}
             className="flex-1 min-w-0 px-1.5 py-1 text-xs border border-slate-200 rounded outline-none"
           />
           <button

@@ -394,7 +394,10 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const validItems = selectedSchedule?.items.filter((i): i is ScheduleItem & { id: string } => !!i.id) ?? [];
+  const validItems =
+    selectedSchedule?.items.filter(
+      (i): i is ScheduleItem & { id: string } => !!i.id
+    ) ?? [];
 
   return (
     <div className="space-y-4">
@@ -544,7 +547,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   onDragEnd={(e) => handleDragEnd(selectedSchedule.id, e)}
                 >
                   <SortableContext
-                    items={validItems.map((i) => i.id as string)}
+                    items={validItems.map((i) => i.id)}
                     strategy={verticalListSortingStrategy}
                   >
                     {validItems.map((item) => (
