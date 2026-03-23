@@ -16,7 +16,7 @@ export const SmartNotebookConfigurationPanel: React.FC<Props> = ({
   onChange,
 }) => {
   const [activeBuildingId, setActiveBuildingId] = useState<string>(
-    BUILDINGS[0].id
+    BUILDINGS.length > 0 ? BUILDINGS[0].id : ''
   );
 
   const activeBuildingConfig =
@@ -113,11 +113,14 @@ export const SmartNotebookConfigurationPanel: React.FC<Props> = ({
                     min="0"
                     max="500"
                     value={activeBuildingConfig.storageLimitMb ?? 50}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
                       handleUpdate({
-                        storageLimitMb: Number(e.target.value) || 0,
-                      })
-                    }
+                        storageLimitMb: isNaN(value)
+                          ? undefined
+                          : Math.max(0, value),
+                      });
+                    }}
                     className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                   <span className="text-xs font-medium text-slate-500">MB</span>
