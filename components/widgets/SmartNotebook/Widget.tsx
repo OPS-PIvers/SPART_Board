@@ -94,7 +94,10 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     if (!file || !user) return;
 
     // Retrieve storage limit from admin configuration, fallback to 50MB
-    const limitMb = config?.storageLimitMb ?? 50;
+    const rawLimit = config?.storageLimitMb;
+    const parsedLimit =
+      typeof rawLimit === 'number' && Number.isFinite(rawLimit) ? rawLimit : 50;
+    const limitMb = Math.max(0, parsedLimit);
 
     // Check file size (0 means no limit)
     if (limitMb > 0 && file.size > limitMb * 1024 * 1024) {

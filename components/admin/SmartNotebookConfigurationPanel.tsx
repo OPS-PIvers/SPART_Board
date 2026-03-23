@@ -4,7 +4,6 @@ import {
   BuildingSmartNotebookDefaults,
 } from '@/types';
 import { BUILDINGS } from '@/config/buildings';
-import { DockDefaultsPanel } from './DockDefaultsPanel';
 
 interface Props {
   config: SmartNotebookGlobalConfig;
@@ -20,7 +19,8 @@ export const SmartNotebookConfigurationPanel: React.FC<Props> = ({
   );
 
   const activeBuildingConfig =
-    config.buildingDefaults?.[activeBuildingId] ?? {};
+    config.buildingDefaults?.[activeBuildingId] ??
+    ({} as Partial<BuildingSmartNotebookDefaults>);
 
   const handleUpdate = (updates: Partial<BuildingSmartNotebookDefaults>) => {
     onChange({
@@ -29,6 +29,7 @@ export const SmartNotebookConfigurationPanel: React.FC<Props> = ({
         ...config.buildingDefaults,
         [activeBuildingId]: {
           ...activeBuildingConfig,
+          buildingId: activeBuildingId,
           ...updates,
         },
       },
@@ -114,11 +115,19 @@ export const SmartNotebookConfigurationPanel: React.FC<Props> = ({
                     max="500"
                     value={activeBuildingConfig.storageLimitMb ?? 50}
                     onChange={(e) => {
-                      const value = Number(e.target.value);
+                      const raw = e.target.value;
+                      if (raw.trim() === '') {
+                        handleUpdate({ storageLimitMb: undefined });
+                        return;
+                      }
+                      const parsed = Number(raw);
+                      if (Number.isNaN(parsed)) {
+                        handleUpdate({ storageLimitMb: undefined });
+                        return;
+                      }
+                      const clamped = Math.min(500, Math.max(0, parsed));
                       handleUpdate({
-                        storageLimitMb: isNaN(value)
-                          ? undefined
-                          : Math.max(0, value),
+                        storageLimitMb: clamped,
                       });
                     }}
                     className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -126,21 +135,6 @@ export const SmartNotebookConfigurationPanel: React.FC<Props> = ({
                   <span className="text-xs font-medium text-slate-500">MB</span>
                 </div>
               </div>
-            </div>
-          </section>
-
-          {/* Dock Defaults Panel for the specific building */}
-          <section className="pt-4 border-t border-slate-100">
-            <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">
-              Dock Placement
-            </h4>
-            <div className="p-4 rounded-xl border border-slate-200">
-              <DockDefaultsPanel
-                config={{ dockDefaults: config.dockDefaults ?? {} }}
-                onChange={(dockDefaults) =>
-                  onChange({ ...config, dockDefaults })
-                }
-              />
             </div>
           </section>
         </div>

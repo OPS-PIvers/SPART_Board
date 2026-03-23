@@ -1051,12 +1051,12 @@ export interface SmartNotebookConfig {
 }
 
 export interface BuildingSmartNotebookDefaults {
+  buildingId: string;
   storageLimitMb?: number; // Admin-only: MB limit for notebook file uploads
 }
 
 export interface SmartNotebookGlobalConfig {
   buildingDefaults?: Record<string, BuildingSmartNotebookDefaults>;
-  dockDefaults?: Record<string, boolean>;
 }
 
 export interface RecessGearConfig {

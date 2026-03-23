@@ -451,15 +451,13 @@ Config: `components/admin/SeatingChartConfigurationPanel.tsx` _(dedicated panel 
 
 ---
 
-[x] Smart Notebook - Default User-Level Settings
--- No configurable user-level defaults natively exist in Settings.tsx. - Admin-Only Settings
--- Configurable maximum file upload size limit (storageLimitMb) added globally per building.
+[x] Smart Notebook — Type: `smartNotebook` | Label: "Notebook"
 
 - **User-level Defaults:**
-  - None.
+  - None natively configurable.
 - **Admin-only Settings:**
-  - `dockDefaults`: Per-building dock visibility (already automatic via generic handler).
-  - Investigate: default notebook template, AI feature toggles, storage limits.
+  - `dockDefaults`: Per-building dock visibility (automatic via generic handler).
+  - `storageLimitMb`: Configurable maximum file upload size limit added globally per building.
 
 ---
 
