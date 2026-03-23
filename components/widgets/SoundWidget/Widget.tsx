@@ -37,7 +37,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     syncExpectations = false,
   } = widget.config as SoundConfig;
 
-  // ⚡ Bolt Optimization: Use ref for sensitivity to prevent audio stream restart
+  // Use ref for sensitivity to prevent audio stream restart on sensitivity changes
   const sensitivityRef = useRef(sensitivity);
   useEffect(() => {
     sensitivityRef.current = sensitivity;
