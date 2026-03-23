@@ -394,7 +394,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const validItems = selectedSchedule?.items.filter((i): i is ScheduleItem & { id: string } => !!i.id) ?? [];
+  const validItems = selectedSchedule?.items.filter((i) => i.id) ?? [];
 
   return (
     <div className="space-y-4">

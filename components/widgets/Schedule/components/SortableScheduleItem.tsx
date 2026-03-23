@@ -26,7 +26,7 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string }[] = [
 // ── SortableScheduleItem ─────────────────────────────────────────────────────
 
 interface SortableScheduleItemProps {
-  item: ScheduleItem;
+  item: ScheduleItem & { id: string };
   onUpdate: (itemId: string, updates: Partial<ScheduleItem>) => void;
   onDelete: (itemId: string) => void;
   isExpanded: boolean;
@@ -42,7 +42,7 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
       transform,
       transition,
       isDragging,
-    } = useSortable({ id: item.id ?? '' });
+    } = useSortable({ id: item.id });
 
     const style = {
       transform: CSS.Transform.toString(transform),
@@ -80,7 +80,7 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
             type="text"
             value={item.task}
             onChange={(e) =>
-              item.id && onUpdate(item.id, { task: e.target.value })
+              onUpdate(item.id, { task: e.target.value })
             }
             placeholder="Task name"
             className="flex-1 px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-400 outline-none min-w-0"
@@ -111,7 +111,7 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
           )}
           <button
             type="button"
-            onClick={() => item.id && onDelete(item.id)}
+            onClick={() => onDelete(item.id)}
             className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors shrink-0"
             aria-label="Delete event"
           >
@@ -124,7 +124,6 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
             type="time"
             value={item.startTime ?? item.time ?? ''}
             onChange={(e) =>
-              item.id &&
               onUpdate(item.id, {
                 startTime: e.target.value,
                 time: e.target.value,
@@ -136,14 +135,13 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
             type="time"
             value={item.endTime ?? ''}
             onChange={(e) =>
-              item.id && onUpdate(item.id, { endTime: e.target.value })
+              onUpdate(item.id, { endTime: e.target.value })
             }
             className="flex-1 min-w-0 px-1.5 py-1 text-xs border border-slate-200 rounded outline-none"
           />
           <button
             type="button"
             onClick={() =>
-              item.id &&
               onUpdate(item.id, {
                 mode: item.mode === 'timer' ? 'clock' : 'timer',
               })
@@ -164,7 +162,7 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
           </button>
           <button
             type="button"
-            onClick={() => item.id && onToggleExpand(item.id)}
+            onClick={() => onToggleExpand(item.id)}
             className={`p-1.5 mr-1 rounded transition-colors shrink-0 ${
               hasLinked || isExpanded
                 ? 'text-blue-500 bg-blue-50'
@@ -192,7 +190,6 @@ export const SortableScheduleItem: React.FC<SortableScheduleItemProps> =
                     key={w.type}
                     type="button"
                     onClick={() => {
-                      if (!item.id) return;
                       const newLinked = isSelected
                         ? linked.filter((t) => t !== w.type)
                         : [...linked, w.type];
