@@ -218,7 +218,7 @@ export const DashboardView: React.FC = () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', onResize);
     };
-  }, []); // stable: rescueWidgets is stable by design, registered once
+  }, [rescueWidgets]); // rescueWidgets is stable ([] deps), so listener is registered once
 
   const { canAccessFeature } = useAuth();
 
