@@ -268,7 +268,6 @@ describe('ScoreboardWidget', () => {
     );
   });
 
-
   it('resets scores after confirmation', () => {
     const teams = [
       { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
