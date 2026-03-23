@@ -815,8 +815,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         const showBelow =
           spaceAbove < menuHeight + MARGIN && spaceBelow >= spaceAbove;
         const rawTopPos = showBelow
-          ? rect.bottom + 8
-          : rect.top - menuHeight - 8;
+          ? rect.bottom + MARGIN
+          : rect.top - menuHeight - MARGIN;
         const clampedTop = Math.max(
           MARGIN,
           Math.min(rawTopPos, window.innerHeight - menuHeight - MARGIN)

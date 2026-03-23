@@ -165,30 +165,45 @@ export const DashboardView: React.FC = () => {
   }, [activeDashboard, dashboards, addWidget]);
 
   // WIDGET POSITION RESCUE
-  // Single centralized listener (vs one per widget) that snaps any widget
-  // back on-screen when the viewport shrinks or a dashboard loads on a
-  // narrower display than the one it was saved on.
-  // rAF-throttled so rapid resize events don't flood state updates.
+  // Refs keep values fresh inside stable callbacks without re-registering
+  // the resize listener on every widget move/resize (per CLAUDE.md ref pattern).
+  const rescueWidgetsRef = React.useRef(activeDashboard?.widgets);
+  rescueWidgetsRef.current = activeDashboard?.widgets;
+  const updateWidgetRef = React.useRef(updateWidget);
+  updateWidgetRef.current = updateWidget;
+
+  // Stable callback — reads fresh values via refs, never recreated.
   const rescueWidgets = React.useCallback(() => {
-    const widgets = activeDashboard?.widgets;
+    const widgets = rescueWidgetsRef.current;
     if (!widgets) return;
     const MIN_VISIBLE = 80;
     const TITLE_BAR = 40;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     widgets.forEach(({ id, x, y, w }) => {
-      const newX = Math.max(-(w - MIN_VISIBLE), Math.min(x, vw - MIN_VISIBLE));
+      // Small widgets (w <= MIN_VISIBLE) must be fully on-screen; the general
+      // formula would produce a positive lower-bound that incorrectly shifts them.
+      let newX: number;
+      if (w <= MIN_VISIBLE) {
+        const maxX = Math.max(0, vw - w);
+        newX = Math.max(0, Math.min(x, maxX));
+      } else {
+        newX = Math.max(-(w - MIN_VISIBLE), Math.min(x, vw - MIN_VISIBLE));
+      }
       const newY = Math.max(0, Math.min(y, vh - TITLE_BAR));
       if (newX !== x || newY !== y) {
-        updateWidget(id, { x: newX, y: newY });
+        updateWidgetRef.current(id, { x: newX, y: newY });
       }
     });
-  }, [activeDashboard?.widgets, updateWidget]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally stable; reads refs
 
+  // Run rescue when the active dashboard changes (covers cross-screen load).
   React.useEffect(() => {
     rescueWidgets();
-  }, [rescueWidgets]);
+  }, [activeDashboard?.id, rescueWidgets]);
 
+  // Single rAF-throttled resize listener — registered once, never torn down on
+  // widget moves because rescueWidgets is stable.
   React.useEffect(() => {
     let rafId: number | null = null;
     const onResize = () => {
@@ -203,7 +218,7 @@ export const DashboardView: React.FC = () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', onResize);
     };
-  }, [rescueWidgets]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- rescueWidgets is stable by design
 
   const { canAccessFeature } = useAuth();
 
