@@ -60,7 +60,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     lastSync,
     config,
   });
-  weatherStateRef.current = { temp, feelsLike, condition, lastSync, config };
+  useEffect(() => {
+    weatherStateRef.current = { temp, feelsLike, condition, lastSync, config };
+  }, [temp, feelsLike, condition, lastSync, config]);
 
   // Initial Admin Proxy Fetch — only re-runs when the strategy itself changes
   useEffect(() => {

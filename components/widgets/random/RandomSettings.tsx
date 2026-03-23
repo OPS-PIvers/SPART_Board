@@ -77,8 +77,12 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
   // Keep refs current so debounced callbacks always read the latest values
   const configRef = useRef(config);
   const updateWidgetRef = useRef(updateWidget);
-  configRef.current = config;
-  updateWidgetRef.current = updateWidget;
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+  useEffect(() => {
+    updateWidgetRef.current = updateWidget;
+  }, [updateWidget]);
 
   // Adjusting state while rendering: sync local inputs when external value changes
   if (firstNames !== prevFirstNames) {

@@ -39,7 +39,9 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Use ref for sensitivity to prevent audio stream restart on sensitivity changes
   const sensitivityRef = useRef(sensitivity);
-  sensitivityRef.current = sensitivity;
+  useEffect(() => {
+    sensitivityRef.current = sensitivity;
+  }, [sensitivity]);
 
   // Nexus Connection: Sync with Expectations
   useEffect(() => {

@@ -891,6 +891,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       if (activeTouchCount.current === 1) {
         longPressStartPos.current = { x: e.clientX, y: e.clientY };
         longPressMoved.current = 0;
+        // eslint-disable-next-line react-hooks/immutability -- intentional ref mutation in event handler
         longPressTimer.current = setTimeout(() => {
           longPressTimer.current = null;
           const LONG_PRESS_MOVE_TOLERANCE_PX = 15;

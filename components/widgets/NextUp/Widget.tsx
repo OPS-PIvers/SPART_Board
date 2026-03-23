@@ -93,7 +93,9 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
   ]);
 
   const queueRef = React.useRef(queue);
-  queueRef.current = queue;
+  React.useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
 
   const lastExternalTriggerRef = React.useRef(config.externalTrigger ?? 0);
 

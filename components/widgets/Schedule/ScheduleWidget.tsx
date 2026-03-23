@@ -605,10 +605,12 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const scheduleItemsRef = useRef(scheduleItems);
   const widgetRef = useRef(widget);
 
-  configRef.current = config;
-  itemsRef.current = displayItems;
-  scheduleItemsRef.current = scheduleItems;
-  widgetRef.current = widget;
+  useEffect(() => {
+    configRef.current = config;
+    itemsRef.current = displayItems;
+    scheduleItemsRef.current = scheduleItems;
+    widgetRef.current = widget;
+  }, [config, displayItems, scheduleItems, widget]);
 
   const toggle = useCallback(
     (idx: number) => {

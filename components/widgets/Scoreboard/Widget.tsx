@@ -50,7 +50,9 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Keep a ref to the latest config to ensure handleUpdateScore is stable
   const configRef = useRef(config);
-  configRef.current = config;
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const handleUpdateScore = useCallback(
     (teamId: string, delta: number) => {
