@@ -63,8 +63,13 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       const newTeams = currentTeams.map((t) =>
         t.id === teamId ? { ...t, score: Math.max(0, t.score + delta) } : t
       );
+      const nextConfig = { ...currentConfig, teams: newTeams };
+
+      // Update ref synchronously to prevent stale state on rapid clicks
+      configRef.current = nextConfig;
+
       updateWidget(widget.id, {
-        config: { ...currentConfig, teams: newTeams },
+        config: nextConfig,
       });
     },
     [widget.id, updateWidget]
