@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
@@ -48,26 +48,41 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   const teams = Array.isArray(config.teams) ? config.teams : DEFAULT_TEAMS;
 
-  // Keep a ref to the latest config to ensure handleUpdateScore is stable
-  const configRef = useRef(config);
+  const [localTeams, setLocalTeams] = useState<ScoreboardTeam[]>(teams);
+  const [prevTeams, setPrevTeams] = useState<ScoreboardTeam[]>(teams);
+
+  // Track the most recently computed teams to handle rapid clicks synchronously
+  const latestTeamsRef = useRef<ScoreboardTeam[]>(teams);
+
+  // Sync localTeams when config.teams changes externally (e.g., remote control or initialization)
+  if (JSON.stringify(teams) !== JSON.stringify(prevTeams)) {
+    setLocalTeams(teams);
+    setPrevTeams(teams);
+  }
+
+  // Safe to write to ref during effect (not render)
   useEffect(() => {
-    configRef.current = config;
-  }, [config]);
+    latestTeamsRef.current = localTeams;
+  }, [localTeams]);
 
   const handleUpdateScore = useCallback(
     (teamId: string, delta: number) => {
-      const currentConfig = configRef.current;
-      const currentTeams = Array.isArray(currentConfig.teams)
-        ? currentConfig.teams
-        : DEFAULT_TEAMS;
+      // Compute the new state synchronously based on the latest known local state
+      const currentTeams = latestTeamsRef.current;
       const newTeams = currentTeams.map((t) =>
         t.id === teamId ? { ...t, score: Math.max(0, t.score + delta) } : t
       );
+
+      // Update both local state and our tracking ref immediately
+      latestTeamsRef.current = newTeams;
+      setLocalTeams(newTeams);
+
+      // Fire the side-effect to sync back to global state outside of the React updater function
       updateWidget(widget.id, {
-        config: { ...currentConfig, teams: newTeams },
+        config: { ...config, teams: newTeams },
       });
     },
-    [widget.id, updateWidget]
+    [widget.id, updateWidget, config]
   );
 
   return (
@@ -81,14 +96,14 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             padding: 'min(16px, 3.5cqmin)',
           }}
         >
-          {teams.map((team) => (
+          {localTeams.map((team) => (
             <ScoreboardItem
               key={team.id}
               team={team}
               onUpdateScore={handleUpdateScore}
             />
           ))}
-          {teams.length === 0 && (
+          {localTeams.length === 0 && (
             <div className="col-span-full h-full">
               <ScaledEmptyState
                 icon={Trophy}
