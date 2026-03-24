@@ -67,11 +67,11 @@ SPART Board is an interactive classroom management dashboard built with React 19
 ### Code Quality Commands
 
 - **Type checking**: `pnpm run type-check`
-- **Linting**: `pnpm run lint` (fails on errors, allows warnings)
+- **Linting**: `pnpm run lint` (fails on errors **and** warnings — uses `--max-warnings 0`)
 - **Auto-fix linting**: `pnpm run lint:fix`
 - **Format code**: `pnpm run format`
 - **Check formatting**: `pnpm run format:check`
-- **Validate all**: `pnpm run validate` (type-check + lint + format-check)
+- **Validate all**: `pnpm run validate` (type-check + lint + format-check + tests)
 
 > **IMPORTANT — Pre-push requirement:** You **must not push any commit** that contains TypeScript type errors, ESLint errors or warnings, or Prettier formatting violations. Always run `pnpm run validate` (or at minimum `pnpm run lint` and `pnpm run format:check`) before committing and pushing. If the environment does not have node_modules installed, note that CI will still enforce these checks and will block the PR. Fix all issues before pushing.
 
@@ -708,7 +708,7 @@ The app uses Firebase Authentication with admin role management through Firestor
 
 3. **Run the admin setup script** (optional):
    ```bash
-   pnpm add firebase-admin
+   pnpm run install:all
    # Get service account credentials from Firebase Console
    # Save as scripts/service-account-key.json
    node scripts/setup-admins.js

@@ -20,17 +20,14 @@ export const BACKGROUND_CATEGORY_ORDER = [
 export type BackgroundCategory = (typeof BACKGROUND_CATEGORY_ORDER)[number];
 
 /** Returns the category for a background, using admin override when present. */
-export function resolveCategory(
-  label: string,
-  adminCategory?: string
-): BackgroundCategory {
+export function resolveCategory(label: string, adminCategory?: string): string {
   if (adminCategory?.trim()) {
     const trimmed = adminCategory.trim();
+    // Normalise to canonical casing if it matches a known category
     const match = BACKGROUND_CATEGORY_ORDER.find(
       (c) => c.toLowerCase() === trimmed.toLowerCase()
     );
-    if (match) return match;
-    // Unrecognized admin category — fall through to keyword detection
+    return match ?? trimmed;
   }
 
   const l = label.toLowerCase();

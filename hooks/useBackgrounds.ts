@@ -4,16 +4,13 @@ import { db } from '../config/firebase';
 import { useAuth } from '../context/useAuth';
 import { BackgroundPreset } from '../types';
 import { BACKGROUND_COLORS, BACKGROUND_GRADIENTS } from '../config/backgrounds';
-import {
-  resolveCategory,
-  BackgroundCategory,
-} from '../utils/backgroundCategories';
+import { resolveCategory } from '../utils/backgroundCategories';
 
 export interface BackgroundPresetItem {
   id: string;
   label: string;
   thumbnailUrl?: string;
-  category: BackgroundCategory;
+  category: string;
 }
 
 export const useBackgrounds = () => {

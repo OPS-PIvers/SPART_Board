@@ -22,6 +22,7 @@ const ThumbnailButton: React.FC<ThumbnailButtonProps> = ({
   onSelect,
 }) => (
   <button
+    type="button"
     onClick={() => onSelect(id)}
     className={`group relative aspect-video rounded-lg overflow-hidden border transition-all ${
       isActive
@@ -212,6 +213,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
       {/* Tab bar */}
       <div className="flex bg-slate-100 p-0.5 rounded-lg text-xxs font-bold uppercase tracking-widest shrink-0">
         <button
+          type="button"
           onClick={() => handleTabChange('media')}
           className={`flex-1 py-1.5 rounded-md transition-all ${
             designTab === 'media'
@@ -222,6 +224,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
           Media
         </button>
         <button
+          type="button"
           onClick={() => handleTabChange('colors')}
           className={`flex-1 py-1.5 rounded-md transition-all ${
             designTab === 'colors'
@@ -232,6 +235,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
           Colors
         </button>
         <button
+          type="button"
           onClick={() => handleTabChange('my-uploads')}
           className={`flex-1 py-1.5 rounded-md transition-all ${
             designTab === 'my-uploads'
@@ -250,6 +254,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
           {availableCategories.length > 1 && (
             <div className="flex flex-wrap gap-1.5 shrink-0">
               <button
+                type="button"
                 onClick={() => setActiveCategory('All')}
                 className={`px-2.5 py-1 rounded-full text-xxs font-bold uppercase tracking-wide transition-all border ${
                   activeCategory === 'All'
@@ -261,6 +266,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
               </button>
               {availableCategories.map((cat) => (
                 <button
+                  type="button"
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
                   className={`px-2.5 py-1 rounded-full text-xxs font-bold uppercase tracking-wide transition-all border ${
@@ -357,6 +363,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
             <div className="grid grid-cols-3 gap-2">
               {colors.map((bg) => (
                 <button
+                  type="button"
                   key={bg.id}
                   onClick={() => setBackground(bg.id)}
                   className={`aspect-square rounded-lg border transition-all relative ${bg.id} ${
@@ -380,6 +387,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {gradients.map((bg) => (
                 <button
+                  type="button"
                   key={bg.id}
                   onClick={() => setBackground(bg.id)}
                   className={`aspect-video rounded-lg border transition-all relative ${
@@ -403,6 +411,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
       {designTab === 'my-uploads' && (
         <div className="flex flex-col gap-4 pb-4">
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || !isInitialized}
             className="w-full py-8 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary hover:bg-slate-50 transition-all disabled:opacity-50"
@@ -432,6 +441,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {userUploads.map((url) => (
                 <button
+                  type="button"
                   key={url}
                   onClick={() => setBackground(url)}
                   className={`aspect-video rounded-lg overflow-hidden border transition-all ${
