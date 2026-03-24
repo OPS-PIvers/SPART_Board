@@ -390,4 +390,13 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       resultsSessionId: null,
     },
   },
+  'guided-learning': {
+    w: 720,
+    h: 520,
+    config: {
+      view: 'library',
+      playerSetId: null,
+      resultsSessionId: null,
+    },
+  },
 };

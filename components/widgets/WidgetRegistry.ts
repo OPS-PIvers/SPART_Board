@@ -161,6 +161,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./VideoActivityWidget/index'),
     'VideoActivityWidget'
   ),
+  'guided-learning': lazyNamed(
+    () => import('./GuidedLearning/index'),
+    'GuidedLearningWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -272,6 +276,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   'video-activity': lazyNamed(
     () => import('./VideoActivityWidget/index'),
     'VideoActivityWidgetSettings'
+  ),
+  'guided-learning': lazyNamed(
+    () => import('./GuidedLearning/index'),
+    'GuidedLearningSettings'
   ),
 };
 
@@ -699,6 +707,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   'video-activity': {
     baseWidth: 640,
     baseHeight: 560,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'guided-learning': {
+    baseWidth: 720,
+    baseHeight: 520,
     canSpread: true,
     skipScaling: true,
     padding: 0,

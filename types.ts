@@ -48,7 +48,8 @@ export type WidgetType =
   | 'syntax-framer'
   | 'hotspot-image'
   | 'starter-pack'
-  | 'video-activity';
+  | 'video-activity'
+  | 'guided-learning';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -1680,6 +1681,157 @@ export interface HotspotImageConfig {
   savedLibrary?: HotspotSavedItem[];
 }
 
+// --- GUIDED LEARNING WIDGET TYPES ---
+
+export type GuidedLearningMode = 'structured' | 'guided' | 'explore';
+export type GuidedLearningInteractionType =
+  | 'text-popover'
+  | 'tooltip'
+  | 'audio'
+  | 'video'
+  | 'pan-zoom'
+  | 'spotlight'
+  | 'question';
+export type GuidedLearningQuestionType =
+  | 'multiple-choice'
+  | 'matching'
+  | 'sorting';
+
+export interface GuidedLearningQuestion {
+  type: GuidedLearningQuestionType;
+  text: string;
+  /** MC options (includes the correct answer) */
+  choices?: string[];
+  /** MC correct answer — never sent to students */
+  correctAnswer?: string;
+  /** Matching pairs — correct pairings */
+  matchingPairs?: { left: string; right: string }[];
+  /** Sorting items in the correct order */
+  sortingItems?: string[];
+}
+
+export interface GuidedLearningStep {
+  id: string;
+  /** % position on image (0–100) */
+  xPct: number;
+  yPct: number;
+  label?: string;
+  interactionType: GuidedLearningInteractionType;
+  /** Content for text-popover and tooltip */
+  text?: string;
+  /** Firebase Storage URL for audio */
+  audioUrl?: string;
+  audioStoragePath?: string;
+  /** YouTube/external URL or Firebase Storage URL for video */
+  videoUrl?: string;
+  videoStoragePath?: string;
+  /** Zoom scale for pan-zoom interaction (default 2.5) */
+  panZoomScale?: number;
+  /** Spotlight radius as % of container cqmin (default 25) */
+  spotlightRadius?: number;
+  question?: GuidedLearningQuestion;
+  /** Seconds before auto-advance in guided mode */
+  autoAdvanceDuration?: number;
+}
+
+/** Full set data stored in Google Drive as JSON */
+export interface GuidedLearningSet {
+  id: string;
+  title: string;
+  description?: string;
+  /** Firebase Storage URL for the base image */
+  imageUrl: string;
+  imagePath?: string;
+  steps: GuidedLearningStep[];
+  mode: GuidedLearningMode;
+  createdAt: number;
+  updatedAt: number;
+  /** Admin-created building-level sets stored in Firestore, not Drive */
+  isBuilding?: boolean;
+  authorUid?: string;
+}
+
+/** Lightweight metadata stored in Firestore (avoids Drive API on every list) */
+export interface GuidedLearningSetMetadata {
+  id: string;
+  title: string;
+  description?: string;
+  stepCount: number;
+  mode: GuidedLearningMode;
+  /** Firebase Storage URL used as thumbnail */
+  imageUrl: string;
+  driveFileId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * Student-safe step — no answer keys.
+ * Choices/pairs/items are pre-shuffled before writing to session doc.
+ */
+export interface GuidedLearningPublicStep {
+  id: string;
+  xPct: number;
+  yPct: number;
+  label?: string;
+  interactionType: GuidedLearningInteractionType;
+  text?: string;
+  audioUrl?: string;
+  videoUrl?: string;
+  panZoomScale?: number;
+  spotlightRadius?: number;
+  question?: {
+    type: GuidedLearningQuestionType;
+    text: string;
+    /** MC: all choices pre-shuffled (correct identity not marked) */
+    choices?: string[];
+    /** Matching: left side (prompt), pre-shuffled */
+    matchingLeft?: string[];
+    /** Matching: right side (definitions), pre-shuffled */
+    matchingRight?: string[];
+    /** Sorting: items pre-shuffled */
+    sortingItems?: string[];
+  };
+  autoAdvanceDuration?: number;
+}
+
+/** Firestore session document granting student access to an experience */
+export interface GuidedLearningSession {
+  id: string;
+  title: string;
+  mode: GuidedLearningMode;
+  imageUrl: string;
+  /** Student-safe steps (no answer keys) */
+  publicSteps: GuidedLearningPublicStep[];
+  teacherUid: string;
+  createdAt: number;
+  expiresAt?: number;
+}
+
+/** Per-student response in /guided_learning_sessions/{id}/responses/{studentUid} */
+export interface GuidedLearningResponse {
+  sessionId: string;
+  studentAnonymousId: string;
+  pin?: string;
+  answers: {
+    stepId: string;
+    answer: string | string[];
+    isCorrect: boolean;
+  }[];
+  completedAt: number | null;
+  startedAt: number;
+  score: number | null;
+}
+
+/** Widget config (teacher-side, stored in WidgetData.config) */
+export interface GuidedLearningConfig {
+  view: 'library' | 'editor' | 'player' | 'results';
+  /** ID of the set currently loaded in player view */
+  playerSetId?: string | null;
+  /** Session ID when viewing results */
+  resultsSessionId?: string | null;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -1731,7 +1883,8 @@ export type WidgetConfig =
   | SyntaxFramerConfig
   | HotspotImageConfig
   | StarterPackConfig
-  | VideoActivityConfig;
+  | VideoActivityConfig
+  | GuidedLearningConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1834,7 +1987,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                                   ? StarterPackConfig
                                                                                                   : T extends 'video-activity'
                                                                                                     ? VideoActivityConfig
-                                                                                                    : never;
+                                                                                                    : T extends 'guided-learning'
+                                                                                                      ? GuidedLearningConfig
+                                                                                                      : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
