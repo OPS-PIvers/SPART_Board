@@ -117,17 +117,9 @@ const StudentExperience: React.FC<{ anonymousUid: string }> = ({
 
   const handleComplete = useCallback(async () => {
     if (!session) return;
-    const questionSteps = session.publicSteps.filter(
-      (s) => s.interactionType === 'question'
-    );
-    const questionAnswers = answers.filter((a) =>
-      questionSteps.some((s) => s.id === a.stepId)
-    );
-    const correct = questionAnswers.filter((a) => a.isCorrect).length;
-    const computedScore =
-      questionAnswers.length > 0
-        ? Math.round((correct / questionAnswers.length) * 100)
-        : null;
+    // In the student app the answer key is not available client-side.
+    // Score is computed on the teacher/results side from raw answers + answer key.
+    const computedScore: number | null = null;
 
     setScore(computedScore);
     setCompleted(true);

@@ -32,7 +32,12 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
   teacherMode = false,
 }) => {
   const mode: GuidedLearningMode = set.mode;
-  const steps = set.steps as GuidedLearningPublicStep[];
+  // In teacher mode set.steps is GuidedLearningStep[]; in student mode it is
+  // GuidedLearningPublicStep[] (via the student-app cast). We intentionally
+  // narrow to GuidedLearningPublicStep[] here so interaction components never
+  // accidentally read answer-key fields from steps. Answer keys are accessed
+  // through set.steps.find() only when teacherMode is true (see renderInteraction).
+  const steps = set.steps as unknown as GuidedLearningPublicStep[];
   const [currentIdx, setCurrentIdx] = useState(0);
   const [activeStepId, setActiveStepId] = useState<string | null>(
     mode !== 'explore' ? (steps[0]?.id ?? null) : null

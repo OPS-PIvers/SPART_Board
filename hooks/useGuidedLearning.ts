@@ -14,7 +14,6 @@ import {
   deleteDoc,
   query,
   orderBy,
-  getDocs,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/useAuth';
@@ -199,9 +198,6 @@ export const useGuidedLearning = (
     },
     [isAdmin]
   );
-
-  // Suppress unused import warning — getDocs used indirectly via inline calls
-  void getDocs;
 
   return {
     sets,

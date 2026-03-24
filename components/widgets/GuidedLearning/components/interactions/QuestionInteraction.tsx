@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, BookOpen } from 'lucide-react';
 import { GuidedLearningPublicStep } from '@/types';
 
 interface Props {
@@ -42,24 +42,32 @@ export const QuestionInteraction: React.FC<Props> = ({
 
     if (q.type === 'multiple-choice') {
       answer = selectedMC ?? '';
-      correct = correctAnswer ? selectedMC === correctAnswer : false;
-      if (!studentMode) correct = true; // teacher preview — always pass
+      if (studentMode) {
+        // Answer key not available client-side; correctness computed in teacher view
+        correct = true;
+      } else {
+        correct = correctAnswer ? selectedMC === correctAnswer : true;
+      }
     } else if (q.type === 'matching') {
       answer = Object.entries(matchingAnswers).map(([l, r]) => `${l}:${r}`);
-      if (correctMatchingPairs) {
-        correct = correctMatchingPairs.every(
-          (pair) => matchingAnswers[pair.left] === pair.right
-        );
+      if (studentMode) {
+        correct = true;
+      } else {
+        correct = correctMatchingPairs
+          ? correctMatchingPairs.every(
+              (pair) => matchingAnswers[pair.left] === pair.right
+            )
+          : true;
       }
-      if (!studentMode) correct = true;
     } else if (q.type === 'sorting') {
       answer = sortingOrder;
-      if (correctSortingItems) {
-        correct = sortingOrder.every(
-          (item, i) => item === correctSortingItems[i]
-        );
+      if (studentMode) {
+        correct = true;
+      } else {
+        correct = correctSortingItems
+          ? sortingOrder.every((item, i) => item === correctSortingItems[i])
+          : true;
       }
-      if (!studentMode) correct = true;
     }
 
     setIsCorrect(correct);
@@ -194,25 +202,37 @@ export const QuestionInteraction: React.FC<Props> = ({
           </>
         ) : (
           <div className="text-center">
-            {isCorrect ? (
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+            {studentMode ? (
+              <>
+                <BookOpen className="w-10 h-10 text-indigo-400 mx-auto mb-2" />
+                <p className="font-bold text-base mb-1 text-indigo-300">
+                  Answer recorded
+                </p>
+              </>
+            ) : isCorrect ? (
+              <>
+                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                <p className="font-bold text-base mb-1 text-emerald-400">
+                  Correct!
+                </p>
+              </>
             ) : (
-              <XCircle className="w-10 h-10 text-red-400 mx-auto mb-2" />
-            )}
-            <p
-              className={`font-bold text-base mb-1 ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}
-            >
-              {isCorrect ? 'Correct!' : 'Not quite'}
-            </p>
-            {!isCorrect && correctAnswer && (
-              <p className="text-slate-400 text-xs mb-3">
-                Correct answer:{' '}
-                <span className="text-white">{correctAnswer}</span>
-              </p>
+              <>
+                <XCircle className="w-10 h-10 text-red-400 mx-auto mb-2" />
+                <p className="font-bold text-base mb-1 text-red-400">
+                  Not quite
+                </p>
+                {correctAnswer && (
+                  <p className="text-slate-400 text-xs mb-3">
+                    Correct answer:{' '}
+                    <span className="text-white">{correctAnswer}</span>
+                  </p>
+                )}
+              </>
             )}
             <button
               onClick={onContinue}
-              className="flex items-center gap-1.5 mx-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-xl transition-colors"
+              className="flex items-center gap-1.5 mx-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-xl transition-colors mt-3"
             >
               Continue
               <ArrowRight className="w-4 h-4" />

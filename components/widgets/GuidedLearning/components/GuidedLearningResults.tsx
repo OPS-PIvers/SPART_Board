@@ -7,13 +7,43 @@ import {
   CheckCircle2,
   Loader2,
 } from 'lucide-react';
-import { GuidedLearningSet } from '@/types';
+import { GuidedLearningSet, GuidedLearningStep } from '@/types';
 import { useGuidedLearningSessionTeacher } from '@/hooks/useGuidedLearningSession';
 
 interface Props {
   set: GuidedLearningSet;
   sessionId: string;
   onClose: () => void;
+}
+
+/** Verify a stored answer against the teacher's answer key. */
+function isAnswerCorrect(
+  step: GuidedLearningStep,
+  answer: string | string[]
+): boolean {
+  const q = step.question;
+  if (!q) return false;
+
+  if (q.type === 'multiple-choice') {
+    return typeof answer === 'string' && answer === q.correctAnswer;
+  }
+
+  if (q.type === 'matching') {
+    if (!Array.isArray(answer) || !q.matchingPairs) return false;
+    return q.matchingPairs.every((pair) =>
+      answer.includes(`${pair.left}:${pair.right}`)
+    );
+  }
+
+  if (q.type === 'sorting') {
+    if (!Array.isArray(answer) || !q.sortingItems) return false;
+    return (
+      answer.length === q.sortingItems.length &&
+      answer.every((item, i) => item === q.sortingItems?.[i])
+    );
+  }
+
+  return false;
 }
 
 export const GuidedLearningResults: React.FC<Props> = ({
@@ -38,13 +68,20 @@ export const GuidedLearningResults: React.FC<Props> = ({
   );
 
   const completedResponses = responses.filter((r) => r.completedAt !== null);
-  const avgScore =
-    completedResponses.length > 0
-      ? Math.round(
-          completedResponses.reduce((sum, r) => sum + (r.score ?? 0), 0) /
-            completedResponses.length
-        )
-      : null;
+
+  // Compute avg score from answer keys rather than trusting client-provided scores
+  const avgScore = (() => {
+    if (completedResponses.length === 0 || questionSteps.length === 0)
+      return null;
+    const total = completedResponses.reduce((sum, r) => {
+      const correct = questionSteps.filter((step) => {
+        const a = r.answers.find((ans) => ans.stepId === step.id);
+        return a ? isAnswerCorrect(step, a.answer) : false;
+      }).length;
+      return sum + Math.round((correct / questionSteps.length) * 100);
+    }, 0);
+    return Math.round(total / completedResponses.length);
+  })();
 
   const handleExport = () => {
     const csv = exportResponsesAsCSV(responses, set);
@@ -125,7 +162,10 @@ export const GuidedLearningResults: React.FC<Props> = ({
                   const stepAnswers = responses.flatMap((r) =>
                     r.answers.filter((a) => a.stepId === step.id)
                   );
-                  const correct = stepAnswers.filter((a) => a.isCorrect).length;
+                  // Recompute correctness from the teacher's answer key
+                  const correct = stepAnswers.filter((a) =>
+                    isAnswerCorrect(step, a.answer)
+                  ).length;
                   const pct =
                     stepAnswers.length > 0
                       ? Math.round((correct / stepAnswers.length) * 100)

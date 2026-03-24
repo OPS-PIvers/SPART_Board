@@ -293,7 +293,7 @@ export const GuidedLearningEditor: React.FC<Props> = ({
                         className="flex items-center gap-1.5 mx-auto px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg transition-colors"
                       >
                         <Upload className="w-3 h-3" />
-                        Upload Image or PDF
+                        Upload Image
                       </button>
                       <button
                         onClick={handlePaste}
@@ -310,7 +310,7 @@ export const GuidedLearningEditor: React.FC<Props> = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept="image/*"
               className="hidden"
               onChange={handleFileSelect}
             />

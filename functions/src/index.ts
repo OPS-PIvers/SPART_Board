@@ -1325,7 +1325,13 @@ export const generateGuidedLearning = functionsV1.https.onCall(
       );
     }
 
-    const userEmail = context.auth?.token.email ?? '';
+    const userEmail = context.auth?.token.email;
+    if (!userEmail) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'Authenticated user must have an email address.'
+      );
+    }
     const adminDoc = await admin
       .firestore()
       .collection('admins')

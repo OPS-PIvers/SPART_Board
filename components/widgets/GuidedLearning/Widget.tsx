@@ -179,7 +179,18 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const handleViewResults = (sessionId: string) => {
+  const handleViewResults = async (sessionId: string) => {
+    // Ensure the corresponding set is loaded so the results view has an activeSet
+    const matchingEntry = Object.entries(recentSessionIds).find(
+      ([, storedSessionId]) => storedSessionId === sessionId
+    );
+    if (matchingEntry) {
+      const [setId] = matchingEntry;
+      const meta = sets.find((s) => s.id === setId);
+      const buildingSet = buildingSets.find((s) => s.id === setId);
+      const loaded = await loadSet(setId, meta?.driveFileId, buildingSet);
+      if (loaded) setActiveSet(loaded);
+    }
     setResultsSessionId(sessionId);
     setView('results');
   };

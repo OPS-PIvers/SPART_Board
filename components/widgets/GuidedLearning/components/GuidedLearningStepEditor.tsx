@@ -284,7 +284,9 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({ step, onChange }) => {
       </div>
 
       {/* Multiple Choice */}
-      {q.type === 'multiple-choice' && <MCEditor q={q} updateQ={updateQ} />}
+      {q.type === 'multiple-choice' && (
+        <MCEditor q={q} updateQ={updateQ} stepId={step.id} />
+      )}
 
       {/* Matching */}
       {q.type === 'matching' && <MatchingEditor q={q} updateQ={updateQ} />}
@@ -298,7 +300,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({ step, onChange }) => {
 const MCEditor: React.FC<{
   q: NonNullable<GuidedLearningStep['question']>;
   updateQ: (p: Partial<NonNullable<GuidedLearningStep['question']>>) => void;
-}> = ({ q, updateQ }) => {
+  stepId: string;
+}> = ({ q, updateQ, stepId }) => {
   const choices = q.choices ?? ['', '', '', ''];
 
   const setChoice = (idx: number, val: string) => {
@@ -322,7 +325,7 @@ const MCEditor: React.FC<{
         <div key={idx} className="flex items-center gap-2">
           <input
             type="radio"
-            name={`correct-${q.text}`}
+            name={`correct-${stepId}`}
             checked={q.correctAnswer === choice && choice !== ''}
             onChange={() => updateQ({ correctAnswer: choice })}
             className="accent-emerald-500 flex-shrink-0"
