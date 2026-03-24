@@ -8,17 +8,7 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore';
-import {
-  X,
-  Plus,
-  Trash2,
-  Save,
-  Building2,
-  Globe,
-  Settings,
-  Library,
-  Video,
-} from 'lucide-react';
+import { X, Trash2, Building2, Settings, Library, Video } from 'lucide-react';
 import { db, isAuthBypass } from '@/config/firebase';
 import {
   GlobalVideoActivity,
@@ -91,7 +81,7 @@ export const VideoActivityConfigurationModal: React.FC<
     activity: GlobalVideoActivity,
     buildingId: string
   ) => {
-    const currentBuildings = activity.buildings || [];
+    const currentBuildings = activity.buildings ?? [];
     const newBuildings = currentBuildings.includes(buildingId)
       ? currentBuildings.filter((id) => id !== buildingId)
       : [...currentBuildings, buildingId];
@@ -112,7 +102,7 @@ export const VideoActivityConfigurationModal: React.FC<
   };
 
   const toggleAllBuildings = async (activity: GlobalVideoActivity) => {
-    const isAll = (activity.buildings || []).length === 0;
+    const isAll = (activity.buildings ?? []).length === 0;
 
     try {
       setSavingId(activity.id);
@@ -153,7 +143,7 @@ export const VideoActivityConfigurationModal: React.FC<
     }
   };
 
-  const config = (permission.config || {}) as VideoActivityGlobalConfig;
+  const config = (permission.config ?? {}) as VideoActivityGlobalConfig;
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] p-4 font-sans backdrop-blur-sm">
@@ -222,7 +212,7 @@ export const VideoActivityConfigurationModal: React.FC<
           {view === 'settings' ? (
             <div className="max-w-2xl mx-auto space-y-6">
               <DockDefaultsPanel
-                config={{ dockDefaults: config.dockDefaults || {} }}
+                config={{ dockDefaults: config.dockDefaults ?? {} }}
                 onChange={(dockDefaults) =>
                   onSave({ config: { ...config, dockDefaults } })
                 }
@@ -299,7 +289,7 @@ export const VideoActivityConfigurationModal: React.FC<
                               <button
                                 onClick={() => toggleAllBuildings(activity)}
                                 className={`px-2.5 py-1 rounded-md text-xs font-bold border transition-all ${
-                                  (activity.buildings || []).length === 0
+                                  (activity.buildings ?? []).length === 0
                                     ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
                                     : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                 }`}
@@ -313,7 +303,7 @@ export const VideoActivityConfigurationModal: React.FC<
                                     toggleBuilding(activity, building.id)
                                   }
                                   className={`px-2.5 py-1 rounded-md text-xs font-bold border transition-all ${
-                                    (activity.buildings || []).includes(
+                                    (activity.buildings ?? []).includes(
                                       building.id
                                     )
                                       ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
