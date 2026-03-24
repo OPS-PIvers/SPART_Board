@@ -171,3 +171,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Identified hardcoded font sizes (`text-[9px]`) in `DriveDisconnectBanner.tsx` bypassing the design system.
 **Fix:** Refactored instances to use the closest standard Tailwind utility class `text-xxxs` (8px/10px) to enforce consistency and eliminate the 'snowflake'.
+
+## 2026-03-24 - Z-Index Standardization (Maximized Widget Control)
+
+**Drift:** Identified a hardcoded z-index value (`z-[70]`) in `DraggableWindow.tsx` for the persistent restore FAB when a widget is maximized, bypassing the centralized `Z_INDEX` registry.
+**Fix:** Added `widgetControl: 70` to `config/zIndex.ts`, exposed it as `'widget-control'` in `tailwind.config.js`, and refactored the component to use the new `z-widget-control` class.

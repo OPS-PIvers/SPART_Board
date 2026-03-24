@@ -89,6 +89,7 @@ export default {
         'sticker-control': Z_INDEX.stickerControl.toString(),
         'widget-resize': Z_INDEX.widgetResize.toString(),
         'widget-internal-overlay': Z_INDEX.widgetInternalOverlay.toString(),
+        'widget-control': Z_INDEX.widgetControl.toString(),
         dropdown: Z_INDEX.dropdown.toString(),
         overlay: Z_INDEX.overlay.toString(),
         'modal-nested': Z_INDEX.modalNested.toString(),
