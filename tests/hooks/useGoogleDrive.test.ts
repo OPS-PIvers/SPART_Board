@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { useGoogleDrive } from '../../hooks/useGoogleDrive';
 import { useAuth } from '../../context/useAuth';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { GoogleDriveService } from '../../utils/googleDriveService';
 import { APP_NAME } from '../../config/constants';
 
@@ -12,6 +13,7 @@ vi.mock('../../context/useAuth', () => ({
 vi.mock('../../utils/googleDriveService', () => {
   return {
     GoogleDriveService: class {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       constructor() {}
       uploadFile = vi.fn();
       makePublic = vi.fn();
@@ -78,10 +80,13 @@ describe('useGoogleDrive', () => {
 
     it('uploads file and returns public URL', async () => {
       const { result } = renderHook(() => useGoogleDrive());
-      const mockDriveService = result.current.driveService as any;
+      const mockDriveService = result.current.driveService as unknown as {
+        uploadFile: Mock;
+        makePublic: Mock;
+      };
 
       mockDriveService.uploadFile.mockResolvedValue({ id: 'mock-file-id' });
-      mockDriveService.makePublic.mockResolvedValue();
+      mockDriveService.makePublic.mockResolvedValue(undefined);
 
       const mockFile = new File(['dummy content'], 'test.png', {
         type: 'image/png',
@@ -124,7 +129,9 @@ describe('useGoogleDrive', () => {
 
     it('returns empty array if app folder is not found', async () => {
       const { result } = renderHook(() => useGoogleDrive());
-      const mockDriveService = result.current.driveService as any;
+      const mockDriveService = result.current.driveService as unknown as {
+        findFolder: Mock;
+      };
 
       mockDriveService.findFolder.mockResolvedValueOnce(null);
 
@@ -139,7 +146,9 @@ describe('useGoogleDrive', () => {
 
     it('returns empty array if backgrounds folder is not found', async () => {
       const { result } = renderHook(() => useGoogleDrive());
-      const mockDriveService = result.current.driveService as any;
+      const mockDriveService = result.current.driveService as unknown as {
+        findFolder: Mock;
+      };
 
       mockDriveService.findFolder.mockImplementation((folderName: string) => {
         if (folderName === APP_NAME) return Promise.resolve('app-folder-id');
@@ -161,7 +170,10 @@ describe('useGoogleDrive', () => {
 
     it('returns array of mapped file URLs', async () => {
       const { result } = renderHook(() => useGoogleDrive());
-      const mockDriveService = result.current.driveService as any;
+      const mockDriveService = result.current.driveService as unknown as {
+        findFolder: Mock;
+        listFiles: Mock;
+      };
 
       mockDriveService.findFolder.mockImplementation((folderName: string) => {
         if (folderName === APP_NAME) return Promise.resolve('app-folder-id');
@@ -202,7 +214,8 @@ describe('useGoogleDrive', () => {
       const { result } = renderHook(() => useGoogleDrive());
       let textContent;
       await act(async () => {
-        textContent = await result.current.getDriveFileTextContent('mock-file-id');
+        textContent =
+          await result.current.getDriveFileTextContent('mock-file-id');
       });
 
       expect(textContent).toBeNull();
@@ -210,7 +223,10 @@ describe('useGoogleDrive', () => {
 
     it('returns text content if successful', async () => {
       const { result } = renderHook(() => useGoogleDrive());
-      const mockDriveService = result.current.driveService as any;
+      const mockDriveService = result.current.driveService as unknown as {
+        getFileMetadata: Mock;
+        exportFileText: Mock;
+      };
 
       mockDriveService.getFileMetadata.mockResolvedValue({
         mimeType: 'text/plain',
@@ -219,10 +235,13 @@ describe('useGoogleDrive', () => {
 
       let textContent;
       await act(async () => {
-        textContent = await result.current.getDriveFileTextContent('mock-file-id');
+        textContent =
+          await result.current.getDriveFileTextContent('mock-file-id');
       });
 
-      expect(mockDriveService.getFileMetadata).toHaveBeenCalledWith('mock-file-id');
+      expect(mockDriveService.getFileMetadata).toHaveBeenCalledWith(
+        'mock-file-id'
+      );
       expect(mockDriveService.exportFileText).toHaveBeenCalledWith(
         'mock-file-id',
         'text/plain'
@@ -232,14 +251,22 @@ describe('useGoogleDrive', () => {
 
     it('returns null and logs error if extraction fails', async () => {
       const { result } = renderHook(() => useGoogleDrive());
-      const mockDriveService = result.current.driveService as any;
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const mockDriveService = result.current.driveService as unknown as {
+        getFileMetadata: Mock;
+      };
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        () => {}
+      );
 
-      mockDriveService.getFileMetadata.mockRejectedValue(new Error('API Error'));
+      mockDriveService.getFileMetadata.mockRejectedValue(
+        new Error('API Error')
+      );
 
       let textContent;
       await act(async () => {
-        textContent = await result.current.getDriveFileTextContent('mock-file-id');
+        textContent =
+          await result.current.getDriveFileTextContent('mock-file-id');
       });
 
       expect(textContent).toBeNull();
