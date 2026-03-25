@@ -350,10 +350,13 @@ export const ScheduleConfigurationPanel: React.FC<
         <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block flex items-center gap-2">
           <Settings2 className="w-3 h-3" /> Configure Building Schedule Defaults
         </label>
-        <BuildingSelector selectedId={selectedBuildingId} onSelect={(id) => {
-                setSelectedBuildingId(id);
-                setActiveScheduleId(null);
-              }} />
+        <BuildingSelector
+          selectedId={selectedBuildingId}
+          onSelect={(id) => {
+            setSelectedBuildingId(id);
+            setActiveScheduleId(null);
+          }}
+        />
       </div>
 
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">

@@ -458,10 +458,10 @@ export const CalendarConfigurationModal: React.FC<
                     <Settings2 className="w-3.5 h-3.5" /> Select Building to
                     Configure
                   </label>
-                  <BuildingSelector selectedId={selectedBuildingId} onSelect={(id) => {
-              setSelectedBuildingId(id);
-              setActiveEventId(null);
-            }} />
+                  <BuildingSelector
+                    selectedId={selectedBuildingId}
+                    onSelect={setSelectedBuildingId}
+                  />
                 </div>
 
                 <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">

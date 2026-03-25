@@ -56,7 +56,10 @@ export const HotspotImageConfigurationPanel: React.FC<
         <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
           Configure Building Defaults
         </label>
-        <BuildingSelector selectedId={selectedBuildingId} onSelect={setSelectedBuildingId} />
+        <BuildingSelector
+          selectedId={selectedBuildingId}
+          onSelect={setSelectedBuildingId}
+        />
       </div>
 
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-4">

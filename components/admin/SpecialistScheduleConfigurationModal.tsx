@@ -385,10 +385,11 @@ export const SpecialistScheduleConfigurationModal: React.FC<
                     <Settings2 className="w-3.5 h-3.5" /> Select Building to
                     Configure
                   </label>
-                  <BuildingSelector selectedId={selectedBuildingId} onSelect={(id) => {
-              setSelectedBuildingId(id);
-              setActiveClassId(null);
-            }} />
+                  <BuildingSelector
+                    selectedId={selectedBuildingId}
+                    onSelect={setSelectedBuildingId}
+                    activeClassName="bg-teal-500 text-white border-teal-500 shadow-sm"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-2 duration-300">

@@ -45,10 +45,10 @@ export const NextUpConfigurationPanel: React.FC<
         <label className="text-xxs font-black text-slate-500 uppercase mb-3 block flex items-center gap-2 tracking-widest">
           <Settings2 className="w-3 h-3" /> Select Building for Defaults
         </label>
-        <BuildingSelector selectedId={selectedBuildingId} onSelect={(id) => {
-            setSelectedBuildingId(id);
-            setNewItemText('');
-          }} />
+        <BuildingSelector
+          selectedId={selectedBuildingId}
+          onSelect={setSelectedBuildingId}
+        />
       </div>
 
       {/* Configuration Section */}
