@@ -448,6 +448,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return unsubscribe;
   }, [user]);
 
+  // Helper for admin checks
+  const checkUserAdminRoles = useCallback((email: string | null | undefined) => {
+    if (!email || !userRoles) return false;
+    const lowerEmail = email.toLowerCase();
+    return (
+      userRoles.admins.some((e) => e.toLowerCase() === lowerEmail) ||
+      userRoles.superAdmins.some((e) => e.toLowerCase() === lowerEmail)
+    );
+  }, [userRoles]);
+
   // Check if user is admin
   useEffect(() => {
     if (isAuthBypass) return;
@@ -463,36 +473,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           doc(db, 'admins', user.email.toLowerCase())
         );
         const isInAdminCollection = adminDoc.exists();
-
-        // Also check if they are in the user roles admins or superAdmins list
-        const userEmailLower = user.email.toLowerCase();
-        const inUserRoles = userRoles
-          ? userRoles.admins.some((e) => e.toLowerCase() === userEmailLower) ||
-            userRoles.superAdmins.some(
-              (e) => e.toLowerCase() === userEmailLower
-            )
-          : false;
+        const inUserRoles = checkUserAdminRoles(user.email);
 
         setIsAdmin(isInAdminCollection || inUserRoles);
       } catch (error) {
         console.error('Error checking admin status:', error);
         // Fallback to roles if collection check fails
-        if (userRoles) {
-          const userEmailLower = user.email.toLowerCase();
-          setIsAdmin(
-            userRoles.admins.some((e) => e.toLowerCase() === userEmailLower) ||
-              userRoles.superAdmins.some(
-                (e) => e.toLowerCase() === userEmailLower
-              )
-          );
-        } else {
-          setIsAdmin(false);
-        }
+        setIsAdmin(checkUserAdminRoles(user.email));
       }
     };
 
     void checkAdminStatus();
-  }, [user, userRoles]);
+  }, [user, checkUserAdminRoles]);
 
   // Listen to feature permissions (only when authenticated)
   useEffect(() => {
@@ -761,6 +753,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return unsubscribe;
   }, []);
 
+  // Helper for checking if a user has beta access
+  const isBetaUser = useCallback((betaUsers: string[], email: string | null | undefined) => {
+    const lowerEmail = email?.toLowerCase() ?? '';
+    return (
+      betaUsers.some((e) => e.toLowerCase() === lowerEmail) ||
+      (userRoles?.betaTeachers?.some((e) => e.toLowerCase() === lowerEmail) ?? false) ||
+      (userRoles?.superAdmins?.some((e) => e.toLowerCase() === lowerEmail) ?? false)
+    );
+  }, [userRoles]);
+
   // Check if user can access a specific widget
   // Wrapped in useCallback to prevent unnecessary re-renders since this function
   // is passed through context and used in component dependencies
@@ -790,23 +792,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       switch (permission.accessLevel) {
         case 'admin':
           return false; // Only admins can access
-        case 'beta': {
-          const email = user.email?.toLowerCase() ?? '';
-          return (
-            permission.betaUsers.some((e) => e.toLowerCase() === email) ||
-            (userRoles?.betaTeachers?.some((e) => e.toLowerCase() === email) ??
-              false) ||
-            (userRoles?.superAdmins?.some((e) => e.toLowerCase() === email) ??
-              false)
-          );
-        }
+        case 'beta':
+          return isBetaUser(permission.betaUsers, user.email);
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, featurePermissions, isAdmin, userRoles]
+    [user, featurePermissions, isAdmin, isBetaUser]
   );
 
   const canAccessFeature = useCallback(
@@ -825,23 +819,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       switch (permission.accessLevel) {
         case 'admin':
           return false;
-        case 'beta': {
-          const email = user.email?.toLowerCase() ?? '';
-          return (
-            permission.betaUsers.some((e) => e.toLowerCase() === email) ||
-            (userRoles?.betaTeachers?.some((e) => e.toLowerCase() === email) ??
-              false) ||
-            (userRoles?.superAdmins?.some((e) => e.toLowerCase() === email) ??
-              false)
-          );
-        }
+        case 'beta':
+          return isBetaUser(permission.betaUsers, user.email);
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, globalPermissions, isAdmin, userRoles]
+    [user, globalPermissions, isAdmin, isBetaUser]
   );
 
   const signInWithGoogle = async () => {

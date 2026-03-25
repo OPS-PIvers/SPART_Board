@@ -80,11 +80,19 @@ export const UserManagementPanel: React.FC = () => {
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const messageTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
+    clearTimeout(messageTimeoutRef.current);
     setMessage({ type, text });
-    const timeoutId = setTimeout(() => setMessage(null), 3000);
-    return () => clearTimeout(timeoutId);
+    messageTimeoutRef.current = setTimeout(() => {
+      setMessage(null);
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    // Cleanup timeout on unmount
+    return () => clearTimeout(messageTimeoutRef.current);
   }, []);
 
   useEffect(() => {
