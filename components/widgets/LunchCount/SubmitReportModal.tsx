@@ -49,10 +49,11 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
 
   // Reset form fields and close — ensures a clean slate for each new opening.
   const handleClose = useCallback(() => {
+    if (isSubmitting) return;
     setNotes('');
     setExtraPizza('');
     onClose();
-  }, [onClose]);
+  }, [isSubmitting, onClose]);
 
   if (!isOpen) return null;
 
@@ -68,7 +69,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
       variant="bare"
       maxWidth="max-w-[90%]"
     >
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90%] overflow-y-auto border border-slate-200 animate-in zoom-in-95 duration-200 custom-scrollbar">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90vh] overflow-y-auto border border-slate-200 animate-in zoom-in-95 duration-200 custom-scrollbar">
         <div className="p-6 bg-brand-blue-primary/90 backdrop-blur-sm text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/30 rounded-xl">

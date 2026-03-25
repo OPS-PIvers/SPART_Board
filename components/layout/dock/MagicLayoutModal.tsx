@@ -16,6 +16,10 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
   const [description, setDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const handleClose = () => {
+    if (!isGenerating) onClose();
+  };
+
   const handleGenerate = async () => {
     if (!description.trim()) return;
 
@@ -37,7 +41,12 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} variant="bare" zIndex="z-critical">
+    <Modal
+      isOpen={true}
+      onClose={handleClose}
+      variant="bare"
+      zIndex="z-critical"
+    >
       <GlassCard className="w-full max-w-lg p-6 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg text-white">
@@ -90,7 +99,7 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
 
         <div className="flex gap-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
             disabled={isGenerating}
           >
