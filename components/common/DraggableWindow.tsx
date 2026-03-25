@@ -1289,7 +1289,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
       {/* Persistent Restore FAB for Maximized State */}
       {isMaximized && (
-        <div className="absolute bottom-6 right-6 z-[70] pointer-events-auto flex items-center justify-center">
+        <div className="absolute bottom-6 right-6 z-widget-control pointer-events-auto flex items-center justify-center">
           <IconButton
             icon={<Minimize2 className="w-6 h-6" />}
             label={t('widgetWindow.restore')}
