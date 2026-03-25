@@ -43,6 +43,11 @@ const VideoActivityStudentApp = lazy(() =>
     (module) => ({ default: module.VideoActivityStudentApp })
   )
 );
+const GuidedLearningStudentApp = lazy(() =>
+  import('./components/guidedLearning/GuidedLearningStudentApp').then(
+    (module) => ({ default: module.GuidedLearningStudentApp })
+  )
+);
 const LoginScreen = lazy(() =>
   import('./components/auth/LoginScreen').then((module) => ({
     default: module.LoginScreen,
@@ -155,6 +160,20 @@ const App: React.FC = () => {
       <DialogProvider>
         <Suspense fallback={<FullPageLoader />}>
           <VideoActivityStudentApp />
+        </Suspense>
+        <DialogContainer />
+      </DialogProvider>
+    );
+  }
+
+  const isGuidedLearningRoute = pathname.startsWith('/guided-learning/');
+
+  // Guided Learning student route — anonymous entry, no teacher auth needed
+  if (isGuidedLearningRoute) {
+    return (
+      <DialogProvider>
+        <Suspense fallback={<FullPageLoader />}>
+          <GuidedLearningStudentApp />
         </Suspense>
         <DialogContainer />
       </DialogProvider>

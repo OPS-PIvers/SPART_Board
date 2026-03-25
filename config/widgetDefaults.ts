@@ -393,4 +393,13 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       allowSkipping: false,
     },
   },
+  'guided-learning': {
+    w: 720,
+    h: 520,
+    config: {
+      view: 'library',
+      playerSetId: null,
+      resultsSessionId: null,
+    },
+  },
 };

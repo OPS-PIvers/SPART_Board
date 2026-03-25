@@ -1,6 +1,13 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/config/firebase';
-import { WidgetType, WidgetConfig, GridPosition } from '@/types';
+import {
+  WidgetType,
+  WidgetConfig,
+  GridPosition,
+  GuidedLearningStep,
+  GuidedLearningMode,
+  GuidedLearningInteractionType,
+} from '@/types';
 import { TOOLS } from '@/config/tools';
 
 export interface GeneratedMiniApp {
@@ -41,7 +48,8 @@ export type AIGenerationType =
   | 'instructional-routine'
   | 'ocr'
   | 'quiz'
-  | 'video-activity';
+  | 'video-activity'
+  | 'guided-learning';
 
 export interface GeneratedVideoQuestion extends GeneratedQuestion {
   /** Seconds from video start when this question should trigger. */
@@ -305,5 +313,117 @@ export async function transcribeVideoWithGemini(
       throw error;
     }
     throw new Error('Failed to transcribe video. Please try again.');
+  }
+}
+
+// ─── Guided Learning Generation ───────────────────────────────────────────────
+
+export interface GeneratedGuidedLearning {
+  suggestedTitle: string;
+  suggestedMode: GuidedLearningMode;
+  steps: GuidedLearningStep[];
+}
+
+interface AIGuidedLearningResponse {
+  suggestedTitle?: string;
+  suggestedMode?: string;
+  steps?: unknown[];
+}
+
+/**
+ * Generates a complete guided learning experience from an image using Gemini.
+ * Admin-only. Sends the image inline to the Cloud Function which calls Gemini.
+ *
+ * @param imageBase64 - Base64-encoded image data (no data URI prefix).
+ * @param mimeType - MIME type of the image (e.g. 'image/jpeg').
+ * @param prompt - Optional additional instructions for Gemini.
+ */
+export async function generateGuidedLearning(
+  imageBase64: string,
+  mimeType: string,
+  prompt?: string
+): Promise<GeneratedGuidedLearning> {
+  try {
+    const fn = httpsCallable<
+      { imageBase64: string; mimeType: string; prompt?: string },
+      AIGuidedLearningResponse
+    >(functions, 'generateGuidedLearning');
+
+    const result = await fn({ imageBase64, mimeType, prompt });
+    const data = result.data;
+
+    if (
+      !data.suggestedTitle ||
+      !Array.isArray(data.steps) ||
+      data.steps.length === 0
+    ) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    const validModes: GuidedLearningMode[] = [
+      'structured',
+      'guided',
+      'explore',
+    ];
+    const suggestedMode: GuidedLearningMode = validModes.includes(
+      data.suggestedMode as GuidedLearningMode
+    )
+      ? (data.suggestedMode as GuidedLearningMode)
+      : 'structured';
+
+    const validInteractionTypes: GuidedLearningInteractionType[] = [
+      'text-popover',
+      'tooltip',
+      'audio',
+      'video',
+      'pan-zoom',
+      'spotlight',
+      'question',
+    ];
+
+    const validatedSteps = data.steps
+      .map((step, index) => {
+        if (typeof step !== 'object' || step === null) return null;
+        const s = step as Record<string, unknown>;
+        const id =
+          typeof s.id === 'string' && s.id.trim().length > 0
+            ? s.id
+            : `step-${index + 1}`;
+        const xPct =
+          typeof s.xPct === 'number'
+            ? Math.max(0, Math.min(100, s.xPct))
+            : null;
+        const yPct =
+          typeof s.yPct === 'number'
+            ? Math.max(0, Math.min(100, s.yPct))
+            : null;
+        const interactionType =
+          typeof s.interactionType === 'string' &&
+          validInteractionTypes.includes(
+            s.interactionType as GuidedLearningInteractionType
+          )
+            ? (s.interactionType as GuidedLearningInteractionType)
+            : null;
+        if (xPct === null || yPct === null || interactionType === null)
+          return null;
+        return { ...s, id, xPct, yPct, interactionType } as GuidedLearningStep;
+      })
+      .filter((s): s is GuidedLearningStep => s !== null);
+
+    if (validatedSteps.length === 0) {
+      throw new Error('AI returned no valid guided learning steps');
+    }
+
+    return {
+      suggestedTitle: data.suggestedTitle,
+      suggestedMode,
+      steps: validatedSteps,
+    };
+  } catch (error) {
+    console.error('Guided Learning Generation Error:', error);
+    if (error instanceof Error) throw error;
+    throw new Error(
+      'Failed to generate guided learning experience. Please try again.'
+    );
   }
 }

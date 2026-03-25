@@ -427,7 +427,7 @@ const getTitle = (widget: WidgetData) => {
 
 ### 5. Test Your Widget
 
-1. Run `npm run dev`
+1. Run `pnpm dev`
 2. Open the Dock (bottom toolbar)
 3. Click your new widget to add it
 4. Test drag, resize, flip, settings
@@ -879,7 +879,7 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 
 ### Linting errors blocking commits
 
-- Run `npm run lint:fix` to auto-fix
+- Run `pnpm lint:fix` to auto-fix
 - Check pre-commit hook output for specific errors
 - See [LINTING_SETUP.md](LINTING_SETUP.md)
 

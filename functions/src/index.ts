@@ -1265,3 +1265,174 @@ Return JSON:
       }
     }
   );
+
+// ─── Guided Learning Generation (Admin Only) ─────────────────────────────────
+
+interface GuidedLearningStep {
+  id: string;
+  xPct: number;
+  yPct: number;
+  label?: string;
+  interactionType: string;
+  text?: string;
+  panZoomScale?: number;
+  spotlightRadius?: number;
+  question?: {
+    type: string;
+    text: string;
+    choices?: string[];
+    correctAnswer?: string;
+    matchingPairs?: { left: string; right: string }[];
+    sortingItems?: string[];
+  };
+  autoAdvanceDuration?: number;
+}
+
+interface GeneratedGuidedLearning {
+  suggestedTitle: string;
+  suggestedMode: string;
+  steps: GuidedLearningStep[];
+}
+
+export const generateGuidedLearning = functionsV1.https.onCall(
+  async (
+    data: { imageBase64: string; mimeType: string; prompt?: string },
+    context
+  ) => {
+    // Admin only
+    const uid = context.auth?.uid;
+    if (!uid) {
+      throw new functionsV1.https.HttpsError(
+        'unauthenticated',
+        'Must be authenticated to use this feature.'
+      );
+    }
+
+    const userEmail = context.auth?.token.email;
+    if (!userEmail) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'Authenticated user must have an email address.'
+      );
+    }
+    const adminDoc = await admin
+      .firestore()
+      .collection('admins')
+      .doc(userEmail.toLowerCase())
+      .get();
+    if (!adminDoc.exists) {
+      throw new functionsV1.https.HttpsError(
+        'permission-denied',
+        'Admin access required to use AI generation.'
+      );
+    }
+
+    const { imageBase64, mimeType, prompt } = data;
+    if (!imageBase64 || !mimeType) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'imageBase64 and mimeType are required.'
+      );
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new functionsV1.https.HttpsError(
+        'internal',
+        'AI service is not configured.'
+      );
+    }
+
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+
+      const systemInstruction = `You are an educational content creator helping teachers build interactive guided learning experiences.
+Analyze the provided image and generate a guided learning experience as a JSON object.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "suggestedTitle": "string",
+  "suggestedMode": "structured" | "guided" | "explore",
+  "steps": [
+    {
+      "id": "unique-string",
+      "xPct": number (0-100),
+      "yPct": number (0-100),
+      "label": "string",
+      "interactionType": "text-popover" | "tooltip" | "pan-zoom" | "spotlight" | "question",
+      "text": "string (for text-popover/tooltip)",
+      "panZoomScale": number (1.5-4, for pan-zoom only),
+      "spotlightRadius": number (10-40, for spotlight only),
+      "autoAdvanceDuration": number (seconds),
+      "question": {
+        "type": "multiple-choice" | "matching" | "sorting",
+        "text": "string",
+        "choices": ["string"] (MC: include correct + 3 incorrect),
+        "correctAnswer": "string (MC: must match one choice)",
+        "matchingPairs": [{"left": "string", "right": "string"}],
+        "sortingItems": ["string"] (in correct order)
+      }
+    }
+  ]
+}
+
+Guidelines:
+- Create 4-8 meaningful steps that guide learners through the content
+- Use text-popover for key concepts, spotlight to highlight areas, pan-zoom to zoom in on details, questions to check understanding
+- Place hotspots at meaningful locations on the image (xPct/yPct as percentages 0-100)
+- Include at least 1 question step for comprehension checking
+- Make content educational and age-appropriate
+- Set autoAdvanceDuration to 5-15 seconds for non-question steps in guided mode`;
+
+      const userPrompt = prompt
+        ? `Additional instructions: ${sanitizePrompt(prompt)}`
+        : 'Analyze this educational image and create an engaging guided learning experience.';
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: userPrompt },
+              {
+                inlineData: {
+                  mimeType,
+                  data: imageBase64,
+                },
+              },
+            ],
+          },
+        ],
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const rawText = response.text ?? '';
+      const parsed = JSON.parse(rawText) as GeneratedGuidedLearning;
+
+      if (
+        !parsed.suggestedTitle ||
+        !Array.isArray(parsed.steps) ||
+        parsed.steps.length === 0
+      ) {
+        throw new Error('Invalid response structure from AI');
+      }
+
+      // Ensure all steps have IDs
+      parsed.steps = parsed.steps.map((step, i) => ({
+        ...step,
+        id: step.id || `step-${i + 1}-${Date.now()}`,
+      }));
+
+      return parsed;
+    } catch (error: unknown) {
+      console.error('[generateGuidedLearning] Gemini error:', error);
+      const msg =
+        error instanceof Error ? error.message : 'AI generation failed';
+      throw new functionsV1.https.HttpsError('internal', msg);
+    }
+  }
+);

@@ -39,6 +39,7 @@ import {
   Layers,
   MapPin,
   Share2,
+  GraduationCap,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -221,5 +222,15 @@ export const TOOLS: ToolMetadata[] = [
     defaultHeight: 560,
     minWidth: 480,
     minHeight: 400,
+  },
+  {
+    type: 'guided-learning',
+    icon: GraduationCap,
+    label: 'Guided Learning',
+    color: 'bg-indigo-600',
+    defaultWidth: 720,
+    defaultHeight: 520,
+    minWidth: 480,
+    minHeight: 380,
   },
 ];
