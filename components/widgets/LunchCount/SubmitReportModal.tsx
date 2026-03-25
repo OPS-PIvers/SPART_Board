@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Button } from '../../common/Button';
-import { Modal } from '../../common/Modal';
+import { Button } from '@/components/common/Button';
+import { Modal } from '@/components/common/Modal';
 import { FileSpreadsheet, X, Send } from 'lucide-react';
 
 /**
@@ -68,6 +68,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
       onClose={handleClose}
       variant="bare"
       maxWidth="max-w-[90%]"
+      ariaLabelledby="report-modal-title"
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90vh] overflow-y-auto border border-slate-200 animate-in zoom-in-95 duration-200 custom-scrollbar">
         <div className="p-6 bg-brand-blue-primary/90 backdrop-blur-sm text-white flex justify-between items-center sticky top-0 z-10">

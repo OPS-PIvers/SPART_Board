@@ -16,6 +16,8 @@ interface ModalProps {
   contentClassName?: string; // For additional styling on the body/content wrapper
   footerClassName?: string; // For additional styling on the footer wrapper
   captureEscape?: boolean; // Whether to use capture phase for Escape key
+  ariaLabel?: string;
+  ariaLabelledby?: string;
 }
 
 // Track number of open modals to handle nested locking correctly
@@ -35,6 +37,8 @@ export const Modal: React.FC<ModalProps> = ({
   footerClassName = 'p-6 pt-4 mt-auto shrink-0 border-t border-slate-100',
   variant = 'default',
   captureEscape = false,
+  ariaLabel,
+  ariaLabelledby,
 }) => {
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -78,6 +82,10 @@ export const Modal: React.FC<ModalProps> = ({
     <div
       className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200`}
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={ariaLabel ?? (!ariaLabelledby ? title : undefined)}
+      aria-labelledby={ariaLabelledby}
     >
       <div
         className={`w-full ${maxWidth} flex flex-col max-h-[90vh] ${variant === 'default' ? 'bg-white rounded-2xl shadow-2xl' : ''} ${className} animate-in zoom-in-95 duration-200`}

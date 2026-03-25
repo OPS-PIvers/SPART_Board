@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { GlassCard } from '../../common/GlassCard';
-import { Modal } from '../../common/Modal';
-import { GlobalStyle } from '../../../types';
+import { GlassCard } from '@/components/common/GlassCard';
+import { Modal } from '@/components/common/Modal';
+import { GlobalStyle } from '@/types';
 
 interface RenameFolderModalProps {
   name: string;
