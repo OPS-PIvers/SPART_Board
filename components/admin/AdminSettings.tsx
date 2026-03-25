@@ -13,6 +13,8 @@ import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';
 import { AnnouncementsManager } from './Announcements';
+import { UserManagementPanel } from './UserManagement/UserManagementPanel';
+import { Users } from 'lucide-react';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -48,7 +50,7 @@ const TabButton: React.FC<{
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'features' | 'global' | 'backgrounds' | 'announcements'
+    'features' | 'global' | 'backgrounds' | 'announcements' | 'users'
   >('features');
 
   // Close modal on Escape key press
@@ -131,6 +133,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               icon={<Bell className="w-4 h-4" />}
               label="Announcements"
             />
+            <TabButton
+              id="tab-users"
+              controls="panel-users"
+              isActive={activeTab === 'users'}
+              onClick={() => setActiveTab('users')}
+              icon={<Users className="w-4 h-4" />}
+              label="User Management"
+            />
           </div>
         </div>
 
@@ -182,6 +192,17 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
             >
               <AnnouncementsManager />
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div
+              id="panel-users"
+              role="tabpanel"
+              aria-labelledby="tab-users"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
+            >
+              <UserManagementPanel />
             </div>
           )}
         </div>

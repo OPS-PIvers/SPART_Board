@@ -33,6 +33,7 @@ import {
   GlobalFeature,
   GradeLevel,
   WidgetConfig,
+  UserRolesConfig,
 } from '../types';
 import { AuthContext } from './AuthContextValue';
 import { getBuildingGradeLevels } from '../config/buildings';
@@ -170,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(
     isAuthBypass ? true : null
   ); // null = not yet checked
+  const [userRoles, setUserRoles] = useState<UserRolesConfig | null>(null);
   const [featurePermissions, setFeaturePermissions] = useState<
     FeaturePermission[]
   >([]);
@@ -422,6 +424,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [googleAccessToken]);
 
+  // Listen to user roles
+  useEffect(() => {
+    if (isAuthBypass) return;
+    if (!user) {
+      setUserRoles(null);
+      return;
+    }
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'admin_settings', 'user_roles'),
+      (doc) => {
+        if (doc.exists()) {
+          setUserRoles(doc.data() as UserRolesConfig);
+        } else {
+          setUserRoles(null);
+        }
+      },
+      (error) => {
+        console.error('Error loading user roles:', error);
+      }
+    );
+    return unsubscribe;
+  }, [user]);
+
   // Check if user is admin
   useEffect(() => {
     if (isAuthBypass) return;
@@ -436,15 +462,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const adminDoc = await getDoc(
           doc(db, 'admins', user.email.toLowerCase())
         );
-        setIsAdmin(adminDoc.exists());
+        const isInAdminCollection = adminDoc.exists();
+
+        // Also check if they are in the user roles admins or superAdmins list
+        const userEmailLower = user.email.toLowerCase();
+        const inUserRoles = userRoles
+          ? userRoles.admins.some((e) => e.toLowerCase() === userEmailLower) ||
+            userRoles.superAdmins.some(
+              (e) => e.toLowerCase() === userEmailLower
+            )
+          : false;
+
+        setIsAdmin(isInAdminCollection || inUserRoles);
       } catch (error) {
         console.error('Error checking admin status:', error);
-        setIsAdmin(false);
+        // Fallback to roles if collection check fails
+        if (userRoles) {
+          const userEmailLower = user.email.toLowerCase();
+          setIsAdmin(
+            userRoles.admins.some((e) => e.toLowerCase() === userEmailLower) ||
+              userRoles.superAdmins.some(
+                (e) => e.toLowerCase() === userEmailLower
+              )
+          );
+        } else {
+          setIsAdmin(false);
+        }
       }
     };
 
     void checkAdminStatus();
-  }, [user]);
+  }, [user, userRoles]);
 
   // Listen to feature permissions (only when authenticated)
   useEffect(() => {
@@ -742,15 +790,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       switch (permission.accessLevel) {
         case 'admin':
           return false; // Only admins can access
-        case 'beta':
-          return permission.betaUsers.includes(user.email ?? '');
+        case 'beta': {
+          const email = user.email?.toLowerCase() ?? '';
+          return (
+            permission.betaUsers.some((e) => e.toLowerCase() === email) ||
+            (userRoles?.betaTeachers?.some((e) => e.toLowerCase() === email) ??
+              false) ||
+            (userRoles?.superAdmins?.some((e) => e.toLowerCase() === email) ??
+              false)
+          );
+        }
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, featurePermissions, isAdmin]
+    [user, featurePermissions, isAdmin, userRoles]
   );
 
   const canAccessFeature = useCallback(
@@ -769,15 +825,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       switch (permission.accessLevel) {
         case 'admin':
           return false;
-        case 'beta':
-          return permission.betaUsers.includes(user.email ?? '');
+        case 'beta': {
+          const email = user.email?.toLowerCase() ?? '';
+          return (
+            permission.betaUsers.some((e) => e.toLowerCase() === email) ||
+            (userRoles?.betaTeachers?.some((e) => e.toLowerCase() === email) ??
+              false) ||
+            (userRoles?.superAdmins?.some((e) => e.toLowerCase() === email) ??
+              false)
+          );
+        }
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, globalPermissions, isAdmin]
+    [user, globalPermissions, isAdmin, userRoles]
   );
 
   const signInWithGoogle = async () => {
@@ -836,6 +900,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         googleAccessToken,
         loading,
         isAdmin,
+        userRoles,
         featurePermissions,
         globalPermissions,
         canAccessWidget,

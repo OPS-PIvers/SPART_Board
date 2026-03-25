@@ -7,6 +7,7 @@ import {
   GlobalFeature,
   GradeLevel,
   WidgetConfig,
+  UserRolesConfig,
 } from '../types';
 
 export interface AuthContextType {
@@ -14,6 +15,7 @@ export interface AuthContextType {
   googleAccessToken: string | null;
   loading: boolean;
   isAdmin: boolean | null; // null = admin status not yet determined
+  userRoles: UserRolesConfig | null;
   featurePermissions: FeaturePermission[];
   globalPermissions: GlobalFeaturePermission[];
   canAccessWidget: (widgetType: WidgetType) => boolean;
