@@ -62,8 +62,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           {COLORS.map((color) => {
-            const isSelected =
-              (widget.backgroundColor || '') === color.value;
+            const isSelected = (widget.backgroundColor ?? '') === color.value;
             return (
               <button
                 key={color.label}
@@ -107,7 +106,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {FONTS.map((font) => {
-            const isSelected = (widget.fontFamily || '') === font.value;
+            const isSelected = (widget.fontFamily ?? '') === font.value;
             return (
               <button
                 key={font.label}
@@ -148,7 +147,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
           )}
         </div>
         <select
-          value={widget.fontSize || ''}
+          value={widget.fontSize ?? ''}
           onChange={(e) =>
             updateWidget(widget.id, {
               fontSize: e.target.value || undefined,
