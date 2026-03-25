@@ -5,6 +5,7 @@ import {
   ChecklistItem,
   WidgetData,
   InstructionalRoutinesConfig,
+  TextConfig,
 } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { RosterModeControl } from '@/components/common/RosterModeControl';
@@ -92,6 +93,64 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     addToast('Imported steps from Routine!', 'success');
   };
 
+  const importFromTextWidget = () => {
+    const textWidgets =
+      activeDashboard?.widgets.filter((w) => w.type === 'text') ?? [];
+    if (textWidgets.length === 0) {
+      addToast('No Text widget found!', 'error');
+      return;
+    }
+
+    let selectedLines: string[] | null = null;
+    for (const textWidget of textWidgets) {
+      const textConfig = textWidget.config as TextConfig;
+      const rawContent = textConfig.content || '';
+
+      // Parse HTML and extract text in a way that preserves visual line breaks
+      const parsedDocument = new DOMParser().parseFromString(
+        rawContent,
+        'text/html'
+      );
+      const body = parsedDocument.body;
+      const plainText = (body.innerText ?? body.textContent ?? '').replace(
+        /\r\n/g,
+        '\n'
+      );
+
+      // Split by newline (handling both \n and \r\n) and filter empty lines
+      const lines = plainText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+      if (lines.length > 0) {
+        selectedLines = lines;
+        break;
+      }
+    }
+
+    if (!selectedLines) {
+      addToast('All Text widgets are empty or have no usable text.', 'info');
+      return;
+    }
+
+    const newItems: ChecklistItem[] = selectedLines.map((line) => ({
+      id: crypto.randomUUID(),
+      text: line,
+      completed: false,
+    }));
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        mode: 'manual',
+        items: newItems,
+      },
+    });
+    setLocalText(newItems.map((i) => i.text).join('\n'));
+    addToast('Imported tasks from Text widget!', 'success');
+  };
+
   return (
     <div className="space-y-6">
       {/* Nexus Connection: Routine Import */}
@@ -104,7 +163,25 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
         <button
           onClick={importFromRoutine}
+          aria-label="Sync Routine"
           className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
+        >
+          <RefreshCw className="w-3 h-3" /> Sync
+        </button>
+      </div>
+
+      {/* Nexus Connection: Text Import */}
+      <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-between">
+        <div className="flex items-center gap-2 text-emerald-900">
+          <Type className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Import from Text Widget
+          </span>
+        </div>
+        <button
+          onClick={importFromTextWidget}
+          aria-label="Sync Text"
+          className="bg-white text-emerald-600 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase shadow-sm border border-emerald-100 hover:bg-emerald-50 transition-colors flex items-center gap-1"
         >
           <RefreshCw className="w-3 h-3" /> Sync
         </button>
