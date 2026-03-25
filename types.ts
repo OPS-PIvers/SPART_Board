@@ -1836,6 +1836,10 @@ export interface GuidedLearningResponse {
   score: number | null;
 }
 
+export interface GuidedLearningGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 /** Widget config (teacher-side, stored in WidgetData.config) */
 export interface GuidedLearningConfig {
   view: 'library' | 'editor' | 'player' | 'results';
