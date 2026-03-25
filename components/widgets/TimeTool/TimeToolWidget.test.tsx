@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TimeToolConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { TimeToolWidget } from './TimeToolWidget';
+import { DashboardContextValue } from '@/context/DashboardContextValue';
 
-vi.mock('../../../context/useDashboard');
-vi.mock('../../../utils/timeToolAudio', () => ({
+vi.mock('@/context/useDashboard');
+vi.mock('@/utils/timeToolAudio', () => ({
   playTimerAlert: vi.fn(),
   resumeAudio: vi.fn().mockResolvedValue(undefined),
 }));
@@ -36,8 +36,8 @@ const renderWidget = (widget: WidgetData) => {
 describe('TimeToolWidget', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      mockDashboardContext
+    (useDashboard as Mock).mockReturnValue(
+      mockDashboardContext as unknown as DashboardContextValue
     );
   });
 

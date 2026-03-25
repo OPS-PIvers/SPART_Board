@@ -33,17 +33,17 @@ vi.mock('firebase/firestore', () => ({
   }),
 }));
 
-vi.mock('../../../config/firebase', () => ({
+vi.mock('@/config/firebase', () => ({
   db: {},
   isAuthBypass: false,
 }));
 
-vi.mock('../../../context/useAuth', () => ({
+vi.mock('@/context/useAuth', () => ({
   useAuth: vi.fn(),
 }));
 
 // Lazy widget registry – we just need to avoid a real dynamic import in tests
-vi.mock('../../../components/widgets/WidgetRegistry', () => ({
+vi.mock('@/components/widgets/WidgetRegistry', () => ({
   WIDGET_COMPONENTS: {},
 }));
 

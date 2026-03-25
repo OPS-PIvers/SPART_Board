@@ -7,7 +7,7 @@ import { RandomWidget } from '@/components/widgets/random/RandomWidget';
 
 const mockUpdateWidget = vi.fn();
 
-vi.mock('../../../context/useDashboard', () => ({
+vi.mock('@/context/useDashboard', () => ({
   useDashboard: () => ({
     updateWidget: mockUpdateWidget,
     updateDashboard: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('../../../context/useDashboard', () => ({
 }));
 
 // Mock audioUtils to avoid errors during tests
-vi.mock('../../../components/widgets/random/audioUtils', () => ({
+vi.mock('@/components/widgets/random/audioUtils', () => ({
   getAudioCtx: vi.fn(),
   playTick: vi.fn(),
   playWinner: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('../../../components/widgets/random/audioUtils', () => ({
 // Mock RandomFlash to capture the fontSize prop via a data attribute.
 // jsdom does not support CSS min() so we cannot reliably check computed styles;
 // capturing the prop string directly is the most reliable alternative.
-vi.mock('../../../components/widgets/random/RandomFlash', () => ({
+vi.mock('@/components/widgets/random/RandomFlash', () => ({
   RandomFlash: ({
     fontSize,
     displayResult,

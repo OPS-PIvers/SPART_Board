@@ -27,7 +27,7 @@ vi.mock('lucide-react', async (importOriginal) => {
 });
 
 // Mock screenshot hook
-vi.mock('../../../hooks/useScreenshot', () => ({
+vi.mock('@/hooks/useScreenshot', () => ({
   useScreenshot: () => ({
     takeScreenshot: vi.fn(),
     isFlashing: false,

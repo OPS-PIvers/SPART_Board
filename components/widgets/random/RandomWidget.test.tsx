@@ -5,7 +5,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { WidgetData, RandomConfig } from '@/types';
 
-vi.mock('../../../context/useDashboard');
+vi.mock('@/context/useDashboard');
 
 // Mock subcomponents
 vi.mock('./RandomWheel', () => ({
