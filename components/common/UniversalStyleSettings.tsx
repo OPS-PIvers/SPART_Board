@@ -67,13 +67,15 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
               <button
                 key={color.label}
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  const nextBackgroundColor =
+                    color.value === ''
+                      ? undefined
+                      : (color.value as WidgetData['backgroundColor']);
                   updateWidget(widget.id, {
-                    backgroundColor:
-                      (color.value as WidgetData['backgroundColor']) ??
-                      undefined,
-                  })
-                }
+                    backgroundColor: nextBackgroundColor,
+                  });
+                }}
                 className={`w-8 h-8 rounded-full border-2 transition-all ${
                   color.value ? color.value : 'bg-transparent border-dashed'
                 } ${
@@ -113,12 +115,15 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
               <button
                 key={font.label}
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  const nextFontFamily =
+                    font.value === ''
+                      ? undefined
+                      : (font.value as WidgetData['fontFamily']);
                   updateWidget(widget.id, {
-                    fontFamily:
-                      (font.value as WidgetData['fontFamily']) ?? undefined,
-                  })
-                }
+                    fontFamily: nextFontFamily,
+                  });
+                }}
                 className={`px-3 py-2 rounded-lg text-sm transition-all text-center ${
                   isSelected
                     ? 'bg-indigo-500 text-white font-bold shadow-md'
@@ -153,12 +158,15 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
         </div>
         <select
           value={widget.baseTextSize ?? ''}
-          onChange={(e) =>
+          onChange={(e) => {
+            const nextBaseTextSize =
+              e.target.value === ''
+                ? undefined
+                : (e.target.value as WidgetData['baseTextSize']);
             updateWidget(widget.id, {
-              baseTextSize:
-                (e.target.value as WidgetData['baseTextSize']) ?? undefined,
-            })
-          }
+              baseTextSize: nextBaseTextSize,
+            });
+          }}
           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           aria-label="Select default text size"
         >

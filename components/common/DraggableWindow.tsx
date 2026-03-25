@@ -999,7 +999,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       cornerRadius={isMaximized ? 'none' : undefined}
       className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
         isMaximized ? 'border-none !shadow-none' : ''
-      } ${universalStyleClasses}`}
+      }`}
       bgClass={widget.backgroundColor}
       style={{
         left: isMaximized
@@ -1035,7 +1035,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       {/* Widget Content (always visible) */}
       <div
         data-testid="drag-surface"
-        className="h-full w-full flex flex-col rounded-[inherit] overflow-hidden"
+        className={`h-full w-full flex flex-col rounded-[inherit] overflow-hidden ${universalStyleClasses}`}
         onPointerDown={handleDragStart}
         style={{ touchAction: 'none' }}
       >
