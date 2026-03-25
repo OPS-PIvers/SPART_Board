@@ -6,7 +6,10 @@ import {
 } from '@/utils/randomHelpers';
 
 describe('randomHelpers', () => {
-  const originalCrypto = globalThis.crypto;
+  const originalCryptoDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'crypto'
+  );
   const originalMathRandom = Math.random;
 
   beforeEach(() => {
@@ -15,12 +18,14 @@ describe('randomHelpers', () => {
   });
 
   afterEach(() => {
-    // Restore original globals safely
-    Object.defineProperty(globalThis, 'crypto', {
-      value: originalCrypto,
-      configurable: true,
-      writable: true,
-    });
+    // Restore original globals safely using the descriptor
+    if (originalCryptoDescriptor) {
+      Object.defineProperty(globalThis, 'crypto', originalCryptoDescriptor);
+    } else {
+      // If it didn't exist originally, delete it
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      delete (globalThis as any).crypto;
+    }
     Math.random = originalMathRandom;
   });
 
@@ -164,7 +169,8 @@ describe('randomHelpers', () => {
       const result = generateSecureSessionCode();
 
       expect(mockMathRandom).toHaveBeenCalled();
-      // 0.123456789.toString(36) is '0.4fzzzxj...', so the code is '4FZZZX'
+      // 0.123456789.toString(36) evaluates to '0.4fzzzxj...'
+      // taking substring(2, 8) yields '4fzzzx', which when uppercased is '4FZZZX'
       expect(result).toBe('4FZZZX');
     });
 
