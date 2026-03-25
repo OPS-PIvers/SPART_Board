@@ -50,7 +50,7 @@ Many widgets currently lack global admin settings, relying instead on user-level
 2.  **JSON Schema-Driven Admin UI:**
     - **Current State:** Each widget requires a bespoke React component for its admin configuration panel (e.g., `ClockConfigurationPanel.tsx`).
     - **Goal:** Automatically generate the admin configuration forms based on a JSON schema defined for each widget.
-    - **Implementation:** When a new widget is registered, its config shape (defined in `types.ts`) can be mapped to a UI schema. A generic `ConfigurationPanel` component can parse this schema to render toggles, text inputs, and color pickers without writing new React code.
+    - **Implementation:** For each widget, define a JSON Schema for its config (maintained manually alongside the `types.ts` definition or generated at build time from those types). A generic `ConfigurationPanel` component parses this JSON Schema to render toggles, text inputs, and color pickers without writing new React code.
 
 ## Phase 3: No-Code / Low-Code Widget Creation
 
