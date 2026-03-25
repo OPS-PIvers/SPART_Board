@@ -2,8 +2,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { QRWidget } from './Widget';
 import { QRSettings } from './Settings';
-import { WidgetData, QRConfig, TextConfig } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
+import { WidgetData, QRConfig, TextConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useAuth } from '@/context/useAuth';
 

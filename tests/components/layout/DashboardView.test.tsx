@@ -1,10 +1,10 @@
 import { render, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DashboardView } from '../../../components/layout/DashboardView';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { useLiveSession } from '../../../hooks/useLiveSession';
-import { Dashboard } from '../../../types';
+import { DashboardView } from '@/components/layout/DashboardView';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useLiveSession } from '@/hooks/useLiveSession';
+import { Dashboard } from '@/types';
 
 // Mock context
 vi.mock('../../../context/useDashboard', () => ({

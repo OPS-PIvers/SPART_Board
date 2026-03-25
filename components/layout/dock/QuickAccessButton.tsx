@@ -1,6 +1,6 @@
 import React from 'react';
-import { TOOLS } from '../../../config/tools';
-import { WidgetType, InternalToolType } from '../../../types';
+import { TOOLS } from '@/config/tools';
+import { WidgetType, InternalToolType } from '@/types';
 
 interface QuickAccessButtonProps {
   type: WidgetType | InternalToolType;

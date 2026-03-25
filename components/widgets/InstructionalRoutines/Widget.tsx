@@ -1,20 +1,20 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { useInstructionalRoutines } from '../../../hooks/useInstructionalRoutines';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useInstructionalRoutines } from '@/hooks/useInstructionalRoutines';
 import {
   WidgetData,
   InstructionalRoutinesConfig,
   RoutineStep,
   WidgetType,
-} from '../../../types';
+} from '@/types';
 import {
   ROUTINES as DEFAULT_ROUTINES,
   InstructionalRoutine,
-} from '../../../config/instructionalRoutines';
+} from '@/config/instructionalRoutines';
 import * as Icons from 'lucide-react';
 import { Star, ArrowLeft, Rocket } from 'lucide-react';
-import { BLOOMS_DATA } from '../../../config/bloomsData';
+import { BLOOMS_DATA } from '@/config/bloomsData';
 
 // Color mapping for routines
 const ROUTINE_COLORS: Record<

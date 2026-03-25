@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import { DEFAULT_GLOBAL_STYLE, GlobalStyle } from '../../types';
+import { DEFAULT_GLOBAL_STYLE, GlobalStyle } from '@/types';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;

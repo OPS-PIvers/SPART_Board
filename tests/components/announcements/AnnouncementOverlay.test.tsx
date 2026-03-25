@@ -10,8 +10,8 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AnnouncementOverlay } from '../../../components/announcements/AnnouncementOverlay';
-import { Announcement } from '../../../types';
+import { AnnouncementOverlay } from '@/components/announcements/AnnouncementOverlay';
+import { Announcement } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Module mocks
@@ -47,7 +47,7 @@ vi.mock('../../../components/widgets/WidgetRegistry', () => ({
   WIDGET_COMPONENTS: {},
 }));
 
-import { useAuth } from '../../../context/useAuth';
+import { useAuth } from '@/context/useAuth';
 
 // ---------------------------------------------------------------------------
 // Helpers

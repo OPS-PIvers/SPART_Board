@@ -1,12 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { useDashboard } from '../../../context/useDashboard';
-import {
-  WidgetData,
-  TimeToolConfig,
-  DEFAULT_GLOBAL_STYLE,
-} from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, TimeToolConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { TimeToolWidget } from './TimeToolWidget';
 
 vi.mock('../../../context/useDashboard');

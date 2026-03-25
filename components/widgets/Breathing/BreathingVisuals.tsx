@@ -1,5 +1,5 @@
 import React from 'react';
-import { BreathingConfig } from '../../../types';
+import { BreathingConfig } from '@/types';
 import { BreathingPhase } from './useBreathing';
 
 interface BreathingVisualsProps {

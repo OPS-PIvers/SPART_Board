@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GlassCard } from '../../common/GlassCard';
-import { GlobalStyle } from '../../../types';
+import { GlassCard } from '@/components/common/GlassCard';
+import { GlobalStyle } from '@/types';
 
 interface RenameFolderModalProps {
   name: string;

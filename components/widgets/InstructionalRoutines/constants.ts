@@ -6,8 +6,8 @@ import {
   TrafficConfig,
   RandomConfig,
   PollConfig,
-} from '../../../types';
-import { WIDGET_DEFAULTS } from '../../../config/widgetDefaults';
+} from '@/types';
+import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
 
 export const QUICK_TOOLS: {
   label: string;

@@ -1,9 +1,9 @@
 import React, { ReactNode } from 'react';
-import { AuthContext, AuthContextType } from '../../context/AuthContextValue';
+import { AuthContext, AuthContextType } from '@/context/AuthContextValue';
 import {
   DashboardContext,
   DashboardContextValue,
-} from '../../context/DashboardContextValue';
+} from '@/context/DashboardContextValue';
 
 interface StudentProviderProps {
   children: ReactNode;

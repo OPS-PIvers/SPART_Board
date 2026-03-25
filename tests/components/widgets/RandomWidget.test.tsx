@@ -2,8 +2,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { WidgetData } from '../../../types';
-import { RandomWidget } from '../../../components/widgets/random/RandomWidget';
+import { WidgetData } from '@/types';
+import { RandomWidget } from '@/components/widgets/random/RandomWidget';
 
 const mockUpdateWidget = vi.fn();
 

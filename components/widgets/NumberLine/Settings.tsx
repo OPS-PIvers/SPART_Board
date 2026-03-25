@@ -6,7 +6,7 @@ import {
   NumberLineMarker,
   NumberLineJump,
 } from '@/types';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { Settings, Plus, X, ArrowRightCircle, Target } from 'lucide-react';
 import { WIDGET_PALETTE } from '@/config/colors';
 

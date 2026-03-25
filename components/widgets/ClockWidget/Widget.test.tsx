@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { ClockWidget } from './Widget';
 
 vi.mock('../../../context/useDashboard');

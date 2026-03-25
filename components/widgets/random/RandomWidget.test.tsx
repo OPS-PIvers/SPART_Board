@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { RandomWidget } from './RandomWidget';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { WidgetData, RandomConfig } from '../../../types';
+import { WidgetData, RandomConfig } from '@/types';
 
 vi.mock('../../../context/useDashboard');
 

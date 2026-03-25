@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
   QRConfig,
   TextConfig,
   QRGlobalConfig,
   FeaturePermission,
-} from '../../../types';
+} from '@/types';
 import { Link } from 'lucide-react';
 import { WidgetLayout } from '../WidgetLayout';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';

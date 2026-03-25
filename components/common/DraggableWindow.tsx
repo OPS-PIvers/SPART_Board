@@ -29,18 +29,18 @@ import {
   GlobalStyle,
   Path,
   DashboardSettings,
-} from '../../types';
+} from '@/types';
 import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
 import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
-import { useScreenshot } from '../../hooks/useScreenshot';
-import { useDashboard } from '../../context/useDashboard';
+import { useScreenshot } from '@/hooks/useScreenshot';
+import { useDashboard } from '@/context/useDashboard';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
-import { useClickOutside } from '../../hooks/useClickOutside';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { IconButton } from '@/components/common/IconButton';
-import { WIDGET_PALETTE } from '../../config/colors';
-import { Z_INDEX } from '../../config/zIndex';
+import { WIDGET_PALETTE } from '@/config/colors';
+import { Z_INDEX } from '@/config/zIndex';
 import { useDialog } from '@/context/useDialog';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations

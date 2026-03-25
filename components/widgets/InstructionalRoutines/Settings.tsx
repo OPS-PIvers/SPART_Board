@@ -1,15 +1,11 @@
 import React from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import {
-  WidgetData,
-  InstructionalRoutinesConfig,
-  RoutineStep,
-} from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { WidgetData, InstructionalRoutinesConfig, RoutineStep } from '@/types';
 import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
 import { IconPicker } from './IconPicker';
 import { QUICK_TOOLS } from './constants';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 export const InstructionalRoutinesSettings: React.FC<{
   widget: WidgetData;

@@ -10,7 +10,7 @@ import { WidgetData, StickerConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useDialog } from '@/context/useDialog';
-import { FloatingPanel } from '../../common/FloatingPanel';
+import { FloatingPanel } from '@/components/common/FloatingPanel';
 
 interface DraggableStickerProps {
   widget: WidgetData;

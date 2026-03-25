@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Wand2, Loader2 } from 'lucide-react';
-import { GlassCard } from '../../common/GlassCard';
-import { generateDashboardLayout } from '../../../utils/ai';
-import { useDashboard } from '../../../context/useDashboard';
+import { GlassCard } from '@/components/common/GlassCard';
+import { generateDashboardLayout } from '@/utils/ai';
+import { useDashboard } from '@/context/useDashboard';
 
 interface MagicLayoutModalProps {
   onClose: () => void;

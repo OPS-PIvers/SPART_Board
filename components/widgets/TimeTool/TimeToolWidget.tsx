@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WidgetData, DEFAULT_GLOBAL_STYLE, TimeToolConfig } from '@/types';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { useTimeTool } from './useTimeTool';
 import { Play, Pause, RotateCcw, Check, Delete } from 'lucide-react';
-import { STANDARD_COLORS } from '../../../config/colors';
+import { STANDARD_COLORS } from '@/config/colors';
 import { WidgetLayout } from '../WidgetLayout';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

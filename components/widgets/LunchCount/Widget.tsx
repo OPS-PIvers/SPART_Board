@@ -13,15 +13,15 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import {
   WidgetData,
   LunchCountConfig,
   LunchCountGlobalConfig,
   DEFAULT_GLOBAL_STYLE,
-} from '../../../types';
-import { Button } from '../../common/Button';
+} from '@/types';
+import { Button } from '@/components/common/Button';
 import { RefreshCw, Undo2, CheckCircle2, Box, Users } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
 import { useNutrislice } from './useNutrislice';

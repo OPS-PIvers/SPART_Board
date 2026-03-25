@@ -1,10 +1,10 @@
 import React from 'react';
-import { WidgetData, MaterialsConfig } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
+import { WidgetData, MaterialsConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 import { MATERIAL_ITEMS } from './constants';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { Type, Palette, Edit3 } from 'lucide-react';
-import { WIDGET_PALETTE } from '../../../config/colors';
+import { WIDGET_PALETTE } from '@/config/colors';
 
 export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,

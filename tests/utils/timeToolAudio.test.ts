@@ -5,7 +5,7 @@ import {
   playTimerAlert,
   resumeAudio,
   getAudioCtx,
-} from '../../utils/timeToolAudio';
+} from '@/utils/timeToolAudio';
 
 describe('timeToolAudio', () => {
   let ctx: any;

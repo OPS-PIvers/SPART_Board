@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, DrawingConfig, Point, Path } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, DrawingConfig, Point, Path } from '@/types';
 import {
   Pencil,
   Eraser,
@@ -14,11 +14,11 @@ import {
   Cast,
   CloudUpload,
 } from 'lucide-react';
-import { useScreenshot } from '../../../hooks/useScreenshot';
-import { useAuth } from '../../../context/useAuth';
-import { useLiveSession } from '../../../hooks/useLiveSession';
-import { Button } from '../../common/Button';
-import { STANDARD_COLORS } from '../../../config/colors';
+import { useScreenshot } from '@/hooks/useScreenshot';
+import { useAuth } from '@/context/useAuth';
+import { useLiveSession } from '@/hooks/useLiveSession';
+import { Button } from '@/components/common/Button';
+import { STANDARD_COLORS } from '@/config/colors';
 import { DRAWING_DEFAULTS } from './constants';
 
 export const DrawingWidget: React.FC<{
