@@ -2054,6 +2054,11 @@ export interface WidgetData {
   transparency?: number;
   annotation?: DrawingConfig;
   config: WidgetConfig;
+
+  // Universal style properties
+  backgroundColor?: string;
+  fontFamily?: string;
+  fontSize?: string;
 }
 
 /**
