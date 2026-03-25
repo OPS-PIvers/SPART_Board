@@ -322,8 +322,10 @@ service cloud.firestore {
     match /guided_learning_sessions/{sessionId} {
       // Any authenticated user (including anonymous) can read session documents
       allow read: if request.auth != null;
-      // Only authenticated (non-anonymous) teachers can create sessions
-      allow create: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      // Only authenticated (non-anonymous) teachers can create sessions; they must own it
+      allow create: if request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous' &&
+        request.resource.data.teacherUid == request.auth.uid;
       // Sessions are immutable after creation
       allow update, delete: if false;
 
@@ -334,10 +336,11 @@ service cloud.firestore {
           get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.teacherUid == request.auth.uid ||
           studentUid == request.auth.uid
         );
-        // Students create their own response; doc ID and studentAnonymousId must match auth UID
+        // Students create their own response; doc ID, studentAnonymousId, and sessionId must match
         allow create: if request.auth != null &&
           studentUid == request.auth.uid &&
           request.resource.data.studentAnonymousId == request.auth.uid &&
+          request.resource.data.sessionId == sessionId &&
           request.resource.data.score == null;
         // Students can update only their own response to add answers or set completedAt;
         // identity fields and score are immutable from the client

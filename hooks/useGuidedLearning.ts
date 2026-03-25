@@ -15,11 +15,11 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { useAuth } from '../context/useAuth';
+import { db } from '@/config/firebase';
+import { useAuth } from '@/context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
-import { GuidedLearningSet, GuidedLearningSetMetadata } from '../types';
-import { GuidedLearningDriveService } from '../utils/guidedLearningDriveService';
+import { GuidedLearningSet, GuidedLearningSetMetadata } from '@/types';
+import { GuidedLearningDriveService } from '@/utils/guidedLearningDriveService';
 
 const GL_COLLECTION = 'guided_learning';
 const BUILDING_GL_COLLECTION = 'building_guided_learning';

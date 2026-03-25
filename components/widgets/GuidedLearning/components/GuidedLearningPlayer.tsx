@@ -106,6 +106,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
     currentStep?.interactionType === 'pan-zoom' ? currentStep.id : null;
 
   const goNext = useCallback(() => {
+    if (steps.length === 0) return;
     setCurrentIdx((prev) => {
       const next = Math.min(prev + 1, steps.length - 1);
       setActiveStepId(steps[next]?.id ?? null);
@@ -114,6 +115,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
   }, [steps]);
 
   const goPrev = useCallback(() => {
+    if (steps.length === 0) return;
     setCurrentIdx((prev) => {
       const prevIdx = Math.max(prev - 1, 0);
       setActiveStepId(steps[prevIdx]?.id ?? null);
@@ -307,7 +309,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
           {set.title}
         </span>
 
-        {mode === 'structured' && (
+        {mode === 'structured' && steps.length > 0 && (
           <div className="flex items-center gap-2">
             <button
               onClick={goPrev}

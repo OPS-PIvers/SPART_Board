@@ -9,7 +9,7 @@
  * Admin-created building sets are stored in Firestore directly (no Drive needed).
  */
 
-import { GuidedLearningSet } from '../types';
+import { GuidedLearningSet } from '@/types';
 
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';

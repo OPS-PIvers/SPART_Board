@@ -6,6 +6,7 @@ import {
   GridPosition,
   GuidedLearningStep,
   GuidedLearningMode,
+  GuidedLearningInteractionType,
 } from '@/types';
 import { TOOLS } from '@/config/tools';
 
@@ -370,10 +371,53 @@ export async function generateGuidedLearning(
       ? (data.suggestedMode as GuidedLearningMode)
       : 'structured';
 
+    const validInteractionTypes: GuidedLearningInteractionType[] = [
+      'text-popover',
+      'tooltip',
+      'audio',
+      'video',
+      'pan-zoom',
+      'spotlight',
+      'question',
+    ];
+
+    const validatedSteps = data.steps
+      .map((step, index) => {
+        if (typeof step !== 'object' || step === null) return null;
+        const s = step as Record<string, unknown>;
+        const id =
+          typeof s.id === 'string' && s.id.trim().length > 0
+            ? s.id
+            : `step-${index + 1}`;
+        const xPct =
+          typeof s.xPct === 'number'
+            ? Math.max(0, Math.min(100, s.xPct))
+            : null;
+        const yPct =
+          typeof s.yPct === 'number'
+            ? Math.max(0, Math.min(100, s.yPct))
+            : null;
+        const interactionType =
+          typeof s.interactionType === 'string' &&
+          validInteractionTypes.includes(
+            s.interactionType as GuidedLearningInteractionType
+          )
+            ? (s.interactionType as GuidedLearningInteractionType)
+            : null;
+        if (xPct === null || yPct === null || interactionType === null)
+          return null;
+        return { ...s, id, xPct, yPct, interactionType } as GuidedLearningStep;
+      })
+      .filter((s): s is GuidedLearningStep => s !== null);
+
+    if (validatedSteps.length === 0) {
+      throw new Error('AI returned no valid guided learning steps');
+    }
+
     return {
       suggestedTitle: data.suggestedTitle,
       suggestedMode,
-      steps: data.steps as GuidedLearningStep[],
+      steps: validatedSteps,
     };
   } catch (error) {
     console.error('Guided Learning Generation Error:', error);

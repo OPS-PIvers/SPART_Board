@@ -43,7 +43,7 @@ export const QuestionInteraction: React.FC<Props> = ({
     if (q.type === 'multiple-choice') {
       answer = selectedMC ?? '';
       if (!studentMode) {
-        correct = correctAnswer ? selectedMC === correctAnswer : true;
+        correct = correctAnswer ? selectedMC === correctAnswer : null;
       }
     } else if (q.type === 'matching') {
       answer = Object.entries(matchingAnswers).map(([l, r]) => `${l}:${r}`);
@@ -52,14 +52,14 @@ export const QuestionInteraction: React.FC<Props> = ({
           ? correctMatchingPairs.every(
               (pair) => matchingAnswers[pair.left] === pair.right
             )
-          : true;
+          : null;
       }
     } else if (q.type === 'sorting') {
       answer = sortingOrder;
       if (!studentMode) {
         correct = correctSortingItems
           ? sortingOrder.every((item, i) => item === correctSortingItems[i])
-          : true;
+          : null;
       }
     }
 
@@ -72,6 +72,10 @@ export const QuestionInteraction: React.FC<Props> = ({
     if (q.type === 'multiple-choice') return selectedMC !== null;
     if (q.type === 'matching')
       return (q.matchingLeft ?? []).every((l) => matchingAnswers[l]);
+    if (q.type === 'sorting') {
+      const expected = q.sortingItems ?? [];
+      return expected.length > 0 && sortingOrder.length === expected.length;
+    }
     return true;
   })();
 
