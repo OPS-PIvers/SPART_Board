@@ -454,8 +454,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!email || !userRoles) return false;
       const lowerEmail = email.toLowerCase();
       return (
-        userRoles.admins.some((e) => e.toLowerCase() === lowerEmail) ||
-        userRoles.superAdmins.some((e) => e.toLowerCase() === lowerEmail)
+        (userRoles.admins?.some((e) => e.toLowerCase() === lowerEmail) ??
+          false) ||
+        (userRoles.superAdmins?.some((e) => e.toLowerCase() === lowerEmail) ??
+          false)
       );
     },
     [userRoles]

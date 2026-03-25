@@ -61,6 +61,7 @@ const RoleSection: React.FC<{
         </div>
       </div>
       <textarea
+        aria-label={`${title} Emails`}
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         onBlur={handleBlur}

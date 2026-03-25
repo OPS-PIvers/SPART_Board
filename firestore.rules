@@ -90,6 +90,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Explicitly allow all authenticated users to read user roles
+    match /admin_settings/user_roles {
+      allow read: if request.auth != null;
+    }
+
     // Feature permissions - all authenticated users can read, only admins can write
     match /feature_permissions/{widgetType} {
       allow read: if request.auth != null;
