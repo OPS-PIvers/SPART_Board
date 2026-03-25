@@ -132,7 +132,7 @@ describe('TimeToolWidget', () => {
         config: expect.objectContaining({
           elapsedTime: 600,
           duration: 600,
-        }),
+        }) as unknown,
       })
     );
   });
@@ -203,7 +203,7 @@ describe('TimeToolWidget', () => {
         config: expect.objectContaining({
           elapsedTime: 120 * 60,
           duration: 120 * 60,
-        }),
+        }) as unknown,
       })
     );
   });
