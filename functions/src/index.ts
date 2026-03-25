@@ -341,15 +341,9 @@ export const generateWithAI = functionsV1
     }
 
     try {
-      console.log('DEBUG: Full data object keys:', Object.keys(data || {}));
-      console.log(
-        `DEBUG: Received type: "${data?.type}" (Type: ${typeof data?.type})`
-      );
-
       const genType = String(data?.type || '')
         .toLowerCase()
         .trim();
-      console.log(`AI Gen starting for type: ${genType}`);
 
       const ai = new GoogleGenAI({ apiKey });
 
@@ -565,7 +559,6 @@ export const generateWithAI = functionsV1
         throw new Error('Empty response from AI');
       }
 
-      console.log('AI Generation successful');
       return JSON.parse(text) as Record<string, unknown>;
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
@@ -765,10 +758,6 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     const repoName = 'OPS-PIvers/SPART_Board';
     const { widgetName, description } = request.data;
 
-    console.log(
-      `Triggering Jules for widget: ${widgetName} in repo: ${repoName}`
-    );
-
     const prompt = `
       As a Jules Agent, your task is to implement a new widget for the SPART Board application.
       
@@ -792,7 +781,6 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     `;
 
     try {
-      console.log('Sending request to Jules API...');
       // Use the named constant for the endpoint
       const { data: session } = await axios.post<JulesSessionResponse>(
         JULES_API_SESSIONS_ENDPOINT,
@@ -824,8 +812,6 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
           'Jules API response is missing a session identifier (name or id).'
         );
       }
-
-      console.log(`Jules session created: ${sessionId}`);
 
       return {
         success: true,
