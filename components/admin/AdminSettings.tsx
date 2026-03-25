@@ -5,6 +5,7 @@ import {
   Image as ImageIcon,
   Zap,
   Bell,
+  BarChart,
   ChevronLeft,
 } from 'lucide-react';
 
@@ -13,6 +14,7 @@ import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';
 import { AnnouncementsManager } from './Announcements';
+import { AnalyticsManager } from './Analytics/AnalyticsManager';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -48,7 +50,7 @@ const TabButton: React.FC<{
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'features' | 'global' | 'backgrounds' | 'announcements'
+    'features' | 'global' | 'backgrounds' | 'announcements' | 'analytics'
   >('features');
 
   // Close modal on Escape key press
@@ -131,6 +133,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               icon={<Bell className="w-4 h-4" />}
               label="Announcements"
             />
+            <TabButton
+              id="tab-analytics"
+              controls="panel-analytics"
+              isActive={activeTab === 'analytics'}
+              onClick={() => setActiveTab('analytics')}
+              icon={<BarChart className="w-4 h-4" />}
+              label="Analytics"
+            />
           </div>
         </div>
 
@@ -182,6 +192,17 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
             >
               <AnnouncementsManager />
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div
+              id="panel-analytics"
+              role="tabpanel"
+              aria-labelledby="tab-analytics"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
+            >
+              <AnalyticsManager />
             </div>
           )}
         </div>
