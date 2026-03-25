@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Path, Point } from '../../types';
+import { Path, Point } from '@/types';
 
 interface AnnotationCanvasProps {
   paths: Path[];

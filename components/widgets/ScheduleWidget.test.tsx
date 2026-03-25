@@ -12,10 +12,10 @@ import {
   ScheduleSettings,
   ScheduleAppearanceSettings,
 } from './Schedule';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { useFeaturePermissions } from '../../hooks/useFeaturePermissions';
-import { WidgetData, ScheduleConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { WidgetData, ScheduleConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 
 vi.mock('../../context/useDashboard');
 vi.mock('../../context/useAuth');

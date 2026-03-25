@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LunchCountWidget } from './Widget';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { WidgetData, LunchCountConfig } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { WidgetData, LunchCountConfig } from '@/types';
 
 // Mock dependencies
 vi.mock('../../../context/useDashboard');

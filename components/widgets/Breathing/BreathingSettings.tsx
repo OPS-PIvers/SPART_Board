@@ -1,8 +1,8 @@
 import React from 'react';
-import { BreathingConfig, WidgetData } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
-import { WIDGET_PALETTE } from '../../../config/colors';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { BreathingConfig, WidgetData } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
+import { WIDGET_PALETTE } from '@/config/colors';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { Palette, Activity, Eye } from 'lucide-react';
 
 export const BreathingSettings: React.FC<{ widget: WidgetData }> = ({

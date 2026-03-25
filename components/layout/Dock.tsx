@@ -25,28 +25,28 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { useLiveSession } from '../../hooks/useLiveSession';
-import { useClickOutside } from '../../hooks/useClickOutside';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useLiveSession } from '@/hooks/useLiveSession';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   WidgetType,
   WidgetData,
   DockFolder,
   MiniAppItem,
   InternalToolType,
-} from '../../types';
-import { TOOLS } from '../../config/tools';
-import { isLunchCountBuilding } from '../../config/buildings';
+} from '@/types';
+import { TOOLS } from '@/config/tools';
+import { isLunchCountBuilding } from '@/config/buildings';
 import { getWidgetGradeLevels } from '@/config/widgetGradeLevels';
-import { AddWidgetOverrides } from '../../types';
-import { getJoinUrl } from '../../utils/urlHelpers';
+import { AddWidgetOverrides } from '@/types';
+import { getJoinUrl } from '@/utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 import RemoteControlMenu from './RemoteControlMenu';
 import { CatalystSetPickerPopover } from '@/components/widgets/Catalyst/CatalystSetPickerPopover';
 import { GlassCard } from '../common/GlassCard';
-import { DEFAULT_GLOBAL_STYLE } from '../../types';
-import { Z_INDEX } from '../../config/zIndex';
+import { DEFAULT_GLOBAL_STYLE } from '@/types';
+import { Z_INDEX } from '@/config/zIndex';
 import { WidgetLibrary } from './dock/WidgetLibrary';
 import { RenameFolderModal } from './dock/RenameFolderModal';
 import { MagicLayoutModal } from './dock/MagicLayoutModal';
@@ -54,16 +54,16 @@ import {
   detectWidgetType,
   buildChecklistFromLines,
   createDefaultTextWidget,
-} from '../../utils/smartPaste';
+} from '@/utils/smartPaste';
 import { SmartPastePickerModal } from './dock/SmartPastePickerModal';
-import { useImageUpload } from '../../hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { DockIcon } from './dock/DockIcon';
 import { DockLabel } from './dock/DockLabel';
 import { ToolDockItem } from './dock/ToolDockItem';
 import { FolderItem } from './dock/FolderItem';
 import { QuickAccessButton } from './dock/QuickAccessButton';
-import { useScreenRecord } from '../../hooks/useScreenRecord';
-import { useGoogleDrive } from '../../hooks/useGoogleDrive';
+import { useScreenRecord } from '@/hooks/useScreenRecord';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 export const Dock: React.FC = () => {
   const { t } = useTranslation();

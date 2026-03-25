@@ -1,4 +1,4 @@
-import { useAppVersion } from '../../hooks/useAppVersion';
+import { useAppVersion } from '@/hooks/useAppVersion';
 import { RefreshCw, AlertCircle, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 

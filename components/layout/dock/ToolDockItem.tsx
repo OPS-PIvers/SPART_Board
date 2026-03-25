@@ -3,13 +3,13 @@ import { createPortal } from 'react-dom';
 import { RefreshCcw, Trash2, Plus, X } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useClickOutside } from '../../../hooks/useClickOutside';
-import { GlassCard } from '../../common/GlassCard';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { GlassCard } from '@/components/common/GlassCard';
 import { DockIcon } from './DockIcon';
 import { DockLabel } from './DockLabel';
-import { getTitle } from '../../../utils/widgetHelpers';
-import { Z_INDEX } from '../../../config/zIndex';
-import { ToolMetadata, WidgetData, GlobalStyle } from '../../../types';
+import { getTitle } from '@/utils/widgetHelpers';
+import { Z_INDEX } from '@/config/zIndex';
+import { ToolMetadata, WidgetData, GlobalStyle } from '@/types';
 
 interface ToolDockItemProps {
   tool: ToolMetadata;

@@ -16,20 +16,20 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { useClickOutside } from '../../../hooks/useClickOutside';
-import { GlassCard } from '../../common/GlassCard';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { GlassCard } from '@/components/common/GlassCard';
 import { DockIcon } from './DockIcon';
 import { DockLabel } from './DockLabel';
 import { SortableFolderWidget } from './SortableFolderWidget';
-import { TOOLS } from '../../../config/tools';
-import { Z_INDEX } from '../../../config/zIndex';
+import { TOOLS } from '@/config/tools';
+import { Z_INDEX } from '@/config/zIndex';
 import {
   DockFolder,
   WidgetType,
   GlobalStyle,
   WidgetData,
   InternalToolType,
-} from '../../../types';
+} from '@/types';
 
 interface FolderItemProps {
   folder: DockFolder;

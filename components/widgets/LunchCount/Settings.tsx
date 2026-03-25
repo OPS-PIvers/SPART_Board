@@ -1,8 +1,8 @@
 import React from 'react';
-import { WidgetData, LunchCountConfig } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
-import { RosterModeControl } from '../../common/RosterModeControl';
-import { Toggle } from '../../common/Toggle';
+import { WidgetData, LunchCountConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
+import { RosterModeControl } from '@/components/common/RosterModeControl';
+import { Toggle } from '@/components/common/Toggle';
 import { School, Users, Clock, GraduationCap } from 'lucide-react';
 
 const SCHOOL_OPTIONS = [

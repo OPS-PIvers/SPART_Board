@@ -13,12 +13,12 @@ import {
   InstructionalRoutine,
   RoutineStructure,
   RoutineAudience,
-} from '../../../config/instructionalRoutines';
+} from '@/config/instructionalRoutines';
 import { IconPicker } from './IconPicker';
-import { ROUTINE_COLORS, ROUTINE_STEP_COLORS } from '../../../config/colors';
-import { ALL_GRADE_LEVELS } from '../../../config/widgetGradeLevels';
-import { TOOLS } from '../../../config/tools';
-import { WidgetType } from '../../../types';
+import { ROUTINE_COLORS, ROUTINE_STEP_COLORS } from '@/config/colors';
+import { ALL_GRADE_LEVELS } from '@/config/widgetGradeLevels';
+import { TOOLS } from '@/config/tools';
+import { WidgetType } from '@/types';
 import { httpsCallable } from 'firebase/functions';
 
 // Derive widget types from TOOLS registry, excluding catalyst-related widgets and internal tools
@@ -29,15 +29,12 @@ const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
     tool.type !== 'record' &&
     tool.type !== 'magic'
 ).map((tool) => tool.type as WidgetType);
-import { functions } from '../../../config/firebase';
-import { useAuth } from '../../../context/useAuth';
-import { useStorage } from '../../../hooks/useStorage';
-import {
-  removeBackground,
-  trimImageWhitespace,
-} from '../../../utils/imageProcessing';
+import { functions } from '@/config/firebase';
+import { useAuth } from '@/context/useAuth';
+import { useStorage } from '@/hooks/useStorage';
+import { removeBackground, trimImageWhitespace } from '@/utils/imageProcessing';
 import { PromptDialog } from './PromptDialog';
-import { Toast } from '../../common/Toast';
+import { Toast } from '@/components/common/Toast';
 import { Card } from '@/components/common/Card';
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;

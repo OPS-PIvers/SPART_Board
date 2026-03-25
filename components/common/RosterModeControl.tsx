@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 
 interface RosterModeControlProps {
   rosterMode: 'class' | 'custom';

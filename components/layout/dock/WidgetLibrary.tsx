@@ -16,13 +16,13 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GlassCard } from '../../common/GlassCard';
+import { GlassCard } from '@/components/common/GlassCard';
 import { IconButton } from '@/components/common/IconButton';
-import { TOOLS } from '../../../config/tools';
-import { WidgetType, GlobalStyle, InternalToolType } from '../../../types';
-import { useClickOutside } from '../../../hooks/useClickOutside';
-import { useDialog } from '../../../context/useDialog';
-import { useDashboard } from '../../../context/useDashboard';
+import { TOOLS } from '@/config/tools';
+import { WidgetType, GlobalStyle, InternalToolType } from '@/types';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { useDialog } from '@/context/useDialog';
+import { useDashboard } from '@/context/useDashboard';
 
 interface WidgetLibraryProps {
   onToggle: (type: WidgetType | InternalToolType) => void;

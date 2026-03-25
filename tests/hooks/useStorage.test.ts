@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useStorage } from '../../hooks/useStorage';
+import { useStorage } from '@/hooks/useStorage';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import {
   ref,
@@ -7,7 +7,7 @@ import {
   getDownloadURL,
   deleteObject,
 } from 'firebase/storage';
-import { useGoogleDrive } from '../../hooks/useGoogleDrive';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 // Mock dependencies
 vi.mock('firebase/storage', () => ({

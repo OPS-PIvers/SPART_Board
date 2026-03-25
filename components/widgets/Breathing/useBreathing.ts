@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-import type { BreathingConfig } from '../../../types';
+import type { BreathingConfig } from '@/types';
 
 type BreathingPattern = BreathingConfig['pattern'];
 

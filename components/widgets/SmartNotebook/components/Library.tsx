@@ -2,7 +2,7 @@ import React, { RefObject } from 'react';
 import { Upload, Book, Trash2, FileText, Loader2 } from 'lucide-react';
 import { NotebookItem } from '@/types';
 import { getButtonAccessibilityProps } from '@/utils/accessibility';
-import { WidgetLayout } from '../../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
 interface LibraryProps {
   notebooks: NotebookItem[];

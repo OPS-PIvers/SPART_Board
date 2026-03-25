@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { Smartphone, ExternalLink, Copy, Check } from 'lucide-react';
-import { Z_INDEX } from '../../config/zIndex';
+import { Z_INDEX } from '@/config/zIndex';
 import { Toggle } from '../common/Toggle';
 
 interface Props {

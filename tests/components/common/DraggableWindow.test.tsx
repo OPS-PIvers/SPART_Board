@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { DraggableWindow } from '../../../components/common/DraggableWindow';
-import { WidgetData, GlobalStyle } from '../../../types';
+import { DraggableWindow } from '@/components/common/DraggableWindow';
+import { WidgetData, GlobalStyle } from '@/types';
 import {
   DashboardContext,
   DashboardContextValue,
-} from '../../../context/DashboardContextValue';
+} from '@/context/DashboardContextValue';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
@@ -27,7 +27,7 @@ vi.mock('lucide-react', async (importOriginal) => {
 });
 
 // Mock screenshot hook
-vi.mock('../../../hooks/useScreenshot', () => ({
+vi.mock('@/hooks/useScreenshot', () => ({
   useScreenshot: () => ({
     takeScreenshot: vi.fn(),
     isFlashing: false,

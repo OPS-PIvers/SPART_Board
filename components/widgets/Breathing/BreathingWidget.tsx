@@ -1,5 +1,5 @@
 import React from 'react';
-import { BreathingConfig, WidgetData } from '../../../types';
+import { BreathingConfig, WidgetData } from '@/types';
 import { WidgetLayout } from '../WidgetLayout';
 import { BreathingVisuals } from './BreathingVisuals';
 import { useBreathing } from './useBreathing';

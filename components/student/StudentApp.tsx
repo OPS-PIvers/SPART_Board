@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { signInAnonymously, signOut } from 'firebase/auth';
-import { auth } from '../../config/firebase';
-import { useLiveSession } from '../../hooks/useLiveSession';
+import { auth } from '@/config/firebase';
+import { useLiveSession } from '@/hooks/useLiveSession';
 import { StudentLobby } from './StudentLobby';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { Snowflake, Radio } from 'lucide-react';
-import { WidgetData, DEFAULT_GLOBAL_STYLE } from '../../types';
-import { getDefaultWidgetConfig } from '../../utils/widgetHelpers';
+import { WidgetData, DEFAULT_GLOBAL_STYLE } from '@/types';
+import { getDefaultWidgetConfig } from '@/utils/widgetHelpers';
 
 const noop = () => undefined;
 const asyncNoop = async () => {

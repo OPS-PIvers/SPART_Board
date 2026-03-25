@@ -1,8 +1,8 @@
 import React from 'react';
 import { Type, Palette } from 'lucide-react';
 import { SettingsLabel } from './SettingsLabel';
-import { FONTS, FONT_COLORS } from '../../config/fonts';
-import { WidgetConfig } from '../../types';
+import { FONTS, FONT_COLORS } from '@/config/fonts';
+import { WidgetConfig } from '@/types';
 
 interface TypographySettingsProps<T extends WidgetConfig> {
   config: T;

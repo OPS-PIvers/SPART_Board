@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import {
-  AccessLevel,
-  GlobalFeature,
-  GlobalFeaturePermission,
-} from '../../types';
+import { db } from '@/config/firebase';
+import { AccessLevel, GlobalFeature, GlobalFeaturePermission } from '@/types';
 import {
   Shield,
   Users,

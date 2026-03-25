@@ -12,7 +12,7 @@ import {
   GlobalFontFamily,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
-} from '../../../types';
+} from '@/types';
 import { StylePreview } from './StylePreview';
 
 const FONT_OPTIONS: { id: GlobalFontFamily; label: string; font: string }[] = [

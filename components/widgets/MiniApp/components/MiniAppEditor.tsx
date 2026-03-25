@@ -10,7 +10,7 @@ import {
   Info,
   FileText,
 } from 'lucide-react';
-import { WidgetLayout } from '../../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { useAuth } from '@/context/useAuth';
 import { TextConfig } from '@/types';
 import { MiniAppConfig, WidgetData } from '@/types';

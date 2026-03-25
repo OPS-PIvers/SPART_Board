@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../../types';
-import { STANDARD_COLORS } from '../../../config/colors';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
+import { STANDARD_COLORS } from '@/config/colors';
 
 import { WidgetLayout } from '../WidgetLayout';
 

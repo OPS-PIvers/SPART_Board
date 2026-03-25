@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MagicInput } from '../../../components/common/MagicInput';
+import { MagicInput } from '@/components/common/MagicInput';
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 

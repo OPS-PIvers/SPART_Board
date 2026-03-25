@@ -1,8 +1,8 @@
 import { render } from '@testing-library/react';
-import { QRWidget } from '../../../components/widgets/QRWidget';
+import { QRWidget } from '@/components/widgets/QRWidget';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { WidgetData, QRConfig, TextConfig } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
+import { WidgetData, QRConfig, TextConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useAuth } from '@/context/useAuth';
 

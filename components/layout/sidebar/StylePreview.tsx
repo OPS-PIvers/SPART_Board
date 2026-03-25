@@ -1,5 +1,5 @@
 import React from 'react';
-import { GlobalStyle } from '../../../types';
+import { GlobalStyle } from '@/types';
 
 export const StylePreview = ({
   pendingStyle,

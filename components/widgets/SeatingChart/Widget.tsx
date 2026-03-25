@@ -27,7 +27,7 @@ import {
   DEFAULT_TEMPLATE_COLUMNS,
 } from './constants';
 import { useDialog } from '@/context/useDialog';
-import { shuffleArray, getRandomInt } from '../../../utils/randomHelpers';
+import { shuffleArray, getRandomInt } from '@/utils/randomHelpers';
 
 // Drag state tracks current positions for all items being dragged simultaneously
 type DragPositions = Map<string, { x: number; y: number }>;

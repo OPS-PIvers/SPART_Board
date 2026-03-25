@@ -3,12 +3,12 @@ import {
   MaterialsConfig,
   DEFAULT_GLOBAL_STYLE,
   WidgetComponentProps,
-} from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
+} from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 import { Package } from 'lucide-react';
 import { MATERIAL_ITEMS } from './constants';
 import { MaterialsSettings } from './Settings';
-import { ScaledEmptyState } from '../../common/ScaledEmptyState';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 
 export { MaterialsSettings };
 

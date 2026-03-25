@@ -1,8 +1,8 @@
-import { APP_NAME } from '../../config/constants';
+import { APP_NAME } from '@/config/constants';
 import React from 'react';
 import { LogIn, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../context/useAuth';
+import { useAuth } from '@/context/useAuth';
 
 export const LoginScreen: React.FC = () => {
   const { signInWithGoogle, loading } = useAuth();

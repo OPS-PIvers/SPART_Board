@@ -19,11 +19,11 @@ import {
   type MockInstance,
 } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
-import { WidgetData, GlobalStyle } from '../../types';
+import { WidgetData, GlobalStyle } from '@/types';
 import {
   DashboardContext,
   DashboardContextValue,
-} from '../../context/DashboardContextValue';
+} from '@/context/DashboardContextValue';
 
 // Mock dependencies
 const { mockTakeScreenshot } = vi.hoisted(() => ({

@@ -1,8 +1,8 @@
 import React from 'react';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, DrawingConfig } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, DrawingConfig } from '@/types';
 import { Pencil, Palette, Minimize, Maximize } from 'lucide-react';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { DRAWING_DEFAULTS } from './constants';
 
 export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({

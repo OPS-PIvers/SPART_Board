@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, FileText, X } from 'lucide-react';
 import { NotebookItem } from '@/types';
-import { WidgetLayout } from '../../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
 interface ViewerProps {
   activeNotebook: NotebookItem;
