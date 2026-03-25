@@ -15,6 +15,7 @@ interface ModalProps {
   className?: string; // For additional styling on the content container
   contentClassName?: string; // For additional styling on the body/content wrapper
   footerClassName?: string; // For additional styling on the footer wrapper
+  captureEscape?: boolean; // Whether to use capture phase for Escape key
 }
 
 // Track number of open modals to handle nested locking correctly
@@ -33,28 +34,40 @@ export const Modal: React.FC<ModalProps> = ({
   contentClassName = 'px-6',
   footerClassName = 'p-6 pt-4 mt-auto shrink-0 border-t border-slate-100',
   variant = 'default',
+  captureEscape = false,
 }) => {
   useEffect(() => {
     if (!isOpen) return undefined;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (captureEscape) e.stopImmediatePropagation();
+        onClose();
+      }
     };
 
     if (openModalCount === 0) {
       document.body.style.overflow = 'hidden';
     }
     openModalCount++;
-    window.addEventListener('keydown', handleEscape);
+    window.addEventListener(
+      'keydown',
+      handleEscape,
+      captureEscape ? { capture: true } : undefined
+    );
 
     return () => {
       openModalCount--;
       if (openModalCount === 0) {
         document.body.style.overflow = 'unset';
       }
-      window.removeEventListener('keydown', handleEscape);
+      window.removeEventListener(
+        'keydown',
+        handleEscape,
+        captureEscape ? { capture: true } : undefined
+      );
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, captureEscape]);
 
   if (!isOpen) return null;
 
