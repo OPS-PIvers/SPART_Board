@@ -3,6 +3,7 @@ import { BUILDINGS } from '@/config/buildings';
 import { ClockGlobalConfig, BuildingClockDefaults } from '@/types';
 import { Toggle } from '../common/Toggle';
 import { STANDARD_COLORS } from '@/config/colors';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 interface ClockConfigurationPanelProps {
   config: ClockGlobalConfig;
@@ -47,9 +48,7 @@ export const ClockConfigurationPanel: React.FC<
     <div className="space-y-6">
       {/* Building Selector */}
       <div>
-        <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
-          Configure Building Clock Defaults
-        </label>
+        <SettingsLabel>Configure Building Clock Defaults</SettingsLabel>
         <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
           {BUILDINGS.map((building) => (
             <button
@@ -92,9 +91,7 @@ export const ClockConfigurationPanel: React.FC<
 
         {/* Font Family */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Font Family
-          </label>
+          <SettingsLabel className="mb-1">Default Font Family</SettingsLabel>
           <div className="flex bg-white rounded-lg border border-slate-200 p-1 gap-1">
             {FONT_FAMILY_OPTIONS.map((opt) => (
               <button
@@ -114,9 +111,7 @@ export const ClockConfigurationPanel: React.FC<
 
         {/* Theme Color */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Theme Color
-          </label>
+          <SettingsLabel className="mb-1">Default Theme Color</SettingsLabel>
           <div className="flex items-center gap-3">
             <input
               type="color"

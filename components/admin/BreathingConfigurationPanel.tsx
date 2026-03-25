@@ -6,6 +6,7 @@ import {
   BreathingConfig,
 } from '@/types';
 import { WIDGET_PALETTE } from '@/config/colors';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 interface BreathingConfigurationPanelProps {
   config: BreathingGlobalConfig;
@@ -65,9 +66,7 @@ export const BreathingConfigurationPanel: React.FC<
     <div className="space-y-6">
       {/* Building Selector */}
       <div>
-        <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
-          Configure Building Breathing Defaults
-        </label>
+        <SettingsLabel>Configure Building Breathing Defaults</SettingsLabel>
         <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
           {BUILDINGS.map((building) => (
             <button
@@ -94,9 +93,7 @@ export const BreathingConfigurationPanel: React.FC<
 
         {/* Pattern Selection */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Pattern
-          </label>
+          <SettingsLabel className="mb-1">Default Pattern</SettingsLabel>
           <div className="flex flex-wrap bg-white rounded-lg border border-slate-200 p-1 gap-1">
             {PATTERNS.map((opt) => (
               <button
@@ -120,9 +117,7 @@ export const BreathingConfigurationPanel: React.FC<
 
         {/* Visual Selection */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Visual Style
-          </label>
+          <SettingsLabel className="mb-1">Default Visual Style</SettingsLabel>
           <div className="flex flex-wrap bg-white rounded-lg border border-slate-200 p-1 gap-1">
             {VISUALS.map((opt) => (
               <button
@@ -147,9 +142,7 @@ export const BreathingConfigurationPanel: React.FC<
         {/* Color Theme */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xxs font-bold text-slate-500 uppercase block">
-              Default Color Theme
-            </label>
+            <SettingsLabel className="mb-0">Default Color Theme</SettingsLabel>
             {!currentBuildingConfig.color ? (
               <span className="text-xxs text-slate-400 italic">
                 Inherit (Default)
