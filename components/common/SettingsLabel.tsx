@@ -21,10 +21,18 @@ export const SettingsLabel: React.FC<SettingsLabelProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  return (
-    <label htmlFor={htmlFor} className={combinedClasses}>
+  const content = (
+    <>
       {Icon && <Icon className="w-3 h-3" />}
       {children}
+    </>
+  );
+
+  return htmlFor ? (
+    <label htmlFor={htmlFor} className={combinedClasses}>
+      {content}
     </label>
+  ) : (
+    <div className={combinedClasses}>{content}</div>
   );
 };

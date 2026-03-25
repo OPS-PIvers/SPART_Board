@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
 import { TimeToolGlobalConfig, BuildingTimeToolDefaults } from '@/types';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 interface TimeToolConfigurationPanelProps {
   config: TimeToolGlobalConfig;
@@ -60,9 +61,7 @@ export const TimeToolConfigurationPanel: React.FC<
     <div className="space-y-6">
       {/* Building Selector */}
       <div>
-        <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
-          Configure Building Timer Defaults
-        </label>
+        <SettingsLabel>Configure Building Timer Defaults</SettingsLabel>
         <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
           {BUILDINGS.map((building) => (
             <button
@@ -89,9 +88,7 @@ export const TimeToolConfigurationPanel: React.FC<
 
         {/* Default Duration */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Timer Duration
-          </label>
+          <SettingsLabel className="mb-1">Default Timer Duration</SettingsLabel>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <input
@@ -136,9 +133,9 @@ export const TimeToolConfigurationPanel: React.FC<
 
         {/* Timer End Traffic Light Color */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+          <SettingsLabel className="mb-1">
             Timer-End Traffic Light Color
-          </label>
+          </SettingsLabel>
           <p className="text-xxs text-slate-400 mb-2 leading-tight">
             Automatically sets the traffic light widget to this color when the
             timer reaches zero.
