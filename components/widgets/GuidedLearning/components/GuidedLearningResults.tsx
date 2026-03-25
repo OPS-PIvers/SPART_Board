@@ -47,18 +47,37 @@ export const GuidedLearningResults: React.FC<Props> = ({
       (s) => s.interactionType === 'question' && s.question
     );
 
+    // Create a fast lookup map for question steps.
+    const qStepMap = new Map(qSteps.map((step) => [step.id, step]));
+
     // Pre-process responses to create lookup maps for efficiency.
     const answersByStep = new Map<string, { answer: string | string[] }[]>();
-    responses.forEach((r) => {
+
+    const rStats = responses.map((r) => {
+      let qCorrect = 0;
+      let qAnswered = 0;
+
+      // We iterate over the student's answers instead of scanning all possible steps
       for (const a of r.answers) {
-        if (!answersByStep.has(a.stepId)) {
-          answersByStep.set(a.stepId, []);
-        }
-        const bucket = answersByStep.get(a.stepId);
-        if (bucket) {
-          bucket.push(a);
+        const step = qStepMap.get(a.stepId);
+        if (step) {
+          qAnswered++;
+          if (isAnswerCorrect(step, a.answer)) {
+            qCorrect++;
+          }
+
+          // Also build up the answersByStep map for the later qStats pass
+          if (!answersByStep.has(a.stepId)) {
+            answersByStep.set(a.stepId, []);
+          }
+          const bucket = answersByStep.get(a.stepId);
+          if (bucket) {
+            bucket.push(a);
+          }
         }
       }
+
+      return { response: r, qCorrect, qAnswered };
     });
 
     const qStats = qSteps.map((step) => {
@@ -71,22 +90,6 @@ export const GuidedLearningResults: React.FC<Props> = ({
           ? Math.round((correct / stepAnswers.length) * 100)
           : null;
       return { step, correct, total: stepAnswers.length, pct };
-    });
-
-    const rStats = responses.map((r) => {
-      const answersByStepId = new Map(r.answers.map((a) => [a.stepId, a]));
-      let qCorrect = 0;
-      let qAnswered = 0;
-      for (const step of qSteps) {
-        const a = answersByStepId.get(step.id);
-        if (a) {
-          qAnswered++;
-          if (isAnswerCorrect(step, a.answer)) {
-            qCorrect++;
-          }
-        }
-      }
-      return { response: r, qCorrect, qAnswered };
     });
 
     const completedResponses = rStats.filter(
