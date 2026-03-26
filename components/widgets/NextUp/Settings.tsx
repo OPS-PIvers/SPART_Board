@@ -201,12 +201,18 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
 
     if (!confirmed) return;
 
-    const newQueue: NextUpQueueItem[] = roster.students.map((student) => ({
-      id: crypto.randomUUID(),
-      name: `${student.firstName} ${student.lastName}`.trim(),
-      status: 'waiting',
-      joinedAt: Date.now(),
-    }));
+    const MAX_QUEUE_LENGTH = 500;
+    const studentsToImport = roster.students.slice(0, MAX_QUEUE_LENGTH);
+    const wasTruncated = roster.students.length > MAX_QUEUE_LENGTH;
+
+    const newQueue: NextUpQueueItem[] = studentsToImport.map(
+      (student, index) => ({
+        id: crypto.randomUUID(),
+        name: `${student.firstName} ${student.lastName}`.trim(),
+        status: index === 0 ? 'active' : 'waiting',
+        joinedAt: Date.now(),
+      })
+    );
 
     try {
       const blob = new Blob([JSON.stringify(newQueue)], {
@@ -218,7 +224,14 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
         config: { ...config, lastUpdated: Date.now() },
       });
 
-      addToast(`Imported ${newQueue.length} students!`, 'success');
+      if (wasTruncated) {
+        addToast(
+          `Imported 500 students. The roster was truncated as it exceeded the maximum queue size.`,
+          'warning'
+        );
+      } else {
+        addToast(`Imported ${newQueue.length} students!`, 'success');
+      }
     } catch (error) {
       console.error('Failed to import roster to queue:', error);
       addToast('Failed to import class to queue.', 'error');
