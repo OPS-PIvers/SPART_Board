@@ -7,6 +7,7 @@ import {
   Bell,
   ChevronLeft,
   Users,
+  BarChart,
 } from 'lucide-react';
 
 import { useAuth } from '@/context/useAuth';
@@ -15,6 +16,7 @@ import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';
 import { AnnouncementsManager } from './Announcements';
 import { UserManagementPanel } from './UserManagement/UserManagementPanel';
+import { AnalyticsManager } from './Analytics/AnalyticsManager';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -50,7 +52,7 @@ const TabButton: React.FC<{
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'features' | 'global' | 'backgrounds' | 'announcements' | 'users'
+    'features' | 'global' | 'backgrounds' | 'announcements' | 'users' | 'analytics'
   >('features');
 
   // Close modal on Escape key press
@@ -141,6 +143,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               icon={<Users className="w-4 h-4" />}
               label="User Management"
             />
+            <TabButton
+              id="tab-analytics"
+              controls="panel-analytics"
+              isActive={activeTab === 'analytics'}
+              onClick={() => setActiveTab('analytics')}
+              icon={<BarChart className="w-4 h-4" />}
+              label="Analytics"
+            />
           </div>
         </div>
 
@@ -203,6 +213,17 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
             >
               <UserManagementPanel />
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div
+              id="panel-analytics"
+              role="tabpanel"
+              aria-labelledby="tab-analytics"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
+            >
+              <AnalyticsManager />
             </div>
           )}
         </div>
