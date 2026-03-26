@@ -39,17 +39,16 @@ Many widgets currently lack global admin settings, relying instead on user-level
 
 ### Opportunities
 
-1.  🔲 **Implement Pending Widget Admin Configs:**
-    - The following widgets have dedicated `*ConfigurationPanel.tsx` components in `components/admin/` for building-level defaults. The ones below are confirmed **not yet implemented** per `docs/admin_settings_widget_configs.md`:
-      - **Magic (AI):** Daily AI rate limits, default prompt suggestions.
-      - **Record:** Max duration/resolution caps.
-    - The following were listed as pending in the original roadmap but have **since been implemented** (panels exist in `components/admin/`):
-      - Classes, Drawing, Embed, PDF Viewer, Poll, QR Code, Quiz, Seating Chart, Smart Notebook, Breathing, Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider, Next Up.
+1.  ✅ **Implement Pending Widget Admin Configs:**
+    - **Implemented:** All major widgets now have admin configuration panels, including:
+      - **Magic (AI):** `MagicConfigurationPanel.tsx` — daily AI rate limits, default prompt suggestions (via `SchemaDrivenConfigurationPanel`).
+      - **Record:** `RecordConfigurationPanel.tsx` — max duration/resolution caps (via `SchemaDrivenConfigurationPanel`).
+      - Classes, Drawing, Embed, Poll, QR Code, Seating Chart, Smart Notebook, Breathing, Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider, Next Up — all have `*ConfigurationPanel.tsx` files registered in `FeatureConfigurationPanel.tsx`.
+      - **PDF Viewer:** Managed via the dedicated `PdfLibraryModal` (global library with per-PDF building targeting), accessible directly from the Feature Permissions manager.
+    - **Quiz** is intentionally excluded from the building-defaults system — its admin surface is the widget's own Drive-backed quiz management interface. A future "District Curriculum Repository" feature is proposed but out of scope for Phase 2. See `docs/admin_settings_widget_configs.md` for details.
 
-2.  🔲 **JSON Schema-Driven Admin UI:**
-    - **Current State:** Each widget requires a bespoke React component for its admin configuration panel (e.g., `ClockConfigurationPanel.tsx`). There are 30+ such panels.
-    - **Goal:** Automatically generate admin configuration forms based on a JSON schema defined for each widget, eliminating the need to write new React code for each new widget config.
-    - **Implementation:** Define a JSON Schema for each widget's config alongside its `types.ts` definition. A generic `ConfigurationPanel` component parses the schema and renders appropriate controls (toggle, slider, text input, color picker, select). New widgets get a config panel for free.
+2.  ✅ **JSON Schema-Driven Admin UI:**
+    - **Implemented:** `SchemaDrivenConfigurationPanel.tsx` — a generic component that parses a `ConfigSchema` and renders appropriate controls (number input, text input, checkbox, textarea for string arrays). New widget admin panels (e.g., Magic, Record) use this component instead of bespoke form code, eliminating boilerplate for future widgets.
 
 ---
 
@@ -113,8 +112,8 @@ Empower admins to control the initial user experience for teachers.
 | 1.2   | Custom Typography (Google Fonts)            | 🔲 Remaining                              |
 | 1.3   | UI Elements Styling (borders, transparency) | ✅ Done                                   |
 | 1.4   | Custom Backgrounds & Logos                  | ✅ Done                                   |
-| 2.1   | Pending Widget Admin Configs                | ✅ Mostly done (Magic & Record remaining) |
-| 2.2   | JSON Schema-Driven Admin UI                 | 🔲 Remaining                              |
+| 2.1   | Pending Widget Admin Configs (Magic, Record)| ✅ Done                                   |
+| 2.2   | JSON Schema-Driven Admin UI                 | ✅ Done                                   |
 | 3.1   | Enhanced Mini Apps (Monaco Editor)          | 🔲 Remaining                              |
 | 3.2   | Visual Widget Builder                       | 🔲 Remaining                              |
 | 3.3   | Data Binding & API Integrations             | 🔲 Remaining                              |
