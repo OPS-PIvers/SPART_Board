@@ -2,31 +2,37 @@
 
 This document outlines opportunities to shift customization, design, and widget creation from code-level changes (React/Tailwind) into dynamic, admin-configurable settings within the SPART Board application. This shift lowers the barrier to scaling the app across different domains, empowering admins to match their branding and utility needs without coding.
 
+> **Implementation status key:**
+>
+> - ✅ **Done** — fully implemented and shipped
+> - 🔲 **Remaining** — planned but not yet implemented
+
+---
+
 ## Phase 1: Global Branding & Theming (Design Customization)
 
 Currently, the application relies heavily on hardcoded Tailwind utility classes and predefined `tailwind.config.js` settings for colors, fonts, and global styles.
 
 ### Opportunities
 
-1.  **Dynamic Color Palettes:**
-    - **Current State:** Colors are predefined in `tailwind.config.js` (`brand-blue-primary`, `emerald-400`, etc.) and safelisted.
-    - **Goal:** Allow admins to define custom color palettes (Primary, Secondary, Accent, Backgrounds) via a color picker in the admin UI.
-    - **Implementation:** Store color hex values in a global Firestore config (`GlobalStyle`). Inject these as CSS variables (`--color-primary`) dynamically at runtime. Update Tailwind config to map its utility classes to these CSS variables.
+1.  ✅ **Dynamic Color Palettes:**
+    - **Implemented:** `GlobalStyle` extended with `primaryColor`, `accentColor`, and `windowTitleColor` (optional hex strings). These are injected as CSS custom properties (`--spart-primary`, `--spart-accent`, `--spart-window-title`) on the dashboard root element at runtime, so any component can reference them via `var(--spart-primary)` without touching `tailwind.config.js`.
+    - A new **"Colors" tab** in `StylePanel` provides color pickers for each variable with per-color and bulk reset-to-default buttons. Changes save alongside the rest of `GlobalStyle` in Firestore.
+    - **Remaining:** Tailwind utility classes (e.g. `bg-brand-blue-primary`) still use the compile-time tokens. To make those classes themselves dynamic, the Tailwind config would need to map to the CSS variables — a larger refactor deferred for a future pass.
 
-2.  **Custom Typography (Fonts):**
-    - **Current State:** Fonts are mapped statically in `tailwind.config.js` (e.g., `font-sans` mapped to 'Lexend').
-    - **Goal:** Allow admins to select custom fonts from Google Fonts or upload custom fonts.
-    - **Implementation:** Store the selected font family string in Firestore. Dynamically inject a `<link>` tag to load the Google Font. Use inline styles or dynamically generated classes for the root element.
+2.  🔲 **Custom Typography (Fonts):**
+    - **Current State:** 11 font families (sans, serif, handwritten, retro, etc.) are selectable in `StylePanel`. All are loaded statically at build time.
+    - **Goal:** Allow admins to select arbitrary Google Fonts or upload custom font files for their district. Store the font family name in Firestore and dynamically inject a `<link>` tag to load it.
+    - **Remaining:** Implement a Google Fonts picker (API search or curated list), dynamic `<link>` injection in `DashboardView`, and `@font-face` upload via Firebase Storage.
 
-3.  **UI Elements Styling (Borders, Transparencies):**
-    - **Current State:** `types.ts` defines `windowBorderRadius` and `windowTransparency` within `DEFAULT_GLOBAL_STYLE`.
-    - **Goal:** Create a robust Admin UI panel to control these global variables visually.
-    - **Implementation:** Connect sliders and selectors in the Admin Dashboard to update the `GlobalStyle` object in Firestore, which automatically re-renders the dashboard layout.
+3.  ✅ **UI Elements Styling (Borders, Transparencies):**
+    - **Implemented:** `StylePanel` already provides sliders and selectors for `windowTransparency`, `windowBorderRadius`, `dockTransparency`, `dockBorderRadius`, `dockTextColor`, and `dockTextShadow`. All values persist to Firestore via `setGlobalStyle()`.
 
-4.  **Custom Backgrounds & Logos:**
-    - **Current State:** Background presets exist (`BackgroundPreset` in `types.ts`).
-    - **Goal:** Allow domain admins to upload their district/school logos to replace the default SPART Board logo. Allow uploading custom branded background sets that are default-assigned to specific buildings.
-    - **Implementation:** Add logo upload fields to a new "Branding" admin panel. Store images in Firebase Storage and URLs in global settings.
+4.  🔲 **Custom Backgrounds & Logos:**
+    - **Current State:** `BackgroundManager` admin panel allows uploading and managing background presets with building targeting, access levels, and categories.
+    - **Remaining:** Logo upload fields for district/school branding to replace the default SPART Board logo. Store logo URL in global Firestore settings and render conditionally in the Sidebar header.
+
+---
 
 ## Phase 2: Comprehensive Widget Configuration
 
@@ -34,23 +40,19 @@ Many widgets currently lack global admin settings, relying instead on user-level
 
 ### Opportunities
 
-1.  **Implement Pending Widget Admin Configs:**
-    - Complete the "Proposed" list in `docs/admin_settings_widget_configs.md`:
-      - **Classes:** SIS Sync rate limits, display name formats.
-      - **Embed:** Domain allowlists, default URLs per building.
-      - **Magic:** Daily AI rate limits, default prompt suggestions.
-      - **PDF Viewer:** Max file size limits, default PDF.
-      - **Poll:** Pushing district-wide polls.
-      - **QR Code:** Automatic UTM tracking parameters.
-      - **Quiz:** Centralized district curriculum repository.
+1.  🔲 **Implement Pending Widget Admin Configs:**
+    - The following widgets have dedicated `*ConfigurationPanel.tsx` components in `components/admin/` for building-level defaults. The ones below are confirmed **not yet implemented** per `docs/admin_settings_widget_configs.md`:
+      - **Magic (AI):** Daily AI rate limits, default prompt suggestions.
       - **Record:** Max duration/resolution caps.
-      - **Seating Chart:** Fire code limits (max nodes), default templates.
-      - **Smart Notebook:** Storage limits (pages/paths).
+    - The following were listed as pending in the original roadmap but have **since been implemented** (panels exist in `components/admin/`):
+      - Classes, Drawing, Embed, PDF Viewer, Poll, QR Code, Quiz, Seating Chart, Smart Notebook, Breathing, Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider, Next Up.
 
-2.  **JSON Schema-Driven Admin UI:**
-    - **Current State:** Each widget requires a bespoke React component for its admin configuration panel (e.g., `ClockConfigurationPanel.tsx`).
-    - **Goal:** Automatically generate the admin configuration forms based on a JSON schema defined for each widget.
-    - **Implementation:** For each widget, define a JSON Schema for its config (maintained manually alongside the `types.ts` definition or generated at build time from those types). A generic `ConfigurationPanel` component parses this JSON Schema to render toggles, text inputs, and color pickers without writing new React code.
+2.  🔲 **JSON Schema-Driven Admin UI:**
+    - **Current State:** Each widget requires a bespoke React component for its admin configuration panel (e.g., `ClockConfigurationPanel.tsx`). There are 30+ such panels.
+    - **Goal:** Automatically generate admin configuration forms based on a JSON schema defined for each widget, eliminating the need to write new React code for each new widget config.
+    - **Implementation:** Define a JSON Schema for each widget's config alongside its `types.ts` definition. A generic `ConfigurationPanel` component parses the schema and renders appropriate controls (toggle, slider, text input, color picker, select). New widgets get a config panel for free.
+
+---
 
 ## Phase 3: No-Code / Low-Code Widget Creation
 
@@ -58,22 +60,23 @@ Currently, adding a new widget requires writing a React component and updating m
 
 ### Opportunities
 
-1.  **Enhance Mini Apps (Low-Code):**
-    - **Current State:** The `MiniAppLibraryModal` allows admins to publish HTML/JS apps.
-    - **Goal:** Provide an integrated code editor (like Monaco Editor) directly in the Admin Dashboard for writing HTML/CSS/JS.
-    - **Implementation:** Expand the `MiniAppItem` schema and define a message-based SPART bridge between the sandboxed Mini App iframe and the main dashboard. Mini Apps should run in an `iframe` with a restrictive `sandbox` (without `allow-same-origin`), and communicate exclusively via `window.postMessage` using a narrow, versioned message schema. The parent validates origin and payload, then performs allowed actions on behalf of the Mini App (for example, handling `getRoster` or `playSound` requests) instead of exposing direct parent-page APIs like `window.SPART`.
+1.  🔲 **Enhance Mini Apps (Low-Code):**
+    - **Current State:** `MiniAppLibraryModal` allows admins to publish raw HTML/JS apps with building and grade-level targeting. Apps run in sandboxed iframes communicating via `postMessage`.
+    - **Remaining:** Integrate an in-browser code editor (Monaco Editor) directly in the Admin Dashboard for writing HTML/CSS/JS with syntax highlighting and autocomplete. Formalize the `window.postMessage` SPART bridge API with a versioned schema and documented methods (e.g. `getRoster`, `playSound`).
 
-2.  **Visual Widget Builder (No-Code):**
-    - **Goal:** Allow non-technical admins to create simple widgets by combining predefined blocks (Text, Image, Button, Iframe).
-    - **Implementation:** Create a "Custom Widget" type. The admin UI provides a drag-and-drop canvas to arrange blocks. The output is a JSON definition of the UI. The dashboard renders this JSON using a generic `<CustomWidgetRenderer>` component.
+2.  🔲 **Visual Widget Builder (No-Code):**
+    - **Goal:** Allow non-technical admins to create simple widgets by combining predefined blocks (Text, Image, Button, Iframe) on a drag-and-drop canvas.
+    - **Implementation:** Create a `custom-widget` type. The admin UI outputs a JSON UI definition. A generic `CustomWidgetRenderer` component renders this JSON at runtime without any code changes.
 
-3.  **Data Binding & API Integrations:**
+3.  🔲 **Data Binding & API Integrations:**
     - **Goal:** Allow admins to create widgets that fetch and display data from third-party APIs (e.g., a custom cafeteria menu API or bus tracker).
-    * **Implementation:** Within the Visual Widget Builder, allow defining a logical "data source" that is backed by a REST endpoint, but never call arbitrary third-party URLs directly from the client. All external requests should flow through a server-side proxy (e.g., Firebase Cloud Functions) that enforces per-domain allowlists, basic validation, rate limiting, and secret management (API keys, headers). The JSON response fields from the proxy are then mapped to text blocks or lists within the custom widget.
+    - **Implementation:** Within the Visual Widget Builder, allow defining a logical "data source" backed by a REST endpoint — but never call arbitrary third-party URLs directly from the client. All external requests must flow through a server-side proxy (Firebase Cloud Function) that enforces per-domain allowlists, validation, rate limiting, and secret management. The proxy response fields are then mapped to widget blocks.
 
-4.  **Action Buttons (Webhooks):**
-    - **Goal:** Allow admins to create buttons that trigger external actions (e.g., "Send Help Request to IT").
-    * **Implementation:** Rather than sending POST requests directly from the browser (which is easy to abuse for exfiltration or spam and often requires auth/secret headers), configure button blocks to call a trusted server-side "webhook executor" endpoint. The admin UI defines an allowed webhook/action identifier, payload template (e.g., user ID, room number, dashboard context), and optional metadata. When clicked, the widget calls the backend executor with the logical action ID; the backend enforces an allowlist of destinations, attaches stored secrets/headers, performs per-user permission checks, executes the outbound webhook, and records audit logs of each invocation.
+4.  🔲 **Action Buttons (Webhooks):**
+    - **Goal:** Allow admins to create button blocks that trigger external actions (e.g., "Send Help Request to IT").
+    - **Implementation:** Button blocks call a trusted server-side "webhook executor" endpoint with a logical action ID. The backend enforces an allowlist of destinations, attaches stored secrets/headers, performs per-user permission checks, executes the outbound webhook, and records audit logs. No outbound URLs or secrets are ever exposed to the client.
+
+---
 
 ## Phase 4: Layout & Dashboard Templates
 
@@ -81,15 +84,45 @@ Empower admins to control the initial user experience for teachers.
 
 ### Opportunities
 
-1.  **Role-Based / Grade-Level Default Dashboards:**
-    - **Current State:** Users start with a blank or generic default dashboard.
-    - **Goal:** Admins can design "Template Dashboards" tailored for specific groups (e.g., K-2 teachers get a dashboard pre-loaded with specific widgets like Traffic Light and Sound; High School gets Timer and Expectations).
-    - **Implementation:** Add a "Dashboard Templates" manager in the admin area. When a new user logs in, assign them a template based on their building or grade-level assignment.
+1.  ✅ **Dashboard Templates:**
+    - **Implemented:** Full `DashboardTemplatesManager` admin component (Admin Settings → Templates tab). Admins can:
+      - Create templates by capturing the current board's widgets, globalStyle, and background
+      - Set name, description, comma-separated tags, target grade levels, and target buildings
+      - Publish/unpublish to the user-facing Starter Pack
+      - Apply a template to the current board (adds all template widgets)
+      - Delete templates with confirmation
+    - Templates are stored in `/dashboard_templates/{id}` in Firestore. Security rules: authenticated users read, admins write.
+    - `DashboardTemplate` type defined in `types.ts` with full metadata.
+    - **Remaining:** Automatic template assignment on first login based on a user's building/grade profile. Currently templates must be applied manually by the user from the Starter Pack.
 
-2.  **Mandatory/Locked Widgets:**
-    - **Goal:** Allow admins to place widgets on a teacher's dashboard that cannot be removed or closed (e.g., District Announcements, Emergency Alerts).
-    - **Implementation:** Add an `isLocked` or `isMandatory` boolean to the `WidgetData` interface. The dashboard UI will disable the close/delete controls for these specific instances.
+2.  ✅ **Mandatory/Locked Widgets:**
+    - **Implemented:** `isLocked?: boolean` added to the `WidgetData` interface. When `true`:
+      - Drag is blocked (pointer events on the title bar are a no-op)
+      - All four corner resize handles are hidden
+      - Keyboard `Delete` shortcut is suppressed (both `onKeyDown` handler and the `widget-keyboard-action` custom event)
+      - The close (X) button is replaced with an amber lock badge with a tooltip
+    - Admins set `isLocked: true` on a widget programmatically (e.g., via Firestore Console, a template, or future admin tooling).
+    - **Remaining:** A dedicated admin UI surface to lock/unlock individual widgets on a teacher's live board without requiring direct Firestore edits.
+
+---
 
 ## Summary
+
+| Phase | Item                                        | Status                                           |
+| ----- | ------------------------------------------- | ------------------------------------------------ |
+| 1.1   | Dynamic Color Palettes (CSS variables)      | ✅ Done                                          |
+| 1.2   | Custom Typography (Google Fonts)            | 🔲 Remaining                                     |
+| 1.3   | UI Elements Styling (borders, transparency) | ✅ Done                                          |
+| 1.4   | Custom Backgrounds & Logos                  | 🔲 Remaining (backgrounds done; logos remaining) |
+| 2.1   | Pending Widget Admin Configs                | ✅ Mostly done (Magic & Record remaining)        |
+| 2.2   | JSON Schema-Driven Admin UI                 | 🔲 Remaining                                     |
+| 3.1   | Enhanced Mini Apps (Monaco Editor)          | 🔲 Remaining                                     |
+| 3.2   | Visual Widget Builder                       | 🔲 Remaining                                     |
+| 3.3   | Data Binding & API Integrations             | 🔲 Remaining                                     |
+| 3.4   | Action Buttons (Webhooks)                   | 🔲 Remaining                                     |
+| 4.1   | Dashboard Templates (create/apply/publish)  | ✅ Done                                          |
+| 4.1   | Auto-assign template on first login         | 🔲 Remaining                                     |
+| 4.2   | Mandatory/Locked Widgets (enforcement)      | ✅ Done                                          |
+| 4.2   | Admin UI to lock/unlock live widgets        | 🔲 Remaining                                     |
 
 By migrating hardcoded styles to dynamic CSS variables, utilizing JSON schemas for admin forms, expanding the Mini App system into a fully-fledged API playground, and introducing visual widget building, SPART Board can evolve into a highly scalable, white-label platform suitable for diverse educational environments without requiring developer intervention for every customization.
