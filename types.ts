@@ -2106,6 +2106,14 @@ export interface DashboardSettings {
   remoteControlEnabled?: boolean;
 }
 
+export interface UserRolesConfig {
+  students: string[];
+  teachers: string[];
+  betaTeachers: string[];
+  admins: string[];
+  superAdmins: string[];
+}
+
 /**
  * Per-user profile data stored in Firestore at /users/{userId}/userProfile.
  * This is separate from dashboard settings and persists across dashboards.

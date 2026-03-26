@@ -90,6 +90,10 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Explicitly allow all authenticated users to read user roles
+    // Removed because this exposes PII (emails). Need a different architecture.
+    // Reverting to admin only for now.
+
     // Feature permissions - all authenticated users can read, only admins can write
     match /feature_permissions/{widgetType} {
       allow read: if request.auth != null;

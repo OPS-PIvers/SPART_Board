@@ -33,6 +33,7 @@ import {
   GlobalFeature,
   GradeLevel,
   WidgetConfig,
+  UserRolesConfig,
 } from '../types';
 import { AuthContext } from './AuthContextValue';
 import { getBuildingGradeLevels } from '../config/buildings';
@@ -170,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(
     isAuthBypass ? true : null
   ); // null = not yet checked
+  const [userRoles, setUserRoles] = useState<UserRolesConfig | null>(null);
   const [featurePermissions, setFeaturePermissions] = useState<
     FeaturePermission[]
   >([]);
@@ -422,6 +424,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [googleAccessToken]);
 
+  // Listen to user roles
+  useEffect(() => {
+    if (isAuthBypass) return;
+    if (!user) {
+      setUserRoles(null);
+      return;
+    }
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'admin_settings', 'user_roles'),
+      (doc) => {
+        if (doc.exists()) {
+          setUserRoles(doc.data() as UserRolesConfig);
+        } else {
+          setUserRoles(null);
+        }
+      },
+      (error) => {
+        console.error('Error loading user roles:', error);
+      }
+    );
+    return unsubscribe;
+  }, [user]);
+
   // Check if user is admin
   useEffect(() => {
     if (isAuthBypass) return;
@@ -436,6 +462,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const adminDoc = await getDoc(
           doc(db, 'admins', user.email.toLowerCase())
         );
+
+        // As per code review, we are keeping isAdmin aligned with the /admins collection
+        // until a safer data model for roles is established, to avoid authorization failures
+        // on writes since firestore.rules still only uses the /admins collection.
         setIsAdmin(adminDoc.exists());
       } catch (error) {
         console.error('Error checking admin status:', error);
@@ -713,6 +743,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return unsubscribe;
   }, []);
 
+  // Helper for checking if a user has beta access
+  const isBetaUser = useCallback(
+    (betaUsers: string[], email: string | null | undefined) => {
+      const lowerEmail = email?.toLowerCase() ?? '';
+      return (
+        betaUsers.some((e) => e.toLowerCase() === lowerEmail) ||
+        (userRoles?.betaTeachers?.some((e) => e.toLowerCase() === lowerEmail) ??
+          false) ||
+        (userRoles?.superAdmins?.some((e) => e.toLowerCase() === lowerEmail) ??
+          false)
+      );
+    },
+    [userRoles]
+  );
+
   // Check if user can access a specific widget
   // Wrapped in useCallback to prevent unnecessary re-renders since this function
   // is passed through context and used in component dependencies
@@ -743,14 +788,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         case 'admin':
           return false; // Only admins can access
         case 'beta':
-          return permission.betaUsers.includes(user.email ?? '');
+          return isBetaUser(permission.betaUsers, user.email);
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, featurePermissions, isAdmin]
+    [user, featurePermissions, isAdmin, isBetaUser]
   );
 
   const canAccessFeature = useCallback(
@@ -770,14 +815,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         case 'admin':
           return false;
         case 'beta':
-          return permission.betaUsers.includes(user.email ?? '');
+          return isBetaUser(permission.betaUsers, user.email);
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, globalPermissions, isAdmin]
+    [user, globalPermissions, isAdmin, isBetaUser]
   );
 
   const signInWithGoogle = async () => {
@@ -836,6 +881,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         googleAccessToken,
         loading,
         isAdmin,
+        userRoles,
         featurePermissions,
         globalPermissions,
         canAccessWidget,
