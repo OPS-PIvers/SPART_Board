@@ -1,11 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-  collection,
-  collectionGroup,
-  getDocs,
-  doc,
-  getDoc,
-} from 'firebase/firestore';
+import React, { useState, useEffect, useMemo } from 'react';
+import { collection, collectionGroup, getDocs } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { BarChart, Users, Zap, LayoutGrid, AlertCircle } from 'lucide-react';
 import { BUILDINGS } from '@/config/buildings';
@@ -130,33 +124,17 @@ export const AnalyticsManager: React.FC = () => {
 
         const now = Date.now();
 
-        // We fetch user profiles from the subcollection in parallel chunks to avoid N+1 slow down
-        // but since we only have ~1k users maximum usually, a batch get isn't natively supported.
-        // We'll queue them up.
-        const profilePromises = usersSnap.docs.map(async (userDoc) => {
+        // We assume the user documents are denormalized and contain a `buildings` array.
+        // This avoids fetching `userProfile` subcollections, solving the N+1 queries.
+        const usersData = usersSnap.docs.map((userDoc) => {
           const userData = userDoc.data();
           const email =
             typeof userData.email === 'string' ? userData.email : '';
           const domain = email.includes('@') ? email.split('@')[1] : 'unknown';
 
           let buildings: string[] = [];
-          try {
-            const profileRef = doc(
-              db,
-              'users',
-              userDoc.id,
-              'userProfile',
-              'global'
-            );
-            const profileSnap = await getDoc(profileRef);
-            if (profileSnap.exists()) {
-              const pData = profileSnap.data();
-              if (Array.isArray(pData.selectedBuildings)) {
-                buildings = pData.selectedBuildings.map(String);
-              }
-            }
-          } catch (_e) {
-            // ignore
+          if (Array.isArray(userData.buildings)) {
+            buildings = userData.buildings.map(String);
           }
 
           return {
@@ -170,8 +148,6 @@ export const AnalyticsManager: React.FC = () => {
             buildings,
           };
         });
-
-        const usersData = await Promise.all(profilePromises);
 
         // 2. Fetch all dashboards via collectionGroup
         const totalWidgetCounts: Record<string, number> = {};
@@ -218,8 +194,6 @@ export const AnalyticsManager: React.FC = () => {
           if (u.lastLogin) {
             if (now - u.lastLogin <= thirtyDaysMs) monthlyActive++;
             if (now - u.lastLogin <= oneDayMs) dailyActive++;
-          } else {
-            monthlyActive++; // Fallback
           }
         });
 
@@ -288,6 +262,52 @@ export const AnalyticsManager: React.FC = () => {
     void fetchAnalytics();
   }, []);
 
+  // Derived filtered users memoized to avoid expensive loops on every render
+  const { filteredTotalUsers, filteredMonthly, filteredDaily } = useMemo(() => {
+    if (!data)
+      return { filteredTotalUsers: 0, filteredMonthly: 0, filteredDaily: 0 };
+
+    let users = data.users.data;
+    if (selectedDomain !== 'all') {
+      users = users.filter((u) => u.domain === selectedDomain);
+    }
+    if (selectedBuilding !== 'all') {
+      users = users.filter((u) => u.buildings.includes(selectedBuilding));
+    }
+
+    let monthly = 0;
+    let daily = 0;
+    const now = Date.now();
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    users.forEach((u) => {
+      if (u.lastLogin) {
+        if (now - u.lastLogin <= thirtyDaysMs) monthly++;
+        if (now - u.lastLogin <= oneDayMs) daily++;
+      }
+    });
+
+    return {
+      filteredTotalUsers: users.length,
+      filteredMonthly: monthly,
+      filteredDaily: daily,
+    };
+  }, [data, selectedDomain, selectedBuilding]);
+
+  // Extract unique domains for the filter
+  const uniqueDomains = useMemo(() => {
+    if (!data) return [];
+    return Array.from(new Set(data.users.data.map((u) => u.domain)))
+      .filter(Boolean)
+      .sort();
+  }, [data]);
+
+  const userMap = useMemo(() => {
+    if (!data) return new Map<string, { email: string }>();
+    return new Map(data.users.data.map((u) => [u.id, u]));
+  }, [data]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-slate-500">
@@ -310,41 +330,6 @@ export const AnalyticsManager: React.FC = () => {
   }
 
   if (!data) return null;
-
-  // Derived filtered users
-  let filteredUsers = data.users.data;
-  if (selectedDomain !== 'all') {
-    filteredUsers = filteredUsers.filter((u) => u.domain === selectedDomain);
-  }
-  if (selectedBuilding !== 'all') {
-    filteredUsers = filteredUsers.filter((u) =>
-      u.buildings.includes(selectedBuilding)
-    );
-  }
-
-  // Recalculate stats based on filters
-  const filteredTotalUsers = filteredUsers.length;
-  let filteredMonthly = 0;
-  let filteredDaily = 0;
-  const now = Date.now();
-  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-  const oneDayMs = 24 * 60 * 60 * 1000;
-
-  filteredUsers.forEach((u) => {
-    if (u.lastLogin) {
-      if (now - u.lastLogin <= thirtyDaysMs) filteredMonthly++;
-      if (now - u.lastLogin <= oneDayMs) filteredDaily++;
-    } else {
-      filteredMonthly++;
-    }
-  });
-
-  // Extract unique domains for the filter
-  const uniqueDomains = Array.from(
-    new Set(data.users.data.map((u) => u.domain))
-  )
-    .filter(Boolean)
-    .sort();
 
   // Sort widgets by popularity
   const sortedWidgets = Object.entries(data.widgets.totalInstances)
@@ -372,7 +357,7 @@ export const AnalyticsManager: React.FC = () => {
               className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-blue-primary"
             >
               <option value="all">All Domains</option>
-              {uniqueDomains.map((d) => (
+              {uniqueDomains.map((d: string) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
@@ -454,7 +439,7 @@ export const AnalyticsManager: React.FC = () => {
         <div className="space-y-4">
           {sortedWidgets.map(([type, count], index) => {
             const label = WIDGET_LABELS[type] || type;
-            const maxCount = sortedWidgets[0][1];
+            const maxCount = sortedWidgets[0]?.[1] || 1;
             const percentage = Math.max(5, (count / maxCount) * 100);
             const activeCount = data.widgets.activeInstances[type] || 0;
 
@@ -502,7 +487,7 @@ export const AnalyticsManager: React.FC = () => {
         </h3>
         <div className="space-y-4">
           {topAiUsers.map(([uid, count], index) => {
-            const user = data.users.data.find((u) => u.id === uid);
+            const user = userMap.get(uid);
             const label = user ? user.email : `Unknown (${uid})`;
             const maxCount = topAiUsers[0]?.[1] || 1;
             const percentage = Math.max(5, (count / maxCount) * 100);
