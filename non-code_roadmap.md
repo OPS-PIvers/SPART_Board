@@ -40,11 +40,12 @@ Many widgets currently lack global admin settings, relying instead on user-level
 ### Opportunities
 
 1.  ✅ **Implement Pending Widget Admin Configs:**
-    - **Implemented:** All widgets now have dedicated `*ConfigurationPanel.tsx` components in `components/admin/` for building-level defaults, including:
+    - **Implemented:** All major widgets now have admin configuration panels, including:
       - **Magic (AI):** `MagicConfigurationPanel.tsx` — daily AI rate limits, default prompt suggestions (via `SchemaDrivenConfigurationPanel`).
       - **Record:** `RecordConfigurationPanel.tsx` — max duration/resolution caps (via `SchemaDrivenConfigurationPanel`).
-      - Classes, Drawing, Embed, PDF Viewer, Poll, QR Code, Quiz, Seating Chart, Smart Notebook, Breathing, Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider, Next Up.
-    - All panels are registered in `FeatureConfigurationPanel.tsx`.
+      - Classes, Drawing, Embed, Poll, QR Code, Seating Chart, Smart Notebook, Breathing, Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider, Next Up — all have `*ConfigurationPanel.tsx` files registered in `FeatureConfigurationPanel.tsx`.
+      - **PDF Viewer:** Managed via the dedicated `PdfLibraryModal` (global library with per-PDF building targeting), accessible directly from the Feature Permissions manager.
+    - **Quiz** is intentionally excluded from the building-defaults system — its admin surface is the widget's own Drive-backed quiz management interface. A future "District Curriculum Repository" feature is proposed but out of scope for Phase 2. See `docs/admin_settings_widget_configs.md` for details.
 
 2.  ✅ **JSON Schema-Driven Admin UI:**
     - **Implemented:** `SchemaDrivenConfigurationPanel.tsx` — a generic component that parses a `ConfigSchema` and renders appropriate controls (number input, text input, checkbox, textarea for string arrays). New widget admin panels (e.g., Magic, Record) use this component instead of bespoke form code, eliminating boilerplate for future widgets.
