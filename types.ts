@@ -2409,11 +2409,13 @@ export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   dockBorderRadius: 'full',
   dockTextColor: '#334155', // Slate 700 (dark grey)
   dockTextShadow: false,
+  // Brand color defaults — shared source of truth used by DashboardView (CSS vars) and StylePanel (pickers)
+  primaryColor: '#2d3f89', // brand-blue-primary
+  accentColor: '#ad2122', // brand-red-primary
+  windowTitleColor: '#ffffff',
 };
 
 // --- DASHBOARD TEMPLATE TYPES ---
-
-export type TemplateDifficultyLevel = 'elementary' | 'middle' | 'high' | 'all';
 
 /**
  * A reusable dashboard template that admins can define and assign to users.

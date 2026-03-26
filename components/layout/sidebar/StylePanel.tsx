@@ -38,10 +38,11 @@ interface StylePanelProps {
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-// Brand color defaults — must match the defaults in DashboardView.tsx
-const DEFAULT_PRIMARY_COLOR = '#2d3f89';
-const DEFAULT_ACCENT_COLOR = '#ad2122';
-const DEFAULT_WINDOW_TITLE_COLOR = '#ffffff';
+// Derived from DEFAULT_GLOBAL_STYLE so defaults stay in sync across the app
+const DEFAULT_PRIMARY_COLOR = DEFAULT_GLOBAL_STYLE.primaryColor ?? '#2d3f89';
+const DEFAULT_ACCENT_COLOR = DEFAULT_GLOBAL_STYLE.accentColor ?? '#ad2122';
+const DEFAULT_WINDOW_TITLE_COLOR =
+  DEFAULT_GLOBAL_STYLE.windowTitleColor ?? '#ffffff';
 
 export const StylePanel: React.FC<StylePanelProps> = ({
   isVisible,

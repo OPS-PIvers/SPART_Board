@@ -11,6 +11,7 @@ import {
 import { db } from '@/config/firebase';
 import {
   DashboardTemplate,
+  GlobalStyle,
   GradeLevel,
   WidgetData,
   DEFAULT_GLOBAL_STYLE,
@@ -65,7 +66,8 @@ const DEFAULT_FORM: TemplateFormState = {
 
 export const DashboardTemplatesManager: React.FC = () => {
   const { user } = useAuth();
-  const { activeDashboard, addWidget } = useDashboard();
+  const { activeDashboard, addWidget, setGlobalStyle, setBackground } =
+    useDashboard();
   const { showConfirm } = useDialog();
 
   const [templates, setTemplates] = useState<DashboardTemplate[]>([]);
@@ -82,12 +84,22 @@ export const DashboardTemplatesManager: React.FC = () => {
       collection(db, TEMPLATES_COLLECTION),
       orderBy('createdAt', 'desc')
     );
-    const unsub = onSnapshot(q, (snap) => {
-      setTemplates(
-        snap.docs.map((d) => ({ ...(d.data() as DashboardTemplate), id: d.id }))
-      );
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setTemplates(
+          snap.docs.map((d) => ({
+            ...(d.data() as DashboardTemplate),
+            id: d.id,
+          }))
+        );
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Failed to load dashboard templates:', err);
+        setLoading(false);
+      }
+    );
     return unsub;
   }, []);
 
@@ -96,17 +108,21 @@ export const DashboardTemplatesManager: React.FC = () => {
 
     setSaving(true);
     try {
-      const id = `template-${Date.now()}`;
+      const id = crypto.randomUUID();
       const now = Date.now();
 
-      // Capture current board widgets if requested
+      // Only capture board content when the checkbox is checked
       let widgets: WidgetData[] = [];
+      let capturedStyle: Partial<GlobalStyle> | undefined;
+      let capturedBackground: string | undefined;
       if (form.captureCurrentBoard && activeDashboard) {
-        // Strip locked state from snapshots so templates start unlocked
+        // Strip locked state so templates start unlocked when applied
         widgets = activeDashboard.widgets.map((w) => ({
           ...w,
           isLocked: undefined,
         }));
+        capturedStyle = activeDashboard.globalStyle;
+        capturedBackground = activeDashboard.background;
       }
 
       const template: DashboardTemplate = {
@@ -114,8 +130,8 @@ export const DashboardTemplatesManager: React.FC = () => {
         name: form.name.trim(),
         description: form.description.trim(),
         widgets,
-        globalStyle: activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE,
-        background: activeDashboard?.background,
+        globalStyle: capturedStyle ?? DEFAULT_GLOBAL_STYLE,
+        background: capturedBackground,
         tags: form.tags
           .split(',')
           .map((t) => t.trim())
@@ -171,21 +187,31 @@ export const DashboardTemplatesManager: React.FC = () => {
 
       setApplyingId(template.id);
       try {
+        // Apply style and background captured by the template
+        if (template.globalStyle) {
+          setGlobalStyle(template.globalStyle);
+        }
+        if (template.background) {
+          setBackground(template.background);
+        }
         for (const widget of template.widgets) {
-          // Add each widget with a slight offset to avoid exact overlap
+          // Deep-clone config to prevent shared references across widget instances
+          const clonedConfig = JSON.parse(
+            JSON.stringify(widget.config)
+          ) as typeof widget.config;
           addWidget(widget.type, {
             x: widget.x + 20,
             y: widget.y + 20,
             w: widget.w,
             h: widget.h,
-            config: widget.config,
+            config: clonedConfig,
           });
         }
       } finally {
         setApplyingId(null);
       }
     },
-    [activeDashboard, addWidget, showConfirm]
+    [activeDashboard, addWidget, setGlobalStyle, setBackground, showConfirm]
   );
 
   const toggleGradeLevel = (level: GradeLevel) => {

@@ -866,9 +866,12 @@ export const DashboardView: React.FC = () => {
   // reference var(--spart-primary), var(--spart-accent), var(--spart-window-title)
   // without hardcoding the brand-blue/brand-red Tailwind tokens.
   const cssVars: React.CSSProperties = {
-    '--spart-primary': globalStyle.primaryColor ?? '#2d3f89',
-    '--spart-accent': globalStyle.accentColor ?? '#ad2122',
-    '--spart-window-title': globalStyle.windowTitleColor ?? '#ffffff',
+    '--spart-primary':
+      globalStyle.primaryColor ?? DEFAULT_GLOBAL_STYLE.primaryColor,
+    '--spart-accent':
+      globalStyle.accentColor ?? DEFAULT_GLOBAL_STYLE.accentColor,
+    '--spart-window-title':
+      globalStyle.windowTitleColor ?? DEFAULT_GLOBAL_STYLE.windowTitleColor,
   } as React.CSSProperties;
 
   return (

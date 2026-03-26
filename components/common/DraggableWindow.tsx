@@ -1588,10 +1588,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 />
                 {isLocked ? (
                   <div
-                    className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400"
+                    role="img"
+                    aria-label="Widget is locked by admin"
                     title="Widget is locked by admin"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400"
                   >
-                    <Lock className="w-3.5 h-3.5" />
+                    <Lock className="w-3.5 h-3.5" aria-hidden="true" />
                   </div>
                 ) : (
                   <IconButton
