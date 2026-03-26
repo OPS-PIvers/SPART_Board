@@ -111,7 +111,7 @@ export const GlobalPermissionsManager: React.FC = () => {
   const [unsavedChanges, setUnsavedChanges] = useState<Set<string>>(new Set());
 
   const { appSettings, updateAppSettings } = useAuth();
-  const { uploadAdminLogo, uploading } = useStorage();
+  const { uploadAdminLogo, deleteAdminLogo, uploading } = useStorage();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Filter state
@@ -125,6 +125,15 @@ export const GlobalPermissionsManager: React.FC = () => {
 
     if (!file.type.startsWith('image/')) {
       showMessage('error', 'Please upload an image file');
+      return;
+    }
+
+    const MAX_LOGO_SIZE_MB = 1; // 1MB limit for logos
+    if (file.size > MAX_LOGO_SIZE_MB * 1024 * 1024) {
+      showMessage(
+        'error',
+        `Logo file size cannot exceed ${MAX_LOGO_SIZE_MB}MB.`
+      );
       return;
     }
 
@@ -144,6 +153,7 @@ export const GlobalPermissionsManager: React.FC = () => {
 
   const handleRemoveLogo = async () => {
     try {
+      await deleteAdminLogo();
       await updateAppSettings({ logoUrl: '' });
       showMessage('success', 'Logo removed successfully');
     } catch (error) {

@@ -284,7 +284,7 @@ export const Sidebar: React.FC = () => {
                       <img
                         src={appSettings.logoUrl}
                         alt="Custom Logo"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     ) : (
                       <LayoutGrid className="w-4 h-4 text-white" />
