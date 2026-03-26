@@ -65,8 +65,13 @@ const DEFAULT_FORM: TemplateFormState = {
 
 export const DashboardTemplatesManager: React.FC = () => {
   const { user } = useAuth();
-  const { activeDashboard, addWidget, setGlobalStyle, setBackground } =
-    useDashboard();
+  const {
+    activeDashboard,
+    addWidget,
+    setGlobalStyle,
+    setBackground,
+    addToast,
+  } = useDashboard();
   const { showConfirm } = useDialog();
 
   const [templates, setTemplates] = useState<DashboardTemplate[]>([]);
@@ -152,20 +157,28 @@ export const DashboardTemplatesManager: React.FC = () => {
       await setDoc(doc(db, TEMPLATES_COLLECTION, id), template);
       setForm(DEFAULT_FORM);
       setShowForm(false);
+    } catch (err) {
+      console.error('Failed to save template:', err);
+      addToast('Failed to save template. Please try again.', 'error');
     } finally {
       setSaving(false);
     }
-  }, [form, user, activeDashboard]);
+  }, [form, user, activeDashboard, addToast]);
 
   const handleTogglePublished = useCallback(
     async (template: DashboardTemplate) => {
-      await setDoc(
-        doc(db, TEMPLATES_COLLECTION, template.id),
-        { isPublished: !template.isPublished, updatedAt: Date.now() },
-        { merge: true }
-      );
+      try {
+        await setDoc(
+          doc(db, TEMPLATES_COLLECTION, template.id),
+          { isPublished: !template.isPublished, updatedAt: Date.now() },
+          { merge: true }
+        );
+      } catch (err) {
+        console.error('Failed to update template:', err);
+        addToast('Failed to update template. Please try again.', 'error');
+      }
     },
-    []
+    [addToast]
   );
 
   const handleDelete = useCallback(
@@ -175,10 +188,15 @@ export const DashboardTemplatesManager: React.FC = () => {
         { title: 'Delete Template', variant: 'danger', confirmLabel: 'Delete' }
       );
       if (confirmed) {
-        await deleteDoc(doc(db, TEMPLATES_COLLECTION, template.id));
+        try {
+          await deleteDoc(doc(db, TEMPLATES_COLLECTION, template.id));
+        } catch (err) {
+          console.error('Failed to delete template:', err);
+          addToast('Failed to delete template. Please try again.', 'error');
+        }
       }
     },
-    [showConfirm]
+    [showConfirm, addToast]
   );
 
   const handleApply = useCallback(
@@ -211,7 +229,7 @@ export const DashboardTemplatesManager: React.FC = () => {
           } = widget;
           addWidget(widget.type, {
             ...rest,
-            config: JSON.parse(JSON.stringify(config)) as typeof config,
+            config: structuredClone(config),
             // Offset so new widgets don't exactly overlap any existing ones
             x: widget.x + 20,
             y: widget.y + 20,

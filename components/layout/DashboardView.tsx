@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGesture } from '@use-gesture/react';
 import { useTranslation } from 'react-i18next';
@@ -846,6 +846,32 @@ export const DashboardView: React.FC = () => {
     return bg;
   }, [activeDashboard]);
 
+  // Derive brand colors before any early return so the useEffect hook below
+  // is always called unconditionally (Rules of Hooks).
+  const activeGlobalStyle =
+    activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+  const primary =
+    activeGlobalStyle.primaryColor ?? DEFAULT_GLOBAL_STYLE.primaryColor;
+  const accent =
+    activeGlobalStyle.accentColor ?? DEFAULT_GLOBAL_STYLE.accentColor;
+  const windowTitle =
+    activeGlobalStyle.windowTitleColor ?? DEFAULT_GLOBAL_STYLE.windowTitleColor;
+
+  // Also apply to documentElement so portaled elements (maximized/spotlighted
+  // widgets rendered via createPortal outside #dashboard-root) can inherit them.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (primary) root.style.setProperty('--spart-primary', primary);
+    if (accent) root.style.setProperty('--spart-accent', accent);
+    if (windowTitle)
+      root.style.setProperty('--spart-window-title', windowTitle);
+    return () => {
+      root.style.removeProperty('--spart-primary');
+      root.style.removeProperty('--spart-accent');
+      root.style.removeProperty('--spart-window-title');
+    };
+  }, [primary, accent, windowTitle]);
+
   if (!activeDashboard) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-900 text-white">
@@ -866,12 +892,9 @@ export const DashboardView: React.FC = () => {
   // reference var(--spart-primary), var(--spart-accent), var(--spart-window-title)
   // without hardcoding the brand-blue/brand-red Tailwind tokens.
   const cssVars: React.CSSProperties = {
-    '--spart-primary':
-      globalStyle.primaryColor ?? DEFAULT_GLOBAL_STYLE.primaryColor,
-    '--spart-accent':
-      globalStyle.accentColor ?? DEFAULT_GLOBAL_STYLE.accentColor,
-    '--spart-window-title':
-      globalStyle.windowTitleColor ?? DEFAULT_GLOBAL_STYLE.windowTitleColor,
+    '--spart-primary': primary,
+    '--spart-accent': accent,
+    '--spart-window-title': windowTitle,
   } as React.CSSProperties;
 
   return (
