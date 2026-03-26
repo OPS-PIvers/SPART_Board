@@ -1073,9 +1073,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  removeWidget(widget.id);
+                  if (!isLocked) removeWidget(widget.id);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                disabled={isLocked}
+                className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('widgetWindow.close')}
               </button>

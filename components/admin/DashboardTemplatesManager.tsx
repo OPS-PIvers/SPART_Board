@@ -8,13 +8,12 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { db, isAuthBypass } from '@/config/firebase';
 import {
   DashboardTemplate,
   GlobalStyle,
   GradeLevel,
   WidgetData,
-  DEFAULT_GLOBAL_STYLE,
 } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
@@ -80,6 +79,10 @@ export const DashboardTemplatesManager: React.FC = () => {
 
   // Subscribe to templates collection
   useEffect(() => {
+    if (isAuthBypass) {
+      setLoading(false);
+      return;
+    }
     const q = query(
       collection(db, TEMPLATES_COLLECTION),
       orderBy('createdAt', 'desc')
@@ -104,7 +107,7 @@ export const DashboardTemplatesManager: React.FC = () => {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!form.name.trim() || !user?.email) return;
+    if (isAuthBypass || !form.name.trim() || !user?.email) return;
 
     setSaving(true);
     try {
@@ -130,7 +133,9 @@ export const DashboardTemplatesManager: React.FC = () => {
         name: form.name.trim(),
         description: form.description.trim(),
         widgets,
-        globalStyle: capturedStyle ?? DEFAULT_GLOBAL_STYLE,
+        // Only persist style/background when the board was captured — leave them
+        // undefined otherwise so applying the template is non-destructive.
+        globalStyle: capturedStyle,
         background: capturedBackground,
         tags: form.tags
           .split(',')
@@ -195,16 +200,21 @@ export const DashboardTemplatesManager: React.FC = () => {
           setBackground(template.background);
         }
         for (const widget of template.widgets) {
-          // Deep-clone config to prevent shared references across widget instances
-          const clonedConfig = JSON.parse(
-            JSON.stringify(widget.config)
-          ) as typeof widget.config;
+          // Omit identity/ordering/lock fields — addWidget assigns a new id and z.
+          // Deep-clone config to prevent shared references across widget instances.
+          const {
+            id: _id,
+            z: _z,
+            isLocked: _isLocked,
+            config,
+            ...rest
+          } = widget;
           addWidget(widget.type, {
+            ...rest,
+            config: JSON.parse(JSON.stringify(config)) as typeof config,
+            // Offset so new widgets don't exactly overlap any existing ones
             x: widget.x + 20,
             y: widget.y + 20,
-            w: widget.w,
-            h: widget.h,
-            config: clonedConfig,
           });
         }
       } finally {
@@ -385,7 +395,7 @@ export const DashboardTemplatesManager: React.FC = () => {
           {/* Actions */}
           <div className="flex gap-2 pt-1">
             <button
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               disabled={saving || !form.name.trim()}
               className="flex items-center gap-2 px-4 py-2 bg-brand-blue-primary text-white rounded-lg font-bold text-sm hover:bg-brand-blue-dark transition-colors disabled:opacity-50"
             >
@@ -472,7 +482,7 @@ export const DashboardTemplatesManager: React.FC = () => {
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => handleApply(template)}
+                    onClick={() => void handleApply(template)}
                     disabled={applyingId === template.id}
                     title="Apply template to current board"
                     className="p-2 rounded-lg text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-primary/10 transition-colors disabled:opacity-50"
@@ -485,7 +495,7 @@ export const DashboardTemplatesManager: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => handleTogglePublished(template)}
+                    onClick={() => void handleTogglePublished(template)}
                     title={
                       template.isPublished
                         ? 'Unpublish template'
@@ -521,7 +531,7 @@ export const DashboardTemplatesManager: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => handleDelete(template)}
+                    onClick={() => void handleDelete(template)}
                     title="Delete template"
                     className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
