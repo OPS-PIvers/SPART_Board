@@ -228,6 +228,27 @@ export const useStorage = () => {
     return uploadFile(`admin_stickers/${timestamp}-${file.name}`, file);
   };
 
+  const uploadAdminLogo = async (file: File): Promise<string> => {
+    return uploadFile(`admin_logos/custom_logo`, file);
+  };
+
+  const deleteAdminLogo = async (): Promise<void> => {
+    const logoRef = ref(storage, 'admin_logos/custom_logo');
+    try {
+      await deleteObject(logoRef);
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code !== 'storage/object-not-found'
+      ) {
+        console.error('Error deleting admin logo:', error);
+        throw error;
+      }
+    }
+  };
+
   const uploadCatalystImage = async (
     routineId: string,
     file: File
@@ -327,6 +348,8 @@ export const useStorage = () => {
     uploadAdminBackground,
     uploadWeatherImage,
     uploadAdminSticker,
+    uploadAdminLogo,
+    deleteAdminLogo,
     uploadCatalystImage,
     uploadPdf,
     uploadAdminPdf,
