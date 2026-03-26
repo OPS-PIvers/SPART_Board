@@ -83,13 +83,12 @@ describe('Token Object Type Guard', () => {
   it('should successfully pass when auth.getAccessToken returns an object with a token property', async () => {
     // Override the mock specifically for this test
     const { GoogleAuth } = await import('google-auth-library');
-    const OriginalClass = GoogleAuth;
 
     vi.mocked(GoogleAuth).mockImplementationOnce(() => {
       return {
         getClient: vi.fn(),
         getAccessToken: vi.fn().mockResolvedValue({ token: 'mock-object-token' })
-      } as unknown as InstanceType<typeof OriginalClass>;
+      } as unknown as InstanceType<typeof GoogleAuth>;
     });
 
     // Mock Admin Check using the granular mock
