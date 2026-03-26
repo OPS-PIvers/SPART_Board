@@ -87,7 +87,9 @@ describe('Token Object Type Guard', () => {
     vi.mocked(GoogleAuth).mockImplementationOnce(() => {
       return {
         getClient: vi.fn(),
-        getAccessToken: vi.fn().mockResolvedValue({ token: 'mock-object-token' })
+        getAccessToken: vi
+          .fn()
+          .mockResolvedValue({ token: 'mock-object-token' }),
       } as unknown as InstanceType<typeof GoogleAuth>;
     });
 
@@ -119,7 +121,9 @@ describe('Token Object Type Guard', () => {
     const result = await handler(request);
 
     expect(mockPost).toHaveBeenCalledTimes(1);
-    const config = mockPost.mock.calls[0][2] as { headers: Record<string, string> };
+    const config = mockPost.mock.calls[0][2] as {
+      headers: Record<string, string>;
+    };
     // Should correctly extract 'mock-object-token' from the { token: 'mock-object-token' } object
     expect(config.headers.Authorization).toBe('Bearer mock-object-token');
     expect(result.success).toBe(true);
