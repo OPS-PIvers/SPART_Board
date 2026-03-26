@@ -1,0 +1,81 @@
+import React from 'react';
+
+export interface ConfigSchemaField {
+  type: 'string' | 'number' | 'boolean' | 'stringArray';
+  label: string;
+  description?: string;
+  default?: unknown;
+}
+
+export type ConfigSchema = Record<string, ConfigSchemaField>;
+
+interface SchemaDrivenConfigurationPanelProps {
+  schema: ConfigSchema;
+  config: Record<string, unknown>;
+  onChange: (newConfig: Record<string, unknown>) => void;
+}
+
+export const SchemaDrivenConfigurationPanel: React.FC<
+  SchemaDrivenConfigurationPanelProps
+> = ({ schema, config, onChange }) => {
+  return (
+    <div className="space-y-4">
+      {Object.entries(schema).map(([key, field]) => {
+        const value = (config || {})[key] ?? field.default;
+
+        return (
+          <div key={key}>
+            <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+              {field.label}
+            </label>
+            {field.description && (
+              <p className="text-xs text-slate-400 mb-2">{field.description}</p>
+            )}
+
+            {field.type === 'number' && (
+              <input
+                type="number"
+                value={value as number}
+                onChange={(e) =>
+                  onChange({ ...config, [key]: Number(e.target.value) })
+                }
+                className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+              />
+            )}
+
+            {field.type === 'string' && (
+              <input
+                type="text"
+                value={value as string}
+                onChange={(e) => onChange({ ...config, [key]: e.target.value })}
+                className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+              />
+            )}
+
+            {field.type === 'boolean' && (
+              <input
+                type="checkbox"
+                checked={!!value}
+                onChange={(e) =>
+                  onChange({ ...config, [key]: e.target.checked })
+                }
+              />
+            )}
+
+            {field.type === 'stringArray' && (
+              <textarea
+                value={((value as string[]) || []).join('\n')}
+                onChange={(e) =>
+                  onChange({ ...config, [key]: e.target.value.split('\n') })
+                }
+                className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                placeholder="One item per line"
+                rows={4}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};

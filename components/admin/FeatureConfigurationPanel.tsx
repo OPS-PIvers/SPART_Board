@@ -48,6 +48,8 @@ import { ClassesConfigurationPanel } from './ClassesConfigurationPanel';
 import { HotspotImageConfigurationPanel } from './HotspotImageConfigurationPanel';
 import { ConceptWebConfigurationPanel } from './ConceptWebConfigurationPanel';
 import { SyntaxFramerConfigurationPanel } from './SyntaxFramerConfigurationPanel';
+import { MagicConfigurationPanel } from './MagicConfigurationPanel';
+import { RecordConfigurationPanel } from './RecordConfigurationPanel';
 import { SeatingChartConfigurationPanel } from './SeatingChartConfigurationPanel';
 import { RevealGridConfigurationPanel } from './RevealGridConfigurationPanel';
 import { SmartNotebookConfigurationPanel } from './SmartNotebookConfigurationPanel';
@@ -94,6 +96,8 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   classes: ClassesConfigurationPanel as unknown as BuildingConfigPanel,
   smartNotebook:
     SmartNotebookConfigurationPanel as unknown as BuildingConfigPanel,
+  magic: MagicConfigurationPanel as unknown as BuildingConfigPanel,
+  record: RecordConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {
