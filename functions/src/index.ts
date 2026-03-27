@@ -742,12 +742,11 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     const client = await auth.getClient();
     const accessTokenResponse = await client.getAccessToken();
 
-    const tokenStr =
-      typeof accessTokenResponse === 'string' ? accessTokenResponse : '';
     const accessToken =
-      tokenStr.length > 0
-        ? tokenStr
-        : (accessTokenResponse as { token?: string | null | undefined })?.token;
+      typeof accessTokenResponse === 'string'
+        ? accessTokenResponse
+        : ((accessTokenResponse as { token?: string | null | undefined })
+            ?.token ?? null);
 
     if (!accessToken) {
       throw new functionsV2.https.HttpsError(
