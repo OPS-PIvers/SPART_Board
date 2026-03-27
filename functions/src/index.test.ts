@@ -69,13 +69,14 @@ import {
 
 // Mock google-auth-library
 vi.mock('google-auth-library', () => {
+  const mockInstance = {
+    getClient: vi.fn().mockResolvedValue({
+      getAccessToken: vi.fn().mockResolvedValue('mock-token'),
+    }),
+    getAccessToken: vi.fn().mockResolvedValue('mock-token'),
+  };
   return {
-    GoogleAuth: class {
-      getClient = vi.fn().mockResolvedValue({
-        getAccessToken: vi.fn().mockResolvedValue('mock-token'),
-      });
-      getAccessToken = vi.fn().mockResolvedValue('mock-token');
-    },
+    GoogleAuth: vi.fn(() => mockInstance),
   };
 });
 
