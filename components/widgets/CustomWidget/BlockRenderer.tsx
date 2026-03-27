@@ -726,15 +726,20 @@ function PollBlock({
 function MultipleChoiceBlock({
   block,
   config,
-  blockState: _blockState,
+  blockState,
   dispatch,
 }: BlockProps<MultipleChoiceBlockConfig>) {
-  const [selected, setSelected] = useState<number>(-1);
+  const selected = blockState.selectedOption;
   const hasAnswered = selected !== -1;
 
   const handleSelect = (index: number) => {
     if (hasAnswered) return;
-    setSelected(index);
+    dispatch({
+      type: 'DIRECT_ACTION',
+      blockId: block.id,
+      action: 'select-option',
+      actionValue: index,
+    });
     const isCorrect = index === config.correctIndex;
     dispatch({
       type: 'BLOCK_EVENT',
@@ -799,15 +804,10 @@ function MatchPairBlock({
   dispatch,
 }: BlockProps<MatchPairBlockConfig>) {
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
-  // Track completed pairs locally since the reducer doesn't have a specific action for this
-  const [localCompletedPairs, setLocalCompletedPairs] = useState<
-    [number, number][]
-  >(() => blockState.completedPairs);
+  const completedPairs = blockState.completedPairs;
 
-  const isLeftMatched = (i: number) =>
-    localCompletedPairs.some(([l]) => l === i);
-  const isRightMatched = (i: number) =>
-    localCompletedPairs.some(([, r]) => r === i);
+  const isLeftMatched = (i: number) => completedPairs.some(([l]) => l === i);
+  const isRightMatched = (i: number) => completedPairs.some(([, r]) => r === i);
 
   const handleLeftClick = (i: number) => {
     if (isLeftMatched(i)) return;
@@ -817,26 +817,31 @@ function MatchPairBlock({
   const handleRightClick = (ri: number) => {
     if (selectedLeft === null || isRightMatched(ri)) return;
     const isCorrect = config.correctPairs[selectedLeft] === ri;
-    const newPairs: [number, number][] = [
-      ...localCompletedPairs,
-      [selectedLeft, ri],
-    ];
-
-    dispatch({
-      type: 'BLOCK_EVENT',
-      sourceId: block.id,
-      event: isCorrect ? 'on-item-sorted' : 'on-click',
-    });
-
     if (isCorrect) {
-      setLocalCompletedPairs(newPairs);
-      if (newPairs.length === config.leftItems.length) {
+      dispatch({
+        type: 'DIRECT_ACTION',
+        blockId: block.id,
+        action: 'complete-pair',
+        actionPayload: `${selectedLeft}:${ri}`,
+      });
+      dispatch({
+        type: 'BLOCK_EVENT',
+        sourceId: block.id,
+        event: 'on-item-sorted',
+      });
+      if (completedPairs.length + 1 === config.leftItems.length) {
         dispatch({
           type: 'BLOCK_EVENT',
           sourceId: block.id,
           event: 'on-all-matched',
         });
       }
+    } else {
+      dispatch({
+        type: 'BLOCK_EVENT',
+        sourceId: block.id,
+        event: 'on-click',
+      });
     }
     setSelectedLeft(null);
   };
@@ -935,11 +940,11 @@ function HotspotBlock({
 function SortBinBlock({
   block,
   config,
-  blockState: _blockState,
+  blockState,
   dispatch,
 }: BlockProps<SortBinBlockConfig>) {
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
-  const [sortedItems, setSortedItems] = useState<Record<number, number>>({});
+  const sortedItems = blockState.sortedItems;
 
   const unsortedItems = config.items
     .map((item, i) => ({ item, i }))
@@ -951,15 +956,20 @@ function SortBinBlock({
 
   const handleBinClick = (binIndex: number) => {
     if (selectedItem === null) return;
-    const updatedSortedItems = { ...sortedItems, [selectedItem]: binIndex };
-    setSortedItems(updatedSortedItems);
     const isCorrect = config.items[selectedItem].correctBin === binIndex;
+    dispatch({
+      type: 'DIRECT_ACTION',
+      blockId: block.id,
+      action: 'sort-item',
+      actionPayload: `${selectedItem}:${binIndex}`,
+    });
     dispatch({
       type: 'BLOCK_EVENT',
       sourceId: block.id,
       event: isCorrect ? 'on-item-sorted' : 'on-click',
     });
-    if (Object.keys(updatedSortedItems).length === config.items.length) {
+    const newSortedCount = Object.keys(sortedItems).length + 1;
+    if (newSortedCount === config.items.length) {
       dispatch({
         type: 'BLOCK_EVENT',
         sourceId: block.id,
@@ -1108,20 +1118,18 @@ function TimerBlock({
     });
     dispatch({
       type: 'BLOCK_EVENT',
-      sourceId: `__timer_stop_${block.id}`,
-      event: '__stop',
+      sourceId: block.id,
+      event: 'on-timer-stop',
     });
   };
 
   const handleReset = () => {
     dispatch({
-      type: 'BLOCK_EVENT',
-      sourceId: `__timer_reset_${block.id}`,
-      event: '__reset',
+      type: 'DIRECT_ACTION',
+      blockId: block.id,
+      action: 'reset',
     });
   };
-
-  void handleReset;
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 overflow-hidden p-1">
@@ -1162,6 +1170,16 @@ function TimerBlock({
               ⏸ Pause
             </button>
           )}
+          <button
+            onClick={handleReset}
+            className="bg-slate-600 hover:bg-slate-500 text-white rounded transition-colors"
+            style={{
+              fontSize: 'min(12px, 4.5cqmin)',
+              padding: 'min(4px, 1.5cqmin) min(10px, 3cqmin)',
+            }}
+          >
+            ↺ Reset
+          </button>
         </div>
       )}
     </div>

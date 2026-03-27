@@ -19,6 +19,7 @@ import {
 import { BuilderGrid } from './BuilderGrid';
 import { BlockPalette } from './BlockPalette';
 import { CellEditor } from './CellEditor';
+import { buildDefaultConfig } from './blockDefaults';
 import { ConnectionsTab } from './ConnectionsTab';
 import { CodeEditorPane, INITIAL_HTML_TEMPLATE } from './CodeEditorPane';
 import { WidgetMetaEditor } from './WidgetMetaEditor';
@@ -369,7 +370,7 @@ export const WidgetBuilderModal: React.FC<WidgetBuilderModalProps> = ({
                         const newBlock = {
                           id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                           type: blockType,
-                          config: {} as never,
+                          config: buildDefaultConfig(blockType) as never,
                           style: {},
                         };
                         const newCells = state.gridDefinition.cells.map((c) =>

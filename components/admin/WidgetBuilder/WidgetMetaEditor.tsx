@@ -200,7 +200,7 @@ export const WidgetMetaEditor: React.FC<WidgetMetaEditorProps> = ({
                 update({
                   betaUsers: e.target.value
                     .split('\n')
-                    .map((s) => s.trim())
+                    .map((s) => s.trim().toLowerCase())
                     .filter(Boolean),
                 })
               }

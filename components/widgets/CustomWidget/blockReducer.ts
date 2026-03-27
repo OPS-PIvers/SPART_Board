@@ -88,6 +88,7 @@ function applyAction(
         sortedItems: {},
         selectedRight: null,
         timerRunning: false,
+        timerRemaining: blockState.initialDuration,
       };
     case 'reset-all':
       // reset-all is handled at the reducer level, this is a no-op per-block
@@ -119,6 +120,33 @@ function applyAction(
       return { ...blockState, value: 1 };
     case 'toggle-off':
       return { ...blockState, value: 0 };
+    case 'select-option':
+      return { ...blockState, selectedOption: actionValue ?? -1 };
+    case 'complete-pair': {
+      // actionPayload encodes "leftIndex:rightIndex"
+      const [ls, rs] = (actionPayload ?? '').split(':');
+      const li = parseInt(ls, 10);
+      const ri = parseInt(rs, 10);
+      if (isNaN(li) || isNaN(ri)) return blockState;
+      return {
+        ...blockState,
+        completedPairs: [
+          ...blockState.completedPairs,
+          [li, ri] as [number, number],
+        ],
+      };
+    }
+    case 'sort-item': {
+      // actionPayload encodes "itemIndex:binIndex"
+      const [is2, bs2] = (actionPayload ?? '').split(':');
+      const itemIdx = parseInt(is2, 10);
+      const binIdx = parseInt(bs2, 10);
+      if (isNaN(itemIdx) || isNaN(binIdx)) return blockState;
+      return {
+        ...blockState,
+        sortedItems: { ...blockState.sortedItems, [itemIdx]: binIdx },
+      };
+    }
     default:
       return blockState;
   }

@@ -2498,6 +2498,7 @@ export type BlockEvent =
   | 'on-all-sorted'
   | 'on-timer-end'
   | 'on-timer-start'
+  | 'on-timer-stop'
   | `on-counter-reach-${number}`
   | 'on-toggle-on'
   | 'on-toggle-off'
@@ -2530,7 +2531,10 @@ export type BlockAction =
   | 'check-item'
   | 'add-score'
   | 'toggle-on'
-  | 'toggle-off';
+  | 'toggle-off'
+  | 'select-option'
+  | 'complete-pair'
+  | 'sort-item';
 
 /** An IFTTT-style connection between two blocks */
 export interface BlockConnection {

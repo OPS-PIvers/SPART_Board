@@ -9,67 +9,13 @@ import {
   BLOCK_LABELS,
 } from '@/components/widgets/CustomWidget/types';
 import { Trash2, X } from 'lucide-react';
+import { buildDefaultConfig } from './blockDefaults';
 
 interface CellEditorProps {
   cell: CustomGridCell | null;
   onUpdateBlock: (cellId: string, block: CustomBlockDefinition | null) => void;
   onDropBlock: (cellId: string, blockType: CustomBlockType) => void;
   onClose: () => void;
-}
-
-function buildDefaultConfig(type: CustomBlockType): Record<string, unknown> {
-  switch (type) {
-    case 'text':
-      return { text: 'Enter text here', fontSize: 16, align: 'left' };
-    case 'heading':
-      return { text: 'Heading', size: 'md' };
-    case 'image':
-      return { url: '', alt: '', objectFit: 'contain' };
-    case 'cb-button':
-      return { label: 'Click Me', style: 'primary' };
-    case 'counter':
-      return { label: 'Count', startValue: 0, step: 1 };
-    case 'toggle':
-      return { label: 'Toggle', onLabel: 'ON', offLabel: 'OFF' };
-    case 'stars':
-      return { maxStars: 5, label: 'Rating' };
-    case 'progress':
-      return { min: 0, max: 100, startValue: 0, label: 'Progress' };
-    case 'timer':
-      return { durationSeconds: 60, autoStart: false, showControls: true };
-    case 'score':
-      return { label: 'Score', startValue: 0 };
-    case 'checklist':
-      return { items: ['Item 1', 'Item 2', 'Item 3'] };
-    case 'poll':
-      return { question: 'Vote:', options: ['Yes', 'No'] };
-    case 'multiple-choice':
-      return {
-        question: 'Question?',
-        options: ['A', 'B', 'C', 'D'],
-        correctIndex: 0,
-      };
-    case 'text-input':
-      return { placeholder: 'Type here...', label: '' };
-    case 'reveal':
-      return { contentType: 'text', content: 'Hidden content' };
-    case 'flip-card':
-      return { frontText: 'Front', backText: 'Back' };
-    case 'conditional-label':
-      return { labels: ['State A', 'State B'], currentIndex: 0 };
-    case 'badge':
-      return { label: 'Badge', icon: '⭐', earned: false };
-    case 'traffic-light':
-      return { state: 'green' };
-    case 'match-pair':
-      return { pairs: [{ left: 'Term', right: 'Definition' }] };
-    case 'hotspot':
-      return { imageSrc: '', spots: [] };
-    case 'sort-bin':
-      return { bins: ['Bin A', 'Bin B'], items: [] };
-    default:
-      return {};
-  }
 }
 
 export const CellEditor: React.FC<CellEditorProps> = ({
