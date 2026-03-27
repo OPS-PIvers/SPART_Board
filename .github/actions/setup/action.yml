@@ -14,7 +14,7 @@ runs:
       id: read-pnpm-version
       shell: bash
       run: |
-        PNPM_VERSION=$(jq -r '.packageManager' package.json | cut -d'@' -f2)
+        PNPM_VERSION=$(grep '"packageManager"' package.json | cut -d'"' -f4 | cut -d'@' -f2)
         echo "version=${PNPM_VERSION}" >> "$GITHUB_OUTPUT"
 
     - name: Install pnpm
