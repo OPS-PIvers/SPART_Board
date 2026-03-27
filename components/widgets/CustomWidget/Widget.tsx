@@ -16,7 +16,11 @@ import {
   CustomWidgetSettingDef,
 } from '@/types';
 import { WidgetBlockState, WidgetAction } from './types';
-import { blockReducer, buildInitialState } from './blockReducer';
+import {
+  blockReducer,
+  buildInitialState,
+  conditionPasses,
+} from './blockReducer';
 import { BlockRenderer } from './BlockRenderer';
 import {
   WidgetStateContext,
@@ -121,25 +125,30 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
     }
   }, [activeGrid]);
 
-  // Derive stable set of running timer block IDs so the interval is not
-  // recreated on every tick (only when the set of running timers changes).
-  const runningTimerIds = Object.entries(state)
-    .filter(([, bs]) => bs.timerRunning && bs.timerRemaining > 0)
-    .map(([id]) => id);
-  const runningTimerKey = runningTimerIds.join(',');
+  // Determine whether any timers are running (safe to derive during render).
+  const hasRunningTimers = Object.values(state).some(
+    (bs) => bs.timerRunning && bs.timerRemaining > 0
+  );
+
+  // Keep a ref with the live list of running timer IDs so the interval
+  // callback is never stale. Updated in an effect (not during render).
+  const runningTimerIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    runningTimerIdsRef.current = Object.entries(state)
+      .filter(([, bs]) => bs.timerRunning && bs.timerRemaining > 0)
+      .map(([id]) => id);
+  });
 
   // Timer intervals: tick each running timer block every second
   useEffect(() => {
-    if (runningTimerIds.length === 0) return;
-    const ids = runningTimerIds;
+    if (!hasRunningTimers) return;
     const interval = setInterval(() => {
-      for (const blockId of ids) {
+      for (const blockId of runningTimerIdsRef.current) {
         dispatch({ type: 'TIMER_TICK', blockId });
       }
     }, 1000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runningTimerKey]);
+  }, [hasRunningTimers, dispatch]);
 
   // Side-effect: fire timer-end events when timers reach 0
   const prevStateRef = useRef<WidgetBlockState>({});
@@ -173,6 +182,7 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
           (c) => c.sourceBlockId === action.sourceId && c.event === action.event
         );
         for (const conn of connections) {
+          if (!conditionPasses(conn.condition, state)) continue;
           if (conn.action === 'play-sound') {
             playBeep();
           }
@@ -187,7 +197,7 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
       }
       dispatch(action);
     },
-    [activeGrid]
+    [activeGrid, state]
   );
 
   // Context value

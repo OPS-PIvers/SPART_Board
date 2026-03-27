@@ -37,7 +37,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           key={key}
           srcDoc={content}
           className="flex-1 w-full border-none bg-white"
-          sandbox="allow-scripts allow-forms allow-modals allow-same-origin"
+          sandbox="allow-scripts allow-forms allow-modals"
           title="Widget preview"
         />
       ) : (

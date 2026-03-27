@@ -2761,4 +2761,6 @@ export interface CustomWidgetConfig {
   mode: 'block' | 'code';
   /** Admin-configured settings values (keyed by CustomWidgetSettingDef.key) */
   adminSettings?: Record<string, string | number | boolean>;
+  /** Setting definitions snapshotted from the CustomWidgetDoc at add time */
+  settings?: CustomWidgetSettingDef[];
 }

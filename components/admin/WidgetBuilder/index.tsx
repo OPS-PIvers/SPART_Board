@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   X,
   ChevronLeft,
@@ -220,6 +220,16 @@ export const WidgetBuilderModal: React.FC<WidgetBuilderModalProps> = ({
 
   // Track selected cell for CellEditor
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
+
+  // Reset builder state whenever the modal is opened or the widget being
+  // edited changes (e.g. user closes and reopens with a different widget).
+  useEffect(() => {
+    if (!isOpen) return;
+    setState(buildInitialState(existingWidget));
+    setSaving(false);
+    setSaveMessage(null);
+    setSelectedCellId(null);
+  }, [isOpen, existingWidget]);
 
   const update = useCallback((updates: Partial<BuilderState>) => {
     setState((prev) => ({ ...prev, ...updates }));

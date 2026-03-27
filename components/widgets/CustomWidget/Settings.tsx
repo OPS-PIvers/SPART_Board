@@ -30,9 +30,7 @@ export const CustomWidgetSettings: React.FC<SettingsProps> = ({ widget }) => {
 
   // Pull setting defs from the widget doc snapshot if present.
   // (The builder stores them at the top level of config for convenience.)
-  const settingDefs: CustomWidgetSettingDef[] =
-    (config as unknown as { _settingDefs?: CustomWidgetSettingDef[] })
-      ._settingDefs ?? [];
+  const settingDefs: CustomWidgetSettingDef[] = config.settings ?? [];
 
   const [localValues, setLocalValues] =
     useState<Record<string, string | number | boolean>>(adminSettings);

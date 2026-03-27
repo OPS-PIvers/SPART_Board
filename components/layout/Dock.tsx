@@ -116,6 +116,7 @@ export const Dock: React.FC = () => {
           mode: cw.mode,
           gridDefinition: cw.gridDefinition,
           codeContent: cw.codeContent,
+          settings: cw.settings,
         },
       });
     },

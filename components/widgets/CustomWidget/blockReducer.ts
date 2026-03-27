@@ -18,7 +18,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Evaluate an optional guard condition on the current state */
-function conditionPasses(
+export function conditionPasses(
   condition: BlockConnection['condition'],
   state: WidgetBlockState
 ): boolean {
@@ -221,6 +221,7 @@ export function buildInitialState(
       votes: pollOptions.map(() => 0),
       checked: checklistItems.map(() => false),
       timerRemaining,
+      initialDuration: timerRemaining,
       trafficColor: initialColor,
     };
   }

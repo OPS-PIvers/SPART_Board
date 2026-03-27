@@ -139,7 +139,7 @@ function RevealBlock({
   const isRevealed = blockState.revealed;
   return (
     <div
-      className="w-full h-full flex items-center justify-center overflow-hidden cursor-pointer"
+      className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-pointer"
       onClick={() =>
         dispatch({ type: 'BLOCK_EVENT', sourceId: block.id, event: 'on-click' })
       }

@@ -35,6 +35,8 @@ export interface BlockState {
   timerRunning: boolean;
   /** Timer: remaining seconds */
   timerRemaining: number;
+  /** Timer: initial duration set by config (used to restore on reset) */
+  initialDuration: number;
   /** Multiple choice: which option was selected (-1 = none) */
   selectedOption: number;
 }
@@ -54,6 +56,7 @@ export const DEFAULT_BLOCK_STATE: BlockState = {
   sortedItems: {},
   timerRunning: false,
   timerRemaining: 0,
+  initialDuration: 0,
   selectedOption: -1,
 };
 
