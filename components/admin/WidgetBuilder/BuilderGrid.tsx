@@ -134,6 +134,16 @@ export const BuilderGrid: React.FC<BuilderGridProps> = ({
   const handleMerge = () => {
     if (!canMerge()) return;
     const selected = cells.filter((c) => shiftSelected.includes(c.id));
+
+    // Prevent data loss: if multiple selected cells have blocks, abort and alert
+    const cellsWithBlocks = selected.filter((c) => c.block !== null);
+    if (cellsWithBlocks.length > 1) {
+      alert(
+        'Cannot merge: multiple selected cells contain blocks. Remove blocks from all but one cell before merging.'
+      );
+      return;
+    }
+
     const minCol = Math.min(...selected.map((c) => c.colStart));
     const maxCol = Math.max(...selected.map((c) => c.colStart + c.colSpan - 1));
     const minRow = Math.min(...selected.map((c) => c.rowStart));

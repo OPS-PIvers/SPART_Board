@@ -2008,7 +2008,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                                     ? VideoActivityConfig
                                                                                                     : T extends 'guided-learning'
                                                                                                       ? GuidedLearningConfig
-                                                                                                      : never;
+                                                                                                      : T extends 'custom-widget'
+                                                                                                        ? CustomWidgetConfig
+                                                                                                        : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
