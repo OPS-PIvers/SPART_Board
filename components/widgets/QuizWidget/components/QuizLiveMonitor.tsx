@@ -100,9 +100,18 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
       ).length
     : 0;
 
-  const completed = responses.filter((r) => r.status === 'completed').length;
-  const inProgress = responses.filter((r) => r.status === 'in-progress').length;
-  const joined = responses.filter((r) => r.status === 'joined').length;
+  // ⚡ Bolt Optimization: Consolidate O(3N) array filtering into a single O(N) pass to avoid intermediate allocations on every render
+  const { completed, inProgress, joined } = React.useMemo(() => {
+    let comp = 0,
+      prog = 0,
+      join = 0;
+    for (const r of responses) {
+      if (r.status === 'completed') comp++;
+      else if (r.status === 'in-progress') prog++;
+      else if (r.status === 'joined') join++;
+    }
+    return { completed: comp, inProgress: prog, joined: join };
+  }, [responses]);
 
   const modeIcon =
     session.sessionMode === 'auto' ? (

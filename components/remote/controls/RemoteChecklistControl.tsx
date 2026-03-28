@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Check, RotateCcw } from 'lucide-react';
 import { WidgetData, ChecklistConfig, ChecklistItem } from '@/types';
 
@@ -12,7 +12,10 @@ export const RemoteChecklistControl: React.FC<RemoteChecklistControlProps> = ({
   updateWidget,
 }) => {
   const config = widget.config as ChecklistConfig;
-  const items: ChecklistItem[] = config.items ?? [];
+  const items: ChecklistItem[] = useMemo(
+    () => config.items ?? [],
+    [config.items]
+  );
 
   const toggleItem = (itemId: string) => {
     const updated = items.map((item) =>
@@ -31,7 +34,11 @@ export const RemoteChecklistControl: React.FC<RemoteChecklistControlProps> = ({
     updateWidget(widget.id, { config: { ...config, items: updated } });
   };
 
-  const completedCount = items.filter((i) => i.completed).length;
+  // ⚡ Bolt Optimization: Use reduce instead of filter().length to prevent generating intermediate array objects
+  const completedCount = useMemo(
+    () => items.reduce((acc, i) => acc + (i.completed ? 1 : 0), 0),
+    [items]
+  );
 
   return (
     <div className="flex flex-col h-full">
