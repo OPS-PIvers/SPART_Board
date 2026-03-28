@@ -549,6 +549,12 @@ export const Dock: React.FC = () => {
     [minimizedWidgetsByType]
   );
 
+  // Precompute id→title map for O(1) lookups in the minimized-widget restore chips
+  const customWidgetTitleById = useMemo(
+    () => new Map(customWidgets.map((w) => [w.id, w.title])),
+    [customWidgets]
+  );
+
   return (
     <div
       ref={dockContainerRef}
@@ -1099,7 +1105,7 @@ export const Dock: React.FC = () => {
                           updateWidget(cw.id, { minimized: false })
                         }
                         className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x flex-shrink-0"
-                        title={`Restore: ${customWidgets.find((w) => w.id === (cw.config as { customWidgetId?: string }).customWidgetId)?.title ?? 'Custom Widget'}`}
+                        title={`Restore: ${customWidgetTitleById.get((cw.config as { customWidgetId?: string }).customWidgetId ?? '') ?? 'Custom Widget'}`}
                       >
                         <DockIcon
                           color="bg-purple-600 shadow-lg shadow-purple-600/20"

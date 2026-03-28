@@ -5,7 +5,7 @@
  * Renders admin-configurable settings defined in the CustomWidgetDoc.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   WidgetData,
   CustomWidgetConfig,
@@ -41,22 +41,21 @@ export const CustomWidgetSettings: React.FC<SettingsProps> = ({ widget }) => {
 
   // Find the live widget doc to get setting definitions
   const widgetDoc = customWidgets.find((cw) => cw.id === config.customWidgetId);
-  const settingDefs = useMemo<CustomWidgetSettingDef[]>(
-    () => widgetDoc?.settings ?? [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [widgetDoc?.id]
-  );
+  const settingDefs: CustomWidgetSettingDef[] = widgetDoc?.settings ?? [];
 
   // Initialize localValues from adminSettings, falling back to setting defaults
   const [localValues, setLocalValues] = useState<
     Record<string, string | number | boolean>
   >(() => buildDefaults(settingDefs, adminSettings));
 
-  // Merge in defaults when settingDefs loads asynchronously (first render
-  // often has an empty array before customWidgets resolves from context).
-  useEffect(() => {
+  // "Adjusting state while rendering" pattern: re-merge defaults whenever the
+  // widget doc changes (async load or switch to a different widget). This avoids
+  // calling setState inside an effect, which triggers react-hooks/set-state-in-effect.
+  const [prevDocId, setPrevDocId] = useState<string | undefined>(undefined);
+  if (prevDocId !== widgetDoc?.id) {
+    setPrevDocId(widgetDoc?.id);
     setLocalValues((prev) => buildDefaults(settingDefs, prev));
-  }, [settingDefs]);
+  }
 
   const handleChange = (key: string, value: string | number | boolean) => {
     setLocalValues((prev) => ({ ...prev, [key]: value }));
