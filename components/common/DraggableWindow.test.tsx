@@ -491,13 +491,13 @@ describe('DraggableWindow', () => {
     ) => void; // the handler is the 2nd arg
 
     // Call it manually
-
-    clickOutsideCallback(new MouseEvent('mousedown'));
+    act(() => {
+      clickOutsideCallback(new MouseEvent('mousedown'));
+    });
 
     // Check if updateWidget was called with the new title
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
-
       expect.objectContaining({ customTitle: 'New Saved Title' })
     );
 
