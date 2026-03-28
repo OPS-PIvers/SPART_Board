@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
-import { WidgetData, PollConfig } from '@/types';
+import { WidgetData, PollConfig, ChecklistConfig } from '@/types';
 import { useDialog } from '@/context/useDialog';
 import {
   RotateCcw,
@@ -84,14 +84,54 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       return;
     }
 
-    const checklistConfig = activeChecklist.config as {
-      items?: { text: string; completed: boolean }[];
-    };
-    const items = checklistConfig.items ?? [];
-    const uncompletedItems = items.filter((i) => !i.completed);
+    const checklistConfig = activeChecklist.config as ChecklistConfig;
+    const {
+      mode = 'manual',
+      items = [],
+      rosterMode = 'class',
+      firstNames = '',
+      lastNames = '',
+      completedNames = [],
+    } = checklistConfig;
 
-    if (uncompletedItems.length === 0) {
-      addToast('Checklist has no uncompleted tasks to import.', 'info');
+    let uncompleted: { text: string }[] = [];
+
+    if (mode === 'manual') {
+      uncompleted = items
+        .filter((i) => !i.completed)
+        .map((i) => ({ text: i.text }));
+    } else {
+      // mode === 'roster'
+      const students: { id: string; label: string }[] = [];
+      if (rosterMode === 'class' && activeRoster) {
+        activeRoster.students.forEach((s) => {
+          students.push({
+            id: s.id,
+            label: `${s.firstName} ${s.lastName}`.trim(),
+          });
+        });
+      } else {
+        const firsts = firstNames
+          .split('\n')
+          .map((n) => n.trim())
+          .filter((n) => n);
+        const lasts = lastNames
+          .split('\n')
+          .map((n) => n.trim())
+          .filter((n) => n);
+        const count = Math.max(firsts.length, lasts.length);
+        for (let i = 0; i < count; i++) {
+          const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
+          if (name) students.push({ id: name, label: name });
+        }
+      }
+      uncompleted = students
+        .filter((s) => !(completedNames || []).includes(s.id))
+        .map((s) => ({ text: s.label }));
+    }
+
+    if (uncompleted.length === 0) {
+      addToast('Checklist has no uncompleted items to import.', 'info');
       return;
     }
 
@@ -103,7 +143,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       if (!confirmed) return;
     }
 
-    const newOptions = uncompletedItems.map((item) => ({
+    const newOptions = uncompleted.map((item) => ({
       id: crypto.randomUUID(),
       label: item.text.trim(),
       votes: 0,
@@ -112,7 +152,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     updateWidget(widget.id, {
       config: { ...config, options: newOptions } as PollConfig,
     });
-    addToast(`Imported ${newOptions.length} tasks!`, 'success');
+    addToast(`Imported ${newOptions.length} items!`, 'success');
   };
 
   const handleExport = () => {
