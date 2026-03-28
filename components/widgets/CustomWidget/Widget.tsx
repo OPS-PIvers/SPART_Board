@@ -149,15 +149,18 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
     return () => clearInterval(interval);
   }, [hasRunningTimers, dispatch]);
 
-  // Track the last dispatched BLOCK_EVENT for post-update side effects.
-  const lastEventRef = useRef<WidgetAction | null>(null);
+  // Queue of BLOCK_EVENTs dispatched since the last state flush — used to fire
+  // side effects after the reducer has settled. A queue (not a single ref) is
+  // required because some blocks emit multiple events in sequence
+  // (e.g. counter: on-counter-reach-X AND on-value-reach-X).
+  const lastEventRef = useRef<WidgetAction[]>([]);
   // Track previous state to detect timer-end transitions for side effects.
   const prevStateRef = useRef<WidgetBlockState>({});
 
   const dispatchWithSideEffects = React.useCallback(
     (action: WidgetAction) => {
       if (action.type === 'BLOCK_EVENT') {
-        lastEventRef.current = action;
+        lastEventRef.current.push(action);
       }
       dispatch(action);
     },
@@ -195,18 +198,19 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
     }
     prevStateRef.current = state;
 
-    // BLOCK_EVENT side effects: play-sound / show-toast from explicit events
-    const lastEvent = lastEventRef.current;
-    if (!lastEvent || lastEvent.type !== 'BLOCK_EVENT') return;
-    lastEventRef.current = null;
-    for (const conn of activeGrid.connections.filter(
-      (c) =>
-        c.sourceBlockId === lastEvent.sourceId && c.event === lastEvent.event
-    )) {
-      if (!conditionPasses(conn.condition, state)) continue;
-      if (conn.action === 'play-sound') playBeep();
-      if (conn.action === 'show-toast' && conn.actionPayload)
-        addToast(conn.actionPayload, 'info');
+    // BLOCK_EVENT side effects: drain the queue and fire play-sound / show-toast
+    const queuedEvents = lastEventRef.current;
+    lastEventRef.current = [];
+    for (const ev of queuedEvents) {
+      if (ev.type !== 'BLOCK_EVENT') continue;
+      for (const conn of activeGrid.connections.filter(
+        (c) => c.sourceBlockId === ev.sourceId && c.event === ev.event
+      )) {
+        if (!conditionPasses(conn.condition, state)) continue;
+        if (conn.action === 'play-sound') playBeep();
+        if (conn.action === 'show-toast' && conn.actionPayload)
+          addToast(conn.actionPayload, 'info');
+      }
     }
   }, [state, activeGrid, addToast]);
 

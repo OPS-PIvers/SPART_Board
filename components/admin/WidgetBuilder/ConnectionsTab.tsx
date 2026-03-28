@@ -3,6 +3,7 @@ import { CustomGridDefinition, BlockConnection, BlockAction } from '@/types';
 import {
   BLOCK_EVENTS as BLOCK_EVENTS_MAP,
   BLOCK_ACTIONS as BLOCK_ACTIONS_MAP,
+  BlockEventDefinition,
 } from '@/components/widgets/CustomWidget/types';
 import { Link2, Plus, Trash2, ArrowRight } from 'lucide-react';
 
@@ -11,14 +12,22 @@ interface ConnectionsTabProps {
   onChange: (grid: CustomGridDefinition) => void;
 }
 
-// Derive unique events from the per-block-type map so this list stays in sync
-const allEventSet = new Set<string>();
-Object.values(BLOCK_EVENTS_MAP).forEach((events) =>
-  events.forEach((e) => allEventSet.add(e))
-);
-const BLOCK_EVENTS = Array.from(allEventSet).sort();
+// ---------------------------------------------------------------------------
+// Derived event / action lists
+// ---------------------------------------------------------------------------
 
-// Derive unique actions from the per-block-type map, plus widget-level actions
+// Deduplicate event definitions by base ID so each event appears once.
+const eventDefMap = new Map<string, BlockEventDefinition>();
+Object.values(BLOCK_EVENTS_MAP).forEach((defs) =>
+  defs.forEach((d) => {
+    if (!eventDefMap.has(d.id)) eventDefMap.set(d.id, d);
+  })
+);
+const ALL_EVENT_DEFS = Array.from(eventDefMap.values()).sort((a, b) =>
+  a.id.localeCompare(b.id)
+);
+
+// Derive unique actions from the per-block-type map, plus widget-level actions.
 const allActionSet = new Set<string>();
 Object.values(BLOCK_ACTIONS_MAP).forEach((actions) =>
   actions.forEach((a) => allActionSet.add(a))
@@ -28,18 +37,74 @@ Object.values(BLOCK_ACTIONS_MAP).forEach((actions) =>
 );
 const BLOCK_ACTIONS = Array.from(allActionSet).sort() as BlockAction[];
 
+// Actions that need a string payload
+const PAYLOAD_ACTIONS: BlockAction[] = [
+  'set-text',
+  'set-image',
+  'show-toast',
+  'set-traffic',
+];
+// Actions that need a numeric value
+const VALUE_ACTIONS: BlockAction[] = [
+  'set-value',
+  'increment',
+  'decrement',
+  'add-score',
+  'check-item',
+];
+
+// ---------------------------------------------------------------------------
+// Form state shape
+// ---------------------------------------------------------------------------
+
+interface NewConnForm {
+  sourceBlockId: string;
+  /** Base event id — for requiresNumber events this is the prefix only */
+  eventBase: string;
+  /** Numeric threshold for parameterized events (e.g. on-counter-reach-N) */
+  eventN: number;
+  targetBlockId: string;
+  action: BlockAction;
+  actionPayload: string;
+  actionValue: number;
+  hasCondition: boolean;
+  conditionWatchBlockId: string;
+  conditionOperator: 'gte' | 'lte' | 'eq';
+  conditionValue: number;
+}
+
+const BLANK_FORM: NewConnForm = {
+  sourceBlockId: '',
+  eventBase: 'on-click',
+  eventN: 1,
+  targetBlockId: '',
+  action: 'show',
+  actionPayload: '',
+  actionValue: 0,
+  hasCondition: false,
+  conditionWatchBlockId: '',
+  conditionOperator: 'gte',
+  conditionValue: 0,
+};
+
+const selectCls =
+  'w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500';
+const inputCls =
+  'w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500';
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
   gridDefinition,
   onChange,
 }) => {
   const { cells, connections } = gridDefinition;
   const [isAdding, setIsAdding] = useState(false);
-  const [newConn, setNewConn] = useState<Partial<BlockConnection>>({
-    event: 'on-click',
-    action: 'show',
-  });
+  const [form, setForm] = useState<NewConnForm>(BLANK_FORM);
 
-  // Collect named blocks from cells
+  // Named blocks available for selection
   const namedBlocks = cells
     .filter((c) => c.block !== null)
     .map((c) => {
@@ -52,40 +117,55 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
     })
     .filter((b): b is { id: string; label: string } => b !== null);
 
-  const handleAddConnection = () => {
-    if (
-      !newConn.sourceBlockId ||
-      !newConn.targetBlockId ||
-      !newConn.event ||
-      !newConn.action
-    ) {
-      return;
-    }
+  // Does the selected event definition require a numeric threshold?
+  const selectedEventDef = eventDefMap.get(form.eventBase);
+  const eventRequiresN = selectedEventDef?.requiresNumber ?? false;
+
+  // Concrete event string saved into the connection
+  const concreteEvent = eventRequiresN
+    ? `${form.eventBase}-${form.eventN}`
+    : form.eventBase;
+
+  const handleAdd = () => {
+    if (!form.sourceBlockId || !form.targetBlockId || !form.action) return;
+
     const conn: BlockConnection = {
       id: crypto.randomUUID(),
-      sourceBlockId: newConn.sourceBlockId,
-      event: newConn.event,
-      targetBlockId: newConn.targetBlockId,
-      action: newConn.action,
+      sourceBlockId: form.sourceBlockId,
+      event: concreteEvent,
+      targetBlockId: form.targetBlockId,
+      action: form.action,
+      ...(PAYLOAD_ACTIONS.includes(form.action) && form.actionPayload
+        ? { actionPayload: form.actionPayload }
+        : {}),
+      ...(VALUE_ACTIONS.includes(form.action)
+        ? { actionValue: form.actionValue }
+        : {}),
+      ...(form.hasCondition && form.conditionWatchBlockId
+        ? {
+            condition: {
+              watchBlockId: form.conditionWatchBlockId,
+              operator: form.conditionOperator,
+              value: form.conditionValue,
+            },
+          }
+        : {}),
     };
-    onChange({
-      ...gridDefinition,
-      connections: [...connections, conn],
-    });
+
+    onChange({ ...gridDefinition, connections: [...connections, conn] });
     setIsAdding(false);
-    setNewConn({ event: 'on-click', action: 'show' });
+    setForm(BLANK_FORM);
   };
 
-  const handleDeleteConnection = (id: string) => {
+  const handleDelete = (id: string) => {
     onChange({
       ...gridDefinition,
       connections: connections.filter((c) => c.id !== id),
     });
   };
 
-  const getBlockLabel = (blockId: string) => {
-    return namedBlocks.find((b) => b.id === blockId)?.label ?? blockId;
-  };
+  const getBlockLabel = (blockId: string) =>
+    namedBlocks.find((b) => b.id === blockId)?.label ?? blockId;
 
   return (
     <div className="flex flex-col h-full bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
@@ -123,16 +203,17 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
               New Connection
             </p>
 
+            {/* Source block */}
             <div className="space-y-1">
               <label className="block text-xs text-slate-400">
                 Source Block
               </label>
               <select
-                value={newConn.sourceBlockId ?? ''}
+                value={form.sourceBlockId}
                 onChange={(e) =>
-                  setNewConn((p) => ({ ...p, sourceBlockId: e.target.value }))
+                  setForm((p) => ({ ...p, sourceBlockId: e.target.value }))
                 }
-                className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                className={selectCls}
               >
                 <option value="">Select block...</option>
                 {namedBlocks.map((b) => (
@@ -143,40 +224,64 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
               </select>
             </div>
 
+            {/* Event + optional threshold number */}
             <div className="space-y-1">
               <label className="block text-xs text-slate-400">Event</label>
-              <select
-                value={newConn.event ?? 'on-click'}
-                onChange={(e) =>
-                  setNewConn((p) => ({
-                    ...p,
-                    event: e.target.value,
-                  }))
-                }
-                className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-              >
-                {BLOCK_EVENTS.map((ev) => (
-                  <option key={ev} value={ev}>
-                    {ev}
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={form.eventBase}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, eventBase: e.target.value }))
+                  }
+                  className={selectCls}
+                >
+                  {ALL_EVENT_DEFS.map((def) => (
+                    <option key={def.id} value={def.id}>
+                      {def.requiresNumber ? `${def.id}-N` : def.id}
+                    </option>
+                  ))}
+                </select>
+                {eventRequiresN && (
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.eventN}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        eventN: Math.max(1, Number(e.target.value)),
+                      }))
+                    }
+                    className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    title="Threshold value (N)"
+                  />
+                )}
+              </div>
+              {eventRequiresN && (
+                <p className="text-xs text-slate-500">
+                  Fires as:{' '}
+                  <span className="font-mono text-amber-400">
+                    {concreteEvent}
+                  </span>
+                </p>
+              )}
             </div>
 
+            {/* Target block */}
             <div className="space-y-1">
               <label className="block text-xs text-slate-400">
                 Target Block
               </label>
               <select
-                value={newConn.targetBlockId ?? ''}
+                value={form.targetBlockId}
                 onChange={(e) =>
-                  setNewConn((p) => ({ ...p, targetBlockId: e.target.value }))
+                  setForm((p) => ({ ...p, targetBlockId: e.target.value }))
                 }
-                className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                className={selectCls}
               >
                 <option value="">Select block...</option>
                 {namedBlocks
-                  .filter((b) => b.id !== newConn.sourceBlockId)
+                  .filter((b) => b.id !== form.sourceBlockId)
                   .map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.label}
@@ -185,17 +290,18 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
               </select>
             </div>
 
+            {/* Action */}
             <div className="space-y-1">
               <label className="block text-xs text-slate-400">Action</label>
               <select
-                value={newConn.action ?? 'show'}
+                value={form.action}
                 onChange={(e) =>
-                  setNewConn((p) => ({
+                  setForm((p) => ({
                     ...p,
                     action: e.target.value as BlockAction,
                   }))
                 }
-                className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                className={selectCls}
               >
                 {BLOCK_ACTIONS.map((act) => (
                   <option key={act} value={act}>
@@ -205,16 +311,139 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
               </select>
             </div>
 
+            {/* Action payload (string) — for set-text, set-image, show-toast, set-traffic */}
+            {PAYLOAD_ACTIONS.includes(form.action) && (
+              <div className="space-y-1">
+                <label className="block text-xs text-slate-400">
+                  {form.action === 'set-traffic'
+                    ? 'Color (red / yellow / green)'
+                    : form.action === 'show-toast'
+                      ? 'Toast message'
+                      : 'Value'}
+                </label>
+                <input
+                  type="text"
+                  value={form.actionPayload}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, actionPayload: e.target.value }))
+                  }
+                  placeholder={
+                    form.action === 'set-traffic'
+                      ? 'red | yellow | green'
+                      : form.action === 'show-toast'
+                        ? 'Message to display'
+                        : 'Value...'
+                  }
+                  className={inputCls}
+                />
+              </div>
+            )}
+
+            {/* Action value (number) — for set-value, increment/decrement step, etc. */}
+            {VALUE_ACTIONS.includes(form.action) && (
+              <div className="space-y-1">
+                <label className="block text-xs text-slate-400">
+                  {form.action === 'increment' || form.action === 'decrement'
+                    ? 'Step (default 1)'
+                    : form.action === 'check-item'
+                      ? 'Item index'
+                      : 'Value'}
+                </label>
+                <input
+                  type="number"
+                  value={form.actionValue}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      actionValue: Number(e.target.value),
+                    }))
+                  }
+                  className={inputCls}
+                />
+              </div>
+            )}
+
+            {/* Optional guard condition */}
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.hasCondition}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, hasCondition: e.target.checked }))
+                  }
+                />
+                Add guard condition
+              </label>
+              {form.hasCondition && (
+                <div className="mt-1 bg-slate-800 border border-slate-600 rounded p-2 space-y-1">
+                  <p className="text-xs text-slate-500">
+                    Only fire if another block&apos;s value matches:
+                  </p>
+                  <select
+                    value={form.conditionWatchBlockId}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        conditionWatchBlockId: e.target.value,
+                      }))
+                    }
+                    className={selectCls}
+                  >
+                    <option value="">Watch block...</option>
+                    {namedBlocks.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-1">
+                    <select
+                      value={form.conditionOperator}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          conditionOperator: e.target.value as
+                            | 'gte'
+                            | 'lte'
+                            | 'eq',
+                        }))
+                      }
+                      className="w-24 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="gte">≥ (gte)</option>
+                      <option value="lte">≤ (lte)</option>
+                      <option value="eq">= (eq)</option>
+                    </select>
+                    <input
+                      type="number"
+                      value={form.conditionValue}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          conditionValue: Number(e.target.value),
+                        }))
+                      }
+                      className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-2 pt-1">
               <button
-                onClick={handleAddConnection}
-                disabled={!newConn.sourceBlockId || !newConn.targetBlockId}
+                onClick={handleAdd}
+                disabled={!form.sourceBlockId || !form.targetBlockId}
                 className="flex-1 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
               >
                 Add Connection
               </button>
               <button
-                onClick={() => setIsAdding(false)}
+                onClick={() => {
+                  setIsAdding(false);
+                  setForm(BLANK_FORM);
+                }}
                 className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
               >
                 Cancel
@@ -253,10 +482,31 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
                 on{' '}
                 <span className="text-amber-400 font-mono">{conn.event}</span> →{' '}
                 <span className="text-purple-400 font-mono">{conn.action}</span>
+                {conn.actionPayload && (
+                  <span className="text-slate-400">
+                    {' '}
+                    ({conn.actionPayload})
+                  </span>
+                )}
+                {conn.actionValue !== undefined && (
+                  <span className="text-slate-400"> ({conn.actionValue})</span>
+                )}
               </p>
+              {conn.condition && (
+                <p className="text-xs text-slate-600 mt-0.5">
+                  if{' '}
+                  <span className="font-mono text-slate-400">
+                    {getBlockLabel(conn.condition.watchBlockId)}
+                  </span>{' '}
+                  {conn.condition.operator}{' '}
+                  <span className="font-mono text-slate-400">
+                    {String(conn.condition.value)}
+                  </span>
+                </p>
+              )}
             </div>
             <button
-              onClick={() => handleDeleteConnection(conn.id)}
+              onClick={() => handleDelete(conn.id)}
               className="p-1 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors flex-shrink-0"
               title="Delete connection"
             >

@@ -182,32 +182,43 @@ export const BLOCK_ICONS: Record<CustomBlockType, string> = {
   checklist: '✅',
 };
 
+/**
+ * Metadata for a single event a block can fire.
+ * - `id`: the base event string (for parameterized events this is the prefix, e.g. `on-counter-reach`)
+ * - `requiresNumber`: when true the admin must supply a numeric threshold; the
+ *   runtime emits `${id}-${N}` and saved connections must store the concrete string.
+ */
+export interface BlockEventDefinition {
+  id: string;
+  requiresNumber?: boolean;
+}
+
 /** Events that each block type can fire */
-export const BLOCK_EVENTS: Record<CustomBlockType, string[]> = {
+export const BLOCK_EVENTS: Record<CustomBlockType, BlockEventDefinition[]> = {
   text: [],
   heading: [],
-  image: ['on-click'],
-  reveal: ['on-click'],
-  'flip-card': ['on-click'],
+  image: [{ id: 'on-click' }],
+  reveal: [{ id: 'on-click' }],
+  'flip-card': [{ id: 'on-click' }],
   'conditional-label': [],
-  badge: ['on-click'],
+  badge: [{ id: 'on-click' }],
   'traffic-light': [],
   divider: [],
   spacer: [],
-  'cb-button': ['on-click'],
-  counter: ['on-counter-reach-N'],
-  toggle: ['on-toggle-on', 'on-toggle-off'],
-  stars: ['on-star-rated-N'],
-  'text-input': ['on-input-submit'],
-  poll: ['on-vote-option-N'],
-  'multiple-choice': ['on-correct', 'on-incorrect'],
-  'match-pair': ['on-all-matched'],
-  hotspot: ['on-spot-clicked-N'],
-  'sort-bin': ['on-item-sorted', 'on-all-sorted'],
+  'cb-button': [{ id: 'on-click' }],
+  counter: [{ id: 'on-counter-reach', requiresNumber: true }],
+  toggle: [{ id: 'on-toggle-on' }, { id: 'on-toggle-off' }],
+  stars: [{ id: 'on-star-rated', requiresNumber: true }],
+  'text-input': [{ id: 'on-input-submit' }],
+  poll: [{ id: 'on-vote-option', requiresNumber: true }],
+  'multiple-choice': [{ id: 'on-correct' }, { id: 'on-incorrect' }],
+  'match-pair': [{ id: 'on-all-matched' }],
+  hotspot: [{ id: 'on-spot-clicked', requiresNumber: true }],
+  'sort-bin': [{ id: 'on-item-sorted' }, { id: 'on-all-sorted' }],
   progress: [],
-  timer: ['on-timer-end', 'on-timer-start'],
-  score: ['on-score-reach-N'],
-  checklist: ['on-item-checked', 'on-all-checked'],
+  timer: [{ id: 'on-timer-end' }, { id: 'on-timer-start' }],
+  score: [{ id: 'on-score-reach', requiresNumber: true }],
+  checklist: [{ id: 'on-item-checked' }, { id: 'on-all-checked' }],
 };
 
 /** Actions that each block type can receive */
