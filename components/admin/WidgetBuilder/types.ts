@@ -49,7 +49,7 @@ export function builderStateToDoc(
   state: BuilderState,
   createdBy: string,
   existingId?: string,
-  existingDoc?: Pick<CustomWidgetDoc, 'createdAt' | 'published'>
+  existingDoc?: Pick<CustomWidgetDoc, 'createdAt' | 'published' | 'enabled'>
 ): Omit<CustomWidgetDoc, 'id'> & { id?: string } {
   return {
     ...(existingId ? { id: existingId } : {}),
@@ -71,7 +71,7 @@ export function builderStateToDoc(
     settings: state.settingsDefs,
     accessLevel: state.meta.accessLevel,
     betaUsers: state.meta.betaUsers,
-    enabled: true,
+    enabled: existingDoc?.enabled ?? true,
   };
 }
 

@@ -425,10 +425,16 @@ function CounterBlock({
       action: 'increment',
       actionValue: step,
     });
+    const reached = blockState.value + step;
     dispatch({
       type: 'BLOCK_EVENT',
       sourceId: block.id,
-      event: `on-counter-reach-${blockState.value + step}`,
+      event: `on-counter-reach-${reached}`,
+    });
+    dispatch({
+      type: 'BLOCK_EVENT',
+      sourceId: block.id,
+      event: `on-value-reach-${reached}`,
     });
   };
 
@@ -846,7 +852,7 @@ function MatchPairBlock({
       dispatch({
         type: 'BLOCK_EVENT',
         sourceId: block.id,
-        event: 'on-click',
+        event: 'on-incorrect',
       });
     }
     setSelectedLeft(null);
@@ -1062,7 +1068,12 @@ function ProgressBlock({
   const min = config.min ?? 0;
   const max = config.max ?? 100;
   const value = blockState.value;
-  const pct = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+  const pct =
+    max > min
+      ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
+      : value >= max
+        ? 100
+        : 0;
 
   return (
     <div className="w-full h-full flex flex-col justify-center gap-1 p-1 overflow-hidden">
@@ -1156,7 +1167,8 @@ function TimerBlock({
           {!isRunning ? (
             <button
               onClick={handleStart}
-              className="bg-green-700 hover:bg-green-600 text-white rounded transition-colors"
+              disabled={remaining <= 0}
+              className="bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded transition-colors"
               style={{
                 fontSize: 'min(12px, 4.5cqmin)',
                 padding: 'min(4px, 1.5cqmin) min(10px, 3cqmin)',

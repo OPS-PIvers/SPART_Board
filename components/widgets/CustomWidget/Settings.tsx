@@ -5,7 +5,7 @@
  * Renders admin-configurable settings defined in the CustomWidgetDoc.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   WidgetData,
   CustomWidgetConfig,
@@ -29,19 +29,31 @@ export const CustomWidgetSettings: React.FC<SettingsProps> = ({ widget }) => {
   const widgetDoc = customWidgets.find((cw) => cw.id === config.customWidgetId);
   const settingDefs: CustomWidgetSettingDef[] = widgetDoc?.settings ?? [];
 
-  // Initialize localValues from adminSettings, falling back to setting defaults
-  const [localValues, setLocalValues] = useState<
-    Record<string, string | number | boolean>
-  >(() => {
-    const defaults: Record<string, string | number | boolean> = {};
-    for (const def of settingDefs) {
-      defaults[def.key] =
-        adminSettings[def.key] ??
+  const buildDefaults = (
+    defs: CustomWidgetSettingDef[],
+    saved: Record<string, string | number | boolean>
+  ) => {
+    const result: Record<string, string | number | boolean> = {};
+    for (const def of defs) {
+      result[def.key] =
+        saved[def.key] ??
         def.defaultValue ??
         (def.type === 'number' ? 0 : def.type === 'boolean' ? false : '');
     }
-    return { ...defaults, ...adminSettings };
-  });
+    return { ...result, ...saved };
+  };
+
+  // Initialize localValues from adminSettings, falling back to setting defaults
+  const [localValues, setLocalValues] = useState<
+    Record<string, string | number | boolean>
+  >(() => buildDefaults(settingDefs, adminSettings));
+
+  // Merge in defaults when settingDefs loads asynchronously (first render
+  // often has an empty array before customWidgets resolves from context).
+  useEffect(() => {
+    setLocalValues((prev) => buildDefaults(settingDefs, prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widgetDoc?.id]);
 
   const handleChange = (key: string, value: string | number | boolean) => {
     setLocalValues((prev) => ({ ...prev, [key]: value }));

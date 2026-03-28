@@ -100,7 +100,7 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
       ref,
       (snap) => {
         if (snap.exists()) {
-          setWidgetDoc({ id: snap.id, ...snap.data() } as CustomWidgetDoc);
+          setWidgetDoc({ ...snap.data(), id: snap.id } as CustomWidgetDoc);
         } else {
           setWidgetDoc(null);
         }
