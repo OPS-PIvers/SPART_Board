@@ -368,7 +368,7 @@ export const WidgetBuilderModal: React.FC<WidgetBuilderModalProps> = ({
                       );
                       if (cell) {
                         const newBlock = {
-                          id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                          id: crypto.randomUUID(),
                           type: blockType,
                           config: buildDefaultConfig(blockType) as never,
                           style: {},

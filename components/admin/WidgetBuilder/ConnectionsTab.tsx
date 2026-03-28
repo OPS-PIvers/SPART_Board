@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { CustomGridDefinition, BlockConnection, BlockAction } from '@/types';
+import {
+  BLOCK_EVENTS as BLOCK_EVENTS_MAP,
+  BLOCK_ACTIONS as BLOCK_ACTIONS_MAP,
+} from '@/components/widgets/CustomWidget/types';
 import { Link2, Plus, Trash2, ArrowRight } from 'lucide-react';
 
 interface ConnectionsTabProps {
@@ -7,49 +11,22 @@ interface ConnectionsTabProps {
   onChange: (grid: CustomGridDefinition) => void;
 }
 
-// Common events used in connections (event is string-typed in BlockConnection for flexibility)
-const BLOCK_EVENTS: string[] = [
-  'on-click',
-  'on-toggle-on',
-  'on-toggle-off',
-  'on-counter-reach-5',
-  'on-score-reach-10',
-  'on-value-reach-5',
-  'on-value-reach-10',
-  'on-timer-end',
-  'on-timer-start',
-  'on-vote-option-1',
-  'on-correct',
-  'on-incorrect',
-  'on-all-checked',
-  'on-item-checked',
-  'on-all-sorted',
-  'on-all-matched',
-  'on-input-submit',
-  'on-star-rated-3',
-];
+// Derive unique events from the per-block-type map so this list stays in sync
+const allEventSet = new Set<string>();
+Object.values(BLOCK_EVENTS_MAP).forEach((events) =>
+  events.forEach((e) => allEventSet.add(e))
+);
+const BLOCK_EVENTS = Array.from(allEventSet).sort();
 
-const BLOCK_ACTIONS: BlockAction[] = [
-  'show',
-  'hide',
-  'reveal',
-  'flip',
-  'flip-back',
-  'reset',
-  'reset-all',
-  'increment',
-  'decrement',
-  'set-value',
-  'set-text',
-  'set-image',
-  'start-timer',
-  'stop-timer',
-  'set-traffic',
-  'show-toast',
-  'play-sound',
-  'check-item',
-  'add-score',
-];
+// Derive unique actions from the per-block-type map, plus widget-level actions
+const allActionSet = new Set<string>();
+Object.values(BLOCK_ACTIONS_MAP).forEach((actions) =>
+  actions.forEach((a) => allActionSet.add(a))
+);
+(['reset-all', 'play-sound', 'show-toast'] as const).forEach((a) =>
+  allActionSet.add(a)
+);
+const BLOCK_ACTIONS = Array.from(allActionSet).sort() as BlockAction[];
 
 export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
   gridDefinition,
@@ -85,7 +62,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
       return;
     }
     const conn: BlockConnection = {
-      id: `conn-${Date.now()}`,
+      id: crypto.randomUUID(),
       sourceBlockId: newConn.sourceBlockId,
       event: newConn.event,
       targetBlockId: newConn.targetBlockId,

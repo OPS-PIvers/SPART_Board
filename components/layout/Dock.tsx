@@ -1099,7 +1099,7 @@ export const Dock: React.FC = () => {
                           updateWidget(cw.id, { minimized: false })
                         }
                         className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x flex-shrink-0"
-                        title={`Restore: ${(cw.config as { customWidgetId?: string }).customWidgetId ?? 'Custom Widget'}`}
+                        title={`Restore: ${customWidgets.find((w) => w.id === (cw.config as { customWidgetId?: string }).customWidgetId)?.title ?? 'Custom Widget'}`}
                       >
                         <DockIcon
                           color="bg-purple-600 shadow-lg shadow-purple-600/20"

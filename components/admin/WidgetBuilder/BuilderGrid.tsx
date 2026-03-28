@@ -8,6 +8,7 @@ import {
   BLOCK_ICONS,
   BLOCK_LABELS,
 } from '@/components/widgets/CustomWidget/types';
+import { useDialog } from '@/context/useDialog';
 
 interface BuilderGridProps {
   gridDefinition: CustomGridDefinition;
@@ -78,6 +79,7 @@ export const BuilderGrid: React.FC<BuilderGridProps> = ({
 }) => {
   const { columns, rows, cells } = gridDefinition;
   const [shiftSelected, setShiftSelected] = useState<string[]>([]);
+  const { showAlert } = useDialog();
 
   const handleColumnChange = (delta: number) => {
     const next = Math.max(1, Math.min(4, columns + delta));
@@ -131,15 +133,16 @@ export const BuilderGrid: React.FC<BuilderGridProps> = ({
     return actualCoverage === expectedCount;
   };
 
-  const handleMerge = () => {
+  const handleMerge = async () => {
     if (!canMerge()) return;
     const selected = cells.filter((c) => shiftSelected.includes(c.id));
 
     // Prevent data loss: if multiple selected cells have blocks, abort and alert
     const cellsWithBlocks = selected.filter((c) => c.block !== null);
     if (cellsWithBlocks.length > 1) {
-      alert(
-        'Cannot merge: multiple selected cells contain blocks. Remove blocks from all but one cell before merging.'
+      await showAlert(
+        'Cannot merge: multiple selected cells contain blocks. Remove blocks from all but one cell before merging.',
+        { title: 'Cannot Merge Cells', variant: 'warning' }
       );
       return;
     }
