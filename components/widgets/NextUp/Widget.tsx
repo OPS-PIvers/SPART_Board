@@ -269,7 +269,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
   // ⚡ Bolt Optimization: Combine slice and filter counts into a single loop to avoid multiple passes and array allocations
   const { waitingStudents, totalWaitingCount } = useMemo(() => {
     let count = 0;
-    const students = [];
+    const students: NextUpQueueItem[] = [];
     for (const q of queue) {
       if (q.status === 'waiting') {
         count++;
