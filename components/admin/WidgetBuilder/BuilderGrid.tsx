@@ -56,7 +56,7 @@ function generateCells(
         }
       } else {
         cells.push({
-          id: `cell-${col}-${row}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: crypto.randomUUID(),
           colStart: col,
           rowStart: row,
           colSpan: 1,
@@ -153,7 +153,7 @@ export const BuilderGrid: React.FC<BuilderGridProps> = ({
       selected.find((c) => c.block)?.block ?? null;
 
     const mergedCell: CustomGridCell = {
-      id: `cell-${minCol}-${minRow}-merged-${Date.now()}`,
+      id: crypto.randomUUID(),
       colStart: minCol,
       rowStart: minRow,
       colSpan: maxCol - minCol + 1,
@@ -176,7 +176,7 @@ export const BuilderGrid: React.FC<BuilderGridProps> = ({
     for (let row = cell.rowStart; row < cell.rowStart + cell.rowSpan; row++) {
       for (let col = cell.colStart; col < cell.colStart + cell.colSpan; col++) {
         newCells.push({
-          id: `cell-${col}-${row}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: crypto.randomUUID(),
           colStart: col,
           rowStart: row,
           colSpan: 1,

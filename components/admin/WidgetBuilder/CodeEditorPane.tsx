@@ -13,11 +13,10 @@ export const INITIAL_HTML_TEMPLATE = `<!DOCTYPE html>
     font-family: 'Segoe UI', system-ui, sans-serif;
     background: #1e293b;
     color: #e2e8f0;
-    height: 100vh;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
   }
   /* Your styles here */
 </style>
