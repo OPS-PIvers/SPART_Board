@@ -5,7 +5,7 @@ export function buildDefaultConfig(
 ): Record<string, unknown> {
   switch (type) {
     case 'text':
-      return { text: 'Enter text here', fontSize: 16, align: 'left' };
+      return { text: 'Enter text here' };
     case 'heading':
       return { text: 'Heading', size: 'md' };
     case 'image':
@@ -15,7 +15,7 @@ export function buildDefaultConfig(
     case 'counter':
       return { label: 'Count', startValue: 0, step: 1 };
     case 'toggle':
-      return { label: 'Toggle', onLabel: 'ON', offLabel: 'OFF' };
+      return { label: 'Toggle', initialOn: false };
     case 'stars':
       return { maxStars: 5, label: 'Rating' };
     case 'progress':
@@ -48,7 +48,7 @@ export function buildDefaultConfig(
     case 'conditional-label':
       return { initialText: 'State A' };
     case 'badge':
-      return { label: 'Badge', icon: '⭐', earned: false };
+      return { label: 'Badge', icon: '⭐' };
     case 'traffic-light':
       return { initialColor: 'green' };
     case 'match-pair':

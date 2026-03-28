@@ -6,8 +6,13 @@
  */
 
 import React, { useState } from 'react';
-import { WidgetData, CustomWidgetConfig } from '@/types';
+import {
+  WidgetData,
+  CustomWidgetConfig,
+  CustomWidgetSettingDef,
+} from '@/types';
 import { useDashboard } from '@/context/useDashboard';
+import { useCustomWidgets } from '@/context/useCustomWidgets';
 
 interface SettingsProps {
   widget: WidgetData;
@@ -15,15 +20,28 @@ interface SettingsProps {
 
 export const CustomWidgetSettings: React.FC<SettingsProps> = ({ widget }) => {
   const { updateWidget } = useDashboard();
+  const { customWidgets } = useCustomWidgets();
   const config = widget.config as CustomWidgetConfig;
   const adminSettings: Record<string, string | number | boolean> =
     config.adminSettings ?? {};
 
-  // The settings panel renders admin-configurable values stored in adminSettings.
-  // Widget definition (gridDefinition, mode, etc.) is loaded live in Widget.tsx.
+  // Find the live widget doc to get setting definitions
+  const widgetDoc = customWidgets.find((cw) => cw.id === config.customWidgetId);
+  const settingDefs: CustomWidgetSettingDef[] = widgetDoc?.settings ?? [];
 
-  const [localValues, setLocalValues] =
-    useState<Record<string, string | number | boolean>>(adminSettings);
+  // Initialize localValues from adminSettings, falling back to setting defaults
+  const [localValues, setLocalValues] = useState<
+    Record<string, string | number | boolean>
+  >(() => {
+    const defaults: Record<string, string | number | boolean> = {};
+    for (const def of settingDefs) {
+      defaults[def.key] =
+        adminSettings[def.key] ??
+        def.defaultValue ??
+        (def.type === 'number' ? 0 : def.type === 'boolean' ? false : '');
+    }
+    return { ...defaults, ...adminSettings };
+  });
 
   const handleChange = (key: string, value: string | number | boolean) => {
     setLocalValues((prev) => ({ ...prev, [key]: value }));
@@ -52,46 +70,48 @@ export const CustomWidgetSettings: React.FC<SettingsProps> = ({ widget }) => {
         </p>
       </div>
 
-      {Object.keys(adminSettings).length > 0 ? (
+      {settingDefs.length > 0 ? (
         <div className="flex flex-col gap-3">
           <h4 className="text-slate-200 font-medium text-sm">Settings</h4>
-          {Object.entries(adminSettings).map(([key, value]) => (
-            <div key={key} className="flex flex-col gap-1">
-              <label className="text-slate-300 text-sm font-medium">
-                {key}
-              </label>
-              {typeof value === 'boolean' ? (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(localValues[key] ?? value)}
-                    onChange={(e) => handleChange(key, e.target.checked)}
-                    className="w-4 h-4 accent-blue-500"
-                  />
-                  <span className="text-slate-400 text-xs">
-                    {localValues[key] ? 'Enabled' : 'Disabled'}
-                  </span>
+          {settingDefs.map((def) => {
+            const val = localValues[def.key];
+            return (
+              <div key={def.key} className="flex flex-col gap-1">
+                <label className="text-slate-300 text-sm font-medium">
+                  {def.label ?? def.key}
                 </label>
-              ) : typeof value === 'number' ? (
-                <input
-                  type="number"
-                  value={String(localValues[key] ?? value)}
-                  onChange={(e) =>
-                    handleChange(key, parseFloat(e.target.value) || 0)
-                  }
-                  className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-white text-sm outline-none focus:border-blue-400"
-                />
-              ) : (
-                <input
-                  type="text"
-                  value={String(localValues[key] ?? value)}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                  className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-white text-sm outline-none focus:border-blue-400"
-                />
-              )}
-            </div>
-          ))}
-
+                {def.type === 'boolean' ? (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(val)}
+                      onChange={(e) => handleChange(def.key, e.target.checked)}
+                      className="w-4 h-4 accent-blue-500"
+                    />
+                    <span className="text-slate-400 text-xs">
+                      {val ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </label>
+                ) : def.type === 'number' ? (
+                  <input
+                    type="number"
+                    value={String(val ?? 0)}
+                    onChange={(e) =>
+                      handleChange(def.key, parseFloat(e.target.value) || 0)
+                    }
+                    className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-white text-sm outline-none focus:border-blue-400"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={String(val ?? '')}
+                    onChange={(e) => handleChange(def.key, e.target.value)}
+                    className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-white text-sm outline-none focus:border-blue-400"
+                  />
+                )}
+              </div>
+            );
+          })}
           <button
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-500 text-white rounded px-4 py-2 text-sm font-medium transition-colors self-start mt-1"

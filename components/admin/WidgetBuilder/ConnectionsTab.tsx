@@ -14,6 +14,8 @@ const BLOCK_EVENTS: string[] = [
   'on-toggle-off',
   'on-counter-reach-5',
   'on-score-reach-10',
+  'on-value-reach-5',
+  'on-value-reach-10',
   'on-timer-end',
   'on-timer-start',
   'on-vote-option-1',

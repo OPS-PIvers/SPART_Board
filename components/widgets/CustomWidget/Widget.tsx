@@ -169,33 +169,44 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
     prevStateRef.current = state;
   }, [state]);
 
-  // Side-effect: handle play-sound and show-toast by intercepting BLOCK_EVENT
-  // We do this by wrapping dispatch to detect certain connections
+  // Track the last dispatched BLOCK_EVENT for post-update side effects.
+  const lastEventRef = useRef<WidgetAction | null>(null);
+
   const dispatchWithSideEffects = React.useCallback(
     (action: WidgetAction) => {
-      // Check for side-effect connections before dispatching
-      if (action.type === 'BLOCK_EVENT' && activeGrid) {
-        const connections = activeGrid.connections.filter(
-          (c) => c.sourceBlockId === action.sourceId && c.event === action.event
-        );
-        for (const conn of connections) {
-          if (!conditionPasses(conn.condition, state)) continue;
-          if (conn.action === 'play-sound') {
-            playBeep();
-          }
-          if (conn.action === 'show-toast' && conn.actionPayload) {
-            // Use a simple alert-style notification if toast lib not available
-            const event = new CustomEvent('custom-widget-toast', {
-              detail: { message: conn.actionPayload },
-            });
-            window.dispatchEvent(event);
-          }
-        }
+      if (action.type === 'BLOCK_EVENT') {
+        lastEventRef.current = action;
       }
       dispatch(action);
     },
-    [activeGrid, state]
+    [dispatch]
   );
+
+  // After state update: fire play-sound / show-toast side effects with
+  // up-to-date state so condition evaluation is never stale.
+  useEffect(() => {
+    const lastEvent = lastEventRef.current;
+    if (!lastEvent || lastEvent.type !== 'BLOCK_EVENT' || !activeGrid) return;
+    lastEventRef.current = null;
+
+    const connections = activeGrid.connections.filter(
+      (c) =>
+        c.sourceBlockId === lastEvent.sourceId && c.event === lastEvent.event
+    );
+    for (const conn of connections) {
+      if (!conditionPasses(conn.condition, state)) continue;
+      if (conn.action === 'play-sound') {
+        playBeep();
+      }
+      if (conn.action === 'show-toast' && conn.actionPayload) {
+        window.dispatchEvent(
+          new CustomEvent('custom-widget-toast', {
+            detail: { message: conn.actionPayload },
+          })
+        );
+      }
+    }
+  }, [state, activeGrid]);
 
   // Context value
   const contextValue: WidgetStateContextValue = React.useMemo(

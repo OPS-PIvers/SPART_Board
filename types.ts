@@ -2499,6 +2499,8 @@ export type BlockEvent =
   | 'on-timer-end'
   | 'on-timer-start'
   | 'on-timer-stop'
+  | `on-counter-reach-${number}`
+  | `on-score-reach-${number}`
   | `on-value-reach-${number}`
   | 'on-toggle-on'
   | 'on-toggle-off'

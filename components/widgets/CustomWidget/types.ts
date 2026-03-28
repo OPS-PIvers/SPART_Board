@@ -213,7 +213,7 @@ export const BLOCK_ACTIONS: Record<CustomBlockType, string[]> = {
   heading: ['show', 'hide', 'set-text'],
   image: ['show', 'hide', 'set-image', 'reveal'],
   reveal: ['reveal', 'show', 'hide'],
-  'flip-card': ['flip', 'flip-back', 'show', 'hide', 'set-image'],
+  'flip-card': ['flip', 'flip-back', 'show', 'hide'],
   'conditional-label': ['show', 'hide', 'set-text'],
   badge: ['reveal', 'show', 'hide'],
   'traffic-light': ['set-traffic', 'show', 'hide'],

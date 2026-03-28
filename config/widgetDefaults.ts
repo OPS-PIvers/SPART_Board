@@ -407,7 +407,6 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     h: 300,
     config: {
       customWidgetId: '',
-      mode: 'block',
     },
   },
 };

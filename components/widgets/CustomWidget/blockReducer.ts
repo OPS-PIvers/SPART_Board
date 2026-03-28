@@ -168,15 +168,18 @@ function getThresholdEvents(
 ): Array<{ sourceId: string; event: string }> {
   const events: Array<{ sourceId: string; event: string }> = [];
 
-  // Value threshold: on-value-reach-N
-  if (nextState.value !== prevState.value) {
-    // Fire if we just crossed or reached the threshold from below
-    if (nextState.value > prevState.value) {
-      events.push({
-        sourceId: blockId,
-        event: `on-value-reach-${nextState.value}`,
-      });
-    }
+  // Value threshold: emit all three variants so connections using any naming
+  // convention (on-value-reach-N, on-counter-reach-N, on-score-reach-N) fire.
+  if (
+    nextState.value !== prevState.value &&
+    nextState.value > prevState.value
+  ) {
+    const v = nextState.value;
+    events.push(
+      { sourceId: blockId, event: `on-value-reach-${v}` },
+      { sourceId: blockId, event: `on-counter-reach-${v}` },
+      { sourceId: blockId, event: `on-score-reach-${v}` }
+    );
   }
 
   return events;
