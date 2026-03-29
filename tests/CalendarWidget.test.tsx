@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { CalendarWidget } from '../components/widgets/Calendar/Widget';
-import { expect, test, vi, describe } from 'vitest';
+import { expect, test, vi, describe, beforeEach, afterEach } from 'vitest';
 import { WidgetData } from '../types';
 
 vi.mock('../context/useDashboard', () => ({
@@ -30,6 +30,16 @@ vi.mock('../hooks/useGoogleCalendar', () => ({
 }));
 
 describe('CalendarWidget handleStartTimer', () => {
+  beforeEach(() => {
+    // Pin clock to noon so +10 min never crosses midnight
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-06-15T12:00:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test('Renders timer button when there is an event in the future', () => {
     // Generate a future time for today
     const now = new Date();
