@@ -109,6 +109,7 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
         setDocLoading(false);
       },
       () => {
+        setWidgetDoc(null);
         setDocLoading(false);
       }
     );

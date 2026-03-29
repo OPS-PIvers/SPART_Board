@@ -91,10 +91,20 @@ export const WidgetMetaEditor: React.FC<WidgetMetaEditorProps> = ({
             type="text"
             value={meta.icon}
             onChange={(e) => {
-              const segs = [...new Intl.Segmenter().segment(e.target.value)];
-              update({
-                icon: segs.length > 0 ? segs[segs.length - 1].segment : '🧩',
-              });
+              const val = e.target.value;
+              let icon = '🧩';
+              if (val.length > 0) {
+                if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+                  const segs = [...new Intl.Segmenter().segment(val)];
+                  if (segs.length > 0) icon = segs[segs.length - 1].segment;
+                } else {
+                  // Fallback: last Unicode code point (handles surrogate pairs)
+                  const codePoints = [...val];
+                  if (codePoints.length > 0)
+                    icon = codePoints[codePoints.length - 1];
+                }
+              }
+              update({ icon });
             }}
             className="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 text-center focus:outline-none focus:border-blue-500"
           />
