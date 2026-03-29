@@ -33,7 +33,7 @@ describe('CalendarWidget handleStartTimer', () => {
   beforeEach(() => {
     // Pin clock to noon so +10 min never crosses midnight
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-06-15T12:00:00'));
+    vi.setSystemTime(new Date('2025-06-15T12:00:00Z')); // explicit UTC noon
   });
 
   afterEach(() => {

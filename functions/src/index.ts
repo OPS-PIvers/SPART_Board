@@ -48,7 +48,8 @@ interface AIData {
     | 'instructional-routine'
     | 'ocr'
     | 'quiz'
-    | 'widget-builder';
+    | 'widget-builder'
+    | 'widget-explainer';
   prompt?: string;
   image?: string; // base64 data
 }
@@ -511,6 +512,14 @@ export const generateWithAI = functionsV1
           `,
           userPrompt: `Create a widget that: <user_request>${sanitizedUserInput}</user_request>`,
         }),
+        'widget-explainer': () => ({
+          systemPrompt: `
+          You are a classroom teacher assistant. Explain what an HTML widget does in 1-2 plain sentences.
+          Use simple language without code jargon.
+          Output ONLY the explanation, nothing else.
+          `,
+          userPrompt: sanitizedUserInput,
+        }),
       };
 
       const promptDataFn = promptMap[genType];
@@ -563,9 +572,11 @@ export const generateWithAI = functionsV1
             : 'gemini-3-flash-preview',
         contents,
         config: {
-          // widget-builder returns raw HTML; all other types return JSON
+          // widget-builder and widget-explainer return plain text; all other types return JSON
           responseMimeType:
-            genType === 'widget-builder' ? 'text/plain' : 'application/json',
+            genType === 'widget-builder' || genType === 'widget-explainer'
+              ? 'text/plain'
+              : 'application/json',
         },
       });
 
@@ -575,8 +586,8 @@ export const generateWithAI = functionsV1
         throw new Error('Empty response from AI');
       }
 
-      // widget-builder returns raw HTML — wrap in { result } for the client
-      if (genType === 'widget-builder') {
+      // widget-builder and widget-explainer return plain text — wrap in { result } for the client
+      if (genType === 'widget-builder' || genType === 'widget-explainer') {
         return { result: text };
       }
 
