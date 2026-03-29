@@ -44,7 +44,7 @@ export const SchemaDrivenConfigurationPanel: React.FC<
         return (
           <div key={key}>
             <label
-              htmlFor={field.type === 'boolean' ? `sdcp-${key}` : undefined}
+              htmlFor={`sdcp-${key}`}
               className="text-xxs font-bold text-slate-500 uppercase mb-1 block"
             >
               {field.label}
@@ -55,6 +55,7 @@ export const SchemaDrivenConfigurationPanel: React.FC<
 
             {field.type === 'number' && (
               <input
+                id={`sdcp-${key}`}
                 type="number"
                 value={value as number}
                 onChange={(e) =>
@@ -66,6 +67,7 @@ export const SchemaDrivenConfigurationPanel: React.FC<
 
             {field.type === 'string' && (
               <input
+                id={`sdcp-${key}`}
                 type="text"
                 value={value as string}
                 onChange={(e) => onChange({ ...config, [key]: e.target.value })}
@@ -87,6 +89,7 @@ export const SchemaDrivenConfigurationPanel: React.FC<
 
             {field.type === 'stringArray' && (
               <textarea
+                id={`sdcp-${key}`}
                 value={(value as string[]).join('\n')}
                 onChange={(e) =>
                   onChange({ ...config, [key]: e.target.value.split('\n') })
