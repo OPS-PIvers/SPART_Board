@@ -80,3 +80,41 @@ export const generateStudentsList = (
     })
     .filter((s): s is Student => s !== null);
 };
+
+import { ClassRoster } from '@/types';
+
+/**
+ * Extracts a list of student labels from a widget's roster configuration.
+ * Handles both 'class' (active roster linked) and 'custom' (manual first/last names) modes.
+ */
+export function getStudentsFromRosterConfig(
+  rosterMode: 'class' | 'custom',
+  activeRoster: ClassRoster | undefined,
+  firstNames: string,
+  lastNames: string
+): { id: string; label: string }[] {
+  if (rosterMode === 'class' && activeRoster) {
+    return activeRoster.students.map((s) => ({
+      id: s.id,
+      label: `${s.firstName} ${s.lastName}`.trim(),
+    }));
+  }
+
+  const firsts = firstNames
+    .split('\n')
+    .map((n) => n.trim())
+    .filter(Boolean);
+  const lasts = lastNames
+    .split('\n')
+    .map((n) => n.trim())
+    .filter(Boolean);
+  const count = Math.max(firsts.length, lasts.length);
+  const students: { id: string; label: string }[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const name = `${firsts[i] ?? ''} ${lasts[i] ?? ''}`.trim();
+    if (name) students.push({ id: name, label: name });
+  }
+
+  return students;
+}

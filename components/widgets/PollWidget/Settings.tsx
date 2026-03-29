@@ -19,6 +19,7 @@ import { generatePoll, GeneratedPoll } from '@/utils/ai';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 import { OptionInput } from './components/OptionInput';
+import { getStudentsFromRosterConfig } from '@/components/widgets/Classes/rosterUtils';
 
 export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast, rosters, activeRosterId, activeDashboard } =
@@ -102,31 +103,14 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         .map((i) => ({ text: i.text }));
     } else {
       // mode === 'roster'
-      const students: { id: string; label: string }[] = [];
-      if (rosterMode === 'class' && activeRoster) {
-        activeRoster.students.forEach((s) => {
-          students.push({
-            id: s.id,
-            label: `${s.firstName} ${s.lastName}`.trim(),
-          });
-        });
-      } else {
-        const firsts = firstNames
-          .split('\n')
-          .map((n) => n.trim())
-          .filter((n) => n);
-        const lasts = lastNames
-          .split('\n')
-          .map((n) => n.trim())
-          .filter((n) => n);
-        const count = Math.max(firsts.length, lasts.length);
-        for (let i = 0; i < count; i++) {
-          const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
-          if (name) students.push({ id: name, label: name });
-        }
-      }
+      const students = getStudentsFromRosterConfig(
+        rosterMode,
+        activeRoster,
+        firstNames,
+        lastNames
+      );
       uncompleted = students
-        .filter((s) => !(completedNames || []).includes(s.id))
+        .filter((s) => !(completedNames ?? []).includes(s.id))
         .map((s) => ({ text: s.label }));
     }
 

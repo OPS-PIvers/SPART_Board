@@ -5,6 +5,7 @@ import { ListPlus, Users } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { WidgetLayout } from '../WidgetLayout';
 import { ChecklistCard } from './components/ChecklistCard';
+import { getStudentsFromRosterConfig } from '@/components/widgets/Classes/rosterUtils';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -40,29 +41,12 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   const students = useMemo((): { id: string; label: string }[] => {
     if (mode !== 'roster') return [];
-
-    if (rosterMode === 'class' && activeRoster) {
-      return activeRoster.students.map((s) => ({
-        id: s.id,
-        label: `${s.firstName} ${s.lastName}`.trim(),
-      }));
-    }
-
-    const firsts = firstNames
-      .split('\n')
-      .map((n) => n.trim())
-      .filter((n) => n);
-    const lasts = lastNames
-      .split('\n')
-      .map((n) => n.trim())
-      .filter((n) => n);
-    const count = Math.max(firsts.length, lasts.length);
-    const combined: { id: string; label: string }[] = [];
-    for (let i = 0; i < count; i++) {
-      const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
-      if (name) combined.push({ id: name, label: name });
-    }
-    return combined;
+    return getStudentsFromRosterConfig(
+      rosterMode,
+      activeRoster,
+      firstNames,
+      lastNames
+    );
   }, [firstNames, lastNames, mode, rosterMode, activeRoster]);
 
   const latestState = useRef({
