@@ -39,18 +39,15 @@ function extractCode(text: string): string {
   return text.trim();
 }
 
-async function callGemini(prompt: string): Promise<string> {
-  const isExplain = prompt.startsWith(
-    'Explain what this HTML widget does in simple terms'
-  );
+async function callGemini(
+  type: 'widget-builder' | 'widget-explainer',
+  prompt: string
+): Promise<string> {
   const generate = httpsCallable<
     { type: string; prompt: string },
     { result: string }
   >(functions, 'generateWithAI');
-  const response = await generate({
-    type: isExplain ? 'widget-explainer' : 'widget-builder',
-    prompt,
-  });
+  const response = await generate({ type, prompt });
   return response.data.result;
 }
 
@@ -81,7 +78,10 @@ export const GeminiPanel: React.FC<GeminiPanelProps> = ({
 
       try {
         const prompt = buildPrompt(action, description.trim(), currentCode);
-        const raw = await callGemini(prompt);
+        const raw = await callGemini(
+          action === 'explain' ? 'widget-explainer' : 'widget-builder',
+          prompt
+        );
 
         if (action === 'explain') {
           setResultText(raw);

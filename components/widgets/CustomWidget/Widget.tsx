@@ -116,11 +116,15 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
     return unsub;
   }, [customWidgetId]);
 
-  // Re-initialize block state when grid definition changes (e.g., after first load)
-  const prevGridRef = useRef<CustomGridDefinition | undefined>(undefined);
+  // Re-initialize block state when grid *content* changes (not just reference).
+  // onSnapshot always creates new objects, so reference equality would fire
+  // on every snapshot even when nothing changed (e.g., updatedAt bumps).
+  const prevGridSignatureRef = useRef<string | null>(null);
   useEffect(() => {
-    if (activeGrid && activeGrid !== prevGridRef.current) {
-      prevGridRef.current = activeGrid;
+    if (!activeGrid) return;
+    const signature = JSON.stringify(activeGrid);
+    if (signature !== prevGridSignatureRef.current) {
+      prevGridSignatureRef.current = signature;
       dispatch({ type: 'INIT', state: buildInitialState(activeGrid) });
     }
   }, [activeGrid]);
