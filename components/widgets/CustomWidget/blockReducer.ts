@@ -39,6 +39,8 @@ export function conditionPasses(
       return watchValue <= condValue;
     case 'eq':
       return watchValue === condValue;
+    case 'neq':
+      return watchValue !== condValue;
     default:
       // Fail closed: unknown/malformed operator should not bypass guards
       return false;

@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 import {
   CustomBlockDefinition,
   TextBlockConfig,
@@ -377,9 +378,9 @@ function ButtonBlock({
   dispatch,
 }: BlockProps<ButtonBlockConfig>) {
   const styleMap: Record<string, string> = {
-    primary: 'bg-blue-600 hover:bg-blue-500 text-white',
+    primary: 'bg-brand-blue-primary hover:bg-brand-blue-light text-white',
     secondary: 'bg-slate-600 hover:bg-slate-500 text-white',
-    danger: 'bg-red-600 hover:bg-red-500 text-white',
+    danger: 'bg-brand-red-primary hover:bg-brand-red-light text-white',
   };
   const btnClass = styleMap[config.style ?? 'primary'];
   return (
@@ -643,7 +644,7 @@ function TextInputBlock({
       />
       <button
         onClick={handleSubmit}
-        className="bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors self-end"
+        className="bg-brand-blue-primary hover:bg-brand-blue-light text-white rounded transition-colors self-end"
         style={{
           fontSize: 'min(12px, 4.5cqmin)',
           padding: 'min(4px, 1.5cqmin) min(10px, 3cqmin)',
@@ -714,7 +715,7 @@ function PollBlock({
             >
               {voted && (
                 <div
-                  className="absolute inset-y-0 left-0 bg-blue-600 opacity-50"
+                  className="absolute inset-y-0 left-0 bg-brand-blue-primary opacity-50"
                   style={{ width: `${pct}%` }}
                 />
               )}
@@ -869,7 +870,7 @@ function MatchPairBlock({
               isLeftMatched(i)
                 ? 'bg-green-700 opacity-60'
                 : selectedLeft === i
-                  ? 'bg-blue-600'
+                  ? 'bg-brand-blue-primary'
                   : 'bg-slate-600 hover:bg-slate-500'
             }`}
             style={{
@@ -931,7 +932,7 @@ function HotspotBlock({
               event: `on-spot-clicked-${i + 1}`,
             })
           }
-          className="absolute rounded-full bg-blue-600 hover:bg-blue-400 text-white font-bold transition-colors flex items-center justify-center"
+          className="absolute rounded-full bg-brand-blue-primary hover:bg-brand-blue-light text-white font-bold transition-colors flex items-center justify-center"
           style={{
             left: `${spot.x}%`,
             top: `${spot.y}%`,
@@ -1001,7 +1002,7 @@ function SortBinBlock({
             onClick={() => handleItemClick(i)}
             className={`rounded text-white transition-colors ${
               selectedItem === i
-                ? 'bg-blue-600'
+                ? 'bg-brand-blue-primary'
                 : 'bg-slate-600 hover:bg-slate-500'
             }`}
             style={{
@@ -1168,35 +1169,53 @@ function TimerBlock({
             <button
               onClick={handleStart}
               disabled={remaining <= 0}
-              className="bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded transition-colors"
+              className="bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded transition-colors flex items-center gap-1"
               style={{
                 fontSize: 'min(12px, 4.5cqmin)',
                 padding: 'min(4px, 1.5cqmin) min(10px, 3cqmin)',
               }}
             >
-              ▶ Start
+              <Play
+                style={{
+                  width: 'min(10px, 3.5cqmin)',
+                  height: 'min(10px, 3.5cqmin)',
+                }}
+              />
+              Start
             </button>
           ) : (
             <button
               onClick={handleStop}
-              className="bg-yellow-700 hover:bg-yellow-600 text-white rounded transition-colors"
+              className="bg-yellow-700 hover:bg-yellow-600 text-white rounded transition-colors flex items-center gap-1"
               style={{
                 fontSize: 'min(12px, 4.5cqmin)',
                 padding: 'min(4px, 1.5cqmin) min(10px, 3cqmin)',
               }}
             >
-              ⏸ Pause
+              <Pause
+                style={{
+                  width: 'min(10px, 3.5cqmin)',
+                  height: 'min(10px, 3.5cqmin)',
+                }}
+              />
+              Pause
             </button>
           )}
           <button
             onClick={handleReset}
-            className="bg-slate-600 hover:bg-slate-500 text-white rounded transition-colors"
+            className="bg-slate-600 hover:bg-slate-500 text-white rounded transition-colors flex items-center gap-1"
             style={{
               fontSize: 'min(12px, 4.5cqmin)',
               padding: 'min(4px, 1.5cqmin) min(10px, 3cqmin)',
             }}
           >
-            ↺ Reset
+            <RotateCcw
+              style={{
+                width: 'min(10px, 3.5cqmin)',
+                height: 'min(10px, 3.5cqmin)',
+              }}
+            />
+            Reset
           </button>
         </div>
       )}

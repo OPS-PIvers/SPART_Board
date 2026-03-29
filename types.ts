@@ -2552,7 +2552,7 @@ export interface BlockConnection {
   /** Optional guard condition */
   condition?: {
     watchBlockId: string;
-    operator: 'gte' | 'lte' | 'eq';
+    operator: 'gte' | 'lte' | 'eq' | 'neq';
     value: number | boolean;
   };
 }

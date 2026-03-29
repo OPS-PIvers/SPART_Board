@@ -69,7 +69,7 @@ interface NewConnForm {
   actionValue: number;
   hasCondition: boolean;
   conditionWatchBlockId: string;
-  conditionOperator: 'gte' | 'lte' | 'eq';
+  conditionOperator: 'gte' | 'lte' | 'eq' | 'neq';
   conditionValue: number;
 }
 
@@ -406,7 +406,8 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
                           conditionOperator: e.target.value as
                             | 'gte'
                             | 'lte'
-                            | 'eq',
+                            | 'eq'
+                            | 'neq',
                         }))
                       }
                       className="w-24 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
@@ -414,6 +415,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
                       <option value="gte">≥ (gte)</option>
                       <option value="lte">≤ (lte)</option>
                       <option value="eq">= (eq)</option>
+                      <option value="neq">≠ (neq)</option>
                     </select>
                     <input
                       type="number"
