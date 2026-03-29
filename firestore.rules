@@ -261,6 +261,14 @@ service cloud.firestore {
     }
 
     // Custom Widgets - admins can read/write all; non-admins can read published+enabled+accessible widgets
+    // NOTE: resource.data.buildings is a UI-targeting field only (filters which
+    // buildings display the widget in their Dock). It is NOT an access-control
+    // boundary enforced here — enforcing it would require an expensive get() call
+    // to look up building membership and is not necessary given that all
+    // custom_widgets content is already scoped to authenticated users within the
+    // same district deployment. If per-building access control is needed in the
+    // future, add building membership to custom auth claims and check
+    // request.auth.token.buildings here.
     match /custom_widgets/{widgetId} {
       allow read: if isAdmin() ||
         (request.auth != null &&

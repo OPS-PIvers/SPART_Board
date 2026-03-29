@@ -117,17 +117,25 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
   }, [customWidgetId]);
 
   // Re-initialize block state when grid *content* changes (not just reference).
-  // onSnapshot always creates new objects, so reference equality would fire
-  // on every snapshot even when nothing changed (e.g., updatedAt bumps).
+  // Two-level guard:
+  //   1. Compare widgetDoc.updatedAt (O(1)) — skips stringify on every snapshot
+  //      when only unrelated metadata (e.g. title) hasn't actually changed.
+  //   2. JSON.stringify only runs when updatedAt bumped, preventing false-positive
+  //      INIT resets from title/description-only saves.
+  const prevUpdatedAtRef = useRef<number | null>(null);
   const prevGridSignatureRef = useRef<string | null>(null);
   useEffect(() => {
     if (!activeGrid) return;
+    const docUpdatedAt = widgetDoc?.updatedAt ?? null;
+    if (docUpdatedAt !== null && docUpdatedAt === prevUpdatedAtRef.current)
+      return;
+    prevUpdatedAtRef.current = docUpdatedAt;
     const signature = JSON.stringify(activeGrid);
     if (signature !== prevGridSignatureRef.current) {
       prevGridSignatureRef.current = signature;
       dispatch({ type: 'INIT', state: buildInitialState(activeGrid) });
     }
-  }, [activeGrid]);
+  }, [activeGrid, widgetDoc?.updatedAt]);
 
   // Determine whether any timers are running (safe to derive during render).
   const hasRunningTimers = Object.values(state).some(
