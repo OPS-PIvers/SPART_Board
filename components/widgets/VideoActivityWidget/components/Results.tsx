@@ -41,15 +41,6 @@ export const Results: React.FC<ResultsProps> = ({
 
   const questions = activity.questions;
   const totalStudents = responses.length;
-  const completed = responses.filter((r) => r.completedAt !== null).length;
-  const avgScore =
-    completed > 0
-      ? Math.round(
-          responses
-            .filter((r) => r.completedAt !== null)
-            .reduce((sum, r) => sum + getStudentScore(r), 0) / completed
-        )
-      : 0;
 
   /** Compute correctness from the authoritative activity question data. */
   const isAnswerCorrect = (questionId: string, answer: string): boolean => {
@@ -75,6 +66,40 @@ export const Results: React.FC<ResultsProps> = ({
     }
     return Math.round((correct / questions.length) * 100);
   };
+
+  // ⚡ Bolt: Consolidate multiple O(N) array passes inside render
+  // Calculate completed count and average score in a single loop
+  const { completed, avgScore } = React.useMemo(() => {
+    let completedCount = 0;
+    let scoreSum = 0;
+
+    for (const r of responses) {
+      if (r.completedAt !== null) {
+        completedCount++;
+        let correct = 0;
+        for (const question of questions) {
+          if (
+            r.answers.some(
+              (a) =>
+                a.questionId === question.id &&
+                a.answer === question.correctAnswer
+            )
+          ) {
+            correct += 1;
+          }
+        }
+        scoreSum +=
+          questions.length > 0
+            ? Math.round((correct / questions.length) * 100)
+            : 0;
+      }
+    }
+
+    return {
+      completed: completedCount,
+      avgScore: completedCount > 0 ? Math.round(scoreSum / completedCount) : 0,
+    };
+  }, [responses, questions]);
 
   const getQuestionAccuracy = (questionId: string): number => {
     const answered = responses.filter((r) =>
