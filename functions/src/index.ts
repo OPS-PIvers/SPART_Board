@@ -13,6 +13,93 @@ interface TranscriptResponse {
   offset: number;
 }
 
+interface TimedtextJson3Event {
+  tStartMs?: number;
+  dDurationMs?: number;
+  segs?: Array<{ utf8?: string }>;
+}
+
+function decodeHtmlEntities(input: string): string {
+  const namedEntities: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+  };
+
+  return input.replace(
+    /&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g,
+    (match: string, entity: string) => {
+      if (entity.startsWith('#x') || entity.startsWith('#X')) {
+        const code = Number.parseInt(entity.slice(2), 16);
+        return Number.isNaN(code) ? match : String.fromCodePoint(code);
+      }
+
+      if (entity.startsWith('#')) {
+        const code = Number.parseInt(entity.slice(1), 10);
+        return Number.isNaN(code) ? match : String.fromCodePoint(code);
+      }
+
+      return namedEntities[entity] ?? match;
+    }
+  );
+}
+
+function parseTimedtextJson3(
+  events: TimedtextJson3Event[]
+): TranscriptResponse[] {
+  return events
+    .filter((event) => event.segs && event.segs.length > 0)
+    .map((event) => ({
+      text: (event.segs ?? [])
+        .map((segment) => segment.utf8 ?? '')
+        .join('')
+        .trim(),
+      offset: event.tStartMs ?? 0,
+      duration: event.dDurationMs ?? 0,
+    }))
+    .filter((item) => item.text.length > 0 && item.text !== '\n');
+}
+
+function parseTimedtextXml(xml: string): TranscriptResponse[] {
+  const textNodes = xml.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g);
+  const parsed: TranscriptResponse[] = [];
+
+  for (const node of textNodes) {
+    const attrs = node[1] ?? '';
+    const rawText = node[2] ?? '';
+
+    const startMatch = attrs.match(/\bstart=["']([^"']+)["']/);
+    const durationMatch = attrs.match(/\bdur=["']([^"']+)["']/);
+    const startSeconds = startMatch ? Number.parseFloat(startMatch[1]) : 0;
+    const durationSeconds = durationMatch
+      ? Number.parseFloat(durationMatch[1])
+      : 0;
+
+    const text = decodeHtmlEntities(rawText)
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!text) continue;
+
+    parsed.push({
+      text,
+      offset: Number.isFinite(startSeconds)
+        ? Math.round(startSeconds * 1000)
+        : 0,
+      duration: Number.isFinite(durationSeconds)
+        ? Math.round(durationSeconds * 1000)
+        : 0,
+    });
+  }
+
+  return parsed;
+}
+
 admin.initializeApp();
 
 interface ClassLinkUser {
@@ -869,37 +956,68 @@ export const generateVideoActivity = functionsV1
 
         for (const candidate of captionCandidates) {
           try {
-            const timedtextResp = await axios.get<{
-              events?: Array<{
-                tStartMs?: number;
-                dDurationMs?: number;
-                segs?: Array<{ utf8?: string }>;
-              }>;
-            }>('https://www.youtube.com/api/timedtext', {
-              params: {
-                v: videoId,
-                lang: candidate.lang,
-                fmt: 'json3',
-                ...(candidate.kind ? { kind: candidate.kind } : {}),
-              },
-              timeout: 10000,
-            });
+            // Fetch as text so we can inspect the body regardless of content-type.
+            // YouTube sometimes returns XML even when fmt=json3 is requested.
+            const timedtextResp = await axios.get<string>(
+              'https://www.youtube.com/api/timedtext',
+              {
+                params: {
+                  v: videoId,
+                  lang: candidate.lang,
+                  fmt: 'json3',
+                  ...(candidate.kind ? { kind: candidate.kind } : {}),
+                },
+                timeout: 10000,
+                responseType: 'text',
+              }
+            );
 
-            const events = timedtextResp.data.events ?? [];
-            const parsed = events
-              .filter((e) => e.segs && e.segs.length > 0)
-              .map((e) => ({
-                text: (e.segs ?? [])
-                  .map((s) => s.utf8 ?? '')
-                  .join('')
-                  .trim(),
-                offset: e.tStartMs ?? 0,
-                duration: e.dDurationMs ?? 0,
-              }))
-              .filter((item) => item.text.length > 0 && item.text !== '\n');
+            const rawBody = timedtextResp.data ?? '';
 
-            if (parsed.length > 0) {
-              transcriptItems = parsed;
+            // Try JSON3 first
+            if (rawBody.trimStart().startsWith('{')) {
+              let parsed: { events?: TimedtextJson3Event[] } = {};
+              try {
+                parsed = JSON.parse(rawBody) as {
+                  events?: TimedtextJson3Event[];
+                };
+              } catch {
+                // not valid JSON3 — fall through to XML
+              }
+              const json3Parsed = parseTimedtextJson3(parsed.events ?? []);
+              if (json3Parsed.length > 0) {
+                transcriptItems = json3Parsed;
+                break;
+              }
+            }
+
+            // If the response body looks like XML, parse it directly without
+            // issuing a second HTTP request.
+            if (rawBody.trimStart().startsWith('<')) {
+              const xmlParsed = parseTimedtextXml(rawBody);
+              if (xmlParsed.length > 0) {
+                transcriptItems = xmlParsed;
+                break;
+              }
+            }
+
+            // As a last resort, fetch without fmt=json3 to get XML explicitly.
+            const xmlResp = await axios.get<string>(
+              'https://www.youtube.com/api/timedtext',
+              {
+                params: {
+                  v: videoId,
+                  lang: candidate.lang,
+                  ...(candidate.kind ? { kind: candidate.kind } : {}),
+                },
+                timeout: 10000,
+                responseType: 'text',
+              }
+            );
+
+            const xmlParsed = parseTimedtextXml(xmlResp.data);
+            if (xmlParsed.length > 0) {
+              transcriptItems = xmlParsed;
               break;
             }
           } catch (candidateErr: unknown) {
