@@ -305,7 +305,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                 <img
                   src={widgetConfig.remoteCaptureDataUrl}
                   alt="Remote Capture"
-                  className={`w-full h-full object-cover transition-transform duration-500 ${isMirrored ? 'scale-x-[-1]' : 'scale-x-1'}`}
+                  className="w-full h-full object-cover transition-transform duration-500"
                 />
               ) : (
                 <video

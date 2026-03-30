@@ -29,16 +29,28 @@ export const RemoteWebcamControl: React.FC<RemoteWebcamControlProps> = ({
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      updateWidget(widget.id, {
-        config: {
-          ...config,
-          remoteCaptureDataUrl: dataUrl,
-          remoteCaptureTimestamp: Date.now(),
-          isRemoteMode: true,
-        },
-      });
-      setIsProcessing(false);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1280;
+        const scale = Math.min(1, MAX_WIDTH / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            remoteCaptureDataUrl: dataUrl,
+            remoteCaptureTimestamp: Date.now(),
+            isRemoteMode: true,
+          },
+        });
+        setIsProcessing(false);
+      };
+      img.src = e.target?.result as string;
     };
     reader.onerror = () => {
       setIsProcessing(false);
