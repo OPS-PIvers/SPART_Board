@@ -51,6 +51,7 @@ interface AIData {
 
 interface GlobalPermConfig {
   dailyLimit?: number;
+  dailyLimitEnabled?: boolean;
 }
 
 interface GlobalPermission {
@@ -243,78 +244,140 @@ export const generateWithAI = functionsV1
 
     const db = admin.firestore();
 
-    // 1. Check global feature permission for gemini-functions
-    const globalPermDoc = await db
-      .collection('global_permissions')
-      .doc('gemini-functions')
-      .get();
-    const globalPerm = globalPermDoc.exists
-      ? (globalPermDoc.data() as GlobalPermission)
-      : null;
-
-    // 2. Check if user is an admin
+    // Check if user is an admin
     const adminDoc = await db
       .collection('admins')
       .doc(email.toLowerCase())
       .get();
     const isAdmin = adminDoc.exists;
 
-    // 3. Validate access
-    if (globalPerm && !globalPerm.enabled) {
-      throw new functionsV1.https.HttpsError(
-        'permission-denied',
-        'Gemini functions are currently disabled by an administrator.'
-      );
-    }
-
     if (!isAdmin) {
-      if (globalPerm) {
-        const { accessLevel, betaUsers = [] } = globalPerm;
-        if (accessLevel === 'admin') {
-          throw new functionsV1.https.HttpsError(
-            'permission-denied',
-            'Gemini functions are currently restricted to administrators.'
-          );
-        }
-        if (
-          accessLevel === 'beta' &&
-          !betaUsers.includes(email.toLowerCase())
-        ) {
-          throw new functionsV1.https.HttpsError(
-            'permission-denied',
-            'You do not have access to Gemini beta functions.'
-          );
-        }
-      }
+      // 1. Determine specific feature ID if applicable
+      let specificFeatureId: string | null = null;
+      const genType = String(data?.type || '')
+        .toLowerCase()
+        .trim();
+      if (genType === 'mini-app') specificFeatureId = 'embed-mini-app';
+      if (genType === 'poll') specificFeatureId = 'smart-poll';
 
-      // 4. Check and increment daily usage
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const usageRef = db.collection('ai_usage').doc(`${uid}_${today}`);
-      const DAILY_LIMIT = globalPerm?.config?.dailyLimit ?? 20;
 
       try {
         await db.runTransaction(async (transaction) => {
-          const usageDoc = await transaction.get(usageRef);
-          const currentUsage = usageDoc.exists
-            ? (usageDoc.data()?.count as number) || 0
-            : 0;
+          // --- Check Overall Gemini Limit ---
+          const globalPermDoc = await transaction.get(
+            db.collection('global_permissions').doc('gemini-functions')
+          );
+          const globalPerm = globalPermDoc.exists
+            ? (globalPermDoc.data() as GlobalPermission)
+            : null;
 
-          if (currentUsage >= DAILY_LIMIT) {
+          if (globalPerm && !globalPerm.enabled) {
             throw new functionsV1.https.HttpsError(
-              'resource-exhausted',
-              `Daily AI usage limit reached (${DAILY_LIMIT} generations). Please try again tomorrow.`
+              'permission-denied',
+              'Gemini functions are currently disabled by an administrator.'
             );
           }
 
+          if (globalPerm) {
+            const { accessLevel, betaUsers = [] } = globalPerm;
+            if (accessLevel === 'admin') {
+              throw new functionsV1.https.HttpsError(
+                'permission-denied',
+                'Gemini functions are currently restricted to administrators.'
+              );
+            }
+            if (
+              accessLevel === 'beta' &&
+              !betaUsers.includes(email.toLowerCase())
+            ) {
+              throw new functionsV1.https.HttpsError(
+                'permission-denied',
+                'You do not have access to Gemini beta functions.'
+              );
+            }
+          }
+
+          const overallLimitEnabled =
+            globalPerm?.config?.dailyLimitEnabled !== false;
+          const overallLimit = globalPerm?.config?.dailyLimit ?? 20;
+
+          const overallUsageRef = db
+            .collection('ai_usage')
+            .doc(`${uid}_${today}`);
+          const overallUsageDoc = await transaction.get(overallUsageRef);
+          const currentOverallUsage = overallUsageDoc.exists
+            ? (overallUsageDoc.data()?.count as number) || 0
+            : 0;
+
+          if (overallLimitEnabled && currentOverallUsage >= overallLimit) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              `Daily AI usage limit reached (${overallLimit} generations). Please try again tomorrow.`
+            );
+          }
+
+          // --- Check Specific Feature Limit ---
+          let specificLimitReached = false;
+          let specificLimit = 0;
+          let specificUsageRef = null;
+          let currentSpecificUsage = 0;
+
+          if (specificFeatureId) {
+            const specPermDoc = await transaction.get(
+              db.collection('global_permissions').doc(specificFeatureId)
+            );
+            if (specPermDoc.exists) {
+              const specPerm = specPermDoc.data() as GlobalPermission;
+              const specLimitEnabled =
+                specPerm.config?.dailyLimitEnabled !== false;
+              specificLimit = specPerm.config?.dailyLimit ?? 20;
+
+              if (specLimitEnabled) {
+                specificUsageRef = db
+                  .collection('ai_usage')
+                  .doc(`${uid}_${specificFeatureId}_${today}`);
+                const specUsageDoc = await transaction.get(specificUsageRef);
+                currentSpecificUsage = specUsageDoc.exists
+                  ? (specUsageDoc.data()?.count as number) || 0
+                  : 0;
+
+                if (currentSpecificUsage >= specificLimit) {
+                  specificLimitReached = true;
+                }
+              }
+            }
+          }
+
+          if (specificLimitReached) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              `Daily limit for ${specificFeatureId} reached (${specificLimit} per day). Please try again tomorrow.`
+            );
+          }
+
+          // --- Increment Both ---
           transaction.set(
-            usageRef,
+            overallUsageRef,
             {
-              count: currentUsage + 1,
+              count: currentOverallUsage + 1,
               email: email,
               lastUsed: admin.firestore.FieldValue.serverTimestamp(),
             },
             { merge: true }
           );
+
+          if (specificUsageRef) {
+            transaction.set(
+              specificUsageRef,
+              {
+                count: currentSpecificUsage + 1,
+                email: email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          }
         });
       } catch (error) {
         if (error instanceof functionsV1.https.HttpsError) {
@@ -757,6 +820,16 @@ export const generateVideoActivity = functionsV1
         );
       }
 
+      const uid = context.auth.uid;
+      const email = context.auth.token.email;
+
+      if (!email) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'User must have an email associated with their account.'
+        );
+      }
+
       const { url, questionCount } = data;
 
       if (!url || typeof url !== 'string') {
@@ -870,6 +943,73 @@ export const generateVideoActivity = functionsV1
         })
         .join('\n');
 
+      const db = admin.firestore();
+
+      // Check if user is an admin (unlimited)
+      const adminDoc = await db
+        .collection('admins')
+        .doc(email.toLowerCase())
+        .get();
+      const isAdmin = adminDoc.exists;
+
+      if (!isAdmin) {
+        // --- Check Overall Gemini Limit ---
+        const today = new Date().toISOString().split('T')[0];
+        const overallUsageRef = db
+          .collection('ai_usage')
+          .doc(`${uid}_${today}`);
+
+        try {
+          await db.runTransaction(async (transaction) => {
+            const globalPermDoc = await transaction.get(
+              db.collection('global_permissions').doc('gemini-functions')
+            );
+            const globalPerm = globalPermDoc.data() as
+              | GlobalPermission
+              | undefined;
+
+            if (globalPerm && !globalPerm.enabled) {
+              throw new functionsV1.https.HttpsError(
+                'permission-denied',
+                'Gemini functions are currently disabled by an administrator.'
+              );
+            }
+
+            const overallLimitEnabled =
+              globalPerm?.config?.dailyLimitEnabled !== false;
+            const overallLimit = globalPerm?.config?.dailyLimit ?? 20;
+
+            const overallUsageDoc = await transaction.get(overallUsageRef);
+            const currentOverallUsage =
+              (overallUsageDoc.data()?.count as number) || 0;
+
+            if (overallLimitEnabled && currentOverallUsage >= overallLimit) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                `Daily AI usage limit reached (${overallLimit} generations). Please try again tomorrow.`
+              );
+            }
+
+            transaction.set(
+              overallUsageRef,
+              {
+                count: currentOverallUsage + 1,
+                email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          });
+        } catch (error) {
+          if (error instanceof functionsV1.https.HttpsError) throw error;
+          console.error('Usage check error:', error);
+          throw new functionsV1.https.HttpsError(
+            'internal',
+            'Failed to verify AI usage limits.'
+          );
+        }
+      }
+
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
         throw new functionsV1.https.HttpsError(
@@ -959,6 +1099,7 @@ interface AudioTranscriptionRequestData {
 
 interface AudioTranscriptionPermConfig {
   dailyLimit?: number;
+  dailyLimitEnabled?: boolean;
   model?: string;
 }
 
@@ -1057,48 +1198,84 @@ export const transcribeVideoWithGemini = functionsV1
         }
       }
 
-      // Separate, lower daily usage limit for audio (costly)
-      const today = new Date().toISOString().split('T')[0];
-      const usageRef = db.collection('ai_usage').doc(`${uid}_audio_${today}`);
-      const AUDIO_DAILY_LIMIT = perm.config?.dailyLimit ?? 5;
+      if (!isAdmin) {
+        // --- Dual Limit Check (Overall + Specific) ---
+        const today = new Date().toISOString().split('T')[0];
+        const overallUsageRef = db
+          .collection('ai_usage')
+          .doc(`${uid}_${today}`);
+        const specificUsageRef = db
+          .collection('ai_usage')
+          .doc(`${uid}_video-activity-audio-transcription_${today}`);
 
-      try {
-        await db.runTransaction(async (transaction) => {
-          const usageDoc = await transaction.get(usageRef);
-          const currentUsage = usageDoc.exists
-            ? (usageDoc.data()?.count as number) || 0
-            : 0;
-
-          if (currentUsage >= AUDIO_DAILY_LIMIT) {
-            throw new functionsV1.https.HttpsError(
-              'resource-exhausted',
-              `Daily audio transcription limit reached (${AUDIO_DAILY_LIMIT} per day). Please try again tomorrow.`
+        try {
+          await db.runTransaction(async (transaction) => {
+            // 1. Check Overall Limit
+            const globalPermDoc = await transaction.get(
+              db.collection('global_permissions').doc('gemini-functions')
             );
-          }
+            const globalPerm = globalPermDoc.data() as
+              | GlobalPermission
+              | undefined;
+            const overallLimitEnabled =
+              globalPerm?.config?.dailyLimitEnabled !== false;
+            const overallLimit = globalPerm?.config?.dailyLimit ?? 20;
 
-          transaction.set(
-            usageRef,
-            {
-              count: currentUsage + 1,
-              email,
-              lastUsed: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
+            const overallUsageDoc = await transaction.get(overallUsageRef);
+            const currentOverallUsage =
+              (overallUsageDoc.data()?.count as number) || 0;
+
+            if (overallLimitEnabled && currentOverallUsage >= overallLimit) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                `Daily AI usage limit reached (${overallLimit} generations). Please try again tomorrow.`
+              );
+            }
+
+            // 2. Check Specific Transcription Limit
+            const specLimitEnabled = perm.config?.dailyLimitEnabled !== false;
+            const specLimit = perm.config?.dailyLimit ?? 5;
+
+            const specUsageDoc = await transaction.get(specificUsageRef);
+            const currentSpecUsage =
+              (specUsageDoc.data()?.count as number) || 0;
+
+            if (specLimitEnabled && currentSpecUsage >= specLimit) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                `Daily audio transcription limit reached (${specLimit} per day). Please try again tomorrow.`
+              );
+            }
+
+            // 3. Increment Both
+            transaction.set(
+              overallUsageRef,
+              {
+                count: currentOverallUsage + 1,
+                email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+            transaction.set(
+              specificUsageRef,
+              {
+                count: currentSpecUsage + 1,
+                email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          });
+        } catch (error) {
+          if (error instanceof functionsV1.https.HttpsError) throw error;
+          console.error('Transcription usage check error:', error);
+          throw new functionsV1.https.HttpsError(
+            'internal',
+            'Failed to verify audio transcription usage limits.'
           );
-        });
-      } catch (error) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'code' in error &&
-          'message' in error
-        ) {
-          throw error;
         }
-        throw new functionsV1.https.HttpsError(
-          'internal',
-          'Failed to verify audio transcription usage limits.'
-        );
       }
 
       const { url, questionCount } = data;
@@ -1499,14 +1676,23 @@ export const getAdminAnalytics = functionsV1
         `[getAdminAnalytics] Found ${aiUsageSnap.size} AI usage records`
       );
 
+      const GEMINI_SPECIFIC_FEATURES = [
+        'smart-poll',
+        'embed-mini-app',
+        'video-activity-audio-transcription',
+      ];
+
       aiUsageSnap.docs.forEach((usageDoc) => {
         const idParts = usageDoc.id.split('_');
         if (idParts.length < 2) return;
 
         const datePart = idParts[idParts.length - 1];
-        const maybeAudioMarker = idParts[idParts.length - 2];
-        const hasAudioMarker = maybeAudioMarker === 'audio';
-        const uidParts = idParts.slice(0, hasAudioMarker ? -2 : -1);
+        const secondToLast = idParts[idParts.length - 2];
+        const isSpecificFeature =
+          GEMINI_SPECIFIC_FEATURES.includes(secondToLast);
+
+        // Exclude the feature ID and date to get the original UID
+        const uidParts = idParts.slice(0, isSpecificFeature ? -2 : -1);
         const uid = uidParts.join('_');
 
         if (!uid || !datePart) return;
@@ -1514,9 +1700,13 @@ export const getAdminAnalytics = functionsV1
         const usageData = usageDoc.data();
         const count = typeof usageData.count === 'number' ? usageData.count : 0;
 
-        totalAiCalls += count;
-        callsPerUser[uid] = (callsPerUser[uid] ?? 0) + count;
-        dailyCallCounts[datePart] = (dailyCallCounts[datePart] ?? 0) + count;
+        // ONLY count the "overall" records for total analytics to avoid double counting
+        // (Specific feature records are for enforcement, overall records track everything)
+        if (!isSpecificFeature) {
+          totalAiCalls += count;
+          callsPerUser[uid] = (callsPerUser[uid] ?? 0) + count;
+          dailyCallCounts[datePart] = (dailyCallCounts[datePart] ?? 0) + count;
+        }
       });
 
       const uniqueDays = Object.keys(dailyCallCounts).length || 1;

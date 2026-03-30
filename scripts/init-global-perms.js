@@ -12,7 +12,28 @@ async function initGlobalPermissions() {
   const features = [
     {
       id: 'gemini-functions',
-      config: { dailyLimit: 20 },
+      config: { dailyLimit: 20, dailyLimitEnabled: true },
+      accessLevel: 'public',
+      enabled: true,
+      betaUsers: [],
+    },
+    {
+      id: 'smart-poll',
+      config: { dailyLimit: 20, dailyLimitEnabled: true },
+      accessLevel: 'public',
+      enabled: true,
+      betaUsers: [],
+    },
+    {
+      id: 'embed-mini-app',
+      config: { dailyLimit: 20, dailyLimitEnabled: true },
+      accessLevel: 'admin',
+      enabled: true,
+      betaUsers: [],
+    },
+    {
+      id: 'video-activity-audio-transcription',
+      config: { dailyLimit: 5, dailyLimitEnabled: true },
       accessLevel: 'public',
       enabled: true,
       betaUsers: [],

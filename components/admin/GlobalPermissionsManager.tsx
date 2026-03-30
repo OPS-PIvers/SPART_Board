@@ -97,6 +97,13 @@ const GLOBAL_FEATURES: {
   },
 ];
 
+const GEMINI_FEATURES: GlobalFeature[] = [
+  'gemini-functions',
+  'smart-poll',
+  'embed-mini-app',
+  'video-activity-audio-transcription',
+];
+
 export const GlobalPermissionsManager: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [permissions, setPermissions] = useState<
@@ -199,13 +206,22 @@ export const GlobalPermissionsManager: React.FC = () => {
   const getPermission = (featureId: GlobalFeature): GlobalFeaturePermission => {
     const defaultAccessLevel: AccessLevel =
       featureId === 'embed-mini-app' ? 'admin' : 'public';
+
+    // Set smart default limits
+    let defaultLimit = 20;
+    if (featureId === 'video-activity-audio-transcription') {
+      defaultLimit = 5;
+    }
+
     return (
       permissions.get(featureId) ?? {
         featureId,
         accessLevel: defaultAccessLevel,
         betaUsers: [],
         enabled: true,
-        config: featureId === 'gemini-functions' ? { dailyLimit: 20 } : {},
+        config: GEMINI_FEATURES.includes(featureId)
+          ? { dailyLimit: defaultLimit, dailyLimitEnabled: true }
+          : {},
       }
     );
   };
@@ -562,29 +578,64 @@ export const GlobalPermissionsManager: React.FC = () => {
                     </div>
 
                     {/* Feature Specific Config (Gemini Limit) */}
-                    {feature.id === 'gemini-functions' && (
-                      <div className="flex items-center gap-2 ml-4 px-4 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
-                        <span className="text-xxs font-bold text-purple-700 uppercase tracking-tight">
-                          Daily Limit
-                        </span>
-                        <input
-                          type="number"
-                          min="1"
-                          max="1000"
-                          value={
-                            (permission.config?.dailyLimit as number) ?? 20
-                          }
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            updatePermission(feature.id, {
-                              config: {
-                                ...permission.config,
-                                dailyLimit: isNaN(val) ? 20 : val,
-                              },
-                            });
-                          }}
-                          className="w-16 px-2 py-0.5 border border-purple-200 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        />
+                    {GEMINI_FEATURES.includes(feature.id) && (
+                      <div className="flex items-center gap-3 ml-4 px-4 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="text-[10px] font-bold text-purple-700 uppercase tracking-tight leading-none mb-0.5">
+                            Limit
+                          </span>
+                          <Toggle
+                            checked={
+                              (permission.config
+                                ?.dailyLimitEnabled as boolean) ?? true
+                            }
+                            onChange={(checked) =>
+                              updatePermission(feature.id, {
+                                config: {
+                                  ...permission.config,
+                                  dailyLimitEnabled: checked,
+                                },
+                              })
+                            }
+                            size="xs"
+                          />
+                        </div>
+
+                        <div className="w-px h-6 bg-purple-200" />
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold text-purple-700 uppercase tracking-tight leading-none">
+                            Daily Max
+                          </span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="1000"
+                            disabled={
+                              !(
+                                (permission.config
+                                  ?.dailyLimitEnabled as boolean) ?? true
+                              )
+                            }
+                            value={
+                              (permission.config?.dailyLimit as number) ??
+                              (feature.id ===
+                              'video-activity-audio-transcription'
+                                ? 5
+                                : 20)
+                            }
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              updatePermission(feature.id, {
+                                config: {
+                                  ...permission.config,
+                                  dailyLimit: isNaN(val) ? 20 : val,
+                                },
+                              });
+                            }}
+                            className="w-14 px-1 py-0 border border-purple-200 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -789,17 +840,54 @@ export const GlobalPermissionsManager: React.FC = () => {
                 )}
 
                 {/* Feature Specific Config (Gemini Limit) */}
-                {feature.id === 'gemini-functions' && (
+                {GEMINI_FEATURES.includes(feature.id) && (
                   <div className="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                    <label className="text-xs font-bold text-purple-700 uppercase tracking-widest mb-2 block">
-                      Daily Usage Limit (Standard Users)
-                    </label>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-xs font-bold text-purple-700 uppercase tracking-widest block">
+                        Daily Usage Limit
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-purple-400 uppercase">
+                          {((permission.config?.dailyLimitEnabled as boolean) ??
+                          true)
+                            ? 'Enabled'
+                            : 'Disabled'}
+                        </span>
+                        <Toggle
+                          checked={
+                            (permission.config?.dailyLimitEnabled as boolean) ??
+                            true
+                          }
+                          onChange={(checked) =>
+                            updatePermission(feature.id, {
+                              config: {
+                                ...permission.config,
+                                dailyLimitEnabled: checked,
+                              },
+                            })
+                          }
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+
                     <div className="flex items-center gap-4">
                       <input
                         type="number"
                         min="1"
                         max="1000"
-                        value={(permission.config?.dailyLimit as number) ?? 20}
+                        disabled={
+                          !(
+                            (permission.config?.dailyLimitEnabled as boolean) ??
+                            true
+                          )
+                        }
+                        value={
+                          (permission.config?.dailyLimit as number) ??
+                          (feature.id === 'video-activity-audio-transcription'
+                            ? 5
+                            : 20)
+                        }
                         onChange={(e) => {
                           const val = parseInt(e.target.value);
                           updatePermission(feature.id, {
@@ -809,7 +897,7 @@ export const GlobalPermissionsManager: React.FC = () => {
                             },
                           });
                         }}
-                        className="w-24 px-3 py-2 border border-purple-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-24 px-3 py-2 border border-purple-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                       />
                       <span className="text-xs text-purple-600 font-medium">
                         generations per day
