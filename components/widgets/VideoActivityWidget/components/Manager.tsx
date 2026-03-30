@@ -80,7 +80,7 @@ const AssignModal: React.FC<AssignModalProps> = ({
             </p>
             <p
               className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1"
-              style={{ fontSize: 'min(10px, 3cqmin)' }}
+              style={{ fontSize: 'clamp(10px, 3cqmin, 12px)' }}
             >
               Create Session Link
             </p>
@@ -312,7 +312,9 @@ export const Manager: React.FC<ManagerProps> = ({
           className="animate-spin"
           style={{ width: 'min(32px, 8cqmin)', height: 'min(32px, 8cqmin)' }}
         />
-        <span style={{ fontSize: 'min(14px, 4cqmin)', fontWeight: 500 }}>
+        <span
+          style={{ fontSize: 'clamp(12px, 4cqmin, 14px)', fontWeight: 500 }}
+        >
           Loading activities…
         </span>
       </div>
@@ -372,13 +374,13 @@ export const Manager: React.FC<ManagerProps> = ({
           <div className="flex flex-col">
             <span
               className="font-black text-brand-blue-dark uppercase tracking-tight"
-              style={{ fontSize: 'min(15px, 4cqmin)' }}
+              style={{ fontSize: 'clamp(13px, 4cqmin, 15px)' }}
             >
               Video Activities
             </span>
             <span
               className="text-brand-blue-primary/60 font-bold"
-              style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+              style={{ fontSize: 'clamp(10px, 2.5cqmin, 11px)' }}
             >
               {activities.length} total • Interactive Lessons
             </span>
@@ -390,7 +392,7 @@ export const Manager: React.FC<ManagerProps> = ({
           style={{
             gap: 'min(6px, 1.5cqmin)',
             padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
-            fontSize: 'min(12px, 3cqmin)',
+            fontSize: 'clamp(11px, 3cqmin, 12px)',
           }}
         >
           <Plus
@@ -433,7 +435,7 @@ export const Manager: React.FC<ManagerProps> = ({
               style={{
                 padding:
                   'min(8px, 2cqmin) min(12px, 3cqmin) min(8px, 2cqmin) min(34px, 8cqmin)',
-                fontSize: 'min(13px, 3.5cqmin)',
+                fontSize: 'clamp(12px, 3.5cqmin, 13px)',
               }}
             />
           </div>
@@ -446,7 +448,7 @@ export const Manager: React.FC<ManagerProps> = ({
             style={{
               padding: 'min(10px, 2.5cqmin)',
               gap: 'min(8px, 2cqmin)',
-              fontSize: 'min(11px, 3.5cqmin)',
+              fontSize: 'clamp(11px, 3.5cqmin, 12px)',
               fontWeight: 500,
             }}
           >
@@ -474,7 +476,7 @@ export const Manager: React.FC<ManagerProps> = ({
                   onClick={onNew}
                   className="inline-flex items-center justify-center rounded-xl bg-brand-blue-primary text-white font-bold shadow-sm hover:bg-brand-blue-dark transition-colors"
                   style={{
-                    fontSize: 'min(11px, 3.25cqmin)',
+                    fontSize: 'clamp(11px, 3.25cqmin, 12px)',
                     padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
                   }}
                 >
@@ -487,7 +489,7 @@ export const Manager: React.FC<ManagerProps> = ({
           <div className="flex-1 flex items-center justify-center py-12">
             <p
               className="text-slate-400 font-bold"
-              style={{ fontSize: 'min(14px, 4cqmin)' }}
+              style={{ fontSize: 'clamp(12px, 4cqmin, 14px)' }}
             >
               No matches for &quot;{searchQuery}&quot;
             </p>
@@ -527,14 +529,14 @@ export const Manager: React.FC<ManagerProps> = ({
                   >
                     <h3
                       className="font-bold text-brand-blue-dark truncate"
-                      style={{ fontSize: 'min(14px, 4cqmin)' }}
+                      style={{ fontSize: 'clamp(12px, 4cqmin, 14px)' }}
                     >
                       {activity.title}
                     </h3>
                     <span
                       className="bg-brand-red-lighter text-brand-red-primary font-black uppercase tracking-widest rounded-md shrink-0"
                       style={{
-                        fontSize: 'min(8px, 2cqmin)',
+                        fontSize: 'clamp(10px, 2cqmin, 11px)',
                         padding: 'min(1px, 0.2cqmin) min(6px, 1.5cqmin)',
                       }}
                     >
@@ -545,7 +547,7 @@ export const Manager: React.FC<ManagerProps> = ({
                     className="flex items-center text-brand-gray-primary font-medium"
                     style={{
                       gap: 'min(8px, 2cqmin)',
-                      fontSize: 'min(11px, 3cqmin)',
+                      fontSize: 'clamp(10px, 3cqmin, 11px)',
                       marginTop: 'min(1px, 0.2cqmin)',
                     }}
                   >
@@ -581,7 +583,7 @@ export const Manager: React.FC<ManagerProps> = ({
                         className="bg-brand-red-primary hover:bg-brand-red-dark text-white font-bold transition-colors"
                         style={{
                           padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-                          fontSize: 'min(10px, 2.5cqmin)',
+                          fontSize: 'clamp(10px, 2.5cqmin, 11px)',
                         }}
                       >
                         Delete
@@ -591,7 +593,7 @@ export const Manager: React.FC<ManagerProps> = ({
                         className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition-colors"
                         style={{
                           padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-                          fontSize: 'min(10px, 2.5cqmin)',
+                          fontSize: 'clamp(10px, 2.5cqmin, 11px)',
                         }}
                       >
                         Esc
@@ -665,9 +667,9 @@ const ActionButton: React.FC<{
     onClick={onClick}
     className={`flex items-center font-bold rounded-lg transition-all active:scale-95 shadow-sm ${color}`}
     style={{
-      gap: 'min(4px, 1cqmin)',
-      padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-      fontSize: 'min(11px, 3cqmin)',
+      gap: 'clamp(4px, 1cqmin, 6px)',
+      padding: 'clamp(6px, 1.5cqmin, 8px) clamp(10px, 2.5cqmin, 12px)',
+      fontSize: 'clamp(10px, 3cqmin, 11px)',
     }}
   >
     {React.cloneElement(
