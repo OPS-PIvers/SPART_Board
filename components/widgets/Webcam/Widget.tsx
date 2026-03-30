@@ -334,7 +334,11 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                 >
                   <button
                     onClick={takePhoto}
-                    disabled={widgetConfig.isRemoteMode ? false : !stream}
+                    disabled={
+                      widgetConfig.isRemoteMode
+                        ? !widgetConfig.remoteCaptureDataUrl
+                        : !stream
+                    }
                     className="hover:bg-white/30 rounded-2xl text-white disabled:opacity-30 disabled:cursor-not-allowed"
                     style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Take Photo"
@@ -349,8 +353,9 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                   <button
                     onClick={extractText}
                     disabled={
-                      (widgetConfig.isRemoteMode ? false : !stream) ||
-                      isExtracting
+                      (widgetConfig.isRemoteMode
+                        ? !widgetConfig.remoteCaptureDataUrl
+                        : !stream) || isExtracting
                     }
                     className={`rounded-2xl text-white transition-all ${isExtracting ? 'bg-blue-500/30 text-blue-400 animate-pulse' : 'hover:bg-white/30'}`}
                     style={{ padding: 'min(12px, 2.5cqmin)' }}
@@ -412,6 +417,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                             ...widgetConfig,
                             isRemoteMode: false,
                             remoteCaptureDataUrl: undefined,
+                            remoteCaptureTimestamp: undefined,
                           },
                         });
                       }}

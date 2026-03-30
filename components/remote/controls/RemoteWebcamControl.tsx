@@ -68,6 +68,7 @@ export const RemoteWebcamControl: React.FC<RemoteWebcamControlProps> = ({
         ...config,
         isRemoteMode: false,
         remoteCaptureDataUrl: undefined,
+        remoteCaptureTimestamp: undefined,
       },
     });
   };
