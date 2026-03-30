@@ -19,5 +19,6 @@
 **Action:** Consolidate multiple passes into a single grouping loop inside a `useMemo` block. Gather counts, generate derived strings (like expressions), and build UI representations (like grouped rectangles) in one go, caching the results against the dependency array. This reduces complexity back down to O(N) and prevents layout thrashing.
 
 ## 2025-02-18 - NextUp Render Optimization
+
 **Learning:** Found an inline array filtering (`.filter(...).length`) executed directly inside a render function inside `NextUp/Widget.tsx`. This causes an O(N) operation on every single re-render unnecessarily, degrading performance on high-frequency update components.
 **Action:** Always memoize derived statistics (like waiting counts from a queue) using `useMemo` and an O(N) `reduce` single-pass, avoiding both render-time iteration and intermediate array allocations just for counting lengths.
