@@ -741,7 +741,7 @@ interface GeneratedVideoActivity {
  */
 export const generateVideoActivity = functionsV1
   .runWith({
-    secrets: ['GEMINI_API_KEY'],
+    secrets: ['GEMINI_API_KEY', 'YOUTUBE_API_KEY'],
     memory: '512MB',
     timeoutSeconds: 120,
   })
@@ -781,14 +781,85 @@ export const generateVideoActivity = functionsV1
         );
       }
 
-      // Fetch transcript
+      // Fetch transcript via YouTube Data API v3 (caption track discovery)
+      // then timedtext endpoint (caption content) — both are official/free.
+      const ytApiKey = process.env.YOUTUBE_API_KEY;
+      if (!ytApiKey) {
+        throw new functionsV1.https.HttpsError(
+          'internal',
+          'YouTube API key is not configured on the server. Please contact your administrator.'
+        );
+      }
+
       let transcriptItems: TranscriptResponse[] = [];
       try {
-        const { fetchTranscript } = (await import('youtube-transcript')) as {
-          fetchTranscript: (videoId: string) => Promise<TranscriptResponse[]>;
-        };
-        transcriptItems = await fetchTranscript(videoId);
+        // Step 1: List available caption tracks for this video
+        const captionListResp = await axios.get<{
+          items?: Array<{
+            id: string;
+            snippet: { language: string; trackKind: string };
+          }>;
+        }>('https://www.googleapis.com/youtube/v3/captions', {
+          params: { videoId, part: 'snippet', key: ytApiKey },
+          timeout: 10000,
+        });
+
+        const tracks = captionListResp.data.items ?? [];
+        if (tracks.length === 0) {
+          throw new functionsV1.https.HttpsError(
+            'not-found',
+            'No captions are available for this video. Try a different video, or ask your admin to enable Gemini audio transcription.'
+          );
+        }
+
+        // Prefer manual English → auto-generated English → any manual → any track
+        const track =
+          tracks.find(
+            (t) =>
+              t.snippet.language === 'en' && t.snippet.trackKind === 'standard'
+          ) ??
+          tracks.find(
+            (t) => t.snippet.language === 'en' && t.snippet.trackKind === 'asr'
+          ) ??
+          tracks.find((t) => t.snippet.trackKind === 'standard') ??
+          tracks.find((t) => t.snippet.trackKind === 'asr') ??
+          tracks[0];
+
+        const lang = track.snippet.language;
+        const isAsr = track.snippet.trackKind === 'asr';
+
+        // Step 2: Fetch caption content via YouTube's timedtext endpoint
+        // (the same endpoint YouTube's own player uses to render captions)
+        const timedtextResp = await axios.get<{
+          events?: Array<{
+            tStartMs?: number;
+            dDurationMs?: number;
+            segs?: Array<{ utf8?: string }>;
+          }>;
+        }>('https://www.youtube.com/api/timedtext', {
+          params: {
+            v: videoId,
+            lang,
+            fmt: 'json3',
+            ...(isAsr ? { kind: 'asr' } : {}),
+          },
+          timeout: 10000,
+        });
+
+        const events = timedtextResp.data.events ?? [];
+        transcriptItems = events
+          .filter((e) => e.segs && e.segs.length > 0)
+          .map((e) => ({
+            text: (e.segs ?? [])
+              .map((s) => s.utf8 ?? '')
+              .join('')
+              .trim(),
+            offset: e.tStartMs ?? 0,
+            duration: e.dDurationMs ?? 0,
+          }))
+          .filter((item) => item.text.length > 0 && item.text !== '\n');
       } catch (err: unknown) {
+        if (err instanceof functionsV1.https.HttpsError) throw err;
         const msg = err instanceof Error ? err.message : String(err);
         console.warn(
           `[generateVideoActivity] Transcript fetch failed for ${videoId}:`,
@@ -800,7 +871,7 @@ export const generateVideoActivity = functionsV1
         );
       }
 
-      if (!transcriptItems || transcriptItems.length === 0) {
+      if (transcriptItems.length === 0) {
         throw new functionsV1.https.HttpsError(
           'not-found',
           'No captions are available for this video. Try a different video, or ask your admin to enable Gemini audio transcription.'
@@ -1108,7 +1179,10 @@ Return JSON:
               parts: [
                 { text: systemPrompt },
                 {
-                  text: `Video URL: https://www.youtube.com/watch?v=${videoId}`,
+                  fileData: {
+                    fileUri: `https://www.youtube.com/watch?v=${videoId}`,
+                    mimeType: 'video/mp4',
+                  },
                 },
               ],
             },
