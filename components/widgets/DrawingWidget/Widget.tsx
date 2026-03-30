@@ -278,6 +278,15 @@ export const DrawingWidget: React.FC<{
         return;
       }
 
+      const safeText = extractedText
+        .trim()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br/>');
+
       const existingTextWidget = activeDashboard?.widgets.find(
         (w) => w.type === 'text'
       );
@@ -285,8 +294,8 @@ export const DrawingWidget: React.FC<{
       if (existingTextWidget) {
         const currentConfig = existingTextWidget.config as TextConfig;
         const newContent = currentConfig.content
-          ? `${currentConfig.content}<br><br>${extractedText}`
-          : extractedText;
+          ? `${currentConfig.content}<br><br>${safeText}`
+          : safeText;
 
         updateWidget(existingTextWidget.id, {
           config: {
@@ -302,7 +311,7 @@ export const DrawingWidget: React.FC<{
           w: 400,
           h: 300,
           config: {
-            content: extractedText,
+            content: safeText,
           } as TextConfig,
         });
         addToast('Created new note with text!', 'success');
