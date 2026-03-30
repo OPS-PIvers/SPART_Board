@@ -590,15 +590,12 @@ Config: `components/admin/VideoActivityConfigurationModal.tsx` _(separate modal;
 
 ---
 
-[X] Webcam — Type: `webcam` | Label: "Camera"
-Config: Inline in `components/admin/FeatureConfigurationPanel.tsx` — no dedicated file. To extract,
-create `components/admin/WebcamConfigurationPanel.tsx` and register in `BUILDING_CONFIG_PANELS`.
-
-- **User-level Defaults:**
-  - None.
-- **Admin-only Settings:**
-  - `ocrMode`: `'standard'` (local browser OCR) vs `'gemini'` (AI-powered, uses API quota).
-  - `dockDefaults`: Per-building dock visibility.
+[x] Webcam
+    - [Default User-Level Settings]
+        -- None natively configurable.
+    - [Admin-Only Settings]
+        -- ocrMode: 'standard' (local browser OCR) vs 'gemini' (AI-powered, uses API quota).
+        -- dockDefaults: Per-building dock visibility.
 
 ---
 
