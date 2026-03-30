@@ -25,8 +25,8 @@ import {
   resolveActiveSchedule,
   getActiveScheduleId,
   parseScheduleTime,
-} from './utils';
-import { ScheduleRow } from './components/ScheduleRow';
+} from '@/components/widgets/Schedule/utils';
+import { ScheduleRow } from '@/components/widgets/Schedule/components/ScheduleRow';
 
 const GAP_STYLE = 'min(10px, 2cqmin)';
 

@@ -57,7 +57,7 @@ export const formatScheduleTime = (
 };
 
 /** Converts a hex color + alpha into an rgba() CSS string. */
-export const hexToRgba = (hex: string, alpha: number): string => {
+export const hexToRgba = (hex: string | undefined, alpha: number): string => {
   const clean = (hex ?? '#ffffff').replace('#', '');
   const a =
     typeof alpha === 'number' && !isNaN(alpha)

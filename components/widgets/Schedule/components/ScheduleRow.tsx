@@ -7,7 +7,7 @@ import {
   formatScheduleTime,
   hexToRgba,
   parseScheduleTimeSeconds,
-} from '../utils';
+} from '@/components/widgets/Schedule/utils';
 
 interface CountdownDisplayProps {
   startTime?: string;
