@@ -138,14 +138,14 @@ const SetCard: React.FC<SetCardProps> = ({
       >
         <h3
           className="font-bold text-white truncate"
-          style={{ fontSize: 'min(14px, 4cqmin)' }}
+          style={{ fontSize: 'clamp(12px, 4cqmin, 14px)' }}
         >
           {title}
         </h3>
         <span
           className={`shrink-0 font-black uppercase tracking-widest rounded-md ${MODE_COLORS[mode]}`}
           style={{
-            fontSize: 'min(8px, 2.2cqmin)',
+            fontSize: 'clamp(8px, 2.2cqmin, 9px)',
             padding: 'min(1px, 0.2cqmin) min(6px, 1.5cqmin)',
           }}
         >
@@ -158,7 +158,10 @@ const SetCard: React.FC<SetCardProps> = ({
       >
         <div
           className="flex items-center text-slate-400 font-medium"
-          style={{ gap: 'min(4px, 1cqmin)', fontSize: 'min(11px, 3cqmin)' }}
+          style={{
+            gap: 'min(4px, 1cqmin)',
+            fontSize: 'clamp(10px, 3cqmin, 11px)',
+          }}
         >
           {isBuilding && (
             <span
@@ -181,7 +184,7 @@ const SetCard: React.FC<SetCardProps> = ({
         {description && (
           <span
             className="text-slate-500 truncate italic hidden sm:inline"
-            style={{ fontSize: 'min(11px, 3cqmin)' }}
+            style={{ fontSize: 'clamp(10px, 3cqmin, 11px)' }}
           >
             — {description}
           </span>
@@ -197,7 +200,7 @@ const SetCard: React.FC<SetCardProps> = ({
         style={{
           gap: 'min(4px, 1cqmin)',
           padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-          fontSize: 'min(11px, 3cqmin)',
+          fontSize: 'clamp(10px, 3cqmin, 11px)',
         }}
         title="Play (display to class)"
       >
@@ -213,7 +216,7 @@ const SetCard: React.FC<SetCardProps> = ({
         style={{
           gap: 'min(4px, 1cqmin)',
           padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-          fontSize: 'min(11px, 3cqmin)',
+          fontSize: 'clamp(10px, 3cqmin, 11px)',
         }}
         title="Assign (copy student link)"
       >
@@ -230,7 +233,7 @@ const SetCard: React.FC<SetCardProps> = ({
           style={{
             gap: 'min(4px, 1cqmin)',
             padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-            fontSize: 'min(11px, 3cqmin)',
+            fontSize: 'clamp(10px, 3cqmin, 11px)',
           }}
           title="View results"
         >
@@ -341,7 +344,7 @@ export const GuidedLearningLibrary: React.FC<GuidedLearningLibraryProps> = ({
             className={`rounded-md transition-colors font-bold uppercase tracking-tight ${tab === 'my' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}
             style={{
               padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(10px, 2.5cqmin)',
+              fontSize: 'clamp(10px, 2.5cqmin, 11px)',
             }}
           >
             <User
@@ -359,7 +362,7 @@ export const GuidedLearningLibrary: React.FC<GuidedLearningLibraryProps> = ({
             className={`rounded-md transition-colors font-bold uppercase tracking-tight ${tab === 'building' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}
             style={{
               padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(10px, 2.5cqmin)',
+              fontSize: 'clamp(10px, 2.5cqmin, 11px)',
             }}
           >
             <Building2
@@ -382,7 +385,7 @@ export const GuidedLearningLibrary: React.FC<GuidedLearningLibraryProps> = ({
               style={{
                 padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
                 gap: 'min(4px, 1cqmin)',
-                fontSize: 'min(10px, 2.5cqmin)',
+                fontSize: 'clamp(10px, 2.5cqmin, 11px)',
               }}
             >
               <Wand2
@@ -400,7 +403,7 @@ export const GuidedLearningLibrary: React.FC<GuidedLearningLibraryProps> = ({
             style={{
               padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
               gap: 'min(4px, 1cqmin)',
-              fontSize: 'min(10px, 2.5cqmin)',
+              fontSize: 'clamp(10px, 2.5cqmin, 11px)',
             }}
           >
             <Plus
