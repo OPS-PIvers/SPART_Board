@@ -560,8 +560,14 @@ export const generateWithAI = functionsV1
         });
       }
 
+      // Use higher complexity model for code generation, and lite for OCR and simple JSON tasks
+      const model =
+        genType === 'mini-app' || genType === 'widget-builder'
+          ? 'gemini-3-flash-preview'
+          : 'gemini-3.1-flash-lite-preview';
+
       const result = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
+        model,
         contents,
         config: {
           // widget-builder and widget-explainer return plain text; all other types return JSON
@@ -1262,7 +1268,7 @@ Guidelines:
           : 'Analyze this educational image and create an engaging guided learning experience.';
 
         const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3-flash-preview',
           contents: [
             {
               role: 'user',
