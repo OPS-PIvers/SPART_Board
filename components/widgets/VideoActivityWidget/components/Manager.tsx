@@ -536,7 +536,7 @@ export const Manager: React.FC<ManagerProps> = ({
                     <span
                       className="bg-brand-red-lighter text-brand-red-primary font-black uppercase tracking-widest rounded-md shrink-0"
                       style={{
-                        fontSize: 'clamp(8px, 2cqmin, 9px)',
+                        fontSize: 'clamp(10px, 2cqmin, 11px)',
                         padding: 'min(1px, 0.2cqmin) min(6px, 1.5cqmin)',
                       }}
                     >
