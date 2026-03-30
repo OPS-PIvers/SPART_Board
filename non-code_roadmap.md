@@ -16,9 +16,9 @@ Currently, the application relies heavily on hardcoded Tailwind utility classes 
 ### Opportunities
 
 1.  ✅ **Dynamic Color Palettes:**
-    - **Implemented:** `GlobalStyle` extended with `primaryColor`, `accentColor`, and `windowTitleColor` (optional hex strings). These are injected as CSS custom properties (`--spart-primary`, `--spart-accent`, `--spart-window-title`) on the dashboard root element at runtime, so any component can reference them via `var(--spart-primary)` without touching `tailwind.config.js`. Properties are also applied to `document.documentElement` so portaled widgets (rendered via `createPortal` outside the dashboard root) inherit the same values.
-    - A **"Colors" tab** in `StylePanel` provides color pickers for each variable with per-color and bulk reset-to-default buttons. Changes save alongside the rest of `GlobalStyle` in Firestore.
-    - **Remaining:** Tailwind utility classes (e.g. `bg-brand-blue-primary`) still use compile-time tokens. To make those classes themselves dynamic, the Tailwind config would need to reference the CSS variables — a larger refactor deferred for a future pass.
+    - **Implemented:** `GlobalStyle` extended with `primaryColor`, `accentColor`, and `windowTitleColor` (optional hex strings). These are injected as CSS custom properties (`--spart-primary`, `--spart-accent`, `--spart-window-title`) on the dashboard root element at runtime, so any component can reference them via `var(--spart-primary)` without touching `tailwind.config.js`.
+    - A new **"Colors" tab** in `StylePanel` provides color pickers for each variable with per-color and bulk reset-to-default buttons. Changes save alongside the rest of `GlobalStyle` in Firestore.
+    - **Remaining:** Tailwind utility classes (e.g. `bg-brand-blue-primary`) still use the compile-time tokens. To make those classes themselves dynamic, the Tailwind config would need to map to the CSS variables — a larger refactor deferred for a future pass.
 
 2.  🔲 **Custom Typography (Fonts):**
     - **Current State:** 11 font families (sans, serif, handwritten, retro, etc.) are selectable in `StylePanel`. All are loaded statically at build time.
@@ -26,11 +26,10 @@ Currently, the application relies heavily on hardcoded Tailwind utility classes 
     - **Remaining:** Implement a Google Fonts picker (API search or curated list), dynamic `<link>` injection in `DashboardView`, and `@font-face` upload via Firebase Storage.
 
 3.  ✅ **UI Elements Styling (Borders, Transparencies):**
-    - **Implemented:** `StylePanel` provides sliders and selectors for `windowTransparency`, `windowBorderRadius`, `dockTransparency`, `dockBorderRadius`, `dockTextColor`, and `dockTextShadow`. All values persist to Firestore via `setGlobalStyle()`.
+    - **Implemented:** `StylePanel` already provides sliders and selectors for `windowTransparency`, `windowBorderRadius`, `dockTransparency`, `dockBorderRadius`, `dockTextColor`, and `dockTextShadow`. All values persist to Firestore via `setGlobalStyle()`.
 
 4.  ✅ **Custom Backgrounds & Logos:**
-    - **Implemented:** `BackgroundManager` admin panel allows uploading and managing background presets with support for static images, YouTube video backgrounds, and Google Drive images. Presets support per-building access levels (Admin/Beta/Public), category management, and grid/list views.
-    - **Implemented:** Global branding UI in `GlobalPermissionsManager` allows uploading a custom logo (up to 1 MB) to replace the default SPART Board logo in the sidebar header. The logo URL is stored in the `app_settings` global Firestore document.
+    - **Implemented:** `BackgroundManager` admin panel allows uploading and managing background presets. Global branding UI added to `GlobalPermissionsManager` for uploading a custom logo to replace the default SPART Board logo in the sidebar header. The logo URL is stored in the `app_settings` global Firestore configuration.
 
 ---
 
@@ -40,33 +39,16 @@ Many widgets currently lack global admin settings, relying instead on user-level
 
 ### Opportunities
 
-1.  **Implement Pending Widget Admin Configs:**
+1.  ✅ **Implement Pending Widget Admin Configs:**
+    - **Implemented:** All major widgets now have admin configuration panels, including:
+      - **Magic (AI):** `MagicConfigurationPanel.tsx` — daily AI rate limits, default prompt suggestions (via `SchemaDrivenConfigurationPanel`).
+      - **Record:** `RecordConfigurationPanel.tsx` — max duration/resolution caps (via `SchemaDrivenConfigurationPanel`).
+      - Classes, Drawing, Embed, Poll, QR Code, Seating Chart, Smart Notebook, Breathing, Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider, Next Up — all have `*ConfigurationPanel.tsx` files registered in `FeatureConfigurationPanel.tsx`.
+      - **PDF Viewer:** Managed via the dedicated `PdfLibraryModal` (global library with per-PDF building targeting), accessible directly from the Feature Permissions manager.
+    - **Quiz** is intentionally excluded from the building-defaults system — its admin surface is the widget's own Drive-backed quiz management interface. A future "District Curriculum Repository" feature is proposed but out of scope for Phase 2. See `docs/admin_settings_widget_configs.md` for details.
 
-    Widget-level admin configuration panels set building-level defaults — the initial state a widget boots up with when a teacher adds it to their dashboard, based on their building assignment. See `docs/admin_settings_widget_configs.md` for the full reference.
-
-    **Currently implemented (24 widgets):**
-    Catalyst, Lunch Count, Weather, Webcam, Expectations, Schedule, Calendar, Stickers, Instructional Routines, Clock, Timer, Checklist, Sound, Note, Traffic Light, Random, Dice, Scoreboard, Materials, Math Tools, Mini Apps, Recess Gear, Talking Tool, Drawing.
-
-    **Not yet implemented (10 widgets):** 🔲
-    - **Classes:** SIS sync rate limits, display name format (First / First L. / First Last).
-    - **Embed:** Domain allowlist for iframe sources, default URL per building.
-    - **Magic (AI):** Per-widget prompt suggestions and usage quota overrides. _(Note: global daily Gemini rate limits are already configurable via Global Settings → Gemini AI Functions.)_
-    - **PDF Viewer:** Max file size limit, default PDF URL per building.
-    - **Poll:** District-wide pushed polls, default question templates.
-    - **QR Code:** UTM tracking parameter appender.
-    - **Quiz:** District curriculum repository integration.
-    - **Record:** Max recording duration and resolution caps.
-    - **Seating Chart:** Max node count, default template per building.
-    - **Smart Notebook:** Max pages and stroke path limits.
-
-    **Newer widget types without config panels yet (assess for need):** 🔲
-    Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider Pro, Video Activity, Graphic Organizer, Guided Learning, Music, Specialist Schedule, Starter Pack, Next Up.
-
-2.  🔲 **JSON Schema-Driven Admin UI:**
-    - **Current State:** Each widget requires a bespoke React component for its admin configuration panel (e.g., `ClockConfigurationPanel.tsx`). There are 30+ such panels.
-    - **Goal:** Automatically generate admin configuration forms based on a JSON schema defined for each widget, eliminating the need to write new React code for each new widget config.
-    - **Implementation:** Define a JSON Schema for each widget's config alongside its type definition. A generic `ConfigurationPanel` component parses the schema and renders appropriate controls (toggle, slider, text input, color picker, select). New widgets get a config panel for free.
-    - **Impact:** This would be foundational — unblocking rapid addition of the 10+ remaining widget configs and all future widgets without developer intervention.
+2.  ✅ **JSON Schema-Driven Admin UI:**
+    - **Implemented:** `SchemaDrivenConfigurationPanel.tsx` — a generic component that parses a `ConfigSchema` and renders appropriate controls (number input, text input, checkbox, textarea for string arrays). New widget admin panels (e.g., Magic, Record) use this component instead of bespoke form code, eliminating boilerplate for future widgets.
 
 ---
 
@@ -76,9 +58,9 @@ Currently, adding a new widget requires writing a React component and updating m
 
 ### Opportunities
 
-1.  **Enhance Mini Apps (Low-Code):**
-    - **Current State:** `MiniAppLibraryModal` (Admin Settings → Global Settings) allows admins to publish raw HTML/JS apps with building and grade-level targeting. Apps run in sandboxed iframes communicating via `postMessage`. Building targeting, result collection via Google Apps Script, and a basic `<textarea>` code editor are all working.
-    - 🔲 **Remaining:** Integrate an in-browser code editor (Monaco Editor) directly in the admin UI for writing HTML/CSS/JS with syntax highlighting, bracket matching, and autocomplete. This is the primary UX gap — the textarea-based editor is not suitable for non-developer admins writing or reviewing multi-line code. Formalize the `window.postMessage` SPART bridge API with a versioned schema and documented methods (e.g. `getRoster`, `playSound`).
+1.  🔲 **Enhance Mini Apps (Low-Code):**
+    - **Current State:** `MiniAppLibraryModal` allows admins to publish raw HTML/JS apps with building and grade-level targeting. Apps run in sandboxed iframes communicating via `postMessage`.
+    - **Remaining:** Integrate an in-browser code editor (Monaco Editor) directly in the Admin Dashboard for writing HTML/CSS/JS with syntax highlighting and autocomplete. Formalize the `window.postMessage` SPART bridge API with a versioned schema and documented methods (e.g. `getRoster`, `playSound`).
 
 2.  🔲 **Visual Widget Builder (No-Code):**
     - **Goal:** Allow non-technical admins to create simple widgets by combining predefined blocks (Text, Image, Button, Iframe) on a drag-and-drop canvas.
@@ -109,7 +91,7 @@ Empower admins to control the initial user experience for teachers.
       - Delete templates with confirmation
     - Templates are stored in `/dashboard_templates/{id}` in Firestore. Security rules: authenticated users read, admins write.
     - `DashboardTemplate` type defined in `types.ts` with full metadata.
-    - 🔲 **Remaining:** Automatic template assignment on first login based on a user's building/grade profile. Currently templates must be applied manually by the user from the Starter Pack.
+    - **Remaining:** Automatic template assignment on first login based on a user's building/grade profile. Currently templates must be applied manually by the user from the Starter Pack.
 
 2.  ✅ **Mandatory/Locked Widgets:**
     - **Implemented:** `isLocked?: boolean` added to the `WidgetData` interface. When `true`:
@@ -117,69 +99,8 @@ Empower admins to control the initial user experience for teachers.
       - All four corner resize handles are hidden
       - Keyboard `Delete` shortcut is suppressed (both `onKeyDown` handler and the `widget-keyboard-action` custom event)
       - The close (X) button is replaced with an amber lock badge with a tooltip
-    - Admins set `isLocked: true` on a widget via templates or direct Firestore edits.
-    - 🔲 **Remaining:** A dedicated admin UI surface to lock/unlock individual widgets on a teacher's live board without requiring direct Firestore edits.
-
----
-
-## Phase 5: Access Control, User Experience & Operations
-
-These capabilities are foundational to deploying SPART Board across an entire district as a managed product.
-
-### Opportunities
-
-1.  ✅ **Global Feature Permissions:**
-    - **Implemented:** `GlobalPermissionsManager` (Admin Settings → Global Settings) provides access control for 9 cross-cutting features that are not tied to individual widgets:
-      - Gemini AI Functions (with configurable daily usage limit)
-      - Live Sessions
-      - Remote Control
-      - Dashboard Sharing
-      - Dashboard Importing
-      - Magic Layout
-      - Smart Paste
-      - Smart Polls
-      - Embed: Generate Mini App
-      - Video Activity Audio Transcription
-    - Each feature supports Admin/Beta/Public access levels, enable/disable toggle, and per-feature beta user email lists.
-
-2.  ✅ **Widget-Level Feature Permissions:**
-    - **Implemented:** `FeaturePermissionsManager` controls which widget types are accessible district-wide. Each widget type can be set to Admin-only, Beta (allowlisted emails), or Public access, and can be fully disabled.
-
-3.  ✅ **Custom Announcements Widget:**
-    - **Implemented:** An `Announcements` admin component allows admins to publish embedded content or rich text announcements that appear as a widget on teacher dashboards. Supports both embed (iframe) and text/HTML content modes.
-
-4.  ✅ **Student / Read-Only View:**
-    - **Implemented:** `StudentContexts.tsx` provides a `StudentProvider` that wraps the app in read-only Auth and Dashboard contexts. All widget state is visible but all write operations (add, update, delete widget) are no-ops. Used for rendering dashboards in a student-facing read-only mode without requiring a separate auth flow.
-    - 🔲 **Remaining:** Admin UI to publish a specific dashboard as a student-facing URL (shareable link to a read-only view of a teacher's active board).
-
-5.  ✅ **User Management:**
-    - **Implemented:** `UserManagementPanel` in Admin Settings provides admin-level control over user roles.
-    - 🔲 **Remaining:** Bulk user import (e.g., CSV upload of staff emails + building assignments), building assignment management, and automated role provisioning via directory sync (Google Workspace / Azure AD).
-
-6.  ✅ **Analytics:**
-    - **Implemented:** `AnalyticsManager` in Admin Settings provides usage tracking and reporting.
-    - 🔲 **Remaining:** District-level dashboards showing widget adoption by building, active user counts, and template usage rates. Exportable reports for admin review.
-
-7.  ✅ **Onboarding / Setup Wizard:**
-    - **Implemented:** `setupCompleted` state tracked in `AuthContext` and Firestore. Onboarding completion is persisted per user.
-    - 🔲 **Remaining:** Building-profile-driven onboarding that auto-selects the correct starter template, walks teachers through their first widget additions, and surfaces relevant admin-configured defaults for their school.
-
----
-
-## Gap Analysis
-
-The following gaps represent the highest-risk areas where the current plan does **not** yet achieve the goal of full admin customization without code changes:
-
-| Gap                                                 | Risk                                                                                                                     | Recommended Next Step                                                                                        |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| **10 widget types lack admin config panels**        | Admins cannot set building-level defaults for Embed, Poll, Classes, QR, Quiz, Record, PDF, Seating Chart, Smart Notebook | Implement panels in priority order; consider JSON schema approach (Phase 2.2) to accelerate                  |
-| **13 newer widget types have no config assessment** | Growing widget library outpaces admin tooling                                                                            | Audit each new widget type against `docs/admin_settings_widget_configs.md` at release time                   |
-| **Mini App editor is textarea-only**                | Non-developer admins cannot realistically write or review HTML/JS apps                                                   | Integrate Monaco Editor in `MiniAppLibraryModal` (Phase 3.1); highest-value UX fix for the low-code path     |
-| **Template auto-assignment unimplemented**          | New teachers see a blank board; the right starter content exists but isn't delivered automatically                       | Implement first-login building profile check and auto-apply matching published template                      |
-| **Widget lock/unlock requires Firestore console**   | Locking widgets via templates works, but unlocking or adjusting locked state on a live board requires direct DB access   | Build a simple lock toggle in the widget's admin settings or in `DashboardTemplatesManager`                  |
-| **No student-facing shareable URL**                 | Read-only student view is implemented at the code level but there is no admin-driven publishing mechanism                | Admin "Publish to Students" action that generates a shareable, unauthenticated read-only URL for a dashboard |
-| **Custom fonts require code changes**               | Districts wanting their own typography must submit code changes                                                          | Implement Google Fonts picker with dynamic `<link>` injection (Phase 1.2)                                    |
-| **Bulk user provisioning is manual**                | Scaling to 500+ teachers requires manual role assignment or direct Firestore edits                                       | Building assignment via CSV or directory sync integration (Phase 5.5)                                        |
+    - Admins set `isLocked: true` on a widget programmatically (e.g., via Firestore Console, a template, or future admin tooling).
+    - **Remaining:** A dedicated admin UI surface to lock/unlock individual widgets on a teacher's live board without requiring direct Firestore edits.
 
 ---
 

@@ -47,7 +47,9 @@ interface AIData {
     | 'dashboard-layout'
     | 'instructional-routine'
     | 'ocr'
-    | 'quiz';
+    | 'quiz'
+    | 'widget-builder'
+    | 'widget-explainer';
   prompt?: string;
   image?: string; // base64 data
 }
@@ -497,6 +499,27 @@ export const generateWithAI = functionsV1
         `,
           userPrompt: `Topic/Content: <topic>${sanitizedUserInput}</topic>`,
         }),
+        'widget-builder': () => ({
+          systemPrompt: `
+          You are an expert frontend developer creating classroom widgets. Create a complete self-contained HTML widget for a classroom dashboard.
+          Requirements:
+          1. Use vanilla HTML/CSS/JS only (no external libraries except optional Tailwind CDN).
+          2. Use a dark background (#1e293b) with light text.
+          3. Include all styles inline in the HTML file.
+          4. The widget must work in a sandboxed iframe.
+          5. Make buttons and interactive elements large enough for tablet use.
+          6. Output ONLY the complete HTML code, nothing else - no explanations, no markdown.
+          `,
+          userPrompt: `Create a widget that: <user_request>${sanitizedUserInput}</user_request>`,
+        }),
+        'widget-explainer': () => ({
+          systemPrompt: `
+          You are a classroom teacher assistant. Explain what an HTML widget does in 1-2 plain sentences.
+          Use simple language without code jargon.
+          Output ONLY the explanation, nothing else.
+          `,
+          userPrompt: sanitizedUserInput,
+        }),
       };
 
       const promptDataFn = promptMap[genType];
@@ -549,7 +572,11 @@ export const generateWithAI = functionsV1
             : 'gemini-3-flash-preview',
         contents,
         config: {
-          responseMimeType: 'application/json',
+          // widget-builder and widget-explainer return plain text; all other types return JSON
+          responseMimeType:
+            genType === 'widget-builder' || genType === 'widget-explainer'
+              ? 'text/plain'
+              : 'application/json',
         },
       });
 
@@ -557,6 +584,11 @@ export const generateWithAI = functionsV1
 
       if (!text) {
         throw new Error('Empty response from AI');
+      }
+
+      // widget-builder and widget-explainer return plain text — wrap in { result } for the client
+      if (genType === 'widget-builder' || genType === 'widget-explainer') {
+        return { result: text };
       }
 
       return JSON.parse(text) as Record<string, unknown>;

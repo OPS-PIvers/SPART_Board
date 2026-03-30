@@ -275,6 +275,29 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Custom Widgets - admins can read/write all; non-admins can read published+enabled+accessible widgets
+    // NOTE: resource.data.buildings is a UI-targeting field only (filters which
+    // buildings display the widget in their Dock). It is NOT an access-control
+    // boundary enforced here — enforcing it would require an expensive get() call
+    // to look up building membership and is not necessary given that all
+    // custom_widgets content is already scoped to authenticated users within the
+    // same district deployment. If per-building access control is needed in the
+    // future, add building membership to custom auth claims and check
+    // request.auth.token.buildings here.
+    match /custom_widgets/{widgetId} {
+      allow read: if isAdmin() ||
+        (request.auth != null &&
+         resource.data.published == true &&
+         resource.data.enabled == true &&
+         (
+           resource.data.accessLevel == 'public' ||
+           (resource.data.accessLevel == 'beta' &&
+            request.auth.token.email != null &&
+            request.auth.token.email.lower() in resource.data.betaUsers)
+         ));
+      allow write: if isAdmin();
+    }
+
     // Next Up Sessions — Teacher owns it, students submit entries to buffer
     match /nextup_sessions/{sessionId} {
       // Students read session to check if active
@@ -337,16 +360,18 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // AI Usage Tracking — users can increment their own daily count
+    // AI Usage Tracking — read-only for users; all writes go through Cloud Functions (Admin SDK)
+    // The Cloud Function uses db.runTransaction() via the Admin SDK, which bypasses these rules.
+    // Client-side write access is intentionally removed to prevent users from resetting their
+    // daily quota by writing a document with count = 0 via the Firestore client SDK.
     match /ai_usage/{usageId} {
       // Document ID is formatted as {uid}_{YYYY-MM-DD}
       // Security rule replacement for startsWith: usageId >= prefix && usageId < prefix + '\uf8ff'
       allow read: if request.auth != null && (
-        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff') || 
+        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff') ||
         isAdmin()
       );
-      allow write: if request.auth != null && 
-        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff');
+      // No client write — quota increments are performed server-side via Admin SDK only.
     }
 
     // Guided Learning Sessions — Teacher creates, authenticated (incl. anonymous) students read and submit
