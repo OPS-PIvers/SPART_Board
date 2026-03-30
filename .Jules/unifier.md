@@ -191,6 +191,7 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Discovered multiple hardcoded Tailwind utility classes (`z-0`, `z-10`, `z-20`, `z-30`, `z-40`, `z-50`) scattered across various components, bypassing the semantic tokens defined in the central `Z_INDEX` registry.
 **Fix:** Standardized z-index layers across the `components/` directory by refactoring these raw utility classes into their respective design system tokens:
+
 - `z-0` -> `z-base`
 - `z-10` -> `z-decorator`
 - `z-20` -> `z-content`

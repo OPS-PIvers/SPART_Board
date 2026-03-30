@@ -67,7 +67,9 @@ describe('UserManagementPanel', () => {
 
     // Verify it was cleaned up and deduplicated
     await waitFor(() => {
-      expect(studentTextarea).toHaveValue('test1@example.com\ntest2@example.com');
+      expect(studentTextarea).toHaveValue(
+        'test1@example.com\ntest2@example.com'
+      );
     });
   });
 
