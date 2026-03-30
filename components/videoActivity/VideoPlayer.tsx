@@ -31,9 +31,15 @@ interface VideoPlayerProps {
   onVideoEnd: () => void;
   /** Whether the overlay is visible (prevents time-tracking while paused for Q). */
   questionVisible: boolean;
+  /** Session setting: allow students to scrub ahead. */
+  allowSkipping: boolean;
+  /** Session setting: start playback automatically on ready. */
+  autoPlay: boolean;
+  /** Optional seek request issued by parent (e.g., rewind on incorrect answer). */
+  seekRequest?: { time: number; nonce: number } | null;
 }
 
-const SEEK_TOLERANCE_SECONDS = 3;
+const SEEK_TOLERANCE_SECONDS = 0.75;
 /** Poll the player state every 250 ms instead of every frame to avoid unnecessary work. */
 const POLL_INTERVAL_MS = 250;
 
@@ -44,6 +50,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onQuestionTrigger,
   onVideoEnd,
   questionVisible,
+  allowSkipping,
+  autoPlay,
+  seekRequest,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -75,6 +84,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const unansweredRef = useRef<VideoActivityQuestion[]>([]);
   const maxAllowedRef = useRef(maxAllowedTime);
   const questionVisibleRef = useRef(questionVisible);
+  const allowSkippingRef = useRef(allowSkipping);
+  const autoPlayRef = useRef(autoPlay);
   const onQuestionTriggerRef = useRef(onQuestionTrigger);
   const onVideoEndRef = useRef(onVideoEnd);
 
@@ -88,6 +99,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useLayoutEffect(() => {
     questionVisibleRef.current = questionVisible;
   }, [questionVisible]);
+
+  useLayoutEffect(() => {
+    allowSkippingRef.current = allowSkipping;
+    autoPlayRef.current = autoPlay;
+  }, [allowSkipping, autoPlay]);
 
   useLayoutEffect(() => {
     onQuestionTriggerRef.current = onQuestionTrigger;
@@ -116,7 +132,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         const currentTime = player.getCurrentTime();
 
         // Anti-skip: if student seeked past allowed time, seek back
-        if (currentTime > maxAllowedRef.current) {
+        if (!allowSkippingRef.current && currentTime > maxAllowedRef.current) {
           player.seekTo(maxAllowedRef.current, true);
           rafRef.current = requestAnimationFrame(tick);
           return;
@@ -170,13 +186,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         videoId,
         playerVars: {
           autoplay: 0,
-          controls: 1,
+          controls: 0,
           rel: 0,
           modestbranding: 1,
           fs: 0, // disable fullscreen to prevent skip bypass
+          disablekb: 1,
+          playsinline: 1,
         },
         events: {
           onReady: () => {
+            if (autoPlayRef.current) {
+              playerRef.current?.playVideo();
+            }
             startPolling();
           },
           onStateChange: (event: { data: number }) => {
@@ -216,6 +237,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     }
   }, [questionVisible]);
+
+  useEffect(() => {
+    if (!seekRequest || !playerRef.current) return;
+    triggeredRef.current.clear();
+    playerRef.current.seekTo(Math.max(0, seekRequest.time), true);
+    if (!questionVisible) {
+      playerRef.current.playVideo();
+    }
+  }, [seekRequest, questionVisible]);
 
   return (
     <div className="relative w-full h-full bg-black">
