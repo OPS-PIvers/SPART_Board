@@ -653,12 +653,6 @@ export interface MaterialsGlobalConfig {
   buildingDefaults: Record<string, BuildingMaterialsDefaults>;
 }
 
-export interface CalendarGlobalEvent {
-  id: string;
-  date: string; // ISO Date string (YYYY-MM-DD)
-  title: string;
-}
-
 export interface BuildingCalendarDefaults {
   buildingId: string;
   events: CalendarEvent[];
@@ -1204,9 +1198,6 @@ export interface QuizResponse {
 }
 
 /** Global admin configuration for the Quiz widget */
-export interface QuizGlobalConfig {
-  dockDefaults?: Record<string, boolean>;
-}
 
 /** Widget configuration for the quiz widget (teacher side) */
 export interface QuizConfig {
@@ -1371,9 +1362,6 @@ export interface StarterPack {
   isLocked: boolean; // Teachers cannot edit/delete
   widgets: Omit<WidgetData, 'id'>[]; // The snapshot of widget states
 }
-
-export type BuildingStarterPack = StarterPack;
-export type UserStarterPack = StarterPack;
 
 export interface StarterPackGlobalConfig {
   dockDefaults?: Record<string, boolean>;
@@ -1836,10 +1824,6 @@ export interface GuidedLearningResponse {
   score: number | null;
 }
 
-export interface GuidedLearningGlobalConfig {
-  dockDefaults?: Record<string, boolean>;
-}
-
 /** Widget config (teacher-side, stored in WidgetData.config) */
 export interface GuidedLearningConfig {
   view: 'library' | 'editor' | 'player' | 'results';
@@ -2119,16 +2103,6 @@ export interface UserRolesConfig {
  * Per-user profile data stored in Firestore at /users/{userId}/userProfile.
  * This is separate from dashboard settings and persists across dashboards.
  */
-export interface UserProfile {
-  /** IDs of the buildings the user works in (matches Building.id in config/buildings.ts) */
-  selectedBuildings: string[];
-  /** Optional language preference */
-  language?: string;
-  /** Global saved widget configs for complex widgets */
-  savedWidgetConfigs?: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
-  /** True after the user has completed the first-time setup wizard */
-  setupCompleted?: boolean;
-}
 
 export interface SharedGroup {
   id: string;
