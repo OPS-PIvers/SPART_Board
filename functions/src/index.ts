@@ -1389,4 +1389,181 @@ Guidelines:
       }
     }
   );
-export * from './adminAnalytics';
+interface DashboardData {
+  updatedAt?: number;
+  widgets?: { type: string }[];
+}
+
+/**
+ * Cloud Function to fetch administrative analytics.
+ * Bumps memory to 1GB and timeout to 300s to handle unbounded collection reads
+ * while a more scalable (paginated/aggregated) solution is developed.
+ */
+export const getAdminAnalytics = functionsV1
+  .runWith({
+    timeoutSeconds: 300,
+    memory: '1GB',
+  })
+  .https.onCall(async (data, context) => {
+    console.log('[getAdminAnalytics] Function started');
+
+    // 1. Verify caller is authenticated
+    if (!context.auth || !context.auth.token.email) {
+      console.error('[getAdminAnalytics] Unauthenticated access attempt');
+      throw new functionsV1.https.HttpsError(
+        'unauthenticated',
+        'User must be logged in.'
+      );
+    }
+
+    const email = context.auth.token.email.toLowerCase();
+    const db = admin.firestore();
+
+    // 2. Verify caller is an admin
+    console.log(`[getAdminAnalytics] Verifying admin status for: ${email}`);
+    const adminDoc = await db.collection('admins').doc(email).get();
+    if (!adminDoc.exists) {
+      console.error(
+        `[getAdminAnalytics] Unauthorized access: ${email} is not an admin`
+      );
+      throw new functionsV1.https.HttpsError(
+        'permission-denied',
+        'This function is restricted to administrators.'
+      );
+    }
+
+    try {
+      const now = Date.now();
+      console.log('[getAdminAnalytics] Fetching users...');
+
+      // 3. Fetch Users
+      // NOTE: We fetch the full collection to provide the list in the UI.
+      const usersSnap = await db.collection('users').get();
+      console.log(`[getAdminAnalytics] Found ${usersSnap.size} user documents`);
+
+      const usersData = usersSnap.docs.map((userDoc) => {
+        const userData = userDoc.data();
+        const userEmail =
+          typeof userData.email === 'string' ? userData.email : '';
+        const domain = userEmail.includes('@')
+          ? userEmail.split('@')[1]
+          : 'unknown';
+
+        let buildings: string[] = [];
+        if (Array.isArray(userData.buildings)) {
+          buildings = userData.buildings.map(String);
+        }
+
+        return {
+          id: userDoc.id,
+          email: userEmail,
+          domain,
+          lastLogin:
+            typeof userData.lastLogin === 'number'
+              ? userData.lastLogin
+              : undefined,
+          buildings,
+        };
+      });
+
+      const totalUsers = usersData.length;
+
+      console.log(
+        '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
+      );
+      // 4. Fetch Dashboards for Widget Stats
+      // Use collectionGroup on backend safely bypassing the user-only read rules
+      const totalWidgetCounts: Record<string, number> = {};
+      const activeWidgetCounts: Record<string, number> = {};
+
+      // TODO: In the future, use count() for the total count, but we still need
+      // the docs here to calculate widget-specific statistics.
+      const dashboardsSnap = await db.collectionGroup('dashboards').get();
+      console.log(
+        `[getAdminAnalytics] Found ${dashboardsSnap.size} dashboards`
+      );
+
+      const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
+
+      for (const dashDoc of dashboardsSnap.docs) {
+        const dashData = dashDoc.data() as DashboardData;
+        const updatedAt =
+          typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
+        const isActive = updatedAt > activeThreshold;
+
+        if (dashData.widgets && Array.isArray(dashData.widgets)) {
+          dashData.widgets.forEach((w: { type: string }) => {
+            if (w && w.type) {
+              totalWidgetCounts[w.type] = (totalWidgetCounts[w.type] || 0) + 1;
+              if (isActive) {
+                activeWidgetCounts[w.type] =
+                  (activeWidgetCounts[w.type] || 0) + 1;
+              }
+            }
+          });
+        }
+      }
+
+      console.log('[getAdminAnalytics] Fetching AI usage...');
+      // 5. Fetch AI Usage
+      let totalAiCalls = 0;
+      const callsPerUser: Record<string, number> = {};
+      const dailyCallCounts: Record<string, number> = {};
+
+      const aiUsageSnap = await db.collection('ai_usage').get();
+      console.log(
+        `[getAdminAnalytics] Found ${aiUsageSnap.size} AI usage records`
+      );
+
+      aiUsageSnap.docs.forEach((usageDoc) => {
+        const idParts = usageDoc.id.split('_');
+        if (idParts.length < 2) return;
+
+        const datePart = idParts[idParts.length - 1];
+        const maybeAudioMarker = idParts[idParts.length - 2];
+        const hasAudioMarker = maybeAudioMarker === 'audio';
+        const uidParts = idParts.slice(0, hasAudioMarker ? -2 : -1);
+        const uid = uidParts.join('_');
+
+        if (!uid || !datePart) return;
+
+        const usageData = usageDoc.data();
+        const count = typeof usageData.count === 'number' ? usageData.count : 0;
+
+        totalAiCalls += count;
+        callsPerUser[uid] = (callsPerUser[uid] ?? 0) + count;
+        dailyCallCounts[datePart] = (dailyCallCounts[datePart] ?? 0) + count;
+      });
+
+      const uniqueDays = Object.keys(dailyCallCounts).length || 1;
+      const avgDailyCalls = Math.round(totalAiCalls / uniqueDays);
+      const activeAiUsers = Object.keys(callsPerUser).length || 1;
+      const avgDailyCallsPerUser =
+        Math.round((avgDailyCalls / activeAiUsers) * 10) / 10;
+
+      console.log('[getAdminAnalytics] Analysis complete, returning results');
+      return {
+        users: {
+          total: totalUsers,
+          data: usersData,
+        },
+        widgets: {
+          totalInstances: totalWidgetCounts,
+          activeInstances: activeWidgetCounts,
+        },
+        api: {
+          totalCalls: totalAiCalls,
+          callsPerUser,
+          avgDailyCalls,
+          avgDailyCallsPerUser,
+        },
+      };
+    } catch (err: unknown) {
+      console.error('[getAdminAnalytics] Error fetching analytics:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An internal error occurred fetching analytics.';
+      throw new functionsV1.https.HttpsError('internal', errorMessage);
+    }
+  });
