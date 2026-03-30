@@ -3,11 +3,10 @@ from playwright.sync_api import sync_playwright
 
 def run_cuj(page):
     page.goto("http://localhost:3000")
-    page.wait_for_timeout(2000)
+    page.wait_for_load_state('networkidle')
 
     # Take screenshot at the key moment
     page.screenshot(path="verification/screenshots/verification.png")
-    page.wait_for_timeout(1000)
 
 if __name__ == "__main__":
     os.makedirs("verification/videos", exist_ok=True)
