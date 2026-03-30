@@ -9,6 +9,8 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     name: Code Quality Checks
     steps:
       - name: Checkout repository
@@ -28,6 +30,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     name: Unit Tests
     steps:
       - name: Checkout repository
@@ -50,6 +54,8 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     container:
       image: mcr.microsoft.com/playwright:v1.58.0-jammy
       options: --shm-size=1g
@@ -77,6 +83,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     name: Build
     steps:
       - name: Checkout repository
@@ -100,6 +108,8 @@ jobs:
   summary:
     needs: [quality, test, build, e2e]
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     if: always()
     steps:
       - name: Add PR Comment

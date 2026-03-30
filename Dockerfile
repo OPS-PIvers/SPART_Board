@@ -3,8 +3,8 @@ FROM node:20.18.0-alpine AS builder
 
 WORKDIR /app
 
-# Enable Corepack
-RUN corepack enable
+# Install pnpm securely
+RUN npm install -g pnpm@10.30.2
 
 COPY package.json pnpm-lock.yaml ./
 # Install dependencies including devDependencies (needed for build)
