@@ -173,7 +173,7 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
           placeholder={`Type ${selectedTemplate?.defaultNodes?.bottomRight ?? 'non-examples'}...`}
         />
       </div>
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-indigo-100 border-4 border-indigo-300 rounded-full w-32 h-32 flex items-center justify-center p-4 shadow-lg text-center z-10">
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-indigo-100 border-4 border-indigo-300 rounded-full w-32 h-32 flex items-center justify-center p-4 shadow-lg text-center z-decorator">
         <EditableNode
           id="center"
           initialText={nodes['center']?.text ?? ''}
@@ -231,7 +231,7 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="absolute w-[60%] h-[80%] left-[10%] border-4 border-blue-400 rounded-full opacity-30 bg-blue-100" />
       <div className="absolute w-[60%] h-[80%] right-[10%] border-4 border-green-400 rounded-full opacity-30 bg-green-100" />
 
-      <div className="flex w-full h-[60%] z-10 text-center">
+      <div className="flex w-full h-[60%] z-decorator text-center">
         <div className="w-[35%] p-4 flex flex-col justify-center">
           <EditableNode
             id="left-header"

@@ -71,7 +71,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
       ariaLabelledby="report-modal-title"
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90vh] overflow-y-auto border border-slate-200 animate-in zoom-in-95 duration-200 custom-scrollbar">
-        <div className="p-6 bg-brand-blue-primary/90 backdrop-blur-sm text-white flex justify-between items-center sticky top-0 z-10">
+        <div className="p-6 bg-brand-blue-primary/90 backdrop-blur-sm text-white flex justify-between items-center sticky top-0 z-decorator">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/30 rounded-xl">
               <FileSpreadsheet className="w-6 h-6" aria-hidden="true" />

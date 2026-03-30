@@ -201,7 +201,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
     if (type === 'text-popover') {
       return (
-        <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+        <div className="absolute inset-0 z-controls pointer-events-none flex items-center justify-center">
           <div className="pointer-events-auto w-full h-full">
             <TextPopoverInteraction
               step={activeStep}
@@ -214,7 +214,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
     if (type === 'audio') {
       return (
-        <div className="absolute inset-0 z-30 pointer-events-none flex items-end justify-center pb-4">
+        <div className="absolute inset-0 z-controls pointer-events-none flex items-end justify-center pb-4">
           <div className="pointer-events-auto">
             <AudioInteraction
               step={activeStep}
@@ -230,7 +230,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
     if (type === 'video') {
       return (
-        <div className="absolute inset-0 z-30 pointer-events-auto">
+        <div className="absolute inset-0 z-controls pointer-events-auto">
           <VideoInteraction
             step={activeStep}
             onClose={() => setActiveStepId(null)}
@@ -258,7 +258,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
         ? set.steps.find((s) => s.id === activeStep.id)
         : null;
       return (
-        <div className="absolute inset-0 z-30 pointer-events-auto overflow-y-auto">
+        <div className="absolute inset-0 z-controls pointer-events-auto overflow-y-auto">
           <QuestionInteraction
             step={activeStep}
             onAnswer={(answer, isCorrect) =>
@@ -400,7 +400,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
               return (
                 <div
                   key={step.id}
-                  className="absolute z-10"
+                  className="absolute z-decorator"
                   style={
                     imgOffset
                       ? {

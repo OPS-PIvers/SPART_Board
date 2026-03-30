@@ -87,7 +87,7 @@ export const FurnitureItemRenderer = memo(
       }
 
       return `absolute border-2 flex items-center justify-center transition-all ${bg} ${border} ${
-        isSelected ? 'ring-2 ring-blue-500 z-10' : ''
+        isSelected ? 'ring-2 ring-blue-500 z-decorator' : ''
       } ${
         item.type === 'table-round' ? 'rounded-full' : 'rounded-lg'
       } shadow-sm`;

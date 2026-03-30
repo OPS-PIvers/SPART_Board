@@ -89,7 +89,7 @@ export const BreathingVisuals: React.FC<BreathingVisualsProps> = ({
               );
             })}
             <div
-              className="absolute w-[20%] h-[20%] rounded-full transition-transform ease-linear z-10 shadow-lg"
+              className="absolute w-[20%] h-[20%] rounded-full transition-transform ease-linear z-decorator shadow-lg"
               style={{
                 backgroundColor: color,
                 transform: `scale(${scale})`,

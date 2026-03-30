@@ -314,14 +314,14 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
       <div
         className={`w-full flex items-center rounded-2xl transition-all relative snap-start overflow-hidden ${
           isActive
-            ? 'border-[min(6px,1.5cqmin)] border-brand-blue-primary shadow-md z-10'
+            ? 'border-[min(6px,1.5cqmin)] border-brand-blue-primary shadow-md z-decorator'
             : 'border border-slate-200 shadow-sm'
         }`}
         style={rowStyle}
       >
         {isActive && (
           <div
-            className="absolute top-0 right-0 bg-brand-blue-primary text-white font-black uppercase tracking-widest z-20"
+            className="absolute top-0 right-0 bg-brand-blue-primary text-white font-black uppercase tracking-widest z-content"
             style={{
               fontSize: 'min(10px, 2.5cqmin)',
               padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',

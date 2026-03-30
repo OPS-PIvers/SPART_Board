@@ -53,7 +53,9 @@ describe('TextWidget', () => {
 
   it('applies font size', () => {
     const { container } = render(<TextWidget widget={mockWidget} />);
-    const contentDiv = container.querySelector('.relative.z-10') as HTMLElement;
+    const contentDiv = container.querySelector(
+      '.relative.z-decorator'
+    ) as HTMLElement;
     // JSDOM does not support container units (cqw/cqh) and will strip them from the style attribute.
     // We verify that the style object is being passed by checking for lineHeight which is supported.
     const styleAttr = contentDiv.getAttribute('style') ?? '';

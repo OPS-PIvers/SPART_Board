@@ -31,7 +31,7 @@ export const VideoInteraction: React.FC<Props> = ({
       <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl w-full max-w-lg">
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 z-10 w-7 h-7 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
+          className="absolute top-2 right-2 z-decorator w-7 h-7 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
           aria-label="Close video"
         >
           <X className="w-4 h-4" />

@@ -692,7 +692,7 @@ export const Dock: React.FC = () => {
                   ? 'none'
                   : globalStyle.dockBorderRadius
             }
-            className="relative z-10 px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar flex-nowrap"
+            className="relative z-decorator px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar flex-nowrap"
           >
             {dockItems.length > 0 ? (
               <>

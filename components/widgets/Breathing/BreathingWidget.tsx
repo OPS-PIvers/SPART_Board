@@ -48,7 +48,7 @@ export const BreathingWidget: React.FC<{ widget: WidgetData }> = ({
             />
 
             {/* Overlay Text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 text-slate-800 dark:text-slate-100 mix-blend-difference drop-shadow-md">
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-decorator text-slate-800 dark:text-slate-100 mix-blend-difference drop-shadow-md">
               <span
                 className="text-4xl font-bold tracking-widest uppercase mb-2"
                 style={{ textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}
@@ -65,7 +65,7 @@ export const BreathingWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
 
           {/* Controls */}
-          <div className="shrink-0 p-4 w-full flex justify-center gap-4 bg-white/50 dark:bg-black/20 backdrop-blur-sm z-20">
+          <div className="shrink-0 p-4 w-full flex justify-center gap-4 bg-white/50 dark:bg-black/20 backdrop-blur-sm z-content">
             <button
               onClick={toggleActive}
               className={`flex items-center justify-center rounded-2xl transition-all shadow-md active:scale-95 ${

@@ -295,7 +295,7 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                   key={item.id}
                   className={`w-full flex items-center rounded-2xl transition-all relative overflow-hidden shrink-0 ${
                     isActive
-                      ? 'border-[min(6px,1.5cqmin)] border-teal-600 shadow-md z-10'
+                      ? 'border-[min(6px,1.5cqmin)] border-teal-600 shadow-md z-decorator'
                       : 'border border-slate-200 shadow-sm'
                   }`}
                   style={{
@@ -306,7 +306,7 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                 >
                   {isActive && (
                     <div
-                      className="absolute top-0 right-0 bg-teal-600 text-white font-black uppercase tracking-widest px-2 py-1 rounded-bl-xl z-20"
+                      className="absolute top-0 right-0 bg-teal-600 text-white font-black uppercase tracking-widest px-2 py-1 rounded-bl-xl z-content"
                       style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                     >
                       Now

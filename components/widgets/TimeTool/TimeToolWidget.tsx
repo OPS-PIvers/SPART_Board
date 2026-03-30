@@ -400,7 +400,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       if (!isRunning && mode === 'timer') setIsEditing(true);
                     }}
                     disabled={isRunning || mode !== 'timer'}
-                    className={`relative z-10 flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()} ${
+                    className={`relative z-decorator flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()} ${
                       !isRunning && mode === 'timer'
                         ? 'cursor-pointer hover:scale-105 active:scale-95'
                         : 'cursor-default'
@@ -464,7 +464,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
 
                   {/* Square Controls - Positioned below the centerline without pushing it */}
                   <div
-                    className="absolute z-10 flex items-center justify-center"
+                    className="absolute z-decorator flex items-center justify-center"
                     style={{
                       top: isVisual ? '120%' : '110%',
                       gap: 'min(12px, 3cqmin)',

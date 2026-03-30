@@ -290,7 +290,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
               {/* Controls Overlay */}
               <div
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center bg-black/60 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-30"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center bg-black/60 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-controls"
                 style={{
                   gap: 'min(8px, 2cqmin)',
                   padding: 'min(8px, 2cqmin)',
@@ -394,7 +394,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
               {/* Status Overlays */}
               {showCaptureSuccess && (
-                <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 backdrop-blur-sm z-40 animate-in fade-in zoom-in duration-300">
+                <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 backdrop-blur-sm z-widget-internal-overlay animate-in fade-in zoom-in duration-300">
                   <div className="bg-green-500 text-white rounded-full p-6 shadow-2xl">
                     <Check
                       style={{
@@ -407,7 +407,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
               )}
 
               {isExtracting && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-500/20 backdrop-blur-sm z-40 animate-in fade-in duration-300">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-500/20 backdrop-blur-sm z-widget-internal-overlay animate-in fade-in duration-300">
                   <div className="bg-brand-blue-primary text-white rounded-full p-6 shadow-2xl mb-4">
                     <Loader2
                       className="animate-spin"

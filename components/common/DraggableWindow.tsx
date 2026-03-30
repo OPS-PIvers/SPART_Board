@@ -1097,7 +1097,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           {isAnnotating && (
             <>
               <AnnotationCanvas
-                className="absolute inset-0 z-40 pointer-events-auto"
+                className="absolute inset-0 z-widget-internal-overlay pointer-events-auto"
                 paths={widget.annotation?.paths ?? []}
                 color={annotationColor}
                 width={annotationWidth}
@@ -1123,7 +1123,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         e.stopPropagation();
                         setAnnotationColor(c);
                       }}
-                      className={`w-5 h-5 rounded-full border border-slate-100 transition-transform ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
+                      className={`w-5 h-5 rounded-full border border-slate-100 transition-transform ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-decorator' : 'hover:scale-110'}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}

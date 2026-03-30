@@ -452,7 +452,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
             {!isStudentView && (
               <>
                 {/* Left Actions: Live Status */}
-                <div className="absolute top-2 left-2 z-10 flex items-center gap-2 opacity-0 group-hover/miniapp:opacity-100 transition-opacity duration-200">
+                <div className="absolute top-2 left-2 z-decorator flex items-center gap-2 opacity-0 group-hover/miniapp:opacity-100 transition-opacity duration-200">
                   <button
                     onClick={() => void handleToggleLive()}
                     className={`flex items-center gap-1.5 font-black uppercase tracking-widest transition-all rounded-lg ${
@@ -508,7 +508,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                 </div>
 
                 {/* Right Actions: App Controls */}
-                <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover/miniapp:opacity-100 transition-opacity duration-200">
+                <div className="absolute top-2 right-2 z-decorator flex items-center gap-1 opacity-0 group-hover/miniapp:opacity-100 transition-opacity duration-200">
                   {config.activeAppUnsaved && (
                     <>
                       <div
@@ -582,7 +582,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
             />
             {/* Save-to-library overlay (shown when user pastes HTML and hasn't saved yet) */}
             {showSaveForm && (
-              <div className="absolute inset-0 z-20 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+              <div className="absolute inset-0 z-content bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
                 <div className="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-xs flex flex-col gap-3 animate-in zoom-in-95 duration-150">
                   <div className="flex items-center justify-between">
                     <h4 className="font-black text-slate-800 uppercase tracking-tight text-xs flex items-center gap-1.5">

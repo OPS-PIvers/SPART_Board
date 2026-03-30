@@ -60,7 +60,7 @@ export const QuestionOverlay: React.FC<QuestionOverlayProps> = ({
   };
 
   return (
-    <div className="absolute inset-0 z-10 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="absolute inset-0 z-decorator bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="bg-brand-blue-primary rounded-t-2xl px-5 py-3 flex items-center justify-between">

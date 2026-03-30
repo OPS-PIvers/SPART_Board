@@ -441,7 +441,7 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
         <div
           ref={overlayRef}
           tabIndex={-1}
-          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200 outline-none"
+          className="absolute inset-0 z-content bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200 outline-none"
           onKeyDown={(e) => {
             if (e.code === 'Escape') setShowGeminiPrompt(false);
           }}

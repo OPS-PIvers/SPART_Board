@@ -336,7 +336,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
                     />
                     <button
                       onClick={() => removeSticker(sticker.url)}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 p-1.5 z-10"
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 p-1.5 z-decorator"
                       title="Remove from global library"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -98,7 +98,7 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                 return (
                   <div
                     key={spot.id}
-                    className="absolute z-10"
+                    className="absolute z-decorator"
                     style={{
                       left: `${spot.xPct}%`,
                       top: `${spot.yPct}%`,
@@ -111,7 +111,7 @@ export const HotspotImageWidget: React.FC<{ widget: WidgetData }> = ({
                       className={`relative flex items-center justify-center rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-400
                         ${
                           isActive
-                            ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50 z-20'
+                            ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50 z-content'
                             : spot.isViewed
                               ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
                               : 'bg-emerald-500 text-white hover:bg-emerald-400 animate-pulse hover:animate-none shadow-md shadow-emerald-500/50'

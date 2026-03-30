@@ -316,7 +316,7 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
     >
       {!isStudentView && (
         <button
-          className="absolute z-20 bg-white border border-slate-300 rounded shadow-sm font-medium text-slate-700 hover:bg-slate-50 pointer-events-auto"
+          className="absolute z-content bg-white border border-slate-300 rounded shadow-sm font-medium text-slate-700 hover:bg-slate-50 pointer-events-auto"
           style={{
             top: 'min(8px, 2cqmin)',
             left: 'min(8px, 2cqmin)',
@@ -330,7 +330,7 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
       )}
 
       <svg
-        className="absolute inset-0 z-0 pointer-events-none w-full h-full"
+        className="absolute inset-0 z-base pointer-events-none w-full h-full"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
@@ -402,7 +402,7 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
             onPointerMove={handleNodePointerMove}
             onPointerUp={handleNodePointerUp}
             onPointerCancel={handleNodePointerUp}
-            className="absolute z-10 flex flex-col items-center justify-center shadow-sm border border-slate-300 rounded-[1cqmin] cursor-grab active:cursor-grabbing p-[1cqmin] group"
+            className="absolute z-decorator flex flex-col items-center justify-center shadow-sm border border-slate-300 rounded-[1cqmin] cursor-grab active:cursor-grabbing p-[1cqmin] group"
             style={{
               left: `${node.x}%`,
               top: `${node.y}%`,

@@ -307,7 +307,7 @@ export const RevealGridWidget: React.FC<{ widget: WidgetData }> = ({
                       {/* THE MAGIC: X-Ray Answer Overlay */}
                       {isShowAnswersMode && !card.isRevealed && (
                         <div
-                          className="absolute bottom-2 left-2 right-2 bg-yellow-100/90 rounded border border-yellow-300 text-yellow-800 text-center shadow-sm z-10"
+                          className="absolute bottom-2 left-2 right-2 bg-yellow-100/90 rounded border border-yellow-300 text-yellow-800 text-center shadow-sm z-decorator"
                           style={{
                             padding: 'min(8px, 2cqmin)',
                             fontSize: 'min(14px, 3.5cqmin)',

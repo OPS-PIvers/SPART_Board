@@ -148,7 +148,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
 
                   {/* Title footer */}
                   <div
-                    className="relative mt-auto z-10 bg-black/50 flex flex-col"
+                    className="relative mt-auto z-decorator bg-black/50 flex flex-col"
                     style={{
                       padding: 'min(6px, 1.8cqmin) min(10px, 2.5cqmin)',
                     }}
@@ -244,7 +244,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
 
                 {/* Title footer */}
                 <div
-                  className="relative mt-auto z-10 flex flex-col"
+                  className="relative mt-auto z-decorator flex flex-col"
                   style={{
                     padding: 'min(8px, 2.5cqmin) min(10px, 3cqmin)',
                     background:

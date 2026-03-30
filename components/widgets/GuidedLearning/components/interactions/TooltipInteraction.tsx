@@ -23,7 +23,7 @@ export const TooltipInteraction: React.FC<Props> = ({
 
   return (
     <div
-      className="absolute pointer-events-none z-20"
+      className="absolute pointer-events-none z-content"
       style={{ left: x + offsetX, top: y + offsetY, maxWidth: 200 }}
     >
       <div

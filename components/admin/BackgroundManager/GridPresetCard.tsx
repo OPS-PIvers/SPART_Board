@@ -45,7 +45,7 @@ export const GridPresetCard: React.FC<PresetCardProps> = ({
             </span>
           </div>
         )}
-        <div className="absolute top-1.5 right-1.5 z-10">
+        <div className="absolute top-1.5 right-1.5 z-decorator">
           <button
             onClick={() => void deletePreset(preset)}
             className="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all scale-90 hover:scale-100"

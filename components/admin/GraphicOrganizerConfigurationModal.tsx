@@ -310,7 +310,7 @@ export const GraphicOrganizerConfigurationModal: React.FC<
                     }}
                     className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors ${
                       selectedBuilding === building.id
-                        ? 'bg-white text-indigo-600 border border-slate-200 border-b-white -mb-[9px] z-10'
+                        ? 'bg-white text-indigo-600 border border-slate-200 border-b-white -mb-[9px] z-decorator'
                         : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                     }`}
                   >

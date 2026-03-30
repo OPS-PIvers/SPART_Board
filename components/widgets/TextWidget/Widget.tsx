@@ -105,7 +105,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           />
           <div
             ref={editorRef}
-            className="relative z-10 h-full w-full outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 empty:before:pointer-events-none"
+            className="relative z-decorator h-full w-full outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 empty:before:pointer-events-none"
             style={{
               fontSize: `min(${fontSize}px, ${fontSize * 0.5}cqmin)`,
               lineHeight: 1.5,

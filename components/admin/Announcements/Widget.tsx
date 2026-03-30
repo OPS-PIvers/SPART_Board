@@ -927,7 +927,7 @@ export const AnnouncementsManager: React.FC = () => {
       {/* Right: Create / Edit form */}
       {isCreating && (
         <div className="w-[420px] shrink-0 bg-white border border-slate-200 rounded-2xl shadow-lg overflow-y-auto max-h-[calc(100vh-240px)]">
-          <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-white border-b border-slate-200">
+          <div className="sticky top-0 z-decorator flex items-center justify-between px-5 py-4 bg-white border-b border-slate-200">
             <h3 className="font-bold text-slate-800 text-base">
               {editingId ? 'Edit Announcement' : 'New Announcement'}
             </h3>

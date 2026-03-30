@@ -186,3 +186,14 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Codebase was using hardcoded hex codes for primary brand colors (e.g., `#2d3f89`) in inline styles and string literals, bypassing the defined Tailwind design system config. Additionally, there were numerous arbitrary text utility classes (`text-[9px]`, `text-[11px]`) instead of standardized micro-typography (`text-xxxs`, `text-xs`).
 **Fix:** Replaced hardcoded `#2d3f89` with `bg-brand-blue-primary` and `border-brand-blue-primary` classes. Standardized all instances of `text-[9px]` to `text-xxxs` and `text-[11px]` to `text-xs`.
+
+## 2026-03-27 - Z-Index Standardization (Utility Classes)
+
+**Drift:** Discovered multiple hardcoded Tailwind utility classes (`z-0`, `z-10`, `z-20`, `z-30`, `z-40`, `z-50`) scattered across various components, bypassing the semantic tokens defined in the central `Z_INDEX` registry.
+**Fix:** Standardized z-index layers across the `components/` directory by refactoring these raw utility classes into their respective design system tokens:
+- `z-0` -> `z-base`
+- `z-10` -> `z-decorator`
+- `z-20` -> `z-content`
+- `z-30` -> `z-controls`
+- `z-40` -> `z-widget-internal-overlay`
+- `z-50` -> Mapped contextually to `z-widget-control`, `z-dropdown`, or `z-toast` depending on the usage.

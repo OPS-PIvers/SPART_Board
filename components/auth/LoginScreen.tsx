@@ -33,9 +33,9 @@ export const LoginScreen: React.FC = () => {
       <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] bg-brand-red-primary/10 rounded-full blur-[100px] animate-pulse delay-1000" />
 
       {loading ? (
-        <Loader2 className="relative z-10 w-12 h-12 text-brand-blue-primary animate-spin" />
+        <Loader2 className="relative z-decorator w-12 h-12 text-brand-blue-primary animate-spin" />
       ) : (
-        <div className="relative z-10 bg-white/80 backdrop-blur-xl p-10 sm:p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 ring-1 ring-slate-900/5 max-w-md w-full mx-4 text-center">
+        <div className="relative z-decorator bg-white/80 backdrop-blur-xl p-10 sm:p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 ring-1 ring-slate-900/5 max-w-md w-full mx-4 text-center">
           {/* Logo/Icon Area */}
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-brand-blue-primary to-brand-blue-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand-blue-primary/20 mb-8 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
             <LogIn className="w-8 h-8 text-white" strokeWidth={2.5} />
@@ -59,9 +59,9 @@ export const LoginScreen: React.FC = () => {
             <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
 
             {signingIn ? (
-              <Loader2 className="w-5 h-5 animate-spin relative z-10" />
+              <Loader2 className="w-5 h-5 animate-spin relative z-decorator" />
             ) : (
-              <span className="flex items-center gap-3 relative z-10">
+              <span className="flex items-center gap-3 relative z-decorator">
                 <LogIn className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                 {t('login.signInWithGoogle')}
               </span>

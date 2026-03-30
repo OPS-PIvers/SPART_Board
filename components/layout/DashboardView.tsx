@@ -930,7 +930,7 @@ export const DashboardView: React.FC = () => {
       >
         {/* Ambient YouTube Video Layer */}
         {youTubeVideoId && (
-          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-black">
+          <div className="absolute inset-0 z-base overflow-hidden pointer-events-none bg-black">
             <iframe
               ref={ytIframeRef}
               src={`https://www.youtube.com/embed/${youTubeVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${youTubeVideoId}&disablekb=1&modestbranding=1&enablejsapi=1`}
@@ -946,7 +946,7 @@ export const DashboardView: React.FC = () => {
 
         {/* Empty Board Hint */}
         {activeDashboard.widgets.length === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-decorator">
             <div className="flex flex-col items-center gap-3 text-center opacity-25">
               <LayoutGrid className="w-12 h-12 text-white" />
               <p className="text-white font-black uppercase tracking-widest text-base">

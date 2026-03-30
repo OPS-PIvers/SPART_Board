@@ -266,7 +266,7 @@ export const Sidebar: React.FC = () => {
           />
           <div className="relative w-full max-w-80 h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300 border-r border-slate-200">
             {/* Header */}
-            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200 shrink-0 bg-white z-10">
+            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200 shrink-0 bg-white z-decorator">
               <div className="flex items-center gap-2">
                 {activeSection !== 'main' ? (
                   <IconButton

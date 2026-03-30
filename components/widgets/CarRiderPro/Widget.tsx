@@ -59,7 +59,7 @@ export const CarRiderProWidget: React.FC<{ widget: WidgetData }> = ({
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute top-2 right-2 z-10 bg-white/80 backdrop-blur-sm hover:bg-white text-slate-500 hover:text-blue-500 shadow-sm border border-slate-200/50 rounded-lg p-1.5 transition-colors"
+            className="absolute top-2 right-2 z-decorator bg-white/80 backdrop-blur-sm hover:bg-white text-slate-500 hover:text-blue-500 shadow-sm border border-slate-200/50 rounded-lg p-1.5 transition-colors"
             title="Open in new tab"
             onPointerDown={(e) => e.stopPropagation()}
           >

@@ -30,7 +30,7 @@ export const StylePreview = ({
 
       {/* Window Preview */}
       <div
-        className={`relative z-10 w-full p-4 transition-all duration-300 ${
+        className={`relative z-decorator w-full p-4 transition-all duration-300 ${
           pendingStyle.windowTransparency <= 0.001
             ? ''
             : 'border border-white/30 shadow-lg backdrop-blur-md'
@@ -60,7 +60,7 @@ export const StylePreview = ({
 
       {/* Dock Preview */}
       <div
-        className={`relative z-10 px-6 py-2 transition-all duration-300 flex flex-col items-center gap-2 ${
+        className={`relative z-decorator px-6 py-2 transition-all duration-300 flex flex-col items-center gap-2 ${
           pendingStyle.dockTransparency <= 0.001
             ? ''
             : 'border border-white/30 shadow-lg backdrop-blur-md'

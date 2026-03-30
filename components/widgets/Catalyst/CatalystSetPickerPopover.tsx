@@ -94,7 +94,7 @@ export const CatalystSetPickerPopover: React.FC<Props> = ({
                 )}
 
                 <div
-                  className="relative mt-auto z-10 flex flex-col"
+                  className="relative mt-auto z-decorator flex flex-col"
                   style={{
                     padding: '8px 10px',
                     background:

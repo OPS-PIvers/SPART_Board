@@ -221,7 +221,7 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
         <div className="flex-1 w-full h-full flex flex-col p-4 space-y-4 overflow-y-auto custom-scrollbar relative">
           {showPromptInput && (
             <div
-              className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
+              className="absolute inset-0 z-content bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setShowPromptInput(false);
               }}

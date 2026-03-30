@@ -88,7 +88,7 @@ const SortableSticker: React.FC<{
         onDragStart(e, sticker.url);
       }}
       onClick={() => onStickerClick(sticker.url)}
-      className={`group relative aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-100 hover:border-blue-200 cursor-pointer ${isDragging ? 'opacity-50 ring-2 ring-blue-500 z-10' : ''}`}
+      className={`group relative aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-100 hover:border-blue-200 cursor-pointer ${isDragging ? 'opacity-50 ring-2 ring-blue-500 z-decorator' : ''}`}
       title={t('widgets.stickers.dragOrClick')}
     >
       {/* Drag handle for reorganizing */}
@@ -102,7 +102,7 @@ const SortableSticker: React.FC<{
         onClick={(e) => {
           e.stopPropagation();
         }}
-        className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-all p-1 z-20 bg-white/80 rounded"
+        className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-all p-1 z-content bg-white/80 rounded"
         title={t('widgets.stickers.reorganizeSticker', 'Reorder')}
       >
         <GripHorizontal
@@ -130,7 +130,7 @@ const SortableSticker: React.FC<{
         type="button"
         onPointerDown={(e) => e.stopPropagation()} // prevent sorting drag
         onClick={(e) => toggleFavorite(e, sticker.url)}
-        className="absolute -bottom-1.5 -right-1.5 bg-white text-slate-400 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md hover:text-red-500 z-10 p-1 scale-75 group-hover:scale-100"
+        className="absolute -bottom-1.5 -right-1.5 bg-white text-slate-400 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md hover:text-red-500 z-decorator p-1 scale-75 group-hover:scale-100"
         title={t('widgets.stickers.favoriteSticker', 'Favorite')}
         aria-label={t('widgets.stickers.favoriteSticker', 'Favorite')}
       >
@@ -148,7 +148,7 @@ const SortableSticker: React.FC<{
             e.stopPropagation();
             onDeleteCustom();
           }}
-          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
+          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-decorator"
           style={{ padding: 'min(6px, 1.5cqmin)' }}
           title={t('widgets.stickers.deleteSticker')}
           aria-label={t('widgets.stickers.deleteSticker')}
@@ -457,7 +457,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       header={
         <div
-          className="flex items-center justify-between sticky top-0 z-10 shrink-0"
+          className="flex items-center justify-between sticky top-0 z-decorator shrink-0"
           style={{ padding: 'min(16px, 3.5cqmin)' }}
         >
           <span

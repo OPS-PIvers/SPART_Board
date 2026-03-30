@@ -147,7 +147,7 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
                       item.color
                     } ${
                       item.textColor ?? 'text-white'
-                    } border-transparent shadow-lg scale-[1.02] z-10`}
+                    } border-transparent shadow-lg scale-[1.02] z-decorator`}
                   >
                     <item.icon
                       className="scale-110"

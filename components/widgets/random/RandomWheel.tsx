@@ -38,7 +38,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
       {/* Static Pointer Arrow (Top Center) */}
 
       <div
-        className="absolute z-20 flex flex-col items-center"
+        className="absolute z-content flex flex-col items-center"
         style={{ top: '0' }}
       >
         <div
@@ -132,7 +132,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
       {/* Winner Result Overlay (Only when not spinning) */}
       {!isSpinning && displayResult && (
         <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-controls"
           style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           <div

@@ -26,7 +26,7 @@ export const SpotlightInteraction: React.FC<Props> = ({
 
   return (
     <svg
-      className="absolute inset-0 pointer-events-none z-20"
+      className="absolute inset-0 pointer-events-none z-content"
       width={containerWidth}
       height={containerHeight}
       style={{ top: 0, left: 0 }}
