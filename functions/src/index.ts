@@ -1716,61 +1716,63 @@ export const getAdminAnalytics = functionsV1
       console.log('[getAdminAnalytics] Fetching users...');
 
       // 3. Fetch Users
-      // Using .select() limits the memory footprint by only retrieving necessary fields
-      const usersSnap = await db
+      // Use count() for aggregate totals instead of counting snapshots
+      const usersCountSnap = await db.collection('users').count().get();
+      const totalUsers = usersCountSnap.data().count;
+      console.log(`[getAdminAnalytics] Found ${totalUsers} user documents`);
+
+      // Using .stream() combined with .select() limits the memory footprint
+      // by streaming documents one-by-one with only the necessary fields
+      const usersStream = db
         .collection('users')
         .select('email', 'lastLogin', 'buildings')
-        .get();
-      console.log(`[getAdminAnalytics] Found ${usersSnap.size} user documents`);
+        .stream();
 
-      const usersData = usersSnap.docs.map((userDoc) => {
-        const userData = userDoc.data();
-        const userEmail =
-          typeof userData.email === 'string' ? userData.email : '';
-        const domain = userEmail.includes('@')
-          ? userEmail.split('@')[1]
-          : 'unknown';
+      const usersData: any[] = [];
+
+      for await (const chunk of usersStream) {
+        const userDoc = chunk as unknown as admin.firestore.DocumentSnapshot;
+        if (!userDoc.exists) continue;
+        const userData = userDoc.data() as FirebaseFirestore.DocumentData;
+        const userEmail = typeof userData.email === 'string' ? userData.email : '';
+        const domain = userEmail.includes('@') ? userEmail.split('@')[1] : 'unknown';
 
         let buildings: string[] = [];
         if (Array.isArray(userData.buildings)) {
           buildings = userData.buildings.map(String);
         }
 
-        return {
+        usersData.push({
           id: userDoc.id,
           email: userEmail,
           domain,
-          lastLogin:
-            typeof userData.lastLogin === 'number'
-              ? userData.lastLogin
-              : undefined,
+          lastLogin: typeof userData.lastLogin === 'number' ? userData.lastLogin : undefined,
           buildings,
-        };
-      });
-
-      const totalUsers = usersData.length;
+        });
+      }
 
       console.log(
         '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
       );
       // 4. Fetch Dashboards for Widget Stats
+      const dashboardsCountSnap = await db.collectionGroup('dashboards').count().get();
+      const totalDashboards = dashboardsCountSnap.data().count;
+      console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
+
       const totalWidgetCounts: Record<string, number> = {};
       const activeWidgetCounts: Record<string, number> = {};
-
-      const dashboardsSnap = await db
-        .collectionGroup('dashboards')
-        .select('widgets', 'updatedAt')
-        .get();
-      console.log(
-        `[getAdminAnalytics] Found ${dashboardsSnap.size} dashboards`
-      );
-
       const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
 
-      for (const dashDoc of dashboardsSnap.docs) {
+      const dashboardsStream = db
+        .collectionGroup('dashboards')
+        .select('widgets', 'updatedAt')
+        .stream();
+
+      for await (const chunk of dashboardsStream) {
+        const dashDoc = chunk as unknown as admin.firestore.DocumentSnapshot;
+        if (!dashDoc.exists) continue;
         const dashData = dashDoc.data() as DashboardData;
-        const updatedAt =
-          typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
+        const updatedAt = typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
         const isActive = updatedAt > activeThreshold;
 
         if (dashData.widgets && Array.isArray(dashData.widgets)) {
@@ -1778,8 +1780,7 @@ export const getAdminAnalytics = functionsV1
             if (w && w.type) {
               totalWidgetCounts[w.type] = (totalWidgetCounts[w.type] || 0) + 1;
               if (isActive) {
-                activeWidgetCounts[w.type] =
-                  (activeWidgetCounts[w.type] || 0) + 1;
+                activeWidgetCounts[w.type] = (activeWidgetCounts[w.type] || 0) + 1;
               }
             }
           });
@@ -1788,14 +1789,13 @@ export const getAdminAnalytics = functionsV1
 
       console.log('[getAdminAnalytics] Fetching AI usage...');
       // 5. Fetch AI Usage
+      const aiUsageCountSnap = await db.collection('ai_usage').count().get();
+      const totalAiUsageRecords = aiUsageCountSnap.data().count;
+      console.log(`[getAdminAnalytics] Found ${totalAiUsageRecords} AI usage records`);
+
       let totalAiCalls = 0;
       const callsPerUser: Record<string, number> = {};
       const dailyCallCounts: Record<string, number> = {};
-
-      const aiUsageSnap = await db.collection('ai_usage').select('count').get();
-      console.log(
-        `[getAdminAnalytics] Found ${aiUsageSnap.size} AI usage records`
-      );
 
       const GEMINI_SPECIFIC_FEATURES = [
         'smart-poll',
@@ -1803,22 +1803,25 @@ export const getAdminAnalytics = functionsV1
         'video-activity-audio-transcription',
       ];
 
-      aiUsageSnap.docs.forEach((usageDoc) => {
+      const aiUsageStream = db.collection('ai_usage').select('count').stream();
+
+      for await (const chunk of aiUsageStream) {
+        const usageDoc = chunk as unknown as admin.firestore.DocumentSnapshot;
+        if (!usageDoc.exists) continue;
         const idParts = usageDoc.id.split('_');
-        if (idParts.length < 2) return;
+        if (idParts.length < 2) continue;
 
         const datePart = idParts[idParts.length - 1];
         const secondToLast = idParts[idParts.length - 2];
-        const isSpecificFeature =
-          GEMINI_SPECIFIC_FEATURES.includes(secondToLast);
+        const isSpecificFeature = GEMINI_SPECIFIC_FEATURES.includes(secondToLast);
 
         // Exclude the feature ID and date to get the original UID
         const uidParts = idParts.slice(0, isSpecificFeature ? -2 : -1);
         const uid = uidParts.join('_');
 
-        if (!uid || !datePart) return;
+        if (!uid || !datePart) continue;
 
-        const usageData = usageDoc.data();
+        const usageData = usageDoc.data() as FirebaseFirestore.DocumentData;
         const count = typeof usageData.count === 'number' ? usageData.count : 0;
 
         // ONLY count the "overall" records for total analytics to avoid double counting
@@ -1828,7 +1831,7 @@ export const getAdminAnalytics = functionsV1
           callsPerUser[uid] = (callsPerUser[uid] ?? 0) + count;
           dailyCallCounts[datePart] = (dailyCallCounts[datePart] ?? 0) + count;
         }
-      });
+      }
 
       const uniqueDays = Object.keys(dailyCallCounts).length || 1;
       const avgDailyCalls = Math.round(totalAiCalls / uniqueDays);
