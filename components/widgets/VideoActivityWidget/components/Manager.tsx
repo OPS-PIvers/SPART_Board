@@ -393,12 +393,12 @@ export const Manager: React.FC<ManagerProps> = ({
               subtitle="Create your first interactive video activity to get started."
               action={
                 <button
+                  type="button"
                   onClick={onNew}
-                  className="bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-black rounded-xl transition-all active:scale-95 shadow-lg shadow-brand-blue-primary/20"
+                  className="inline-flex items-center justify-center rounded-xl bg-brand-blue-primary text-white font-bold shadow-sm hover:bg-brand-blue-dark transition-colors"
                   style={{
-                    padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
-                    fontSize: 'min(12px, 3cqmin)',
-                    marginTop: '2cqmin',
+                    fontSize: 'min(11px, 3.25cqmin)',
+                    padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
                   }}
                 >
                   Create Activity
