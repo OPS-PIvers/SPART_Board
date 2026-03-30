@@ -266,6 +266,15 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
     () => queue.find((q) => q.status === 'active'),
     [queue]
   );
+
+  // ⚡ Bolt: Optimize O(N) array filtering inside the render loop
+  // Instead of allocating a new array every render just to get its length,
+  // we compute the total waiting count efficiently in a single pass.
+  const totalWaitingCount = useMemo(
+    () => queue.reduce((acc, q) => (q.status === 'waiting' ? acc + 1 : acc), 0),
+    [queue]
+  );
+
   const waitingStudents = useMemo(
     () =>
       queue.filter((q) => q.status === 'waiting').slice(0, config.displayCount),
@@ -401,7 +410,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
                 className="text-slate-300 font-bold"
                 style={{ fontSize: 'min(10px, 2.5cqmin)' }}
               >
-                {queue.filter((q) => q.status === 'waiting').length} total
+                {totalWaitingCount} total
               </span>
             </div>
 
