@@ -304,6 +304,38 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (isDockInitialized) return;
 
+    // If the user already has a saved dock layout/tool visibility in
+    // localStorage, preserve it and mark init complete instead of overwriting
+    // with building defaults. This keeps dock customizations intact when
+    // creating or switching boards.
+    const savedDockRaw = localStorage.getItem('classroom_dock_items');
+    const savedVisibleToolsRaw = localStorage.getItem(
+      'classroom_visible_tools'
+    );
+    const hasPersistedDockState =
+      savedDockRaw !== null || savedVisibleToolsRaw !== null;
+
+    if (hasPersistedDockState) {
+      try {
+        if (savedDockRaw !== null) {
+          setDockItems(JSON.parse(savedDockRaw) as DockItem[]);
+        }
+        if (savedVisibleToolsRaw !== null) {
+          setVisibleTools(
+            JSON.parse(savedVisibleToolsRaw) as (
+              | WidgetType
+              | InternalToolType
+            )[]
+          );
+        }
+        setIsDockInitialized(true);
+        localStorage.setItem('classroom_dock_initialized', 'true');
+        return;
+      } catch (err) {
+        console.warn('Failed to hydrate saved dock state, using defaults', err);
+      }
+    }
+
     // Safety timeout: if we are stuck waiting for some reason after 5 seconds, fallback.
     // Uses isDockInitializedRef so the callback always reads the latest value even
     // if the effect closure has gone stale.  The timer also captures getDefaultDockTools
