@@ -155,7 +155,7 @@ import {
   checkUrlCompatibility,
   parseTimedtextTrackList,
   buildTimedtextCandidates,
-  getAdminAnalytics,
+  adminAnalytics,
 } from './index';
 
 describe('fetchWeatherProxy', () => {
@@ -437,7 +437,7 @@ describe('timedtext track helpers', () => {
   });
 });
 
-describe('getAdminAnalytics', () => {
+describe('adminAnalytics', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFirestoreState.admins = new Set<string>(['admin@school.org']);
@@ -481,7 +481,7 @@ describe('getAdminAnalytics', () => {
       { id: 'uid2_smart-poll_2026-03-30', data: { count: 99 } },
     ];
 
-    const handler = getAdminAnalytics as unknown as (
+    const handler = adminAnalytics as unknown as (
       req: unknown,
       context: { auth?: { token?: { email?: string } } }
     ) => Promise<{
@@ -557,7 +557,7 @@ describe('getAdminAnalytics', () => {
       { id: 'uid_b_2026-03-30', data: { count: 3 } },
     ];
 
-    const handler = getAdminAnalytics as unknown as (
+    const handler = adminAnalytics as unknown as (
       req: unknown,
       context: { auth?: { token?: { email?: string } } }
     ) => Promise<{
