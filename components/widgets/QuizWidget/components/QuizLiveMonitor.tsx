@@ -94,15 +94,31 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
       ? quizData.questions[session.currentQuestionIndex]
       : undefined;
 
-  const answered = currentQ
-    ? responses.filter((r) =>
-        r.answers.some((a) => a.questionId === currentQ.id)
-      ).length
-    : 0;
+  // ⚡ Bolt: Optimize multiple array iterations inside the render loop
+  // Instead of 4 separate .filter() passes, calculate all stats in one O(N) loop
+  const { answered, completed, inProgress, joined } = React.useMemo(() => {
+    let _answered = 0;
+    let _completed = 0;
+    let _inProgress = 0;
+    let _joined = 0;
 
-  const completed = responses.filter((r) => r.status === 'completed').length;
-  const inProgress = responses.filter((r) => r.status === 'in-progress').length;
-  const joined = responses.filter((r) => r.status === 'joined').length;
+    for (const r of responses) {
+      if (currentQ && r.answers.some((a) => a.questionId === currentQ.id)) {
+        _answered++;
+      }
+
+      if (r.status === 'completed') _completed++;
+      else if (r.status === 'in-progress') _inProgress++;
+      else if (r.status === 'joined') _joined++;
+    }
+
+    return {
+      answered: _answered,
+      completed: _completed,
+      inProgress: _inProgress,
+      joined: _joined,
+    };
+  }, [responses, currentQ]);
 
   const modeIcon =
     session.sessionMode === 'auto' ? (

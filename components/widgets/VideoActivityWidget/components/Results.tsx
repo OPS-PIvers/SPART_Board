@@ -41,15 +41,6 @@ export const Results: React.FC<ResultsProps> = ({
 
   const questions = activity.questions;
   const totalStudents = responses.length;
-  const completed = responses.filter((r) => r.completedAt !== null).length;
-  const avgScore =
-    completed > 0
-      ? Math.round(
-          responses
-            .filter((r) => r.completedAt !== null)
-            .reduce((sum, r) => sum + getStudentScore(r), 0) / completed
-        )
-      : 0;
 
   /** Compute correctness from the authoritative activity question data. */
   const isAnswerCorrect = (questionId: string, answer: string): boolean => {
@@ -75,6 +66,47 @@ export const Results: React.FC<ResultsProps> = ({
     }
     return Math.round((correct / questions.length) * 100);
   };
+
+  // ⚡ Bolt: Consolidate multiple O(N) array passes inside render
+  // Calculate completed count and average score in a single loop
+  const { completed, avgScore } = React.useMemo(() => {
+    if (responses.length === 0) {
+      return { completed: 0, avgScore: 0 };
+    }
+
+    const correctAnswersMap = new Map<string, string>();
+    for (const q of questions) {
+      correctAnswersMap.set(q.id, q.correctAnswer);
+    }
+
+    let completedCount = 0;
+    let scoreSum = 0;
+
+    for (const r of responses) {
+      if (r.completedAt !== null) {
+        completedCount++;
+
+        const correctAnswersForStudent = new Set<string>();
+        for (const answer of r.answers) {
+          if (answer.answer === correctAnswersMap.get(answer.questionId)) {
+            correctAnswersForStudent.add(answer.questionId);
+          }
+        }
+        const score =
+          questions.length > 0
+            ? Math.round(
+                (correctAnswersForStudent.size / questions.length) * 100
+              )
+            : 0;
+        scoreSum += score;
+      }
+    }
+
+    return {
+      completed: completedCount,
+      avgScore: completedCount > 0 ? Math.round(scoreSum / completedCount) : 0,
+    };
+  }, [responses, questions]);
 
   const getQuestionAccuracy = (questionId: string): number => {
     const answered = responses.filter((r) =>

@@ -266,11 +266,23 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
     () => queue.find((q) => q.status === 'active'),
     [queue]
   );
-  const waitingStudents = useMemo(
-    () =>
-      queue.filter((q) => q.status === 'waiting').slice(0, config.displayCount),
-    [queue, config.displayCount]
-  );
+
+  // ⚡ Bolt: Consolidate multiple O(N) .filter() array iterations
+  const { waitingStudents, waitingCount } = useMemo(() => {
+    const students: NextUpQueueItem[] = [];
+    let count = 0;
+
+    for (const q of queue) {
+      if (q.status === 'waiting') {
+        count++;
+        if (students.length < config.displayCount) {
+          students.push(q);
+        }
+      }
+    }
+
+    return { waitingStudents: students, waitingCount: count };
+  }, [queue, config.displayCount]);
 
   if (!config.isActive) {
     return (
@@ -401,7 +413,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
                 className="text-slate-300 font-bold"
                 style={{ fontSize: 'min(10px, 2.5cqmin)' }}
               >
-                {queue.filter((q) => q.status === 'waiting').length} total
+                {waitingCount} total
               </span>
             </div>
 
