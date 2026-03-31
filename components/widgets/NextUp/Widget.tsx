@@ -262,15 +262,31 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
     await syncToDrive(updated);
   };
 
-  const activeStudent = useMemo(
-    () => queue.find((q) => q.status === 'active'),
-    [queue]
-  );
-  const waitingStudents = useMemo(
-    () =>
-      queue.filter((q) => q.status === 'waiting').slice(0, config.displayCount),
-    [queue, config.displayCount]
-  );
+  // ⚡ Bolt: Consolidate array passes into a single O(N) loop
+  // Instead of multiple passes (find, filter, slice, reduce), compute activeStudent,
+  // waitingStudents, and totalWaitingCount in one single iteration.
+  const { activeStudent, waitingStudents, totalWaitingCount } = useMemo(() => {
+    let active: NextUpQueueItem | undefined;
+    const waiting: NextUpQueueItem[] = [];
+    let waitingCount = 0;
+
+    for (const q of queue) {
+      if (q.status === 'active' && !active) {
+        active = q;
+      } else if (q.status === 'waiting') {
+        waitingCount++;
+        if (waiting.length < config.displayCount) {
+          waiting.push(q);
+        }
+      }
+    }
+
+    return {
+      activeStudent: active,
+      waitingStudents: waiting,
+      totalWaitingCount: waitingCount,
+    };
+  }, [queue, config.displayCount]);
 
   if (!config.isActive) {
     return (
@@ -401,7 +417,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
                 className="text-slate-300 font-bold"
                 style={{ fontSize: 'min(10px, 2.5cqmin)' }}
               >
-                {queue.filter((q) => q.status === 'waiting').length} total
+                {totalWaitingCount} total
               </span>
             </div>
 
