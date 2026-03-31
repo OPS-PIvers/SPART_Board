@@ -67,12 +67,13 @@ export const SoundboardSettings: React.FC<{ widget: WidgetData }> = ({
                       style={{ backgroundColor: sound.color ?? '#6366f1' }}
                     />
                     <div className="flex flex-col">
-                      <span
-                        className="text-sm font-bold text-slate-700 cursor-pointer"
+                      <button
+                        type="button"
+                        className="text-sm font-bold text-slate-700 cursor-pointer bg-transparent p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded-md"
                         onClick={() => handleToggleSound(sound.id, !isSelected)}
                       >
                         {sound.label}
-                      </span>
+                      </button>
                     </div>
                   </div>
                   <Toggle
