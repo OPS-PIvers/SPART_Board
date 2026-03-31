@@ -71,7 +71,7 @@ export interface DashboardContextValue {
   zoom: number;
   setZoom: (zoom: number) => void;
   panOffset: { x: number; y: number };
-  setPanOffset: (offset: { x: number; y: number }) => void;
+  setPanOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
 
   // Selection system
   selectedWidgetId: string | null;
