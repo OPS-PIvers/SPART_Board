@@ -26,6 +26,17 @@ interface TimedtextTrack {
   vssId?: string;
 }
 
+const LEGACY_TIMEDTEXT_CANDIDATES: TimedtextTrack[] = [
+  { lang: 'en' },
+  { lang: 'en', kind: 'asr' },
+  { lang: 'en-US' },
+  { lang: 'en-US', kind: 'asr' },
+  { lang: 'en-GB' },
+  { lang: 'en-GB', kind: 'asr' },
+];
+
+const MAX_TIMEDTEXT_TRACK_CANDIDATES = 12;
+
 function decodeHtmlEntities(input: string): string {
   const namedEntities: Record<string, string> = {
     amp: '&',
@@ -107,7 +118,7 @@ function parseTimedtextXml(xml: string): TranscriptResponse[] {
   return parsed;
 }
 
-function parseTimedtextTrackList(xml: string): TimedtextTrack[] {
+export function parseTimedtextTrackList(xml: string): TimedtextTrack[] {
   const trackNodes = xml.matchAll(/<track\b([^>]*)\/?>(?:<\/track>)?/g);
   const tracks: TimedtextTrack[] = [];
 
@@ -130,6 +141,33 @@ function parseTimedtextTrackList(xml: string): TimedtextTrack[] {
   }
 
   return tracks;
+}
+
+export function buildTimedtextCandidates(
+  discoveredTracks: TimedtextTrack[]
+): TimedtextTrack[] {
+  const dedupeKey = (track: TimedtextTrack): string =>
+    `${track.lang}|${track.kind ?? ''}|${track.name ?? ''}|${track.vssId ?? ''}`;
+
+  const uniqueTracks = Array.from(
+    new Map(discoveredTracks.map((track) => [dedupeKey(track), track])).values()
+  );
+
+  const englishTracks = uniqueTracks.filter((track) =>
+    track.lang.toLowerCase().startsWith('en')
+  );
+  const nonEnglishTracks = uniqueTracks.filter(
+    (track) => !track.lang.toLowerCase().startsWith('en')
+  );
+
+  const prioritizedTracks = [...englishTracks, ...nonEnglishTracks].slice(
+    0,
+    MAX_TIMEDTEXT_TRACK_CANDIDATES
+  );
+
+  return prioritizedTracks.length > 0
+    ? prioritizedTracks
+    : [...LEGACY_TIMEDTEXT_CANDIDATES];
 }
 
 admin.initializeApp();
@@ -976,45 +1014,35 @@ export const generateVideoActivity = functionsV1
       let transcriptItems: TranscriptResponse[] = [];
       try {
         // Fetch captions directly from timedtext (no Data API key dependency).
-        // First, discover available tracks so we can support non-English videos
-        // (or videos where only one specific transcript track is published).
-        const trackListResp = await axios.get<string>(
-          'https://www.youtube.com/api/timedtext',
-          {
-            params: {
-              type: 'list',
-              v: videoId,
-            },
-            timeout: 10000,
-            responseType: 'text',
-          }
-        );
-
-        const discoveredTracks = parseTimedtextTrackList(trackListResp.data);
-
-        const englishTracks = discoveredTracks.filter((track) =>
-          track.lang.toLowerCase().startsWith('en')
-        );
-        const nonEnglishTracks = discoveredTracks.filter(
-          (track) => !track.lang.toLowerCase().startsWith('en')
-        );
-
-        // Prefer English when available, then fall back to any available track.
-        const captionCandidates: TimedtextTrack[] = [
-          ...englishTracks,
-          ...nonEnglishTracks,
+        let captionCandidates: TimedtextTrack[] = [
+          ...LEGACY_TIMEDTEXT_CANDIDATES,
         ];
+        try {
+          // First, discover available tracks so we can support non-English
+          // videos (or videos where only one specific transcript track is
+          // published).
+          const trackListResp = await axios.get<string>(
+            'https://www.youtube.com/api/timedtext',
+            {
+              params: {
+                type: 'list',
+                v: videoId,
+              },
+              timeout: 10000,
+              responseType: 'text',
+            }
+          );
 
-        // Legacy fallback in case the track list endpoint is empty but direct
-        // language requests still work.
-        if (captionCandidates.length === 0) {
-          captionCandidates.push(
-            { lang: 'en' },
-            { lang: 'en', kind: 'asr' },
-            { lang: 'en-US' },
-            { lang: 'en-US', kind: 'asr' },
-            { lang: 'en-GB' },
-            { lang: 'en-GB', kind: 'asr' }
+          const discoveredTracks = parseTimedtextTrackList(trackListResp.data);
+          captionCandidates = buildTimedtextCandidates(discoveredTracks);
+        } catch (trackListErr: unknown) {
+          const msg =
+            trackListErr instanceof Error
+              ? trackListErr.message
+              : String(trackListErr);
+          console.warn(
+            `[generateVideoActivity] Timedtext track discovery failed for ${videoId}; falling back to legacy candidates:`,
+            msg
           );
         }
 
