@@ -135,6 +135,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     selectedWidgetId,
     setSelectedWidgetId,
     zoom,
+    panOffset,
   } = useDashboard();
   const { showConfirm: showConfirmDialog } = useDialog();
 
@@ -818,19 +819,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         const menuHeight = menuEl.offsetHeight;
         const menuWidth = menuEl.offsetWidth;
 
-        // getBoundingClientRect() reflects mid-animation transforms on ancestor
-        // containers (e.g. the dashboard slide-in animation uses translateX(±100%)).
-        // When zoom === 1, widget.x/y ARE the true viewport coordinates, so if the
-        // measured rect deviates significantly from those values the widget surface
-        // is still animating. Use the authoritative widget coordinates as a fallback
-        // so the toolbar always appears at the widget's final resting position.
-        const ANIMATION_THRESHOLD = 10;
-        const isAnimating =
-          zoom === 1 && Math.abs(rect.left - widget.x) > ANIMATION_THRESHOLD;
-        const effectiveLeft = isAnimating ? widget.x : rect.left;
-        const effectiveTop = isAnimating ? widget.y : rect.top;
-        const effectiveWidth = isAnimating ? widget.w : rect.width;
-        const effectiveHeight = isAnimating ? widget.h : rect.height;
+        const effectiveLeft = rect.left;
+        const effectiveTop = rect.top;
+        const effectiveWidth = rect.width;
+        const effectiveHeight = rect.height;
         const effectiveBottom = effectiveTop + effectiveHeight;
 
         // Vertical: prefer above; flip below only when space above is tight AND
@@ -861,6 +853,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           left: clampedLeft,
           zIndex: Z_INDEX.toolMenu,
           visibility: 'visible',
+          transition: 'top 0.15s ease-out, left 0.15s ease-out',
         });
       };
 
@@ -872,7 +865,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       setMenuStyle({ visibility: 'hidden' });
     }
     return undefined;
-  }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized, zoom]);
+  }, [
+    showTools,
+    widget.x,
+    widget.y,
+    widget.w,
+    widget.h,
+    isMaximized,
+    zoom,
+    panOffset,
+  ]);
 
   useEffect(() => {
     const handleCustomKeyboard = (e: Event) => {

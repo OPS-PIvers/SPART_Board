@@ -130,6 +130,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [zoom, setZoom] = useState<number>(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDockInitialized, setIsDockInitialized] = useState<boolean>(() => {
     return localStorage.getItem('classroom_dock_initialized') === 'true';
   });
@@ -2774,6 +2775,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       clearPendingShare,
       zoom,
       setZoom,
+      panOffset,
+      setPanOffset,
     }),
     [
       dashboards,
@@ -2842,6 +2845,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       clearPendingShare,
       zoom,
       setZoom,
+      panOffset,
+      setPanOffset,
     ]
   );
 

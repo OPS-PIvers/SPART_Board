@@ -70,6 +70,8 @@ export interface DashboardContextValue {
   // Zoom system
   zoom: number;
   setZoom: (zoom: number) => void;
+  panOffset: { x: number; y: number };
+  setPanOffset: (offset: { x: number; y: number }) => void;
 
   // Selection system
   selectedWidgetId: string | null;

@@ -130,6 +130,8 @@ export const DashboardView: React.FC = () => {
     updateDashboardSettings,
     zoom,
     setZoom,
+    panOffset,
+    setPanOffset,
   } = useDashboard();
   const { uploadAndRegisterPdf } = useStorage();
 
@@ -306,7 +308,6 @@ export const DashboardView: React.FC = () => {
     };
   }, []);
 
-  const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 });
   // Track the peak touch count across a gesture.  At gesture end (`last`),
   // `touches` has already decremented to 0 as fingers lift, so we cannot
   // rely on it there to distinguish 1-finger from 2-finger gestures.
@@ -341,7 +342,10 @@ export const DashboardView: React.FC = () => {
           // Disabled when the gesture starts on a widget to avoid interfering
           // with widget interactions.
           if (gestureFingerCount.current === 1 && zoom > 1 && !widgetEl) {
-            setPanOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+            setPanOffset((prev: { x: number; y: number }) => ({
+              x: prev.x + dx,
+              y: prev.y + dy,
+            }));
           }
           return;
         }
@@ -515,13 +519,13 @@ export const DashboardView: React.FC = () => {
     if (currentIndex !== -1) {
       setPrevIndex(currentIndex);
     }
-  }, [activeDashboard?.id, currentIndex, setZoom]);
+  }, [activeDashboard?.id, currentIndex, setZoom, setPanOffset]);
 
   React.useEffect(() => {
     if (zoom === 1) {
       setPanOffset({ x: 0, y: 0 });
     }
-  }, [zoom]);
+  }, [zoom, setPanOffset]);
 
   // Keyboard Navigation
   React.useEffect(() => {
