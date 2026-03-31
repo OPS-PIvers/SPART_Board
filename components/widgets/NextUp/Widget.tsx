@@ -272,6 +272,18 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
     [queue, config.displayCount]
   );
 
+  // ⚡ Bolt: Optimize O(N) array filtering inside the render loop
+  // Instead of allocating a new array with .filter() just to get its length,
+  // we compute the total count directly using a memoized .reduce().
+  const totalWaitingCount = useMemo(
+    () =>
+      queue.reduce(
+        (count, q) => (q.status === 'waiting' ? count + 1 : count),
+        0
+      ),
+    [queue]
+  );
+
   if (!config.isActive) {
     return (
       <WidgetLayout
@@ -401,7 +413,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
                 className="text-slate-300 font-bold"
                 style={{ fontSize: 'min(10px, 2.5cqmin)' }}
               >
-                {queue.filter((q) => q.status === 'waiting').length} total
+                {totalWaitingCount} total
               </span>
             </div>
 
