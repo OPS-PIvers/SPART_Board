@@ -532,6 +532,8 @@ export interface BuildingTimeToolDefaults {
   buildingId: string;
   duration?: number; // in seconds
   timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+  timerEndTriggerRandom?: boolean;
+  timerEndTriggerNextUp?: boolean;
 }
 
 export interface TimeToolGlobalConfig {
@@ -947,6 +949,8 @@ export interface CatalystRoutine {
   id: string;
   title: string;
   icon?: string;
+  buttonColor?: string;
+  iconColor?: string;
   imageUrl?: string;
   description?: string;
   widgets: Omit<WidgetData, 'id'>[];
@@ -1285,6 +1289,7 @@ export interface GlobalVideoActivity extends VideoActivityMetadata {
 
 export interface VideoActivityGlobalConfig {
   dockDefaults?: Record<string, boolean>;
+  aiEnabled?: boolean;
 }
 
 /**
@@ -2458,8 +2463,10 @@ export interface DashboardTemplate {
   targetGradeLevels: GradeLevel[];
   /** Building IDs this template is offered to; empty = all buildings */
   targetBuildings: string[];
-  /** When true, this template is shown in the user-facing starter pack */
-  isPublished: boolean;
+  /** Whether this template is available to users (replaces isPublished) */
+  enabled: boolean;
+  /** Who can see/use this template */
+  accessLevel: 'admin' | 'beta' | 'public';
   createdAt: number;
   updatedAt: number;
   createdBy: string; // admin email
@@ -2605,7 +2612,7 @@ export interface ConditionalLabelBlockConfig {
   initialText: string;
 }
 export interface BadgeBlockConfig {
-  icon: string; // emoji
+  icon: string; // lucide key (or legacy emoji)
   label?: string;
 }
 export interface TrafficLightBlockConfig {
@@ -2749,7 +2756,7 @@ export interface CustomWidgetDoc {
   slug: string;
   title: string;
   description?: string;
-  icon: string; // emoji
+  icon: string; // lucide key (or legacy emoji)
   color: string; // Tailwind bg-* class
   createdBy: string;
   createdAt: number;

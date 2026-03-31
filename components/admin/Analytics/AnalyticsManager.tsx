@@ -1,22 +1,36 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/config/firebase';
-import { BarChart, Users, Zap, LayoutGrid, AlertCircle } from 'lucide-react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
+import { auth } from '@/config/firebase';
+import {
+  BarChart,
+  Users,
+  Zap,
+  LayoutGrid,
+  AlertCircle,
+  RefreshCw,
+} from 'lucide-react';
 import { BUILDINGS } from '@/config/buildings';
 import { TOOLS } from '@/config/tools';
+
+interface EngagementCounts {
+  total: number;
+  monthly: number;
+  daily: number;
+}
 
 interface AnalyticsData {
   users: {
     total: number;
     monthly: number;
     daily: number;
-    data: {
-      id: string;
-      email: string;
-      lastLogin?: number;
-      buildings: string[];
-      domain: string;
-    }[];
+    domains: Record<string, EngagementCounts>;
+    buildings: Record<string, EngagementCounts>;
+    domainBuilding: Record<string, Record<string, EngagementCounts>>;
   };
   widgets: {
     totalInstances: Record<string, number>;
@@ -24,7 +38,12 @@ interface AnalyticsData {
   };
   api: {
     totalCalls: number;
-    callsPerUser: Record<string, number>;
+    activeUsers: number;
+    topUsers: {
+      uid: string;
+      count: number;
+      email: string;
+    }[];
     avgDailyCalls: number;
     avgDailyCallsPerUser: number;
   };
@@ -38,13 +57,22 @@ const WIDGET_LABELS: Record<string, string> = TOOLS.reduce(
   {} as Record<string, string>
 );
 
+const KNOWN_BUILDINGS = new Map(
+  BUILDINGS.map((building) => [building.id, building])
+);
+const NUMBER_FORMATTER = new Intl.NumberFormat();
+const formatNumber = (value: number) => NUMBER_FORMATTER.format(value);
+
+const formatRate = (value: number) =>
+  Number.isFinite(value) ? `${value.toFixed(1)}%` : '0.0%';
+
 const StatCard: React.FC<{
   title: string;
   value: string | number;
   icon: React.ReactNode;
   subtitle?: string;
 }> = ({ title, value, icon, subtitle }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
     <div className="flex justify-between items-start mb-4">
       <div className="p-3 bg-brand-blue-primary/10 rounded-xl text-brand-blue-primary">
         {icon}
@@ -66,92 +94,137 @@ export const AnalyticsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const requestSequenceRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   // Filters
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all');
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  useEffect(
+    () => () => {
+      isMountedRef.current = false;
+      requestSequenceRef.current += 1;
+    },
+    []
+  );
 
-        const getAnalyticsData = httpsCallable<void, AnalyticsData>(
-          functions,
-          'getAdminAnalytics'
-        );
+  const fetchAnalytics = useCallback(async () => {
+    const requestId = requestSequenceRef.current + 1;
+    requestSequenceRef.current = requestId;
 
-        const result = await getAnalyticsData();
-        const dataPayload = result.data;
+    try {
+      setLoading(true);
+      setError(null);
 
-        setData({
-          ...dataPayload,
-          users: {
-            ...dataPayload.users,
-            monthly: 0, // Calculated dynamically by the memo below
-            daily: 0,
-          },
-        });
-      } catch (err: unknown) {
-        console.error('Failed to load analytics', err);
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : 'An error occurred loading analytics data';
-        setError(errorMessage);
-      } finally {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Not authenticated');
+
+      const token = await user.getIdToken();
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string;
+      const url = `https://us-central1-${projectId}.cloudfunctions.net/adminAnalytics`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as {
+          message?: string;
+          error?: string;
+        };
+        const msg = body.message ?? body.error ?? `HTTP ${response.status}`;
+        throw new Error(msg);
+      }
+
+      const nextData = (await response.json()) as AnalyticsData;
+      if (!isMountedRef.current || requestId !== requestSequenceRef.current) {
+        return;
+      }
+      setData(nextData);
+    } catch (err: unknown) {
+      console.error('Failed to load analytics', err);
+      if (!isMountedRef.current || requestId !== requestSequenceRef.current) {
+        return;
+      }
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred loading analytics data';
+      setError(errorMessage);
+    } finally {
+      if (isMountedRef.current && requestId === requestSequenceRef.current) {
         setLoading(false);
       }
-    };
-
-    void fetchAnalytics();
+    }
   }, []);
 
-  // Derived filtered users memoized to avoid expensive loops on every render
+  useEffect(() => {
+    void fetchAnalytics();
+  }, [fetchAnalytics]);
+
   const { filteredTotalUsers, filteredMonthly, filteredDaily } = useMemo(() => {
-    if (!data)
+    if (!data) {
       return { filteredTotalUsers: 0, filteredMonthly: 0, filteredDaily: 0 };
-
-    let users = data.users.data;
-    if (selectedDomain !== 'all') {
-      users = users.filter((u) => u.domain === selectedDomain);
-    }
-    if (selectedBuilding !== 'all') {
-      users = users.filter((u) => u.buildings.includes(selectedBuilding));
     }
 
-    let monthly = 0;
-    let daily = 0;
-    const now = Date.now();
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-    const oneDayMs = 24 * 60 * 60 * 1000;
+    if (selectedDomain === 'all' && selectedBuilding === 'all') {
+      return {
+        filteredTotalUsers: data.users.total,
+        filteredMonthly: data.users.monthly,
+        filteredDaily: data.users.daily,
+      };
+    }
 
-    users.forEach((u) => {
-      if (u.lastLogin) {
-        if (now - u.lastLogin <= thirtyDaysMs) monthly++;
-        if (now - u.lastLogin <= oneDayMs) daily++;
-      }
-    });
+    if (selectedDomain === 'all') {
+      const bucket = data.users.buildings[selectedBuilding];
+      return {
+        filteredTotalUsers: bucket?.total ?? 0,
+        filteredMonthly: bucket?.monthly ?? 0,
+        filteredDaily: bucket?.daily ?? 0,
+      };
+    }
 
+    if (selectedBuilding === 'all') {
+      const bucket = data.users.domains[selectedDomain];
+      return {
+        filteredTotalUsers: bucket?.total ?? 0,
+        filteredMonthly: bucket?.monthly ?? 0,
+        filteredDaily: bucket?.daily ?? 0,
+      };
+    }
+
+    const bucket =
+      data.users.domainBuilding[selectedDomain]?.[selectedBuilding];
     return {
-      filteredTotalUsers: users.length,
-      filteredMonthly: monthly,
-      filteredDaily: daily,
+      filteredTotalUsers: bucket?.total ?? 0,
+      filteredMonthly: bucket?.monthly ?? 0,
+      filteredDaily: bucket?.daily ?? 0,
     };
   }, [data, selectedDomain, selectedBuilding]);
 
-  // Extract unique domains for the filter
   const uniqueDomains = useMemo(() => {
     if (!data) return [];
-    return Array.from(new Set(data.users.data.map((u) => u.domain)))
-      .filter(Boolean)
-      .sort();
+    return Object.keys(data.users.domains).filter(Boolean).sort();
   }, [data]);
-
-  const userMap = useMemo(() => {
-    if (!data) return new Map<string, { email: string }>();
-    return new Map(data.users.data.map((u) => [u.id, u]));
+  const hasNoBuildingUsers = Boolean(data?.users.buildings.none);
+  const buildingOptions = useMemo(() => {
+    if (!data) return [];
+    return Object.keys(data.users.buildings)
+      .filter((id) => id !== 'none')
+      .sort()
+      .map((id) => {
+        const building = KNOWN_BUILDINGS.get(id);
+        return {
+          id,
+          name: building?.name ?? `Unknown Building (${id})`,
+        };
+      });
   }, [data]);
 
   if (loading) {
@@ -177,26 +250,29 @@ export const AnalyticsManager: React.FC = () => {
 
   if (!data) return null;
 
-  // Sort widgets by popularity
   const sortedWidgets = Object.entries(data.widgets.totalInstances)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 15); // Top 15
+    .slice(0, 15);
 
-  // Sorted API users
-  const topAiUsers = Object.entries(data.api.callsPerUser)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 10);
+  const topAiUsers = data.api.topUsers.slice(0, 10);
+  const monthlyEngagementRate =
+    filteredTotalUsers > 0 ? (filteredMonthly / filteredTotalUsers) * 100 : 0;
+  const dailyEngagementRate =
+    filteredTotalUsers > 0 ? (filteredDaily / filteredTotalUsers) * 100 : 0;
+  const safeAvgDailyPerUser =
+    data.api.activeUsers > 0
+      ? data.api.avgDailyCalls / data.api.activeUsers
+      : 0;
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Overview Section */}
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+      <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-5 gap-4">
           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <Users className="w-5 h-5 text-brand-blue-primary" />
             User Engagement
           </h3>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={selectedDomain}
               onChange={(e) => setSelectedDomain(e.target.value)}
@@ -215,39 +291,62 @@ export const AnalyticsManager: React.FC = () => {
               className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-blue-primary"
             >
               <option value="all">All Buildings</option>
-              {BUILDINGS.map((b) => (
+              {hasNoBuildingUsers && (
+                <option value="none">No Building Assigned</option>
+              )}
+              {buildingOptions.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void fetchAnalytics()}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+              />
+              Refresh
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
             title="Total Users"
-            value={filteredTotalUsers}
+            value={formatNumber(filteredTotalUsers)}
             icon={<Users className="w-6 h-6" />}
             subtitle="Lifetime registered users"
           />
           <StatCard
             title="Monthly Active"
-            value={filteredMonthly}
+            value={formatNumber(filteredMonthly)}
             icon={<BarChart className="w-6 h-6" />}
-            subtitle="Users active in last 30 days"
+            subtitle={`${formatRate(monthlyEngagementRate)} engagement`}
           />
           <StatCard
             title="Daily Active"
-            value={filteredDaily}
+            value={formatNumber(filteredDaily)}
             icon={<Zap className="w-6 h-6" />}
-            subtitle="Users active in last 24 hours"
+            subtitle={`${formatRate(dailyEngagementRate)} engagement`}
+          />
+          <StatCard
+            title="Filter Scope"
+            value={
+              selectedDomain === 'all' && selectedBuilding === 'all'
+                ? 'Global'
+                : 'Filtered'
+            }
+            icon={<LayoutGrid className="w-6 h-6" />}
+            subtitle="Applies to the user cards above"
           />
         </div>
       </div>
 
-      {/* API Usage Section */}
-      <div>
+      <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Zap className="w-5 h-5 text-brand-purple" />
           Gemini AI Usage
@@ -255,28 +354,28 @@ export const AnalyticsManager: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total API Calls"
-            value={data.api.totalCalls}
+            value={formatNumber(data.api.totalCalls)}
             icon={<Zap className="w-6 h-6" />}
           />
           <StatCard
             title="Active AI Users"
-            value={Object.keys(data.api.callsPerUser).length}
+            value={formatNumber(data.api.activeUsers)}
             icon={<Users className="w-6 h-6" />}
           />
           <StatCard
             title="Avg Daily Calls"
-            value={data.api.avgDailyCalls}
+            value={formatNumber(data.api.avgDailyCalls)}
             icon={<BarChart className="w-6 h-6" />}
           />
           <StatCard
             title="Avg Daily Per User"
-            value={data.api.avgDailyCallsPerUser}
+            value={safeAvgDailyPerUser.toFixed(1)}
             icon={<Users className="w-6 h-6" />}
+            subtitle="Derived from avg daily calls / active AI users"
           />
         </div>
       </div>
 
-      {/* Widget Usage Section */}
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
         <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
           <LayoutGrid className="w-5 h-5 text-brand-blue-primary" />
@@ -285,9 +384,8 @@ export const AnalyticsManager: React.FC = () => {
         <div className="space-y-4">
           {sortedWidgets.map(([type, count], index) => {
             const label = WIDGET_LABELS[type] || type;
-            const maxCount = sortedWidgets[0]?.[1] || 1;
-            const percentage = Math.max(5, (count / maxCount) * 100);
             const activeCount = data.widgets.activeInstances[type] || 0;
+            const percentage = count > 0 ? (activeCount / count) * 100 : 0;
 
             return (
               <div key={type} className="flex items-center gap-4">
@@ -300,13 +398,18 @@ export const AnalyticsManager: React.FC = () => {
                       {label}
                     </span>
                     <div className="flex gap-3">
-                      <span className="text-slate-500">{count} total</span>
+                      <span className="text-slate-500">
+                        {formatNumber(count)} total
+                      </span>
                       <span className="text-brand-blue-primary font-medium">
-                        {activeCount} active
+                        {formatNumber(activeCount)} active
+                      </span>
+                      <span className="text-slate-400">
+                        {formatRate(percentage)}
                       </span>
                     </div>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden w-full">
                     <div
                       className="h-full bg-brand-blue-primary rounded-full transition-all duration-1000"
                       style={{ width: `${percentage}%` }}
@@ -325,21 +428,20 @@ export const AnalyticsManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Top API Users List */}
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
         <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
           <Zap className="w-5 h-5 text-brand-blue-primary" />
           Top AI Users
         </h3>
         <div className="space-y-4">
-          {topAiUsers.map(([uid, count], index) => {
-            const user = userMap.get(uid);
-            const label = user ? user.email : `Unknown (${uid})`;
-            const maxCount = topAiUsers[0]?.[1] || 1;
-            const percentage = Math.max(5, (count / maxCount) * 100);
+          {topAiUsers.map((user, index) => {
+            const label = user.email;
+            const maxCount = topAiUsers[0]?.count || 1;
+            const count = user.count;
+            const percentage = (count / maxCount) * 100;
 
             return (
-              <div key={uid} className="flex items-center gap-4">
+              <div key={user.uid} className="flex items-center gap-4">
                 <div className="w-8 text-center text-sm font-bold text-slate-400">
                   #{index + 1}
                 </div>
@@ -348,7 +450,9 @@ export const AnalyticsManager: React.FC = () => {
                     <span className="font-semibold text-slate-700">
                       {label}
                     </span>
-                    <span className="text-slate-500">{count} calls</span>
+                    <span className="text-slate-500">
+                      {formatNumber(count)} calls
+                    </span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div

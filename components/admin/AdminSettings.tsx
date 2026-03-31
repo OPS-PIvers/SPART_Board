@@ -9,7 +9,6 @@ import {
   Users,
   BarChart,
   LayoutTemplate,
-  Puzzle,
 } from 'lucide-react';
 
 import { useAuth } from '@/context/useAuth';
@@ -20,11 +19,6 @@ import { AnnouncementsManager } from './Announcements';
 import { UserManagementPanel } from './UserManagement/UserManagementPanel';
 import { AnalyticsManager } from './Analytics/AnalyticsManager';
 import { DashboardTemplatesManager } from './DashboardTemplatesManager';
-const LazyWidgetBuilderManager = React.lazy(() =>
-  import('./WidgetBuilderManager').then((m) => ({
-    default: m.WidgetBuilderManager,
-  }))
-);
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -67,7 +61,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
     | 'users'
     | 'analytics'
     | 'templates'
-    | 'widgets'
   >('features');
 
   // Close modal on Escape key press
@@ -174,14 +167,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               icon={<LayoutTemplate className="w-4 h-4" />}
               label="Templates"
             />
-            <TabButton
-              id="tab-widgets"
-              controls="panel-widgets"
-              isActive={activeTab === 'widgets'}
-              onClick={() => setActiveTab('widgets')}
-              icon={<Puzzle className="w-4 h-4" />}
-              label="Widget Builder"
-            />
           </div>
         </div>
 
@@ -266,31 +251,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               className="animate-in fade-in slide-in-from-bottom-2 duration-300"
             >
               <DashboardTemplatesManager />
-            </div>
-          )}
-
-          {activeTab === 'widgets' && (
-            <div
-              id="panel-widgets"
-              role="tabpanel"
-              aria-labelledby="tab-widgets"
-              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-            >
-              <div className="mb-4">
-                <p className="text-slate-600 text-sm">
-                  Create custom no-code widgets using the block builder or
-                  AI-assisted code editor.
-                </p>
-              </div>
-              <React.Suspense
-                fallback={
-                  <div className="text-slate-400 text-sm p-4 text-center">
-                    Loading builder…
-                  </div>
-                }
-              >
-                <LazyWidgetBuilderManager />
-              </React.Suspense>
             </div>
           )}
         </div>

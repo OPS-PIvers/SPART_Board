@@ -1,4 +1,4 @@
-import { createContext } from 'react';
+import { createContext, Dispatch, SetStateAction } from 'react';
 import {
   WidgetData,
   WidgetType,
@@ -47,6 +47,7 @@ export interface DashboardContextValue {
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
+  clearAllStickers: () => void;
   clearAllWidgets: () => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
@@ -65,13 +66,12 @@ export interface DashboardContextValue {
   libraryOrder: (WidgetType | InternalToolType)[];
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   updateDashboard: (updates: Partial<Dashboard>) => void;
-  clearAllStickers: () => void;
 
   // Zoom system
   zoom: number;
   setZoom: (zoom: number) => void;
   panOffset: { x: number; y: number };
-  setPanOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  setPanOffset: Dispatch<SetStateAction<{ x: number; y: number }>>;
 
   // Selection system
   selectedWidgetId: string | null;

@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, LayoutTemplate, Loader2 } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -17,12 +17,17 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
-import { Dashboard } from '@/types';
+import { Dashboard, DashboardTemplate } from '@/types';
 import { SortableDashboardItem } from './SortableDashboardItem';
 import { useDialog } from '@/context/useDialog';
+import { SaveAsTemplateModal } from '@/components/admin/SaveAsTemplateModal';
+import { db as firestoreDb, isAuthBypass } from '@/config/firebase';
+
+const TEMPLATES_COLLECTION = 'dashboard_templates';
 
 interface SidebarBoardsProps {
   isVisible: boolean;
@@ -50,7 +55,7 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
     addToast,
   } = useDashboard();
 
-  const { canAccessFeature } = useAuth();
+  const { canAccessFeature, isAdmin } = useAuth();
 
   const [showNewDashboardModal, setShowNewDashboardModal] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
@@ -58,6 +63,51 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
     id: string;
     name: string;
   } | null>(null);
+
+  // Template state
+  const [templates, setTemplates] = useState<DashboardTemplate[]>([]);
+  // Skip loading state when auth is bypassed (no Firestore subscription needed)
+  const [loadingTemplates, setLoadingTemplates] = useState(!isAuthBypass);
+  const [saveAsTemplateDash, setSaveAsTemplateDash] =
+    useState<Dashboard | null>(null);
+  // When set, the "new board" modal creates from this template
+  const [pendingTemplateSource, setPendingTemplateSource] =
+    useState<DashboardTemplate | null>(null);
+
+  // Subscribe to templates collection
+  useEffect(() => {
+    if (isAuthBypass) return;
+    const q = query(
+      collection(firestoreDb, TEMPLATES_COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setTemplates(
+          snap.docs.map((d) => ({
+            ...(d.data() as DashboardTemplate),
+            id: d.id,
+          }))
+        );
+        setLoadingTemplates(false);
+      },
+      (err) => {
+        console.error('Failed to load templates:', err);
+        setLoadingTemplates(false);
+      }
+    );
+    return unsub;
+  }, []);
+
+  // Filter templates by access level
+  const visibleTemplates = templates.filter((t) => {
+    if (!t.enabled) return false;
+    if (t.accessLevel === 'admin') return Boolean(isAdmin);
+    // 'beta' shown to admins only for now (beta user email list is a future enhancement)
+    if (t.accessLevel === 'beta') return Boolean(isAdmin);
+    return true; // 'public'
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -138,6 +188,45 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
     }
   };
 
+  const handleUseTemplate = (template: DashboardTemplate) => {
+    setPendingTemplateSource(template);
+    setNewDashboardName(template.name);
+    setShowNewDashboardModal(true);
+  };
+
+  const handleCreateBoard = () => {
+    if (!newDashboardName.trim()) return;
+    if (pendingTemplateSource) {
+      // Create from template: deep-clone widgets to avoid shared refs
+      const templateData: Dashboard = {
+        id: crypto.randomUUID(),
+        name: newDashboardName.trim(),
+        background: pendingTemplateSource.background ?? 'bg-slate-800',
+        widgets: pendingTemplateSource.widgets.map((w) => ({
+          ...w,
+          id: crypto.randomUUID(),
+          config: structuredClone(w.config),
+        })),
+        globalStyle: pendingTemplateSource.globalStyle as
+          | import('@/types').GlobalStyle
+          | undefined,
+        createdAt: Date.now(),
+      };
+      createNewDashboard(newDashboardName.trim(), templateData);
+    } else {
+      createNewDashboard(newDashboardName.trim());
+    }
+    setShowNewDashboardModal(false);
+    setPendingTemplateSource(null);
+    setNewDashboardName('');
+  };
+
+  const handleCloseNewModal = () => {
+    setShowNewDashboardModal(false);
+    setPendingTemplateSource(null);
+    setNewDashboardName('');
+  };
+
   return (
     <>
       <div
@@ -151,6 +240,7 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
           <button
             onClick={() => {
               setNewDashboardName('');
+              setPendingTemplateSource(null);
               setShowNewDashboardModal(true);
             }}
             className="flex flex-col items-center justify-center gap-1.5 p-3 bg-brand-blue-primary text-white rounded-xl shadow-sm hover:bg-brand-blue-dark transition-all"
@@ -198,6 +288,7 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
                     onSetDefault={setDefaultDashboard}
                     onDuplicate={duplicateDashboard}
                     onShare={handleShare}
+                    onSaveAsTemplate={() => setSaveAsTemplateDash(db)}
                     canShare={canAccessFeature('dashboard-sharing')}
                   />
                 ))}
@@ -205,6 +296,47 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
             </DndContext>
           </div>
         </div>
+
+        {/* Templates section */}
+        {!loadingTemplates && visibleTemplates.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-xxs font-bold text-slate-400 uppercase tracking-widest px-1">
+              Templates
+            </h3>
+            <div className="flex flex-col gap-2">
+              {visibleTemplates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleUseTemplate(template)}
+                  className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:border-brand-blue-primary hover:shadow-sm transition-all text-left group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-brand-blue-primary/10 flex items-center justify-center shrink-0">
+                    <LayoutTemplate className="w-4 h-4 text-brand-blue-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm text-slate-700 truncate group-hover:text-brand-blue-dark">
+                      {template.name}
+                    </div>
+                    {template.description && (
+                      <div className="text-xxs text-slate-400 truncate">
+                        {template.description}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xxs font-bold text-brand-blue-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    Use →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {loadingTemplates && (
+          <div className="flex items-center gap-2 text-slate-400 text-xs px-1">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            Loading templates…
+          </div>
+        )}
       </div>
 
       {editingDashboard &&
@@ -274,10 +406,14 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
           <div className="fixed inset-0 z-popover flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
               <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
-                {t('sidebar.boards.newBoardTitle')}
+                {pendingTemplateSource
+                  ? 'Create Board from Template'
+                  : t('sidebar.boards.newBoardTitle')}
               </h2>
               <p className="text-xs text-slate-500 mb-4">
-                {t('sidebar.boards.enterName')}
+                {pendingTemplateSource
+                  ? `Give your new board a name. It will start with all the widgets from "${pendingTemplateSource.name}".`
+                  : t('sidebar.boards.enterName')}
               </p>
               <input
                 type="text"
@@ -285,12 +421,9 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
                 onChange={(e) => setNewDashboardName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    if (newDashboardName.trim()) {
-                      createNewDashboard(newDashboardName.trim());
-                      setShowNewDashboardModal(false);
-                    }
+                    handleCreateBoard();
                   } else if (e.key === 'Escape') {
-                    setShowNewDashboardModal(false);
+                    handleCloseNewModal();
                   }
                 }}
                 autoFocus
@@ -299,27 +432,31 @@ export const SidebarBoards: React.FC<SidebarBoardsProps> = ({ isVisible }) => {
               />
               <div className="flex justify-end gap-2">
                 <button
-                  onClick={() => setShowNewDashboardModal(false)}
+                  onClick={handleCloseNewModal}
                   className="px-3 py-2 text-xxs font-bold uppercase tracking-wider text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
-                  onClick={() => {
-                    if (newDashboardName.trim()) {
-                      createNewDashboard(newDashboardName.trim());
-                      setShowNewDashboardModal(false);
-                    }
-                  }}
-                  className="px-3 py-2 text-xxs font-bold uppercase tracking-wider text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-sm transition"
+                  onClick={handleCreateBoard}
+                  disabled={!newDashboardName.trim()}
+                  className="px-3 py-2 text-xxs font-bold uppercase tracking-wider text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-sm transition disabled:opacity-50"
                 >
-                  {t('sidebar.boards.create')}
+                  {pendingTemplateSource
+                    ? 'Create from Template'
+                    : t('sidebar.boards.create')}
                 </button>
               </div>
             </div>
           </div>,
           document.body
         )}
+
+      <SaveAsTemplateModal
+        isOpen={!!saveAsTemplateDash}
+        currentDashboard={saveAsTemplateDash}
+        onClose={() => setSaveAsTemplateDash(null)}
+      />
     </>
   );
 };

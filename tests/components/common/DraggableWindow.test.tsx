@@ -70,6 +70,9 @@ describe('DraggableWindow (Tests folder)', () => {
     resetWidgetSize: vi.fn(),
     selectedWidgetId: null,
     setSelectedWidgetId: vi.fn(),
+    zoom: 1,
+    panOffset: { x: 0, y: 0 },
+    setPanOffset: vi.fn(),
   };
 
   beforeEach(() => {
