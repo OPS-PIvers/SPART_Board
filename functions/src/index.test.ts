@@ -310,10 +310,11 @@ describe('timedtext track helpers', () => {
 
     const result = buildTimedtextCandidates(discoveredTracks);
 
-    expect(result).toHaveLength(12);
+    expect(result).toHaveLength(8);
     expect(result[0]?.lang).toBe('en');
     expect(result[1]?.lang).toBe('en-US');
     expect(result.map((track) => track.vssId)).toContain('.es');
+    expect(result.map((track) => track.vssId)).not.toContain('.ar');
     expect(result.map((track) => track.vssId)).not.toContain('.nl');
   });
 
