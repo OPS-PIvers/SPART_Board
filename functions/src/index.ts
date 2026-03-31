@@ -1846,7 +1846,6 @@ export const getAdminAnalytics = functionsV1
         string,
         Record<string, EngagementCounts>
       > = {};
-      const uidToEmail: Record<string, string> = {};
       const totalEngagement: EngagementCounts = {
         total: 0,
         monthly: 0,
@@ -1877,7 +1876,6 @@ export const getAdminAnalytics = functionsV1
         const domain = userEmail.includes('@')
           ? userEmail.split('@')[1]
           : 'unknown';
-        uidToEmail[userDoc.id] = userEmail || `Unknown (${userDoc.id})`;
 
         let buildings: string[] = [];
         if (Array.isArray(userData.buildings)) {
@@ -2020,13 +2018,37 @@ export const getAdminAnalytics = functionsV1
       const activeAiUsers = Object.keys(callsPerUser).length || 1;
       const avgDailyCallsPerUser =
         Math.round((avgDailyCalls / activeAiUsers) * 10) / 10;
+      const topUserUids = Object.entries(callsPerUser)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 25)
+        .map(([uid]) => uid);
+      const topUserEmails: Record<string, string> = {};
+
+      for (let i = 0; i < topUserUids.length; i += 10) {
+        const uidChunk = topUserUids.slice(i, i + 10);
+        if (uidChunk.length === 0) continue;
+
+        const usersSnapshot = await db
+          .collection('users')
+          .where(admin.firestore.FieldPath.documentId(), 'in', uidChunk)
+          .select('email')
+          .get();
+
+        usersSnapshot.docs.forEach((doc) => {
+          const userData = doc.data();
+          if (typeof userData.email === 'string' && userData.email.length > 0) {
+            topUserEmails[doc.id] = userData.email;
+          }
+        });
+      }
+
       const topUsers = Object.entries(callsPerUser)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 25)
         .map(([uid, count]) => ({
           uid,
           count,
-          email: uidToEmail[uid] ?? `Unknown (${uid})`,
+          email: topUserEmails[uid] ?? `Unknown (${uid})`,
         }));
 
       console.log('[getAdminAnalytics] Analysis complete, returning results');

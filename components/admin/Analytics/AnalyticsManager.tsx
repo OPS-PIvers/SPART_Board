@@ -150,6 +150,7 @@ export const AnalyticsManager: React.FC = () => {
     if (!data) return [];
     return Object.keys(data.users.domains).filter(Boolean).sort();
   }, [data]);
+  const hasNoBuildingUsers = Boolean(data?.users.buildings.none);
 
   if (loading) {
     return (
@@ -207,6 +208,9 @@ export const AnalyticsManager: React.FC = () => {
               className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-blue-primary"
             >
               <option value="all">All Buildings</option>
+              {hasNoBuildingUsers && (
+                <option value="none">No Building Assigned</option>
+              )}
               {BUILDINGS.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
