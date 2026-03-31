@@ -965,6 +965,7 @@ interface GeneratedVideoActivity {
  * multiple-choice questions for the Video Activity widget.
  */
 export const generateVideoActivity = functionsV1
+  .region('us-central1')
   .runWith({
     secrets: ['GEMINI_API_KEY'],
     memory: '512MB',
@@ -1042,6 +1043,15 @@ export const generateVideoActivity = functionsV1
           const discoveredTracks = parseTimedtextTrackList(trackListResp.data);
           captionCandidates = buildTimedtextCandidates(discoveredTracks);
         } catch (trackListErr: unknown) {
+          if (
+            axios.isAxiosError(trackListErr) &&
+            trackListErr.response?.status === 429
+          ) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              'YouTube is temporarily rate-limiting caption requests from our server. Please try Manual Entry or CSV Import instead.'
+            );
+          }
           const msg =
             trackListErr instanceof Error
               ? trackListErr.message
@@ -1135,6 +1145,15 @@ export const generateVideoActivity = functionsV1
               break;
             }
           } catch (candidateErr: unknown) {
+            if (
+              axios.isAxiosError(candidateErr) &&
+              candidateErr.response?.status === 429
+            ) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                'YouTube is temporarily rate-limiting caption requests from our server. Please try Manual Entry or CSV Import instead.'
+              );
+            }
             const msg =
               candidateErr instanceof Error
                 ? candidateErr.message
@@ -1154,14 +1173,14 @@ export const generateVideoActivity = functionsV1
         );
         throw new functionsV1.https.HttpsError(
           'not-found',
-          'No captions are available for this video. Try a different video, or ask your admin to enable Gemini audio transcription.'
+          'No captions are available for this video or they could not be retrieved. Try a different video, or use Manual Entry / CSV Import instead.'
         );
       }
 
       if (transcriptItems.length === 0) {
         throw new functionsV1.https.HttpsError(
           'not-found',
-          'No captions are available for this video. Try a different video, or ask your admin to enable Gemini audio transcription.'
+          'No captions are available for this video or they could not be retrieved. Try a different video, or use Manual Entry / CSV Import instead.'
         );
       }
 
