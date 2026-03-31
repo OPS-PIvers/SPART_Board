@@ -19,6 +19,26 @@ interface TimedtextJson3Event {
   segs?: Array<{ utf8?: string }>;
 }
 
+interface TimedtextTrack {
+  lang: string;
+  kind?: 'asr';
+  name?: string;
+  vssId?: string;
+}
+
+const LEGACY_TIMEDTEXT_CANDIDATES: TimedtextTrack[] = [
+  { lang: 'en' },
+  { lang: 'en', kind: 'asr' },
+  { lang: 'en-US' },
+  { lang: 'en-US', kind: 'asr' },
+  { lang: 'en-GB' },
+  { lang: 'en-GB', kind: 'asr' },
+];
+
+const MAX_TIMEDTEXT_TRACK_CANDIDATES = 8;
+const TIMEDTEXT_REQUEST_TIMEOUT_MS = 5000;
+const TIMEDTEXT_TOTAL_BUDGET_MS = 30000;
+
 function decodeHtmlEntities(input: string): string {
   const namedEntities: Record<string, string> = {
     amp: '&',
@@ -98,6 +118,58 @@ function parseTimedtextXml(xml: string): TranscriptResponse[] {
   }
 
   return parsed;
+}
+
+export function parseTimedtextTrackList(xml: string): TimedtextTrack[] {
+  const trackNodes = xml.matchAll(/<track\b([^>]*)\/?>(?:<\/track>)?/g);
+  const tracks: TimedtextTrack[] = [];
+
+  for (const node of trackNodes) {
+    const attrs = node[1] ?? '';
+    const langMatch = attrs.match(/\blang_code=["']([^"']+)["']/);
+
+    if (!langMatch?.[1]) continue;
+
+    const kindMatch = attrs.match(/\bkind=["']([^"']+)["']/);
+    const nameMatch = attrs.match(/\bname=["']([^"']*)["']/);
+    const vssIdMatch = attrs.match(/\bvss_id=["']([^"']+)["']/);
+
+    tracks.push({
+      lang: decodeHtmlEntities(langMatch[1]),
+      kind: kindMatch?.[1] === 'asr' ? 'asr' : undefined,
+      name: nameMatch?.[1] ? decodeHtmlEntities(nameMatch[1]) : undefined,
+      vssId: vssIdMatch?.[1] ? decodeHtmlEntities(vssIdMatch[1]) : undefined,
+    });
+  }
+
+  return tracks;
+}
+
+export function buildTimedtextCandidates(
+  discoveredTracks: TimedtextTrack[]
+): TimedtextTrack[] {
+  const dedupeKey = (track: TimedtextTrack): string =>
+    `${track.lang}|${track.kind ?? ''}|${track.name ?? ''}|${track.vssId ?? ''}`;
+
+  const uniqueTracks = Array.from(
+    new Map(discoveredTracks.map((track) => [dedupeKey(track), track])).values()
+  );
+
+  const englishTracks = uniqueTracks.filter((track) =>
+    track.lang.toLowerCase().startsWith('en')
+  );
+  const nonEnglishTracks = uniqueTracks.filter(
+    (track) => !track.lang.toLowerCase().startsWith('en')
+  );
+
+  const prioritizedTracks = [...englishTracks, ...nonEnglishTracks].slice(
+    0,
+    MAX_TIMEDTEXT_TRACK_CANDIDATES
+  );
+
+  return prioritizedTracks.length > 0
+    ? prioritizedTracks
+    : [...LEGACY_TIMEDTEXT_CANDIDATES];
 }
 
 admin.initializeApp();
@@ -944,17 +1016,46 @@ export const generateVideoActivity = functionsV1
       let transcriptItems: TranscriptResponse[] = [];
       try {
         // Fetch captions directly from timedtext (no Data API key dependency).
-        // Try common language/kind combinations in preference order.
-        const captionCandidates: Array<{ lang: string; kind?: 'asr' }> = [
-          { lang: 'en' },
-          { lang: 'en', kind: 'asr' },
-          { lang: 'en-US' },
-          { lang: 'en-US', kind: 'asr' },
-          { lang: 'en-GB' },
-          { lang: 'en-GB', kind: 'asr' },
+        const captionFetchStartMs = Date.now();
+        let captionCandidates: TimedtextTrack[] = [
+          ...LEGACY_TIMEDTEXT_CANDIDATES,
         ];
+        try {
+          // First, discover available tracks so we can support non-English
+          // videos (or videos where only one specific transcript track is
+          // published).
+          const trackListResp = await axios.get<string>(
+            'https://www.youtube.com/api/timedtext',
+            {
+              params: {
+                type: 'list',
+                v: videoId,
+              },
+              timeout: TIMEDTEXT_REQUEST_TIMEOUT_MS,
+              responseType: 'text',
+            }
+          );
+
+          const discoveredTracks = parseTimedtextTrackList(trackListResp.data);
+          captionCandidates = buildTimedtextCandidates(discoveredTracks);
+        } catch (trackListErr: unknown) {
+          const msg =
+            trackListErr instanceof Error
+              ? trackListErr.message
+              : String(trackListErr);
+          console.warn(
+            `[generateVideoActivity] Timedtext track discovery failed for ${videoId}; falling back to legacy candidates:`,
+            msg
+          );
+        }
 
         for (const candidate of captionCandidates) {
+          if (Date.now() - captionFetchStartMs >= TIMEDTEXT_TOTAL_BUDGET_MS) {
+            console.warn(
+              `[generateVideoActivity] Timedtext retrieval budget exceeded for ${videoId}; stopping caption attempts early.`
+            );
+            break;
+          }
           try {
             // Fetch as text so we can inspect the body regardless of content-type.
             // YouTube sometimes returns XML even when fmt=json3 is requested.
@@ -965,9 +1066,11 @@ export const generateVideoActivity = functionsV1
                   v: videoId,
                   lang: candidate.lang,
                   fmt: 'json3',
+                  ...(candidate.name ? { name: candidate.name } : {}),
+                  ...(candidate.vssId ? { vss_id: candidate.vssId } : {}),
                   ...(candidate.kind ? { kind: candidate.kind } : {}),
                 },
-                timeout: 10000,
+                timeout: TIMEDTEXT_REQUEST_TIMEOUT_MS,
                 responseType: 'text',
               }
             );
@@ -1002,15 +1105,23 @@ export const generateVideoActivity = functionsV1
             }
 
             // As a last resort, fetch without fmt=json3 to get XML explicitly.
+            if (Date.now() - captionFetchStartMs >= TIMEDTEXT_TOTAL_BUDGET_MS) {
+              console.warn(
+                `[generateVideoActivity] Timedtext retrieval budget reached before XML fallback for ${videoId}; skipping remaining attempts.`
+              );
+              break;
+            }
             const xmlResp = await axios.get<string>(
               'https://www.youtube.com/api/timedtext',
               {
                 params: {
                   v: videoId,
                   lang: candidate.lang,
+                  ...(candidate.name ? { name: candidate.name } : {}),
+                  ...(candidate.vssId ? { vss_id: candidate.vssId } : {}),
                   ...(candidate.kind ? { kind: candidate.kind } : {}),
                 },
-                timeout: 10000,
+                timeout: TIMEDTEXT_REQUEST_TIMEOUT_MS,
                 responseType: 'text',
               }
             );

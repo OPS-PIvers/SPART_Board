@@ -52,7 +52,12 @@ vi.mock('firebase-functions/v1', () => ({
 vi.mock('axios');
 
 // Import the function under test
-import { fetchWeatherProxy, checkUrlCompatibility } from './index';
+import {
+  fetchWeatherProxy,
+  checkUrlCompatibility,
+  parseTimedtextTrackList,
+  buildTimedtextCandidates,
+} from './index';
 
 describe('fetchWeatherProxy', () => {
   beforeEach(() => {
@@ -269,5 +274,58 @@ describe('checkUrlCompatibility', () => {
     expect(result.isEmbeddable).toBe(true);
     expect(result.uncertain).toBe(true);
     expect(result.error).toContain('Network error on head request');
+  });
+});
+
+describe('timedtext track helpers', () => {
+  it('parses timedtext type=list XML and decodes entity values', () => {
+    const xml = `<transcript_list>
+      <track id="0" name="English &amp; Auto" vss_id=".en" lang_code="en" lang_original="English"/>
+      <track id="1" name="Espa&#241;ol" vss_id=".es" lang_code="es" kind="asr"/>
+    </transcript_list>`;
+
+    expect(parseTimedtextTrackList(xml)).toEqual([
+      { lang: 'en', name: 'English & Auto', vssId: '.en' },
+      { lang: 'es', kind: 'asr', name: 'Español', vssId: '.es' },
+    ]);
+  });
+
+  it('builds prioritized deduped candidates and caps result size', () => {
+    const discoveredTracks = [
+      { lang: 'es', vssId: '.es' },
+      { lang: 'en', vssId: '.en' },
+      { lang: 'en', vssId: '.en' }, // duplicate
+      { lang: 'fr', vssId: '.fr' },
+      { lang: 'en-US', kind: 'asr' as const, vssId: 'a.en-US' },
+      { lang: 'de', vssId: '.de' },
+      { lang: 'pt', vssId: '.pt' },
+      { lang: 'it', vssId: '.it' },
+      { lang: 'ja', vssId: '.ja' },
+      { lang: 'ko', vssId: '.ko' },
+      { lang: 'ru', vssId: '.ru' },
+      { lang: 'zh', vssId: '.zh' },
+      { lang: 'ar', vssId: '.ar' },
+      { lang: 'nl', vssId: '.nl' },
+    ];
+
+    const result = buildTimedtextCandidates(discoveredTracks);
+
+    expect(result).toHaveLength(8);
+    expect(result[0]?.lang).toBe('en');
+    expect(result[1]?.lang).toBe('en-US');
+    expect(result.map((track) => track.vssId)).toContain('.es');
+    expect(result.map((track) => track.vssId)).not.toContain('.ar');
+    expect(result.map((track) => track.vssId)).not.toContain('.nl');
+  });
+
+  it('falls back to legacy candidates when discovery is empty', () => {
+    expect(buildTimedtextCandidates([])).toEqual([
+      { lang: 'en' },
+      { lang: 'en', kind: 'asr' },
+      { lang: 'en-US' },
+      { lang: 'en-US', kind: 'asr' },
+      { lang: 'en-GB' },
+      { lang: 'en-GB', kind: 'asr' },
+    ]);
   });
 });
