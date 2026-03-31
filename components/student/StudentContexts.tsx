@@ -1,9 +1,9 @@
 import React, { ReactNode } from 'react';
-import { AuthContext, AuthContextType } from '../../context/AuthContextValue';
+import { AuthContext, AuthContextType } from '@/context/AuthContextValue';
 import {
   DashboardContext,
   DashboardContextValue,
-} from '../../context/DashboardContextValue';
+} from '@/context/DashboardContextValue';
 
 interface StudentProviderProps {
   children: ReactNode;
@@ -15,8 +15,11 @@ const mockAuth: AuthContextType = {
   googleAccessToken: null,
   loading: false,
   isAdmin: null,
+  userRoles: null,
+  appSettings: null,
   featurePermissions: [],
   globalPermissions: [],
+  updateAppSettings: () => Promise.resolve(),
   canAccessWidget: () => true, // Allow everything in student view
   canAccessFeature: () => true,
   signInWithGoogle: async () => {
@@ -43,6 +46,11 @@ const mockAuth: AuthContextType = {
   savedWidgetConfigs: {},
   saveWidgetConfig: () => {
     // No-op
+  },
+  profileLoaded: true,
+  setupCompleted: true,
+  completeSetup: async () => {
+    // No-op in student view
   },
 };
 

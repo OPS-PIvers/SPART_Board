@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { DraggableWindow } from '../../../components/common/DraggableWindow';
-import { WidgetData, GlobalStyle } from '../../../types';
+import { DraggableWindow } from '@/components/common/DraggableWindow';
+import { WidgetData, GlobalStyle } from '@/types';
 import {
   DashboardContext,
   DashboardContextValue,
-} from '../../../context/DashboardContextValue';
+} from '@/context/DashboardContextValue';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
@@ -27,7 +27,7 @@ vi.mock('lucide-react', async (importOriginal) => {
 });
 
 // Mock screenshot hook
-vi.mock('../../../hooks/useScreenshot', () => ({
+vi.mock('@/hooks/useScreenshot', () => ({
   useScreenshot: () => ({
     takeScreenshot: vi.fn(),
     isFlashing: false,
@@ -163,5 +163,42 @@ describe('DraggableWindow (Tests folder)', () => {
     expect(widgetCard.style.height).toBe('100vh');
     expect(widgetCard.style.left).toBe('0px');
     expect(widgetCard.style.top).toBe('0px');
+  });
+
+  it('applies universal style properties to wrapper and content', () => {
+    const styledWidget = {
+      ...mockWidget,
+      backgroundColor: 'bg-emerald-50' as const,
+      fontFamily: 'comic' as const,
+      baseTextSize: '2xl' as const,
+    };
+
+    render(
+      <DashboardContext.Provider
+        value={mockContext as unknown as DashboardContextValue}
+      >
+        <DraggableWindow
+          widget={styledWidget}
+          globalStyle={mockGlobalStyle}
+          title="Test Styled Widget"
+          settings={<div>Settings</div>}
+        >
+          <div data-testid="styled-content">Content</div>
+        </DraggableWindow>
+      </DashboardContext.Provider>
+    );
+
+    const content = screen.getByTestId('styled-content');
+
+    // The surface container should have the text and font classes
+    const dragSurface = content.closest(
+      '[data-testid="drag-surface"]'
+    ) as HTMLElement;
+    expect(dragSurface.className).toContain('font-comic');
+    expect(dragSurface.className).toContain('text-2xl');
+
+    // The GlassCard root container should have the background class
+    const widgetCard = content.closest('.widget') as HTMLElement;
+    expect(widgetCard.className).toContain('bg-emerald-50');
   });
 });

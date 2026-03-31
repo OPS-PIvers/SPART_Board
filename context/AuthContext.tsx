@@ -33,6 +33,8 @@ import {
   GlobalFeature,
   GradeLevel,
   WidgetConfig,
+  UserRolesConfig,
+  AppSettings,
 } from '../types';
 import { AuthContext } from './AuthContextValue';
 import { getBuildingGradeLevels } from '../config/buildings';
@@ -170,6 +172,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(
     isAuthBypass ? true : null
   ); // null = not yet checked
+  const [userRoles, setUserRoles] = useState<UserRolesConfig | null>(null);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [featurePermissions, setFeaturePermissions] = useState<
     FeaturePermission[]
   >([]);
@@ -185,6 +189,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [language, setLanguageState] = useState<string>(
     () => i18n.language ?? 'en'
   );
+  const [profileLoaded, setProfileLoaded] = useState(isAuthBypass);
+  const [setupCompleted, setSetupCompletedState] = useState(isAuthBypass);
   // Tracks the latest setSelectedBuildings / setLanguage call to detect and suppress stale writes
   const writeTokenRef = useRef(0);
   const widgetConfigTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -420,6 +426,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [googleAccessToken]);
 
+  // Listen to user roles
+  useEffect(() => {
+    if (isAuthBypass) return;
+    if (!user) {
+      setUserRoles(null);
+      return;
+    }
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'admin_settings', 'user_roles'),
+      (doc) => {
+        if (doc.exists()) {
+          setUserRoles(doc.data() as UserRolesConfig);
+        } else {
+          setUserRoles(null);
+        }
+      },
+      (error) => {
+        console.error('Error loading user roles:', error);
+      }
+    );
+
+    const appSettingsUnsubscribe = onSnapshot(
+      doc(db, 'admin_settings', 'app_settings'),
+      (doc) => {
+        if (doc.exists()) {
+          setAppSettings(doc.data() as AppSettings);
+        } else {
+          setAppSettings(null);
+        }
+      },
+      (error) => {
+        console.error('Error loading app settings:', error);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+      appSettingsUnsubscribe();
+    };
+  }, [user]);
+
   // Check if user is admin
   useEffect(() => {
     if (isAuthBypass) return;
@@ -434,6 +482,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const adminDoc = await getDoc(
           doc(db, 'admins', user.email.toLowerCase())
         );
+
+        // As per code review, we are keeping isAdmin aligned with the /admins collection
+        // until a safer data model for roles is established, to avoid authorization failures
+        // on writes since firestore.rules still only uses the /admins collection.
         setIsAdmin(adminDoc.exists());
       } catch (error) {
         console.error('Error checking admin status:', error);
@@ -503,8 +555,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     let isCancelled = false;
 
     const loadProfile = async () => {
+      // Reset stale state from the previous user before loading new profile
+      setProfileLoaded(false);
+      setSetupCompletedState(false);
+      setSavedWidgetConfigs({});
+
       if (!user) {
         setSelectedBuildingsState([]);
+        setSavedWidgetConfigs({});
+        setProfileLoaded(true);
         return;
       }
       try {
@@ -514,6 +573,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (isCancelled) return;
         if (!profileDoc.exists()) {
           setSelectedBuildingsState([]);
+          setSavedWidgetConfigs({});
+          setProfileLoaded(true);
           return;
         }
         const rawData: unknown = profileDoc.data();
@@ -561,14 +622,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             );
           }
 
+          // Load setupCompleted. The field is only written by the wizard on new
+          // accounts, so its absence from an existing profile doc means the user
+          // pre-dates the wizard — treat them as having completed setup already.
+          setSetupCompletedState(
+            !('setupCompleted' in data) || data.setupCompleted === true
+          );
+
+          setProfileLoaded(true);
           return;
         }
-        // Profile exists but has no valid data; clear any previous selection
+        // Profile exists but has no valid data; clear any previous selection.
+        // Doc existence implies the user pre-dates or completed setup already.
         setSelectedBuildingsState([]);
+        setSetupCompletedState(true);
+        setProfileLoaded(true);
       } catch (error) {
         if (!isCancelled) {
           console.error('Error loading user profile:', error);
         }
+        if (!isCancelled) setProfileLoaded(true);
       }
     };
 
@@ -621,6 +694,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [user]
   );
+
+  const completeSetup = useCallback(async () => {
+    setSetupCompletedState(true);
+    if (!user || isAuthBypass) return;
+    try {
+      await setDoc(
+        doc(db, 'users', user.uid, 'userProfile', 'profile'),
+        { setupCompleted: true },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error('Error saving setup completion:', error);
+    }
+  }, [user]);
 
   const saveWidgetConfig = useCallback(
     (type: WidgetType, config: Partial<WidgetConfig>) => {
@@ -676,6 +763,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return unsubscribe;
   }, []);
 
+  // Helper for checking if a user has beta access
+  const isBetaUser = useCallback(
+    (betaUsers: string[], email: string | null | undefined) => {
+      const lowerEmail = email?.toLowerCase() ?? '';
+      return (
+        betaUsers.some((e) => e.toLowerCase() === lowerEmail) ||
+        (userRoles?.betaTeachers?.some((e) => e.toLowerCase() === lowerEmail) ??
+          false) ||
+        (userRoles?.superAdmins?.some((e) => e.toLowerCase() === lowerEmail) ??
+          false)
+      );
+    },
+    [userRoles]
+  );
+
   // Check if user can access a specific widget
   // Wrapped in useCallback to prevent unnecessary re-renders since this function
   // is passed through context and used in component dependencies
@@ -706,14 +808,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         case 'admin':
           return false; // Only admins can access
         case 'beta':
-          return permission.betaUsers.includes(user.email ?? '');
+          return isBetaUser(permission.betaUsers, user.email);
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, featurePermissions, isAdmin]
+    [user, featurePermissions, isAdmin, isBetaUser]
   );
 
   const canAccessFeature = useCallback(
@@ -733,14 +835,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         case 'admin':
           return false;
         case 'beta':
-          return permission.betaUsers.includes(user.email ?? '');
+          return isBetaUser(permission.betaUsers, user.email);
         case 'public':
           return true;
         default:
           return false;
       }
     },
-    [user, globalPermissions, isAdmin]
+    [user, globalPermissions, isAdmin, isBetaUser]
   );
 
   const signInWithGoogle = async () => {
@@ -774,6 +876,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const updateAppSettings = useCallback(
+    async (updates: Partial<AppSettings>) => {
+      if (!isAdmin || isAuthBypass) return;
+      try {
+        await setDoc(doc(db, 'admin_settings', 'app_settings'), updates, {
+          merge: true,
+        });
+      } catch (error) {
+        console.error('Error updating app settings:', error);
+        throw error;
+      }
+    },
+    [isAdmin]
+  );
+
   const signOut = async () => {
     if (isAuthBypass) {
       console.warn('Bypassing Sign Out');
@@ -799,8 +916,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         googleAccessToken,
         loading,
         isAdmin,
+        userRoles,
+        appSettings,
         featurePermissions,
         globalPermissions,
+        updateAppSettings,
         canAccessWidget,
         canAccessFeature,
         signInWithGoogle,
@@ -814,6 +934,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         connectGoogleDrive,
         savedWidgetConfigs,
         saveWidgetConfig,
+        profileLoaded,
+        setupCompleted,
+        completeSetup,
       }}
     >
       {children}

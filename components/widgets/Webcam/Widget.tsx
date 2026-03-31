@@ -12,7 +12,7 @@ import {
   Video,
   FlipHorizontal,
 } from 'lucide-react';
-import { WidgetData, TextConfig } from '@/types';
+import { WidgetData, WebcamConfig } from '@/types';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
@@ -26,13 +26,14 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   widget: _widget,
 }) => {
   const { featurePermissions } = useAuth();
-  const { activeDashboard, updateWidget, addWidget, addToast } = useDashboard();
+  const { addWidget, addToast, updateWidget } = useDashboard();
   const { showAlert, showConfirm } = useDialog();
   const webcamPermission = featurePermissions.find(
     (p) => p.widgetType === 'webcam'
   );
   const config = (webcamPermission?.config ?? {}) as WebcamGlobalConfig;
   const ocrMode = config.ocrMode ?? 'standard';
+  const widgetConfig = (_widget.config || {}) as WebcamConfig;
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isMirrored, setIsMirrored] = useState(true);
@@ -105,23 +106,60 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
     setSelectedDeviceId(devices[nextIndex].deviceId);
   }, [devices, selectedDeviceId]);
 
+  const performSendToNotes = useCallback(
+    (text: string) => {
+      if (!text) return;
+      const trimmedText = text.trim();
+
+      if (!trimmedText) {
+        addToast('No usable text detected.', 'info');
+        return;
+      }
+
+      const safeText = trimmedText
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br/>');
+
+      addWidget('text', {
+        x: _widget.x + _widget.w + 20,
+        y: _widget.y,
+        config: {
+          content: safeText,
+        },
+      });
+      addToast('Created new Notes widget with text', 'success');
+    },
+    [addWidget, addToast, _widget]
+  );
+
   const extractText = useCallback(async () => {
-    if (!videoRef.current) return;
+    const isRemote =
+      widgetConfig.isRemoteMode && widgetConfig.remoteCaptureDataUrl;
+    if (!isRemote && !videoRef.current) return;
 
     setIsExtracting(true);
     try {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get canvas context');
+      let dataUrl = '';
+      if (isRemote && widgetConfig.remoteCaptureDataUrl) {
+        dataUrl = widgetConfig.remoteCaptureDataUrl;
+      } else if (videoRef.current) {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not get canvas context');
 
-      if (isMirrored) {
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
+        if (isMirrored) {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+        }
+        ctx.drawImage(videoRef.current, 0, 0);
+        dataUrl = canvas.toDataURL('image/png');
       }
-      ctx.drawImage(videoRef.current, 0, 0);
-      const dataUrl = canvas.toDataURL('image/png');
 
       let text = '';
       if (ocrMode === 'gemini') {
@@ -131,8 +169,12 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
         text = result.data.text;
       }
 
-      setExtractedText(text);
-      setShowTextModal(true);
+      if (widgetConfig.autoSendToNotes) {
+        performSendToNotes(text);
+      } else {
+        setExtractedText(text);
+        setShowTextModal(true);
+      }
     } catch (err) {
       console.error('OCR Error:', err);
       await showAlert('Failed to extract text. Please try again.', {
@@ -142,7 +184,15 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
     } finally {
       setIsExtracting(false);
     }
-  }, [isMirrored, ocrMode, showAlert]);
+  }, [
+    isMirrored,
+    ocrMode,
+    showAlert,
+    widgetConfig.autoSendToNotes,
+    widgetConfig.isRemoteMode,
+    widgetConfig.remoteCaptureDataUrl,
+    performSendToNotes,
+  ]);
 
   const handleCopy = useCallback(() => {
     if (extractedText) {
@@ -154,49 +204,16 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
   const handleSendToNotes = useCallback(() => {
     if (!extractedText) return;
-
-    // Find an existing text widget
-    const existingTextWidget = activeDashboard?.widgets.find(
-      (w) => w.type === 'text'
-    );
-
-    if (existingTextWidget) {
-      // Append text
-      const existingConfig = existingTextWidget.config as TextConfig;
-      const currentContent = existingConfig.content ?? '';
-      const newContent = currentContent
-        ? `${currentContent}<br/><br/>${extractedText}`
-        : extractedText;
-      updateWidget(existingTextWidget.id, {
-        config: {
-          ...existingConfig,
-          content: newContent,
-        },
-      });
-      addToast('Text appended to Notes', 'success');
-    } else {
-      // Create new text widget
-      addWidget('text', {
-        x: _widget.x + _widget.w + 20,
-        y: _widget.y,
-        config: {
-          content: extractedText,
-        },
-      });
-      addToast('Created new Notes widget with text', 'success');
-    }
+    performSendToNotes(extractedText);
     setShowTextModal(false);
-  }, [
-    extractedText,
-    activeDashboard,
-    updateWidget,
-    addWidget,
-    addToast,
-    _widget,
-  ]);
+  }, [extractedText, performSendToNotes]);
 
   const takePhoto = useCallback(() => {
-    if (videoRef.current) {
+    let dataUrl = '';
+
+    if (widgetConfig.isRemoteMode && widgetConfig.remoteCaptureDataUrl) {
+      dataUrl = widgetConfig.remoteCaptureDataUrl;
+    } else if (videoRef.current) {
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
@@ -207,21 +224,28 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
           ctx.scale(-1, 1);
         }
         ctx.drawImage(videoRef.current, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
-        const newItem: CapturedItem = {
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-          dataUrl,
-          status: 'captured',
-        };
-        setCapturedItems((prev) => [newItem, ...prev]);
-
-        // Visual feedback
-        setShowCaptureSuccess(true);
-        setTimeout(() => setShowCaptureSuccess(false), 1500);
+        dataUrl = canvas.toDataURL('image/png');
       }
     }
-  }, [isMirrored]);
+
+    if (dataUrl) {
+      const newItem: CapturedItem = {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        dataUrl,
+        status: 'captured',
+      };
+      setCapturedItems((prev) => [newItem, ...prev]);
+
+      // Visual feedback
+      setShowCaptureSuccess(true);
+      setTimeout(() => setShowCaptureSuccess(false), 1500);
+    }
+  }, [
+    isMirrored,
+    widgetConfig.isRemoteMode,
+    widgetConfig.remoteCaptureDataUrl,
+  ]);
 
   const toggleMirror = useCallback(() => setIsMirrored((prev) => !prev), []);
 
@@ -276,13 +300,22 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
             />
           ) : (
             <>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover transition-transform duration-500 ${isMirrored ? 'scale-x-[-1]' : 'scale-x-1'}`}
-              />
+              {widgetConfig.isRemoteMode &&
+              widgetConfig.remoteCaptureDataUrl ? (
+                <img
+                  src={widgetConfig.remoteCaptureDataUrl}
+                  alt="Remote Capture"
+                  className="w-full h-full object-cover transition-transform duration-500"
+                />
+              ) : (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover transition-transform duration-500 ${isMirrored ? 'scale-x-[-1]' : 'scale-x-1'}`}
+                />
+              )}
 
               {/* Controls Overlay */}
               <div
@@ -301,7 +334,11 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                 >
                   <button
                     onClick={takePhoto}
-                    disabled={!stream}
+                    disabled={
+                      widgetConfig.isRemoteMode
+                        ? !widgetConfig.remoteCaptureDataUrl
+                        : !stream
+                    }
                     className="hover:bg-white/30 rounded-2xl text-white disabled:opacity-30 disabled:cursor-not-allowed"
                     style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Take Photo"
@@ -315,7 +352,11 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                   </button>
                   <button
                     onClick={extractText}
-                    disabled={!stream || isExtracting}
+                    disabled={
+                      (widgetConfig.isRemoteMode
+                        ? !widgetConfig.remoteCaptureDataUrl
+                        : !stream) || isExtracting
+                    }
                     className={`rounded-2xl text-white transition-all ${isExtracting ? 'bg-blue-500/30 text-blue-400 animate-pulse' : 'hover:bg-white/30'}`}
                     style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Extract Text (OCR)"
@@ -339,7 +380,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                   </button>
                   <button
                     onClick={toggleMirror}
-                    disabled={!stream}
+                    disabled={widgetConfig.isRemoteMode ? false : !stream}
                     className={`rounded-2xl text-white transition-all ${isMirrored ? 'bg-blue-500/30 text-blue-400' : 'hover:bg-white/30'}`}
                     style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Mirror Camera"
@@ -352,7 +393,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                       }}
                     />
                   </button>
-                  {devices.length > 1 && (
+                  {devices.length > 1 && !widgetConfig.isRemoteMode && (
                     <button
                       onClick={switchCamera}
                       disabled={!stream}
@@ -361,6 +402,30 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                       title="Switch Camera"
                     >
                       <Video
+                        style={{
+                          width: 'min(20px, 5cqmin)',
+                          height: 'min(20px, 5cqmin)',
+                        }}
+                      />
+                    </button>
+                  )}
+                  {widgetConfig.isRemoteMode && (
+                    <button
+                      onClick={() => {
+                        updateWidget(_widget.id, {
+                          config: {
+                            ...widgetConfig,
+                            isRemoteMode: false,
+                            remoteCaptureDataUrl: undefined,
+                            remoteCaptureTimestamp: undefined,
+                          },
+                        });
+                      }}
+                      className="hover:bg-white/30 rounded-2xl text-white"
+                      style={{ padding: 'min(12px, 2.5cqmin)' }}
+                      title="Exit Remote Mode"
+                    >
+                      <X
                         style={{
                           width: 'min(20px, 5cqmin)',
                           height: 'min(20px, 5cqmin)',

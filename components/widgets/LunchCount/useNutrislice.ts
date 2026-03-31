@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LunchCountConfig, LunchMenuDay, WidgetData } from '../../../types';
+import { LunchCountConfig, LunchMenuDay, WidgetData } from '@/types';
 
 interface UseNutrisliceProps {
   widgetId: string;

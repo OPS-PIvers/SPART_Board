@@ -1,7 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FolderPlus, X } from 'lucide-react';
-import { useSortable, SortableContext, arrayMove } from '@dnd-kit/sortable';
+import {
+  useSortable,
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
 import {
   DndContext,
   closestCenter,
@@ -11,20 +16,20 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { useClickOutside } from '../../../hooks/useClickOutside';
-import { GlassCard } from '../../common/GlassCard';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { GlassCard } from '@/components/common/GlassCard';
 import { DockIcon } from './DockIcon';
 import { DockLabel } from './DockLabel';
 import { SortableFolderWidget } from './SortableFolderWidget';
-import { TOOLS } from '../../../config/tools';
-import { Z_INDEX } from '../../../config/zIndex';
+import { TOOLS } from '@/config/tools';
+import { Z_INDEX } from '@/config/zIndex';
 import {
   DockFolder,
   WidgetType,
   GlobalStyle,
   WidgetData,
   InternalToolType,
-} from '../../../types';
+} from '@/types';
 
 interface FolderItemProps {
   folder: DockFolder;
@@ -156,7 +161,10 @@ export const FolderItem = React.memo(
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <SortableContext items={folder.items}>
+                <SortableContext
+                  items={folder.items}
+                  strategy={rectSortingStrategy}
+                >
                   <div className="grid grid-cols-3 gap-3">
                     {folder.items.map((type) => {
                       const tool = TOOLS.find((t) => t.type === type);

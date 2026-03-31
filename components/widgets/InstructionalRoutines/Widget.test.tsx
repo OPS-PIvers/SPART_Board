@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { InstructionalRoutinesWidget } from './Widget';
 import { InstructionalRoutinesSettings } from './Settings';
 import { vi, describe, it, expect } from 'vitest';
-import { WidgetData } from '../../../types';
+import { WidgetData } from '@/types';
 
 const addWidgetSpy = vi.fn();
 vi.mock('../../../context/useDashboard', () => ({

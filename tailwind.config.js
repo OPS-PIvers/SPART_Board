@@ -14,7 +14,7 @@ export default {
     // Dynamic font classes used by Clock and TimeTool widgets via font-${globalStyle.fontFamily}
     {
       pattern:
-        /^font-(sans|mono|handwritten|rounded|fun|comic|slab|retro|marker|cursive)$/,
+        /^font-(sans|serif|mono|handwritten|rounded|fun|comic|slab|retro|marker|cursive)$/,
     },
     'bg-blue-500',
     'bg-red-500',
@@ -89,6 +89,7 @@ export default {
         'sticker-control': Z_INDEX.stickerControl.toString(),
         'widget-resize': Z_INDEX.widgetResize.toString(),
         'widget-internal-overlay': Z_INDEX.widgetInternalOverlay.toString(),
+        'widget-control': Z_INDEX.widgetControl.toString(),
         dropdown: Z_INDEX.dropdown.toString(),
         overlay: Z_INDEX.overlay.toString(),
         'modal-nested': Z_INDEX.modalNested.toString(),

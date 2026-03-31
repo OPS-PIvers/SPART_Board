@@ -14,7 +14,7 @@
 
 ## Project Structure & Architecture
 
-**CRITICAL NOTE:** This project uses a **flat file structure**. There is **NO `src/` directory**. All source code resides at the project root.
+**CRITICAL NOTE:** This project uses a **flat-ish file structure**. Most source code resides at the project root (e.g., `App.tsx`, `types.ts`, `index.tsx`), but specialized logic is organized into directories like `/components/`, `/context/`, `/hooks/`, `/utils/`, and `/config/`. There is **NO `src/` directory** for primary application code (any existing `src/` is for temporary scratch files or isolated testing).
 
 ### Directory Layout
 
@@ -30,6 +30,8 @@
 - `/context/`: React Context providers (`AuthContext`, `DashboardContext`).
 - `/hooks/`: Custom hooks (`useFirestore`, `useStorage`).
 - `/config/`: Configuration files (`firebase.ts`, `tools.ts`, `widgetGradeLevels.ts`).
+- `/utils/`: Shared utility functions.
+- `/functions/`: Firebase Cloud Functions (backend logic).
 - `/tests/`: Test setup and E2E tests.
   - `e2e/`: Playwright end-to-end tests.
 - `/types.ts`: Global TypeScript definitions.
@@ -185,8 +187,11 @@ VITE_GOOGLE_CLIENT_ID=...
 
 ## AI Model Requirements
 
-- **Primary Model:** `gemini-3-flash-preview`
-- **Status:** This model is **REQUIRED** for all AI generation tasks (mini-apps, polls, etc.). Older models (e.g., gemini-1.5-flash) are considered deprecated for this project and should not be used.
+- **Models:** `gemini-3-flash-preview` (High Complexity) and `gemini-3.1-flash-lite-preview` (Standard/OCR).
+- **Selection Logic:**
+  - `gemini-3-flash-preview`: Used for complex code generation (`mini-app`, `widget-builder`) and deep multimodal analysis (`guided-learning`).
+  - `gemini-3.1-flash-lite-preview`: Used for standard JSON tasks (polls, quizzes, layouts) and high-speed multimodal tasks like `ocr`.
+- **Status:** These models are **REQUIRED**. Older models (e.g., gemini-1.5-flash, gemini-2.0-flash) are deprecated and must not be used.
 
 ## Usage Limits
 

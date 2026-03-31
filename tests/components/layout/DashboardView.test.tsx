@@ -1,38 +1,35 @@
 import { render, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DashboardView } from '../../../components/layout/DashboardView';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { useLiveSession } from '../../../hooks/useLiveSession';
-import { Dashboard } from '../../../types';
+import { DashboardView } from '@/components/layout/DashboardView';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useLiveSession } from '@/hooks/useLiveSession';
+import { Dashboard } from '@/types';
 
 // Mock context
-vi.mock('../../../context/useDashboard', () => ({
+vi.mock('@/context/useDashboard', () => ({
   useDashboard: vi.fn(),
 }));
 
-vi.mock('../../../context/useAuth', () => ({
+vi.mock('@/context/useAuth', () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock('../../../hooks/useLiveSession', () => ({
+vi.mock('@/hooks/useLiveSession', () => ({
   useLiveSession: vi.fn(),
 }));
 
 // Mock child components
-vi.mock('../../../components/announcements/AnnouncementOverlay', () => ({
-  AnnouncementOverlay: () => null,
-}));
-vi.mock('../../../components/layout/sidebar/Sidebar', () => ({
+vi.mock('@/components/layout/sidebar/Sidebar', () => ({
   Sidebar: () => <div data-testid="sidebar">Sidebar</div>,
 }));
-vi.mock('../../../components/layout/Dock', () => ({
+vi.mock('@/components/layout/Dock', () => ({
   Dock: () => <div data-testid="dock">Dock</div>,
 }));
 vi.mock('@/components/announcements/AnnouncementOverlay', () => ({
   AnnouncementOverlay: () => <div data-testid="announcement-overlay" />,
 }));
-vi.mock('../../../components/widgets/WidgetRenderer', () => ({
+vi.mock('@/components/widgets/WidgetRenderer', () => ({
   WidgetRenderer: () => <div data-testid="widget">Widget</div>,
 }));
 

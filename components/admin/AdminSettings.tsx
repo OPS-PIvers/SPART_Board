@@ -6,6 +6,9 @@ import {
   Zap,
   Bell,
   ChevronLeft,
+  Users,
+  BarChart,
+  LayoutTemplate,
 } from 'lucide-react';
 
 import { useAuth } from '@/context/useAuth';
@@ -13,6 +16,9 @@ import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';
 import { AnnouncementsManager } from './Announcements';
+import { UserManagementPanel } from './UserManagement/UserManagementPanel';
+import { AnalyticsManager } from './Analytics/AnalyticsManager';
+import { DashboardTemplatesManager } from './DashboardTemplatesManager';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -48,7 +54,13 @@ const TabButton: React.FC<{
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'features' | 'global' | 'backgrounds' | 'announcements'
+    | 'features'
+    | 'global'
+    | 'backgrounds'
+    | 'announcements'
+    | 'users'
+    | 'analytics'
+    | 'templates'
   >('features');
 
   // Close modal on Escape key press
@@ -131,6 +143,30 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               icon={<Bell className="w-4 h-4" />}
               label="Announcements"
             />
+            <TabButton
+              id="tab-users"
+              controls="panel-users"
+              isActive={activeTab === 'users'}
+              onClick={() => setActiveTab('users')}
+              icon={<Users className="w-4 h-4" />}
+              label="User Management"
+            />
+            <TabButton
+              id="tab-analytics"
+              controls="panel-analytics"
+              isActive={activeTab === 'analytics'}
+              onClick={() => setActiveTab('analytics')}
+              icon={<BarChart className="w-4 h-4" />}
+              label="Analytics"
+            />
+            <TabButton
+              id="tab-templates"
+              controls="panel-templates"
+              isActive={activeTab === 'templates'}
+              onClick={() => setActiveTab('templates')}
+              icon={<LayoutTemplate className="w-4 h-4" />}
+              label="Templates"
+            />
           </div>
         </div>
 
@@ -182,6 +218,39 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
             >
               <AnnouncementsManager />
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div
+              id="panel-users"
+              role="tabpanel"
+              aria-labelledby="tab-users"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
+            >
+              <UserManagementPanel />
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div
+              id="panel-analytics"
+              role="tabpanel"
+              aria-labelledby="tab-analytics"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
+            >
+              <AnalyticsManager />
+            </div>
+          )}
+
+          {activeTab === 'templates' && (
+            <div
+              id="panel-templates"
+              role="tabpanel"
+              aria-labelledby="tab-templates"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+              <DashboardTemplatesManager />
             </div>
           )}
         </div>

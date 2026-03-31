@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { DrawingWidget } from './Widget';
-import { WidgetData, DrawingConfig } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { useLiveSession } from '../../../hooks/useLiveSession';
-import { useScreenshot } from '../../../hooks/useScreenshot';
+import { WidgetData, DrawingConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useLiveSession } from '@/hooks/useLiveSession';
+import { useScreenshot } from '@/hooks/useScreenshot';
 
 // Mock hooks
 vi.mock('../../../context/useDashboard', () => ({

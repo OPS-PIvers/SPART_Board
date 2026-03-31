@@ -156,3 +156,38 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Discovered multiple hardcoded instances of the pattern `bg-white rounded-[xl|2xl|3xl] border border-slate-200 shadow-sm` acting as card containers across random widget settings, app rows, sortable items, and configuration panels.
 **Fix:** Refactored multiple target files to use the `Card` component (`components/common/Card.tsx`) to unify standard padding, border radius, and shadow hover states.
+
+## 2026-03-15 - Standardized Modal Overlays
+
+**Drift:** Discovered multiple hardcoded instances of the pattern `bg-black/50` acting as fixed modal overlays across various admin settings panels and modals. This deviated from the standard `bg-slate-900/50 backdrop-blur-sm` used in `components/common/Modal.tsx`.
+**Fix:** Refactored multiple target files (`InstructionalRoutinesManager.tsx`, `BackgroundManager.tsx`, `MiniAppLibraryModal.tsx`, `StickerLibraryModal.tsx`, `PdfLibraryModal.tsx`, `CatalystConfigurationModal.tsx`, `GraphicOrganizerConfigurationModal.tsx`) to use the standard `bg-slate-900/50 backdrop-blur-sm` overlay classes to enforce design system consistency and eliminate "snowflakes".
+
+## 2026-03-23 - Micro-Typography Standardization (text-xxs)
+
+**Drift:** Identified multiple hardcoded font sizes (`text-[10px]`) across components (`NumberLine/Settings.tsx`, `QRConfigurationPanel.tsx`, `StarterPackConfigurationModal.tsx`, `RemoteControlMenu.tsx`, `BoardZoomControl.tsx`) bypassing the design system's `text-xxs` token.
+**Fix:** Refactored all instances to use the standard Tailwind utility class `text-xxs` (10px/14px) to enforce consistency.
+
+## 2026-03-23 - Micro-Typography Standardization (text-xxxs)
+
+**Drift:** Identified hardcoded font sizes (`text-[9px]`) in `DriveDisconnectBanner.tsx` bypassing the design system.
+**Fix:** Refactored instances to use the closest standard Tailwind utility class `text-xxxs` (8px/10px) to enforce consistency and eliminate the 'snowflake'.
+
+## 2026-03-24 - Z-Index Standardization (Maximized Widget Control)
+
+**Drift:** Identified a hardcoded z-index value (`z-[70]`) in `DraggableWindow.tsx` for the persistent restore FAB when a widget is maximized, bypassing the centralized `Z_INDEX` registry.
+**Fix:** Added `widgetControl: 70` to `config/zIndex.ts`, exposed it as `'widget-control'` in `tailwind.config.js`, and refactored the component to use the new `z-widget-control` class.
+
+## 2026-03-25 - Standardized Admin Configuration Settings Labels
+
+**Drift:** Hardcoded settings labels across admin widget configuration panels (e.g. `text-xxs font-bold text-slate-500 uppercase`) caused inconsistency.
+**Fix:** Replaced hardcoded labels with the standardized `<SettingsLabel>` component from `@/components/common/SettingsLabel` in `BreathingConfigurationPanel`, `TimeToolConfigurationPanel`, and `ClockConfigurationPanel` to ensure a consistent `text-xxs font-black text-slate-400 uppercase tracking-widest block mb-2` rendering.
+
+## 2026-03-26 - Standardize Hardcoded Hex Colors and Text Utilities
+
+**Drift:** Codebase was using hardcoded hex codes for primary brand colors (e.g., `#2d3f89`) in inline styles and string literals, bypassing the defined Tailwind design system config. Additionally, there were numerous arbitrary text utility classes (`text-[9px]`, `text-[11px]`) instead of standardized micro-typography (`text-xxxs`, `text-xs`).
+**Fix:** Replaced hardcoded `#2d3f89` with `bg-brand-blue-primary` and `border-brand-blue-primary` classes. Standardized all instances of `text-[9px]` to `text-xxxs` and `text-[11px]` to `text-xs`.
+
+## 2026-03-30 - Typography & Z-Index Standardization
+
+**Drift:** Identified hardcoded font sizes (`text-[11px]`) and generic z-indices (`z-50`) across components (`Calendar/Settings.tsx`, `GuidedLearningAIGenerator.tsx`, `VideoActivityConfigurationModal.tsx`, `StarterPackConfigurationModal.tsx`) bypassing the design system's tokens.
+**Fix:** Refactored instances to use the closest standard Tailwind utility class (`text-xxs`) and specific z-index tokens (`z-widget-internal-overlay`, `z-toast`, `z-popover`) to enforce consistency.

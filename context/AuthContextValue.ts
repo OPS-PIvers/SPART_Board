@@ -7,6 +7,8 @@ import {
   GlobalFeature,
   GradeLevel,
   WidgetConfig,
+  UserRolesConfig,
+  AppSettings,
 } from '../types';
 
 export interface AuthContextType {
@@ -14,8 +16,11 @@ export interface AuthContextType {
   googleAccessToken: string | null;
   loading: boolean;
   isAdmin: boolean | null; // null = admin status not yet determined
+  userRoles: UserRolesConfig | null;
+  appSettings: AppSettings | null;
   featurePermissions: FeaturePermission[];
   globalPermissions: GlobalFeaturePermission[];
+  updateAppSettings: (updates: Partial<AppSettings>) => Promise<void>;
   canAccessWidget: (widgetType: WidgetType) => boolean;
   canAccessFeature: (featureId: GlobalFeature) => boolean;
   signInWithGoogle: () => Promise<void>;
@@ -49,6 +54,12 @@ export interface AuthContextType {
   savedWidgetConfigs: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
   /** Save a widget's config globally (debounced Firestore write) */
   saveWidgetConfig: (type: WidgetType, config: Partial<WidgetConfig>) => void;
+  /** True once the profile Firestore fetch has resolved (success or error) */
+  profileLoaded: boolean;
+  /** True after the user completes the first-time setup wizard */
+  setupCompleted: boolean;
+  /** Mark setup as done — writes setupCompleted:true to Firestore */
+  completeSetup: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

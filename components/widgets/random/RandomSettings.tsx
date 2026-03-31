@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { useDialog } from '@/context/useDialog';
-import { WidgetData, RandomConfig } from '../../../types';
-import { RosterModeControl } from '../../common/RosterModeControl';
-import { Toggle } from '../../common/Toggle';
+import { WidgetData, RandomConfig } from '@/types';
+import { RosterModeControl } from '@/components/common/RosterModeControl';
+import { Toggle } from '@/components/common/Toggle';
 import { Card } from '@/components/common/Card';
 import {
   Users,
@@ -17,14 +17,44 @@ import {
   Volume2,
   VolumeX,
   Clock,
+  RefreshCw,
 } from 'lucide-react';
+import { Button } from '@/components/common/Button';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, activeDashboard } = useDashboard();
+  const { updateWidget, activeDashboard, rosters, activeRosterId } =
+    useDashboard();
   const { showConfirm } = useDialog();
+
   const config = widget.config as RandomConfig;
+
+  const activeRoster = React.useMemo(
+    () => rosters.find((r) => r.id === activeRosterId),
+    [rosters, activeRosterId]
+  );
+
+  const importFromRoster = React.useCallback(() => {
+    if (!activeRoster) return;
+
+    const students = activeRoster.students;
+    const newFirstNames = students
+      .map((s) => [s.firstName, s.lastName].filter(Boolean).join(' '))
+      .join('\n');
+    const newLastNames = '';
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        firstNames: newFirstNames,
+        lastNames: newLastNames,
+        lastResult: null,
+        remainingStudents: [],
+      },
+    });
+  }, [activeRoster, config, updateWidget, widget.id]);
   const {
     firstNames = '',
     lastNames = '',
@@ -41,22 +71,20 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
   const firstNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Store latest values in refs to avoid unnecessary effect re-runs
+  // Keep refs current so debounced callbacks always read the latest values
   const configRef = useRef(config);
   const updateWidgetRef = useRef(updateWidget);
-
   useEffect(() => {
     configRef.current = config;
   }, [config]);
-
   useEffect(() => {
     updateWidgetRef.current = updateWidget;
   }, [updateWidget]);
 
+  // Sync local inputs when the external value changes (e.g. roster import)
   useEffect(() => {
     setLocalFirstNames(firstNames);
   }, [firstNames]);
-
   useEffect(() => {
     setLocalLastNames(lastNames);
   }, [lastNames]);
@@ -273,6 +301,28 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
 
       {rosterMode === 'custom' && (
         <>
+          {activeRoster && (
+            <div className="flex flex-col gap-2 p-3 bg-brand-blue-lighter/30 border border-brand-blue-lighter rounded-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <SettingsLabel>Import from Class</SettingsLabel>
+                  <div className="text-xxxs text-slate-500">
+                    Replace list with active roster ({activeRoster.name})
+                  </div>
+                </div>
+                <Button
+                  onClick={importFromRoster}
+                  variant="primary"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Import
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-2 block">

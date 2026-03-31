@@ -380,4 +380,33 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     h: 500,
     config: {},
   },
+  'video-activity': {
+    w: 640,
+    h: 560,
+    config: {
+      view: 'manager',
+      selectedActivityId: null,
+      selectedActivityTitle: null,
+      resultsSessionId: null,
+      autoPlay: false,
+      requireCorrectAnswer: true,
+      allowSkipping: false,
+    },
+  },
+  'guided-learning': {
+    w: 720,
+    h: 520,
+    config: {
+      view: 'library',
+      playerSetId: null,
+      resultsSessionId: null,
+    },
+  },
+  'custom-widget': {
+    w: 400,
+    h: 300,
+    config: {
+      customWidgetId: '',
+    },
+  },
 };

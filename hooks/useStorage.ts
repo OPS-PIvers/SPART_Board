@@ -228,6 +228,27 @@ export const useStorage = () => {
     return uploadFile(`admin_stickers/${timestamp}-${file.name}`, file);
   };
 
+  const uploadAdminLogo = async (file: File): Promise<string> => {
+    return uploadFile(`admin_logos/custom_logo`, file);
+  };
+
+  const deleteAdminLogo = async (): Promise<void> => {
+    const logoRef = ref(storage, 'admin_logos/custom_logo');
+    try {
+      await deleteObject(logoRef);
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code !== 'storage/object-not-found'
+      ) {
+        console.error('Error deleting admin logo:', error);
+        throw error;
+      }
+    }
+  };
+
   const uploadCatalystImage = async (
     routineId: string,
     file: File
@@ -268,6 +289,34 @@ export const useStorage = () => {
     return { url, storagePath };
   };
 
+  const uploadAdminPdf = async (
+    file: File
+  ): Promise<{ url: string; storagePath: string }> => {
+    if (driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          file,
+          `pdf-${Date.now()}-${file.name}`,
+          'Assets/PDFs'
+        );
+        await driveService.makePublic(driveFile.id, userDomain);
+        const previewUrl = `https://drive.google.com/file/d/${driveFile.id}/preview`;
+        return {
+          url: previewUrl,
+          storagePath: driveFile.webViewLink ?? previewUrl,
+        };
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    const timestamp = Date.now();
+    const storagePath = `global_pdfs/${timestamp}-${file.name}`;
+    const url = await uploadFile(storagePath, file);
+    return { url, storagePath };
+  };
+
   const uploadAndRegisterPdf = async (
     userId: string,
     file: File
@@ -299,8 +348,11 @@ export const useStorage = () => {
     uploadAdminBackground,
     uploadWeatherImage,
     uploadAdminSticker,
+    uploadAdminLogo,
+    deleteAdminLogo,
     uploadCatalystImage,
     uploadPdf,
+    uploadAdminPdf,
     uploadAndRegisterPdf,
   };
 };

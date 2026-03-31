@@ -41,6 +41,8 @@ import { MiniAppLibraryModal } from '@/components/admin/MiniAppLibraryModal';
 import { StarterPackConfigurationModal } from '@/components/admin/StarterPackConfigurationModal';
 import { MusicLibraryModal } from '@/components/admin/MusicLibraryModal';
 import { CatalystConfigurationModal } from '@/components/admin/CatalystConfigurationModal';
+import { PdfLibraryModal } from '@/components/admin/PdfLibraryModal';
+import { VideoActivityConfigurationModal } from '@/components/admin/VideoActivityConfigurationModal';
 import { StickerGlobalConfig } from '@/types';
 import { useDialog } from '@/context/useDialog';
 
@@ -851,17 +853,31 @@ export const FeaturePermissionsManager: React.FC = () => {
         />
       )}
 
+      {activeModalTool?.type === 'pdf' && (
+        <PdfLibraryModal onClose={() => setActiveModalTool(null)} />
+      )}
+
+      {activeModalTool?.type === 'video-activity' && (
+        <VideoActivityConfigurationModal
+          onClose={() => setActiveModalTool(null)}
+          permission={getPermission('video-activity')}
+          onSave={(updates) => updatePermission('video-activity', updates)}
+        />
+      )}
+
       {activeModalTool &&
         ![
-          'instructionalRoutines',
-          'stickers',
           'calendar',
-          'specialist-schedule',
-          'graphic-organizer',
-          'miniApp',
-          'starter-pack',
-          'music',
           'catalyst',
+          'graphic-organizer',
+          'instructionalRoutines',
+          'miniApp',
+          'music',
+          'pdf',
+          'specialist-schedule',
+          'starter-pack',
+          'stickers',
+          'video-activity',
         ].includes(activeModalTool.type) && (
           <GenericConfigurationModal
             tool={activeModalTool}

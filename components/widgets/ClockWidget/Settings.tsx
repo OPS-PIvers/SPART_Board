@@ -1,10 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, ClockConfig } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, ClockConfig } from '@/types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
-import { WIDGET_PALETTE } from '../../../config/colors';
-import { SettingsLabel } from '../../common/SettingsLabel';
+import { WIDGET_PALETTE } from '@/config/colors';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { t } = useTranslation();

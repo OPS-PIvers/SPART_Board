@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
+import { BuildingSelector } from './BuildingSelector';
 import { TimeToolGlobalConfig, BuildingTimeToolDefaults } from '@/types';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 interface TimeToolConfigurationPanelProps {
   config: TimeToolGlobalConfig;
@@ -60,24 +62,11 @@ export const TimeToolConfigurationPanel: React.FC<
     <div className="space-y-6">
       {/* Building Selector */}
       <div>
-        <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
-          Configure Building Timer Defaults
-        </label>
-        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-          {BUILDINGS.map((building) => (
-            <button
-              key={building.id}
-              onClick={() => setSelectedBuildingId(building.id)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg border whitespace-nowrap transition-colors ${
-                selectedBuildingId === building.id
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {building.name}
-            </button>
-          ))}
-        </div>
+        <SettingsLabel>Configure Building Timer Defaults</SettingsLabel>
+        <BuildingSelector
+          selectedId={selectedBuildingId}
+          onSelect={setSelectedBuildingId}
+        />
       </div>
 
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-4">
@@ -89,9 +78,7 @@ export const TimeToolConfigurationPanel: React.FC<
 
         {/* Default Duration */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Timer Duration
-          </label>
+          <SettingsLabel className="mb-1">Default Timer Duration</SettingsLabel>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <input
@@ -136,9 +123,9 @@ export const TimeToolConfigurationPanel: React.FC<
 
         {/* Timer End Traffic Light Color */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+          <SettingsLabel className="mb-1">
             Timer-End Traffic Light Color
-          </label>
+          </SettingsLabel>
           <p className="text-xxs text-slate-400 mb-2 leading-tight">
             Automatically sets the traffic light widget to this color when the
             timer reaches zero.
@@ -162,6 +149,44 @@ export const TimeToolConfigurationPanel: React.FC<
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-b pb-4">
+        <div>
+          <p className="font-medium text-slate-800">Auto-Pick Random Student</p>
+          <p className="text-sm text-slate-500">
+            Pick a random student when the timer ends.
+          </p>
+        </div>
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={currentBuildingConfig.timerEndTriggerRandom ?? false}
+            onChange={(e) =>
+              handleUpdateBuilding({ timerEndTriggerRandom: e.target.checked })
+            }
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pb-2">
+        <div>
+          <p className="font-medium text-slate-800">
+            Auto-Advance Next Up Queue
+          </p>
+          <p className="text-sm text-slate-500">
+            Advance to the next student in the queue when the timer ends.
+          </p>
+        </div>
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={currentBuildingConfig.timerEndTriggerNextUp ?? false}
+            onChange={(e) =>
+              handleUpdateBuilding({ timerEndTriggerNextUp: e.target.checked })
+            }
+          />
         </div>
       </div>
     </div>

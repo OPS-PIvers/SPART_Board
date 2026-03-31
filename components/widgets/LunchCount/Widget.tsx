@@ -13,15 +13,15 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import {
   WidgetData,
   LunchCountConfig,
   LunchCountGlobalConfig,
   DEFAULT_GLOBAL_STYLE,
-} from '../../../types';
-import { Button } from '../../common/Button';
+} from '@/types';
+import { Button } from '@/components/common/Button';
 import { RefreshCw, Undo2, CheckCircle2, Box, Users } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
 import { useNutrislice } from './useNutrislice';
@@ -180,21 +180,32 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }, [rosterMode, roster, rosters, activeRosterId]);
 
+  const groupedStudents = useMemo(() => {
+    const hot: string[] = [];
+    const bento: string[] = [];
+    const home: string[] = [];
+    const unassigned: string[] = [];
+
+    activeRoster.forEach((student) => {
+      const assignment = assignments[student];
+      if (assignment === 'hot') hot.push(student);
+      else if (assignment === 'bento') bento.push(student);
+      else if (assignment === 'home') home.push(student);
+      else unassigned.push(student);
+    });
+
+    return { hot, bento, home, unassigned };
+  }, [activeRoster, assignments]);
+
   const stats = useMemo(() => {
-    const total = activeRoster.length;
-    const hotLunch = Object.values(assignments).filter(
-      (a) => a === 'hot'
-    ).length;
-    const bentoBox = Object.values(assignments).filter(
-      (a) => a === 'bento'
-    ).length;
-    const homeLunch = Object.values(assignments).filter(
-      (a) => a === 'home'
-    ).length;
-    const remaining = total - (hotLunch + bentoBox + homeLunch);
+    const hotLunch = groupedStudents.hot.length;
+    const bentoBox = groupedStudents.bento.length;
+    const homeLunch = groupedStudents.home.length;
+    const remaining = groupedStudents.unassigned.length;
+    const total = hotLunch + bentoBox + homeLunch + remaining;
 
     return { total, hotLunch, bentoBox, homeLunch, remaining };
-  }, [activeRoster, assignments]);
+  }, [groupedStudents]);
 
   const updateAssignment = useCallback(
     (student: string, type: 'hot' | 'bento' | 'home' | null) => {
@@ -613,18 +624,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     paddingRight: 'min(4px, 1cqmin)',
                   }}
                 >
-                  {activeRoster
-                    .filter((s) => assignments[s] === 'hot')
-                    .map((student) => (
-                      <DraggableStudent
-                        key={student}
-                        id={student}
-                        name={student}
-                        onClick={() => updateAssignment(student, null)}
-                        className={studentItemClass}
-                        style={studentItemStyle}
-                      />
-                    ))}
+                  {groupedStudents.hot.map((student) => (
+                    <DraggableStudent
+                      key={student}
+                      id={student}
+                      name={student}
+                      onClick={() => updateAssignment(student, null)}
+                      className={studentItemClass}
+                      style={studentItemStyle}
+                    />
+                  ))}
                 </div>
               </DroppableZone>
 
@@ -680,18 +689,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     paddingRight: 'min(4px, 1cqmin)',
                   }}
                 >
-                  {activeRoster
-                    .filter((s) => assignments[s] === 'bento')
-                    .map((student) => (
-                      <DraggableStudent
-                        key={student}
-                        id={student}
-                        name={student}
-                        onClick={() => updateAssignment(student, null)}
-                        className={studentItemClass}
-                        style={studentItemStyle}
-                      />
-                    ))}
+                  {groupedStudents.bento.map((student) => (
+                    <DraggableStudent
+                      key={student}
+                      id={student}
+                      name={student}
+                      onClick={() => updateAssignment(student, null)}
+                      className={studentItemClass}
+                      style={studentItemStyle}
+                    />
+                  ))}
                 </div>
               </DroppableZone>
 
@@ -747,18 +754,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     paddingRight: 'min(4px, 1cqmin)',
                   }}
                 >
-                  {activeRoster
-                    .filter((s) => assignments[s] === 'home')
-                    .map((student) => (
-                      <DraggableStudent
-                        key={student}
-                        id={student}
-                        name={student}
-                        onClick={() => updateAssignment(student, null)}
-                        className={studentItemClass}
-                        style={studentItemStyle}
-                      />
-                    ))}
+                  {groupedStudents.home.map((student) => (
+                    <DraggableStudent
+                      key={student}
+                      id={student}
+                      name={student}
+                      onClick={() => updateAssignment(student, null)}
+                      className={studentItemClass}
+                      style={studentItemStyle}
+                    />
+                  ))}
                 </div>
               </DroppableZone>
             </div>
@@ -807,17 +812,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     className="flex flex-wrap justify-center w-full"
                     style={{ gap: 'min(6px, 1.5cqmin)' }}
                   >
-                    {activeRoster
-                      .filter((s) => !assignments[s])
-                      .map((student) => (
-                        <DraggableStudent
-                          key={student}
-                          id={student}
-                          name={student}
-                          className={studentItemClass}
-                          style={studentItemStyle}
-                        />
-                      ))}
+                    {groupedStudents.unassigned.map((student) => (
+                      <DraggableStudent
+                        key={student}
+                        id={student}
+                        name={student}
+                        className={studentItemClass}
+                        style={studentItemStyle}
+                      />
+                    ))}
                   </div>
                 </div>
               </DroppableZone>

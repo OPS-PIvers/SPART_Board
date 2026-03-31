@@ -1,4 +1,4 @@
-import { WIDGET_PALETTE } from '../../../config/colors';
+import { WIDGET_PALETTE } from '@/config/colors';
 
 export const DRAWING_DEFAULTS = {
   WIDTH: 4,

@@ -94,15 +94,31 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
       ? quizData.questions[session.currentQuestionIndex]
       : undefined;
 
-  const answered = currentQ
-    ? responses.filter((r) =>
-        r.answers.some((a) => a.questionId === currentQ.id)
-      ).length
-    : 0;
+  // ⚡ Bolt: Optimize multiple array iterations inside the render loop
+  // Instead of 4 separate .filter() passes, calculate all stats in one O(N) loop
+  const { answered, completed, inProgress, joined } = React.useMemo(() => {
+    let _answered = 0;
+    let _completed = 0;
+    let _inProgress = 0;
+    let _joined = 0;
 
-  const completed = responses.filter((r) => r.status === 'completed').length;
-  const inProgress = responses.filter((r) => r.status === 'in-progress').length;
-  const joined = responses.filter((r) => r.status === 'joined').length;
+    for (const r of responses) {
+      if (currentQ && r.answers.some((a) => a.questionId === currentQ.id)) {
+        _answered++;
+      }
+
+      if (r.status === 'completed') _completed++;
+      else if (r.status === 'in-progress') _inProgress++;
+      else if (r.status === 'joined') _joined++;
+    }
+
+    return {
+      answered: _answered,
+      completed: _completed,
+      inProgress: _inProgress,
+      joined: _joined,
+    };
+  }, [responses, currentQ]);
 
   const modeIcon =
     session.sessionMode === 'auto' ? (
@@ -680,9 +696,24 @@ const MCDistribution: React.FC<{
     question.correctAnswer,
     ...question.incorrectAnswers.filter(Boolean),
   ];
-  const totalAnswered = responses.filter((r) =>
-    r.answers.some((a) => a.questionId === question.id)
-  ).length;
+
+  // ⚡ Bolt: Optimize O(N*M) array filtering inside the render loop
+  // Instead of scanning all responses for every option, we pre-calculate
+  // the distribution in a single pass O(M) and lookup by option O(1).
+  const { totalAnswered, distribution } = React.useMemo(() => {
+    let answered = 0;
+    const dist: Record<string, number> = {};
+
+    responses.forEach((r) => {
+      const ans = r.answers.find((a) => a.questionId === question.id);
+      if (ans) {
+        answered++;
+        dist[ans.answer] = (dist[ans.answer] || 0) + 1;
+      }
+    });
+
+    return { totalAnswered: answered, distribution: dist };
+  }, [responses, question.id]);
 
   return (
     <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
@@ -693,11 +724,7 @@ const MCDistribution: React.FC<{
         Live Answer Distribution
       </p>
       {options.map((opt) => {
-        const count = responses.filter((r) =>
-          r.answers.some(
-            (a) => a.questionId === question.id && a.answer === opt
-          )
-        ).length;
+        const count = distribution[opt] || 0;
         const pct =
           totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
         const isCorrect = gradeAnswer(question, opt);

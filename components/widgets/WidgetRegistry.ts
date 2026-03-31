@@ -157,6 +157,18 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./StarterPack/Widget'),
     'StarterPackWidget'
   ),
+  'video-activity': lazyNamed(
+    () => import('./VideoActivityWidget/index'),
+    'VideoActivityWidget'
+  ),
+  'guided-learning': lazyNamed(
+    () => import('./GuidedLearning/index'),
+    'GuidedLearningWidget'
+  ),
+  'custom-widget': lazyNamed(
+    () => import('./CustomWidget/Widget'),
+    'CustomWidgetWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -264,6 +276,18 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   'starter-pack': lazyNamed(
     () => import('./StarterPack/Settings'),
     'StarterPackSettings'
+  ),
+  'video-activity': lazyNamed(
+    () => import('./VideoActivityWidget/index'),
+    'VideoActivityWidgetSettings'
+  ),
+  'guided-learning': lazyNamed(
+    () => import('./GuidedLearning/index'),
+    'GuidedLearningSettings'
+  ),
+  'custom-widget': lazyNamed(
+    () => import('./CustomWidget/Settings'),
+    'CustomWidgetSettings'
   ),
 };
 
@@ -684,6 +708,27 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   'starter-pack': {
     baseWidth: 600,
     baseHeight: 500,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'video-activity': {
+    baseWidth: 640,
+    baseHeight: 560,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'guided-learning': {
+    baseWidth: 720,
+    baseHeight: 520,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'custom-widget': {
+    baseWidth: 400,
+    baseHeight: 300,
     canSpread: true,
     skipScaling: true,
     padding: 0,

@@ -94,6 +94,9 @@ export const WIDGET_GRADE_LEVELS: Record<
   'syntax-framer': ALL_GRADE_LEVELS,
   'hotspot-image': ALL_GRADE_LEVELS,
   'starter-pack': ALL_GRADE_LEVELS,
+  'video-activity': ALL_GRADE_LEVELS,
+  'guided-learning': ALL_GRADE_LEVELS,
+  'custom-widget': ALL_GRADE_LEVELS,
 };
 
 /**

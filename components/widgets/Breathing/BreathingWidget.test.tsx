@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BreathingWidget } from './BreathingWidget';
-import { WidgetData } from '../../../types';
+import { WidgetData } from '@/types';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockWidget: WidgetData = {

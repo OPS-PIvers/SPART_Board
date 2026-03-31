@@ -7,9 +7,8 @@ WORKDIR /app
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
-COPY functions/package.json functions/pnpm-lock.yaml ./functions/
 # Install dependencies including devDependencies (needed for build)
-RUN pnpm install --frozen-lockfile && pnpm -C functions install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
@@ -40,7 +39,7 @@ ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN pnpm run build
 
 # Stage 2: Serve
-FROM nginx:alpine
+FROM nginx:1.27.3-alpine
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html

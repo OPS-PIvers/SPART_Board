@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Cast, Snowflake, X, Trash2 } from 'lucide-react';
-import { LiveStudent } from '../../types';
-import { useClickOutside } from '../../hooks/useClickOutside';
-import { Z_INDEX } from '../../config/zIndex';
+import { LiveStudent } from '@/types';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { Z_INDEX } from '@/config/zIndex';
 
 interface LiveControlProps {
   isLive: boolean;

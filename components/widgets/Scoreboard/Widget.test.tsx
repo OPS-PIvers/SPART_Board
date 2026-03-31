@@ -24,11 +24,17 @@ vi.mock('./components/ScoreboardItem', async (importOriginal) => {
 
   const spy = vi.fn();
 
-  const InnerItem = (props: { team: ScoreboardTeam }) => {
+  const InnerItem = (props: {
+    team: ScoreboardTeam;
+    onUpdateScore: (id: string, delta: number) => void;
+  }) => {
     spy(props);
     return (
       <div>
         {props.team.name} {props.team.score}
+        <button onClick={() => props.onUpdateScore(props.team.id, 1)}>
+          Increase score
+        </button>
       </div>
     );
   };
@@ -176,6 +182,88 @@ describe('ScoreboardWidget', () => {
     expect(itemRenderSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         team: expect.objectContaining({ id: '1', score: 11 }),
+      })
+    );
+  });
+
+  it('uses DEFAULT_TEAMS when config.teams is invalid or missing during handleUpdateScore', () => {
+    const widget: WidgetData = {
+      id: 'test-id',
+      type: 'scoreboard',
+      config: {
+        // Omitting teams completely
+      } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
+
+    render(<ScoreboardWidget widget={widget} />);
+
+    // Since it's omitted, Widget renders DEFAULT_TEAMS ("Team A", "Team B").
+    // We update team-a to test fallback logic.
+
+    // We know from initial render that it migrated, but we want to trigger updateScore
+    // We'll mock the hook to see updateScore behaviour directly
+    const plusBtns = screen.getAllByRole('button', { name: /increase score/i });
+    fireEvent.click(plusBtns[0]); // Increases Team A by 1
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ id: 'team-a', score: 1 }), // DEFAULT_TEAMS starts with score 0
+          ]),
+        }) as unknown,
+      })
+    );
+  });
+
+  it('correctly handles rapid successive clicks without dropping updates', () => {
+    const teams = [
+      { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
+    ];
+    const widget: WidgetData = {
+      id: 'test-id',
+      type: 'scoreboard',
+      config: { teams } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
+
+    // To simulate rapid clicks, we render once and fire multiple click events.
+    // The component should synchronously update its internal ref and issue updateWidget
+    // with the accumulating score.
+    render(<ScoreboardWidget widget={widget} />);
+
+    mockUpdateWidget.mockClear();
+
+    const plusBtns = screen.getAllByRole('button', { name: /increase score/i });
+
+    // Simulate rapid, synchronous clicks
+    fireEvent.click(plusBtns[0]); // Score goes 10 -> 11
+    fireEvent.click(plusBtns[0]); // Score goes 11 -> 12
+    fireEvent.click(plusBtns[0]); // Score goes 12 -> 13
+
+    expect(mockUpdateWidget).toHaveBeenCalledTimes(3);
+
+    // Check that the last call correctly accumulated the score to 13
+    expect(mockUpdateWidget).toHaveBeenLastCalledWith(
+      'test-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ id: '1', score: 13 }),
+          ]),
+        }),
       })
     );
   });
@@ -532,6 +620,64 @@ it('shows error if no random widget on import', () => {
   mockAddToast.mockClear();
 
   render(<ScoreboardSettings widget={widget} />);
-  const importButton = screen.getByRole('button', { name: 'Import Groups' });
+  const importButton = screen.getByTestId('import-groups-btn');
   expect(importButton).toBeDisabled();
+});
+
+it('handles missing sharedGroups gracefully when updating team name', () => {
+  vi.useFakeTimers();
+
+  const teams = [
+    {
+      id: '1',
+      name: 'Team One',
+      score: 10,
+      color: 'bg-blue-500',
+      linkedGroupId: 'linked-group-1',
+    },
+  ];
+  const widget: WidgetData = {
+    id: 'scoreboard-id',
+    type: 'scoreboard',
+    config: { teams } as ScoreboardConfig,
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100,
+    z: 1,
+    flipped: true,
+  };
+
+  const mockUpdateDashboard = vi.fn();
+  (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    ...mockDashboardContext,
+    updateDashboard: mockUpdateDashboard,
+    activeDashboard: {
+      widgets: [],
+      // Missing shared group with 'linked-group-1' ID
+      sharedGroups: [],
+    },
+  });
+
+  render(<ScoreboardSettings widget={widget} />);
+
+  mockUpdateDashboard.mockClear();
+
+  const input = screen.getByPlaceholderText('Team Name');
+  fireEvent.change(input, {
+    target: { value: 'New Name With No Shared Group' },
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(500);
+  });
+
+  // Should trigger the fallback branch `newSharedGroups = [...sharedGroups, { id: team.linkedGroupId, name }];`
+  expect(mockUpdateDashboard).toHaveBeenCalledWith({
+    sharedGroups: [
+      { id: 'linked-group-1', name: 'New Name With No Shared Group' },
+    ],
+  });
+
+  vi.useRealTimers();
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   AlgebraTileKind,
   AlgebraTileStyle,
@@ -42,35 +42,9 @@ export const AlgebraTilesTool: React.FC = () => {
     setTiles((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const expr = (() => {
-    const x2 =
-      tiles.filter((t) => t.kind === 'x2-pos').length -
-      tiles.filter((t) => t.kind === 'x2-neg').length;
-    const x =
-      tiles.filter((t) => t.kind === 'x-pos').length -
-      tiles.filter((t) => t.kind === 'x-neg').length;
-    const unit =
-      tiles.filter((t) => t.kind === 'unit-pos').length -
-      tiles.filter((t) => t.kind === 'unit-neg').length;
-    const parts: string[] = [];
-    if (x2 !== 0) parts.push(`${x2 === 1 ? '' : x2 === -1 ? '−' : x2}x²`);
-    if (x !== 0) parts.push(`${x === 1 ? '' : x === -1 ? '−' : x}x`);
-    if (unit !== 0) parts.push(`${unit}`);
-    return parts.length > 0 ? parts.join(' + ').replace('+ −', '− ') : '0';
-  })();
-
   const PAD = 12;
   const TILE_GAP = 6;
   const CANVAS_W = 420;
-
-  const groups: Tile['kind'][] = [
-    'x2-pos',
-    'x2-neg',
-    'x-pos',
-    'x-neg',
-    'unit-pos',
-    'unit-neg',
-  ];
 
   type TileRect = {
     tile: Tile;
@@ -78,32 +52,75 @@ export const AlgebraTilesTool: React.FC = () => {
     y: number;
     meta: AlgebraTileStyle;
   };
-  const rects: TileRect[] = [];
-  let curX = PAD;
-  let curY = PAD;
-  let rowH = 0;
 
-  for (const kind of groups) {
-    const meta = ALGEBRA_TILE_META[kind];
-    const group = tiles.filter((t) => t.kind === kind);
-    for (const tile of group) {
-      if (curX + meta.w > CANVAS_W - PAD && curX > PAD) {
+  const { expr, rects, CANVAS_H } = useMemo(() => {
+    const GROUPS: Tile['kind'][] = [
+      'x2-pos',
+      'x2-neg',
+      'x-pos',
+      'x-neg',
+      'unit-pos',
+      'unit-neg',
+    ];
+    // Single pass to group tiles and compute counts
+    const groupedTiles: Record<AlgebraTileKind, Tile[]> = {
+      'x2-pos': [],
+      'x2-neg': [],
+      'x-pos': [],
+      'x-neg': [],
+      'unit-pos': [],
+      'unit-neg': [],
+    };
+
+    for (const tile of tiles) {
+      groupedTiles[tile.kind].push(tile);
+    }
+
+    const x2 = groupedTiles['x2-pos'].length - groupedTiles['x2-neg'].length;
+    const x = groupedTiles['x-pos'].length - groupedTiles['x-neg'].length;
+    const unit =
+      groupedTiles['unit-pos'].length - groupedTiles['unit-neg'].length;
+
+    const parts: string[] = [];
+    if (x2 !== 0) parts.push(`${x2 === 1 ? '' : x2 === -1 ? '−' : x2}x²`);
+    if (x !== 0) parts.push(`${x === 1 ? '' : x === -1 ? '−' : x}x`);
+    if (unit !== 0) parts.push(`${unit}`);
+    const computedExpr =
+      parts.length > 0 ? parts.join(' + ').replace('+ −', '− ') : '0';
+
+    const computedRects: TileRect[] = [];
+    let curX = PAD;
+    let curY = PAD;
+    let rowH = 0;
+
+    for (const kind of GROUPS) {
+      const meta = ALGEBRA_TILE_META[kind];
+      const group = groupedTiles[kind];
+      for (const tile of group) {
+        if (curX + meta.w > CANVAS_W - PAD && curX > PAD) {
+          curX = PAD;
+          curY += rowH + TILE_GAP;
+          rowH = 0;
+        }
+        computedRects.push({ tile, x: curX, y: curY, meta });
+        curX += meta.w + TILE_GAP;
+        rowH = Math.max(rowH, meta.h);
+      }
+      if (group.length > 0) {
         curX = PAD;
-        curY += rowH + TILE_GAP;
+        curY += rowH + TILE_GAP * 2;
         rowH = 0;
       }
-      rects.push({ tile, x: curX, y: curY, meta });
-      curX += meta.w + TILE_GAP;
-      rowH = Math.max(rowH, meta.h);
     }
-    if (group.length > 0) {
-      curX = PAD;
-      curY += rowH + TILE_GAP * 2;
-      rowH = 0;
-    }
-  }
 
-  const CANVAS_H = Math.max(180, curY + rowH + PAD);
+    const computedCanvasH = Math.max(180, curY + rowH + PAD);
+
+    return {
+      expr: computedExpr,
+      rects: computedRects,
+      CANVAS_H: computedCanvasH,
+    };
+  }, [tiles]);
 
   return (
     <div

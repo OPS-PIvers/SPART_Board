@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { ScaledEmptyState } from '../../../components/common/ScaledEmptyState';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Camera, Clock } from 'lucide-react';
 import React from 'react';
 

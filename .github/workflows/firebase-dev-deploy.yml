@@ -3,11 +3,7 @@ name: Deploy Dev Branches to Firebase Preview
 on:
   push:
     branches:
-      - dev-paul        # Your branch
-      - dev-jen         # Developer 1's branch
-      - dev-bailey      # Developer 2's branch
-      - dev-joel        # Joel's branch
-      - dev-jason       # Jason's branch
+      - 'dev-*'
 
 jobs:
   lint:
@@ -72,7 +68,7 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
 
       - name: Deploy Firebase Rules and Functions
-        run: pnpm exec firebase deploy --only functions,firestore,storage --project spartboard
+        run: pnpm exec firebase deploy --only functions,firestore,storage --project spartboard --force
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./service-account.json
 

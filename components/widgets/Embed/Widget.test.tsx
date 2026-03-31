@@ -40,8 +40,11 @@ vi.mock('@/context/useAuth', () => ({
     googleAccessToken: 'test-token',
     loading: false,
     isAdmin: false,
+    userRoles: null,
+    appSettings: null,
     featurePermissions: [],
     globalPermissions: [],
+    updateAppSettings: vi.fn(),
     canAccessWidget: vi.fn(() => true),
     canAccessFeature: vi.fn(() => true),
     signInWithGoogle: vi.fn(),
@@ -55,6 +58,9 @@ vi.mock('@/context/useAuth', () => ({
     connectGoogleDrive: vi.fn(),
     savedWidgetConfigs: {},
     saveWidgetConfig: vi.fn(),
+    profileLoaded: true,
+    setupCompleted: true,
+    completeSetup: vi.fn(),
   })),
 }));
 
@@ -360,8 +366,11 @@ describe('EmbedWidget', () => {
         googleAccessToken: 'test-token',
         loading: false,
         isAdmin: false,
+        userRoles: null,
+        appSettings: null,
         featurePermissions: [],
         globalPermissions: [],
+        updateAppSettings: vi.fn(),
         canAccessWidget: vi.fn(() => true),
         canAccessFeature: vi.fn(() => false),
         signInWithGoogle: vi.fn(),
@@ -375,6 +384,9 @@ describe('EmbedWidget', () => {
         connectGoogleDrive: vi.fn(),
         savedWidgetConfigs: {},
         saveWidgetConfig: vi.fn(),
+        profileLoaded: true,
+        setupCompleted: true,
+        completeSetup: vi.fn(),
       });
 
       render(<EmbedWidget widget={validWidget} />);

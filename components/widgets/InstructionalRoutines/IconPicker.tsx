@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
-import { COMMON_INSTRUCTIONAL_ICONS } from '../../../config/instructionalIcons';
+import { COMMON_INSTRUCTIONAL_ICONS } from '@/config/instructionalIcons';
 import { getRoutineColorClasses } from './colorHelpers';
-import { FloatingPanel } from '../../common/FloatingPanel';
+import { FloatingPanel } from '@/components/common/FloatingPanel';
 
 export const IconPicker: React.FC<{
   currentIcon: string;

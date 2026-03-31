@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutGrid, Users, Cast, Square } from 'lucide-react';
+import { LayoutGrid, Puzzle, Users, Cast, Square } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -25,28 +25,29 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { useLiveSession } from '../../hooks/useLiveSession';
-import { useClickOutside } from '../../hooks/useClickOutside';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useCustomWidgets } from '@/context/useCustomWidgets';
+import { useLiveSession } from '@/hooks/useLiveSession';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   WidgetType,
   WidgetData,
   DockFolder,
   MiniAppItem,
   InternalToolType,
-} from '../../types';
-import { TOOLS } from '../../config/tools';
-import { isLunchCountBuilding } from '../../config/buildings';
+} from '@/types';
+import { TOOLS } from '@/config/tools';
+import { isLunchCountBuilding } from '@/config/buildings';
 import { getWidgetGradeLevels } from '@/config/widgetGradeLevels';
-import { AddWidgetOverrides } from '../../types';
-import { getJoinUrl } from '../../utils/urlHelpers';
+import { AddWidgetOverrides } from '@/types';
+import { getJoinUrl } from '@/utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 import RemoteControlMenu from './RemoteControlMenu';
 import { CatalystSetPickerPopover } from '@/components/widgets/Catalyst/CatalystSetPickerPopover';
 import { GlassCard } from '../common/GlassCard';
-import { DEFAULT_GLOBAL_STYLE } from '../../types';
-import { Z_INDEX } from '../../config/zIndex';
+import { DEFAULT_GLOBAL_STYLE } from '@/types';
+import { Z_INDEX } from '@/config/zIndex';
 import { WidgetLibrary } from './dock/WidgetLibrary';
 import { RenameFolderModal } from './dock/RenameFolderModal';
 import { MagicLayoutModal } from './dock/MagicLayoutModal';
@@ -54,16 +55,16 @@ import {
   detectWidgetType,
   buildChecklistFromLines,
   createDefaultTextWidget,
-} from '../../utils/smartPaste';
+} from '@/utils/smartPaste';
 import { SmartPastePickerModal } from './dock/SmartPastePickerModal';
-import { useImageUpload } from '../../hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { DockIcon } from './dock/DockIcon';
 import { DockLabel } from './dock/DockLabel';
 import { ToolDockItem } from './dock/ToolDockItem';
 import { FolderItem } from './dock/FolderItem';
 import { QuickAccessButton } from './dock/QuickAccessButton';
-import { useScreenRecord } from '../../hooks/useScreenRecord';
-import { useGoogleDrive } from '../../hooks/useGoogleDrive';
+import { useScreenRecord } from '@/hooks/useScreenRecord';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 export const Dock: React.FC = () => {
   const { t } = useTranslation();
@@ -96,6 +97,27 @@ export const Dock: React.FC = () => {
     featurePermissions,
   } = useAuth();
   const { driveService } = useGoogleDrive();
+  const { customWidgets } = useCustomWidgets();
+
+  const publishedCustomWidgets = useMemo(
+    () => customWidgets.filter((w) => w.published && w.enabled),
+    [customWidgets]
+  );
+
+  const handleAddCustomWidget = useCallback(
+    (customWidgetId: string) => {
+      const cw = customWidgets.find((w) => w.id === customWidgetId);
+      if (!cw) return;
+      addWidget('custom-widget', {
+        w: cw.defaultWidth,
+        h: cw.defaultHeight,
+        config: {
+          customWidgetId: cw.id,
+        },
+      });
+    },
+    [customWidgets, addWidget]
+  );
 
   const getToolLabel = useCallback(
     (type: WidgetType | InternalToolType): string => {
@@ -520,6 +542,19 @@ export const Dock: React.FC = () => {
     );
   }, [activeDashboard]);
 
+  // Minimized custom-widget instances (not in the static TOOLS list so
+  // they need a separate restore path in the dock).
+  const minimizedCustomWidgets = useMemo(
+    () => minimizedWidgetsByType['custom-widget' as WidgetType] ?? [],
+    [minimizedWidgetsByType]
+  );
+
+  // Precompute id→title map for O(1) lookups in the minimized-widget restore chips
+  const customWidgetTitleById = useMemo(
+    () => new Map(customWidgets.map((w) => [w.id, w.title])),
+    [customWidgets]
+  );
+
   return (
     <div
       ref={dockContainerRef}
@@ -677,6 +712,8 @@ export const Dock: React.FC = () => {
               onReorderLibrary={reorderLibrary}
               onAddFolder={() => setShowCreateFolderModal(true)}
               getToolLabel={getToolLabel}
+              customWidgets={publishedCustomWidgets}
+              onAddCustomWidget={handleAddCustomWidget}
             />
           )}
 
@@ -1055,6 +1092,32 @@ export const Dock: React.FC = () => {
                     </GlassCard>,
                     document.body
                   )}
+
+                {/* Minimized custom widgets — not in static TOOLS list so
+                    surfaced here so they can always be restored */}
+                {minimizedCustomWidgets.length > 0 && (
+                  <>
+                    <div className="w-px h-8 bg-slate-200 mx-1 flex-shrink-0" />
+                    {minimizedCustomWidgets.map((cw) => (
+                      <button
+                        key={cw.id}
+                        onClick={() =>
+                          updateWidget(cw.id, { minimized: false })
+                        }
+                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-pan-x flex-shrink-0"
+                        title={`Restore: ${customWidgetTitleById.get((cw.config as { customWidgetId?: string }).customWidgetId ?? '') ?? 'Custom Widget'}`}
+                      >
+                        <DockIcon
+                          color="bg-purple-600 shadow-lg shadow-purple-600/20"
+                          className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-purple-500 transition-all"
+                        >
+                          <Puzzle className="w-5 h-5 md:w-6 md:h-6" />
+                        </DockIcon>
+                        <DockLabel className="text-slate-600">Custom</DockLabel>
+                      </button>
+                    ))}
+                  </>
+                )}
 
                 {/* Separator and More Button */}
                 <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />

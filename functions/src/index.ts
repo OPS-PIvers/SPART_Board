@@ -1,17 +1,181 @@
 import * as functionsV1 from 'firebase-functions/v1';
-import * as functionsV2 from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
 import { GoogleGenAI, Content } from '@google/genai';
-import { GoogleAuth } from 'google-auth-library';
 import { sanitizePrompt } from './sanitize';
+import cors from 'cors';
+
+const corsHandler = cors({ origin: true });
+// Local mirror of youtube-transcript's TranscriptResponse to avoid depending on
+// an ESM-only package at the type level (dynamic import used at runtime instead).
+interface TranscriptResponse {
+  text: string;
+  duration: number;
+  offset: number;
+}
+
+interface TimedtextJson3Event {
+  tStartMs?: number;
+  dDurationMs?: number;
+  segs?: Array<{ utf8?: string }>;
+}
+
+interface TimedtextTrack {
+  lang: string;
+  kind?: 'asr';
+  name?: string;
+  vssId?: string;
+}
+
+const LEGACY_TIMEDTEXT_CANDIDATES: TimedtextTrack[] = [
+  { lang: 'en' },
+  { lang: 'en', kind: 'asr' },
+  { lang: 'en-US' },
+  { lang: 'en-US', kind: 'asr' },
+  { lang: 'en-GB' },
+  { lang: 'en-GB', kind: 'asr' },
+];
+
+const MAX_TIMEDTEXT_TRACK_CANDIDATES = 8;
+const TIMEDTEXT_REQUEST_TIMEOUT_MS = 5000;
+const TIMEDTEXT_TOTAL_BUDGET_MS = 30000;
+
+function decodeHtmlEntities(input: string): string {
+  const namedEntities: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+  };
+
+  return input.replace(
+    /&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g,
+    (match: string, entity: string) => {
+      if (entity.startsWith('#x') || entity.startsWith('#X')) {
+        const code = Number.parseInt(entity.slice(2), 16);
+        return Number.isNaN(code) ? match : String.fromCodePoint(code);
+      }
+
+      if (entity.startsWith('#')) {
+        const code = Number.parseInt(entity.slice(1), 10);
+        return Number.isNaN(code) ? match : String.fromCodePoint(code);
+      }
+
+      return namedEntities[entity] ?? match;
+    }
+  );
+}
+
+function parseTimedtextJson3(
+  events: TimedtextJson3Event[]
+): TranscriptResponse[] {
+  return events
+    .filter((event) => event.segs && event.segs.length > 0)
+    .map((event) => ({
+      text: (event.segs ?? [])
+        .map((segment) => segment.utf8 ?? '')
+        .join('')
+        .trim(),
+      offset: event.tStartMs ?? 0,
+      duration: event.dDurationMs ?? 0,
+    }))
+    .filter((item) => item.text.length > 0 && item.text !== '\n');
+}
+
+function parseTimedtextXml(xml: string): TranscriptResponse[] {
+  const textNodes = xml.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g);
+  const parsed: TranscriptResponse[] = [];
+
+  for (const node of textNodes) {
+    const attrs = node[1] ?? '';
+    const rawText = node[2] ?? '';
+
+    const startMatch = attrs.match(/\bstart=["']([^"']+)["']/);
+    const durationMatch = attrs.match(/\bdur=["']([^"']+)["']/);
+    const startSeconds = startMatch ? Number.parseFloat(startMatch[1]) : 0;
+    const durationSeconds = durationMatch
+      ? Number.parseFloat(durationMatch[1])
+      : 0;
+
+    const text = decodeHtmlEntities(rawText)
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!text) continue;
+
+    parsed.push({
+      text,
+      offset: Number.isFinite(startSeconds)
+        ? Math.round(startSeconds * 1000)
+        : 0,
+      duration: Number.isFinite(durationSeconds)
+        ? Math.round(durationSeconds * 1000)
+        : 0,
+    });
+  }
+
+  return parsed;
+}
+
+export function parseTimedtextTrackList(xml: string): TimedtextTrack[] {
+  const trackNodes = xml.matchAll(/<track\b([^>]*)\/?>(?:<\/track>)?/g);
+  const tracks: TimedtextTrack[] = [];
+
+  for (const node of trackNodes) {
+    const attrs = node[1] ?? '';
+    const langMatch = attrs.match(/\blang_code=["']([^"']+)["']/);
+
+    if (!langMatch?.[1]) continue;
+
+    const kindMatch = attrs.match(/\bkind=["']([^"']+)["']/);
+    const nameMatch = attrs.match(/\bname=["']([^"']*)["']/);
+    const vssIdMatch = attrs.match(/\bvss_id=["']([^"']+)["']/);
+
+    tracks.push({
+      lang: decodeHtmlEntities(langMatch[1]),
+      kind: kindMatch?.[1] === 'asr' ? 'asr' : undefined,
+      name: nameMatch?.[1] ? decodeHtmlEntities(nameMatch[1]) : undefined,
+      vssId: vssIdMatch?.[1] ? decodeHtmlEntities(vssIdMatch[1]) : undefined,
+    });
+  }
+
+  return tracks;
+}
+
+export function buildTimedtextCandidates(
+  discoveredTracks: TimedtextTrack[]
+): TimedtextTrack[] {
+  const dedupeKey = (track: TimedtextTrack): string =>
+    `${track.lang}|${track.kind ?? ''}|${track.name ?? ''}|${track.vssId ?? ''}`;
+
+  const uniqueTracks = Array.from(
+    new Map(discoveredTracks.map((track) => [dedupeKey(track), track])).values()
+  );
+
+  const englishTracks = uniqueTracks.filter((track) =>
+    track.lang.toLowerCase().startsWith('en')
+  );
+  const nonEnglishTracks = uniqueTracks.filter(
+    (track) => !track.lang.toLowerCase().startsWith('en')
+  );
+
+  const prioritizedTracks = [...englishTracks, ...nonEnglishTracks].slice(
+    0,
+    MAX_TIMEDTEXT_TRACK_CANDIDATES
+  );
+
+  return prioritizedTracks.length > 0
+    ? prioritizedTracks
+    : [...LEGACY_TIMEDTEXT_CANDIDATES];
+}
 
 admin.initializeApp();
-
-export const JULES_API_SESSIONS_ENDPOINT =
-  'https://jules.googleapis.com/v1alpha/sessions';
 
 interface ClassLinkUser {
   sourcedId: string;
@@ -39,13 +203,17 @@ interface AIData {
     | 'poll'
     | 'dashboard-layout'
     | 'instructional-routine'
-    | 'ocr';
+    | 'ocr'
+    | 'quiz'
+    | 'widget-builder'
+    | 'widget-explainer';
   prompt?: string;
   image?: string; // base64 data
 }
 
 interface GlobalPermConfig {
   dailyLimit?: number;
+  dailyLimitEnabled?: boolean;
 }
 
 interface GlobalPermission {
@@ -238,78 +406,140 @@ export const generateWithAI = functionsV1
 
     const db = admin.firestore();
 
-    // 1. Check global feature permission for gemini-functions
-    const globalPermDoc = await db
-      .collection('global_permissions')
-      .doc('gemini-functions')
-      .get();
-    const globalPerm = globalPermDoc.exists
-      ? (globalPermDoc.data() as GlobalPermission)
-      : null;
-
-    // 2. Check if user is an admin
+    // Check if user is an admin
     const adminDoc = await db
       .collection('admins')
       .doc(email.toLowerCase())
       .get();
     const isAdmin = adminDoc.exists;
 
-    // 3. Validate access
-    if (globalPerm && !globalPerm.enabled) {
-      throw new functionsV1.https.HttpsError(
-        'permission-denied',
-        'Gemini functions are currently disabled by an administrator.'
-      );
-    }
-
     if (!isAdmin) {
-      if (globalPerm) {
-        const { accessLevel, betaUsers = [] } = globalPerm;
-        if (accessLevel === 'admin') {
-          throw new functionsV1.https.HttpsError(
-            'permission-denied',
-            'Gemini functions are currently restricted to administrators.'
-          );
-        }
-        if (
-          accessLevel === 'beta' &&
-          !betaUsers.includes(email.toLowerCase())
-        ) {
-          throw new functionsV1.https.HttpsError(
-            'permission-denied',
-            'You do not have access to Gemini beta functions.'
-          );
-        }
-      }
+      // 1. Determine specific feature ID if applicable
+      let specificFeatureId: string | null = null;
+      const genType = String(data?.type || '')
+        .toLowerCase()
+        .trim();
+      if (genType === 'mini-app') specificFeatureId = 'embed-mini-app';
+      if (genType === 'poll') specificFeatureId = 'smart-poll';
 
-      // 4. Check and increment daily usage
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const usageRef = db.collection('ai_usage').doc(`${uid}_${today}`);
-      const DAILY_LIMIT = globalPerm?.config?.dailyLimit ?? 20;
 
       try {
         await db.runTransaction(async (transaction) => {
-          const usageDoc = await transaction.get(usageRef);
-          const currentUsage = usageDoc.exists
-            ? (usageDoc.data()?.count as number) || 0
-            : 0;
+          // --- Check Overall Gemini Limit ---
+          const globalPermDoc = await transaction.get(
+            db.collection('global_permissions').doc('gemini-functions')
+          );
+          const globalPerm = globalPermDoc.exists
+            ? (globalPermDoc.data() as GlobalPermission)
+            : null;
 
-          if (currentUsage >= DAILY_LIMIT) {
+          if (globalPerm && !globalPerm.enabled) {
             throw new functionsV1.https.HttpsError(
-              'resource-exhausted',
-              `Daily AI usage limit reached (${DAILY_LIMIT} generations). Please try again tomorrow.`
+              'permission-denied',
+              'Gemini functions are currently disabled by an administrator.'
             );
           }
 
+          if (globalPerm) {
+            const { accessLevel, betaUsers = [] } = globalPerm;
+            if (accessLevel === 'admin') {
+              throw new functionsV1.https.HttpsError(
+                'permission-denied',
+                'Gemini functions are currently restricted to administrators.'
+              );
+            }
+            if (
+              accessLevel === 'beta' &&
+              !betaUsers.includes(email.toLowerCase())
+            ) {
+              throw new functionsV1.https.HttpsError(
+                'permission-denied',
+                'You do not have access to Gemini beta functions.'
+              );
+            }
+          }
+
+          const overallLimitEnabled =
+            globalPerm?.config?.dailyLimitEnabled !== false;
+          const overallLimit = globalPerm?.config?.dailyLimit ?? 20;
+
+          const overallUsageRef = db
+            .collection('ai_usage')
+            .doc(`${uid}_${today}`);
+          const overallUsageDoc = await transaction.get(overallUsageRef);
+          const currentOverallUsage = overallUsageDoc.exists
+            ? (overallUsageDoc.data()?.count as number) || 0
+            : 0;
+
+          if (overallLimitEnabled && currentOverallUsage >= overallLimit) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              `Daily AI usage limit reached (${overallLimit} generations). Please try again tomorrow.`
+            );
+          }
+
+          // --- Check Specific Feature Limit ---
+          let specificLimitReached = false;
+          let specificLimit = 0;
+          let specificUsageRef = null;
+          let currentSpecificUsage = 0;
+
+          if (specificFeatureId) {
+            const specPermDoc = await transaction.get(
+              db.collection('global_permissions').doc(specificFeatureId)
+            );
+            if (specPermDoc.exists) {
+              const specPerm = specPermDoc.data() as GlobalPermission;
+              const specLimitEnabled =
+                specPerm.config?.dailyLimitEnabled !== false;
+              specificLimit = specPerm.config?.dailyLimit ?? 20;
+
+              if (specLimitEnabled) {
+                specificUsageRef = db
+                  .collection('ai_usage')
+                  .doc(`${uid}_${specificFeatureId}_${today}`);
+                const specUsageDoc = await transaction.get(specificUsageRef);
+                currentSpecificUsage = specUsageDoc.exists
+                  ? (specUsageDoc.data()?.count as number) || 0
+                  : 0;
+
+                if (currentSpecificUsage >= specificLimit) {
+                  specificLimitReached = true;
+                }
+              }
+            }
+          }
+
+          if (specificLimitReached) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              `Daily limit for ${specificFeatureId} reached (${specificLimit} per day). Please try again tomorrow.`
+            );
+          }
+
+          // --- Increment Both ---
           transaction.set(
-            usageRef,
+            overallUsageRef,
             {
-              count: currentUsage + 1,
+              count: currentOverallUsage + 1,
               email: email,
               lastUsed: admin.firestore.FieldValue.serverTimestamp(),
             },
             { merge: true }
           );
+
+          if (specificUsageRef) {
+            transaction.set(
+              specificUsageRef,
+              {
+                count: currentSpecificUsage + 1,
+                email: email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          }
         });
       } catch (error) {
         if (error instanceof functionsV1.https.HttpsError) {
@@ -333,15 +563,9 @@ export const generateWithAI = functionsV1
     }
 
     try {
-      console.log('DEBUG: Full data object keys:', Object.keys(data || {}));
-      console.log(
-        `DEBUG: Received type: "${data?.type}" (Type: ${typeof data?.type})`
-      );
-
       const genType = String(data?.type || '')
         .toLowerCase()
         .trim();
-      console.log(`AI Gen starting for type: ${genType}`);
 
       const ai = new GoogleGenAI({ apiKey });
 
@@ -469,6 +693,53 @@ export const generateWithAI = functionsV1
         `,
           userPrompt: 'Extract text from this image.',
         }),
+        quiz: () => ({
+          systemPrompt: `
+          You are an expert teacher creating a classroom quiz.
+          Generate a quiz based on the topic or content provided within <topic> tags.
+          Return JSON in this exact format:
+          {
+            "title": "Quiz title",
+            "questions": [
+              {
+                "text": "Question text",
+                "type": "MC",
+                "correctAnswer": "The correct answer",
+                "incorrectAnswers": ["Wrong answer 1", "Wrong answer 2", "Wrong answer 3"],
+                "timeLimit": 30
+              }
+            ]
+          }
+          Rules:
+          1. Generate 5-10 questions unless the user specifies a number.
+          2. Use only "MC" (Multiple Choice) type.
+          3. Each question must have exactly 3 incorrect answers.
+          4. Time limit should be 20-60 seconds depending on question complexity.
+          5. Questions should progress from easier to harder.
+        `,
+          userPrompt: `Topic/Content: <topic>${sanitizedUserInput}</topic>`,
+        }),
+        'widget-builder': () => ({
+          systemPrompt: `
+          You are an expert frontend developer creating classroom widgets. Create a complete self-contained HTML widget for a classroom dashboard.
+          Requirements:
+          1. Use vanilla HTML/CSS/JS only (no external libraries except optional Tailwind CDN).
+          2. Use a dark background (#1e293b) with light text.
+          3. Include all styles inline in the HTML file.
+          4. The widget must work in a sandboxed iframe.
+          5. Make buttons and interactive elements large enough for tablet use.
+          6. Output ONLY the complete HTML code, nothing else - no explanations, no markdown.
+          `,
+          userPrompt: `Create a widget that: <user_request>${sanitizedUserInput}</user_request>`,
+        }),
+        'widget-explainer': () => ({
+          systemPrompt: `
+          You are a classroom teacher assistant. Explain what an HTML widget does in 1-2 plain sentences.
+          Use simple language without code jargon.
+          Output ONLY the explanation, nothing else.
+          `,
+          userPrompt: sanitizedUserInput,
+        }),
       };
 
       const promptDataFn = promptMap[genType];
@@ -514,14 +785,21 @@ export const generateWithAI = functionsV1
         });
       }
 
+      // Use higher complexity model for code generation, and lite for OCR and simple JSON tasks
+      const model =
+        genType === 'mini-app' || genType === 'widget-builder'
+          ? 'gemini-3-flash-preview'
+          : 'gemini-3.1-flash-lite-preview';
+
       const result = await ai.models.generateContent({
-        model:
-          genType === 'ocr'
-            ? 'gemini-3.1-flash-lite-preview'
-            : 'gemini-3-flash-preview',
+        model,
         contents,
         config: {
-          responseMimeType: 'application/json',
+          // widget-builder and widget-explainer return plain text; all other types return JSON
+          responseMimeType:
+            genType === 'widget-builder' || genType === 'widget-explainer'
+              ? 'text/plain'
+              : 'application/json',
         },
       });
 
@@ -531,7 +809,11 @@ export const generateWithAI = functionsV1
         throw new Error('Empty response from AI');
       }
 
-      console.log('AI Generation successful');
+      // widget-builder and widget-explainer return plain text — wrap in { result } for the client
+      if (genType === 'widget-builder' || genType === 'widget-explainer') {
+        return { result: text };
+      }
+
       return JSON.parse(text) as Record<string, unknown>;
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
@@ -656,169 +938,1191 @@ export const checkUrlCompatibility = functionsV1
     }
   });
 
-interface JulesData {
-  widgetName: string;
-  description: string;
+// ---------------------------------------------------------------------------
+// Video Activity: Caption-based AI question generation
+// ---------------------------------------------------------------------------
+
+interface VideoActivityRequestData {
+  url: string;
+  questionCount: number;
 }
 
-interface JulesSessionResponse {
-  name?: string;
-  id?: string;
+interface GeneratedVideoQuestion {
+  text: string;
+  timestamp: number;
+  correctAnswer: string;
+  incorrectAnswers: string[];
+  timeLimit: number;
 }
 
-interface JulesError {
-  error?: {
-    message?: string;
-  };
+interface GeneratedVideoActivity {
+  title: string;
+  questions: GeneratedVideoQuestion[];
 }
 
-export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
-  {
-    timeoutSeconds: 300,
-    memory: '256MiB',
-    cors: true,
-  },
-  async (request) => {
-    if (!request.auth) {
-      throw new functionsV2.https.HttpsError(
-        'unauthenticated',
-        'The function must be called while authenticated.'
+/**
+ * Fetches YouTube captions and uses Gemini to generate timestamped
+ * multiple-choice questions for the Video Activity widget.
+ */
+export const generateVideoActivity = functionsV1
+  .region('us-central1')
+  .runWith({
+    secrets: ['GEMINI_API_KEY'],
+    memory: '512MB',
+    timeoutSeconds: 120,
+  })
+  .https.onCall(
+    async (
+      data: VideoActivityRequestData,
+      context
+    ): Promise<GeneratedVideoActivity> => {
+      if (!context.auth) {
+        throw new functionsV1.https.HttpsError(
+          'unauthenticated',
+          'The function must be called while authenticated.'
+        );
+      }
+
+      const uid = context.auth.uid;
+      const email = context.auth.token.email;
+
+      if (!email) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'User must have an email associated with their account.'
+        );
+      }
+
+      const { url, questionCount } = data;
+
+      if (!url || typeof url !== 'string') {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'A valid YouTube URL is required.'
+        );
+      }
+
+      const count = Math.min(Math.max(Number(questionCount) || 5, 1), 20);
+
+      // Extract video ID from URL
+      const videoIdMatch = url.match(
+        /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&]{11})/
       );
-    }
+      const videoId = videoIdMatch?.[1];
 
-    const email = request.auth.token.email;
-    if (!email) {
-      throw new functionsV2.https.HttpsError(
-        'invalid-argument',
-        'User must have an email associated with their account.'
-      );
-    }
+      if (!videoId) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'Could not extract a video ID from the provided URL. Please paste a valid YouTube link.'
+        );
+      }
 
-    const db = admin.firestore();
-    const adminDoc = await db
-      .collection('admins')
-      .doc(email.toLowerCase())
-      .get();
-    if (!adminDoc.exists) {
-      throw new functionsV2.https.HttpsError(
-        'permission-denied',
-        'This function is restricted to administrators.'
-      );
-    }
+      let transcriptItems: TranscriptResponse[] = [];
+      try {
+        // Fetch captions directly from timedtext (no Data API key dependency).
+        const captionFetchStartMs = Date.now();
+        let captionCandidates: TimedtextTrack[] = [
+          ...LEGACY_TIMEDTEXT_CANDIDATES,
+        ];
+        try {
+          // First, discover available tracks so we can support non-English
+          // videos (or videos where only one specific transcript track is
+          // published).
+          const trackListResp = await axios.get<string>(
+            'https://www.youtube.com/api/timedtext',
+            {
+              params: {
+                type: 'list',
+                v: videoId,
+              },
+              timeout: TIMEDTEXT_REQUEST_TIMEOUT_MS,
+              responseType: 'text',
+            }
+          );
 
-    // Generate OAuth 2.0 Access Token
-
-    const auth = new GoogleAuth({
-      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-    });
-
-    const accessTokenResponse = (await auth.getAccessToken()) as
-      | string
-      | { token: string | null }
-      | null;
-    const accessToken =
-      typeof accessTokenResponse === 'string'
-        ? accessTokenResponse
-        : accessTokenResponse?.token;
-
-    if (!accessToken) {
-      throw new functionsV2.https.HttpsError(
-        'internal',
-        'Failed to generate OAuth token.'
-      );
-    }
-
-    const repoName = 'OPS-PIvers/SPART_Board';
-    const { widgetName, description } = request.data;
-
-    console.log(
-      `Triggering Jules for widget: ${widgetName} in repo: ${repoName}`
-    );
-
-    const prompt = `
-      As a Jules Agent, your task is to implement a new widget for the SPART Board application.
-      
-      Widget Name: ${widgetName}
-      Features Requested: ${description}
-      
-      Implementation Requirements:
-      1. Create a new component in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.tsx'.
-      2. Follow the existing patterns:
-         - Accept 'widget: WidgetData' as a prop.
-         - Use 'useDashboard()' for state updates.
-         - Use Tailwind CSS for styling, adhering to the brand theme (brand-blue, brand-red, etc.).
-         - Use Lucide icons.
-      3. Register the new type in 'types.ts' (WidgetType).
-      4. Add metadata to 'TOOLS' in 'config/tools.ts'.
-      5. Map the component in 'WidgetRenderer.tsx'.
-      6. Define default configuration in 'context/DashboardContext.tsx' (inside the 'addWidget' function).
-      7. Add a unit test in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.test.tsx'.
-      
-      Please ensure all code is strictly typed and follows the project's 'Zero-tolerance' linting policy.
-    `;
-
-    try {
-      console.log('Sending request to Jules API...');
-      // Use the named constant for the endpoint
-      const { data: session } = await axios.post<JulesSessionResponse>(
-        JULES_API_SESSIONS_ENDPOINT,
-        {
-          prompt: prompt,
-          sourceContext: {
-            source: `sources/github.com/${repoName}`,
-            githubRepoContext: {
-              startingBranch: 'main',
-            },
-          },
-          automationMode: 'AUTO_CREATE_PR',
-          title: `Generate Widget: ${widgetName}`,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
+          const discoveredTracks = parseTimedtextTrackList(trackListResp.data);
+          captionCandidates = buildTimedtextCandidates(discoveredTracks);
+        } catch (trackListErr: unknown) {
+          if (
+            axios.isAxiosError(trackListErr) &&
+            trackListErr.response?.status === 429
+          ) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              'YouTube is temporarily rate-limiting caption requests from our server. Please try Manual Entry or CSV Import instead.'
+            );
+          }
+          const msg =
+            trackListErr instanceof Error
+              ? trackListErr.message
+              : String(trackListErr);
+          console.warn(
+            `[generateVideoActivity] Timedtext track discovery failed for ${videoId}; falling back to legacy candidates:`,
+            msg
+          );
         }
-      );
 
-      const sessionIdFromName = session.name?.split('/').pop();
-      const sessionId = sessionIdFromName ?? session.id;
+        for (const candidate of captionCandidates) {
+          if (Date.now() - captionFetchStartMs >= TIMEDTEXT_TOTAL_BUDGET_MS) {
+            console.warn(
+              `[generateVideoActivity] Timedtext retrieval budget exceeded for ${videoId}; stopping caption attempts early.`
+            );
+            break;
+          }
+          try {
+            // Fetch as text so we can inspect the body regardless of content-type.
+            // YouTube sometimes returns XML even when fmt=json3 is requested.
+            const timedtextResp = await axios.get<string>(
+              'https://www.youtube.com/api/timedtext',
+              {
+                params: {
+                  v: videoId,
+                  lang: candidate.lang,
+                  fmt: 'json3',
+                  ...(candidate.name ? { name: candidate.name } : {}),
+                  ...(candidate.vssId ? { vss_id: candidate.vssId } : {}),
+                  ...(candidate.kind ? { kind: candidate.kind } : {}),
+                },
+                timeout: TIMEDTEXT_REQUEST_TIMEOUT_MS,
+                responseType: 'text',
+              }
+            );
 
-      if (!sessionId) {
-        throw new functionsV2.https.HttpsError(
-          'internal',
-          'Jules API response is missing a session identifier (name or id).'
-        );
-      }
+            const rawBody = timedtextResp.data ?? '';
 
-      console.log(`Jules session created: ${sessionId}`);
+            // Try JSON3 first
+            if (rawBody.trimStart().startsWith('{')) {
+              let parsed: { events?: TimedtextJson3Event[] } = {};
+              try {
+                parsed = JSON.parse(rawBody) as {
+                  events?: TimedtextJson3Event[];
+                };
+              } catch {
+                // not valid JSON3 — fall through to XML
+              }
+              const json3Parsed = parseTimedtextJson3(parsed.events ?? []);
+              if (json3Parsed.length > 0) {
+                transcriptItems = json3Parsed;
+                break;
+              }
+            }
 
-      return {
-        success: true,
-        message: `Jules session started successfully. Session ID: ${sessionId}`,
-        consoleUrl: `https://jules.google.com/session/${sessionId}`,
-      };
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
+            // If the response body looks like XML, parse it directly without
+            // issuing a second HTTP request.
+            if (rawBody.trimStart().startsWith('<')) {
+              const xmlParsed = parseTimedtextXml(rawBody);
+              if (xmlParsed.length > 0) {
+                transcriptItems = xmlParsed;
+                break;
+              }
+            }
+
+            // As a last resort, fetch without fmt=json3 to get XML explicitly.
+            if (Date.now() - captionFetchStartMs >= TIMEDTEXT_TOTAL_BUDGET_MS) {
+              console.warn(
+                `[generateVideoActivity] Timedtext retrieval budget reached before XML fallback for ${videoId}; skipping remaining attempts.`
+              );
+              break;
+            }
+            const xmlResp = await axios.get<string>(
+              'https://www.youtube.com/api/timedtext',
+              {
+                params: {
+                  v: videoId,
+                  lang: candidate.lang,
+                  ...(candidate.name ? { name: candidate.name } : {}),
+                  ...(candidate.vssId ? { vss_id: candidate.vssId } : {}),
+                  ...(candidate.kind ? { kind: candidate.kind } : {}),
+                },
+                timeout: TIMEDTEXT_REQUEST_TIMEOUT_MS,
+                responseType: 'text',
+              }
+            );
+
+            const xmlParsed = parseTimedtextXml(xmlResp.data);
+            if (xmlParsed.length > 0) {
+              transcriptItems = xmlParsed;
+              break;
+            }
+          } catch (candidateErr: unknown) {
+            if (
+              axios.isAxiosError(candidateErr) &&
+              candidateErr.response?.status === 429
+            ) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                'YouTube is temporarily rate-limiting caption requests from our server. Please try Manual Entry or CSV Import instead.'
+              );
+            }
+            const msg =
+              candidateErr instanceof Error
+                ? candidateErr.message
+                : String(candidateErr);
+            console.warn(
+              `[generateVideoActivity] Timedtext fetch failed for ${candidate.lang}${candidate.kind ? ` (${candidate.kind})` : ''}:`,
+              msg
+            );
+          }
+        }
+      } catch (err: unknown) {
+        if (err instanceof functionsV1.https.HttpsError) throw err;
+        const msg = err instanceof Error ? err.message : String(err);
         console.warn(
-          'Jules API 404: The source entity was not found. Please ensure the repository is connected to the Jules project.'
+          `[generateVideoActivity] Transcript fetch failed for ${videoId}:`,
+          msg
+        );
+        throw new functionsV1.https.HttpsError(
+          'not-found',
+          'No captions are available for this video or they could not be retrieved. Try a different video, or use Manual Entry / CSV Import instead.'
         );
       }
-      let errorMessage = 'An unknown error occurred';
-      if (axios.isAxiosError(error)) {
-        console.error('Jules API Error Response Data:', error.response?.data);
-        console.error('Jules API Error Status:', error.response?.status);
 
-        const data = error.response?.data as JulesError | undefined;
-        errorMessage = data?.error?.message ?? error.message;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
+      if (transcriptItems.length === 0) {
+        throw new functionsV1.https.HttpsError(
+          'not-found',
+          'No captions are available for this video or they could not be retrieved. Try a different video, or use Manual Entry / CSV Import instead.'
+        );
       }
-      console.error('Jules API Error:', errorMessage);
-      throw new functionsV2.https.HttpsError(
-        'internal',
-        `Failed to trigger Jules: ${errorMessage}`
-      );
+
+      // Build structured transcript text (timestamp + text per segment)
+      const transcriptText = transcriptItems
+        .map((item) => {
+          const secs = Math.floor((item.offset ?? 0) / 1000);
+          const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+          const ss = String(secs % 60).padStart(2, '0');
+          return `[${mm}:${ss}] ${item.text.trim()}`;
+        })
+        .join('\n');
+
+      const db = admin.firestore();
+
+      // Check if user is an admin (unlimited)
+      const adminDoc = await db
+        .collection('admins')
+        .doc(email.toLowerCase())
+        .get();
+      const isAdmin = adminDoc.exists;
+
+      if (!isAdmin) {
+        // --- Check Overall Gemini Limit ---
+        const today = new Date().toISOString().split('T')[0];
+        const overallUsageRef = db
+          .collection('ai_usage')
+          .doc(`${uid}_${today}`);
+
+        try {
+          await db.runTransaction(async (transaction) => {
+            const globalPermDoc = await transaction.get(
+              db.collection('global_permissions').doc('gemini-functions')
+            );
+            const globalPerm = globalPermDoc.data() as
+              | GlobalPermission
+              | undefined;
+
+            if (globalPerm && !globalPerm.enabled) {
+              throw new functionsV1.https.HttpsError(
+                'permission-denied',
+                'Gemini functions are currently disabled by an administrator.'
+              );
+            }
+
+            const overallLimitEnabled =
+              globalPerm?.config?.dailyLimitEnabled !== false;
+            const overallLimit = globalPerm?.config?.dailyLimit ?? 20;
+
+            const overallUsageDoc = await transaction.get(overallUsageRef);
+            const currentOverallUsage =
+              (overallUsageDoc.data()?.count as number) || 0;
+
+            if (overallLimitEnabled && currentOverallUsage >= overallLimit) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                `Daily AI usage limit reached (${overallLimit} generations). Please try again tomorrow.`
+              );
+            }
+
+            transaction.set(
+              overallUsageRef,
+              {
+                count: currentOverallUsage + 1,
+                email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          });
+        } catch (error) {
+          if (error instanceof functionsV1.https.HttpsError) throw error;
+          console.error('Usage check error:', error);
+          throw new functionsV1.https.HttpsError(
+            'internal',
+            'Failed to verify AI usage limits.'
+          );
+        }
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new functionsV1.https.HttpsError(
+          'internal',
+          'Gemini API Key is missing on the server.'
+        );
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+
+      const systemPrompt = `You are an expert teacher creating a video comprehension activity.
+You will be given a timed transcript of a YouTube video.
+Generate exactly ${count} multiple-choice questions that check understanding of key concepts.
+
+CRITICAL RULES:
+1. Each question's "timestamp" field MUST be the exact second (as an integer) when the answer appears in the transcript.
+   Convert "[MM:SS]" to total seconds: e.g. "[02:15]" → 135.
+1b. The question should be asked AFTER students have heard the explanation, so choose a timestamp near the END of the relevant explanation chunk (not the beginning).
+2. Questions must be in ascending timestamp order.
+3. Each question must have exactly 3 plausible but clearly incorrect answers.
+4. Only use "MC" (Multiple Choice) type.
+5. Time limit should be 20-45 seconds per question.
+6. Return ONLY valid JSON — no markdown fences, no commentary.
+
+Return JSON in this exact format:
+{
+  "title": "Short descriptive activity title based on video content",
+  "questions": [
+    {
+      "text": "Question text here?",
+      "timestamp": 42,
+      "correctAnswer": "The correct answer",
+      "incorrectAnswers": ["Wrong 1", "Wrong 2", "Wrong 3"],
+      "timeLimit": 30
     }
-  }
-);
+  ]
+}`;
+
+      const userPrompt = `Timed transcript:\n\n${transcriptText}`;
+
+      const contents: Content[] = [
+        {
+          role: 'user',
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
+        },
+      ];
+
+      try {
+        const result = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite-preview',
+          contents,
+          config: { responseMimeType: 'application/json' },
+        });
+
+        const text = result.text;
+        if (!text) throw new Error('Empty response from AI');
+
+        const parsed = JSON.parse(text) as GeneratedVideoActivity;
+
+        if (
+          !parsed.title ||
+          !Array.isArray(parsed.questions) ||
+          parsed.questions.length === 0
+        ) {
+          throw new Error('Invalid response structure from AI');
+        }
+
+        return parsed;
+      } catch (error: unknown) {
+        console.error('[generateVideoActivity] Gemini error:', error);
+        const msg =
+          error instanceof Error ? error.message : 'AI generation failed';
+        throw new functionsV1.https.HttpsError('internal', msg);
+      }
+    }
+  );
+
+// ---------------------------------------------------------------------------
+// Video Activity: Admin-gated Gemini audio transcription fallback
+// For videos that do not have captions available.
+// ---------------------------------------------------------------------------
+
+interface AudioTranscriptionRequestData {
+  url: string;
+  questionCount: number;
+}
+
+interface AudioTranscriptionPermConfig {
+  dailyLimit?: number;
+  dailyLimitEnabled?: boolean;
+  model?: string;
+}
+
+interface AudioTranscriptionPerm {
+  enabled: boolean;
+  accessLevel: 'admin' | 'beta' | 'all';
+  betaUsers?: string[];
+  config?: AudioTranscriptionPermConfig;
+}
+
+/**
+ * Admin-only fallback: uses Gemini multimodal to transcribe a video that has
+ * no captions, then generates timestamped quiz questions.
+ *
+ * Gated behind global_permissions/video-activity-audio-transcription.
+ * Separate daily usage counter to control costs independently.
+ *
+ * NOTE: Audio/video extraction from YouTube may be subject to YouTube Terms of
+ * Service. This feature is disabled by default and must be explicitly enabled
+ * by an administrator who accepts the associated risk.
+ */
+export const transcribeVideoWithGemini = functionsV1
+  .runWith({
+    secrets: ['GEMINI_API_KEY'],
+    memory: '1GB',
+    timeoutSeconds: 300,
+  })
+  .https.onCall(
+    async (
+      data: AudioTranscriptionRequestData,
+      context
+    ): Promise<GeneratedVideoActivity> => {
+      if (!context.auth) {
+        throw new functionsV1.https.HttpsError(
+          'unauthenticated',
+          'The function must be called while authenticated.'
+        );
+      }
+
+      const uid = context.auth.uid;
+      const email = context.auth.token.email;
+
+      if (!email) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'User must have an email associated with their account.'
+        );
+      }
+
+      const db = admin.firestore();
+
+      // Check feature permission — admin-gated, off by default
+      const permDoc = await db
+        .collection('global_permissions')
+        .doc('video-activity-audio-transcription')
+        .get();
+
+      if (!permDoc.exists) {
+        throw new functionsV1.https.HttpsError(
+          'permission-denied',
+          'Gemini audio transcription is not enabled. An administrator must enable it in Feature Permissions.'
+        );
+      }
+
+      const perm = permDoc.data() as AudioTranscriptionPerm;
+
+      if (!perm.enabled) {
+        throw new functionsV1.https.HttpsError(
+          'permission-denied',
+          'Gemini audio transcription is currently disabled.'
+        );
+      }
+
+      // Check admin status
+      const adminDoc = await db
+        .collection('admins')
+        .doc(email.toLowerCase())
+        .get();
+      const isAdmin = adminDoc.exists;
+
+      if (!isAdmin) {
+        if (perm.accessLevel === 'admin') {
+          throw new functionsV1.https.HttpsError(
+            'permission-denied',
+            'Gemini audio transcription is restricted to administrators.'
+          );
+        }
+        if (
+          perm.accessLevel === 'beta' &&
+          !perm.betaUsers?.includes(email.toLowerCase())
+        ) {
+          throw new functionsV1.https.HttpsError(
+            'permission-denied',
+            'You do not have access to Gemini audio transcription.'
+          );
+        }
+      }
+
+      if (!isAdmin) {
+        // --- Dual Limit Check (Overall + Specific) ---
+        const today = new Date().toISOString().split('T')[0];
+        const overallUsageRef = db
+          .collection('ai_usage')
+          .doc(`${uid}_${today}`);
+        const specificUsageRef = db
+          .collection('ai_usage')
+          .doc(`${uid}_video-activity-audio-transcription_${today}`);
+
+        try {
+          await db.runTransaction(async (transaction) => {
+            // 1. Check Overall Limit
+            const globalPermDoc = await transaction.get(
+              db.collection('global_permissions').doc('gemini-functions')
+            );
+            const globalPerm = globalPermDoc.data() as
+              | GlobalPermission
+              | undefined;
+            const overallLimitEnabled =
+              globalPerm?.config?.dailyLimitEnabled !== false;
+            const overallLimit = globalPerm?.config?.dailyLimit ?? 20;
+
+            const overallUsageDoc = await transaction.get(overallUsageRef);
+            const currentOverallUsage =
+              (overallUsageDoc.data()?.count as number) || 0;
+
+            if (overallLimitEnabled && currentOverallUsage >= overallLimit) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                `Daily AI usage limit reached (${overallLimit} generations). Please try again tomorrow.`
+              );
+            }
+
+            // 2. Check Specific Transcription Limit
+            const specLimitEnabled = perm.config?.dailyLimitEnabled !== false;
+            const specLimit = perm.config?.dailyLimit ?? 5;
+
+            const specUsageDoc = await transaction.get(specificUsageRef);
+            const currentSpecUsage =
+              (specUsageDoc.data()?.count as number) || 0;
+
+            if (specLimitEnabled && currentSpecUsage >= specLimit) {
+              throw new functionsV1.https.HttpsError(
+                'resource-exhausted',
+                `Daily audio transcription limit reached (${specLimit} per day). Please try again tomorrow.`
+              );
+            }
+
+            // 3. Increment Both
+            transaction.set(
+              overallUsageRef,
+              {
+                count: currentOverallUsage + 1,
+                email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+            transaction.set(
+              specificUsageRef,
+              {
+                count: currentSpecUsage + 1,
+                email,
+                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          });
+        } catch (error) {
+          if (error instanceof functionsV1.https.HttpsError) throw error;
+          console.error('Transcription usage check error:', error);
+          throw new functionsV1.https.HttpsError(
+            'internal',
+            'Failed to verify audio transcription usage limits.'
+          );
+        }
+      }
+
+      const { url, questionCount } = data;
+      const count = Math.min(Math.max(Number(questionCount) || 5, 1), 20);
+
+      const videoIdMatch = url.match(
+        /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&]{11})/
+      );
+      const videoId = videoIdMatch?.[1];
+
+      if (!videoId) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'Could not extract a video ID from the provided URL.'
+        );
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new functionsV1.https.HttpsError(
+          'internal',
+          'Gemini API Key is missing on the server.'
+        );
+      }
+
+      // Use the YouTube video URL directly with Gemini's video understanding
+      const model = perm.config?.model ?? 'gemini-3.1-flash-lite-preview';
+      const ai = new GoogleGenAI({ apiKey });
+
+      const systemPrompt = `You are an expert teacher creating a video comprehension activity.
+Watch the provided YouTube video and generate exactly ${count} multiple-choice questions.
+
+CRITICAL RULES:
+1. Each question's "timestamp" field MUST be an integer (seconds from start) when the answer is discussed.
+1b. Place each question timestamp near the END of the explanation segment so students hear the content before being prompted.
+2. Questions must be in ascending timestamp order.
+3. Each question must have exactly 3 plausible but incorrect answers.
+4. Only use "MC" type.
+5. Time limit should be 20-45 seconds per question.
+6. Return ONLY valid JSON — no markdown fences, no commentary.
+
+Return JSON:
+{
+  "title": "Short descriptive activity title",
+  "questions": [
+    {
+      "text": "Question?",
+      "timestamp": 42,
+      "correctAnswer": "Correct answer",
+      "incorrectAnswers": ["Wrong 1", "Wrong 2", "Wrong 3"],
+      "timeLimit": 30
+    }
+  ]
+}`;
+
+      try {
+        const result = await ai.models.generateContent({
+          model,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: systemPrompt },
+                {
+                  fileData: {
+                    fileUri: `https://www.youtube.com/watch?v=${videoId}`,
+                    mimeType: 'video/mp4',
+                  },
+                },
+              ],
+            },
+          ],
+          config: { responseMimeType: 'application/json' },
+        });
+
+        const text = result.text;
+        if (!text) throw new Error('Empty response from AI');
+
+        const parsed = JSON.parse(text) as GeneratedVideoActivity;
+
+        if (
+          !parsed.title ||
+          !Array.isArray(parsed.questions) ||
+          parsed.questions.length === 0
+        ) {
+          throw new Error('Invalid response structure from AI');
+        }
+
+        return parsed;
+      } catch (error: unknown) {
+        console.error('[transcribeVideoWithGemini] Gemini error:', error);
+        const msg =
+          error instanceof Error ? error.message : 'AI generation failed';
+        throw new functionsV1.https.HttpsError('internal', msg);
+      }
+    }
+  );
+
+// ─── Guided Learning Generation (Admin Only) ─────────────────────────────────
+
+interface GuidedLearningStep {
+  id: string;
+  xPct: number;
+  yPct: number;
+  label?: string;
+  interactionType: string;
+  text?: string;
+  panZoomScale?: number;
+  spotlightRadius?: number;
+  question?: {
+    type: string;
+    text: string;
+    choices?: string[];
+    correctAnswer?: string;
+    matchingPairs?: { left: string; right: string }[];
+    sortingItems?: string[];
+  };
+  autoAdvanceDuration?: number;
+}
+
+interface GeneratedGuidedLearning {
+  suggestedTitle: string;
+  suggestedMode: string;
+  steps: GuidedLearningStep[];
+}
+
+export const generateGuidedLearning = functionsV1
+  .runWith({
+    secrets: ['GEMINI_API_KEY'],
+    memory: '512MB',
+    timeoutSeconds: 120,
+  })
+  .https.onCall(
+    async (
+      data: { imageBase64: string; mimeType: string; prompt?: string },
+      context
+    ) => {
+      // Admin only
+      const uid = context.auth?.uid;
+      if (!uid) {
+        throw new functionsV1.https.HttpsError(
+          'unauthenticated',
+          'Must be authenticated to use this feature.'
+        );
+      }
+
+      const userEmail = context.auth?.token.email;
+      if (!userEmail) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'Authenticated user must have an email address.'
+        );
+      }
+      const adminDoc = await admin
+        .firestore()
+        .collection('admins')
+        .doc(userEmail.toLowerCase())
+        .get();
+      if (!adminDoc.exists) {
+        throw new functionsV1.https.HttpsError(
+          'permission-denied',
+          'Admin access required to use AI generation.'
+        );
+      }
+
+      const { imageBase64, mimeType, prompt } = data;
+      if (!imageBase64 || !mimeType) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'imageBase64 and mimeType are required.'
+        );
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new functionsV1.https.HttpsError(
+          'internal',
+          'AI service is not configured.'
+        );
+      }
+
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+
+        const systemInstruction = `You are an educational content creator helping teachers build interactive guided learning experiences.
+Analyze the provided image and generate a guided learning experience as a JSON object.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "suggestedTitle": "string",
+  "suggestedMode": "structured" | "guided" | "explore",
+  "steps": [
+    {
+      "id": "unique-string",
+      "xPct": number (0-100),
+      "yPct": number (0-100),
+      "label": "string",
+      "interactionType": "text-popover" | "tooltip" | "pan-zoom" | "spotlight" | "question",
+      "text": "string (for text-popover/tooltip)",
+      "panZoomScale": number (1.5-4, for pan-zoom only),
+      "spotlightRadius": number (10-40, for spotlight only),
+      "autoAdvanceDuration": number (seconds),
+      "question": {
+        "type": "multiple-choice" | "matching" | "sorting",
+        "text": "string",
+        "choices": ["string"] (MC: include correct + 3 incorrect),
+        "correctAnswer": "string (MC: must match one choice)",
+        "matchingPairs": [{"left": "string", "right": "string"}],
+        "sortingItems": ["string"] (in correct order)
+      }
+    }
+  ]
+}
+
+Guidelines:
+- Create 4-8 meaningful steps that guide learners through the content
+- Use text-popover for key concepts, spotlight to highlight areas, pan-zoom to zoom in on details, questions to check understanding
+- Place hotspots at meaningful locations on the image (xPct/yPct as percentages 0-100)
+- Include at least 1 question step for comprehension checking
+- Make content educational and age-appropriate
+- Set autoAdvanceDuration to 5-15 seconds for non-question steps in guided mode`;
+
+        const userPrompt = prompt
+          ? `Additional instructions: ${sanitizePrompt(prompt)}`
+          : 'Analyze this educational image and create an engaging guided learning experience.';
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: userPrompt },
+                {
+                  inlineData: {
+                    mimeType,
+                    data: imageBase64,
+                  },
+                },
+              ],
+            },
+          ],
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const rawText = response.text ?? '';
+        const parsed = JSON.parse(rawText) as GeneratedGuidedLearning;
+
+        if (
+          !parsed.suggestedTitle ||
+          !Array.isArray(parsed.steps) ||
+          parsed.steps.length === 0
+        ) {
+          throw new Error('Invalid response structure from AI');
+        }
+
+        // Ensure all steps have IDs
+        parsed.steps = parsed.steps.map((step, i) => ({
+          ...step,
+          id: step.id || `step-${i + 1}-${Date.now()}`,
+        }));
+
+        return parsed;
+      } catch (error: unknown) {
+        console.error('[generateGuidedLearning] Gemini error:', error);
+        const msg =
+          error instanceof Error ? error.message : 'AI generation failed';
+        throw new functionsV1.https.HttpsError('internal', msg);
+      }
+    }
+  );
+interface DashboardData {
+  updatedAt?: number;
+  widgets?: { type: string }[];
+}
+
+interface EngagementCounts {
+  total: number;
+  monthly: number;
+  daily: number;
+}
+
+/**
+ * Cloud Function to fetch administrative analytics.
+ * Uses onRequest with explicit CORS to avoid preflight issues with onCall.
+ * Bumps memory and timeout to handle unbounded collection reads
+ * while a more scalable (paginated/aggregated) solution is developed.
+ */
+export const adminAnalytics = functionsV1
+  .runWith({
+    timeoutSeconds: 540,
+    memory: '4GB',
+  })
+  .https.onRequest((req, res) => {
+    corsHandler(req, res, async () => {
+      console.log('[getAdminAnalytics] Function started');
+
+      // 1. Verify caller is authenticated via Bearer token
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        console.error('[getAdminAnalytics] Unauthenticated access attempt');
+        res.status(401).json({ error: 'unauthenticated' });
+        return;
+      }
+
+      let email: string;
+      try {
+        const idToken = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        if (!decodedToken.email) {
+          res.status(401).json({ error: 'unauthenticated' });
+          return;
+        }
+        email = decodedToken.email.toLowerCase();
+      } catch {
+        res.status(401).json({ error: 'unauthenticated' });
+        return;
+      }
+
+      const db = admin.firestore();
+
+      // 2. Verify caller is an admin
+      console.log(`[getAdminAnalytics] Verifying admin status for: ${email}`);
+      const adminDoc = await db.collection('admins').doc(email).get();
+      if (!adminDoc.exists) {
+        console.error(
+          `[getAdminAnalytics] Unauthorized access: ${email} is not an admin`
+        );
+        res.status(403).json({ error: 'permission-denied' });
+        return;
+      }
+
+      try {
+        const now = Date.now();
+        console.log('[getAdminAnalytics] Fetching users...');
+
+        // 3. Fetch Users
+        // Using .stream() combined with .select() limits the memory footprint
+        // by streaming documents one-by-one with only the necessary fields
+        const usersStream = db
+          .collection('users')
+          .select('email', 'lastLogin', 'buildings')
+          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+
+        const usersByDomain: Record<string, EngagementCounts> = {};
+        const usersByBuilding: Record<string, EngagementCounts> = {};
+        const usersByDomainAndBuilding: Record<
+          string,
+          Record<string, EngagementCounts>
+        > = {};
+        const totalEngagement: EngagementCounts = {
+          total: 0,
+          monthly: 0,
+          daily: 0,
+        };
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+        const oneDayMs = 24 * 60 * 60 * 1000;
+
+        const increment = (
+          bucket: Record<string, EngagementCounts>,
+          key: string,
+          isMonthlyActive: boolean,
+          isDailyActive: boolean
+        ) => {
+          if (!bucket[key]) {
+            bucket[key] = { total: 0, monthly: 0, daily: 0 };
+          }
+          bucket[key].total += 1;
+          if (isMonthlyActive) bucket[key].monthly += 1;
+          if (isDailyActive) bucket[key].daily += 1;
+        };
+
+        for await (const userDoc of usersStream) {
+          if (!userDoc.exists) continue;
+          const userData = userDoc.data();
+          const userEmail =
+            typeof userData.email === 'string' ? userData.email : '';
+          const domain = userEmail.includes('@')
+            ? userEmail.split('@')[1]
+            : 'unknown';
+
+          let buildings: string[] = [];
+          if (Array.isArray(userData.buildings)) {
+            buildings = userData.buildings.map(String);
+          }
+
+          const lastLogin =
+            typeof userData.lastLogin === 'number' ? userData.lastLogin : 0;
+          const isMonthlyActive =
+            lastLogin > 0 && now - lastLogin <= thirtyDaysMs;
+          const isDailyActive = lastLogin > 0 && now - lastLogin <= oneDayMs;
+
+          totalEngagement.total += 1;
+          if (isMonthlyActive) totalEngagement.monthly += 1;
+          if (isDailyActive) totalEngagement.daily += 1;
+
+          increment(usersByDomain, domain, isMonthlyActive, isDailyActive);
+
+          if (buildings.length === 0) {
+            increment(usersByBuilding, 'none', isMonthlyActive, isDailyActive);
+            if (!usersByDomainAndBuilding[domain]) {
+              usersByDomainAndBuilding[domain] = {};
+            }
+            increment(
+              usersByDomainAndBuilding[domain],
+              'none',
+              isMonthlyActive,
+              isDailyActive
+            );
+            continue;
+          }
+
+          for (const building of buildings) {
+            increment(
+              usersByBuilding,
+              building,
+              isMonthlyActive,
+              isDailyActive
+            );
+            if (!usersByDomainAndBuilding[domain]) {
+              usersByDomainAndBuilding[domain] = {};
+            }
+            increment(
+              usersByDomainAndBuilding[domain],
+              building,
+              isMonthlyActive,
+              isDailyActive
+            );
+          }
+        }
+
+        const totalUsers = totalEngagement.total;
+        console.log(`[getAdminAnalytics] Found ${totalUsers} user documents`);
+
+        console.log(
+          '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
+        );
+        // 4. Fetch Dashboards for Widget Stats
+        let totalDashboards = 0;
+        const totalWidgetCounts: Record<string, number> = {};
+        const activeWidgetCounts: Record<string, number> = {};
+        const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
+
+        const dashboardsStream = db
+          .collectionGroup('dashboards')
+          .select('widgets', 'updatedAt')
+          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+
+        for await (const dashDoc of dashboardsStream) {
+          if (!dashDoc.exists) continue;
+          totalDashboards++;
+          const dashData = dashDoc.data() as DashboardData;
+          const updatedAt =
+            typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
+          const isActive = updatedAt > activeThreshold;
+
+          if (dashData.widgets && Array.isArray(dashData.widgets)) {
+            dashData.widgets.forEach((w: { type: string }) => {
+              if (w && w.type) {
+                totalWidgetCounts[w.type] =
+                  (totalWidgetCounts[w.type] || 0) + 1;
+                if (isActive) {
+                  activeWidgetCounts[w.type] =
+                    (activeWidgetCounts[w.type] || 0) + 1;
+                }
+              }
+            });
+          }
+        }
+
+        console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
+
+        console.log('[getAdminAnalytics] Fetching AI usage...');
+        // 5. Fetch AI Usage
+        let totalAiUsageRecords = 0;
+        let totalAiCalls = 0;
+        const callsPerUser: Record<string, number> = {};
+        const dailyCallCounts: Record<string, number> = {};
+
+        const GEMINI_SPECIFIC_FEATURES = [
+          'smart-poll',
+          'embed-mini-app',
+          'video-activity-audio-transcription',
+        ];
+
+        const aiUsageStream = db
+          .collection('ai_usage')
+          .select('count')
+          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+
+        for await (const usageDoc of aiUsageStream) {
+          if (!usageDoc.exists) continue;
+          totalAiUsageRecords++;
+          const idParts = usageDoc.id.split('_');
+          if (idParts.length < 2) continue;
+
+          const datePart = idParts[idParts.length - 1];
+          const secondToLast = idParts[idParts.length - 2];
+          const isSpecificFeature =
+            GEMINI_SPECIFIC_FEATURES.includes(secondToLast);
+
+          // Exclude the feature ID and date to get the original UID
+          const uidParts = idParts.slice(0, isSpecificFeature ? -2 : -1);
+          const uid = uidParts.join('_');
+
+          if (!uid || !datePart) continue;
+
+          const usageData = usageDoc.data();
+          const count =
+            typeof usageData.count === 'number' ? usageData.count : 0;
+
+          // ONLY count the "overall" records for total analytics to avoid double counting
+          // (Specific feature records are for enforcement, overall records track everything)
+          if (!isSpecificFeature) {
+            totalAiCalls += count;
+            callsPerUser[uid] = (callsPerUser[uid] ?? 0) + count;
+            dailyCallCounts[datePart] =
+              (dailyCallCounts[datePart] ?? 0) + count;
+          }
+        }
+
+        console.log(
+          `[getAdminAnalytics] Found ${totalAiUsageRecords} AI usage records`
+        );
+
+        const uniqueDays = Object.keys(dailyCallCounts).length || 1;
+        const avgDailyCalls = Math.round(totalAiCalls / uniqueDays);
+        const activeAiUsers = Object.keys(callsPerUser).length || 1;
+        const avgDailyCallsPerUser =
+          Math.round((avgDailyCalls / activeAiUsers) * 10) / 10;
+        const topUserUids = Object.entries(callsPerUser)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 25)
+          .map(([uid]) => uid);
+        const topUserEmails: Record<string, string> = {};
+
+        for (let i = 0; i < topUserUids.length; i += 10) {
+          const uidChunk = topUserUids.slice(i, i + 10);
+          if (uidChunk.length === 0) continue;
+
+          const usersSnapshot = await db
+            .collection('users')
+            .where(admin.firestore.FieldPath.documentId(), 'in', uidChunk)
+            .select('email')
+            .get();
+
+          usersSnapshot.docs.forEach((doc) => {
+            const userData = doc.data();
+            if (
+              typeof userData.email === 'string' &&
+              userData.email.length > 0
+            ) {
+              topUserEmails[doc.id] = userData.email;
+            }
+          });
+        }
+
+        const topUsers = Object.entries(callsPerUser)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 25)
+          .map(([uid, count]) => ({
+            uid,
+            count,
+            email: topUserEmails[uid] ?? `Unknown (${uid})`,
+          }));
+
+        console.log('[getAdminAnalytics] Analysis complete, returning results');
+        res.json({
+          users: {
+            ...totalEngagement,
+            domains: usersByDomain,
+            buildings: usersByBuilding,
+            domainBuilding: usersByDomainAndBuilding,
+          },
+          widgets: {
+            totalInstances: totalWidgetCounts,
+            activeInstances: activeWidgetCounts,
+          },
+          api: {
+            totalCalls: totalAiCalls,
+            activeUsers: Object.keys(callsPerUser).length,
+            topUsers,
+            avgDailyCalls,
+            avgDailyCallsPerUser,
+          },
+        });
+      } catch (err: unknown) {
+        console.error('[getAdminAnalytics] Error fetching analytics:', err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : 'An internal error occurred fetching analytics.';
+        res.status(500).json({ error: 'internal', message: errorMessage });
+      }
+    });
+  });

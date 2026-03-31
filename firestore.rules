@@ -65,6 +65,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
+
+    // Global Video Activities - all authenticated users can read, only admins can write
+    match /global_video_activities/{activityId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
     // Catalyst Routines (legacy)
     match /artifacts/{appId}/public/data/catalystRoutines/{routineId} {
       allow read: if request.auth != null;
@@ -84,6 +90,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // User Roles - stored in admin_settings for global access but restricted to admins
+    match /admin_settings/user_roles {
+      allow read, write: if isAdmin();
+    }
+
+    // Explicitly allow all authenticated users to read user roles
+    // Removed because this exposes PII (emails). Need a different architecture.
+    // Reverting to admin only for now.
+
     // Feature permissions - all authenticated users can read, only admins can write
     match /feature_permissions/{widgetType} {
       allow read: if request.auth != null;
@@ -92,6 +107,16 @@ service cloud.firestore {
 
     // Global permissions - all authenticated users can read, only admins can write
     match /global_permissions/{featureId=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Guided Learning
+    match /users/{userId}/guided_learning/{setId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /building_guided_learning/{setId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
@@ -232,9 +257,44 @@ service cloud.firestore {
       }
     }
 
+    // Dashboard Templates - all authenticated users can read, only admins can write
+    match /dashboard_templates/{templateId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Global PDFs - all authenticated users can read, only admins can write
+    match /global_pdfs/{pdfId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Global Mini Apps - all authenticated users can read, only admins can write
     match /global_mini_apps/{appId} {
       allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Custom Widgets - admins can read/write all; non-admins can read published+enabled+accessible widgets
+    // NOTE: resource.data.buildings is a UI-targeting field only (filters which
+    // buildings display the widget in their Dock). It is NOT an access-control
+    // boundary enforced here — enforcing it would require an expensive get() call
+    // to look up building membership and is not necessary given that all
+    // custom_widgets content is already scoped to authenticated users within the
+    // same district deployment. If per-building access control is needed in the
+    // future, add building membership to custom auth claims and check
+    // request.auth.token.buildings here.
+    match /custom_widgets/{widgetId} {
+      allow read: if isAdmin() ||
+        (request.auth != null &&
+         resource.data.published == true &&
+         resource.data.enabled == true &&
+         (
+           resource.data.accessLevel == 'public' ||
+           (resource.data.accessLevel == 'beta' &&
+            request.auth.token.email != null &&
+            request.auth.token.email.lower() in resource.data.betaUsers)
+         ));
       allow write: if isAdmin();
     }
 
@@ -257,16 +317,99 @@ service cloud.firestore {
       }
     }
 
-    // AI Usage Tracking — users can increment their own daily count
+    // Video Activity Sessions — Teacher creates, anonymous students can read and submit responses
+    match /video_activity_sessions/{sessionId} {
+      // Any authenticated user (including anonymous) can read session documents
+      allow read: if request.auth != null;
+      // Only authenticated (non-anonymous) users can create sessions (teachers)
+      allow create: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      // Sessions are immutable after creation (no updates needed)
+      allow update, delete: if false;
+
+      match /responses/{studentUid} {
+        // Teacher can read all responses; students can only read their own (doc ID == auth UID)
+        allow read: if request.auth != null && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.teacherUid == request.auth.uid ||
+          studentUid == request.auth.uid
+        );
+        // Students create their own response; document ID and studentUid field must match their auth UID
+        allow create: if request.auth != null &&
+          studentUid == request.auth.uid &&
+          request.resource.data.studentUid == request.auth.uid &&
+          request.resource.data.score == null &&
+          request.resource.data.completedAt == null;
+        // Students can update only their own response to add answers or set completedAt;
+        // identity fields and score are immutable from the client; answers array may only grow
+        allow update: if request.auth != null &&
+          studentUid == request.auth.uid &&
+          request.resource.data.studentUid == resource.data.studentUid &&
+          request.resource.data.pin == resource.data.pin &&
+          request.resource.data.name == resource.data.name &&
+          request.resource.data.joinedAt == resource.data.joinedAt &&
+          request.resource.data.score == resource.data.score &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers', 'completedAt']) &&
+          request.resource.data.answers.size() >= resource.data.answers.size() &&
+          request.resource.data.answers.hasAll(resource.data.answers);
+        allow delete: if false;
+      }
+    }
+
+    // Video Activity metadata — stored per teacher user
+    match /users/{userId}/video_activities/{activityId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // AI Usage Tracking — read-only for users; all writes go through Cloud Functions (Admin SDK)
+    // The Cloud Function uses db.runTransaction() via the Admin SDK, which bypasses these rules.
+    // Client-side write access is intentionally removed to prevent users from resetting their
+    // daily quota by writing a document with count = 0 via the Firestore client SDK.
     match /ai_usage/{usageId} {
       // Document ID is formatted as {uid}_{YYYY-MM-DD}
       // Security rule replacement for startsWith: usageId >= prefix && usageId < prefix + '\uf8ff'
       allow read: if request.auth != null && (
-        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff') || 
+        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff') ||
         isAdmin()
       );
-      allow write: if request.auth != null && 
-        (usageId >= request.auth.uid + '_' && usageId < request.auth.uid + '_' + '\uf8ff');
+      // No client write — quota increments are performed server-side via Admin SDK only.
+    }
+
+    // Guided Learning Sessions — Teacher creates, authenticated (incl. anonymous) students read and submit
+    match /guided_learning_sessions/{sessionId} {
+      // Any authenticated user (including anonymous) can read session documents
+      allow read: if request.auth != null;
+      // Only authenticated (non-anonymous) teachers can create sessions; they must own it
+      allow create: if request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous' &&
+        request.resource.data.teacherUid == request.auth.uid;
+      // Sessions are immutable after creation
+      allow update, delete: if false;
+
+      match /responses/{studentUid} {
+        // Teacher can read all responses; students can only read their own
+        allow read: if request.auth != null && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.teacherUid == request.auth.uid ||
+          studentUid == request.auth.uid
+        );
+        // Students create their own response; doc ID, studentAnonymousId, and sessionId must match
+        allow create: if request.auth != null &&
+          studentUid == request.auth.uid &&
+          request.resource.data.studentAnonymousId == request.auth.uid &&
+          request.resource.data.sessionId == sessionId &&
+          request.resource.data.score == null;
+        // Students can update only their own response to add answers or set completedAt;
+        // identity fields and score are immutable from the client
+        allow update: if request.auth != null &&
+          studentUid == request.auth.uid &&
+          request.resource.data.studentAnonymousId == resource.data.studentAnonymousId &&
+          request.resource.data.sessionId == resource.data.sessionId &&
+          request.resource.data.startedAt == resource.data.startedAt &&
+          request.resource.data.score == resource.data.score &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers', 'completedAt', 'pin']) &&
+          request.resource.data.answers.size() >= resource.data.answers.size();
+        allow delete: if false;
+      }
     }
 
     // Default deny all other collections

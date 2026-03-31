@@ -47,7 +47,10 @@ export type WidgetType =
   | 'numberLine'
   | 'syntax-framer'
   | 'hotspot-image'
-  | 'starter-pack';
+  | 'starter-pack'
+  | 'video-activity'
+  | 'guided-learning'
+  | 'custom-widget';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -172,6 +175,7 @@ export interface ScheduleItem {
   mode?: 'clock' | 'timer';
   linkedWidgets?: WidgetType[];
   spawnedWidgetIds?: string[];
+  oneOffDate?: string; // YYYY-MM-DD: if set, item only shows on this specific date
 }
 
 export interface DailySchedule {
@@ -319,6 +323,10 @@ export interface WebcamConfig {
   deviceId?: string;
   zoomLevel?: number;
   isMirrored?: boolean;
+  autoSendToNotes?: boolean;
+  isRemoteMode?: boolean;
+  remoteCaptureDataUrl?: string;
+  remoteCaptureTimestamp?: number;
 }
 
 export interface ScoreboardTeam {
@@ -481,6 +489,32 @@ export interface EmbedGlobalConfig {
   buildingDefaults: Record<string, BuildingEmbedDefaults>;
 }
 
+// --- Reveal Grid Global Config ---
+export interface BuildingRevealGridDefaults {
+  buildingId: string;
+  columns?: 2 | 3 | 4 | 5;
+  revealMode?: 'flip' | 'fade';
+  fontFamily?: GlobalFontFamily;
+  defaultCardColor?: string;
+  defaultCardBackColor?: string;
+}
+
+export interface RevealGridGlobalConfig {
+  buildingDefaults: Record<string, BuildingRevealGridDefaults>;
+}
+
+// --- Breathing Global Config ---
+export interface BuildingBreathingDefaults {
+  buildingId: string;
+  pattern?: '4-4-4-4' | '4-7-8' | '5-5';
+  visual?: 'circle' | 'lotus' | 'wave';
+  color?: string;
+}
+
+export interface BreathingGlobalConfig {
+  buildingDefaults: Record<string, BuildingBreathingDefaults>;
+}
+
 // --- Clock Global Config ---
 export interface BuildingClockDefaults {
   buildingId: string;
@@ -498,6 +532,8 @@ export interface BuildingTimeToolDefaults {
   buildingId: string;
   duration?: number; // in seconds
   timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+  timerEndTriggerRandom?: boolean;
+  timerEndTriggerNextUp?: boolean;
 }
 
 export interface TimeToolGlobalConfig {
@@ -712,7 +748,18 @@ export interface LunchCountConfig {
   gradeLevel?: string;
 }
 
-export type ClassesConfig = Record<string, never>;
+export interface BuildingClassesDefaults {
+  buildingId: string;
+  classLinkEnabled?: boolean;
+}
+
+export interface ClassesGlobalConfig {
+  buildingDefaults: Record<string, BuildingClassesDefaults>;
+}
+
+export interface ClassesConfig {
+  classLinkEnabled?: boolean;
+}
 
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
@@ -787,6 +834,16 @@ export interface PdfItem {
   uploadedAt: number;
   order?: number;
 }
+
+export interface GlobalPdfItem extends PdfItem {
+  buildings?: string[];
+  createdAt?: number;
+}
+
+export interface PdfGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 export interface BreathingConfig {
   pattern: '4-4-4-4' | '4-7-8' | '5-5';
   visual: 'circle' | 'lotus' | 'wave';
@@ -941,6 +998,8 @@ export interface StickerConfig {
 
 export interface StickerBookConfig {
   uploadedUrls?: string[];
+  favorites?: string[];
+  stickerOrder?: string[];
 }
 
 export interface GlobalSticker {
@@ -965,6 +1024,15 @@ export interface FurnitureItem {
 
 export type SeatingChartTemplate = 'freeform' | 'rows' | 'horseshoe' | 'pods';
 
+export interface BuildingSeatingChartDefaults {
+  buildingId: string;
+  rosterMode?: 'class' | 'custom';
+}
+
+export interface SeatingChartGlobalConfig {
+  buildingDefaults?: Record<string, BuildingSeatingChartDefaults>;
+}
+
 export interface SeatingChartConfig {
   furniture: FurnitureItem[];
   assignments: Record<string, string>; // studentId -> furnitureId
@@ -986,6 +1054,16 @@ export interface NotebookItem {
 
 export interface SmartNotebookConfig {
   activeNotebookId: string | null;
+  storageLimitMb?: number;
+}
+
+export interface BuildingSmartNotebookDefaults {
+  buildingId: string;
+  storageLimitMb?: number; // Admin-only: MB limit for notebook file uploads
+}
+
+export interface SmartNotebookGlobalConfig {
+  buildingDefaults?: Record<string, BuildingSmartNotebookDefaults>;
 }
 
 export interface RecessGearConfig {
@@ -1131,6 +1209,11 @@ export interface QuizResponse {
   tabSwitchWarnings?: number;
 }
 
+/** Global admin configuration for the Quiz widget */
+export interface QuizGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
 /** Widget configuration for the quiz widget (teacher side) */
 export interface QuizConfig {
   view: 'manager' | 'import' | 'editor' | 'preview' | 'results' | 'monitor';
@@ -1140,6 +1223,121 @@ export interface QuizConfig {
   activeLiveSessionCode: string | null;
   /** Quiz session ID for viewing historical results */
   resultsSessionId: string | null;
+}
+
+// --- VIDEO ACTIVITY TYPES ---
+
+/**
+ * A quiz question that is tied to a specific timestamp in a YouTube video.
+ * Only MC question type is supported in V1.
+ */
+export interface VideoActivityQuestion extends QuizQuestion {
+  /** Seconds into the video when this question should trigger. */
+  timestamp: number;
+}
+
+/** Full video activity data stored in Google Drive as JSON. */
+export interface VideoActivityData {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  /** Total video duration in seconds, populated after the first player load. */
+  videoDuration?: number;
+  questions: VideoActivityQuestion[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Lightweight metadata stored in Firestore (avoids Drive API on every list). */
+export interface VideoActivityMetadata {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  driveFileId: string;
+  questionCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type VideoActivityView = 'manager' | 'create' | 'editor' | 'results';
+
+/** Widget configuration for the video activity widget (teacher side). */
+export interface VideoActivityConfig {
+  view: VideoActivityView;
+  selectedActivityId: string | null;
+  selectedActivityTitle: string | null;
+  /** Session ID for the most recently created/viewed session. */
+  resultsSessionId: string | null;
+  /** Default settings for sessions created via this widget */
+  autoPlay?: boolean;
+  requireCorrectAnswer?: boolean;
+  allowSkipping?: boolean;
+}
+
+export interface VideoActivitySessionSettings {
+  autoPlay: boolean;
+  requireCorrectAnswer: boolean;
+  allowSkipping: boolean;
+}
+
+export interface GlobalVideoActivity extends VideoActivityMetadata {
+  /** Building IDs this activity is assigned to; empty array = all buildings */
+  buildings?: string[];
+}
+
+export interface VideoActivityGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+  aiEnabled?: boolean;
+}
+
+/**
+ * A Firestore session document giving students access to an activity.
+ * Stored at /video_activity_sessions/{sessionId}
+ */
+export interface VideoActivitySession {
+  id: string;
+  activityId: string;
+  activityTitle: string;
+  teacherUid: string;
+  youtubeUrl: string;
+  /** Full questions including correctAnswer — used server-side for grading. */
+  questions: VideoActivityQuestion[];
+  /** Session-level behavior controls configured at assignment time. */
+  settings?: VideoActivitySessionSettings;
+  /**
+   * Roster PINs allowed to join. Teacher sets this when assigning to a class.
+   * Empty array means any PIN is accepted.
+   */
+  allowedPins: string[];
+  createdAt: number;
+  /** Optional Unix timestamp when the session link expires. */
+  expiresAt?: number;
+}
+
+/** A single answer submitted by a student for a video activity question. */
+export interface VideoActivityAnswer {
+  questionId: string;
+  answer: string;
+  /** Whether the answer was correct. Not written by the student client; derived from
+   *  authoritative question data (correctAnswer) when displaying teacher results. */
+  isCorrect?: boolean;
+  answeredAt: number;
+}
+
+/**
+ * Per-student response document in Firestore.
+ * Stored at /video_activity_sessions/{sessionId}/responses/{studentUid}
+ * The document ID is the student's Firebase auth UID (prevents PIN-claiming attacks).
+ */
+export interface VideoActivityResponse {
+  pin: string;
+  name: string;
+  /** Firebase auth UID of the student who created this response. Used for Firestore ownership rules. */
+  studentUid: string;
+  joinedAt: number;
+  answers: VideoActivityAnswer[];
+  completedAt: number | null;
+  score: number | null;
 }
 
 export type TalkingToolConfig = Record<string, never>;
@@ -1244,6 +1442,15 @@ export interface NumberLineConfig {
   markers: NumberLineMarker[];
   jumps: NumberLineJump[];
   showArrows: boolean;
+}
+
+export type BuildingNumberLineDefaults = Pick<
+  NumberLineConfig,
+  'min' | 'max' | 'step' | 'displayMode' | 'showArrows'
+>;
+
+export interface NumberLineGlobalConfig {
+  buildingDefaults?: Record<string, BuildingNumberLineDefaults>;
 }
 
 export interface SpecialistScheduleBuildingConfig {
@@ -1384,10 +1591,22 @@ export interface RevealCard {
   bgColor?: string;
 }
 
+export interface MemoryCard {
+  id: string;
+  originalId: string;
+  content: string;
+  type: 'term' | 'definition';
+  isRevealed: boolean;
+  isMatched: boolean;
+  bgColor?: string;
+}
+
 export interface RevealGridConfig {
   columns: 2 | 3 | 4 | 5;
   cards: RevealCard[];
   revealMode: 'flip' | 'fade';
+  isMemoryMode?: boolean;
+  memoryCards?: MemoryCard[];
   fontFamily?: GlobalFontFamily;
   defaultCardColor?: string;
   defaultCardBackColor?: string;
@@ -1421,6 +1640,17 @@ export interface ConceptWebConfig {
   defaultNodeHeight?: number; // Height as a percentage of container
 }
 
+export interface BuildingConceptWebDefaults {
+  buildingId: string;
+  defaultNodeWidth?: number;
+  defaultNodeHeight?: number;
+  fontFamily?: GlobalFontFamily;
+}
+
+export interface ConceptWebGlobalConfig {
+  buildingDefaults: Record<string, BuildingConceptWebDefaults>;
+}
+
 export interface SyntaxToken {
   id: string;
   value: string; // the word, punctuation, or math operator
@@ -1432,6 +1662,16 @@ export interface SyntaxFramerConfig {
   mode: 'text' | 'math'; // Math mode adds an equation-style font
   tokens: SyntaxToken[];
   alignment: 'left' | 'center';
+}
+
+export interface BuildingSyntaxFramerDefaults {
+  buildingId: string;
+  mode?: 'text' | 'math';
+  alignment?: 'left' | 'center';
+}
+
+export interface SyntaxFramerGlobalConfig {
+  buildingDefaults: Record<string, BuildingSyntaxFramerDefaults>;
 }
 
 export interface ImageHotspot {
@@ -1453,11 +1693,175 @@ export interface HotspotSavedItem {
   createdAt: number;
 }
 
+export interface BuildingHotspotImageDefaults {
+  buildingId: string;
+  popoverTheme?: 'light' | 'dark' | 'glass';
+}
+
+export interface HotspotImageGlobalConfig {
+  buildingDefaults: Record<string, BuildingHotspotImageDefaults>;
+}
+
 export interface HotspotImageConfig {
   baseImageUrl: string;
   hotspots: ImageHotspot[];
   popoverTheme?: 'light' | 'dark' | 'glass';
   savedLibrary?: HotspotSavedItem[];
+}
+
+// --- GUIDED LEARNING WIDGET TYPES ---
+
+export type GuidedLearningMode = 'structured' | 'guided' | 'explore';
+export type GuidedLearningInteractionType =
+  | 'text-popover'
+  | 'tooltip'
+  | 'audio'
+  | 'video'
+  | 'pan-zoom'
+  | 'spotlight'
+  | 'question';
+export type GuidedLearningQuestionType =
+  | 'multiple-choice'
+  | 'matching'
+  | 'sorting';
+
+export interface GuidedLearningQuestion {
+  type: GuidedLearningQuestionType;
+  text: string;
+  /** MC options (includes the correct answer) */
+  choices?: string[];
+  /** MC correct answer — never sent to students */
+  correctAnswer?: string;
+  /** Matching pairs — correct pairings */
+  matchingPairs?: { left: string; right: string }[];
+  /** Sorting items in the correct order */
+  sortingItems?: string[];
+}
+
+export interface GuidedLearningStep {
+  id: string;
+  /** % position on image (0–100) */
+  xPct: number;
+  yPct: number;
+  label?: string;
+  interactionType: GuidedLearningInteractionType;
+  /** Content for text-popover and tooltip */
+  text?: string;
+  /** Firebase Storage URL for audio */
+  audioUrl?: string;
+  audioStoragePath?: string;
+  /** YouTube/external URL or Firebase Storage URL for video */
+  videoUrl?: string;
+  videoStoragePath?: string;
+  /** Zoom scale for pan-zoom interaction (default 2.5) */
+  panZoomScale?: number;
+  /** Spotlight radius as % of container cqmin (default 25) */
+  spotlightRadius?: number;
+  question?: GuidedLearningQuestion;
+  /** Seconds before auto-advance in guided mode */
+  autoAdvanceDuration?: number;
+}
+
+/** Full set data stored in Google Drive as JSON */
+export interface GuidedLearningSet {
+  id: string;
+  title: string;
+  description?: string;
+  /** Firebase Storage URL for the base image */
+  imageUrl: string;
+  imagePath?: string;
+  steps: GuidedLearningStep[];
+  mode: GuidedLearningMode;
+  createdAt: number;
+  updatedAt: number;
+  /** Admin-created building-level sets stored in Firestore, not Drive */
+  isBuilding?: boolean;
+  authorUid?: string;
+}
+
+/** Lightweight metadata stored in Firestore (avoids Drive API on every list) */
+export interface GuidedLearningSetMetadata {
+  id: string;
+  title: string;
+  description?: string;
+  stepCount: number;
+  mode: GuidedLearningMode;
+  /** Firebase Storage URL used as thumbnail */
+  imageUrl: string;
+  driveFileId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * Student-safe step — no answer keys.
+ * Choices/pairs/items are pre-shuffled before writing to session doc.
+ */
+export interface GuidedLearningPublicStep {
+  id: string;
+  xPct: number;
+  yPct: number;
+  label?: string;
+  interactionType: GuidedLearningInteractionType;
+  text?: string;
+  audioUrl?: string;
+  videoUrl?: string;
+  panZoomScale?: number;
+  spotlightRadius?: number;
+  question?: {
+    type: GuidedLearningQuestionType;
+    text: string;
+    /** MC: all choices pre-shuffled (correct identity not marked) */
+    choices?: string[];
+    /** Matching: left side (prompt), pre-shuffled */
+    matchingLeft?: string[];
+    /** Matching: right side (definitions), pre-shuffled */
+    matchingRight?: string[];
+    /** Sorting: items pre-shuffled */
+    sortingItems?: string[];
+  };
+  autoAdvanceDuration?: number;
+}
+
+/** Firestore session document granting student access to an experience */
+export interface GuidedLearningSession {
+  id: string;
+  title: string;
+  mode: GuidedLearningMode;
+  imageUrl: string;
+  /** Student-safe steps (no answer keys) */
+  publicSteps: GuidedLearningPublicStep[];
+  teacherUid: string;
+  createdAt: number;
+  expiresAt?: number;
+}
+
+/** Per-student response in /guided_learning_sessions/{id}/responses/{studentUid} */
+export interface GuidedLearningResponse {
+  sessionId: string;
+  studentAnonymousId: string;
+  pin?: string;
+  answers: {
+    stepId: string;
+    answer: string | string[];
+    isCorrect: boolean | null; // null when correctness can't be computed client-side (student mode)
+  }[];
+  completedAt: number | null;
+  startedAt: number;
+  score: number | null;
+}
+
+export interface GuidedLearningGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
+}
+
+/** Widget config (teacher-side, stored in WidgetData.config) */
+export interface GuidedLearningConfig {
+  view: 'library' | 'editor' | 'player' | 'results';
+  /** ID of the set currently loaded in player view */
+  playerSetId?: string | null;
+  /** Session ID when viewing results */
+  resultsSessionId?: string | null;
 }
 
 // Union of all widget configs
@@ -1510,7 +1914,10 @@ export type WidgetConfig =
   | ConceptWebConfig
   | SyntaxFramerConfig
   | HotspotImageConfig
-  | StarterPackConfig;
+  | StarterPackConfig
+  | VideoActivityConfig
+  | GuidedLearningConfig
+  | CustomWidgetConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -1611,7 +2018,13 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                                                 ? HotspotImageConfig
                                                                                                 : T extends 'starter-pack'
                                                                                                   ? StarterPackConfig
-                                                                                                  : never;
+                                                                                                  : T extends 'video-activity'
+                                                                                                    ? VideoActivityConfig
+                                                                                                    : T extends 'guided-learning'
+                                                                                                      ? GuidedLearningConfig
+                                                                                                      : T extends 'custom-widget'
+                                                                                                        ? CustomWidgetConfig
+                                                                                                        : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
@@ -1655,13 +2068,28 @@ export interface WidgetData {
   h: number;
   z: number;
   flipped: boolean;
+  version?: number;
   minimized?: boolean;
   maximized?: boolean;
   customTitle?: string | null;
   isLive?: boolean;
+  isLocked?: boolean; // When true: widget cannot be moved, resized, or deleted by end-users
   transparency?: number;
   annotation?: DrawingConfig;
   config: WidgetConfig;
+
+  // Universal style properties
+  backgroundColor?:
+    | 'bg-white'
+    | 'bg-slate-50'
+    | 'bg-blue-50'
+    | 'bg-indigo-50'
+    | 'bg-purple-50'
+    | 'bg-rose-50'
+    | 'bg-amber-50'
+    | 'bg-emerald-50';
+  fontFamily?: 'sans' | 'serif' | 'mono' | 'handwritten' | 'comic';
+  baseTextSize?: 'sm' | 'base' | 'lg' | 'xl' | '2xl';
 }
 
 /**
@@ -1697,6 +2125,14 @@ export interface DashboardSettings {
   remoteControlEnabled?: boolean;
 }
 
+export interface UserRolesConfig {
+  students: string[];
+  teachers: string[];
+  betaTeachers: string[];
+  admins: string[];
+  superAdmins: string[];
+}
+
 /**
  * Per-user profile data stored in Firestore at /users/{userId}/userProfile.
  * This is separate from dashboard settings and persists across dashboards.
@@ -1708,6 +2144,8 @@ export interface UserProfile {
   language?: string;
   /** Global saved widget configs for complex widgets */
   savedWidgetConfigs?: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
+  /** True after the user has completed the first-time setup wizard */
+  setupCompleted?: boolean;
 }
 
 export interface SharedGroup {
@@ -1759,6 +2197,10 @@ export interface ToolMetadata {
   defaultHeight?: number;
   minWidth?: number;
   minHeight?: number;
+  /** For custom-widget type: the Firestore doc ID of the specific custom widget */
+  customWidgetId?: string;
+  /** For custom-widget type: the emoji icon of the custom widget */
+  customWidgetIcon?: string;
 }
 
 export type AccessLevel = 'admin' | 'beta' | 'public';
@@ -1773,7 +2215,8 @@ export type GlobalFeature =
   | 'smart-poll'
   | 'screen-recording'
   | 'remote-control'
-  | 'embed-mini-app';
+  | 'embed-mini-app'
+  | 'video-activity-audio-transcription';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
@@ -1785,6 +2228,7 @@ export interface GlobalFeaturePermission {
 
 export interface AppSettings {
   geminiDailyLimit: number;
+  logoUrl?: string;
 }
 
 /**
@@ -1890,6 +2334,10 @@ export interface GlobalStyle {
   dockBorderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
   dockTextColor: string; // hex color
   dockTextShadow: boolean;
+  /** Custom brand colors — injected as CSS variables at the dashboard root */
+  primaryColor?: string; // hex, defaults to brand-blue-primary (#2d3f89)
+  accentColor?: string; // hex, defaults to brand-red-primary (#ad2122)
+  windowTitleColor?: string; // hex, defaults to white (#ffffff)
 }
 
 /**
@@ -1984,4 +2432,350 @@ export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   dockBorderRadius: 'full',
   dockTextColor: '#334155', // Slate 700 (dark grey)
   dockTextShadow: false,
+  // Brand color defaults — shared source of truth used by DashboardView (CSS vars) and StylePanel (pickers)
+  primaryColor: '#2d3f89', // brand-blue-primary
+  accentColor: '#ad2122', // brand-red-primary
+  windowTitleColor: '#ffffff',
 };
+
+// --- DASHBOARD TEMPLATE TYPES ---
+
+/**
+ * A reusable dashboard template that admins can define and assign to users.
+ * Stored in Firestore under /dashboard_templates/{id}.
+ * All authenticated users can read; only admins can write.
+ */
+export interface DashboardTemplate {
+  id: string;
+  name: string;
+  description: string;
+  /** Snapshot of widgets to pre-populate the dashboard with */
+  widgets: WidgetData[];
+  /** Optional global style override applied when template is deployed */
+  globalStyle?: Partial<GlobalStyle>;
+  /** Optional background to apply (Tailwind class, hex, gradient, or URL) */
+  background?: string;
+  /** Tag labels for filtering in the template browser */
+  tags: string[];
+  /** Grade-level targeting — empty means applicable to all grades */
+  targetGradeLevels: GradeLevel[];
+  /** Building IDs this template is offered to; empty = all buildings */
+  targetBuildings: string[];
+  /** Whether this template is available to users (replaces isPublished) */
+  enabled: boolean;
+  /** Who can see/use this template */
+  accessLevel: 'admin' | 'beta' | 'public';
+  createdAt: number;
+  updatedAt: number;
+  createdBy: string; // admin email
+}
+
+// --- CUSTOM WIDGET TYPES (Phase 3: No-Code Widget Builder) ---
+
+/** Block types available in the visual block builder */
+export type CustomBlockType =
+  // Display blocks
+  | 'text'
+  | 'heading'
+  | 'image'
+  | 'reveal'
+  | 'flip-card'
+  | 'conditional-label'
+  | 'badge'
+  | 'traffic-light'
+  | 'divider'
+  | 'spacer'
+  // Input & Control blocks
+  | 'cb-button'
+  | 'counter'
+  | 'toggle'
+  | 'stars'
+  | 'text-input'
+  | 'poll'
+  // Game & Assessment blocks
+  | 'multiple-choice'
+  | 'match-pair'
+  | 'hotspot'
+  | 'sort-bin'
+  // Progress & Measurement blocks
+  | 'progress'
+  | 'timer'
+  | 'score'
+  | 'checklist';
+
+/** Events that blocks can fire */
+export type BlockEvent =
+  | 'on-click'
+  | `on-spot-clicked-${number}`
+  | 'on-correct'
+  | 'on-incorrect'
+  | 'on-all-matched'
+  | 'on-item-sorted'
+  | 'on-all-sorted'
+  | 'on-timer-end'
+  | 'on-timer-start'
+  | 'on-timer-stop'
+  | `on-counter-reach-${number}`
+  | `on-score-reach-${number}`
+  | `on-value-reach-${number}`
+  | 'on-toggle-on'
+  | 'on-toggle-off'
+  | `on-vote-option-${number}`
+  | `on-star-rated-${number}`
+  | 'on-item-checked'
+  | 'on-all-checked'
+  | 'on-input-submit';
+
+/** Actions that blocks can receive */
+export type BlockAction =
+  | 'show'
+  | 'hide'
+  | 'reveal'
+  | 'flip'
+  | 'flip-back'
+  | 'set-text'
+  | 'set-image'
+  | 'increment'
+  | 'decrement'
+  | 'set-value'
+  | 'reset'
+  | 'reset-all'
+  | 'start-timer'
+  | 'stop-timer'
+  | 'set-traffic'
+  | 'play-sound'
+  | 'show-toast'
+  | 'check-item'
+  | 'add-score'
+  | 'toggle-on'
+  | 'toggle-off'
+  | 'select-option'
+  | 'complete-pair'
+  | 'sort-item'
+  | 'vote-option';
+
+/** An IFTTT-style connection between two blocks */
+export interface BlockConnection {
+  id: string;
+  sourceBlockId: string;
+  event: string; // BlockEvent (string for flexibility)
+  targetBlockId: string;
+  action: BlockAction;
+  /** Optional string payload (e.g. text for set-text, sound name for play-sound) */
+  actionPayload?: string;
+  /** Optional numeric payload (e.g. value for set-value, add-score) */
+  actionValue?: number;
+  /** Optional guard condition */
+  condition?: {
+    watchBlockId: string;
+    operator: 'gte' | 'lte' | 'eq' | 'neq';
+    value: number | boolean;
+  };
+}
+
+/** Style overrides for an individual block cell */
+export interface BlockStyle {
+  backgroundColor?: string;
+  textColor?: string;
+  borderRadius?: string;
+  padding?: string;
+  fontSize?: string;
+}
+
+/** Per-block config types */
+export interface TextBlockConfig {
+  text: string;
+}
+export interface HeadingBlockConfig {
+  text: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+}
+export interface ImageBlockConfig {
+  url: string;
+  alt?: string;
+  objectFit?: 'cover' | 'contain';
+}
+export interface RevealBlockConfig {
+  contentType: 'text' | 'image';
+  content: string;
+  animation?: 'fade' | 'scale' | 'slide';
+}
+export interface FlipCardBlockConfig {
+  frontType: 'text' | 'image';
+  frontContent: string;
+  backType: 'text' | 'image';
+  backContent: string;
+}
+export interface ConditionalLabelBlockConfig {
+  initialText: string;
+}
+export interface BadgeBlockConfig {
+  icon: string; // lucide key (or legacy emoji)
+  label?: string;
+}
+export interface TrafficLightBlockConfig {
+  initialColor: 'red' | 'yellow' | 'green';
+  label?: string;
+}
+export interface ButtonBlockConfig {
+  label: string;
+  icon?: string;
+  style?: 'primary' | 'secondary' | 'danger';
+  initialHidden?: boolean;
+}
+export interface CounterBlockConfig {
+  label?: string;
+  startValue: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  eventThreshold?: number;
+}
+export interface ToggleBlockConfig {
+  label?: string;
+  initialOn?: boolean;
+}
+export interface StarsBlockConfig {
+  maxStars?: number;
+  initialValue?: number;
+}
+export interface TextInputBlockConfig {
+  label?: string;
+  placeholder?: string;
+  submitLabel?: string;
+}
+export interface PollBlockConfig {
+  question?: string;
+  options: string[];
+  showResults?: boolean;
+}
+export interface MultipleChoiceBlockConfig {
+  question?: string;
+  options: string[];
+  correctIndex: number;
+}
+export interface MatchPairBlockConfig {
+  leftItems: string[];
+  rightItems: string[];
+  correctPairs: number[]; // rightItems[i] matches leftItems[correctPairs[i]]
+}
+export interface HotspotBlockConfig {
+  imageUrl: string;
+  spots: Array<{ label: string; x: number; y: number }>;
+}
+export interface SortBinBlockConfig {
+  bins: string[];
+  items: Array<{ label: string; correctBin: number }>;
+}
+export interface ProgressBlockConfig {
+  min?: number;
+  max?: number;
+  startValue?: number;
+  label?: string;
+}
+export interface TimerBlockConfig {
+  durationSeconds: number;
+  autoStart?: boolean;
+  showControls?: boolean;
+}
+export interface ScoreBlockConfig {
+  label?: string;
+  startValue?: number;
+  eventThreshold?: number;
+}
+export interface ChecklistBlockConfig {
+  items: string[];
+}
+
+export type BlockConfig =
+  | TextBlockConfig
+  | HeadingBlockConfig
+  | ImageBlockConfig
+  | RevealBlockConfig
+  | FlipCardBlockConfig
+  | ConditionalLabelBlockConfig
+  | BadgeBlockConfig
+  | TrafficLightBlockConfig
+  | ButtonBlockConfig
+  | CounterBlockConfig
+  | ToggleBlockConfig
+  | StarsBlockConfig
+  | TextInputBlockConfig
+  | PollBlockConfig
+  | MultipleChoiceBlockConfig
+  | MatchPairBlockConfig
+  | HotspotBlockConfig
+  | SortBinBlockConfig
+  | ProgressBlockConfig
+  | TimerBlockConfig
+  | ScoreBlockConfig
+  | ChecklistBlockConfig;
+
+/** A single block placed in a grid cell */
+export interface CustomBlockDefinition {
+  id: string;
+  type: CustomBlockType;
+  config: BlockConfig;
+  style: BlockStyle;
+  /** Auto-generated human-readable name, e.g. "Button A1" */
+  name?: string;
+}
+
+/** A cell in the custom widget grid */
+export interface CustomGridCell {
+  id: string;
+  colStart: number;
+  rowStart: number;
+  colSpan: number;
+  rowSpan: number;
+  block: CustomBlockDefinition | null;
+}
+
+/** Grid layout for a block-mode custom widget */
+export interface CustomGridDefinition {
+  columns: number; // 1–4
+  rows: number; // 1–8
+  cells: CustomGridCell[];
+  connections: BlockConnection[];
+}
+
+/** An admin-configurable setting exposed by a custom widget */
+export interface CustomWidgetSettingDef {
+  key: string;
+  label: string;
+  type: 'string' | 'number' | 'boolean' | 'select';
+  defaultValue: string | number | boolean;
+  options?: string[]; // for type 'select'
+}
+
+/** Firestore document for a published custom widget */
+export interface CustomWidgetDoc {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string;
+  icon: string; // lucide key (or legacy emoji)
+  color: string; // Tailwind bg-* class
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+  mode: 'block' | 'code';
+  published: boolean;
+  buildings: string[];
+  gridDefinition?: CustomGridDefinition;
+  codeContent?: string;
+  defaultWidth: number;
+  defaultHeight: number;
+  settings: CustomWidgetSettingDef[];
+  accessLevel: 'admin' | 'beta' | 'public';
+  betaUsers: string[];
+  enabled: boolean;
+}
+
+/** Config stored in WidgetData for a custom-widget instance */
+export interface CustomWidgetConfig {
+  /** ID of the CustomWidgetDoc in Firestore */
+  customWidgetId: string;
+  /** Admin-configured settings values (keyed by CustomWidgetSettingDef.key) */
+  adminSettings?: Record<string, string | number | boolean>;
+}

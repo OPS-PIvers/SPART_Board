@@ -3,6 +3,7 @@ import React, {
   useRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -21,6 +22,7 @@ import {
   Trash2,
   Highlighter,
   LayoutTemplate,
+  Lock,
 } from 'lucide-react';
 import {
   WidgetData,
@@ -28,18 +30,18 @@ import {
   GlobalStyle,
   Path,
   DashboardSettings,
-} from '../../types';
+} from '@/types';
 import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
 import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
-import { useScreenshot } from '../../hooks/useScreenshot';
-import { useDashboard } from '../../context/useDashboard';
+import { useScreenshot } from '@/hooks/useScreenshot';
+import { useDashboard } from '@/context/useDashboard';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
-import { useClickOutside } from '../../hooks/useClickOutside';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { IconButton } from '@/components/common/IconButton';
-import { WIDGET_PALETTE } from '../../config/colors';
-import { Z_INDEX } from '../../config/zIndex';
+import { WIDGET_PALETTE } from '@/config/colors';
+import { Z_INDEX } from '@/config/zIndex';
 import { useDialog } from '@/context/useDialog';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
@@ -200,13 +202,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     [verticalSplitLayout]
   );
 
-  useEffect(() => {
-    if (!showTools && showSnapMenu) {
-      setShowSnapMenu(false);
-      setSnapPreviewZone(null);
-      snapPreviewZoneRef.current = null;
-    }
-  }, [showTools, showSnapMenu]);
+  // Adjusting state while rendering: close snap menu when the tool overlay is dismissed
+  if (!showTools && showSnapMenu) {
+    setShowSnapMenu(false);
+    setSnapPreviewZone(null);
+    snapPreviewZoneRef.current = null;
+  }
 
   // OPTIMIZATION: Transient drag state for direct DOM manipulation
   // This allows us to update the DOM directly during drag/resize without triggering React re-renders for the whole tree
@@ -218,8 +219,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   } | null>(null);
 
   // OPTIMIZATION: Lazy initialization of settings
-  // We only set this to true once the widget is opened for the first time.
-  // This prevents downloading and rendering the settings chunk for every widget on load.
+  // Latch to true once the widget is flipped for the first time so the settings
+  // chunk is never unmounted after being loaded (prevents re-mount cost).
   useEffect(() => {
     if (widget.flipped && !shouldRenderSettings) {
       setShouldRenderSettings(true);
@@ -296,6 +297,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   );
 
   const isMaximized = widget.maximized ?? false;
+  const isLocked = widget.isLocked ?? false;
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -306,15 +308,17 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const handleMaximizeToggle = useCallback(() => {
+    if (isLocked) return;
     const newMaximized = !isMaximized;
     updateWidget(widget.id, { maximized: newMaximized, flipped: false });
     if (newMaximized) {
       bringToFront(widget.id);
     }
-  }, [isMaximized, widget.id, updateWidget, bringToFront]);
+  }, [isLocked, isMaximized, widget.id, updateWidget, bringToFront]);
 
   const handleSnapToZone = useCallback(
     (zone: SnapZone) => {
+      if (isLocked) return;
       const { x, y, w, h } = calculateSnapBounds(zone);
 
       updateWidget(widget.id, {
@@ -329,7 +333,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       setShowSnapMenu(false);
       handleCloseTools();
     },
-    [widget.id, updateWidget, handleCloseTools]
+    [isLocked, widget.id, updateWidget, handleCloseTools]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -365,7 +369,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
 
     if (e.key === 'Delete' && !e.shiftKey && !e.altKey && !e.ctrlKey) {
-      // NEW BEHAVIOR: Delete removes the widget
+      // NEW BEHAVIOR: Delete removes the widget (blocked for locked widgets)
+      if (isLocked) return;
       e.preventDefault();
       e.stopPropagation();
       if (skipCloseConfirmation) {
@@ -416,15 +421,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
   };
 
-  const clearLongPressTimer = useCallback(() => {
+  const clearLongPressTimer = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-  }, []);
+  };
 
   const handleDragStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
+    if (isLocked) return;
 
     // Don't drag if clicking interactive elements or resize handle
     const target = e.target as HTMLElement;
@@ -612,6 +618,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleResizeStart = (e: React.PointerEvent, direction: string) => {
     if (isMaximized) return;
+    if (isLocked) return;
     e.stopPropagation();
     e.preventDefault();
 
@@ -781,13 +788,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   // TOOL MENU POSITIONING
+  // useLayoutEffect runs synchronously after the DOM is mutated but before paint,
+  // guaranteeing offsetHeight/offsetWidth are final when we read them.
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (showTools && windowRef.current) {
       const updatePosition = () => {
         const rect = windowRef.current?.getBoundingClientRect();
-        if (!rect) return;
+        const menuEl = menuRef.current;
+        if (!rect || !menuEl) return;
 
         if (isMaximized) {
           setMenuStyle({
@@ -799,21 +809,41 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           return;
         }
 
+        const MARGIN = 8;
+        const menuHeight = menuEl.offsetHeight;
+        const menuWidth = menuEl.offsetWidth;
+
+        // Vertical: prefer above; flip below only when space above is tight AND
+        // there is room below. If neither side fits, pick whichever has more space
+        // and clamp to keep the toolbar on-screen.
         const spaceAbove = rect.top;
-        const menuHeight = 56; // approximate height including spacing
-        const shouldShowBelow = spaceAbove < menuHeight + 20;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const showBelow =
+          spaceAbove < menuHeight + MARGIN && spaceBelow >= spaceAbove;
+        const rawTopPos = showBelow
+          ? rect.bottom + MARGIN
+          : rect.top - menuHeight - MARGIN;
+        const clampedTop = Math.max(
+          MARGIN,
+          Math.min(rawTopPos, window.innerHeight - menuHeight - MARGIN)
+        );
+
+        // Horizontal: center on widget, clamp so toolbar never overflows viewport
+        const idealLeft = rect.left + rect.width / 2 - menuWidth / 2;
+        const clampedLeft = Math.max(
+          MARGIN,
+          Math.min(idealLeft, window.innerWidth - menuWidth - MARGIN)
+        );
 
         setMenuStyle({
           position: 'fixed',
-          top: shouldShowBelow ? rect.bottom + 12 : rect.top - 56,
-          left: rect.left + rect.width / 2,
-          transform: 'translateX(-50%)',
+          top: clampedTop,
+          left: clampedLeft,
           zIndex: Z_INDEX.toolMenu,
         });
       };
 
       updatePosition();
-      // Update on scroll or resize just in case, though widgets are absolute
       window.addEventListener('resize', updatePosition);
       return () => window.removeEventListener('resize', updatePosition);
     }
@@ -838,11 +868,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           updateWidget(widget.id, { minimized: true, flipped: false });
         }
       } else if (key === 'Delete') {
-        if (skipCloseConfirmation) {
-          removeWidget(widget.id);
-        } else {
-          setShowConfirm(true);
-          handleCloseTools();
+        if (!isLocked) {
+          if (skipCloseConfirmation) {
+            removeWidget(widget.id);
+          } else {
+            setShowConfirm(true);
+            handleCloseTools();
+          }
         }
       }
     };
@@ -858,6 +890,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     widget.flipped,
     showConfirm,
     isAnnotating,
+    isLocked,
     skipCloseConfirmation,
     removeWidget,
     updateWidget,
@@ -940,6 +973,21 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     !POSITION_AWARE_WIDGETS.includes(widget.type) &&
     dragState.current;
 
+  const UNIVERSAL_TEXT_SIZES: Record<string, string> = {
+    sm: 'text-sm',
+    base: 'text-base',
+    lg: 'text-lg',
+    xl: 'text-xl',
+    '2xl': 'text-2xl',
+  };
+
+  const universalStyleClasses = [
+    widget.fontFamily ? `font-${widget.fontFamily}` : '',
+    widget.baseTextSize ? UNIVERSAL_TEXT_SIZES[widget.baseTextSize] : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   const content = (
     <GlassCard
       globalStyle={globalStyle}
@@ -961,7 +1009,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       cornerRadius={isMaximized ? 'none' : undefined}
       className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
         isMaximized ? 'border-none !shadow-none' : ''
-      } `}
+      }`}
+      bgClass={widget.backgroundColor}
       style={{
         left: isMaximized
           ? 0
@@ -996,7 +1045,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       {/* Widget Content (always visible) */}
       <div
         data-testid="drag-surface"
-        className="h-full w-full flex flex-col rounded-[inherit] overflow-hidden"
+        className={`h-full w-full flex flex-col rounded-[inherit] overflow-hidden ${universalStyleClasses}`}
         onPointerDown={handleDragStart}
         style={{ touchAction: 'none' }}
       >
@@ -1026,9 +1075,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  removeWidget(widget.id);
+                  if (!isLocked) removeWidget(widget.id);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                disabled={isLocked}
+                className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('widgetWindow.close')}
               </button>
@@ -1144,27 +1194,31 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         </div>
 
         {/* Resize Handles (Corners Only) */}
-        <div
-          onPointerDown={(e) => handleResizeStart(e, 'nw')}
-          className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
-        />
-        <div
-          onPointerDown={(e) => handleResizeStart(e, 'ne')}
-          className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
-        />
-        <div
-          onPointerDown={(e) => handleResizeStart(e, 'sw')}
-          className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
-        />
-        <div
-          onPointerDown={(e) => handleResizeStart(e, 'se')}
-          className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
-        >
-          <ResizeHandleIcon
-            className="text-slate-400"
-            style={{ opacity: isSelected ? 1 : transparency }}
-          />
-        </div>
+        {!isLocked && (
+          <>
+            <div
+              onPointerDown={(e) => handleResizeStart(e, 'nw')}
+              className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
+            />
+            <div
+              onPointerDown={(e) => handleResizeStart(e, 'ne')}
+              className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
+            />
+            <div
+              onPointerDown={(e) => handleResizeStart(e, 'sw')}
+              className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
+            />
+            <div
+              onPointerDown={(e) => handleResizeStart(e, 'se')}
+              className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
+            >
+              <ResizeHandleIcon
+                className="text-slate-400"
+                style={{ opacity: isSelected ? 1 : transparency }}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Invisible edge grab zones — extend INVISIBLE_EDGE_PAD px outside the widget's visual
@@ -1266,7 +1320,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
       {/* Persistent Restore FAB for Maximized State */}
       {isMaximized && (
-        <div className="absolute bottom-6 right-6 z-[70] pointer-events-auto flex items-center justify-center">
+        <div className="absolute bottom-6 right-6 z-widget-control pointer-events-auto flex items-center justify-center">
           <IconButton
             icon={<Minimize2 className="w-6 h-6" />}
             label={t('widgetWindow.restore')}
@@ -1535,21 +1589,32 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   size="sm"
                   variant="glass"
                 />
-                <IconButton
-                  onClick={() => {
-                    if (skipCloseConfirmation) {
-                      removeWidget(widget.id);
-                    } else {
-                      setShowConfirm(true);
-                      handleCloseTools();
-                    }
-                  }}
-                  icon={<X className="w-3.5 h-3.5" />}
-                  label={t('widgetWindow.close')}
-                  size="sm"
-                  variant="danger"
-                  className="hover:!bg-red-500/20"
-                />
+                {isLocked ? (
+                  <div
+                    role="img"
+                    aria-label="Widget is locked by admin"
+                    title="Widget is locked by admin"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400"
+                  >
+                    <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                  </div>
+                ) : (
+                  <IconButton
+                    onClick={() => {
+                      if (skipCloseConfirmation) {
+                        removeWidget(widget.id);
+                      } else {
+                        setShowConfirm(true);
+                        handleCloseTools();
+                      }
+                    }}
+                    icon={<X className="w-3.5 h-3.5" />}
+                    label={t('widgetWindow.close')}
+                    size="sm"
+                    variant="danger"
+                    className="hover:!bg-red-500/20"
+                  />
+                )}
               </div>
             </div>
           </div>,

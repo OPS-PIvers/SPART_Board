@@ -4,7 +4,7 @@ import {
   WidgetType,
   InternalToolType,
   ToolMetadata,
-} from '../../types';
+} from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
 
 interface BetaUsersPanelProps {

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
+import { BuildingSelector } from './BuildingSelector';
 import { ClockGlobalConfig, BuildingClockDefaults } from '@/types';
 import { Toggle } from '../common/Toggle';
 import { STANDARD_COLORS } from '@/config/colors';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
 
 interface ClockConfigurationPanelProps {
   config: ClockGlobalConfig;
@@ -47,24 +49,11 @@ export const ClockConfigurationPanel: React.FC<
     <div className="space-y-6">
       {/* Building Selector */}
       <div>
-        <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
-          Configure Building Clock Defaults
-        </label>
-        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-          {BUILDINGS.map((building) => (
-            <button
-              key={building.id}
-              onClick={() => setSelectedBuildingId(building.id)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg border whitespace-nowrap transition-colors ${
-                selectedBuildingId === building.id
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {building.name}
-            </button>
-          ))}
-        </div>
+        <SettingsLabel>Configure Building Clock Defaults</SettingsLabel>
+        <BuildingSelector
+          selectedId={selectedBuildingId}
+          onSelect={setSelectedBuildingId}
+        />
       </div>
 
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-4">
@@ -92,9 +81,7 @@ export const ClockConfigurationPanel: React.FC<
 
         {/* Font Family */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Font Family
-          </label>
+          <SettingsLabel className="mb-1">Default Font Family</SettingsLabel>
           <div className="flex bg-white rounded-lg border border-slate-200 p-1 gap-1">
             {FONT_FAMILY_OPTIONS.map((opt) => (
               <button
@@ -114,9 +101,7 @@ export const ClockConfigurationPanel: React.FC<
 
         {/* Theme Color */}
         <div>
-          <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-            Default Theme Color
-          </label>
+          <SettingsLabel className="mb-1">Default Theme Color</SettingsLabel>
           <div className="flex items-center gap-3">
             <input
               type="color"

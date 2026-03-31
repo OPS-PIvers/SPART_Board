@@ -29,8 +29,11 @@ const mockAuthContext = (
   googleAccessToken: null,
   loading: false,
   isAdmin: false,
+  userRoles: null,
+  appSettings: null,
   featurePermissions: [],
   globalPermissions: [],
+  updateAppSettings: () => Promise.resolve(),
   canAccessWidget: () => true,
   canAccessFeature: () => true,
   signInWithGoogle: async () => {
@@ -52,6 +55,11 @@ const mockAuthContext = (
   connectGoogleDrive: () => Promise.resolve(),
   savedWidgetConfigs: {},
   saveWidgetConfig: () => {
+    /* mock */
+  },
+  profileLoaded: true,
+  setupCompleted: true,
+  completeSetup: async () => {
     /* mock */
   },
   ...overrides,

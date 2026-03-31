@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { Star, Plus } from 'lucide-react';
-import { Z_INDEX } from '../../config/zIndex';
+import { Z_INDEX } from '@/config/zIndex';
 
 interface Props {
   onClose: () => void;

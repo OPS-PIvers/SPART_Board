@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
   RandomConfig,
@@ -9,8 +9,8 @@ import {
   RandomGroup,
   SharedGroup,
   ScoreboardTeam,
-} from '../../../types';
-import { Button } from '../../common/Button';
+} from '@/types';
+import { Button } from '@/components/common/Button';
 import {
   Users,
   RefreshCw,

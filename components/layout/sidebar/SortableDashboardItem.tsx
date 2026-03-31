@@ -1,9 +1,18 @@
 import React from 'react';
-import { GripVertical, Star, Pencil, Copy, Share2, Trash2 } from 'lucide-react';
+import {
+  GripVertical,
+  Star,
+  Pencil,
+  Copy,
+  Share2,
+  Trash2,
+  LayoutTemplate,
+} from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Dashboard } from '../../../types';
-import { Z_INDEX } from '../../../config/zIndex';
+import { Dashboard } from '@/types';
+import { Z_INDEX } from '@/config/zIndex';
+import { useAuth } from '@/context/useAuth';
 
 interface SortableDashboardItemProps {
   db: Dashboard;
@@ -14,6 +23,7 @@ interface SortableDashboardItemProps {
   onSetDefault: (id: string) => void;
   onDuplicate: (id: string) => void;
   onShare: (db: Dashboard) => void;
+  onSaveAsTemplate?: () => void;
   canShare?: boolean;
 }
 
@@ -27,8 +37,10 @@ export const SortableDashboardItem = React.memo(
     onSetDefault,
     onDuplicate,
     onShare,
+    onSaveAsTemplate,
     canShare = true,
   }: SortableDashboardItemProps) => {
+    const { isAdmin } = useAuth();
     const {
       attributes,
       listeners,
@@ -150,6 +162,18 @@ export const SortableDashboardItem = React.memo(
                   title="Share"
                 >
                   <Share2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {isAdmin && onSaveAsTemplate && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSaveAsTemplate();
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+                  title="Save as Template"
+                >
+                  <LayoutTemplate className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>

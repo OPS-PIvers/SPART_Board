@@ -6,43 +6,50 @@ This document outlines the administrative and user-level configuration capabilit
 
 ## Implementation Status
 
-| Widget                                         | Status         | Notes                                                                                |
-| ---------------------------------------------- | -------------- | ------------------------------------------------------------------------------------ |
-| Catalyst (catalyst)                            | ✅ Implemented | `CatalystPermissionEditor` component                                                 |
-| Lunch Count (lunchCount)                       | ✅ Implemented | Sheet IDs + submission URL in `FeatureConfigurationPanel`                            |
-| Weather                                        | ✅ Implemented | Fetching strategy, source, temperature ranges, showFeelsLike                         |
-| Webcam                                         | ✅ Implemented | OCR mode toggle (Standard vs Gemini)                                                 |
-| Expectations                                   | ✅ Implemented | `ExpectationsConfigurationPanel` per-building option overrides                       |
-| Schedule                                       | ✅ Implemented | `ScheduleConfigurationPanel` per-building default schedule items                     |
-| Calendar                                       | ✅ Implemented | `CalendarGlobalConfig` type + `CalendarConfigurationModal`                           |
-| Stickers                                       | ✅ Implemented | `StickerLibraryModal` + `StickerGlobalConfig` type                                   |
-| Instructional Routines (instructionalRoutines) | ✅ Implemented | `InstructionalRoutinesManager` component                                             |
-| Clock                                          | ✅ Implemented | Per-building defaults: format24, fontFamily, themeColor — `ClockConfigurationPanel`  |
-| Timer (time-tool)                              | ✅ Implemented | Per-building defaults: duration, timerEndTrafficColor — `TimeToolConfigurationPanel` |
-| Checklist                                      | ✅ Implemented | Per-building defaults: items[], scaleMultiplier — `ChecklistConfigurationPanel`      |
-| Sound                                          | ✅ Implemented | Per-building defaults: visual style, sensitivity — `SoundConfigurationPanel`         |
-| Note (text)                                    | ✅ Implemented | Per-building defaults: fontSize, bgColor — `NoteConfigurationPanel`                  |
-| Traffic Light (traffic)                        | ✅ Implemented | Per-building defaults: default active state — `TrafficLightConfigurationPanel`       |
-| Random                                         | ✅ Implemented | Per-building defaults: visualStyle, soundEnabled — `RandomConfigurationPanel`        |
-| Dice                                           | ✅ Implemented | Per-building defaults: count — `DiceConfigurationPanel`                              |
-| Scoreboard                                     | ✅ Implemented | Per-building defaults: teams (names/colors) — `ScoreboardConfigurationPanel`         |
-| Materials                                      | ✅ Implemented | Per-building defaults: selectedItems — `MaterialsConfigurationPanel`                 |
-| Math Tools (mathTools)                         | ✅ Implemented | Per-tool grade level control + DPI calibration — `MathToolsConfigurationPanel`       |
-| Mini Apps (miniApp)                            | ✅ Implemented | Global app library with building targeting — `MiniAppLibraryModal`                   |
-| Recess Gear (recessGear)                       | ✅ Implemented | Weather-linked gear ranges and fetching strategy — `FeatureConfigurationPanel`       |
-| Classes                                        | ⬜ Not started | SIS sync rate limits, display name format [First / First L. \ First Last]            |
-| Drawing                                        | ✅ Implemented | Default mode, brush thickness, and restricted palettes — `DrawingConfigurationPanel` |
-| Embed                                          | ⬜ Not started | Domain allowlist, default URL per building                                           |
-| Magic                                          | ⬜ Not started | Usage quotas, prompt suggestions                                                     |
-| PDF Viewer (pdf)                               | ⬜ Not started | Max file size limit, default PDF URL                                                 |
-| Poll                                           | ⬜ Not started | District-wide pushed polls                                                           |
-| QR Code (qr)                                   | ⬜ Not started | UTM tracking parameter appender                                                      |
-| Quiz                                           | ⬜ Not started | District curriculum repository                                                       |
-| Record                                         | ⬜ Not started | Max duration/resolution limits                                                       |
-| Seating Chart (seating-chart)                  | ⬜ Not started | Max nodes, default template per building                                             |
-| Smart Notebook (smartNotebook)                 | ⬜ Not started | Max pages/stroke paths                                                               |
-| Talking Tool (talking-tool)                    | ✅ Implemented | Admin phrase bank and category management                                            |
-| Breathing                                      | ⬜ Not started | No specific global settings available                                                |
+| Widget                                         | Status                  | Notes                                                                                                                                                                                                                         |
+| ---------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalyst (catalyst)                            | ✅ Implemented          | `CatalystPermissionEditor` component                                                                                                                                                                                          |
+| Lunch Count (lunchCount)                       | ✅ Implemented          | Sheet IDs + submission URL in `FeatureConfigurationPanel`                                                                                                                                                                     |
+| Weather                                        | ✅ Implemented          | Fetching strategy, source, temperature ranges, showFeelsLike                                                                                                                                                                  |
+| Webcam                                         | ✅ Implemented          | OCR mode toggle (Standard vs Gemini)                                                                                                                                                                                          |
+| Expectations                                   | ✅ Implemented          | `ExpectationsConfigurationPanel` per-building option overrides                                                                                                                                                                |
+| Schedule                                       | ✅ Implemented          | `ScheduleConfigurationPanel` per-building default schedule items                                                                                                                                                              |
+| Calendar                                       | ✅ Implemented          | `CalendarGlobalConfig` type + `CalendarConfigurationModal`                                                                                                                                                                    |
+| Stickers                                       | ✅ Implemented          | `StickerLibraryModal` + `StickerGlobalConfig` type                                                                                                                                                                            |
+| Instructional Routines (instructionalRoutines) | ✅ Implemented          | `InstructionalRoutinesManager` component                                                                                                                                                                                      |
+| Clock                                          | ✅ Implemented          | Per-building defaults: format24, fontFamily, themeColor — `ClockConfigurationPanel`                                                                                                                                           |
+| Timer (time-tool)                              | ✅ Implemented          | Per-building defaults: duration, timerEndTrafficColor — `TimeToolConfigurationPanel`                                                                                                                                          |
+| Checklist                                      | ✅ Implemented          | Per-building defaults: items[], scaleMultiplier — `ChecklistConfigurationPanel`                                                                                                                                               |
+| Sound                                          | ✅ Implemented          | Per-building defaults: visual style, sensitivity — `SoundConfigurationPanel`                                                                                                                                                  |
+| Note (text)                                    | ✅ Implemented          | Per-building defaults: fontSize, bgColor — `NoteConfigurationPanel`                                                                                                                                                           |
+| Traffic Light (traffic)                        | ✅ Implemented          | Per-building defaults: default active state — `TrafficLightConfigurationPanel`                                                                                                                                                |
+| Random                                         | ✅ Implemented          | Per-building defaults: visualStyle, soundEnabled — `RandomConfigurationPanel`                                                                                                                                                 |
+| Dice                                           | ✅ Implemented          | Per-building defaults: count — `DiceConfigurationPanel`                                                                                                                                                                       |
+| Scoreboard                                     | ✅ Implemented          | Per-building defaults: teams (names/colors) — `ScoreboardConfigurationPanel`                                                                                                                                                  |
+| Materials                                      | ✅ Implemented          | Per-building defaults: selectedItems — `MaterialsConfigurationPanel`                                                                                                                                                          |
+| Math Tools (mathTools)                         | ✅ Implemented          | Per-tool grade level control + DPI calibration — `MathToolsConfigurationPanel`                                                                                                                                                |
+| Mini Apps (miniApp)                            | ✅ Implemented          | Global app library with building targeting — `MiniAppLibraryModal`                                                                                                                                                            |
+| Recess Gear (recessGear)                       | ✅ Implemented          | Weather-linked gear ranges and fetching strategy — `FeatureConfigurationPanel`                                                                                                                                                |
+| Talking Tool (talking-tool)                    | ✅ Implemented          | Admin phrase bank and category management — `TalkingToolConfigurationPanel`                                                                                                                                                   |
+| Drawing                                        | ✅ Implemented          | Default mode, brush thickness, and restricted palettes — `DrawingConfigurationPanel`                                                                                                                                          |
+| Classes                                        | ✅ Implemented          | Per-building ClassLink enable/disable, roster display defaults — `ClassesConfigurationPanel`                                                                                                                                  |
+| Embed                                          | ✅ Implemented          | Per-building domain allowlist, default URL, hide-URL-field toggle — `EmbedConfigurationPanel`                                                                                                                                 |
+| Poll                                           | ✅ Implemented          | Per-building default question and answer options — `PollConfigurationPanel`                                                                                                                                                   |
+| QR Code (qr)                                   | ✅ Implemented          | Per-building default URL and color scheme — `QRConfigurationPanel`                                                                                                                                                            |
+| Seating Chart (seating-chart)                  | ✅ Implemented          | Per-building roster mode and layout defaults — `SeatingChartConfigurationPanel`                                                                                                                                               |
+| Smart Notebook (smartNotebook)                 | ✅ Implemented          | Per-building max pages and stroke-path limits — `SmartNotebookConfigurationPanel`                                                                                                                                             |
+| Breathing                                      | ✅ Implemented          | Per-building default pattern, visual style, and color — `BreathingConfigurationPanel`                                                                                                                                         |
+| PDF Viewer (pdf)                               | ✅ Implemented          | Global PDF library with per-PDF building targeting, dock defaults — `PdfLibraryModal` (dedicated modal)                                                                                                                       |
+| Magic (magic)                                  | ✅ Implemented          | Daily AI rate limit, default prompt suggestions — `MagicConfigurationPanel` (schema-driven)                                                                                                                                   |
+| Record                                         | ✅ Implemented          | Max duration (minutes), max resolution cap — `RecordConfigurationPanel` (schema-driven)                                                                                                                                       |
+| Number Line (numberLine)                       | ✅ Implemented          | Per-building defaults — `NumberLineConfigurationPanel`                                                                                                                                                                        |
+| Concept Web (concept-web)                      | ✅ Implemented          | Per-building defaults — `ConceptWebConfigurationPanel`                                                                                                                                                                        |
+| Syntax Framer (syntax-framer)                  | ✅ Implemented          | Per-building defaults — `SyntaxFramerConfigurationPanel`                                                                                                                                                                      |
+| Hotspot Image (hotspot-image)                  | ✅ Implemented          | Per-building defaults — `HotspotImageConfigurationPanel`                                                                                                                                                                      |
+| Reveal Grid (reveal-grid)                      | ✅ Implemented          | Per-building defaults — `RevealGridConfigurationPanel`                                                                                                                                                                        |
+| Car Rider (car-rider-pro)                      | ✅ Implemented          | Per-building defaults — `CarRiderConfigurationPanel`                                                                                                                                                                          |
+| Next Up (nextUp)                               | ✅ Implemented          | Per-building defaults — `NextUpConfigurationPanel`                                                                                                                                                                            |
+| Quiz                                           | ⬜ No building defaults | Quiz management is self-contained in the widget (Drive-backed quizzes, live sessions). A "District Curriculum Repository" feature is proposed but not yet built. Intentionally excluded from the building-defaults panel map. |
 
 ---
 
@@ -160,52 +167,79 @@ These widgets currently have explicit UI controls in the admin panel allowing ad
 **Global Admin Config**: Set weather-fetching strategy and define gear categories (clothing, footwear, accessories) linked to temperature ranges with custom labels and icons.
 **User Config Modal Defaults**: Teachers link the widget to a specific weather source and toggle "feels like" temperature usage.
 
+## 23. Talking Tool (talking-tool)
+
+**Global Admin Config**: Manage the admin phrase bank and category configuration used to seed the widget's phrase library.
+**User Config Modal Defaults**: Teachers select from the admin-curated phrase bank or add their own phrases.
+
+## 24. Drawing (drawing)
+
+**Global Admin Config**: Set per-building defaults for drawing mode, brush thickness, and restricted color palettes.
+**User Config Modal Defaults**: Teachers select tools, colors, and canvas options.
+
+## 25. Classes (classes)
+
+**Global Admin Config**: Per-building ClassLink integration enable/disable. Controls whether the ClassLink roster sync is available for each building, and sets default display name format (first name only, first + last initial, or full name).
+**User Config Modal Defaults**: Teachers select their active class roster source and display preferences.
+
+## 26. Embed (embed)
+
+**Global Admin Config**: Per-building domain allowlist (restrict embeddable URLs to approved domains), a default URL per building (e.g., daily announcements page), and a toggle to hide the URL input field from teachers.
+**User Config Modal Defaults**: Teachers enter a URL to embed in the iframe.
+
+## 27. Poll (poll)
+
+**Global Admin Config**: Per-building default question text and answer options that pre-populate a new Poll widget.
+**User Config Modal Defaults**: Teachers customize the question, options, and reset vote counts.
+
+## 28. QR Code (qr)
+
+**Global Admin Config**: Per-building default URL and color scheme for the QR code.
+**User Config Modal Defaults**: Teachers enter a URL and optionally customize colors.
+
+## 29. Seating Chart (seating-chart)
+
+**Global Admin Config**: Per-building roster mode (class vs. custom) and layout defaults.
+**User Config Modal Defaults**: Teachers build and arrange their seating layout.
+
+## 30. Smart Notebook (smartNotebook)
+
+**Global Admin Config**: Per-building limits on max pages and stroke paths to control storage usage.
+**User Config Modal Defaults**: Teachers add pages, write, and draw.
+
+## 31. Breathing (breathing)
+
+**Global Admin Config**: Per-building defaults for breathing pattern (Box, Relaxing, Coherent), visual style (Sphere, Lotus, Ripple), and accent color.
+**User Config Modal Defaults**: Teachers select their preferred pattern and visual.
+
+## 32. PDF Viewer (pdf)
+
+**Global Admin Config**: Managed via the dedicated `PdfLibraryModal` (accessible from the Feature Permissions manager). Admins upload PDFs to a global library and optionally restrict each PDF to specific buildings. The settings tab controls dock visibility defaults. PDFs in the library become available to all teachers in targeted buildings.
+**User Config Modal Defaults**: Teachers browse the global library and select the active PDF.
+
+## 33. Magic (magic)
+
+**Global Admin Config**: Daily AI rate limit (max requests per user per day) and a list of default prompt suggestions shown to all users. Implemented via `MagicConfigurationPanel` using the `SchemaDrivenConfigurationPanel` generic form engine.
+**User Config Modal Defaults**: Teachers type their own prompts or select from suggestions.
+
+## 34. Record (record)
+
+**Global Admin Config**: Maximum recording duration (minutes) and maximum resolution cap (e.g., 1080p, 720p). Implemented via `RecordConfigurationPanel` using the `SchemaDrivenConfigurationPanel` generic form engine.
+**User Config Modal Defaults**: Teachers start/stop recordings within the enforced limits.
+
+## 35. Number Line, Concept Web, Syntax Framer, Hotspot Image, Reveal Grid, Car Rider, Next Up
+
+**Global Admin Config**: Each has a dedicated `*ConfigurationPanel.tsx` providing per-building defaults registered in `FeatureConfigurationPanel.tsx`.
+**User Config Modal Defaults**: Teachers adjust per-widget settings within allowed bounds.
+
 ---
 
-# Part 2: Widgets WITHOUT Global Admin Settings (Proposed)
+# Part 2: Widgets WITHOUT Global Admin Settings
 
-These widgets currently lack specific global settings panels beyond basic enablement.
+As of the current implementation, all major widgets have admin configuration panels. The only remaining widget without a building-defaults panel is:
 
-## 1. Classes (classes)
+## Quiz (quiz)
 
-**Proposed Admin Config**: SIS Synchronization Limits. Add controls for how often roster data can be pulled from ClassLink/Drive. Set building-level default display styles (e.g., "First Name + Last Initial" vs "Full Name").
+**Current State**: The Quiz widget is a self-contained system backed by Google Drive (quiz JSON files) and Firestore live sessions. Admin management of quiz content happens at the widget level (teacher creates/imports quizzes from Drive). The widget is intentionally excluded from the building-defaults panel map in `FeatureConfigurationPanel.tsx`.
 
-## 3. Embed (embed)
-
-**Proposed Admin Config**: Domain Allowlist. Establish security array of allowed domains. Set default URLs per building (e.g., daily announcements).
-
-## 4. Magic (magic)
-
-**Proposed Admin Config**: Usage Quotas. Implement daily rate limits on AI generation. Provide default prompt suggestions tailored to building level.
-
-## 5. PDF Viewer (pdf)
-
-**Proposed Admin Config**: Max file size limits. Set building default PDF (e.g., bell schedule).
-
-## 6. Poll (poll)
-
-**Proposed Admin Config**: District-Wide Pushed Polls. Interface for admins to force a poll onto active dashboards.
-
-## 7. QR Code (qr)
-
-**Proposed Admin Config**: UTM Tracking. Configure automatic URL tracking parameter appender for analytics.
-
-## 8. Quiz (quiz)
-
-**Proposed Admin Config**: District Curriculum Repository. Centralized database of approved quizzes.
-
-## 9. Record (record)
-
-**Proposed Admin Config**: Storage & Resolution Limits. Set max recording duration and enforce resolution caps.
-
-## 10. Seating Chart (seating-chart)
-
-**Proposed Admin Config**: Classroom Dimensions. Limit max furniture nodes for fire code. Set default template (rows, pods, etc) per building.
-
-## 11. Smart Notebook (smartNotebook)
-
-**Proposed Admin Config**: Data Caps. Define max pages or stroke paths per notebook.
-
-## 13. Breathing (breathing)
-
-**Proposed Admin Config**: Building default pattern or visual style.
+**Proposed Future Admin Config**: District Curriculum Repository — a centralized Firestore/Drive collection of approved quizzes that admins can publish, tag by grade/subject, and make available to all teachers. This is a larger feature not yet implemented.

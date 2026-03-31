@@ -48,13 +48,18 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 
 ## 2024-05-18 - [Auto-Rotation Loop] **Source:** Timer (Time Tool) **Destination:** NextUp Widget **Value:** Automates center rotations by advancing the student queue when the timer ends.
 
+## 2024-05-22 - [OCR to Notes] **Source:** Webcam **Destination:** Text **Value:** Instantly converts physical documents into editable digital text on the dashboard.
+
+## 2024-05-23 - [Roster to Queue] **Source:** Classes (Roster) **Destination:** NextUp **Value:** Allows teachers to instantly populate the NextUp queue with their active class roster.
+
+## 2024-05-24 - [Quiz to Scoreboard] **Source:** Quiz **Destination:** Scoreboard **Value:** Instantly converts completed quiz scores into a competitive scoreboard for post-quiz review.
+
 ## Planned Connections
 
 ## WILL NOT IMPLEMENT
 
 - **Poll -> Scoreboard:** this is not a connection that adds meaningful value.
-
-## 2026-03-11 - [OCR to Notes] **Source:** Webcam **Destination:** Text **Value:** Instantly converts physical documents into editable digital text on the dashboard.
+- **Scoreboard & Randomizer (additional automations):** Beyond the existing _Randomizer -> Scoreboard (Team Builder)_ handoff documented above, we do not plan further automatic or bi-directional integrations between these widgets, to maintain their simplicity.
 
 ## 2024-05-20 - [Event Countdown] **Source:** Calendar **Destination:** Timer (Time Tool) **Value:** Launches a timer that counts down to the start of a calendar event.
 

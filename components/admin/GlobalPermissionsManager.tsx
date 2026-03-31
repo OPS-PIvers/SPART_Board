@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import {
-  AccessLevel,
-  GlobalFeature,
-  GlobalFeaturePermission,
-} from '../../types';
+import { db } from '@/config/firebase';
+import { AccessLevel, GlobalFeature, GlobalFeaturePermission } from '@/types';
 import {
   Shield,
   Users,
@@ -25,6 +21,8 @@ import {
   List,
   Filter,
 } from 'lucide-react';
+import { useAuth } from '@/context/useAuth';
+import { useStorage } from '@/hooks/useStorage';
 import { Toggle } from '../common/Toggle';
 import { Toast } from '../common/Toast';
 
@@ -90,6 +88,20 @@ const GLOBAL_FEATURES: {
     description:
       'AI button inside Embed widgets that generates an interactive mini app from the embedded content.',
   },
+  {
+    id: 'video-activity-audio-transcription',
+    label: 'Video Activity Audio Transcription',
+    icon: Wand2,
+    description:
+      'Allow generating quizzes from videos that do not have captions, using Gemini AI audio transcription.',
+  },
+];
+
+const GEMINI_FEATURES: GlobalFeature[] = [
+  'gemini-functions',
+  'smart-poll',
+  'embed-mini-app',
+  'video-activity-audio-transcription',
 ];
 
 export const GlobalPermissionsManager: React.FC = () => {
@@ -105,10 +117,58 @@ export const GlobalPermissionsManager: React.FC = () => {
   } | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState<Set<string>>(new Set());
 
+  const { appSettings, updateAppSettings } = useAuth();
+  const { uploadAdminLogo, deleteAdminLogo, uploading } = useStorage();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   // Filter state
   const [filterEnabled, setFilterEnabled] = useState<'all' | 'on' | 'off'>(
     'all'
   );
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showMessage('error', 'Please upload an image file');
+      return;
+    }
+
+    const MAX_LOGO_SIZE_MB = 1; // 1MB limit for logos
+    if (file.size > MAX_LOGO_SIZE_MB * 1024 * 1024) {
+      showMessage(
+        'error',
+        `Logo file size cannot exceed ${MAX_LOGO_SIZE_MB}MB.`
+      );
+      return;
+    }
+
+    try {
+      const url = await uploadAdminLogo(file);
+      await updateAppSettings({ logoUrl: url });
+      showMessage('success', 'Logo updated successfully');
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      showMessage('error', 'Failed to upload logo');
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    try {
+      await deleteAdminLogo();
+      await updateAppSettings({ logoUrl: '' });
+      showMessage('success', 'Logo removed successfully');
+    } catch (error) {
+      console.error('Error removing logo:', error);
+      showMessage('error', 'Failed to remove logo');
+    }
+  };
+
   const [filterAvailability, setFilterAvailability] = useState<
     'all' | AccessLevel
   >('all');
@@ -146,13 +206,22 @@ export const GlobalPermissionsManager: React.FC = () => {
   const getPermission = (featureId: GlobalFeature): GlobalFeaturePermission => {
     const defaultAccessLevel: AccessLevel =
       featureId === 'embed-mini-app' ? 'admin' : 'public';
+
+    // Set smart default limits
+    let defaultLimit = 20;
+    if (featureId === 'video-activity-audio-transcription') {
+      defaultLimit = 5;
+    }
+
     return (
       permissions.get(featureId) ?? {
         featureId,
         accessLevel: defaultAccessLevel,
         betaUsers: [],
         enabled: true,
-        config: featureId === 'gemini-functions' ? { dailyLimit: 20 } : {},
+        config: GEMINI_FEATURES.includes(featureId)
+          ? { dailyLimit: defaultLimit, dailyLimitEnabled: true }
+          : {},
       }
     );
   };
@@ -282,6 +351,63 @@ export const GlobalPermissionsManager: React.FC = () => {
           onClose={() => setMessage(null)}
         />
       )}
+
+      {/* Global Branding */}
+      <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 mb-6 hover:border-brand-blue-light transition-all text-left">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="bg-brand-blue-lighter p-3 rounded-xl text-brand-blue-primary">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-800 text-lg">Custom Logo</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Upload a custom logo to replace the default SPART Board logo in
+              the sidebar header.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+          <div className="w-16 h-16 bg-slate-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-slate-300">
+            {appSettings?.logoUrl ? (
+              <img
+                src={appSettings.logoUrl}
+                alt="Custom Logo"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <LayoutGrid className="w-8 h-8 text-slate-400" />
+            )}
+          </div>
+
+          <div className="flex-1 flex items-center gap-3">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={(e) => void handleLogoUpload(e)}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="px-4 py-2 bg-brand-blue-primary text-white text-sm font-bold rounded-lg shadow-sm hover:bg-brand-blue-dark transition-colors disabled:opacity-50"
+            >
+              {uploading ? 'Uploading...' : 'Upload Logo'}
+            </button>
+
+            {appSettings?.logoUrl && (
+              <button
+                onClick={() => void handleRemoveLogo()}
+                disabled={uploading}
+                className="px-4 py-2 bg-white text-red-600 text-sm font-bold border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                Remove Logo
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl mb-2">
@@ -452,29 +578,64 @@ export const GlobalPermissionsManager: React.FC = () => {
                     </div>
 
                     {/* Feature Specific Config (Gemini Limit) */}
-                    {feature.id === 'gemini-functions' && (
-                      <div className="flex items-center gap-2 ml-4 px-4 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
-                        <span className="text-xxs font-bold text-purple-700 uppercase tracking-tight">
-                          Daily Limit
-                        </span>
-                        <input
-                          type="number"
-                          min="1"
-                          max="1000"
-                          value={
-                            (permission.config?.dailyLimit as number) ?? 20
-                          }
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            updatePermission(feature.id, {
-                              config: {
-                                ...permission.config,
-                                dailyLimit: isNaN(val) ? 20 : val,
-                              },
-                            });
-                          }}
-                          className="w-16 px-2 py-0.5 border border-purple-200 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        />
+                    {GEMINI_FEATURES.includes(feature.id) && (
+                      <div className="flex items-center gap-3 ml-4 px-4 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="text-[10px] font-bold text-purple-700 uppercase tracking-tight leading-none mb-0.5">
+                            Limit
+                          </span>
+                          <Toggle
+                            checked={
+                              (permission.config
+                                ?.dailyLimitEnabled as boolean) ?? true
+                            }
+                            onChange={(checked) =>
+                              updatePermission(feature.id, {
+                                config: {
+                                  ...permission.config,
+                                  dailyLimitEnabled: checked,
+                                },
+                              })
+                            }
+                            size="xs"
+                          />
+                        </div>
+
+                        <div className="w-px h-6 bg-purple-200" />
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold text-purple-700 uppercase tracking-tight leading-none">
+                            Daily Max
+                          </span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="1000"
+                            disabled={
+                              !(
+                                (permission.config
+                                  ?.dailyLimitEnabled as boolean) ?? true
+                              )
+                            }
+                            value={
+                              (permission.config?.dailyLimit as number) ??
+                              (feature.id ===
+                              'video-activity-audio-transcription'
+                                ? 5
+                                : 20)
+                            }
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              updatePermission(feature.id, {
+                                config: {
+                                  ...permission.config,
+                                  dailyLimit: isNaN(val) ? 20 : val,
+                                },
+                              });
+                            }}
+                            className="w-14 px-1 py-0 border border-purple-200 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -679,17 +840,54 @@ export const GlobalPermissionsManager: React.FC = () => {
                 )}
 
                 {/* Feature Specific Config (Gemini Limit) */}
-                {feature.id === 'gemini-functions' && (
+                {GEMINI_FEATURES.includes(feature.id) && (
                   <div className="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                    <label className="text-xs font-bold text-purple-700 uppercase tracking-widest mb-2 block">
-                      Daily Usage Limit (Standard Users)
-                    </label>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-xs font-bold text-purple-700 uppercase tracking-widest block">
+                        Daily Usage Limit
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-purple-400 uppercase">
+                          {((permission.config?.dailyLimitEnabled as boolean) ??
+                          true)
+                            ? 'Enabled'
+                            : 'Disabled'}
+                        </span>
+                        <Toggle
+                          checked={
+                            (permission.config?.dailyLimitEnabled as boolean) ??
+                            true
+                          }
+                          onChange={(checked) =>
+                            updatePermission(feature.id, {
+                              config: {
+                                ...permission.config,
+                                dailyLimitEnabled: checked,
+                              },
+                            })
+                          }
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+
                     <div className="flex items-center gap-4">
                       <input
                         type="number"
                         min="1"
                         max="1000"
-                        value={(permission.config?.dailyLimit as number) ?? 20}
+                        disabled={
+                          !(
+                            (permission.config?.dailyLimitEnabled as boolean) ??
+                            true
+                          )
+                        }
+                        value={
+                          (permission.config?.dailyLimit as number) ??
+                          (feature.id === 'video-activity-audio-transcription'
+                            ? 5
+                            : 20)
+                        }
                         onChange={(e) => {
                           const val = parseInt(e.target.value);
                           updatePermission(feature.id, {
@@ -699,7 +897,7 @@ export const GlobalPermissionsManager: React.FC = () => {
                             },
                           });
                         }}
-                        className="w-24 px-3 py-2 border border-purple-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-24 px-3 py-2 border border-purple-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                       />
                       <span className="text-xs text-purple-600 font-medium">
                         generations per day

@@ -97,3 +97,21 @@
 **Weed:** Monolithic files holding multiple components and settings (`TimeToolWidget.tsx` scattered in the root widgets folder).
 **Root Cause:** Component grew organically as features were added (visuals, sounds, widget settings) without separating concerns.
 **Plan:** Extracted `TimeToolSettings` and `TimeToolAppearanceSettings` to `components/widgets/TimeTool/Settings.tsx` to reduce file size and improve readability/maintainability.
+
+## 2026-03-23 - Extracted SortableScheduleItem
+
+**Weed:** `ScheduleSettings` component in `components/widgets/Schedule/Settings.tsx` was over 1100 lines and contained a complex inner component `SortableScheduleItem` along with large constant arrays like `AVAILABLE_WIDGETS`.
+**Root Cause:** "God Component" pattern where the settings UI for the Schedule widget grew organically, mixing the main settings list view with the complex rendering and editing logic of individual sortable schedule items.
+**Plan:** Extracted `SortableScheduleItem` and `AVAILABLE_WIDGETS` into a dedicated `components/widgets/Schedule/components/SortableScheduleItem.tsx` file, reducing the size and complexity of `Settings.tsx`.
+
+## 2026-03-26 - Unused Variables in Utils
+
+**Weed:** `eslint-disable-next-line @typescript-eslint/no-unused-vars`
+**Root Cause:** Bypassing linter for intentionally unused destructured variables instead of using the configured `^_` prefix.
+**Plan:** Rename unused destructured variables with a leading underscore (e.g. `id` -> `_id`).
+
+## 2026-04-18 - Refactored ScheduleWidget
+
+**Weed:** `ScheduleWidget.tsx` was over 900 lines long, containing multiple internal components (`CountdownDisplay`, `ScheduleRow`) and numerous helper functions, acting as a "God Component" for the scheduling logic.
+**Root Cause:** "God Component" pattern where the feature was built out incrementally over time, mixing UI, time parsing, formatting, and complex layout logic into a single file without separating concerns.
+**Plan:** Extracted the utility functions (`parseScheduleTime`, `formatCountdown`, `hexToRgba`, etc.) into `components/widgets/Schedule/utils.ts`. Extracted the internal sub-components (`ScheduleRow`, `CountdownDisplay`) into `components/widgets/Schedule/components/ScheduleRow.tsx`. Kept the main orchestration logic in `ScheduleWidget.tsx`.
