@@ -7,16 +7,11 @@ import {
   onSnapshot,
   query,
   orderBy,
+  addDoc,
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
-import {
-  DashboardTemplate,
-  GlobalStyle,
-  GradeLevel,
-  WidgetData,
-} from '@/types';
+import { DashboardTemplate } from '@/types';
 import { useAuth } from '@/context/useAuth';
-import { useDashboard } from '@/context/useDashboard';
 import { useDialog } from '@/context/useDialog';
 import { Toggle } from '@/components/common/Toggle';
 import { BUILDINGS } from '@/config/buildings';
@@ -25,63 +20,63 @@ import {
   Trash2,
   LayoutTemplate,
   Loader2,
-  Globe,
-  Eye,
-  EyeOff,
-  BookOpen,
   Save,
-  ChevronDown,
-  ChevronUp,
-  Download,
+  Shield,
+  Globe,
+  Users,
 } from 'lucide-react';
 
-const GRADE_LEVELS: { id: GradeLevel; label: string }[] = [
-  { id: 'k-2', label: 'K–2' },
-  { id: '3-5', label: '3–5' },
-  { id: '6-8', label: '6–8' },
-  { id: '9-12', label: '9–12' },
-];
+type AccessLevel = 'admin' | 'beta' | 'public';
 
 const TEMPLATES_COLLECTION = 'dashboard_templates';
 
-interface TemplateFormState {
+const getAccessLevelColor = (level: AccessLevel) => {
+  switch (level) {
+    case 'admin':
+      return 'bg-purple-100 text-purple-700 border-purple-300';
+    case 'beta':
+      return 'bg-blue-100 text-blue-700 border-blue-300';
+    case 'public':
+      return 'bg-green-100 text-green-700 border-green-300';
+  }
+};
+
+const getAccessLevelIcon = (level: AccessLevel) => {
+  switch (level) {
+    case 'admin':
+      return <Shield className="w-3.5 h-3.5" />;
+    case 'beta':
+      return <Users className="w-3.5 h-3.5" />;
+    case 'public':
+      return <Globe className="w-3.5 h-3.5" />;
+  }
+};
+
+interface NewTemplateFormState {
   name: string;
   description: string;
-  tags: string;
-  targetGradeLevels: GradeLevel[];
-  targetBuildings: string[];
-  isPublished: boolean;
-  captureCurrentBoard: boolean;
 }
 
-const DEFAULT_FORM: TemplateFormState = {
-  name: '',
-  description: '',
-  tags: '',
-  targetGradeLevels: [],
-  targetBuildings: [],
-  isPublished: true,
-  captureCurrentBoard: true,
-};
+const DEFAULT_FORM: NewTemplateFormState = { name: '', description: '' };
 
 export const DashboardTemplatesManager: React.FC = () => {
   const { user } = useAuth();
-  const {
-    activeDashboard,
-    addWidget,
-    setGlobalStyle,
-    setBackground,
-    addToast,
-  } = useDashboard();
   const { showConfirm } = useDialog();
 
   const [templates, setTemplates] = useState<DashboardTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+
+  // Local editable copies keyed by template id
+  const [localTemplates, setLocalTemplates] = useState<
+    Map<string, DashboardTemplate>
+  >(new Map());
+  const [unsavedIds, setUnsavedIds] = useState<Set<string>>(new Set());
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+
+  // New template form
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<TemplateFormState>(DEFAULT_FORM);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [form, setForm] = useState<NewTemplateFormState>(DEFAULT_FORM);
+  const [creating, setCreating] = useState(false);
 
   // Subscribe to templates collection
   useEffect(() => {
@@ -96,12 +91,27 @@ export const DashboardTemplatesManager: React.FC = () => {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setTemplates(
-          snap.docs.map((d) => ({
-            ...(d.data() as DashboardTemplate),
-            id: d.id,
-          }))
-        );
+        const loaded = snap.docs.map((d) => ({
+          ...(d.data() as DashboardTemplate),
+          id: d.id,
+        }));
+        setTemplates(loaded);
+        // Seed local copies for any template not already being edited
+        setLocalTemplates((prev) => {
+          const next = new Map(prev);
+          for (const t of loaded) {
+            if (!next.has(t.id)) {
+              next.set(t.id, t);
+            }
+          }
+          // Remove entries for deleted templates
+          for (const key of next.keys()) {
+            if (!loaded.find((t) => t.id === key)) {
+              next.delete(key);
+            }
+          }
+          return next;
+        });
         setLoading(false);
       },
       (err) => {
@@ -112,74 +122,44 @@ export const DashboardTemplatesManager: React.FC = () => {
     return unsub;
   }, []);
 
-  const handleSave = useCallback(async () => {
-    if (isAuthBypass || !form.name.trim() || !user?.email) return;
+  const updateLocal = useCallback(
+    (id: string, updates: Partial<DashboardTemplate>) => {
+      setLocalTemplates((prev) => {
+        const current = prev.get(id);
+        if (!current) return prev;
+        return new Map(prev).set(id, { ...current, ...updates });
+      });
+      setUnsavedIds((prev) => new Set(prev).add(id));
+    },
+    []
+  );
 
-    setSaving(true);
-    try {
-      const id = crypto.randomUUID();
-      const now = Date.now();
-
-      // Only capture board content when the checkbox is checked
-      let widgets: WidgetData[] = [];
-      let capturedStyle: Partial<GlobalStyle> | undefined;
-      let capturedBackground: string | undefined;
-      if (form.captureCurrentBoard && activeDashboard) {
-        // Strip locked state so templates start unlocked when applied
-        widgets = activeDashboard.widgets.map((w) => ({
-          ...w,
-          isLocked: undefined,
-        }));
-        capturedStyle = activeDashboard.globalStyle;
-        capturedBackground = activeDashboard.background;
-      }
-
-      const template: DashboardTemplate = {
-        id,
-        name: form.name.trim(),
-        description: form.description.trim(),
-        widgets,
-        // Only persist style/background when the board was captured — leave them
-        // undefined otherwise so applying the template is non-destructive.
-        globalStyle: capturedStyle,
-        background: capturedBackground,
-        tags: form.tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-        targetGradeLevels: form.targetGradeLevels,
-        targetBuildings: form.targetBuildings,
-        isPublished: form.isPublished,
-        createdAt: now,
-        updatedAt: now,
-        createdBy: user.email,
-      };
-
-      await setDoc(doc(db, TEMPLATES_COLLECTION, id), template);
-      setForm(DEFAULT_FORM);
-      setShowForm(false);
-    } catch (err) {
-      console.error('Failed to save template:', err);
-      addToast('Failed to save template. Please try again.', 'error');
-    } finally {
-      setSaving(false);
-    }
-  }, [form, user, activeDashboard, addToast]);
-
-  const handleTogglePublished = useCallback(
-    async (template: DashboardTemplate) => {
+  const handleSave = useCallback(
+    async (id: string) => {
+      const local = localTemplates.get(id);
+      if (!local) return;
+      setSavingIds((prev) => new Set(prev).add(id));
       try {
-        await setDoc(
-          doc(db, TEMPLATES_COLLECTION, template.id),
-          { isPublished: !template.isPublished, updatedAt: Date.now() },
-          { merge: true }
-        );
+        await setDoc(doc(db, TEMPLATES_COLLECTION, id), {
+          ...local,
+          updatedAt: Date.now(),
+        });
+        setUnsavedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
       } catch (err) {
-        console.error('Failed to update template:', err);
-        addToast('Failed to update template. Please try again.', 'error');
+        console.error('Failed to save template:', err);
+      } finally {
+        setSavingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
       }
     },
-    [addToast]
+    [localTemplates]
   );
 
   const handleDelete = useCallback(
@@ -193,72 +173,47 @@ export const DashboardTemplatesManager: React.FC = () => {
           await deleteDoc(doc(db, TEMPLATES_COLLECTION, template.id));
         } catch (err) {
           console.error('Failed to delete template:', err);
-          addToast('Failed to delete template. Please try again.', 'error');
         }
       }
     },
-    [showConfirm, addToast]
+    [showConfirm]
   );
 
-  const handleApply = useCallback(
-    async (template: DashboardTemplate) => {
-      if (!activeDashboard) return;
-      const confirmed = await showConfirm(
-        `Apply "${template.name}" to your current board? This will add all template widgets at their default positions.`,
-        { title: 'Apply Template', confirmLabel: 'Apply' }
-      );
-      if (!confirmed) return;
+  const handleCreate = useCallback(async () => {
+    if (!form.name.trim() || !user?.email) return;
+    setCreating(true);
+    try {
+      const now = Date.now();
+      const newTemplate: Omit<DashboardTemplate, 'id'> = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        widgets: [],
+        tags: [],
+        targetGradeLevels: [],
+        targetBuildings: [],
+        enabled: true,
+        accessLevel: 'public',
+        createdAt: now,
+        updatedAt: now,
+        createdBy: user.email,
+      };
+      await addDoc(collection(db, TEMPLATES_COLLECTION), newTemplate);
+      setForm(DEFAULT_FORM);
+      setShowForm(false);
+    } catch (err) {
+      console.error('Failed to create template:', err);
+    } finally {
+      setCreating(false);
+    }
+  }, [form, user]);
 
-      setApplyingId(template.id);
-      try {
-        // Apply style and background captured by the template
-        if (template.globalStyle) {
-          setGlobalStyle(template.globalStyle);
-        }
-        if (template.background) {
-          setBackground(template.background);
-        }
-        for (const widget of template.widgets) {
-          // Omit identity/ordering/lock fields — addWidget assigns a new id and z.
-          // Deep-clone config to prevent shared references across widget instances.
-          const {
-            id: _id,
-            z: _z,
-            isLocked: _isLocked,
-            config,
-            ...rest
-          } = widget;
-          addWidget(widget.type, {
-            ...rest,
-            config: structuredClone(config),
-            // Offset so new widgets don't exactly overlap any existing ones
-            x: widget.x + 20,
-            y: widget.y + 20,
-          });
-        }
-      } finally {
-        setApplyingId(null);
-      }
-    },
-    [activeDashboard, addWidget, setGlobalStyle, setBackground, showConfirm]
-  );
-
-  const toggleGradeLevel = (level: GradeLevel) => {
-    setForm((prev) => ({
-      ...prev,
-      targetGradeLevels: prev.targetGradeLevels.includes(level)
-        ? prev.targetGradeLevels.filter((l) => l !== level)
-        : [...prev.targetGradeLevels, level],
-    }));
-  };
-
-  const toggleBuilding = (id: string) => {
-    setForm((prev) => ({
-      ...prev,
-      targetBuildings: prev.targetBuildings.includes(id)
-        ? prev.targetBuildings.filter((b) => b !== id)
-        : [...prev.targetBuildings, id],
-    }));
+  const toggleBuilding = (id: string, buildingId: string) => {
+    const local = localTemplates.get(id);
+    if (!local) return;
+    const next = local.targetBuildings.includes(buildingId)
+      ? local.targetBuildings.filter((b) => b !== buildingId)
+      : [...local.targetBuildings, buildingId];
+    updateLocal(id, { targetBuildings: next });
   };
 
   return (
@@ -270,8 +225,9 @@ export const DashboardTemplatesManager: React.FC = () => {
             Dashboard Templates
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Create reusable dashboard layouts that can be applied to any board.
-            Templates capture the current board&apos;s widgets and style.
+            Manage templates available to users in the Boards sidebar. Use the
+            &ldquo;Save as Template&rdquo; button on any board card to capture a
+            board&apos;s layout.
           </p>
         </div>
         <button
@@ -283,15 +239,19 @@ export const DashboardTemplatesManager: React.FC = () => {
         </button>
       </div>
 
-      {/* Create Form */}
+      {/* Create Form (blank template shell) */}
       {showForm && (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm animate-in slide-in-from-top-2 duration-200">
           <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
             <LayoutTemplate className="w-4 h-4 text-brand-blue-primary" />
-            Create New Template
+            Create Empty Template Shell
           </h3>
+          <p className="text-xs text-slate-500">
+            Creates a template with no widgets. Use the &ldquo;Save as
+            Template&rdquo; button on a board card to populate it with a real
+            board layout.
+          </p>
 
-          {/* Name */}
           <div className="space-y-1">
             <label className="text-xxs font-bold text-slate-500 uppercase tracking-widest">
               Template Name *
@@ -305,119 +265,33 @@ export const DashboardTemplatesManager: React.FC = () => {
             />
           </div>
 
-          {/* Description */}
           <div className="space-y-1">
             <label className="text-xxs font-bold text-slate-500 uppercase tracking-widest">
               Description
             </label>
-            <textarea
+            <input
+              type="text"
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
               placeholder="What is this template for?"
-              rows={2}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-brand-blue-primary/30"
-            />
-          </div>
-
-          {/* Tags */}
-          <div className="space-y-1">
-            <label className="text-xxs font-bold text-slate-500 uppercase tracking-widest">
-              Tags (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={form.tags}
-              onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              placeholder="morning, math, literacy"
               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue-primary/30"
             />
           </div>
 
-          {/* Grade Levels */}
-          <div className="space-y-2">
-            <label className="text-xxs font-bold text-slate-500 uppercase tracking-widest">
-              Target Grade Levels (empty = all)
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {GRADE_LEVELS.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => toggleGradeLevel(g.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                    form.targetGradeLevels.includes(g.id)
-                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-brand-blue-primary'
-                  }`}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Buildings */}
-          {BUILDINGS.length > 0 && (
-            <div className="space-y-2">
-              <label className="text-xxs font-bold text-slate-500 uppercase tracking-widest">
-                Target Buildings (empty = all buildings)
-              </label>
-              <div className="flex gap-2 flex-wrap max-h-28 overflow-y-auto">
-                {BUILDINGS.map((b) => (
-                  <button
-                    key={b.id}
-                    onClick={() => toggleBuilding(b.id)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                      form.targetBuildings.includes(b.id)
-                        ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-brand-blue-primary'
-                    }`}
-                  >
-                    {b.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Capture Board Checkbox */}
-          <div className="flex items-center gap-3">
-            <Toggle
-              checked={form.captureCurrentBoard}
-              onChange={(checked) =>
-                setForm({ ...form, captureCurrentBoard: checked })
-              }
-            />
-            <span className="text-sm text-slate-700 font-medium">
-              Capture current board widgets &amp; style
-            </span>
-          </div>
-
-          {/* Published Checkbox */}
-          <div className="flex items-center gap-3">
-            <Toggle
-              checked={form.isPublished}
-              onChange={(checked) => setForm({ ...form, isPublished: checked })}
-            />
-            <span className="text-sm text-slate-700 font-medium">
-              Publish template (visible in user Starter Pack)
-            </span>
-          </div>
-
-          {/* Actions */}
           <div className="flex gap-2 pt-1">
             <button
-              onClick={() => void handleSave()}
-              disabled={saving || !form.name.trim()}
+              onClick={() => void handleCreate()}
+              disabled={creating || !form.name.trim()}
               className="flex items-center gap-2 px-4 py-2 bg-brand-blue-primary text-white rounded-lg font-bold text-sm hover:bg-brand-blue-dark transition-colors disabled:opacity-50"
             >
-              {saving ? (
+              {creating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Save className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
               )}
-              Save Template
+              Create
             </button>
             <button
               onClick={() => {
@@ -432,7 +306,7 @@ export const DashboardTemplatesManager: React.FC = () => {
         </div>
       )}
 
-      {/* Templates List */}
+      {/* Template Rows */}
       {loading ? (
         <div className="flex items-center justify-center py-12 text-slate-400">
           <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -440,183 +314,179 @@ export const DashboardTemplatesManager: React.FC = () => {
         </div>
       ) : templates.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
-          <BookOpen className="w-10 h-10 opacity-40" />
+          <LayoutTemplate className="w-10 h-10 opacity-40" />
           <p className="text-sm font-medium">No templates yet.</p>
           <p className="text-xs text-center max-w-xs">
-            Create a template to save the current board layout and make it
-            available to other users as a Starter Pack option.
+            Create a template above, then use the &ldquo;Save as Template&rdquo;
+            button on any board card to capture its layout.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {templates.map((template) => (
-            <div
-              key={template.id}
-              className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm"
-            >
-              {/* Template Row */}
-              <div className="flex items-center gap-3 p-4">
-                <div className="w-10 h-10 rounded-xl bg-brand-blue-primary/10 flex items-center justify-center shrink-0">
-                  <LayoutTemplate className="w-5 h-5 text-brand-blue-primary" />
-                </div>
+          {templates.map((template) => {
+            const local = localTemplates.get(template.id) ?? template;
+            const hasUnsaved = unsavedIds.has(template.id);
+            const isSaving = savingIds.has(template.id);
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-slate-800 text-sm truncate">
-                      {template.name}
-                    </h3>
-                    {!template.isPublished && (
-                      <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-xxs font-bold uppercase rounded">
-                        Draft
-                      </span>
-                    )}
-                    {template.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-xxs font-bold rounded"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+            return (
+              <div
+                key={template.id}
+                className="bg-white border-2 border-slate-200 rounded-xl hover:border-brand-blue-light transition-colors overflow-hidden"
+              >
+                <div className="flex items-center gap-4 p-3 flex-wrap">
+                  {/* Identity */}
+                  <div className="flex items-center gap-3 w-60 shrink-0 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-brand-blue-primary/10 flex items-center justify-center shrink-0">
+                      <LayoutTemplate className="w-4 h-4 text-brand-blue-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <input
+                        type="text"
+                        value={local.name}
+                        onChange={(e) =>
+                          updateLocal(template.id, { name: e.target.value })
+                        }
+                        className="w-full font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-brand-blue-primary focus:outline-none px-0 py-0.5 text-sm transition-colors"
+                        placeholder="Template name"
+                      />
+                      <input
+                        type="text"
+                        value={local.description}
+                        onChange={(e) =>
+                          updateLocal(template.id, {
+                            description: e.target.value,
+                          })
+                        }
+                        className="w-full text-xs text-slate-500 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-brand-blue-primary focus:outline-none px-0 py-0.5 transition-colors"
+                        placeholder="Add description…"
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {template.widgets.length} widget
-                    {template.widgets.length !== 1 ? 's' : ''} ·{' '}
-                    {template.targetGradeLevels.length > 0
-                      ? template.targetGradeLevels.join(', ')
-                      : 'All grades'}{' '}
-                    ·{' '}
-                    {template.targetBuildings.length > 0
-                      ? `${template.targetBuildings.length} building${template.targetBuildings.length !== 1 ? 's' : ''}`
-                      : 'All buildings'}
-                  </p>
+
+                  <div className="w-px h-8 bg-slate-100 mx-1 shrink-0" />
+
+                  {/* Enabled toggle */}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <span className="text-xxs font-bold text-slate-400 uppercase">
+                      Enabled
+                    </span>
+                    <Toggle
+                      checked={local.enabled}
+                      onChange={(checked) =>
+                        updateLocal(template.id, { enabled: checked })
+                      }
+                      size="sm"
+                    />
+                  </div>
+
+                  <div className="w-px h-8 bg-slate-100 mx-1 shrink-0" />
+
+                  {/* Access level */}
+                  <div className="flex items-center gap-1">
+                    {(['admin', 'beta', 'public'] as AccessLevel[]).map(
+                      (level) => (
+                        <button
+                          key={level}
+                          onClick={() =>
+                            updateLocal(template.id, { accessLevel: level })
+                          }
+                          className={`px-2 py-1.5 rounded-md border text-xs font-medium flex items-center gap-1 transition-all ${
+                            local.accessLevel === level
+                              ? getAccessLevelColor(level)
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {getAccessLevelIcon(level)}
+                          <span className="capitalize">{level}</span>
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  {/* Building selector */}
+                  {BUILDINGS.length > 0 && (
+                    <>
+                      <div className="w-px h-8 bg-slate-100 mx-1 shrink-0" />
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {BUILDINGS.map((b) => {
+                          const selected = local.targetBuildings.includes(b.id);
+                          return (
+                            <button
+                              key={b.id}
+                              onClick={() => toggleBuilding(template.id, b.id)}
+                              title={b.name}
+                              className={`px-2 py-1 rounded-md text-xxs font-bold border transition-all ${
+                                selected
+                                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
+                                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                              }`}
+                            >
+                              {b.gradeLabel}
+                            </button>
+                          );
+                        })}
+                        <button
+                          onClick={() =>
+                            updateLocal(template.id, { targetBuildings: [] })
+                          }
+                          className={`px-2 py-1 rounded-md text-xxs font-bold border transition-all ${
+                            local.targetBuildings.length === 0
+                              ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
+                              : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          ALL
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 ml-auto pl-3 border-l border-slate-100 shrink-0">
+                    <button
+                      onClick={() => void handleSave(template.id)}
+                      disabled={isSaving || !hasUnsaved}
+                      title={hasUnsaved ? 'Save changes' : 'No changes to save'}
+                      className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        hasUnsaved
+                          ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                          : 'text-slate-300 hover:bg-brand-blue-primary hover:text-white'
+                      }`}
+                    >
+                      {isSaving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(template)}
+                      title="Delete template"
+                      className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => void handleApply(template)}
-                    disabled={applyingId === template.id}
-                    title="Apply template to current board"
-                    className="p-2 rounded-lg text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-primary/10 transition-colors disabled:opacity-50"
-                  >
-                    {applyingId === template.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => void handleTogglePublished(template)}
-                    title={
-                      template.isPublished
-                        ? 'Unpublish template'
-                        : 'Publish template'
-                    }
-                    className={`p-2 rounded-lg transition-colors ${
-                      template.isPublished
-                        ? 'text-green-500 hover:bg-green-50'
-                        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    {template.isPublished ? (
-                      <Globe className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      setExpandedId(
-                        expandedId === template.id ? null : template.id
-                      )
-                    }
-                    title="Show details"
-                    className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  >
-                    {expandedId === template.id ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => void handleDelete(template)}
-                    title="Delete template"
-                    className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                {/* Widget count footer */}
+                <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 text-xxs text-slate-400">
+                  {template.widgets.length} widget
+                  {template.widgets.length !== 1 ? 's' : ''} captured
+                  {template.targetBuildings.length > 0 && (
+                    <>
+                      {' '}
+                      · {template.targetBuildings.length} building
+                      {template.targetBuildings.length !== 1 ? 's' : ''}
+                    </>
+                  )}
+                  {' · '}by {template.createdBy}
                 </div>
               </div>
-
-              {/* Expanded Details */}
-              {expandedId === template.id && (
-                <div className="border-t border-slate-100 px-4 py-3 bg-slate-50 space-y-2 animate-in slide-in-from-top-1 duration-150">
-                  {template.description && (
-                    <p className="text-sm text-slate-600">
-                      {template.description}
-                    </p>
-                  )}
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-500">
-                    <span>
-                      <strong>Created by:</strong> {template.createdBy}
-                    </span>
-                    <span>
-                      <strong>Created:</strong>{' '}
-                      {new Date(template.createdAt).toLocaleDateString()}
-                    </span>
-                    <span>
-                      <strong>Widgets:</strong> {template.widgets.length}
-                    </span>
-                    <span>
-                      <strong>Published:</strong>{' '}
-                      {template.isPublished ? 'Yes' : 'No (draft)'}
-                    </span>
-                    {template.tags.length > 0 && (
-                      <span className="col-span-2">
-                        <strong>Tags:</strong> {template.tags.join(', ')}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Widget type list */}
-                  {template.widgets.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {Array.from(
-                        new Set(template.widgets.map((w) => w.type))
-                      ).map((type) => (
-                        <span
-                          key={type}
-                          className="px-2 py-0.5 bg-white border border-slate-200 text-slate-600 text-xxs font-mono rounded"
-                        >
-                          {type}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
-
-      {/* Firestore rules reminder */}
-      <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
-        <Eye className="w-4 h-4 shrink-0 mt-0.5" />
-        <p>
-          Templates are stored in the{' '}
-          <code className="font-mono bg-amber-100 px-1 rounded">
-            dashboard_templates
-          </code>{' '}
-          Firestore collection. Ensure your security rules allow authenticated
-          users to read and admins to write this collection.
-        </p>
-      </div>
     </div>
   );
 };

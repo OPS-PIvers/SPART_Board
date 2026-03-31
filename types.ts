@@ -2460,8 +2460,10 @@ export interface DashboardTemplate {
   targetGradeLevels: GradeLevel[];
   /** Building IDs this template is offered to; empty = all buildings */
   targetBuildings: string[];
-  /** When true, this template is shown in the user-facing starter pack */
-  isPublished: boolean;
+  /** Whether this template is available to users (replaces isPublished) */
+  enabled: boolean;
+  /** Who can see/use this template */
+  accessLevel: 'admin' | 'beta' | 'public';
   createdAt: number;
   updatedAt: number;
   createdBy: string; // admin email
