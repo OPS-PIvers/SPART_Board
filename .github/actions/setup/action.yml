@@ -10,8 +10,23 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Read pnpm version from package.json
+      id: read-pnpm-version
+      shell: bash
+      run: |
+        PNPM_INFO=$(grep '"packageManager"' package.json | cut -d'"' -f4 || echo "")
+        if [[ "$PNPM_INFO" =~ ^pnpm@(.+)$ ]]; then
+          PNPM_VERSION="${BASH_REMATCH[1]}"
+          echo "version=${PNPM_VERSION}" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::'packageManager' field in package.json is missing or has an unexpected format. Expected 'pnpm@<version>', got '$PNPM_INFO'."
+          exit 1
+        fi
+
     - name: Install pnpm
       uses: pnpm/action-setup@v4
+      with:
+        version: ${{ steps.read-pnpm-version.outputs.version }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
