@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { auth } from '@/config/firebase';
 import {
   BarChart,
@@ -51,7 +57,11 @@ const WIDGET_LABELS: Record<string, string> = TOOLS.reduce(
   {} as Record<string, string>
 );
 
-const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
+const KNOWN_BUILDINGS = new Map(
+  BUILDINGS.map((building) => [building.id, building])
+);
+const NUMBER_FORMATTER = new Intl.NumberFormat();
+const formatNumber = (value: number) => NUMBER_FORMATTER.format(value);
 
 const formatRate = (value: number) =>
   Number.isFinite(value) ? `${value.toFixed(1)}%` : '0.0%';
@@ -84,12 +94,25 @@ export const AnalyticsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const requestSequenceRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   // Filters
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all');
 
-  const fetchAnalytics = async () => {
+  useEffect(
+    () => () => {
+      isMountedRef.current = false;
+      requestSequenceRef.current += 1;
+    },
+    []
+  );
+
+  const fetchAnalytics = useCallback(async () => {
+    const requestId = requestSequenceRef.current + 1;
+    requestSequenceRef.current = requestId;
+
     try {
       setLoading(true);
       setError(null);
@@ -120,22 +143,30 @@ export const AnalyticsManager: React.FC = () => {
       }
 
       const nextData = (await response.json()) as AnalyticsData;
+      if (!isMountedRef.current || requestId !== requestSequenceRef.current) {
+        return;
+      }
       setData(nextData);
     } catch (err: unknown) {
       console.error('Failed to load analytics', err);
+      if (!isMountedRef.current || requestId !== requestSequenceRef.current) {
+        return;
+      }
       const errorMessage =
         err instanceof Error
           ? err.message
           : 'An error occurred loading analytics data';
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current && requestId === requestSequenceRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     void fetchAnalytics();
-  }, []);
+  }, [fetchAnalytics]);
 
   const { filteredTotalUsers, filteredMonthly, filteredDaily } = useMemo(() => {
     if (!data) {
@@ -184,12 +215,11 @@ export const AnalyticsManager: React.FC = () => {
   const hasNoBuildingUsers = Boolean(data?.users.buildings.none);
   const buildingOptions = useMemo(() => {
     if (!data) return [];
-    const known = new Map(BUILDINGS.map((building) => [building.id, building]));
     return Object.keys(data.users.buildings)
       .filter((id) => id !== 'none')
       .sort()
       .map((id) => {
-        const building = known.get(id);
+        const building = KNOWN_BUILDINGS.get(id);
         return {
           id,
           name: building?.name ?? `Unknown Building (${id})`,
@@ -272,10 +302,13 @@ export const AnalyticsManager: React.FC = () => {
             </select>
             <button
               type="button"
+              disabled={loading}
               onClick={() => void fetchAnalytics()}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+              />
               Refresh
             </button>
           </div>
@@ -352,9 +385,7 @@ export const AnalyticsManager: React.FC = () => {
           {sortedWidgets.map(([type, count], index) => {
             const label = WIDGET_LABELS[type] || type;
             const activeCount = data.widgets.activeInstances[type] || 0;
-            const percentage = data.widgets.totalInstances[type]
-              ? (activeCount / data.widgets.totalInstances[type]) * 100
-              : 0;
+            const percentage = count > 0 ? (activeCount / count) * 100 : 0;
 
             return (
               <div key={type} className="flex items-center gap-4">
