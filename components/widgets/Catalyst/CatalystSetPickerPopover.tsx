@@ -94,7 +94,7 @@ export const CatalystSetPickerPopover: React.FC<Props> = ({
           <div
             className="grid"
             style={{
-              gridTemplateColumns: `repeat(${sets.length}, 120px)`,
+              gridTemplateColumns: `repeat(${sets.length}, 144px)`,
               gap: '8px',
             }}
           >

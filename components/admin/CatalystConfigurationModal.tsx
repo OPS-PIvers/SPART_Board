@@ -758,7 +758,7 @@ export const CatalystConfigurationModal: React.FC<
                         />
                       </div>
                       <div className="grid grid-cols-8 gap-2 max-h-44 overflow-y-auto custom-scrollbar">
-                        {filteredIconNames.map((name) => {
+                        {filteredIconNames.slice(0, 100).map((name) => {
                           const IconComp = (
                             LucideIcons as unknown as Record<
                               string,
