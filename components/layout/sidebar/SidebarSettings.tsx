@@ -39,12 +39,14 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   return (
     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
       <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
         className="w-full flex items-center justify-between mb-1 px-1 focus:outline-none focus:ring-2 focus:ring-brand-blue-primary/50 focus:border-transparent rounded"
       >
         <div className="flex items-center gap-2">
           {icon}
-          <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight block cursor-pointer">
+          <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
             {title}
           </span>
         </div>
@@ -61,11 +63,11 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
       <div
         className={`grid transition-all duration-200 ease-in-out ${
           isExpanded
-            ? 'grid-rows-[1fr] mt-2 opacity-100'
+            ? 'grid-rows-[1fr] opacity-100'
             : 'grid-rows-[0fr] opacity-0'
         }`}
       >
-        <div className="overflow-hidden">{children}</div>
+        <div className="overflow-hidden pt-2">{children}</div>
       </div>
     </div>
   );
@@ -268,7 +270,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
           title={t('sidebar.settings.interfacePreferences')}
           icon={<Settings className="w-4 h-4 text-slate-400" />}
         >
-          <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm mt-2">
+          <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
             <div className="flex flex-col gap-0.5">
               <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
                 {t('sidebar.settings.disableCloseWarning')}
@@ -294,7 +296,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
         {/* Remote Control */}
         {canAccessFeature('remote-control') && (
           <CollapsibleSection
-            title="Remote Control"
+            title={t('sidebar.settings.remoteControl')}
             icon={<Smartphone className="w-4 h-4 text-slate-400" />}
           >
             <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
@@ -333,7 +335,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
             </span>
           }
         >
-          <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed mt-2">
+          <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
             {t('sidebar.settings.quickAccessDescription')}
           </p>
           <div className="grid grid-cols-6 gap-2">
