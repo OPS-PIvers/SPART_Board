@@ -188,6 +188,7 @@ describe('DraggableWindow', () => {
             selectedWidgetId,
             setSelectedWidgetId: mockSetSelectedWidgetId,
             zoom: 1,
+            panOffset: { x: 0, y: 0 },
           } as unknown as DashboardContextValue
         }
       >
@@ -221,6 +222,7 @@ describe('DraggableWindow', () => {
             selectedWidgetId: null,
             setSelectedWidgetId: mockSetSelectedWidgetId,
             zoom: 1,
+            panOffset: { x: 0, y: 0 },
           } as unknown as DashboardContextValue
         }
       >
@@ -253,6 +255,7 @@ describe('DraggableWindow', () => {
             selectedWidgetId: null,
             setSelectedWidgetId: mockSetSelectedWidgetId,
             zoom: 1,
+            panOffset: { x: 0, y: 0 },
           } as unknown as DashboardContextValue
         }
       >
