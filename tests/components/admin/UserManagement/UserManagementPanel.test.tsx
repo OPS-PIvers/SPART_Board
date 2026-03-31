@@ -65,6 +65,10 @@ describe('UserManagementPanel', () => {
     // Trigger blur to format
     fireEvent.blur(studentTextarea);
 
+    // Give it a small delay for state to settle and the useEffect to sync back the parent's `emails` array.
+    // The previous test issue indicated it was receiving empty values instead of the populated array.
+    await new Promise((r) => setTimeout(r, 0));
+
     // Verify it was cleaned up and deduplicated
     await waitFor(() => {
       expect(studentTextarea).toHaveValue(
