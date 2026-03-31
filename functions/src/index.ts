@@ -1784,6 +1784,12 @@ interface DashboardData {
   widgets?: { type: string }[];
 }
 
+interface EngagementCounts {
+  total: number;
+  monthly: number;
+  daily: number;
+}
+
 /**
  * Cloud Function to fetch administrative analytics.
  * Bumps memory to 1GB and timeout to 300s to handle unbounded collection reads
@@ -1834,15 +1840,34 @@ export const getAdminAnalytics = functionsV1
         .select('email', 'lastLogin', 'buildings')
         .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
 
-      interface UserDataResponse {
-        id: string;
-        email: string;
-        domain: string;
-        lastLogin?: number;
-        buildings: string[];
-      }
+      const usersByDomain: Record<string, EngagementCounts> = {};
+      const usersByBuilding: Record<string, EngagementCounts> = {};
+      const usersByDomainAndBuilding: Record<
+        string,
+        Record<string, EngagementCounts>
+      > = {};
+      const uidToEmail: Record<string, string> = {};
+      const totalEngagement: EngagementCounts = {
+        total: 0,
+        monthly: 0,
+        daily: 0,
+      };
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const oneDayMs = 24 * 60 * 60 * 1000;
 
-      const usersData: UserDataResponse[] = [];
+      const increment = (
+        bucket: Record<string, EngagementCounts>,
+        key: string,
+        isMonthlyActive: boolean,
+        isDailyActive: boolean
+      ) => {
+        if (!bucket[key]) {
+          bucket[key] = { total: 0, monthly: 0, daily: 0 };
+        }
+        bucket[key].total += 1;
+        if (isMonthlyActive) bucket[key].monthly += 1;
+        if (isDailyActive) bucket[key].daily += 1;
+      };
 
       for await (const userDoc of usersStream) {
         if (!userDoc.exists) continue;
@@ -1852,25 +1877,54 @@ export const getAdminAnalytics = functionsV1
         const domain = userEmail.includes('@')
           ? userEmail.split('@')[1]
           : 'unknown';
+        uidToEmail[userDoc.id] = userEmail || `Unknown (${userDoc.id})`;
 
         let buildings: string[] = [];
         if (Array.isArray(userData.buildings)) {
           buildings = userData.buildings.map(String);
         }
 
-        usersData.push({
-          id: userDoc.id,
-          email: userEmail,
-          domain,
-          lastLogin:
-            typeof userData.lastLogin === 'number'
-              ? userData.lastLogin
-              : undefined,
-          buildings,
-        });
+        const lastLogin =
+          typeof userData.lastLogin === 'number' ? userData.lastLogin : 0;
+        const isMonthlyActive =
+          lastLogin > 0 && now - lastLogin <= thirtyDaysMs;
+        const isDailyActive = lastLogin > 0 && now - lastLogin <= oneDayMs;
+
+        totalEngagement.total += 1;
+        if (isMonthlyActive) totalEngagement.monthly += 1;
+        if (isDailyActive) totalEngagement.daily += 1;
+
+        increment(usersByDomain, domain, isMonthlyActive, isDailyActive);
+
+        if (buildings.length === 0) {
+          increment(usersByBuilding, 'none', isMonthlyActive, isDailyActive);
+          if (!usersByDomainAndBuilding[domain]) {
+            usersByDomainAndBuilding[domain] = {};
+          }
+          increment(
+            usersByDomainAndBuilding[domain],
+            'none',
+            isMonthlyActive,
+            isDailyActive
+          );
+          continue;
+        }
+
+        for (const building of buildings) {
+          increment(usersByBuilding, building, isMonthlyActive, isDailyActive);
+          if (!usersByDomainAndBuilding[domain]) {
+            usersByDomainAndBuilding[domain] = {};
+          }
+          increment(
+            usersByDomainAndBuilding[domain],
+            building,
+            isMonthlyActive,
+            isDailyActive
+          );
+        }
       }
 
-      const totalUsers = usersData.length;
+      const totalUsers = totalEngagement.total;
       console.log(`[getAdminAnalytics] Found ${totalUsers} user documents`);
 
       console.log(
@@ -1966,12 +2020,22 @@ export const getAdminAnalytics = functionsV1
       const activeAiUsers = Object.keys(callsPerUser).length || 1;
       const avgDailyCallsPerUser =
         Math.round((avgDailyCalls / activeAiUsers) * 10) / 10;
+      const topUsers = Object.entries(callsPerUser)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 25)
+        .map(([uid, count]) => ({
+          uid,
+          count,
+          email: uidToEmail[uid] ?? `Unknown (${uid})`,
+        }));
 
       console.log('[getAdminAnalytics] Analysis complete, returning results');
       return {
         users: {
-          total: totalUsers,
-          data: usersData,
+          ...totalEngagement,
+          domains: usersByDomain,
+          buildings: usersByBuilding,
+          domainBuilding: usersByDomainAndBuilding,
         },
         widgets: {
           totalInstances: totalWidgetCounts,
@@ -1979,7 +2043,8 @@ export const getAdminAnalytics = functionsV1
         },
         api: {
           totalCalls: totalAiCalls,
-          callsPerUser,
+          activeUsers: Object.keys(callsPerUser).length,
+          topUsers,
           avgDailyCalls,
           avgDailyCallsPerUser,
         },
