@@ -1716,11 +1716,25 @@ export const getAdminAnalytics = functionsV1
       console.log('[getAdminAnalytics] Fetching users...');
 
       // 3. Fetch Users
-      // NOTE: We fetch the full collection to provide the list in the UI.
-      const usersSnap = await db.collection('users').get();
-      console.log(`[getAdminAnalytics] Found ${usersSnap.size} user documents`);
+      // Using .stream() combined with .select() limits the memory footprint
+      // by streaming documents one-by-one with only the necessary fields
+      const usersStream = db
+        .collection('users')
+        .select('email', 'lastLogin', 'buildings')
+        .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
 
-      const usersData = usersSnap.docs.map((userDoc) => {
+      interface UserDataResponse {
+        id: string;
+        email: string;
+        domain: string;
+        lastLogin?: number;
+        buildings: string[];
+      }
+
+      const usersData: UserDataResponse[] = [];
+
+      for await (const userDoc of usersStream) {
+        if (!userDoc.exists) continue;
         const userData = userDoc.data();
         const userEmail =
           typeof userData.email === 'string' ? userData.email : '';
@@ -1733,7 +1747,7 @@ export const getAdminAnalytics = functionsV1
           buildings = userData.buildings.map(String);
         }
 
-        return {
+        usersData.push({
           id: userDoc.id,
           email: userEmail,
           domain,
@@ -1742,29 +1756,29 @@ export const getAdminAnalytics = functionsV1
               ? userData.lastLogin
               : undefined,
           buildings,
-        };
-      });
+        });
+      }
 
       const totalUsers = usersData.length;
+      console.log(`[getAdminAnalytics] Found ${totalUsers} user documents`);
 
       console.log(
         '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
       );
       // 4. Fetch Dashboards for Widget Stats
-      // Use collectionGroup on backend safely bypassing the user-only read rules
+      let totalDashboards = 0;
       const totalWidgetCounts: Record<string, number> = {};
       const activeWidgetCounts: Record<string, number> = {};
-
-      // TODO: In the future, use count() for the total count, but we still need
-      // the docs here to calculate widget-specific statistics.
-      const dashboardsSnap = await db.collectionGroup('dashboards').get();
-      console.log(
-        `[getAdminAnalytics] Found ${dashboardsSnap.size} dashboards`
-      );
-
       const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
 
-      for (const dashDoc of dashboardsSnap.docs) {
+      const dashboardsStream = db
+        .collectionGroup('dashboards')
+        .select('widgets', 'updatedAt')
+        .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+
+      for await (const dashDoc of dashboardsStream) {
+        if (!dashDoc.exists) continue;
+        totalDashboards++;
         const dashData = dashDoc.data() as DashboardData;
         const updatedAt =
           typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
@@ -1783,16 +1797,14 @@ export const getAdminAnalytics = functionsV1
         }
       }
 
+      console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
+
       console.log('[getAdminAnalytics] Fetching AI usage...');
       // 5. Fetch AI Usage
+      let totalAiUsageRecords = 0;
       let totalAiCalls = 0;
       const callsPerUser: Record<string, number> = {};
       const dailyCallCounts: Record<string, number> = {};
-
-      const aiUsageSnap = await db.collection('ai_usage').get();
-      console.log(
-        `[getAdminAnalytics] Found ${aiUsageSnap.size} AI usage records`
-      );
 
       const GEMINI_SPECIFIC_FEATURES = [
         'smart-poll',
@@ -1800,9 +1812,16 @@ export const getAdminAnalytics = functionsV1
         'video-activity-audio-transcription',
       ];
 
-      aiUsageSnap.docs.forEach((usageDoc) => {
+      const aiUsageStream = db
+        .collection('ai_usage')
+        .select('count')
+        .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+
+      for await (const usageDoc of aiUsageStream) {
+        if (!usageDoc.exists) continue;
+        totalAiUsageRecords++;
         const idParts = usageDoc.id.split('_');
-        if (idParts.length < 2) return;
+        if (idParts.length < 2) continue;
 
         const datePart = idParts[idParts.length - 1];
         const secondToLast = idParts[idParts.length - 2];
@@ -1813,7 +1832,7 @@ export const getAdminAnalytics = functionsV1
         const uidParts = idParts.slice(0, isSpecificFeature ? -2 : -1);
         const uid = uidParts.join('_');
 
-        if (!uid || !datePart) return;
+        if (!uid || !datePart) continue;
 
         const usageData = usageDoc.data();
         const count = typeof usageData.count === 'number' ? usageData.count : 0;
@@ -1825,7 +1844,11 @@ export const getAdminAnalytics = functionsV1
           callsPerUser[uid] = (callsPerUser[uid] ?? 0) + count;
           dailyCallCounts[datePart] = (dailyCallCounts[datePart] ?? 0) + count;
         }
-      });
+      }
+
+      console.log(
+        `[getAdminAnalytics] Found ${totalAiUsageRecords} AI usage records`
+      );
 
       const uniqueDays = Object.keys(dailyCallCounts).length || 1;
       const avgDailyCalls = Math.round(totalAiCalls / uniqueDays);
