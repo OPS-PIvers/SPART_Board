@@ -28,12 +28,7 @@ export const ActivityWallSettings: React.FC<{ widget: WidgetData }> = ({
   };
 
   const upsertActivity = (activity: ActivityWallActivity) => {
-    const existing = config.activities ?? [];
-    const updated = existing.some((a) => a.id === activity.id)
-      ? existing.map((a) => (a.id === activity.id ? activity : a))
-      : [...existing, activity];
-
-    updateConfig({ activities: updated, draftActivity: activity });
+    updateConfig({ draftActivity: activity });
   };
 
   const draft =

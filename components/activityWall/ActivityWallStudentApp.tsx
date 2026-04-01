@@ -10,14 +10,59 @@ type ActivityPayload = {
   identificationMode: ActivityWallIdentificationMode;
 };
 
+const isActivityPayload = (value: unknown): value is ActivityPayload => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const payload = value as {
+    id?: unknown;
+    title?: unknown;
+    prompt?: unknown;
+    mode?: unknown;
+    identificationMode?: unknown;
+  };
+
+  return (
+    typeof payload.id === 'string' &&
+    typeof payload.title === 'string' &&
+    typeof payload.prompt === 'string' &&
+    (payload.mode === 'text' || payload.mode === 'photo') &&
+    (payload.identificationMode === 'anonymous' ||
+      payload.identificationMode === 'name' ||
+      payload.identificationMode === 'pin' ||
+      payload.identificationMode === 'name-pin')
+  );
+};
+
+const decodeBase64Utf8 = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const binary = atob(decodeURIComponent(trimmed));
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return null;
+  }
+};
+
 const parsePayload = (): ActivityPayload | null => {
   const params = new URLSearchParams(window.location.search);
   const encoded = params.get('data');
   if (!encoded) return null;
 
+  const decodedJson = decodeBase64Utf8(encoded);
+  if (!decodedJson) return null;
+
   try {
-    const decoded = atob(decodeURIComponent(encoded));
-    return JSON.parse(decoded) as ActivityPayload;
+    const parsed = JSON.parse(decodedJson) as unknown;
+    if (!isActivityPayload(parsed)) return null;
+    return parsed;
   } catch {
     return null;
   }
@@ -25,12 +70,15 @@ const parsePayload = (): ActivityPayload | null => {
 
 export const ActivityWallStudentApp: React.FC = () => {
   const payload = useMemo(() => parsePayload(), []);
+  const activityIdFromPath = window.location.pathname
+    .replace(/^\/activity-wall\/?/, '')
+    .split('/')[0];
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [response, setResponse] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  if (!payload) {
+  if (!payload || !activityIdFromPath || payload.id !== activityIdFromPath) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4 text-center">
         Invalid activity link. Ask your teacher for a new link.

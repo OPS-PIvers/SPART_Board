@@ -17,20 +17,37 @@ import {
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
+const encodeActivityData = (activity: ActivityWallActivity): string => {
+  const payload = JSON.stringify({
+    id: activity.id,
+    title: activity.title,
+    prompt: activity.prompt,
+    mode: activity.mode,
+    identificationMode: activity.identificationMode,
+  });
+  const bytes = new TextEncoder().encode(payload);
+  let binary = '';
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+  return encodeURIComponent(btoa(binary));
+};
+
 const buildPublicActivityLink = (activity: ActivityWallActivity): string => {
-  const encoded = encodeURIComponent(
-    btoa(
-      JSON.stringify({
-        id: activity.id,
-        title: activity.title,
-        prompt: activity.prompt,
-        mode: activity.mode,
-        identificationMode: activity.identificationMode,
-      })
-    )
-  );
+  const encoded = encodeActivityData(activity);
 
   return `${window.location.origin}/activity-wall/${activity.id}?data=${encoded}`;
+};
+
+const MAX_STORED_SUBMISSIONS = 200;
+
+const isSafeHttpUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
 };
 
 const QRPreview: React.FC<{ url: string }> = ({ url }) => {
@@ -83,7 +100,9 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
 
       return {
         ...activity,
-        submissions: [...(activity.submissions ?? []), submission],
+        submissions: [...(activity.submissions ?? []), submission].slice(
+          -MAX_STORED_SUBMISSIONS
+        ),
       };
     });
 
@@ -350,15 +369,26 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
                         {submission.content}
                       </p>
                     ) : (
-                      <a
-                        href={submission.content}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-brand-blue-primary underline break-all"
-                        style={{ fontSize: 'min(10px, 3.4cqmin)' }}
-                      >
-                        Open photo
-                      </a>
+                      <>
+                        {isSafeHttpUrl(submission.content) ? (
+                          <a
+                            href={submission.content}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-brand-blue-primary underline break-all"
+                            style={{ fontSize: 'min(10px, 3.4cqmin)' }}
+                          >
+                            Open photo
+                          </a>
+                        ) : (
+                          <p
+                            className="text-red-600 break-words"
+                            style={{ fontSize: 'min(10px, 3.4cqmin)' }}
+                          >
+                            Invalid photo URL
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}

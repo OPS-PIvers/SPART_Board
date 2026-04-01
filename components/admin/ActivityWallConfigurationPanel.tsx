@@ -8,8 +8,9 @@ interface ActivityWallConfigurationPanelProps {
 export const ActivityWallConfigurationPanel: React.FC<
   ActivityWallConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const rawEnabledByDefault = config.enabledByDefault;
   const enabledByDefault =
-    (config.enabledByDefault as boolean | undefined) ?? true;
+    typeof rawEnabledByDefault === 'boolean' ? rawEnabledByDefault : true;
 
   return (
     <div className="space-y-3">
