@@ -812,6 +812,8 @@ export const CatalystConfigurationModal: React.FC<
                                 }))
                               }
                               title={name}
+                              aria-label={name}
+                              type="button"
                               className={`w-8 h-8 rounded-lg border transition-colors flex items-center justify-center ${
                                 isSelected
                                   ? 'border-indigo-500 ring-2 ring-indigo-200'

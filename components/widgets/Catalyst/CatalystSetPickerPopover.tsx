@@ -75,6 +75,8 @@ export const CatalystSetPickerPopover: React.FC<Props> = ({
                     color: routine.iconColor?.trim() ?? '#4338ca',
                   }}
                   title={routine.title}
+                  aria-label={routine.title}
+                  type="button"
                 >
                   {renderCatalystIcon(routine.icon ?? 'Zap', 16)}
                 </button>

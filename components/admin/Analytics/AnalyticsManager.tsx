@@ -101,13 +101,13 @@ export const AnalyticsManager: React.FC = () => {
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all');
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
       isMountedRef.current = false;
       requestSequenceRef.current += 1;
-    },
-    []
-  );
+    };
+  }, []);
 
   const fetchAnalytics = useCallback(async () => {
     const requestId = requestSequenceRef.current + 1;

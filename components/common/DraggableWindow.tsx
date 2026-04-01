@@ -135,7 +135,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     selectedWidgetId,
     setSelectedWidgetId,
     zoom,
-    panOffset = { x: 0, y: 0 },
   } = useDashboard();
   const { showConfirm: showConfirmDialog } = useDialog();
 
@@ -797,6 +796,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     visibility: 'hidden',
   });
 
+  // Stable ref to the latest updatePosition fn — lets the board-pan listener
+  // always call the current version without being in its dependency array.
+  const updatePositionRef = useRef<(() => void) | null>(null);
+
   useLayoutEffect(() => {
     if (showTools && windowRef.current) {
       const updatePosition = () => {
@@ -853,28 +856,31 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           left: clampedLeft,
           zIndex: Z_INDEX.toolMenu,
           visibility: 'visible',
-          transition: 'top 0.15s ease-out, left 0.15s ease-out',
         });
       };
 
+      updatePositionRef.current = updatePosition;
       updatePosition();
       window.addEventListener('resize', updatePosition);
-      return () => window.removeEventListener('resize', updatePosition);
+      return () => {
+        updatePositionRef.current = null;
+        window.removeEventListener('resize', updatePosition);
+      };
     } else {
       // Reset to hidden when toolbar closes so next open starts invisible
       setMenuStyle({ visibility: 'hidden' });
     }
     return undefined;
-  }, [
-    showTools,
-    widget.x,
-    widget.y,
-    widget.w,
-    widget.h,
-    isMaximized,
-    zoom,
-    panOffset,
-  ]);
+  }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized, zoom]);
+
+  // Reposition the tool menu on board pan without subscribing to panOffset in
+  // context (which would cause every widget to re-render on every pan frame).
+  useEffect(() => {
+    if (!showTools) return;
+    const handlePan = () => updatePositionRef.current?.();
+    window.addEventListener('board-pan', handlePan);
+    return () => window.removeEventListener('board-pan', handlePan);
+  }, [showTools]);
 
   useEffect(() => {
     const handleCustomKeyboard = (e: Event) => {

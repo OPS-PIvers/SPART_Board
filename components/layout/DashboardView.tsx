@@ -346,6 +346,7 @@ export const DashboardView: React.FC = () => {
               x: prev.x + dx,
               y: prev.y + dy,
             }));
+            window.dispatchEvent(new CustomEvent('board-pan'));
           }
           return;
         }

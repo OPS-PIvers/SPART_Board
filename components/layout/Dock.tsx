@@ -600,7 +600,10 @@ export const Dock: React.FC = () => {
           onSelectRoutine={(setId, routineId) => {
             const set = catalystSets.find((item) => item.id === setId);
             const routine = set?.routines.find((item) => item.id === routineId);
-            if (!routine) return;
+            if (!routine) {
+              setShowCatalystPicker(false);
+              return;
+            }
             executeRoutine(routine, addWidget);
             setShowCatalystPicker(false);
           }}
