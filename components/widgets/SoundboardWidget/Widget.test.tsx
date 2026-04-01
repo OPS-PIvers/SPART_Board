@@ -15,8 +15,13 @@ const mockPlay = vi
 vi.stubGlobal(
   'Audio',
   class {
+    src = '';
+    currentTime = 0;
     play(): Promise<void> {
       return mockPlay();
+    }
+    pause() {
+      // silent
     }
   }
 );

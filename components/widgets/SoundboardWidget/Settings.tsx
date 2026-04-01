@@ -3,6 +3,7 @@ import { WidgetData, SoundboardConfig, SoundboardGlobalConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
 import { Toggle } from '@/components/common/Toggle';
+import { STANDARD_COLORS } from '@/config/colors';
 
 export const SoundboardSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -64,7 +65,9 @@ export const SoundboardSettings: React.FC<{ widget: WidgetData }> = ({
                   <div className="flex items-center gap-3">
                     <div
                       className="w-8 h-8 rounded-lg shadow-inner flex-shrink-0"
-                      style={{ backgroundColor: sound.color ?? '#6366f1' }}
+                      style={{
+                        backgroundColor: sound.color ?? STANDARD_COLORS.indigo,
+                      }}
                     />
                     <div className="flex flex-col">
                       <button

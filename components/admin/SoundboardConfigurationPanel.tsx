@@ -8,6 +8,7 @@ import {
 } from '@/types';
 import { Button } from '@/components/common/Button';
 import { Plus, Trash2 } from 'lucide-react';
+import { STANDARD_COLORS } from '@/config/colors';
 
 interface SoundboardConfigurationPanelProps {
   config: SoundboardGlobalConfig;
@@ -48,7 +49,7 @@ export const SoundboardConfigurationPanel: React.FC<
       id: crypto.randomUUID(),
       label: 'New Sound',
       url: '',
-      color: '#6366f1',
+      color: STANDARD_COLORS.indigo,
     };
     handleUpdateBuilding({ availableSounds: [...sounds, newSound] });
   };
@@ -124,7 +125,7 @@ export const SoundboardConfigurationPanel: React.FC<
                       <div className="flex gap-2 items-center">
                         <input
                           type="color"
-                          value={sound.color ?? '#6366f1'}
+                          value={sound.color ?? STANDARD_COLORS.indigo}
                           onChange={(e) =>
                             updateSound(index, { color: e.target.value })
                           }
@@ -132,7 +133,7 @@ export const SoundboardConfigurationPanel: React.FC<
                         />
                         <input
                           type="text"
-                          value={sound.color ?? '#6366f1'}
+                          value={sound.color ?? STANDARD_COLORS.indigo}
                           onChange={(e) =>
                             updateSound(index, { color: e.target.value })
                           }

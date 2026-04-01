@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import {
   WidgetData,
   SoundboardConfig,
@@ -9,11 +9,13 @@ import { useAuth } from '@/context/useAuth';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Volume2 } from 'lucide-react';
+import { STANDARD_COLORS } from '@/config/colors';
 
 export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const config = widget.config as SoundboardConfig;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { selectedSoundIds = [] } = config;
 
   const { featurePermissions, selectedBuildings } = useAuth();
@@ -48,11 +50,24 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   const playSound = (url: string) => {
     if (!url) return;
-    const audio = new Audio(url);
-    audio.play().catch(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(url);
+    } else {
+      audioRef.current.src = url;
+      audioRef.current.currentTime = 0;
+    }
+    audioRef.current.play().catch(() => {
       /* silent */
     });
   };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
 
   if (visibleSounds.length === 0) {
     return (
@@ -70,37 +85,44 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <WidgetLayout
-      padding="p-[min(12px,2cqmin)]"
+      padding="p-0"
       content={
         <div
           className="w-full h-full grid"
           style={{
             gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
             gap: 'min(12px, 2cqmin)',
+            padding: 'min(12px, 2cqmin)',
           }}
         >
           {visibleSounds.map((sound) => (
             <button
               key={sound.id}
               onClick={() => playSound(sound.url)}
-              className="relative overflow-hidden rounded-[min(16px,3cqmin)] flex flex-col items-center justify-center transition-transform active:scale-95 group shadow-sm hover:shadow-md border border-slate-200/50"
+              className="relative overflow-hidden flex flex-col items-center justify-center transition-transform active:scale-95 group shadow-sm hover:shadow-md border border-slate-200/50"
               style={{
-                backgroundColor: sound.color ?? '#6366f1', // default indigo-500
+                backgroundColor: sound.color ?? STANDARD_COLORS.indigo, // default indigo-500
+                borderRadius: 'min(16px, 3cqmin)',
               }}
             >
               {/* Overlay for interaction state */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 group-active:bg-black/10 transition-colors" />
 
               <Volume2
-                className="text-white drop-shadow-sm mb-[min(8px,1.5cqmin)]"
+                className="text-white drop-shadow-sm"
                 style={{
                   width: 'min(48px, 15cqmin)',
                   height: 'min(48px, 15cqmin)',
+                  marginBottom: 'min(8px, 1.5cqmin)',
                 }}
               />
               <span
-                className="font-black text-white text-center px-[min(8px,1.5cqmin)] leading-tight drop-shadow-md break-words max-w-full"
-                style={{ fontSize: 'min(18px, 6cqmin)' }}
+                className="font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full"
+                style={{
+                  fontSize: 'min(18px, 6cqmin)',
+                  paddingLeft: 'min(8px, 1.5cqmin)',
+                  paddingRight: 'min(8px, 1.5cqmin)',
+                }}
               >
                 {sound.label}
               </span>
