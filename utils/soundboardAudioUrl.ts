@@ -32,8 +32,7 @@ export const normalizeSoundboardAudioUrl = (url: string): string => {
 
   if (parsedUrl.pathname === '/uc') {
     const fileId = parsedUrl.searchParams.get('id');
-    const exportParam = parsedUrl.searchParams.get('export');
-    if (fileId && exportParam === 'download') {
+    if (fileId) {
       return toCanonicalDrivePlaybackUrl(fileId);
     }
   }

@@ -21,6 +21,12 @@ describe('normalizeSoundboardAudioUrl', () => {
     ).toBe(canonicalUrl);
   });
 
+  it('adds export=download for uc?id=<id> links that are missing it', () => {
+    expect(
+      normalizeSoundboardAudioUrl(`https://drive.google.com/uc?id=${fileId}`)
+    ).toBe(canonicalUrl);
+  });
+
   it('keeps uc?id=<id>&export=download links stable (idempotent)', () => {
     expect(normalizeSoundboardAudioUrl(canonicalUrl)).toBe(canonicalUrl);
   });
