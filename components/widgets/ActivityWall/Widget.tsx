@@ -37,6 +37,7 @@ const encodeActivityData = (
     title: activity.title,
     prompt: activity.prompt,
     mode: activity.mode,
+    moderationEnabled: activity.moderationEnabled,
     identificationMode: activity.identificationMode,
     teacherUid,
   });
