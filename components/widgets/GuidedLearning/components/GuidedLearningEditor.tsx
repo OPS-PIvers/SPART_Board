@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/context/useAuth';
 import { useStorage } from '@/hooks/useStorage';
 import { GuidedLearningStepEditor } from './GuidedLearningStepEditor';
+import { calculateImageFootprint } from '../utils/imageUtils';
 
 interface Props {
   /** Existing set to edit, or null for new */
@@ -79,38 +80,19 @@ export const GuidedLearningEditor: React.FC<Props> = ({
   } | null>(null);
 
   const measureImage = useCallback(() => {
-    if (!imageRef.current || !imageContainerRef.current) return;
-    const imageEl = imageRef.current;
-    const contRect = imageContainerRef.current.getBoundingClientRect();
-    const naturalWidth = imageEl.naturalWidth;
-    const naturalHeight = imageEl.naturalHeight;
-    if (
-      contRect.width === 0 ||
-      contRect.height === 0 ||
-      naturalWidth === 0 ||
-      naturalHeight === 0
-    ) {
+    if (!imageRef.current || !imageContainerRef.current) {
+      setImgBounds(null);
       return;
     }
 
-    const imageAspect = naturalWidth / naturalHeight;
-    const containerAspect = contRect.width / contRect.height;
+    const footprint = calculateImageFootprint(
+      imageRef.current.naturalWidth,
+      imageRef.current.naturalHeight,
+      imageContainerRef.current.getBoundingClientRect().width,
+      imageContainerRef.current.getBoundingClientRect().height
+    );
 
-    const width =
-      imageAspect > containerAspect
-        ? contRect.width
-        : contRect.height * imageAspect;
-    const height =
-      imageAspect > containerAspect
-        ? contRect.width / imageAspect
-        : contRect.height;
-
-    setImgBounds({
-      offsetLeft: (contRect.width - width) / 2,
-      offsetTop: (contRect.height - height) / 2,
-      width,
-      height,
-    });
+    setImgBounds(footprint);
   }, []);
 
   useEffect(() => {
@@ -120,7 +102,7 @@ export const GuidedLearningEditor: React.FC<Props> = ({
     });
     ro.observe(imageContainerRef.current);
     return () => ro.disconnect();
-  }, [measureImage]);
+  }, [imageUrl, measureImage]);
 
   // Handle file upload
   const handleImageUpload = async (file: File) => {

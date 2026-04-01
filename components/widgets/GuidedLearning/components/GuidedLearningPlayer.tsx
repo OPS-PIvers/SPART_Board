@@ -11,6 +11,11 @@ import { AudioInteraction } from './interactions/AudioInteraction';
 import { VideoInteraction } from './interactions/VideoInteraction';
 import { SpotlightInteraction } from './interactions/SpotlightInteraction';
 import { QuestionInteraction } from './interactions/QuestionInteraction';
+import {
+  calculateImageFootprint,
+  toContainerCoords,
+  toImageOffset,
+} from '../utils/imageUtils';
 
 interface Props {
   set: GuidedLearningSet;
@@ -70,36 +75,20 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
   } | null>(null);
 
   const measureImg = useCallback(() => {
-    if (!imgRef.current || !containerRef.current) return;
-    const imageEl = imgRef.current;
-    const contRect = containerRef.current.getBoundingClientRect();
-    const naturalWidth = imageEl.naturalWidth;
-    const naturalHeight = imageEl.naturalHeight;
-    if (
-      contRect.width === 0 ||
-      contRect.height === 0 ||
-      naturalWidth === 0 ||
-      naturalHeight === 0
-    )
+    if (!imgRef.current || !containerRef.current) {
+      setImgOffset(null);
       return;
+    }
 
-    const imageAspect = naturalWidth / naturalHeight;
-    const containerAspect = contRect.width / contRect.height;
-    const drawWidth =
-      imageAspect > containerAspect
-        ? contRect.width
-        : contRect.height * imageAspect;
-    const drawHeight =
-      imageAspect > containerAspect
-        ? contRect.width / imageAspect
-        : contRect.height;
+    const rect = containerRef.current.getBoundingClientRect();
+    const footprint = calculateImageFootprint(
+      imgRef.current.naturalWidth,
+      imgRef.current.naturalHeight,
+      rect.width,
+      rect.height
+    );
 
-    setImgOffset({
-      left: ((contRect.width - drawWidth) / 2 / contRect.width) * 100,
-      top: ((contRect.height - drawHeight) / 2 / contRect.height) * 100,
-      scaleX: drawWidth / contRect.width,
-      scaleY: drawHeight / contRect.height,
-    });
+    setImgOffset(toImageOffset(footprint, rect.width, rect.height));
   }, []);
 
   // Observe container size for overlay positioning
@@ -120,6 +109,19 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
   const currentStep = steps[currentIdx] ?? null;
   const activeStep = steps.find((s) => s.id === activeStepId) ?? null;
+
+  const toContainerStep = useCallback(
+    (step: GuidedLearningPublicStep | null) => {
+      if (!step) return null;
+      return {
+        ...step,
+        ...toContainerCoords(step.xPct, step.yPct, imgOffset),
+      };
+    },
+    [imgOffset]
+  );
+
+  const activeStepInContainer = toContainerStep(activeStep);
 
   // Derive pan-zoom active state from current step (no effect needed)
   const panZoomActive =
@@ -200,7 +202,9 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
   // Calculate pan-zoom transform
   const getPanZoomStyle = (): React.CSSProperties => {
     if (!panZoomActive || containerSize.w === 0) return {};
-    const step = steps.find((s) => s.id === panZoomActive);
+    const step = toContainerStep(
+      steps.find((s) => s.id === panZoomActive) ?? null
+    );
     if (!step) return {};
     const scale = step.panZoomScale ?? 2.5;
     // Translate so the hotspot is centred
@@ -262,10 +266,10 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
       );
     }
 
-    if (type === 'spotlight') {
+    if (type === 'spotlight' && activeStepInContainer) {
       return (
         <SpotlightInteraction
-          step={activeStep}
+          step={activeStepInContainer}
           containerWidth={containerSize.w}
           containerHeight={containerSize.h}
         />
@@ -302,10 +306,16 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
   // Tooltip — rendered separately (not in overlay, directly on canvas)
   const renderTooltip = () => {
-    if (!activeStep || activeStep.interactionType !== 'tooltip') return null;
+    if (
+      !activeStepInContainer ||
+      activeStepInContainer.interactionType !== 'tooltip'
+    ) {
+      return null;
+    }
+
     return (
       <TooltipInteraction
-        step={activeStep}
+        step={activeStepInContainer}
         containerWidth={containerSize.w}
         containerHeight={containerSize.h}
       />
@@ -469,23 +479,21 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
               if (!showPin) return null;
 
+              const position = toContainerCoords(
+                step.xPct,
+                step.yPct,
+                imgOffset
+              );
+
               return (
                 <div
                   key={step.id}
                   className="absolute z-10"
-                  style={
-                    imgOffset
-                      ? {
-                          left: `${imgOffset.left + step.xPct * imgOffset.scaleX}%`,
-                          top: `${imgOffset.top + step.yPct * imgOffset.scaleY}%`,
-                          transform: 'translate(-50%, -50%)',
-                        }
-                      : {
-                          left: `${step.xPct}%`,
-                          top: `${step.yPct}%`,
-                          transform: 'translate(-50%, -50%)',
-                        }
-                  }
+                  style={{
+                    left: `${position.xPct}%`,
+                    top: `${position.yPct}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
                 >
                   <button
                     onClick={() => handlePinClick(step)}
