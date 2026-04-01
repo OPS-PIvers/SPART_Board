@@ -143,7 +143,6 @@ export const ActivityWallStudentApp: React.FC = () => {
     if (payload.mode === 'text' && !response.trim()) return;
     if (payload.mode === 'photo' && !selectedFile) return;
 
-    // Client-side file validation before attempting the upload.
     if (payload.mode === 'photo' && selectedFile) {
       if (selectedFile.size > 10 * 1024 * 1024) {
         setSubmitError(
@@ -161,34 +160,28 @@ export const ActivityWallStudentApp: React.FC = () => {
     setSubmitError(null);
 
     try {
-      // Sign in anonymously so Firestore/Storage security rules allow the write.
-      // Skip if already signed in to avoid unnecessary auth churn.
       if (!auth.currentUser) {
         await signInAnonymously(auth);
       }
 
       const sessionId = `${payload.teacherUid}_${payload.id}`;
       const submissionId = crypto.randomUUID();
+      const submissionDoc = doc(
+        collection(db, 'activity_wall_sessions', sessionId, 'submissions'),
+        submissionId
+      );
 
       let content: string;
+      let storagePath: string | undefined;
+
       if (payload.mode === 'photo' && selectedFile) {
-        // Upload photo to Firebase Storage under the teacher's session path.
-        // Student photos are stored at activity_wall_photos/{sessionId}/{submissionId}
-        // and are publicly readable via the generated download URL.
-        const storageRef = ref(
-          storage,
-          `activity_wall_photos/${sessionId}/${submissionId}`
-        );
+        storagePath = `activity_wall_photos/${sessionId}/${submissionId}`;
+        const storageRef = ref(storage, storagePath);
         const snapshot = await uploadBytes(storageRef, selectedFile);
         content = await getDownloadURL(snapshot.ref);
       } else {
         content = response.trim();
       }
-
-      const submissionDoc = doc(
-        collection(db, 'activity_wall_sessions', sessionId, 'submissions'),
-        submissionId
-      );
 
       await setDoc(submissionDoc, {
         id: submissionId,
@@ -200,6 +193,12 @@ export const ActivityWallStudentApp: React.FC = () => {
           name.trim(),
           pin.trim()
         ),
+        ...(storagePath
+          ? {
+              storagePath,
+              archiveStatus: 'firebase',
+            }
+          : {}),
       });
 
       setSubmitted(true);
@@ -253,7 +252,6 @@ export const ActivityWallStudentApp: React.FC = () => {
                   className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                 />
               ) : (
-                /* Photo mode: file picker with preview */
                 <div className="space-y-2">
                   <label className="block cursor-pointer">
                     <div

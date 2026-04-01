@@ -1,7 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Copy, MessageSquare, QrCode } from 'lucide-react';
 import {
   WidgetData,
+  ActivityWallArchiveStatus,
   ActivityWallConfig,
   ActivityWallActivity,
   ActivityWallSubmission,
@@ -9,8 +16,17 @@ import {
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
-import { db } from '@/config/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { db, storage } from '@/config/firebase';
+import {
+  collection,
+  deleteField,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
+import { deleteObject, ref as storageRef } from 'firebase/storage';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 const encodeActivityData = (
   activity: ActivityWallActivity,
@@ -47,6 +63,39 @@ const isSafeHttpUrl = (url: string): boolean => {
   } catch {
     return false;
   }
+};
+
+const getArchiveStatus = (
+  submission: Pick<
+    ActivityWallSubmission,
+    'archiveStatus' | 'storagePath' | 'driveFileId'
+  >
+): ActivityWallArchiveStatus | null => {
+  if (submission.archiveStatus) return submission.archiveStatus;
+  if (submission.storagePath) return 'firebase';
+  if (submission.driveFileId) return 'archived';
+  return null;
+};
+
+const preloadImage = async (url: string): Promise<void> => {
+  await new Promise<void>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('Drive image failed to load'));
+    img.src = url;
+  });
+};
+
+const getFileExtension = (mimeType: string): string => {
+  if (mimeType === 'image/png') return 'png';
+  if (mimeType === 'image/gif') return 'gif';
+  if (mimeType === 'image/webp') return 'webp';
+  return 'jpg';
+};
+
+const buildArchiveError = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.slice(0, 180);
 };
 
 /** Stable color from word string so it doesn't flicker on re-render. */
@@ -119,6 +168,18 @@ interface WordWeight {
   weight: number;
 }
 
+interface LiveSubmission {
+  id: string;
+  content: string;
+  submittedAt: number;
+  participantLabel?: string;
+  storagePath?: string;
+  archiveStatus?: ActivityWallArchiveStatus;
+  driveFileId?: string;
+  archiveError?: string | null;
+  archivedAt?: number;
+}
+
 const buildWordCloud = (
   submissions: ActivityWallSubmission[]
 ): WordWeight[] => {
@@ -147,28 +208,41 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { addWidget, addToast } = useDashboard();
   const { user } = useAuth();
+  const { driveService, isConnected: isDriveConnected } = useGoogleDrive();
   const config = widget.config as ActivityWallConfig;
   const activities = config.activities ?? [];
   const activeActivity =
     activities.find((activity) => activity.id === config.activeActivityId) ??
     null;
-  // Raw Firestore submissions — status is applied during render based on moderationEnabled.
   const [firestoreState, setFirestoreState] = useState<{
     sessionId: string | null;
-    submissions: {
-      id: string;
-      content: string;
-      submittedAt: number;
-      participantLabel?: string;
-    }[];
+    submissions: LiveSubmission[];
   }>({
     sessionId: null,
     submissions: [],
   });
+  const syncingSubmissionIdsRef = useRef<Set<string>>(new Set());
   const activeSessionId =
     activeActivity && user ? `${user.uid}_${activeActivity.id}` : null;
 
-  // Subscribe to real-time student submissions from Firestore.
+  useEffect(() => {
+    if (!activeActivity || !user || !activeSessionId) return;
+
+    void setDoc(
+      doc(db, 'activity_wall_sessions', activeSessionId),
+      {
+        id: activeSessionId,
+        activityId: activeActivity.id,
+        teacherUid: user.uid,
+        title: activeActivity.title,
+        prompt: activeActivity.prompt,
+        mode: activeActivity.mode,
+        updatedAt: Date.now(),
+      },
+      { merge: true }
+    );
+  }, [activeActivity, activeSessionId, user]);
+
   useEffect(() => {
     if (!activeActivity || !user) return;
 
@@ -190,6 +264,13 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
             content: data.content as string,
             submittedAt: data.submittedAt as number,
             participantLabel: data.participantLabel as string | undefined,
+            storagePath: data.storagePath as string | undefined,
+            archiveStatus: data.archiveStatus as
+              | ActivityWallArchiveStatus
+              | undefined,
+            driveFileId: data.driveFileId as string | undefined,
+            archiveError: data.archiveError as string | null | undefined,
+            archivedAt: data.archivedAt as number | undefined,
           };
         }),
       });
@@ -211,7 +292,112 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
     return buildPublicActivityLink(activeActivity, user.uid);
   }, [activeActivity, user]);
 
-  // Combine demo submissions (stored in config) with live Firestore submissions.
+  const archivePhotoSubmission = useCallback(
+    async (submission: LiveSubmission) => {
+      if (!driveService || !activeActivity || !activeSessionId) return;
+
+      const submissionRef = doc(
+        db,
+        'activity_wall_sessions',
+        activeSessionId,
+        'submissions',
+        submission.id
+      );
+      syncingSubmissionIdsRef.current.add(submission.id);
+
+      try {
+        if (!submission.storagePath) {
+          throw new Error('Missing Firebase storage path for photo submission');
+        }
+
+        await updateDoc(submissionRef, {
+          archiveStatus: 'syncing',
+          archiveError: deleteField(),
+        });
+
+        const response = await fetch(submission.content);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to download submitted photo (${response.status})`
+          );
+        }
+        const blob = await response.blob();
+
+        const driveFile = await driveService.uploadFile(
+          blob,
+          `${submission.id}.${getFileExtension(blob.type)}`,
+          `Activity Wall/${activeActivity.id}`
+        );
+        await driveService.makePublic(driveFile.id, undefined);
+
+        const driveUrl = `https://lh3.googleusercontent.com/d/${driveFile.id}`;
+        await preloadImage(driveUrl);
+
+        await updateDoc(submissionRef, {
+          content: driveUrl,
+          archiveStatus: 'archived',
+          driveFileId: driveFile.id,
+          archivedAt: Date.now(),
+          storagePath: deleteField(),
+          archiveError: deleteField(),
+        });
+
+        try {
+          await deleteObject(storageRef(storage, submission.storagePath));
+        } catch (cleanupError) {
+          console.warn(
+            '[ActivityWall] Archived photo but failed to delete Firebase copy:',
+            cleanupError
+          );
+        }
+      } catch (error) {
+        console.error('[ActivityWall] Photo archive failed:', error);
+        try {
+          await updateDoc(submissionRef, {
+            archiveStatus: 'failed',
+            archiveError: buildArchiveError(error),
+          });
+        } catch (updateError) {
+          console.error(
+            '[ActivityWall] Failed to persist archive error state:',
+            updateError
+          );
+        }
+      } finally {
+        syncingSubmissionIdsRef.current.delete(submission.id);
+      }
+    },
+    [activeActivity, activeSessionId, driveService]
+  );
+
+  useEffect(() => {
+    if (
+      !activeActivity ||
+      activeActivity.mode !== 'photo' ||
+      !activeSessionId ||
+      !driveService
+    ) {
+      return;
+    }
+
+    for (const submission of firestoreRaw) {
+      const status = getArchiveStatus(submission);
+      if (
+        submission.storagePath &&
+        (status === 'firebase' || status === 'failed') &&
+        !syncingSubmissionIdsRef.current.has(submission.id)
+      ) {
+        void archivePhotoSubmission(submission);
+      }
+    }
+  }, [
+    activeActivity,
+    activeSessionId,
+    archivePhotoSubmission,
+    driveService,
+    firestoreRaw,
+  ]);
+
   const allSubmissions = useMemo(() => {
     const demoSubs = activeActivity?.submissions ?? [];
     const combined = [...demoSubs];
@@ -244,6 +430,74 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
       { approved: 0, pending: 0 }
     );
   }, [allSubmissions]);
+
+  const photoSyncCounts = useMemo(() => {
+    let archived = 0;
+    let syncing = 0;
+    let queued = 0;
+    let failed = 0;
+
+    for (const submission of firestoreRaw) {
+      const status = getArchiveStatus(submission);
+      if (!status) continue;
+
+      if (status === 'archived') archived += 1;
+      else if (status === 'syncing') syncing += 1;
+      else if (status === 'failed') failed += 1;
+      else queued += 1;
+    }
+
+    return {
+      archived,
+      syncing,
+      queued,
+      failed,
+      total: archived + syncing + queued + failed,
+    };
+  }, [firestoreRaw]);
+
+  const syncBanner = useMemo(() => {
+    if (!activeActivity || activeActivity.mode !== 'photo') return null;
+
+    if (!isDriveConnected) {
+      if (photoSyncCounts.queued + photoSyncCounts.failed > 0) {
+        return {
+          className: 'bg-amber-50 border-amber-200 text-amber-800',
+          text: `${photoSyncCounts.queued + photoSyncCounts.failed} photo${photoSyncCounts.queued + photoSyncCounts.failed === 1 ? '' : 's'} waiting in Firebase until Drive reconnects.`,
+        };
+      }
+      return {
+        className: 'bg-slate-100 border-slate-200 text-slate-700',
+        text: 'Drive disconnected. New photos will stay in Firebase until you reconnect.',
+      };
+    }
+
+    if (photoSyncCounts.syncing > 0) {
+      return {
+        className: 'bg-sky-50 border-sky-200 text-sky-800',
+        text: `Drive connected. Syncing ${photoSyncCounts.syncing} photo${photoSyncCounts.syncing === 1 ? '' : 's'} in the background.`,
+      };
+    }
+
+    if (photoSyncCounts.failed > 0) {
+      return {
+        className: 'bg-amber-50 border-amber-200 text-amber-800',
+        text: `${photoSyncCounts.failed} photo${photoSyncCounts.failed === 1 ? '' : 's'} need another Drive sync attempt.`,
+      };
+    }
+
+    if (photoSyncCounts.archived > 0) {
+      return {
+        className: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+        text: 'Drive connected. All visible photos are archived to Drive.',
+      };
+    }
+
+    return {
+      className: 'bg-slate-100 border-slate-200 text-slate-700',
+      text: 'Drive connected. New photos will archive automatically after they appear.',
+    };
+  }, [activeActivity, isDriveConnected, photoSyncCounts]);
 
   const spawnQrWidget = () => {
     if (!participantUrl) return;
@@ -318,7 +572,6 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
           className="h-full w-full bg-white flex flex-col"
           style={{ gap: 'min(8px, 2cqmin)', padding: 'min(10px, 2.4cqmin)' }}
         >
-          {/* Header: title, prompt, mode badge, and pending count */}
           <div
             className="flex items-start justify-between"
             style={{ gap: 'min(8px, 2cqmin)' }}
@@ -358,7 +611,15 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           </div>
 
-          {/* Share buttons */}
+          {syncBanner && (
+            <div
+              className={`rounded-xl border px-3 py-2 font-semibold ${syncBanner.className}`}
+              style={{ fontSize: 'min(10px, 3.4cqmin)' }}
+            >
+              {syncBanner.text}
+            </div>
+          )}
+
           <div
             className="grid grid-cols-2"
             style={{ gap: 'min(6px, 1.8cqmin)' }}
@@ -401,7 +662,6 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
             </button>
           </div>
 
-          {/* Submissions display */}
           <div
             className="flex-1 min-h-0 overflow-auto rounded-xl border border-slate-200 bg-slate-50"
             style={{ padding: 'min(8px, 2cqmin)' }}
@@ -423,7 +683,6 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
                 </span>
               </div>
             ) : activeActivity.mode === 'text' ? (
-              /* Word cloud: words sized by frequency */
               <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 p-1">
                 {wordCloudData.map(({ word, weight }) => (
                   <span
@@ -440,54 +699,93 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
                 ))}
               </div>
             ) : (
-              /* Photo mode: thumbnail grid */
               <div
                 className="grid grid-cols-2"
                 style={{ gap: 'min(6px, 1.8cqmin)' }}
               >
-                {visibleSubmissions.map((submission) => (
-                  <div
-                    key={submission.id}
-                    className="rounded-lg bg-white border border-slate-200 overflow-hidden"
-                  >
-                    {isSafeHttpUrl(submission.content) ? (
-                      <a
-                        href={submission.content}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block"
-                      >
-                        <img
-                          src={submission.content}
-                          alt={submission.participantLabel ?? 'Photo'}
-                          className="w-full object-cover"
-                          style={{ aspectRatio: '4/3' }}
-                        />
-                        {submission.participantLabel && (
-                          <p
-                            className="text-slate-600 truncate"
+                {visibleSubmissions.map((submission) => {
+                  const archiveStatus = getArchiveStatus(submission);
+                  return (
+                    <div
+                      key={submission.id}
+                      className="rounded-lg bg-white border border-slate-200 overflow-hidden"
+                    >
+                      {isSafeHttpUrl(submission.content) ? (
+                        <a
+                          href={submission.content}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block"
+                        >
+                          <div className="relative">
+                            <img
+                              src={submission.content}
+                              alt={submission.participantLabel ?? 'Photo'}
+                              className="w-full object-cover"
+                              style={{ aspectRatio: '4/3' }}
+                            />
+                            {archiveStatus && (
+                              <span
+                                className={`absolute right-2 top-2 rounded-full px-2 py-1 font-bold ${
+                                  archiveStatus === 'archived'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : archiveStatus === 'syncing'
+                                      ? 'bg-sky-100 text-sky-700'
+                                      : archiveStatus === 'failed'
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : 'bg-slate-900/75 text-white'
+                                }`}
+                                style={{ fontSize: 'min(8px, 2.7cqmin)' }}
+                              >
+                                {archiveStatus === 'archived'
+                                  ? 'Drive'
+                                  : archiveStatus === 'syncing'
+                                    ? 'Syncing'
+                                    : archiveStatus === 'failed'
+                                      ? 'Retry'
+                                      : 'Firebase'}
+                              </span>
+                            )}
+                          </div>
+                          <div
+                            className="text-slate-600"
                             style={{
-                              fontSize: 'min(9px, 3cqmin)',
-                              padding: 'min(3px, 0.8cqmin) min(6px, 1.5cqmin)',
+                              padding: 'min(4px, 1cqmin) min(6px, 1.5cqmin)',
                             }}
                           >
-                            {submission.participantLabel}
-                          </p>
-                        )}
-                      </a>
-                    ) : (
-                      <div
-                        className="flex items-center justify-center text-red-400"
-                        style={{
-                          aspectRatio: '4/3',
-                          fontSize: 'min(9px, 3cqmin)',
-                        }}
-                      >
-                        Invalid photo
-                      </div>
-                    )}
-                  </div>
-                ))}
+                            {submission.participantLabel && (
+                              <p
+                                className="truncate"
+                                style={{ fontSize: 'min(9px, 3cqmin)' }}
+                              >
+                                {submission.participantLabel}
+                              </p>
+                            )}
+                            {archiveStatus === 'failed' &&
+                              submission.archiveError && (
+                                <p
+                                  className="text-amber-700 line-clamp-2"
+                                  style={{ fontSize: 'min(8px, 2.7cqmin)' }}
+                                >
+                                  {submission.archiveError}
+                                </p>
+                              )}
+                          </div>
+                        </a>
+                      ) : (
+                        <div
+                          className="flex items-center justify-center text-red-400"
+                          style={{
+                            aspectRatio: '4/3',
+                            fontSize: 'min(9px, 3cqmin)',
+                          }}
+                        >
+                          Invalid photo
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

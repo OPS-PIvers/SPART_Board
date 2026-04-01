@@ -109,13 +109,16 @@ service firebase.storage {
         (isAdmin() || sessionId.matches(request.auth.uid + '_.*'));
       // Any authenticated user (including anonymous students) may upload a new image,
       // but only if the target session exists in Firestore (guards against DoS uploads
-      // to guessed sessionIds). Updates and deletes are not permitted.
+      // to guessed sessionIds).
       allow create: if request.auth != null &&
         request.resource.size < 10 * 1024 * 1024 &&
         request.resource.contentType.matches('image/.*') &&
         firestore.exists(
           /databases/(default)/documents/activity_wall_sessions/$(sessionId)
         );
+      // The owning teacher/admin may delete the temporary Firebase copy after Drive archival.
+      allow delete: if request.auth != null &&
+        (isAdmin() || sessionId.matches(request.auth.uid + '_.*'));
     }
 
     // Default deny for everything else
