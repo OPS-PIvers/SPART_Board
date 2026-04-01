@@ -10,6 +10,7 @@ import { Button } from '@/components/common/Button';
 import { Plus, Trash2, Play, CheckCircle2, Music } from 'lucide-react';
 import { SOUND_LIBRARY } from '@/config/soundLibrary';
 import { ensureProtocol, extractGoogleFileId } from '@/utils/urlHelpers';
+import { normalizeSoundboardAudioUrl } from '@/utils/soundboardAudioUrl';
 
 interface SoundboardConfigurationPanelProps {
   config: SoundboardGlobalConfig;
@@ -55,7 +56,7 @@ export const SoundboardConfigurationPanel: React.FC<
       const hasDriveIdIssue = isGoogleDriveUrl && !driveFileId;
 
       return {
-        normalizedUrl: withProtocol,
+        normalizedUrl: normalizeSoundboardAudioUrl(withProtocol),
         isValidUrl: true,
         isGoogleDriveUrl,
         driveFileId,
@@ -215,44 +216,48 @@ export const SoundboardConfigurationPanel: React.FC<
             const isPlaying = playingId === libSound.id;
 
             return (
-              <button
+              <div
                 key={libSound.id}
-                onClick={() => toggleLibrarySound(libSound.id)}
-                className={`relative p-2 rounded-lg border transition-all text-left group ${
+                className={`relative rounded-lg border p-2 transition-all ${
                   isEnabled
                     ? 'border-brand-blue-primary bg-brand-blue-lighter/30 ring-1 ring-brand-blue-primary/20'
-                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    : 'border-slate-200 bg-slate-50'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span
-                    className={`text-xxs font-bold ${isEnabled ? 'text-brand-blue-dark' : 'text-slate-500'}`}
-                  >
-                    {libSound.label}
-                  </span>
-                  {isEnabled && (
-                    <CheckCircle2
-                      size={12}
-                      className="text-brand-blue-primary"
-                    />
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => toggleLibrarySound(libSound.id)}
+                  className={`w-full text-left transition-colors ${
+                    isEnabled
+                      ? 'text-brand-blue-dark'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xxs font-bold">{libSound.label}</span>
+                    {isEnabled && (
+                      <CheckCircle2
+                        size={12}
+                        className="text-brand-blue-primary"
+                      />
+                    )}
+                  </div>
                   <div
                     className="w-4 h-4 rounded"
                     style={{ backgroundColor: libSound.color }}
                   />
+                </button>
+
+                <div className="mt-2 flex justify-end">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void testSound(libSound.id, libSound.url);
-                    }}
+                    type="button"
+                    onClick={() => void testSound(libSound.id, libSound.url)}
                     className={`p-1 rounded-md transition-colors ${
                       isPlaying
                         ? 'bg-brand-blue-primary text-white'
-                        : 'hover:bg-slate-200 text-slate-400'
+                        : 'text-slate-400 hover:bg-slate-200'
                     }`}
+                    title={`Preview ${libSound.label}`}
                   >
                     <Play
                       size={10}
@@ -260,7 +265,7 @@ export const SoundboardConfigurationPanel: React.FC<
                     />
                   </button>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
