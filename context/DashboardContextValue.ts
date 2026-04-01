@@ -47,6 +47,7 @@ export interface DashboardContextValue {
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
+  clearAllStickers: () => void;
   clearAllWidgets: () => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
@@ -65,7 +66,6 @@ export interface DashboardContextValue {
   libraryOrder: (WidgetType | InternalToolType)[];
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   updateDashboard: (updates: Partial<Dashboard>) => void;
-  clearAllStickers: () => void;
 
   // Zoom system
   zoom: number;

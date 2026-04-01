@@ -19,6 +19,7 @@ const mockDashboardContext: Partial<DashboardContextValue> = {
   rosters: [],
   activeRosterId: null,
   addToast: vi.fn(),
+  zoom: 1,
 };
 
 describe('SeatingChartWidget', () => {

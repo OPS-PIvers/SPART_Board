@@ -62,6 +62,7 @@ const mockWidget: WidgetData = {
 
 const defaultContext: Partial<DashboardContextValue> = {
   updateWidget: mockUpdateWidget,
+  zoom: 1,
   activeDashboard: {
     id: 'dashboard-1',
     name: 'Test Dashboard',

@@ -790,11 +790,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // TOOL MENU POSITIONING
   // useLayoutEffect runs synchronously after the DOM is mutated but before paint,
   // guaranteeing offsetHeight/offsetWidth are final when we read them.
-  // Initialized with visibility:hidden so there is never a flash of the toolbar
-  // at position (0,0) before the first layout measurement completes.
+  // position:fixed is required from the start so that offsetWidth is measured
+  // as shrink-to-fit content width. Without it the element is position:static
+  // inside document.body and offsetWidth equals the full viewport width, which
+  // makes the centering formula produce a wildly negative idealLeft value that
+  // gets clamped to the left margin on every first/re-selection.
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({
+    position: 'fixed',
     visibility: 'hidden',
   });
+
+  // Stable ref to the latest updatePosition fn — lets the board-pan listener
+  // always call the current version without being in its dependency array.
+  const updatePositionRef = useRef<(() => void) | null>(null);
 
   useLayoutEffect(() => {
     if (showTools && windowRef.current) {
@@ -818,19 +826,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         const menuHeight = menuEl.offsetHeight;
         const menuWidth = menuEl.offsetWidth;
 
-        // getBoundingClientRect() reflects mid-animation transforms on ancestor
-        // containers (e.g. the dashboard slide-in animation uses translateX(±100%)).
-        // When zoom === 1, widget.x/y ARE the true viewport coordinates, so if the
-        // measured rect deviates significantly from those values the widget surface
-        // is still animating. Use the authoritative widget coordinates as a fallback
-        // so the toolbar always appears at the widget's final resting position.
-        const ANIMATION_THRESHOLD = 10;
-        const isAnimating =
-          zoom === 1 && Math.abs(rect.left - widget.x) > ANIMATION_THRESHOLD;
-        const effectiveLeft = isAnimating ? widget.x : rect.left;
-        const effectiveTop = isAnimating ? widget.y : rect.top;
-        const effectiveWidth = isAnimating ? widget.w : rect.width;
-        const effectiveHeight = isAnimating ? widget.h : rect.height;
+        const effectiveLeft = rect.left;
+        const effectiveTop = rect.top;
+        const effectiveWidth = rect.width;
+        const effectiveHeight = rect.height;
         const effectiveBottom = effectiveTop + effectiveHeight;
 
         // Vertical: prefer above; flip below only when space above is tight AND
@@ -864,15 +863,41 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         });
       };
 
+      updatePositionRef.current = updatePosition;
       updatePosition();
       window.addEventListener('resize', updatePosition);
-      return () => window.removeEventListener('resize', updatePosition);
+      return () => {
+        updatePositionRef.current = null;
+        window.removeEventListener('resize', updatePosition);
+      };
     } else {
-      // Reset to hidden when toolbar closes so next open starts invisible
-      setMenuStyle({ visibility: 'hidden' });
+      // Keep position:fixed on reset so offsetWidth measures content width
+      // (not viewport width) the next time the toolbar opens.
+      setMenuStyle({ position: 'fixed', visibility: 'hidden' });
     }
     return undefined;
-  }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized, zoom]);
+  }, [
+    showTools,
+    widget.x,
+    widget.y,
+    widget.w,
+    widget.h,
+    widget.flipped,
+    widget.customTitle,
+    isMaximized,
+    zoom,
+    isEditingTitle,
+    title,
+  ]);
+
+  // Reposition the tool menu on board pan without subscribing to panOffset in
+  // context (which would cause every widget to re-render on every pan frame).
+  useEffect(() => {
+    if (!showTools) return;
+    const handlePan = () => updatePositionRef.current?.();
+    window.addEventListener('board-pan', handlePan);
+    return () => window.removeEventListener('board-pan', handlePan);
+  }, [showTools]);
 
   useEffect(() => {
     const handleCustomKeyboard = (e: Event) => {

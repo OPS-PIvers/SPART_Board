@@ -72,6 +72,7 @@ const defaultContext: Partial<DashboardContextValue> = {
   addToast: mockAddToast,
   rosters: [],
   activeRosterId: null,
+  zoom: 1,
   activeDashboard: {
     id: 'dashboard-1',
     name: 'Test Dashboard',

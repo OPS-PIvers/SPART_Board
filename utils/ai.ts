@@ -61,6 +61,20 @@ export interface GeneratedVideoActivity {
   questions: GeneratedVideoQuestion[];
 }
 
+const VIDEO_ACTIVITY_CALL_TIMEOUT_MS = 300_000;
+
+const VIDEO_ACTIVITY_TIMEOUT_ERROR =
+  'Video analysis is taking longer than expected. Please try a shorter YouTube video (under ~15 minutes) or try again in a moment.';
+
+const isFunctionsDeadlineExceededError = (
+  error: unknown
+): error is { code: string } =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  typeof error.code === 'string' &&
+  error.code === 'deadline-exceeded';
+
 /**
  * Generic helper to call the AI function and handle errors
  */
@@ -234,13 +248,13 @@ export async function generateQuiz(prompt: string): Promise<GeneratedQuiz> {
 }
 
 /**
- * Generates timestamped multiple-choice questions from a YouTube video's
- * captions using the dedicated `generateVideoActivity` Cloud Function.
+ * Generates timestamped multiple-choice questions from a YouTube video using
+ * Gemini's multimodal video understanding.
  *
  * @param url - Full YouTube video URL.
  * @param questionCount - Desired number of questions (clamped 1–20 server-side).
  * @returns Generated activity title and questions with timestamps.
- * @throws Error if the video has no captions, is private/restricted, or generation fails.
+ * @throws Error if the video is private/restricted or generation fails.
  */
 export async function generateVideoActivity(
   url: string,
@@ -250,7 +264,9 @@ export async function generateVideoActivity(
     const fn = httpsCallable<
       { url: string; questionCount: number },
       GeneratedVideoActivity
-    >(functions, 'generateVideoActivity');
+    >(functions, 'generateVideoActivity', {
+      timeout: VIDEO_ACTIVITY_CALL_TIMEOUT_MS,
+    });
 
     const result = await fn({ url, questionCount });
 
@@ -267,6 +283,10 @@ export async function generateVideoActivity(
     return result.data;
   } catch (error) {
     console.error('Video Activity Generation Error:', error);
+    if (isFunctionsDeadlineExceededError(error)) {
+      throw new Error(VIDEO_ACTIVITY_TIMEOUT_ERROR);
+    }
+
     if (error instanceof Error) {
       throw error;
     }
@@ -294,7 +314,9 @@ export async function transcribeVideoWithGemini(
     const fn = httpsCallable<
       { url: string; questionCount: number },
       GeneratedVideoActivity
-    >(functions, 'transcribeVideoWithGemini');
+    >(functions, 'transcribeVideoWithGemini', {
+      timeout: VIDEO_ACTIVITY_CALL_TIMEOUT_MS,
+    });
 
     const result = await fn({ url, questionCount });
 
@@ -309,6 +331,9 @@ export async function transcribeVideoWithGemini(
     return result.data;
   } catch (error) {
     console.error('Audio Transcription Error:', error);
+    if (isFunctionsDeadlineExceededError(error)) {
+      throw new Error(VIDEO_ACTIVITY_TIMEOUT_ERROR);
+    }
     if (error instanceof Error) {
       throw error;
     }

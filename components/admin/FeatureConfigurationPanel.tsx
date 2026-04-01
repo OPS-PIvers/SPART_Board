@@ -1,3 +1,4 @@
+import { SoundboardConfigurationPanel } from './SoundboardConfigurationPanel';
 import React, { useState } from 'react';
 import {
   FeaturePermission,
@@ -35,6 +36,7 @@ import { DiceConfigurationPanel } from './DiceConfigurationPanel';
 import { ScoreboardConfigurationPanel } from './ScoreboardConfigurationPanel';
 import { DrawingConfigurationPanel } from './DrawingConfigurationPanel';
 import { TalkingToolConfigurationPanel } from './TalkingToolConfigurationPanel';
+import { GuidedLearningConfigurationPanel } from '@/components/admin/GuidedLearningConfigurationPanel';
 import { MaterialsConfigurationPanel } from './MaterialsConfigurationPanel';
 import { MathToolsConfigurationPanel } from './MathToolsConfigurationPanel';
 import { NextUpConfigurationPanel } from './NextUpConfigurationPanel';
@@ -65,6 +67,7 @@ type BuildingConfigPanel = React.ComponentType<{
 // Map from widget/tool type to its building-defaults configuration panel.
 // Catalyst is excluded here because it requires additional props.
 const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
+  soundboard: SoundboardConfigurationPanel as unknown as BuildingConfigPanel,
   schedule: ScheduleConfigurationPanel as unknown as BuildingConfigPanel,
   clock: ClockConfigurationPanel as unknown as BuildingConfigPanel,
   'time-tool': TimeToolConfigurationPanel as unknown as BuildingConfigPanel,
@@ -98,6 +101,8 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
     SmartNotebookConfigurationPanel as unknown as BuildingConfigPanel,
   magic: MagicConfigurationPanel as unknown as BuildingConfigPanel,
   record: RecordConfigurationPanel as unknown as BuildingConfigPanel,
+  'guided-learning':
+    GuidedLearningConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {

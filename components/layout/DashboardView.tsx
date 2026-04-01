@@ -131,6 +131,14 @@ export const DashboardView: React.FC = () => {
     zoom,
     setZoom,
   } = useDashboard();
+
+  const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 });
+
+  // Notify DraggableWindow tool-menu positioning without triggering re-renders
+  // on every context consumer — panOffset intentionally lives outside context.
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent('board-pan'));
+  }, [panOffset]);
   const { uploadAndRegisterPdf } = useStorage();
 
   const [isCheatSheetOpen, setIsCheatSheetOpen] = React.useState(false);
@@ -306,7 +314,6 @@ export const DashboardView: React.FC = () => {
     };
   }, []);
 
-  const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 });
   // Track the peak touch count across a gesture.  At gesture end (`last`),
   // `touches` has already decremented to 0 as fingers lift, so we cannot
   // rely on it there to distinguish 1-finger from 2-finger gestures.
@@ -341,7 +348,11 @@ export const DashboardView: React.FC = () => {
           // Disabled when the gesture starts on a widget to avoid interfering
           // with widget interactions.
           if (gestureFingerCount.current === 1 && zoom > 1 && !widgetEl) {
-            setPanOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+            setPanOffset((prev) => ({
+              x: prev.x + dx,
+              y: prev.y + dy,
+            }));
+            window.dispatchEvent(new CustomEvent('board-pan'));
           }
           return;
         }
