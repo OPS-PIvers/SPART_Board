@@ -11,6 +11,7 @@ import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Volume2, Music } from 'lucide-react';
 import { SOUND_LIBRARY } from '@/config/soundLibrary';
+import { normalizeSoundboardAudioUrl } from '@/utils/soundboardAudioUrl';
 
 // ─── Web Audio API synthesis ─────────────────────────────────────────────────
 
@@ -299,7 +300,7 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
     if (sound.synthesized) {
       playSynthesizedSound(sound.id);
     } else {
-      const audio = new Audio(sound.url);
+      const audio = new Audio(normalizeSoundboardAudioUrl(sound.url));
       void audio.play().catch((err: unknown) => {
         console.error(`[Soundboard] Failed to play sound ${sound.id}:`, err);
       });

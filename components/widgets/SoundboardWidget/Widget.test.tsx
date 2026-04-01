@@ -17,9 +17,15 @@ const mockPlay = vi
   .fn<() => Promise<void>>()
   .mockResolvedValue(undefined as unknown as void);
 
+const mockAudioConstructor = vi.fn<(src?: string) => void>();
+
 vi.stubGlobal(
   'Audio',
   class {
+    constructor(src?: string) {
+      mockAudioConstructor(src);
+    }
+
     play(): Promise<void> {
       return mockPlay();
     }
@@ -161,6 +167,43 @@ describe('SoundboardWidget', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Applause/i }));
 
+    expect(mockPlay).toHaveBeenCalled();
+  });
+
+  it('normalizes Google Drive URLs before creating Audio', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      selectedBuildings: ['school-1'],
+      featurePermissions: [
+        {
+          widgetType: 'soundboard',
+          accessLevel: 'admin',
+          enabled: true,
+          betaUsers: [],
+          config: {
+            buildingDefaults: {
+              'school-1': {
+                availableSounds: [
+                  {
+                    id: 'sound-1',
+                    label: 'Applause',
+                    url: 'https://drive.google.com/file/d/driveSound123/view',
+                    color: '#000000',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    } as unknown as ReturnType<typeof useAuth>);
+
+    render(<SoundboardWidget widget={defaultWidget} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Applause/i }));
+
+    expect(mockAudioConstructor).toHaveBeenCalledWith(
+      'https://drive.google.com/uc?id=driveSound123&export=download'
+    );
     expect(mockPlay).toHaveBeenCalled();
   });
 
