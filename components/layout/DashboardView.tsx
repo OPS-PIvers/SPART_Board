@@ -130,7 +130,7 @@ export const DashboardView: React.FC = () => {
     updateDashboardSettings,
     zoom,
     setZoom,
-    panOffset,
+    panOffset = { x: 0, y: 0 },
     setPanOffset,
   } = useDashboard();
   const { uploadAndRegisterPdf } = useStorage();

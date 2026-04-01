@@ -135,7 +135,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     selectedWidgetId,
     setSelectedWidgetId,
     zoom,
-    panOffset,
+    panOffset = { x: 0, y: 0 },
   } = useDashboard();
   const { showConfirm: showConfirmDialog } = useDialog();
 
