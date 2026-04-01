@@ -52,11 +52,11 @@ describe('ActivityWallSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue(
-      'demo-submission-1'
+      '22222222-2222-2222-2222-222222222222'
     );
     vi.mocked(useDashboard).mockReturnValue({
       updateWidget: mockUpdateWidget,
-    } as ReturnType<typeof useDashboard>);
+    } as unknown as ReturnType<typeof useDashboard>);
   });
 
   it('stores demo responses as approved even when moderation is enabled', async () => {
@@ -77,7 +77,7 @@ describe('ActivityWallSettings', () => {
             id: 'activity-1',
             submissions: [
               expect.objectContaining({
-                id: 'demo-submission-1',
+                id: '22222222-2222-2222-2222-222222222222',
                 content: 'Teacher sample',
                 participantLabel: 'Demo Student',
                 status: 'approved',
