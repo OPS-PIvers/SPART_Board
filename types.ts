@@ -350,12 +350,23 @@ export type ActivityWallIdentificationMode =
   | 'pin'
   | 'name-pin';
 
+export type ActivityWallArchiveStatus =
+  | 'firebase'
+  | 'syncing'
+  | 'archived'
+  | 'failed';
+
 export interface ActivityWallSubmission {
   id: string;
   content: string;
   submittedAt: number;
   status: 'approved' | 'pending';
   participantLabel?: string;
+  storagePath?: string;
+  archiveStatus?: ActivityWallArchiveStatus;
+  driveFileId?: string;
+  archiveError?: string | null;
+  archivedAt?: number;
 }
 
 export interface ActivityWallActivity {
