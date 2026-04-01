@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/common/Button';
 import { Plus, Trash2, Play, CheckCircle2, Music } from 'lucide-react';
 import { SOUND_LIBRARY } from '@/config/soundLibrary';
+import { normalizeSoundboardAudioUrl } from '@/utils/soundboardAudioUrl';
 
 interface SoundboardConfigurationPanelProps {
   config: SoundboardGlobalConfig;
@@ -45,9 +46,10 @@ export const SoundboardConfigurationPanel: React.FC<
   };
 
   const testSound = (id: string, url: string) => {
-    if (!url) return;
+    const normalizedUrl = normalizeSoundboardAudioUrl(url);
+    if (!normalizedUrl) return;
     setPlayingId(id);
-    const audio = new Audio(url);
+    const audio = new Audio(normalizedUrl);
     void audio.play().finally(() => {
       // Small timeout to show the "playing" state
       setTimeout(() => setPlayingId(null), 1000);
@@ -67,9 +69,21 @@ export const SoundboardConfigurationPanel: React.FC<
     handleUpdateBuilding({ availableSounds: [...sounds, newSound] });
   };
 
-  const updateSound = (index: number, updates: Partial<SoundboardSound>) => {
+  const updateSound = (
+    index: number,
+    updates: Partial<SoundboardSound>,
+    normalizeUrl = false
+  ) => {
+    const normalizedUrl =
+      normalizeUrl && typeof updates.url === 'string'
+        ? normalizeSoundboardAudioUrl(updates.url)
+        : updates.url;
+    const normalizedUpdates: Partial<SoundboardSound> =
+      typeof normalizedUrl === 'string'
+        ? { ...updates, url: normalizedUrl }
+        : updates;
     const newSounds = [...sounds];
-    newSounds[index] = { ...newSounds[index], ...updates };
+    newSounds[index] = { ...newSounds[index], ...normalizedUpdates };
     handleUpdateBuilding({ availableSounds: newSounds });
   };
 
@@ -253,6 +267,9 @@ export const SoundboardConfigurationPanel: React.FC<
                           value={sound.url}
                           onChange={(e) =>
                             updateSound(index, { url: e.target.value })
+                          }
+                          onBlur={(e) =>
+                            updateSound(index, { url: e.target.value }, true)
                           }
                           className="flex-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-blue-primary outline-none"
                           placeholder="https://example.com/sound.mp3"
