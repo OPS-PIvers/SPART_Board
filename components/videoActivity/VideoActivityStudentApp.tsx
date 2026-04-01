@@ -311,7 +311,7 @@ const JoinAndPlay: React.FC = () => {
   const totalQuestions = sortedQuestions.length;
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-950 flex flex-col">
+    <div className="h-screen h-dvh overflow-hidden bg-slate-950 flex flex-col">
       {/* Top bar */}
       <div className="bg-slate-900 px-4 py-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
@@ -346,8 +346,9 @@ const JoinAndPlay: React.FC = () => {
               />
 
               {activeQuestion && (
-                <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-2 sm:p-4">
+                <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-[1px] flex items-center justify-center overflow-y-auto p-2 sm:p-4">
                   <QuestionOverlay
+                    key={activeQuestion.id}
                     question={activeQuestion}
                     onAnswer={handleAnswer}
                     questionIndex={

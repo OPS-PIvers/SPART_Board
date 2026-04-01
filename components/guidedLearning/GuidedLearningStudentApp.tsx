@@ -170,7 +170,7 @@ const StudentExperience: React.FC<{ anonymousUid: string }> = ({
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-950">
+    <div className="h-screen h-dvh overflow-hidden bg-slate-950">
       <div className="h-full relative">
         <GuidedLearningPlayer
           set={
