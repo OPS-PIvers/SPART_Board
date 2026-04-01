@@ -790,9 +790,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // TOOL MENU POSITIONING
   // useLayoutEffect runs synchronously after the DOM is mutated but before paint,
   // guaranteeing offsetHeight/offsetWidth are final when we read them.
-  // Initialized with visibility:hidden so there is never a flash of the toolbar
-  // at position (0,0) before the first layout measurement completes.
+  // position:fixed is required from the start so that offsetWidth is measured
+  // as shrink-to-fit content width. Without it the element is position:static
+  // inside document.body and offsetWidth equals the full viewport width, which
+  // makes the centering formula produce a wildly negative idealLeft value that
+  // gets clamped to the left margin on every first/re-selection.
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({
+    position: 'fixed',
     visibility: 'hidden',
   });
 
@@ -867,8 +871,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         window.removeEventListener('resize', updatePosition);
       };
     } else {
-      // Reset to hidden when toolbar closes so next open starts invisible
-      setMenuStyle({ visibility: 'hidden' });
+      // Keep position:fixed on reset so offsetWidth measures content width
+      // (not viewport width) the next time the toolbar opens.
+      setMenuStyle({ position: 'fixed', visibility: 'hidden' });
     }
     return undefined;
   }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized, zoom]);
