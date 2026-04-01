@@ -146,7 +146,10 @@ export const ActivityWallSettings: React.FC<{ widget: WidgetData }> = ({
     setDraftDemo('');
   };
 
-  const toggleModeration = (activity: ActivityWallActivity, enabled: boolean) => {
+  const toggleModeration = (
+    activity: ActivityWallActivity,
+    enabled: boolean
+  ) => {
     const nextActivities = (config.activities ?? []).map((a) =>
       a.id === activity.id ? { ...a, moderationEnabled: enabled } : a
     );

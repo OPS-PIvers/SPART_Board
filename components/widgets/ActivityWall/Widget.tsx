@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, MessageSquare, QrCode } from 'lucide-react';
-import { WidgetData, ActivityWallConfig, ActivityWallActivity } from '@/types';
+import {
+  WidgetData,
+  ActivityWallConfig,
+  ActivityWallActivity,
+  ActivityWallSubmission,
+} from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
