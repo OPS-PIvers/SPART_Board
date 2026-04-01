@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20.20.2-alpine3.23 AS builder
+FROM node:20.20.2-alpine3.23@sha256:42d1d5b07c84257b55d409f4e6e3be3b55d42867afce975a5648a3f231bf7e81 AS builder
 
 WORKDIR /app
 
@@ -39,7 +39,7 @@ ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN pnpm run build
 
 # Stage 2: Serve
-FROM nginx:1.27.3-alpine3.20
+FROM nginx:1.27.3-alpine3.20@sha256:679a5fd058f6ca754a561846fe27927e408074431d63556e8fc588fc38be6901
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
