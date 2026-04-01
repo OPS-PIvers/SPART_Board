@@ -368,17 +368,19 @@ const ActiveQuiz: React.FC<{
   const [submitting, setSubmitting] = useState(false);
   const [fibAnswer, setFibAnswer] = useState('');
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [prevQuestionId, setPrevQuestionId] = useState<string | undefined>(
+    currentQuestion?.id
+  );
 
-  // Reset state on new question
-  useEffect(() => {
+  // Derived state: reset state on new question during render phase
+  if (currentQuestion?.id !== prevQuestionId) {
+    setPrevQuestionId(currentQuestion?.id);
+    setSelectedAnswer(null);
+    setSubmitted(alreadyAnswered);
+    setFibAnswer('');
     const tl = currentQuestion?.timeLimit ?? 0;
-    setTimeout(() => {
-      setSelectedAnswer(null);
-      setSubmitted(alreadyAnswered);
-      setFibAnswer('');
-      setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
-    }, 0);
-  }, [currentQuestion?.id, currentQuestion?.timeLimit, alreadyAnswered]);
+    setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
+  }
 
   // Countdown
   useEffect(() => {
