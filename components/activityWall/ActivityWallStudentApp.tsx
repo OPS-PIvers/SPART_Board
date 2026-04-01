@@ -11,6 +11,7 @@ type ActivityPayload = {
   title: string;
   prompt: string;
   mode: ActivityWallMode;
+  moderationEnabled: boolean;
   identificationMode: ActivityWallIdentificationMode;
   teacherUid: string;
 };
@@ -25,6 +26,7 @@ const isActivityPayload = (value: unknown): value is ActivityPayload => {
     title?: unknown;
     prompt?: unknown;
     mode?: unknown;
+    moderationEnabled?: unknown;
     identificationMode?: unknown;
     teacherUid?: unknown;
   };
@@ -34,6 +36,7 @@ const isActivityPayload = (value: unknown): value is ActivityPayload => {
     typeof payload.title === 'string' &&
     typeof payload.prompt === 'string' &&
     typeof payload.teacherUid === 'string' &&
+    typeof payload.moderationEnabled === 'boolean' &&
     (payload.mode === 'text' || payload.mode === 'photo') &&
     (payload.identificationMode === 'anonymous' ||
       payload.identificationMode === 'name' ||
@@ -144,7 +147,7 @@ export const ActivityWallStudentApp: React.FC = () => {
     if (payload.mode === 'photo' && !selectedFile) return;
 
     if (payload.mode === 'photo' && selectedFile) {
-      if (selectedFile.size > 10 * 1024 * 1024) {
+      if (selectedFile.size >= 10 * 1024 * 1024) {
         setSubmitError(
           'Photo must be smaller than 10 MB. Please choose a smaller image.'
         );
@@ -188,7 +191,7 @@ export const ActivityWallStudentApp: React.FC = () => {
         activityId: payload.id,
         content,
         submittedAt: Date.now(),
-        status: 'approved',
+        status: payload.moderationEnabled ? 'pending' : 'approved',
         participantLabel: buildParticipantLabel(
           payload.identificationMode,
           name.trim(),
@@ -288,6 +291,7 @@ export const ActivityWallStudentApp: React.FC = () => {
                     <input
                       type="file"
                       accept="image/*"
+                      aria-label="Choose a photo to upload"
                       className="sr-only"
                       onChange={handleFileChange}
                     />
