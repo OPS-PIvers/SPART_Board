@@ -100,6 +100,19 @@ export const ActivityWallStudentApp: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Keep previewUrl in sync with selectedFile and revoke the blob URL on cleanup
+  // to avoid leaking browser memory (synchronization with an external resource).
+  // Must be called before any early return to satisfy the Rules of Hooks.
+  React.useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(selectedFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedFile]);
+
   if (!payload || !activityIdFromPath || payload.id !== activityIdFromPath) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4 text-center">
@@ -114,18 +127,6 @@ export const ActivityWallStudentApp: React.FC = () => {
   const requiresPin =
     payload.identificationMode === 'pin' ||
     payload.identificationMode === 'name-pin';
-
-  // Keep previewUrl in sync with selectedFile and revoke the blob URL on cleanup
-  // to avoid leaking browser memory (synchronization with an external resource).
-  React.useEffect(() => {
-    if (!selectedFile) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(selectedFile);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [selectedFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFile(e.target.files?.[0] ?? null);
