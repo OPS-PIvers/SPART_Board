@@ -85,7 +85,9 @@ describe('ActivityWallStudentApp', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('submission-123');
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue(
+      '11111111-1111-1111-1111-111111111111'
+    );
     Object.defineProperty(URL, 'createObjectURL', {
       value: vi.fn(() => 'blob:preview-url'),
       writable: true,
@@ -102,7 +104,8 @@ describe('ActivityWallStudentApp', () => {
     }));
     mockUploadBytes.mockResolvedValue({
       ref: {
-        fullPath: 'activity_wall_photos/teacher-1_activity-1/submission-123',
+        fullPath:
+          'activity_wall_photos/teacher-1_activity-1/11111111-1111-1111-1111-111111111111',
       },
     });
     mockGetDownloadURL.mockResolvedValue('https://firebase.example/photo.jpg');
@@ -200,7 +203,7 @@ describe('ActivityWallStudentApp', () => {
           content: 'https://firebase.example/photo.jpg',
           status: 'pending',
           storagePath:
-            'activity_wall_photos/teacher-1_activity-1/submission-123',
+            'activity_wall_photos/teacher-1_activity-1/11111111-1111-1111-1111-111111111111',
           archiveStatus: 'firebase',
         })
       );
