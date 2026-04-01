@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, MessageSquare, QrCode } from 'lucide-react';
-import { WidgetData, ActivityWallConfig } from '@/types';
+import { WidgetData, ActivityWallConfig, ActivityWallActivity } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
@@ -34,8 +34,6 @@ const buildPublicActivityLink = (
   const encoded = encodeActivityData(activity, teacherUid);
   return `${window.location.origin}/activity-wall/${activity.id}?data=${encoded}`;
 };
-
-const MAX_STORED_SUBMISSIONS = 200;
 
 const isSafeHttpUrl = (url: string): boolean => {
   try {

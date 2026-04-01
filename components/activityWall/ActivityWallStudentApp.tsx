@@ -115,17 +115,24 @@ export const ActivityWallStudentApp: React.FC = () => {
     payload.identificationMode === 'pin' ||
     payload.identificationMode === 'name-pin';
 
+  // Keep previewUrl in sync with selectedFile and revoke the blob URL on cleanup
+  // to avoid leaking browser memory (synchronization with an external resource).
+  React.useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(selectedFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedFile]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setSelectedFile(file);
-    setPreviewUrl(file ? URL.createObjectURL(file) : null);
+    setSelectedFile(e.target.files?.[0] ?? null);
   };
 
   const clearPhoto = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(null);
-    setPreviewUrl(null);
   };
 
   const onSubmit = async (event: React.FormEvent) => {
