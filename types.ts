@@ -1324,7 +1324,7 @@ export interface VideoActivityConfig {
   view: VideoActivityView;
   selectedActivityId: string | null;
   selectedActivityTitle: string | null;
-  /** Session ID for the most recently created/viewed session. */
+  /** Session ID for the currently viewed results session. */
   resultsSessionId: string | null;
   /** Default settings for sessions created via this widget */
   autoPlay?: boolean;
@@ -1356,18 +1356,21 @@ export interface VideoActivitySession {
   id: string;
   activityId: string;
   activityTitle: string;
+  assignmentName: string;
   teacherUid: string;
   youtubeUrl: string;
   /** Full questions including correctAnswer — used server-side for grading. */
   questions: VideoActivityQuestion[];
   /** Session-level behavior controls configured at assignment time. */
   settings?: VideoActivitySessionSettings;
+  status: 'active' | 'ended';
   /**
    * Roster PINs allowed to join. Teacher sets this when assigning to a class.
    * Empty array means any PIN is accepted.
    */
   allowedPins: string[];
   createdAt: number;
+  endedAt?: number;
   /** Optional Unix timestamp when the session link expires. */
   expiresAt?: number;
 }

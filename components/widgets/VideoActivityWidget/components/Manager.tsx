@@ -17,8 +17,15 @@ import {
   ExternalLink,
   X,
   Search,
+  Pencil,
+  Ban,
+  Clock3,
 } from 'lucide-react';
-import { VideoActivityMetadata, VideoActivitySessionSettings } from '@/types';
+import {
+  VideoActivityMetadata,
+  VideoActivitySessionSettings,
+  VideoActivitySession,
+} from '@/types';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Toggle } from '@/components/common/Toggle';
 
@@ -29,22 +36,43 @@ interface ManagerProps {
   onNew: () => void;
   onEdit: (activity: VideoActivityMetadata) => void;
   onResults: (activity: VideoActivityMetadata) => void;
+  onCloseResults: () => void;
+  onOpenSessionResults: (session: VideoActivitySession) => void;
+  onRenameSession: (sessionId: string, assignmentName: string) => Promise<void>;
+  onEndSession: (sessionId: string) => Promise<void>;
   onAssign: (
     activity: VideoActivityMetadata,
-    settings: VideoActivitySessionSettings
+    settings: VideoActivitySessionSettings,
+    assignmentName: string
   ) => Promise<string>;
   onDelete: (activity: VideoActivityMetadata) => void;
   defaultSessionSettings: VideoActivitySessionSettings;
+  sessionResultsActivity: VideoActivityMetadata | null;
+  activitySessions: VideoActivitySession[];
+  sessionsLoading: boolean;
 }
 
 interface AssignModalProps {
   activity: VideoActivityMetadata;
   initialSettings: VideoActivitySessionSettings;
   onClose: () => void;
-  onConfirm: (settings: VideoActivitySessionSettings) => void;
+  onConfirm: (
+    settings: VideoActivitySessionSettings,
+    assignmentName: string
+  ) => void;
   isCreating: boolean;
   error: string | null;
 }
+
+const buildDefaultAssignmentName = (title: string): string => {
+  const formattedDate = new Date().toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${title} - ${formattedDate}`;
+};
 
 const AssignModal: React.FC<AssignModalProps> = ({
   activity,
@@ -56,6 +84,9 @@ const AssignModal: React.FC<AssignModalProps> = ({
 }) => {
   const [settings, setSettings] =
     useState<VideoActivitySessionSettings>(initialSettings);
+  const [assignmentName, setAssignmentName] = useState(() =>
+    buildDefaultAssignmentName(activity.title)
+  );
 
   return (
     <div className="absolute inset-0 z-overlay bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -91,6 +122,25 @@ const AssignModal: React.FC<AssignModalProps> = ({
           </p>
 
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+            <div>
+              <label
+                htmlFor="video-activity-assignment-name"
+                className="block text-sm font-bold text-slate-700 mb-1.5"
+              >
+                Assignment Name
+              </label>
+              <input
+                id="video-activity-assignment-name"
+                type="text"
+                value={assignmentName}
+                onChange={(e) => setAssignmentName(e.target.value)}
+                placeholder="1st period"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-brand-blue-primary"
+              />
+            </div>
+
+            <div className="w-full h-px bg-slate-200" />
+
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-slate-700">Auto-Play</p>
@@ -161,8 +211,8 @@ const AssignModal: React.FC<AssignModalProps> = ({
           )}
           <div className="grid gap-3">
             <button
-              onClick={() => onConfirm(settings)}
-              disabled={isCreating}
+              onClick={() => onConfirm(settings, assignmentName.trim())}
+              disabled={isCreating || assignmentName.trim().length === 0}
               className="w-full flex items-center justify-center gap-2 bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-xl transition-all active:scale-95 shadow-sm py-3 text-sm disabled:opacity-60"
             >
               {isCreating ? (
@@ -181,11 +231,13 @@ const AssignModal: React.FC<AssignModalProps> = ({
 
 interface SessionLinkModalProps {
   sessionId: string;
+  assignmentName: string;
   onClose: () => void;
 }
 
 const SessionLinkModal: React.FC<SessionLinkModalProps> = ({
   sessionId,
+  assignmentName,
   onClose,
 }) => {
   const link = `${window.location.origin}/activity/${sessionId}`;
@@ -216,6 +268,11 @@ const SessionLinkModal: React.FC<SessionLinkModalProps> = ({
         </div>
 
         <div className="p-5 space-y-4">
+          <div className="text-center">
+            <p className="font-bold text-brand-blue-dark text-base truncate px-2">
+              {assignmentName}
+            </p>
+          </div>
           <p className="text-slate-600 text-sm text-center">
             Share this link with your students. They&apos;ll enter their PIN to
             join.
@@ -258,6 +315,247 @@ const SessionLinkModal: React.FC<SessionLinkModalProps> = ({
   );
 };
 
+interface ResultsModalProps {
+  activity: VideoActivityMetadata;
+  sessions: VideoActivitySession[];
+  loading: boolean;
+  onClose: () => void;
+  onOpenSessionResults: (session: VideoActivitySession) => void;
+  onRenameSession: (sessionId: string, assignmentName: string) => Promise<void>;
+  onEndSession: (sessionId: string) => Promise<void>;
+}
+
+const ResultsModal: React.FC<ResultsModalProps> = ({
+  activity,
+  sessions,
+  loading,
+  onClose,
+  onOpenSessionResults,
+  onRenameSession,
+  onEndSession,
+}) => {
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
+  const [savingSessionId, setSavingSessionId] = useState<string | null>(null);
+  const [confirmEndId, setConfirmEndId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const handleCopy = async (sessionId: string) => {
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/activity/${sessionId}`
+    );
+  };
+
+  const handleSaveRename = async (sessionId: string) => {
+    if (!draftName.trim()) return;
+    setSavingSessionId(sessionId);
+    setActionError(null);
+    try {
+      await onRenameSession(sessionId, draftName.trim());
+      setEditingSessionId(null);
+      setDraftName('');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Rename failed');
+    } finally {
+      setSavingSessionId(null);
+    }
+  };
+
+  const handleEndSession = async (sessionId: string) => {
+    setSavingSessionId(sessionId);
+    setActionError(null);
+    try {
+      await onEndSession(sessionId);
+      setConfirmEndId(null);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to end session'
+      );
+    } finally {
+      setSavingSessionId(null);
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 z-overlay bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div className="bg-violet-600 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-white min-w-0">
+            <BarChart3 className="w-5 h-5 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-black uppercase tracking-tight">Results</p>
+              <p className="text-white/80 text-xs truncate">{activity.title}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white transition-colors"
+            aria-label="Close results"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-5 overflow-y-auto space-y-4">
+          {actionError && (
+            <p className="text-sm text-brand-red-primary font-medium">
+              {actionError}
+            </p>
+          )}
+
+          {loading ? (
+            <div className="py-10 flex items-center justify-center text-brand-blue-primary">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+              <p className="font-bold text-slate-700">No assignments yet</p>
+              <p className="text-sm text-slate-500 mt-1">
+                Create an assignment to generate a reusable student link and
+                results history for this activity.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sessions.map((session) => {
+                const isEditing = editingSessionId === session.id;
+                const isSaving = savingSessionId === session.id;
+                const link = `${window.location.origin}/activity/${session.id}`;
+
+                return (
+                  <div
+                    key={session.id}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={draftName}
+                              onChange={(e) => setDraftName(e.target.value)}
+                              className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-brand-blue-primary"
+                            />
+                            <button
+                              onClick={() => void handleSaveRename(session.id)}
+                              disabled={
+                                isSaving || draftName.trim().length === 0
+                              }
+                              className="rounded-xl bg-brand-blue-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingSessionId(null);
+                                setDraftName('');
+                              }}
+                              className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-bold text-slate-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p className="font-bold text-brand-blue-dark truncate">
+                              {session.assignmentName}
+                            </p>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black uppercase tracking-widest ${
+                                session.status === 'ended'
+                                  ? 'bg-slate-200 text-slate-600'
+                                  : 'bg-emerald-100 text-emerald-700'
+                              }`}
+                            >
+                              {session.status}
+                            </span>
+                          </div>
+                        )}
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                          <span className="inline-flex items-center gap-1">
+                            <Clock3 className="w-3 h-3" />
+                            {new Date(session.createdAt).toLocaleString()}
+                          </span>
+                          <span className="opacity-30">•</span>
+                          <span className="truncate">{link}</span>
+                        </div>
+                      </div>
+                      {!isEditing && (
+                        <button
+                          onClick={() => {
+                            setEditingSessionId(session.id);
+                            setDraftName(session.assignmentName);
+                          }}
+                          className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100"
+                          title="Rename assignment"
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <Pencil className="w-3 h-3" />
+                            Rename
+                          </span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => onOpenSessionResults(session)}
+                        className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white hover:bg-violet-700"
+                      >
+                        Open Results
+                      </button>
+                      <button
+                        onClick={() => void handleCopy(session.id)}
+                        className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100"
+                      >
+                        Copy Link
+                      </button>
+                      {session.status === 'active' ? (
+                        confirmEndId === session.id ? (
+                          <>
+                            <button
+                              onClick={() => void handleEndSession(session.id)}
+                              disabled={isSaving}
+                              className="rounded-xl bg-brand-red-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                            >
+                              Confirm End
+                            </button>
+                            <button
+                              onClick={() => setConfirmEndId(null)}
+                              className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-bold text-slate-700"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmEndId(session.id)}
+                            className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 border border-amber-200 hover:bg-amber-100"
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <Ban className="w-3 h-3" />
+                              End Session
+                            </span>
+                          </button>
+                        )
+                      ) : (
+                        <span className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-bold text-slate-600">
+                          Closed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Manager: React.FC<ManagerProps> = ({
   activities,
   loading,
@@ -265,14 +563,24 @@ export const Manager: React.FC<ManagerProps> = ({
   onNew,
   onEdit,
   onResults,
+  onCloseResults,
+  onOpenSessionResults,
+  onRenameSession,
+  onEndSession,
   onAssign,
   onDelete,
   defaultSessionSettings,
+  sessionResultsActivity,
+  activitySessions,
+  sessionsLoading,
 }) => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] =
     useState<VideoActivityMetadata | null>(null);
-  const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
+  const [createdSession, setCreatedSession] = useState<{
+    id: string;
+    assignmentName: string;
+  } | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -284,15 +592,16 @@ export const Manager: React.FC<ManagerProps> = ({
   }, [activities, searchQuery]);
 
   const handleAssignConfirm = async (
-    settings: VideoActivitySessionSettings
+    settings: VideoActivitySessionSettings,
+    assignmentName: string
   ) => {
     if (!assignTarget) return;
     setIsCreating(true);
     setAssignError(null);
     try {
-      const sessionId = await onAssign(assignTarget, settings);
+      const sessionId = await onAssign(assignTarget, settings, assignmentName);
       setAssignTarget(null);
-      setCreatedSessionId(sessionId);
+      setCreatedSession({ id: sessionId, assignmentName });
     } catch (err) {
       setAssignError(
         err instanceof Error ? err.message : 'Failed to create session'
@@ -341,10 +650,23 @@ export const Manager: React.FC<ManagerProps> = ({
       )}
 
       {/* Session link modal */}
-      {createdSessionId && (
+      {createdSession && (
         <SessionLinkModal
-          sessionId={createdSessionId}
-          onClose={() => setCreatedSessionId(null)}
+          sessionId={createdSession.id}
+          assignmentName={createdSession.assignmentName}
+          onClose={() => setCreatedSession(null)}
+        />
+      )}
+
+      {sessionResultsActivity && (
+        <ResultsModal
+          activity={sessionResultsActivity}
+          sessions={activitySessions}
+          loading={sessionsLoading}
+          onClose={onCloseResults}
+          onOpenSessionResults={onOpenSessionResults}
+          onRenameSession={onRenameSession}
+          onEndSession={onEndSession}
         />
       )}
 

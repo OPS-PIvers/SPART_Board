@@ -7,27 +7,27 @@ import React, { useState } from 'react';
 import {
   ArrowLeft,
   Download,
+  Loader2,
+  ExternalLink,
+  AlertTriangle,
   BarChart3,
+  Clock,
   Users,
   CheckCircle2,
   XCircle,
-  Loader2,
-  ExternalLink,
-  Clock,
-  AlertTriangle,
 } from 'lucide-react';
-import { VideoActivityData, VideoActivityResponse } from '@/types';
+import { VideoActivityResponse, VideoActivitySession } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { QuizDriveService } from '@/utils/quizDriveService';
 
 interface ResultsProps {
-  activity: VideoActivityData;
+  session: VideoActivitySession;
   responses: VideoActivityResponse[];
   onBack: () => void;
 }
 
 export const Results: React.FC<ResultsProps> = ({
-  activity,
+  session,
   responses,
   onBack,
 }) => {
@@ -39,7 +39,7 @@ export const Results: React.FC<ResultsProps> = ({
     'overview' | 'questions' | 'students'
   >('overview');
 
-  const questions = activity.questions;
+  const questions = session.questions;
   const totalStudents = responses.length;
 
   /** Compute correctness from the authoritative activity question data. */
@@ -163,7 +163,7 @@ export const Results: React.FC<ResultsProps> = ({
       }));
 
       const url = await drive.exportResultsToSheet(
-        activity.title,
+        session.assignmentName,
         quizResponses,
         questions
       );
@@ -201,14 +201,16 @@ export const Results: React.FC<ResultsProps> = ({
               className="font-bold text-brand-blue-dark truncate"
               style={{ fontSize: 'min(13px, 4cqmin)' }}
             >
-              Results: {activity.title}
+              Results: {session.assignmentName}
             </p>
             <p
               className="text-brand-blue-primary/60"
               style={{ fontSize: 'min(10px, 3cqmin)' }}
             >
-              {totalStudents} student{totalStudents !== 1 ? 's' : ''} ·{' '}
-              {completed} completed
+              {session.activityTitle} · {totalStudents} student
+              {totalStudents !== 1 ? 's' : ''} ·{' '}
+              {session.status === 'ended' ? 'Closed' : 'Active'} · {completed}{' '}
+              completed
             </p>
           </div>
         </div>

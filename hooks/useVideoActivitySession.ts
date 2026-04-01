@@ -20,6 +20,9 @@ import {
   arrayUnion,
   runTransaction,
   Unsubscribe,
+  query,
+  where,
+  orderBy,
 } from 'firebase/firestore';
 import { db, auth } from '@/config/firebase';
 import {
@@ -43,8 +46,20 @@ export interface UseVideoActivitySessionTeacherResult {
     activity: VideoActivityData,
     teacherUid: string,
     allowedPins?: string[],
-    settings?: Partial<VideoActivitySessionSettings>
+    settings?: Partial<VideoActivitySessionSettings>,
+    assignmentName?: string
   ) => Promise<string>;
+  /** Sessions created by the current teacher for the selected activity. */
+  sessions: VideoActivitySession[];
+  sessionsLoading: boolean;
+  /** Subscribe to sessions for a single activity. Cleans up any previous listener. */
+  subscribeToActivitySessions: (activityId: string, teacherUid: string) => void;
+  /** Unsubscribe from the current activity session list. */
+  unsubscribeFromActivitySessions: () => void;
+  /** Rename a previously created session. */
+  renameSession: (sessionId: string, assignmentName: string) => Promise<void>;
+  /** End a session so the join link is no longer valid. */
+  endSession: (sessionId: string) => Promise<void>;
   /** Real-time responses for a specific session. */
   responses: VideoActivityResponse[];
   /** Subscribe to a specific session's responses. Cleans up any previous listener. */
@@ -56,18 +71,23 @@ export interface UseVideoActivitySessionTeacherResult {
 
 export const useVideoActivitySessionTeacher =
   (): UseVideoActivitySessionTeacherResult => {
+    const [sessions, setSessions] = useState<VideoActivitySession[]>([]);
+    const [sessionsLoading, setSessionsLoading] = useState(false);
     const [responses, setResponses] = useState<VideoActivityResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const unsubRef = useRef<Unsubscribe | null>(null);
+    const sessionsUnsubRef = useRef<Unsubscribe | null>(null);
 
     const createSession = useCallback(
       async (
         activity: VideoActivityData,
         teacherUid: string,
         allowedPins: string[] = [],
-        settings?: Partial<VideoActivitySessionSettings>
+        settings?: Partial<VideoActivitySessionSettings>,
+        assignmentName?: string
       ): Promise<string> => {
         const sessionId = crypto.randomUUID();
+        const trimmedAssignmentName = assignmentName?.trim();
         const sessionSettings: VideoActivitySessionSettings = {
           autoPlay: settings?.autoPlay ?? false,
           requireCorrectAnswer: settings?.requireCorrectAnswer ?? true,
@@ -78,10 +98,15 @@ export const useVideoActivitySessionTeacher =
           id: sessionId,
           activityId: activity.id,
           activityTitle: activity.title,
+          assignmentName:
+            trimmedAssignmentName && trimmedAssignmentName.length > 0
+              ? trimmedAssignmentName
+              : `${activity.title} ${new Date().toLocaleString()}`,
           teacherUid,
           youtubeUrl: activity.youtubeUrl,
           questions: activity.questions,
           settings: sessionSettings,
+          status: 'active',
           allowedPins,
           createdAt: Date.now(),
         };
@@ -92,6 +117,70 @@ export const useVideoActivitySessionTeacher =
       },
       []
     );
+
+    const subscribeToActivitySessions = useCallback(
+      (activityId: string, teacherUid: string) => {
+        if (sessionsUnsubRef.current) {
+          sessionsUnsubRef.current();
+          sessionsUnsubRef.current = null;
+        }
+
+        setSessionsLoading(true);
+        sessionsUnsubRef.current = onSnapshot(
+          query(
+            collection(db, SESSIONS_COLLECTION),
+            where('activityId', '==', activityId),
+            where('teacherUid', '==', teacherUid),
+            orderBy('createdAt', 'desc')
+          ),
+          (snap) => {
+            setSessions(
+              snap.docs.map((sessionDoc) => {
+                const data = sessionDoc.data() as VideoActivitySession;
+                return { ...data, id: sessionDoc.id };
+              })
+            );
+            setSessionsLoading(false);
+          },
+          (err) => {
+            console.error(
+              '[useVideoActivitySessionTeacher] Activity session list error:',
+              err
+            );
+            setSessions([]);
+            setSessionsLoading(false);
+          }
+        );
+      },
+      []
+    );
+
+    const unsubscribeFromActivitySessions = useCallback(() => {
+      if (sessionsUnsubRef.current) {
+        sessionsUnsubRef.current();
+        sessionsUnsubRef.current = null;
+      }
+      setSessions([]);
+      setSessionsLoading(false);
+    }, []);
+
+    const renameSession = useCallback(
+      async (sessionId: string, assignmentName: string): Promise<void> => {
+        await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), {
+          assignmentName: assignmentName.trim(),
+        });
+      },
+      []
+    );
+
+    const endSession = useCallback(async (sessionId: string): Promise<void> => {
+      const now = Date.now();
+      await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), {
+        status: 'ended',
+        endedAt: now,
+        expiresAt: now,
+      });
+    }, []);
 
     const subscribeToSession = useCallback((sessionId: string) => {
       // Clean up any existing listener before creating a new one
@@ -129,6 +218,10 @@ export const useVideoActivitySessionTeacher =
     // Clean up on unmount
     useEffect(() => {
       return () => {
+        if (sessionsUnsubRef.current) {
+          sessionsUnsubRef.current();
+          sessionsUnsubRef.current = null;
+        }
         if (unsubRef.current) {
           unsubRef.current();
           unsubRef.current = null;
@@ -138,6 +231,12 @@ export const useVideoActivitySessionTeacher =
 
     return {
       createSession,
+      sessions,
+      sessionsLoading,
+      subscribeToActivitySessions,
+      unsubscribeFromActivitySessions,
+      renameSession,
+      endSession,
       responses,
       subscribeToSession,
       unsubscribeFromSession,
@@ -261,6 +360,14 @@ export const useVideoActivitySessionStudent =
           ) {
             setJoinStatus('pin-rejected');
             setError('Incorrect PIN. Please check with your teacher.');
+            return;
+          }
+
+          if (sessionData.status === 'ended') {
+            setJoinStatus('error');
+            setError(
+              'This activity has been closed by your teacher. Ask for a new link if you still need access.'
+            );
             return;
           }
 

@@ -323,8 +323,26 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Only authenticated (non-anonymous) users can create sessions (teachers)
       allow create: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
-      // Sessions are immutable after creation (no updates needed)
-      allow update, delete: if false;
+      // Teacher owners may rename or end sessions, but not mutate session content.
+      allow update: if request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous' &&
+        resource.data.teacherUid == request.auth.uid &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.activityId == resource.data.activityId &&
+        request.resource.data.activityTitle == resource.data.activityTitle &&
+        request.resource.data.teacherUid == resource.data.teacherUid &&
+        request.resource.data.youtubeUrl == resource.data.youtubeUrl &&
+        request.resource.data.questions == resource.data.questions &&
+        request.resource.data.settings == resource.data.settings &&
+        request.resource.data.allowedPins == resource.data.allowedPins &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignmentName', 'status', 'endedAt', 'expiresAt']) &&
+        request.resource.data.assignmentName is string &&
+        request.resource.data.assignmentName.size() > 0 &&
+        request.resource.data.status in ['active', 'ended'] &&
+        (!('endedAt' in request.resource.data) || request.resource.data.endedAt is int) &&
+        (!('expiresAt' in request.resource.data) || request.resource.data.expiresAt is int);
+      allow delete: if false;
 
       match /responses/{studentUid} {
         // Teacher can read all responses; students can only read their own (doc ID == auth UID)
