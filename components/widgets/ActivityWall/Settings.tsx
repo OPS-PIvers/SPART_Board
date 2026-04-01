@@ -128,7 +128,8 @@ export const ActivityWallSettings: React.FC<{ widget: WidgetData }> = ({
       id: crypto.randomUUID(),
       content: draftDemo.trim(),
       submittedAt: Date.now(),
-      status: activity.moderationEnabled ? 'pending' : 'approved',
+      // Demo responses are always approved so teachers can preview the display.
+      status: 'approved',
       participantLabel: 'Demo Student',
     };
     const nextActivities = (config.activities ?? []).map((a) =>
