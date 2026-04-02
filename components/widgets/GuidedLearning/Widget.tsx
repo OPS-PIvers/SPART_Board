@@ -18,6 +18,7 @@ import { Loader2 } from 'lucide-react';
 
 // ─── AI generation modal (admin only) ────────────────────────────────────────
 import { GuidedLearningAIGenerator } from './components/GuidedLearningAIGenerator';
+import { normalizeGuidedLearningSet } from './utils/setMigration';
 
 export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -69,12 +70,12 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
       driveFileId?: string,
       buildingSet?: GuidedLearningSet
     ): Promise<GuidedLearningSet | null> => {
-      if (buildingSet) return buildingSet;
+      if (buildingSet) return normalizeGuidedLearningSet(buildingSet);
       if (!driveFileId) return null;
       setLoadingSet(true);
       try {
         const data = await loadSetData(driveFileId);
-        return data;
+        return normalizeGuidedLearningSet(data);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to load set';
         addToast(msg, 'error');
@@ -214,7 +215,7 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
   const emptySet = (): GuidedLearningSet => ({
     id: crypto.randomUUID(),
     title: '',
-    imageUrl: '',
+    imageUrls: [],
     steps: [],
     mode: 'structured',
     createdAt: Date.now(),

@@ -108,12 +108,13 @@ describe('GuidedLearningPlayer', () => {
     const set: GuidedLearningSet = {
       id: 'set-1',
       title: 'Player Test',
-      imageUrl: 'https://example.com/image.png',
+      imageUrls: ['https://example.com/image.png'],
       steps: [
         {
           id: 'step-1',
           xPct: 10,
           yPct: 80,
+          imageIndex: 0,
           interactionType: 'tooltip',
           text: 'Hello',
         },

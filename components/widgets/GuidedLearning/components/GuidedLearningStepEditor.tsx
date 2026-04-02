@@ -8,6 +8,7 @@ import {
 
 interface Props {
   step: GuidedLearningStep;
+  imageCount: number;
   onChange: (updated: GuidedLearningStep) => void;
   onDelete: () => void;
   isExpanded: boolean;
@@ -23,6 +24,7 @@ const INTERACTION_TYPES: {
   { value: 'audio', label: 'Audio' },
   { value: 'video', label: 'Video' },
   { value: 'pan-zoom', label: 'Pan & Zoom' },
+  { value: 'pan-zoom-spotlight', label: 'Pan & Zoom + Spotlight' },
   { value: 'spotlight', label: 'Spotlight' },
   { value: 'question', label: 'Question' },
 ];
@@ -35,6 +37,7 @@ const QUESTION_TYPES: { value: GuidedLearningQuestionType; label: string }[] = [
 
 export const GuidedLearningStepEditor: React.FC<Props> = ({
   step,
+  imageCount,
   onChange,
   onDelete,
   isExpanded,
@@ -150,6 +153,47 @@ export const GuidedLearningStepEditor: React.FC<Props> = ({
             </select>
           </div>
 
+          {imageCount >= 2 && (
+            <div>
+              <label
+                className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
+                style={{ fontSize: 'clamp(10px, 2.5cqmin, 14px)' }}
+              >
+                Image
+              </label>
+              <select
+                value={step.imageIndex}
+                onChange={(e) =>
+                  update({ imageIndex: parseInt(e.target.value, 10) || 0 })
+                }
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 appearance-none"
+                style={{
+                  padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                  fontSize: 'clamp(12px, 3.2cqmin, 16px)',
+                }}
+              >
+                {Array.from({ length: imageCount }, (_, i) => (
+                  <option key={i} value={i}>
+                    Image {i + 1}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <label
+            className="flex items-center text-white"
+            style={{ gap: 'min(8px, 2cqmin)', fontSize: 'min(12px, 3cqmin)' }}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(step.hideStepNumber)}
+              onChange={(e) => update({ hideStepNumber: e.target.checked })}
+              className="accent-indigo-500"
+            />
+            Hide step number on hotspot
+          </label>
+
           {/* Text content */}
           {(step.interactionType === 'text-popover' ||
             step.interactionType === 'tooltip') && (
@@ -230,7 +274,8 @@ export const GuidedLearningStepEditor: React.FC<Props> = ({
           )}
 
           {/* Pan-zoom scale */}
-          {step.interactionType === 'pan-zoom' && (
+          {(step.interactionType === 'pan-zoom' ||
+            step.interactionType === 'pan-zoom-spotlight') && (
             <div>
               <label
                 className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
@@ -253,7 +298,8 @@ export const GuidedLearningStepEditor: React.FC<Props> = ({
           )}
 
           {/* Spotlight radius */}
-          {step.interactionType === 'spotlight' && (
+          {(step.interactionType === 'spotlight' ||
+            step.interactionType === 'pan-zoom-spotlight') && (
             <div>
               <label
                 className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
@@ -273,6 +319,62 @@ export const GuidedLearningStepEditor: React.FC<Props> = ({
                 className="w-full accent-indigo-500"
               />
             </div>
+          )}
+
+          {(step.interactionType === 'pan-zoom' ||
+            step.interactionType === 'spotlight' ||
+            step.interactionType === 'pan-zoom-spotlight') && (
+            <>
+              <div>
+                <label
+                  className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
+                  style={{ fontSize: 'clamp(10px, 2.5cqmin, 14px)' }}
+                >
+                  Overlay Style
+                </label>
+                <select
+                  value={step.showOverlay ?? 'none'}
+                  onChange={(e) =>
+                    update({
+                      showOverlay: e.target
+                        .value as GuidedLearningStep['showOverlay'],
+                    })
+                  }
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 appearance-none"
+                  style={{
+                    padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                    fontSize: 'clamp(12px, 3.2cqmin, 16px)',
+                  }}
+                >
+                  <option value="none">None</option>
+                  <option value="popover">Popover</option>
+                  <option value="tooltip">Tooltip</option>
+                  <option value="banner">Banner</option>
+                </select>
+              </div>
+
+              {(step.showOverlay ?? 'none') !== 'none' && (
+                <div>
+                  <label
+                    className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
+                    style={{ fontSize: 'clamp(10px, 2.5cqmin, 14px)' }}
+                  >
+                    Text Content
+                  </label>
+                  <textarea
+                    value={step.text ?? ''}
+                    onChange={(e) => update({ text: e.target.value })}
+                    rows={4}
+                    placeholder="Enter overlay text…"
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+                    style={{
+                      padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+                      fontSize: 'clamp(12px, 3.2cqmin, 16px)',
+                    }}
+                  />
+                </div>
+              )}
+            </>
           )}
 
           {/* Question */}

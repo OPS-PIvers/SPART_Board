@@ -1295,8 +1295,11 @@ interface GuidedLearningStep {
   id: string;
   xPct: number;
   yPct: number;
+  imageIndex?: number;
   label?: string;
   interactionType: string;
+  hideStepNumber?: boolean;
+  showOverlay?: 'none' | 'popover' | 'tooltip' | 'banner';
   text?: string;
   panZoomScale?: number;
   spotlightRadius?: number;
@@ -1388,10 +1391,13 @@ Return ONLY valid JSON with this exact structure:
       "xPct": number (0-100),
       "yPct": number (0-100),
       "label": "string",
-      "interactionType": "text-popover" | "tooltip" | "pan-zoom" | "spotlight" | "question",
+      "interactionType": "text-popover" | "tooltip" | "pan-zoom" | "spotlight" | "pan-zoom-spotlight" | "question",
+      "imageIndex": number (always 0 for now),
+      "hideStepNumber": boolean (optional),
+      "showOverlay": "none" | "popover" | "tooltip" | "banner" (for pan-zoom, spotlight, pan-zoom-spotlight),
       "text": "string (for text-popover/tooltip)",
-      "panZoomScale": number (1.5-4, for pan-zoom only),
-      "spotlightRadius": number (10-40, for spotlight only),
+      "panZoomScale": number (1.5-4, for pan-zoom and pan-zoom-spotlight),
+      "spotlightRadius": number (10-40, for spotlight and pan-zoom-spotlight),
       "autoAdvanceDuration": number (seconds),
       "question": {
         "type": "multiple-choice" | "matching" | "sorting",
@@ -1407,7 +1413,8 @@ Return ONLY valid JSON with this exact structure:
 
 Guidelines:
 - Create 4-8 meaningful steps that guide learners through the content
-- Use text-popover for key concepts, spotlight to highlight areas, pan-zoom to zoom in on details, questions to check understanding
+- Use text-popover for key concepts, spotlight to highlight areas, pan-zoom to zoom in on details, pan-zoom-spotlight when both are useful, questions to check understanding
+- This phase supports single-image AI generation only, so set imageIndex to 0 for every step
 - Place hotspots at meaningful locations on the image (xPct/yPct as percentages 0-100)
 - Include at least 1 question step for comprehension checking
 - Make content educational and age-appropriate

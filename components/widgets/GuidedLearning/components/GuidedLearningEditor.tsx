@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+} from 'react';
 import {
   Upload,
   ImageIcon,
@@ -7,6 +13,9 @@ import {
   Loader2,
   Plus,
   Clipboard,
+  ChevronUp,
+  ChevronDown,
+  Trash2,
 } from 'lucide-react';
 import {
   GuidedLearningSet,
@@ -59,8 +68,11 @@ export const GuidedLearningEditor: React.FC<Props> = ({
   const [mode, setMode] = useState<GuidedLearningMode>(
     existingSet?.mode ?? 'structured'
   );
-  const [imageUrl, setImageUrl] = useState(existingSet?.imageUrl ?? '');
-  const [imagePath] = useState(existingSet?.imagePath ?? '');
+  const [imageUrls, setImageUrls] = useState<string[]>(
+    existingSet?.imageUrls ?? []
+  );
+  const [imagePaths] = useState<string[]>(existingSet?.imagePaths ?? []);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [steps, setSteps] = useState<GuidedLearningStep[]>(
     existingSet?.steps ?? []
   );
@@ -71,6 +83,12 @@ export const GuidedLearningEditor: React.FC<Props> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+
+  const currentImageUrl = imageUrls[currentImageIndex] ?? '';
+  const currentImageSteps = useMemo(
+    () => steps.filter((step) => step.imageIndex === currentImageIndex),
+    [steps, currentImageIndex]
+  );
 
   const [imgBounds, setImgBounds] = useState<{
     offsetLeft: number;
@@ -102,15 +120,22 @@ export const GuidedLearningEditor: React.FC<Props> = ({
     });
     ro.observe(imageContainerRef.current);
     return () => ro.disconnect();
-  }, [imageUrl, measureImage]);
+  }, [currentImageUrl, measureImage]);
 
-  // Handle file upload
-  const handleImageUpload = async (file: File) => {
-    if (!user) return;
+  const uploadImages = async (files: File[]) => {
+    if (!user || files.length === 0) return;
     setImageError('');
+
+    const uploadedUrls: string[] = [];
     try {
-      const url = await uploadHotspotImage(user.uid, file);
-      setImageUrl(url);
+      for (const file of files) {
+        const url = await uploadHotspotImage(user.uid, file);
+        uploadedUrls.push(url);
+      }
+      if (uploadedUrls.length > 0) {
+        setImageUrls((prev) => [...prev, ...uploadedUrls]);
+        setCurrentImageIndex(imageUrls.length + uploadedUrls.length - 1);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Upload failed';
       setImageError(msg);
@@ -118,9 +143,66 @@ export const GuidedLearningEditor: React.FC<Props> = ({
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await handleImageUpload(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    await uploadImages(files);
+    e.target.value = '';
+  };
+
+  const handleDeleteImage = (deleteIndex: number) => {
+    setImageUrls((prev) => {
+      const updated = prev.filter((_, index) => index !== deleteIndex);
+      setCurrentImageIndex((curr) => {
+        if (updated.length === 0) return 0;
+        if (curr === deleteIndex)
+          return Math.min(deleteIndex, updated.length - 1);
+        if (curr > deleteIndex) return curr - 1;
+        return curr;
+      });
+      return updated;
+    });
+
+    setSteps((prev) =>
+      prev
+        .filter((step) => step.imageIndex !== deleteIndex)
+        .map((step) => ({
+          ...step,
+          imageIndex:
+            step.imageIndex > deleteIndex
+              ? step.imageIndex - 1
+              : step.imageIndex,
+        }))
+    );
+  };
+
+  const handleMoveImage = (fromIndex: number, direction: -1 | 1) => {
+    const toIndex = fromIndex + direction;
+    if (toIndex < 0 || toIndex >= imageUrls.length) return;
+
+    setImageUrls((prev) => {
+      const updated = [...prev];
+      [updated[fromIndex], updated[toIndex]] = [
+        updated[toIndex],
+        updated[fromIndex],
+      ];
+      return updated;
+    });
+
+    setSteps((prev) =>
+      prev.map((step) => {
+        if (step.imageIndex === fromIndex)
+          return { ...step, imageIndex: toIndex };
+        if (step.imageIndex === toIndex)
+          return { ...step, imageIndex: fromIndex };
+        return step;
+      })
+    );
+
+    setCurrentImageIndex((prev) => {
+      if (prev === fromIndex) return toIndex;
+      if (prev === toIndex) return fromIndex;
+      return prev;
+    });
   };
 
   // Paste from clipboard
@@ -132,7 +214,7 @@ export const GuidedLearningEditor: React.FC<Props> = ({
           if (type.startsWith('image/')) {
             const blob = await item.getType(type);
             const file = new File([blob], 'pasted-image.png', { type });
-            await handleImageUpload(file);
+            await uploadImages([file]);
             return;
           }
         }
@@ -176,7 +258,9 @@ export const GuidedLearningEditor: React.FC<Props> = ({
       id: crypto.randomUUID(),
       xPct,
       yPct,
+      imageIndex: currentImageIndex,
       interactionType: 'text-popover',
+      showOverlay: 'none',
       text: '',
     };
     setSteps((prev) => [...prev, newStep]);
@@ -192,8 +276,8 @@ export const GuidedLearningEditor: React.FC<Props> = ({
       id: setId,
       title: title.trim(),
       description: description.trim() || undefined,
-      imageUrl,
-      imagePath: imagePath || undefined,
+      imageUrls,
+      imagePaths: imagePaths.length > 0 ? imagePaths : undefined,
       steps,
       mode,
       createdAt: existingSet?.createdAt ?? now,
@@ -205,7 +289,6 @@ export const GuidedLearningEditor: React.FC<Props> = ({
 
   return (
     <div className="h-full flex flex-col bg-slate-900">
-      {/* Toolbar */}
       <div
         className="flex items-center border-b border-white/10 flex-shrink-0"
         style={{
@@ -219,10 +302,7 @@ export const GuidedLearningEditor: React.FC<Props> = ({
           aria-label="Cancel"
         >
           <X
-            style={{
-              width: 'min(16px, 4cqmin)',
-              height: 'min(16px, 4cqmin)',
-            }}
+            style={{ width: 'min(16px, 4cqmin)', height: 'min(16px, 4cqmin)' }}
           />
         </button>
         <span
@@ -233,7 +313,9 @@ export const GuidedLearningEditor: React.FC<Props> = ({
         </span>
         <button
           onClick={handleSave}
-          disabled={saving || uploading || !title.trim() || !imageUrl}
+          disabled={
+            saving || uploading || !title.trim() || imageUrls.length === 0
+          }
           className="flex items-center bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-lg transition-all active:scale-95"
           style={{
             gap: 'min(6px, 1.5cqmin)',
@@ -263,7 +345,6 @@ export const GuidedLearningEditor: React.FC<Props> = ({
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="space-y-3" style={{ padding: 'min(12px, 3cqmin)' }}>
-          {/* Title */}
           <div>
             <label
               className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
@@ -284,7 +365,6 @@ export const GuidedLearningEditor: React.FC<Props> = ({
             />
           </div>
 
-          {/* Description */}
           <div>
             <label
               className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
@@ -305,7 +385,6 @@ export const GuidedLearningEditor: React.FC<Props> = ({
             />
           </div>
 
-          {/* Mode */}
           <div>
             <label
               className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
@@ -345,92 +424,111 @@ export const GuidedLearningEditor: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Image upload */}
           <div>
             <label
               className="block text-slate-400 font-bold uppercase tracking-wider mb-1"
               style={{ fontSize: 'clamp(10px, 2.5cqmin, 14px)' }}
             >
-              Base Image *
+              Images *
             </label>
-            {imageUrl ? (
-              <div
-                ref={imageContainerRef}
-                className={`relative rounded-lg overflow-hidden bg-slate-800 ${addingStep ? 'cursor-crosshair' : ''}`}
-                onClick={handleImageClick}
-                data-no-drag={addingStep ? 'true' : undefined}
-                style={{ height: 'min(600px, 50cqh)' }}
-              >
-                <img
-                  ref={imageRef}
-                  src={imageUrl}
-                  alt="Base"
-                  className="w-full h-full object-contain"
-                  draggable={false}
-                  onLoad={measureImage}
-                />
-                {/* Step pins overlay */}
-                {steps.map((s, idx) => (
-                  <div
-                    key={s.id}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 bg-indigo-600 text-white rounded-full flex items-center justify-center border-2 border-white cursor-pointer select-none shadow-md"
-                    style={
-                      imgBounds
-                        ? {
-                            left:
-                              imgBounds.offsetLeft +
-                              (s.xPct / 100) * imgBounds.width,
-                            top:
-                              imgBounds.offsetTop +
-                              (s.yPct / 100) * imgBounds.height,
-                            width: 'min(20px, 5cqmin)',
-                            height: 'min(20px, 5cqmin)',
-                            fontSize: 'min(10px, 2.5cqmin)',
-                          }
-                        : {
-                            left: `${s.xPct}%`,
-                            top: `${s.yPct}%`,
-                            width: 'min(20px, 5cqmin)',
-                            height: 'min(20px, 5cqmin)',
-                            fontSize: 'min(10px, 2.5cqmin)',
-                          }
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedStepId((prev) =>
-                        prev === s.id ? null : s.id
-                      );
-                    }}
-                  >
-                    {idx + 1}
-                  </div>
-                ))}
-                {addingStep && (
-                  <div
-                    className="absolute bg-indigo-500/10 border-2 border-indigo-400 border-dashed rounded-lg flex items-center justify-center pointer-events-none"
-                    style={
-                      imgBounds
-                        ? {
-                            left: imgBounds.offsetLeft,
-                            top: imgBounds.offsetTop,
-                            width: imgBounds.width,
-                            height: imgBounds.height,
-                          }
-                        : { inset: 0 }
-                    }
-                  >
-                    <span
-                      className="text-indigo-200 font-bold bg-indigo-900/70 rounded-lg shadow-xl"
-                      style={{
-                        padding: 'min(4px, 1cqmin) min(12px, 3cqmin)',
-                        fontSize: 'clamp(12px, 3cqmin, 16px)',
+
+            {currentImageUrl ? (
+              <>
+                <div
+                  className="flex flex-wrap"
+                  style={{
+                    gap: 'min(6px, 1.5cqmin)',
+                    marginBottom: 'min(8px, 2cqmin)',
+                  }}
+                >
+                  {imageUrls.map((url, idx) => (
+                    <button
+                      key={url}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`border rounded px-2 py-1 text-xs ${idx === currentImageIndex ? 'border-indigo-400 text-indigo-300 bg-indigo-500/10' : 'border-white/20 text-slate-300'}`}
+                    >
+                      Image {idx + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <div
+                  ref={imageContainerRef}
+                  className={`relative rounded-lg overflow-hidden bg-slate-800 ${addingStep ? 'cursor-crosshair' : ''}`}
+                  onClick={handleImageClick}
+                  data-no-drag={addingStep ? 'true' : undefined}
+                  style={{ height: 'min(600px, 50cqh)' }}
+                >
+                  <img
+                    ref={imageRef}
+                    src={currentImageUrl}
+                    alt="Current step image"
+                    className="w-full h-full object-contain"
+                    draggable={false}
+                    onLoad={measureImage}
+                  />
+                  {currentImageSteps.map((s, idx) => (
+                    <div
+                      key={s.id}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 bg-indigo-600 text-white rounded-full flex items-center justify-center border-2 border-white cursor-pointer select-none shadow-md"
+                      style={
+                        imgBounds
+                          ? {
+                              left:
+                                imgBounds.offsetLeft +
+                                (s.xPct / 100) * imgBounds.width,
+                              top:
+                                imgBounds.offsetTop +
+                                (s.yPct / 100) * imgBounds.height,
+                              width: 'min(20px, 5cqmin)',
+                              height: 'min(20px, 5cqmin)',
+                              fontSize: 'min(10px, 2.5cqmin)',
+                            }
+                          : {
+                              left: `${s.xPct}%`,
+                              top: `${s.yPct}%`,
+                              width: 'min(20px, 5cqmin)',
+                              height: 'min(20px, 5cqmin)',
+                              fontSize: 'min(10px, 2.5cqmin)',
+                            }
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedStepId((prev) =>
+                          prev === s.id ? null : s.id
+                        );
                       }}
                     >
-                      Click to place hotspot
-                    </span>
-                  </div>
-                )}
-              </div>
+                      {idx + 1}
+                    </div>
+                  ))}
+                  {addingStep && (
+                    <div
+                      className="absolute bg-indigo-500/10 border-2 border-indigo-400 border-dashed rounded-lg flex items-center justify-center pointer-events-none"
+                      style={
+                        imgBounds
+                          ? {
+                              left: imgBounds.offsetLeft,
+                              top: imgBounds.offsetTop,
+                              width: imgBounds.width,
+                              height: imgBounds.height,
+                            }
+                          : { inset: 0 }
+                      }
+                    >
+                      <span
+                        className="text-indigo-200 font-bold bg-indigo-900/70 rounded-lg shadow-xl"
+                        style={{
+                          padding: 'min(4px, 1cqmin) min(12px, 3cqmin)',
+                          fontSize: 'clamp(12px, 3cqmin, 16px)',
+                        }}
+                      >
+                        Click to place hotspot
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
               <div
                 className="border-2 border-dashed border-white/20 rounded-xl text-center"
@@ -456,65 +554,114 @@ export const GuidedLearningEditor: React.FC<Props> = ({
                     </p>
                   </div>
                 ) : (
-                  <>
-                    <ImageIcon
-                      className="text-slate-500 mx-auto"
-                      style={{
-                        width: 'min(32px, 8cqmin)',
-                        height: 'min(32px, 8cqmin)',
-                        marginBottom: 'min(8px, 2cqmin)',
-                      }}
-                    />
-                    <div
-                      className="flex flex-col"
-                      style={{ gap: 'min(8px, 2cqmin)' }}
-                    >
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors"
-                        style={{
-                          gap: 'min(6px, 1.5cqmin)',
-                          padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-                          fontSize: 'clamp(11px, 3cqmin, 16px)',
-                        }}
-                      >
-                        <Upload
-                          style={{
-                            width: 'min(12px, 3cqmin)',
-                            height: 'min(12px, 3cqmin)',
-                          }}
-                        />
-                        Upload Image
-                      </button>
-                      <button
-                        onClick={handlePaste}
-                        className="flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors"
-                        style={{
-                          gap: 'min(6px, 1.5cqmin)',
-                          padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-                          fontSize: 'clamp(11px, 3cqmin, 16px)',
-                        }}
-                      >
-                        <Clipboard
-                          style={{
-                            width: 'min(12px, 3cqmin)',
-                            height: 'min(12px, 3cqmin)',
-                          }}
-                        />
-                        Paste from Clipboard
-                      </button>
-                    </div>
-                  </>
+                  <ImageIcon
+                    className="text-slate-500 mx-auto"
+                    style={{
+                      width: 'min(32px, 8cqmin)',
+                      height: 'min(32px, 8cqmin)',
+                      marginBottom: 'min(8px, 2cqmin)',
+                    }}
+                  />
                 )}
               </div>
             )}
+
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={handleFileSelect}
             />
+
+            <div
+              className="flex flex-wrap"
+              style={{ gap: 'min(8px, 2cqmin)', marginTop: 'min(8px, 2cqmin)' }}
+            >
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors"
+                style={{
+                  gap: 'min(6px, 1.5cqmin)',
+                  padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                  fontSize: 'clamp(11px, 3cqmin, 16px)',
+                }}
+              >
+                <Upload
+                  style={{
+                    width: 'min(12px, 3cqmin)',
+                    height: 'min(12px, 3cqmin)',
+                  }}
+                />
+                Add Image(s)
+              </button>
+              <button
+                onClick={handlePaste}
+                className="flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors"
+                style={{
+                  gap: 'min(6px, 1.5cqmin)',
+                  padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                  fontSize: 'clamp(11px, 3cqmin, 16px)',
+                }}
+              >
+                <Clipboard
+                  style={{
+                    width: 'min(12px, 3cqmin)',
+                    height: 'min(12px, 3cqmin)',
+                  }}
+                />
+                Paste Image
+              </button>
+              {imageUrls.length > 0 && (
+                <button
+                  onClick={() => handleDeleteImage(currentImageIndex)}
+                  className="flex items-center justify-center bg-red-700/80 hover:bg-red-600 text-white font-bold rounded-lg transition-colors"
+                  style={{
+                    gap: 'min(6px, 1.5cqmin)',
+                    padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                    fontSize: 'clamp(11px, 3cqmin, 16px)',
+                  }}
+                >
+                  <Trash2
+                    style={{
+                      width: 'min(12px, 3cqmin)',
+                      height: 'min(12px, 3cqmin)',
+                    }}
+                  />
+                  Delete Current Image
+                </button>
+              )}
+            </div>
+
+            {imageUrls.length > 1 && (
+              <div
+                className="flex items-center"
+                style={{
+                  gap: 'min(8px, 2cqmin)',
+                  marginTop: 'min(8px, 2cqmin)',
+                }}
+              >
+                <button
+                  onClick={() => handleMoveImage(currentImageIndex, -1)}
+                  disabled={currentImageIndex === 0}
+                  className="text-slate-300 disabled:opacity-40"
+                >
+                  <ChevronUp />
+                </button>
+                <button
+                  onClick={() => handleMoveImage(currentImageIndex, 1)}
+                  disabled={currentImageIndex === imageUrls.length - 1}
+                  className="text-slate-300 disabled:opacity-40"
+                >
+                  <ChevronDown />
+                </button>
+                <span className="text-slate-400 text-xs">
+                  Reorder current image
+                </span>
+              </div>
+            )}
+
             {imageError && (
               <p
                 className="text-red-400 font-medium"
@@ -526,27 +673,9 @@ export const GuidedLearningEditor: React.FC<Props> = ({
                 {imageError}
               </p>
             )}
-            {imageUrl && (
-              <div
-                className="flex"
-                style={{
-                  gap: 'min(8px, 2cqmin)',
-                  marginTop: 'min(8px, 2cqmin)',
-                }}
-              >
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-slate-400 hover:text-white font-medium transition-colors"
-                  style={{ fontSize: 'min(11px, 2.8cqmin)' }}
-                >
-                  Change image
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Steps */}
-          {imageUrl && (
+          {imageUrls.length > 0 && (
             <div>
               <div
                 className="flex items-center justify-between"
@@ -580,11 +709,13 @@ export const GuidedLearningEditor: React.FC<Props> = ({
                   {addingStep ? 'Click image…' : 'Add Step'}
                 </button>
               </div>
+
               <div className="space-y-2">
                 {steps.map((s) => (
                   <GuidedLearningStepEditor
                     key={s.id}
                     step={s}
+                    imageCount={imageUrls.length}
                     onChange={(updated) =>
                       setSteps((prev) =>
                         prev.map((x) => (x.id === updated.id ? updated : x))

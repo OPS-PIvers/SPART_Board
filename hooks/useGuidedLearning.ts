@@ -20,6 +20,7 @@ import { useAuth } from '@/context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
 import { GuidedLearningSet, GuidedLearningSetMetadata } from '@/types';
 import { GuidedLearningDriveService } from '@/utils/guidedLearningDriveService';
+import { normalizeGuidedLearningSet } from '@/components/widgets/GuidedLearning/utils/setMigration';
 
 const GL_COLLECTION = 'guided_learning';
 const BUILDING_GL_COLLECTION = 'building_guided_learning';
@@ -101,8 +102,8 @@ export const useGuidedLearning = (
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const list: GuidedLearningSet[] = snap.docs.map(
-          (d) => d.data() as GuidedLearningSet
+        const list: GuidedLearningSet[] = snap.docs.map((d) =>
+          normalizeGuidedLearningSet(d.data() as GuidedLearningSet)
         );
         setBuildingSets(list);
         setBuildingLoading(false);
@@ -132,7 +133,10 @@ export const useGuidedLearning = (
     ): Promise<GuidedLearningSetMetadata> => {
       if (!userId) throw new Error('Not authenticated');
       const drive = getDriveService();
-      const updatedSet: GuidedLearningSet = { ...set, updatedAt: Date.now() };
+      const updatedSet: GuidedLearningSet = normalizeGuidedLearningSet({
+        ...set,
+        updatedAt: Date.now(),
+      });
 
       const driveFileId = await drive.saveSet(updatedSet, existingDriveFileId);
 
@@ -142,7 +146,7 @@ export const useGuidedLearning = (
         description: set.description,
         stepCount: set.steps.length,
         mode: set.mode,
-        imageUrl: set.imageUrl,
+        imageUrl: updatedSet.imageUrls[0] ?? '',
         driveFileId,
         createdAt: set.createdAt,
         updatedAt: updatedSet.updatedAt,
@@ -158,7 +162,8 @@ export const useGuidedLearning = (
   const loadSetData = useCallback(
     async (driveFileId: string): Promise<GuidedLearningSet> => {
       const drive = getDriveService();
-      return drive.loadSet(driveFileId);
+      const loadedSet = await drive.loadSet(driveFileId);
+      return normalizeGuidedLearningSet(loadedSet);
     },
     [getDriveService]
   );
@@ -182,7 +187,7 @@ export const useGuidedLearning = (
     async (set: GuidedLearningSet): Promise<void> => {
       if (!isAdmin) throw new Error('Admin access required');
       const updatedSet: GuidedLearningSet = {
-        ...set,
+        ...normalizeGuidedLearningSet(set),
         isBuilding: true,
         updatedAt: Date.now(),
       };

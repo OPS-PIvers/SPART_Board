@@ -80,8 +80,11 @@ function toPublicStep(step: GuidedLearningStep): GuidedLearningPublicStep {
     id: step.id,
     xPct: step.xPct,
     yPct: step.yPct,
+    imageIndex: step.imageIndex,
     label: step.label,
     interactionType: step.interactionType,
+    hideStepNumber: step.hideStepNumber,
+    showOverlay: step.showOverlay,
     text: step.text,
     audioUrl: step.audioUrl,
     videoUrl: step.videoUrl,
@@ -154,7 +157,7 @@ export const useGuidedLearningSessionTeacher = (
         id: sessionId,
         title: set.title,
         mode: set.mode,
-        imageUrl: set.imageUrl,
+        imageUrls: set.imageUrls,
         publicSteps,
         teacherUid,
         createdAt: Date.now(),
@@ -273,7 +276,24 @@ export const useGuidedLearningSessionStudent = (
         if (!snap.exists()) {
           setError('This guided learning session was not found.');
         } else {
-          setSession(snap.data() as GuidedLearningSession);
+          const raw = snap.data() as GuidedLearningSession & {
+            imageUrl?: string;
+          };
+          const imageUrls =
+            raw.imageUrls && raw.imageUrls.length > 0
+              ? raw.imageUrls
+              : raw.imageUrl
+                ? [raw.imageUrl]
+                : [];
+          setSession({
+            ...raw,
+            imageUrls,
+            publicSteps: raw.publicSteps.map((step) => ({
+              ...step,
+              imageIndex: step.imageIndex ?? 0,
+              showOverlay: step.showOverlay ?? 'none',
+            })),
+          });
         }
       } catch (err) {
         console.error('[useGuidedLearningSession] Load error:', err);

@@ -64,7 +64,7 @@ export const GuidedLearningAIGenerator: React.FC<Props> = ({
       const set: GuidedLearningSet = {
         id: crypto.randomUUID(),
         title: result.suggestedTitle,
-        imageUrl,
+        imageUrls: [imageUrl],
         steps: result.steps,
         mode: result.suggestedMode,
         createdAt: Date.now(),

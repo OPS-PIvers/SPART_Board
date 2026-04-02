@@ -504,7 +504,7 @@ export const GuidedLearningLibrary: React.FC<GuidedLearningLibraryProps> = ({
                 description={set.description}
                 stepCount={set.steps.length}
                 mode={set.mode}
-                imageUrl={set.imageUrl}
+                imageUrl={set.imageUrls[0]}
                 isBuilding
                 onPlay={() => onPlay(set.id, undefined, set)}
                 onEdit={() => onEdit(set.id, undefined, set)}
