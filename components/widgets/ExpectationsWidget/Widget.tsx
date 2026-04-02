@@ -313,8 +313,6 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
     (i) => i.id === interactionMode
   );
 
-  const isElementary = config.layout === 'elementary';
-
   const showVolume = buildingConfig?.showVolume !== false;
   const showGroup = buildingConfig?.showGroup !== false;
   const showInteraction = buildingConfig?.showInteraction !== false;
@@ -338,9 +336,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className={`h-full w-full bg-transparent overflow-hidden animate-in fade-in duration-200 ${
-            isElementary ? 'grid grid-cols-2' : 'flex flex-col'
-          }`}
+          className="h-full w-full bg-transparent overflow-hidden animate-in fade-in duration-200 flex flex-col"
           style={{
             padding: 'min(16px, 3cqmin)',
             gap: 'min(16px, 3cqmin)',
@@ -353,7 +349,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 selectedVolume
                   ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
                   : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-              } ${isElementary && showVolume && (!showGroup || !showInteraction) ? 'col-span-2' : isElementary && showVolume ? 'col-span-2' : ''}`}
+              }`}
               style={{
                 gap: 'min(20px, 4cqmin)',
                 padding: 'min(20px, 4cqmin)',
@@ -399,7 +395,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 selectedGroup
                   ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
                   : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-              } ${isElementary && !showVolume ? 'col-span-2' : ''}`}
+              }`}
               style={{
                 gap: 'min(20px, 4cqmin)',
                 padding: 'min(20px, 4cqmin)',
@@ -445,7 +441,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 selectedInteraction
                   ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
                   : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-              } ${isElementary && !showVolume && !showGroup ? 'col-span-2' : isElementary && showVolume && !showGroup ? 'col-span-2' : ''}`}
+              }`}
               style={{
                 gap: 'min(20px, 4cqmin)',
                 padding: 'min(20px, 4cqmin)',

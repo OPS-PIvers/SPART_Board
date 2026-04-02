@@ -82,7 +82,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as DashboardContextValue);
+    } as unknown as DashboardContextValue);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -97,7 +97,7 @@ describe('RecessGearWidget', () => {
     vi.mocked(useDashboard).mockReturnValue({
       activeDashboard: { widgets: [] },
       updateWidget: vi.fn(),
-    } as DashboardContextValue);
+    } as unknown as DashboardContextValue);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -121,7 +121,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as DashboardContextValue);
+    } as unknown as DashboardContextValue);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -150,7 +150,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as DashboardContextValue);
+    } as unknown as DashboardContextValue);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -178,7 +178,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as DashboardContextValue);
+    } as unknown as DashboardContextValue);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -211,7 +211,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as DashboardContextValue);
+    } as unknown as DashboardContextValue);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -234,7 +234,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as DashboardContextValue);
+    } as unknown as DashboardContextValue);
 
     render(<RecessGearSettings widget={baseWidget} />);
 

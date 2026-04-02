@@ -5,6 +5,7 @@ import {
   DrawingConfig,
   WidgetConfig,
   LiveStudent,
+  LiveSession,
   GlobalStyle,
   WidgetType,
   DashboardSettings,
@@ -57,7 +58,7 @@ interface WidgetRendererProps {
     widgetType: WidgetType,
     config?: WidgetConfig,
     background?: string
-  ) => Promise<void>;
+  ) => Promise<LiveSession>;
   endSession: () => Promise<void>;
   removeStudent: (studentId: string) => Promise<void>;
   toggleFreezeStudent: (

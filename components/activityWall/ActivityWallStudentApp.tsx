@@ -4,7 +4,7 @@ import { ActivityWallIdentificationMode, ActivityWallMode } from '@/types';
 import { db, auth, storage } from '@/config/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { doc, collection, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes } from 'firebase/storage';
 
 type ActivityPayload = {
   id: string;
@@ -78,6 +78,11 @@ const parsePayload = (): ActivityPayload | null => {
   }
 };
 
+const getSafePreviewUrl = (value: string | null): string | null => {
+  if (!value) return null;
+  return value.startsWith('blob:') ? value : null;
+};
+
 const buildParticipantLabel = (
   identificationMode: ActivityWallIdentificationMode,
   name: string,
@@ -115,6 +120,8 @@ export const ActivityWallStudentApp: React.FC = () => {
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [selectedFile]);
+
+  const safePreviewUrl = getSafePreviewUrl(previewUrl);
 
   if (!payload || !activityIdFromPath || payload.id !== activityIdFromPath) {
     return (
@@ -180,8 +187,8 @@ export const ActivityWallStudentApp: React.FC = () => {
       if (payload.mode === 'photo' && selectedFile) {
         storagePath = `activity_wall_photos/${sessionId}/${submissionId}`;
         const storageRef = ref(storage, storagePath);
-        const snapshot = await uploadBytes(storageRef, selectedFile);
-        content = await getDownloadURL(snapshot.ref);
+        await uploadBytes(storageRef, selectedFile);
+        content = storagePath;
       } else {
         content = response.trim();
       }
@@ -206,7 +213,8 @@ export const ActivityWallStudentApp: React.FC = () => {
       });
 
       setSubmitted(true);
-    } catch {
+    } catch (error) {
+      console.error('[ActivityWallStudentApp] Submission failed:', error);
       setSubmitError(
         'Could not submit your response. Please check your connection and try again.'
       );
@@ -265,9 +273,9 @@ export const ActivityWallStudentApp: React.FC = () => {
                           : 'border-slate-300 hover:border-brand-blue-primary'
                       }`}
                     >
-                      {previewUrl ? (
+                      {safePreviewUrl ? (
                         <img
-                          src={previewUrl}
+                          src={safePreviewUrl}
                           alt="Preview"
                           className="max-h-48 w-full object-contain rounded-lg"
                         />

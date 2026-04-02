@@ -313,6 +313,7 @@ export interface DrawingConfig {
 
 export interface QRConfig {
   url?: string;
+  showUrl?: boolean;
   syncWithTextWidget?: boolean;
   qrColor?: string;
   qrBgColor?: string;
@@ -364,6 +365,7 @@ export interface ActivityWallSubmission {
   participantLabel?: string;
   storagePath?: string;
   archiveStatus?: ActivityWallArchiveStatus;
+  archiveStartedAt?: number;
   driveFileId?: string;
   archiveError?: string;
   archivedAt?: number;
@@ -1810,8 +1812,14 @@ export type GuidedLearningInteractionType =
   | 'audio'
   | 'video'
   | 'pan-zoom'
+  | 'pan-zoom-spotlight'
   | 'spotlight'
   | 'question';
+export type GuidedLearningOverlayType =
+  | 'none'
+  | 'popover'
+  | 'tooltip'
+  | 'banner';
 export type GuidedLearningQuestionType =
   | 'multiple-choice'
   | 'matching'
@@ -1835,8 +1843,14 @@ export interface GuidedLearningStep {
   /** % position on image (0–100) */
   xPct: number;
   yPct: number;
+  /** Which image in set.imageUrls this step belongs to */
+  imageIndex: number;
   label?: string;
   interactionType: GuidedLearningInteractionType;
+  /** Optional hotspot style customization */
+  hideStepNumber?: boolean;
+  /** Overlay style for pan-zoom/spotlight interactions */
+  showOverlay?: GuidedLearningOverlayType;
   /** Content for text-popover and tooltip */
   text?: string;
   /** Firebase Storage URL for audio */
@@ -1859,9 +1873,9 @@ export interface GuidedLearningSet {
   id: string;
   title: string;
   description?: string;
-  /** Firebase Storage URL for the base image */
-  imageUrl: string;
-  imagePath?: string;
+  /** Firebase Storage URLs for one or more activity images */
+  imageUrls: string[];
+  imagePaths?: string[];
   steps: GuidedLearningStep[];
   mode: GuidedLearningMode;
   createdAt: number;
@@ -1893,8 +1907,11 @@ export interface GuidedLearningPublicStep {
   id: string;
   xPct: number;
   yPct: number;
+  imageIndex: number;
   label?: string;
   interactionType: GuidedLearningInteractionType;
+  hideStepNumber?: boolean;
+  showOverlay?: GuidedLearningOverlayType;
   text?: string;
   audioUrl?: string;
   videoUrl?: string;
@@ -1920,7 +1937,7 @@ export interface GuidedLearningSession {
   id: string;
   title: string;
   mode: GuidedLearningMode;
-  imageUrl: string;
+  imageUrls: string[];
   /** Student-safe steps (no answer keys) */
   publicSteps: GuidedLearningPublicStep[];
   teacherUid: string;
@@ -2274,6 +2291,10 @@ export interface Dashboard {
   settings?: DashboardSettings;
   libraryOrder?: (WidgetType | InternalToolType)[];
   updatedAt?: number;
+  /** Viewport width (px) when the dashboard was last saved. Used for proportional layout scaling on load. */
+  viewportWidth?: number;
+  /** Viewport height (px) when the dashboard was last saved. Used for proportional layout scaling on load. */
+  viewportHeight?: number;
 }
 
 export interface Toast {

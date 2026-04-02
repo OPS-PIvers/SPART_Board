@@ -162,7 +162,7 @@ const StudentExperience: React.FC<{ anonymousUid: string }> = ({
   const setForPlayer = {
     id: session.id,
     title: session.title,
-    imageUrl: session.imageUrl,
+    imageUrls: session.imageUrls,
     steps: session.publicSteps,
     mode: session.mode,
     createdAt: session.createdAt,
