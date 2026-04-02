@@ -369,6 +369,17 @@ export interface ActivityWallActivity {
   startedAt: number | null;
 }
 
+export interface ActivityWallBuildingConfig {
+  defaultMode?: ActivityWallMode;
+  defaultIdentificationMode?: ActivityWallIdentificationMode;
+  defaultModerationEnabled?: boolean;
+}
+
+export interface ActivityWallGlobalConfig {
+  buildingDefaults?: Record<string, ActivityWallBuildingConfig>;
+  dockDefaults?: Record<string, boolean>;
+}
+
 export interface ActivityWallConfig {
   activities?: ActivityWallActivity[];
   activeActivityId?: string | null;
