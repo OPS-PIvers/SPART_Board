@@ -22,6 +22,7 @@ import {
   Trash2,
   Highlighter,
   LayoutTemplate,
+  LayoutGrid,
   Lock,
 } from 'lucide-react';
 import {
@@ -46,6 +47,10 @@ import { useDialog } from '@/context/useDialog';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
+
+// Custom size picker grid dimensions
+const GRID_COLS = 8;
+const GRID_ROWS = 6;
 
 // Widgets that require real-time position updates for inter-widget functionality
 const POSITION_AWARE_WIDGETS: WidgetType[] = [
@@ -155,6 +160,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const snapPreviewZoneRef = useRef<SnapZone | 'maximize' | 'minimize' | null>(
     null
   );
+  const [customGrid, setCustomGrid] = useState<{
+    start: { col: number; row: number } | null;
+    end: { col: number; row: number } | null;
+    selecting: boolean;
+  }>({ start: null, end: null, selecting: false });
+  const customGridRef = useRef(customGrid);
+  customGridRef.current = customGrid;
 
   // Pre-cached zones for edge detection optimization
   const splitLayout = useMemo(
@@ -334,6 +346,50 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       handleCloseTools();
     },
     [isLocked, widget.id, updateWidget, handleCloseTools]
+  );
+
+  const getCellFromPointer = (
+    e: React.PointerEvent,
+    el: HTMLElement
+  ): { col: number; row: number } => {
+    const rect = el.getBoundingClientRect();
+    const col = Math.max(
+      0,
+      Math.min(
+        GRID_COLS - 1,
+        Math.floor(((e.clientX - rect.left) / rect.width) * GRID_COLS)
+      )
+    );
+    const row = Math.max(
+      0,
+      Math.min(
+        GRID_ROWS - 1,
+        Math.floor(((e.clientY - rect.top) / rect.height) * GRID_ROWS)
+      )
+    );
+    return { col, row };
+  };
+
+  const handleCustomGridApply = useCallback(
+    (
+      start: { col: number; row: number },
+      end: { col: number; row: number }
+    ) => {
+      const c0 = Math.min(start.col, end.col);
+      const c1 = Math.max(start.col, end.col);
+      const r0 = Math.min(start.row, end.row);
+      const r1 = Math.max(start.row, end.row);
+      const zone: SnapZone = {
+        id: 'custom',
+        x: c0 / GRID_COLS,
+        y: r0 / GRID_ROWS,
+        w: (c1 - c0 + 1) / GRID_COLS,
+        h: (r1 - r0 + 1) / GRID_ROWS,
+      };
+      handleSnapToZone(zone);
+      setCustomGrid({ start: null, end: null, selecting: false });
+    },
+    [handleSnapToZone]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1559,7 +1615,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     createPortal(
                       <div
                         ref={snapMenuRef}
-                        className="fixed z-modal p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-48 animate-in slide-in-from-top-2 fade-in duration-200"
+                        className="fixed z-modal p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-56 animate-in slide-in-from-top-2 fade-in duration-200"
                         style={{
                           // Position below the button, centered horizontally
                           top: `${Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-y') ?? 0) + 40}px`,
@@ -1576,13 +1632,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-1.5">
                           {SNAP_LAYOUTS.map((layout) => (
                             <div
                               key={layout.id}
                               className="group relative p-1 rounded-lg hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
                             >
-                              <div className="relative w-full h-8 bg-slate-50 rounded-md overflow-hidden">
+                              <div className="relative w-full h-7 bg-slate-50 rounded-md overflow-hidden">
                                 {layout.zones.map((zone) => (
                                   <button
                                     key={zone.id}
@@ -1605,6 +1661,104 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                             </div>
                           ))}
                         </div>
+
+                        <div className="my-2 border-t border-slate-200" />
+
+                        <div className="flex items-center gap-2 mb-1.5 px-1">
+                          <LayoutGrid className="w-3.5 h-3.5 text-indigo-500" />
+                          <span className="text-xxs font-black text-slate-500 uppercase tracking-widest">
+                            Custom Size
+                          </span>
+                          {customGrid.start && customGrid.end && (
+                            <span className="ml-auto text-xxs font-bold text-indigo-600">
+                              {Math.abs(
+                                customGrid.end.col - customGrid.start.col
+                              ) + 1}{' '}
+                              ×{' '}
+                              {Math.abs(
+                                customGrid.end.row - customGrid.start.row
+                              ) + 1}
+                            </span>
+                          )}
+                        </div>
+
+                        <div
+                          className="rounded-lg overflow-hidden select-none touch-none cursor-crosshair"
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
+                            gap: '2px',
+                            padding: '2px',
+                            background: '#f1f5f9',
+                          }}
+                          onPointerDown={(e) => {
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                            const cell = getCellFromPointer(e, e.currentTarget);
+                            setCustomGrid({
+                              start: cell,
+                              end: cell,
+                              selecting: true,
+                            });
+                          }}
+                          onPointerMove={(e) => {
+                            if (!customGridRef.current.selecting) return;
+                            const cell = getCellFromPointer(e, e.currentTarget);
+                            setCustomGrid((prev) => ({ ...prev, end: cell }));
+                          }}
+                          onPointerUp={() => {
+                            const g = customGridRef.current;
+                            if (g.selecting && g.start && g.end) {
+                              handleCustomGridApply(g.start, g.end);
+                            } else {
+                              setCustomGrid({
+                                start: null,
+                                end: null,
+                                selecting: false,
+                              });
+                            }
+                          }}
+                        >
+                          {Array.from(
+                            { length: GRID_COLS * GRID_ROWS },
+                            (_, i) => {
+                              const col = i % GRID_COLS;
+                              const row = Math.floor(i / GRID_COLS);
+                              const selected =
+                                customGrid.start !== null &&
+                                customGrid.end !== null &&
+                                col >=
+                                  Math.min(
+                                    customGrid.start.col,
+                                    customGrid.end.col
+                                  ) &&
+                                col <=
+                                  Math.max(
+                                    customGrid.start.col,
+                                    customGrid.end.col
+                                  ) &&
+                                row >=
+                                  Math.min(
+                                    customGrid.start.row,
+                                    customGrid.end.row
+                                  ) &&
+                                row <=
+                                  Math.max(
+                                    customGrid.start.row,
+                                    customGrid.end.row
+                                  );
+                              return (
+                                <div
+                                  key={i}
+                                  className={`rounded-[2px] transition-colors ${selected ? 'bg-indigo-400' : 'bg-slate-300'}`}
+                                  style={{ height: '14px' }}
+                                />
+                              );
+                            }
+                          )}
+                        </div>
+                        <p className="text-xxs text-slate-400 text-center mt-1">
+                          Drag to set custom size
+                        </p>
                       </div>,
                       document.body
                     )}
