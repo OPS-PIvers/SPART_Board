@@ -64,14 +64,14 @@ export const GlobalAppRow: React.FC<GlobalAppRowProps> = ({
             <div className="flex items-center gap-1">
               <span
                 className="bg-violet-100 text-violet-700 font-mono font-black px-1.5 py-0.5 rounded text-xxs tracking-wider border border-violet-200 animate-in fade-in"
-                title="Live Session Code"
+                title="Assignment Code"
               >
                 {sessionCode}
               </span>
               <button
                 onClick={handleCopy}
                 className="p-1 text-slate-400 hover:text-violet-600 transition-colors"
-                title="Copy Student Link"
+                title="Copy Assignment Link"
               >
                 {copied ? (
                   <Check className="w-3 h-3 text-emerald-500" />
@@ -101,7 +101,7 @@ export const GlobalAppRow: React.FC<GlobalAppRowProps> = ({
             padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
             fontSize: 'min(10px, 2.5cqmin)',
           }}
-          title={isLive ? 'End Live Session' : 'Go Live for Students'}
+          title={isLive ? 'End Assignment' : 'Assign (copy student link)'}
         >
           <Cast
             style={{
@@ -110,7 +110,7 @@ export const GlobalAppRow: React.FC<GlobalAppRowProps> = ({
             }}
           />
           <span className="hidden sm:inline">
-            {isLive ? 'LIVE' : 'GO LIVE'}
+            {isLive ? 'ASSIGNED' : 'ASSIGN'}
           </span>
         </button>
 

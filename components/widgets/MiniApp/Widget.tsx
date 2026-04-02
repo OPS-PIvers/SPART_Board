@@ -185,11 +185,14 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
           app ? { ...config, activeApp: app } : widget.config,
           activeDashboard?.background
         );
-        addToast('App is now live for students!', 'success');
+        addToast(
+          'Assignment link copied and app assigned to students!',
+          'success'
+        );
       }
     } catch (error) {
       console.error('Failed to toggle live session:', error);
-      addToast('Failed to go live.', 'error');
+      addToast('Failed to assign app.', 'error');
     }
   };
 
@@ -467,7 +470,9 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                       padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
                       fontSize: 'min(10px, 2.5cqmin)',
                     }}
-                    title={isLive ? 'End Live Session' : 'Go Live for Students'}
+                    title={
+                      isLive ? 'End Assignment' : 'Assign (copy student link)'
+                    }
                   >
                     <Cast
                       style={{
@@ -476,7 +481,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                       }}
                     />
                     <span className="hidden sm:inline">
-                      {isLive ? 'Live' : 'Go Live'}
+                      {isLive ? 'Assigned' : 'Assign'}
                     </span>
                   </button>
 
@@ -498,7 +503,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                       <button
                         onClick={() => handleCopyLink(session.code)}
                         className="p-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg transition-all border border-white/10 shadow-sm"
-                        title="Copy Student Link"
+                        title="Copy Assignment Link"
                       >
                         {copied ? (
                           <Check className="w-3 h-3 text-emerald-400" />
