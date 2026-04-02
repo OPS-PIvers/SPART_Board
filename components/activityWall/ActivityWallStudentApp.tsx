@@ -4,7 +4,7 @@ import { ActivityWallIdentificationMode, ActivityWallMode } from '@/types';
 import { db, auth, storage } from '@/config/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { doc, collection, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes } from 'firebase/storage';
 
 type ActivityPayload = {
   id: string;
@@ -180,8 +180,8 @@ export const ActivityWallStudentApp: React.FC = () => {
       if (payload.mode === 'photo' && selectedFile) {
         storagePath = `activity_wall_photos/${sessionId}/${submissionId}`;
         const storageRef = ref(storage, storagePath);
-        const snapshot = await uploadBytes(storageRef, selectedFile);
-        content = await getDownloadURL(snapshot.ref);
+        await uploadBytes(storageRef, selectedFile);
+        content = '';
       } else {
         content = response.trim();
       }

@@ -26,7 +26,7 @@ import {
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
-import { db, functions } from '@/config/firebase';
+import { db, functions, storage } from '@/config/firebase';
 import {
   collection,
   deleteField,
@@ -36,6 +36,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 const encodeActivityData = (
@@ -254,6 +255,9 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
     null
   );
   const [showLiveView, setShowLiveView] = useState(false);
+  const [firebasePhotoUrls, setFirebasePhotoUrls] = useState<
+    Record<string, string>
+  >({});
 
   const [firestoreState, setFirestoreState] = useState<{
     sessionId: string | null;
@@ -330,6 +334,74 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
         : [],
     [activeSessionId, firestoreState]
   );
+
+  useEffect(() => {
+    if (!activeSessionId) {
+      setFirebasePhotoUrls({});
+      return;
+    }
+
+    const activeStoragePaths = new Set(
+      firestoreRaw.flatMap((submission) =>
+        submission.storagePath ? [submission.storagePath] : []
+      )
+    );
+
+    setFirebasePhotoUrls((previous) => {
+      const nextEntries = Object.entries(previous).filter(([storagePath]) =>
+        activeStoragePaths.has(storagePath)
+      );
+      if (nextEntries.length === Object.keys(previous).length) {
+        return previous;
+      }
+      return Object.fromEntries(nextEntries);
+    });
+
+    const pendingStoragePaths = firestoreRaw
+      .flatMap((submission) => {
+        if (!submission.storagePath) return [];
+        if (isSafeHttpUrl(submission.content)) return [];
+        if (firebasePhotoUrls[submission.storagePath]) return [];
+        return [submission.storagePath];
+      })
+      .filter(
+        (storagePath, index, values) => values.indexOf(storagePath) === index
+      );
+
+    if (pendingStoragePaths.length === 0) return;
+
+    let cancelled = false;
+
+    void Promise.all(
+      pendingStoragePaths.map(async (storagePath) => {
+        try {
+          const url = await getDownloadURL(storageRef(storage, storagePath));
+          return [storagePath, url] as const;
+        } catch (error) {
+          console.error(
+            '[ActivityWall] Failed to resolve Firebase photo preview URL:',
+            error
+          );
+          return null;
+        }
+      })
+    ).then((results) => {
+      if (cancelled) return;
+
+      setFirebasePhotoUrls((previous) => {
+        const resolvedEntries = results.filter((entry) => entry !== null);
+        if (resolvedEntries.length === 0) return previous;
+        return {
+          ...previous,
+          ...Object.fromEntries(resolvedEntries),
+        };
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSessionId, firebasePhotoUrls, firestoreRaw]);
 
   const participantUrl = useMemo(() => {
     if (!activeActivity || !user) return '';
@@ -1243,21 +1315,27 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 {visibleSubmissions.map((submission) => {
                   const archiveStatus = getArchiveStatus(submission);
+                  const displayUrl = isSafeHttpUrl(submission.content)
+                    ? submission.content
+                    : submission.storagePath
+                      ? firebasePhotoUrls[submission.storagePath]
+                      : undefined;
+
                   return (
                     <div
                       key={submission.id}
                       className="rounded-lg bg-white border border-slate-200 overflow-hidden"
                     >
-                      {isSafeHttpUrl(submission.content) ? (
+                      {displayUrl ? (
                         <a
-                          href={submission.content}
+                          href={displayUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="block"
                         >
                           <div className="relative">
                             <img
-                              src={submission.content}
+                              src={displayUrl}
                               alt={submission.participantLabel ?? 'Photo'}
                               className="block w-full h-auto"
                             />
@@ -1317,7 +1395,7 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
                             fontSize: 'min(9px, 3cqmin)',
                           }}
                         >
-                          Invalid photo
+                          Photo still syncing
                         </div>
                       )}
                     </div>

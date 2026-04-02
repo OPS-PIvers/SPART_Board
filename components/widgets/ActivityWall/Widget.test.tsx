@@ -23,6 +23,8 @@ const {
   mockRefreshGoogleToken,
   mockArchivePhotoCallable,
   mockHttpsCallable,
+  mockGetDownloadURL,
+  mockStorageRef,
 } = vi.hoisted(() => ({
   mockAddWidget: vi.fn(),
   mockAddToast: vi.fn(),
@@ -37,6 +39,8 @@ const {
   mockRefreshGoogleToken: vi.fn(),
   mockArchivePhotoCallable: vi.fn(),
   mockHttpsCallable: vi.fn(),
+  mockGetDownloadURL: vi.fn(),
+  mockStorageRef: vi.fn(),
 }));
 
 let snapshotDocs: Record<string, unknown>[] = [];
@@ -64,10 +68,16 @@ vi.mock('@/hooks/useGoogleDrive', () => ({
 vi.mock('@/config/firebase', () => ({
   db: {},
   functions: {},
+  storage: {},
 }));
 
 vi.mock('firebase/functions', () => ({
   httpsCallable: mockHttpsCallable,
+}));
+
+vi.mock('firebase/storage', () => ({
+  getDownloadURL: mockGetDownloadURL,
+  ref: mockStorageRef,
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -117,6 +127,12 @@ describe('ActivityWallWidget', () => {
     mockSetDoc.mockResolvedValue(undefined);
     mockUpdateDoc.mockResolvedValue(undefined);
     mockRefreshGoogleToken.mockResolvedValue('refreshed-google-access-token');
+    mockStorageRef.mockImplementation((_storage, path: string) => ({
+      fullPath: path,
+    }));
+    mockGetDownloadURL.mockResolvedValue(
+      'https://firebase.example/teacher-preview.jpg'
+    );
     mockArchivePhotoCallable.mockResolvedValue({
       data: {
         archiveStatus: 'archived',
@@ -221,6 +237,56 @@ describe('ActivityWallWidget', () => {
 
     expect(image).not.toHaveStyle({ aspectRatio: '4/3' });
     expect(image).toHaveClass('block', 'w-full', 'h-auto');
+  });
+
+  it('resolves Firebase preview URLs for approved photo submissions that only store a storage path', async () => {
+    snapshotDocs = [
+      {
+        id: 'submission-photo-firebase-preview',
+        content: '',
+        submittedAt: 790,
+        status: 'approved',
+        participantLabel: 'Firebase Photo',
+        storagePath:
+          'activity_wall_photos/teacher-1_activity-photo-preview/submission-photo-firebase-preview',
+        archiveStatus: 'firebase',
+      },
+    ];
+
+    const photoWidget: WidgetData = {
+      ...baseWidget,
+      config: {
+        activeActivityId: 'activity-photo-preview',
+        activities: [
+          {
+            id: 'activity-photo-preview',
+            title: 'Snapshot',
+            prompt: 'Share a photo',
+            mode: 'photo',
+            moderationEnabled: true,
+            identificationMode: 'anonymous',
+            submissions: [],
+            startedAt: Date.now(),
+          },
+        ],
+      },
+    } as WidgetData;
+
+    render(<ActivityWallWidget widget={photoWidget} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    await waitFor(() => {
+      expect(mockStorageRef).toHaveBeenCalledWith(
+        {},
+        'activity_wall_photos/teacher-1_activity-photo-preview/submission-photo-firebase-preview'
+      );
+      expect(mockGetDownloadURL).toHaveBeenCalled();
+    });
+
+    expect(
+      await screen.findByRole('img', { name: 'Firebase Photo' })
+    ).toHaveAttribute('src', 'https://firebase.example/teacher-preview.jpg');
   });
 
   it('archives photos through the callable backend flow instead of browser storage reads', async () => {

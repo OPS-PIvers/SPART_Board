@@ -8,7 +8,6 @@ const {
   mockSetDoc,
   mockSignInAnonymously,
   mockUploadBytes,
-  mockGetDownloadURL,
   mockCollection,
   mockDoc,
   mockStorageRef,
@@ -19,7 +18,6 @@ const {
   mockSetDoc: vi.fn(),
   mockSignInAnonymously: vi.fn(),
   mockUploadBytes: vi.fn(),
-  mockGetDownloadURL: vi.fn(),
   mockCollection: vi.fn(),
   mockDoc: vi.fn(),
   mockStorageRef: vi.fn(),
@@ -47,7 +45,6 @@ vi.mock('firebase/firestore', () => ({
 vi.mock('firebase/storage', () => ({
   ref: mockStorageRef,
   uploadBytes: mockUploadBytes,
-  getDownloadURL: mockGetDownloadURL,
 }));
 
 describe('ActivityWallStudentApp', () => {
@@ -108,7 +105,6 @@ describe('ActivityWallStudentApp', () => {
           'activity_wall_photos/teacher-1_activity-1/11111111-1111-1111-1111-111111111111',
       },
     });
-    mockGetDownloadURL.mockResolvedValue('https://firebase.example/photo.jpg');
     mockSignInAnonymously.mockResolvedValue({ user: { uid: 'anon-user' } });
     mockSetDoc.mockResolvedValue(undefined);
   });
@@ -200,7 +196,7 @@ describe('ActivityWallStudentApp', () => {
       expect(mockSetDoc).toHaveBeenCalledWith(
         'submission-doc',
         expect.objectContaining({
-          content: 'https://firebase.example/photo.jpg',
+          content: '',
           status: 'pending',
           storagePath:
             'activity_wall_photos/teacher-1_activity-1/11111111-1111-1111-1111-111111111111',
