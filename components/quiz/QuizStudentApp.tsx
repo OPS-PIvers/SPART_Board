@@ -363,22 +363,34 @@ const ActiveQuiz: React.FC<{
       )
     : sessionAnswered;
 
+  const initialTimeLimit = currentQuestion?.timeLimit ?? 0;
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fibAnswer, setFibAnswer] = useState('');
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-  // Reset state on new question
-  useEffect(() => {
+  const [submitted, setSubmitted] = useState(alreadyAnswered);
+  const [timeLeft, setTimeLeft] = useState<number | null>(
+    initialTimeLimit > 0 && !alreadyAnswered ? initialTimeLimit : null
+  );
+  const [prevQuestionId, setPrevQuestionId] = useState<string | undefined>(
+    currentQuestion?.id
+  );
+  const [prevAlreadyAnswered, setPrevAlreadyAnswered] =
+    useState<boolean>(alreadyAnswered);
+
+  // Derived state: reset local UI state on new question or when global alreadyAnswered state arrives
+  if (
+    currentQuestion?.id !== prevQuestionId ||
+    alreadyAnswered !== prevAlreadyAnswered
+  ) {
+    setPrevQuestionId(currentQuestion?.id);
+    setPrevAlreadyAnswered(alreadyAnswered);
+    setSelectedAnswer(null);
+    setSubmitted(alreadyAnswered);
+    setFibAnswer('');
     const tl = currentQuestion?.timeLimit ?? 0;
-    setTimeout(() => {
-      setSelectedAnswer(null);
-      setSubmitted(alreadyAnswered);
-      setFibAnswer('');
-      setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
-    }, 0);
-  }, [currentQuestion?.id, currentQuestion?.timeLimit, alreadyAnswered]);
+    setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
+  }
 
   // Countdown
   useEffect(() => {
