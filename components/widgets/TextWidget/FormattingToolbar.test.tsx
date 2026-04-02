@@ -15,12 +15,18 @@ describe('FormattingToolbar', () => {
   const mockEditorRef = {
     current: document.createElement('div'),
   } as React.RefObject<HTMLDivElement>;
-  let execCommandMock: ReturnType<typeof vi.fn>;
+  let execCommandMock: ReturnType<
+    typeof vi.fn<
+      (commandId: string, showUI?: boolean, value?: string) => boolean
+    >
+  >;
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock document.execCommand
-    execCommandMock = vi.fn();
+    execCommandMock = vi.fn(
+      (_commandId: string, _showUI?: boolean, _value?: string) => true
+    );
     document.execCommand = execCommandMock;
   });
 

@@ -26,7 +26,11 @@ vi.mock('@/context/useDialog', () => ({
 }));
 
 describe('TextWidget', () => {
-  let execCommandMock: ReturnType<typeof vi.fn>;
+  let execCommandMock: ReturnType<
+    typeof vi.fn<
+      (commandId: string, showUI?: boolean, value?: string) => boolean
+    >
+  >;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -34,7 +38,9 @@ describe('TextWidget', () => {
       mockDashboardContext
     );
     // Mock document.execCommand
-    execCommandMock = vi.fn();
+    execCommandMock = vi.fn(
+      (_commandId: string, _showUI?: boolean, _value?: string) => true
+    );
     document.execCommand = execCommandMock;
   });
 
