@@ -378,9 +378,13 @@ export const useRosters = (user: User | null) => {
       // where buildRosters reads stale Firestore metadata before migration has
       // written the driveFileIds back to each roster document.
       const runAsync = async () => {
-        await runMigrationIfNeeded(metaList, rawDocs);
-        const full = await buildRosters(metaList);
-        setRosters(full);
+        try {
+          await runMigrationIfNeeded(metaList, rawDocs);
+          const full = await buildRosters(metaList);
+          setRosters(full);
+        } catch (err) {
+          console.error('Roster sync error:', err);
+        }
       };
       void runAsync();
     };
