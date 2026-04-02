@@ -356,7 +356,10 @@ export const useRosters = (user: User | null) => {
 
     let innerUnsubscribe: (() => void) | null = null;
 
+    let currentSnapshotId = 0;
+
     const handleSnapshot = (rawDocs: { id: string; data: () => unknown }[]) => {
+      const snapshotId = ++currentSnapshotId;
       const metaList = rawDocs
         .map((d) => validateRosterMeta(d.id, d.data()))
         .filter((m): m is ClassRosterMeta => m !== null);
@@ -381,7 +384,10 @@ export const useRosters = (user: User | null) => {
         try {
           await runMigrationIfNeeded(metaList, rawDocs);
           const full = await buildRosters(metaList);
-          setRosters(full);
+          // Only update state if this is still the most recent snapshot processing pass
+          if (snapshotId === currentSnapshotId) {
+            setRosters(full);
+          }
         } catch (err) {
           console.error('Roster sync error:', err);
         }

@@ -6,6 +6,7 @@ import { WidgetData, RecessGearConfig, WeatherConfig } from '@/types';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 import { useDashboard } from '@/context/useDashboard';
+import { DashboardContextValue } from '@/context/DashboardContextValue';
 
 // Mock dependencies
 vi.mock('@/context/useDashboard', () => ({
@@ -81,7 +82,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as unknown as ReturnType<typeof useDashboard>);
+    } as DashboardContextValue);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -96,7 +97,7 @@ describe('RecessGearWidget', () => {
     vi.mocked(useDashboard).mockReturnValue({
       activeDashboard: { widgets: [] },
       updateWidget: vi.fn(),
-    } as unknown as ReturnType<typeof useDashboard>);
+    } as DashboardContextValue);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -120,7 +121,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as unknown as ReturnType<typeof useDashboard>);
+    } as DashboardContextValue);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -149,7 +150,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as unknown as ReturnType<typeof useDashboard>);
+    } as DashboardContextValue);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -177,7 +178,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as unknown as ReturnType<typeof useDashboard>);
+    } as DashboardContextValue);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -210,7 +211,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as unknown as ReturnType<typeof useDashboard>);
+    } as DashboardContextValue);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -233,7 +234,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as unknown as ReturnType<typeof useDashboard>);
+    } as DashboardContextValue);
 
     render(<RecessGearSettings widget={baseWidget} />);
 
