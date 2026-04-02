@@ -368,9 +368,7 @@ const ActiveQuiz: React.FC<{
   const [submitting, setSubmitting] = useState(false);
   const [fibAnswer, setFibAnswer] = useState('');
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [prevQuestionId, setPrevQuestionId] = useState<string | undefined>(
-    currentQuestion?.id
-  );
+  const [prevQuestionId, setPrevQuestionId] = useState<string | undefined>();
 
   // Derived state: reset state on new question during render phase
   if (currentQuestion?.id !== prevQuestionId) {
