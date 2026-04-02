@@ -1615,7 +1615,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     createPortal(
                       <div
                         ref={snapMenuRef}
-                        className="fixed z-modal p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-56 animate-in slide-in-from-top-2 fade-in duration-200"
+                        className="fixed z-modal p-3 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 shadow-2xl w-72 animate-in slide-in-from-top-2 fade-in duration-200"
                         style={{
                           // Position below the button, centered horizontally
                           top: `${Number(document.querySelector(`[aria-label="${t('widgetWindow.snapLayout')}"]`)?.getAttribute('data-menu-y') ?? 0) + 40}px`,
@@ -1632,7 +1632,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-1.5">
+                        <div className="grid grid-cols-4 gap-1.5">
                           {SNAP_LAYOUTS.map((layout) => (
                             <div
                               key={layout.id}

@@ -33,6 +33,11 @@ export const UrlWidgetSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, ...updates } });
   };
 
+  const getDisplayLabel = (title?: string, url?: string) => {
+    const trimmedTitle = title?.trim();
+    return trimmedTitle && trimmedTitle.length > 0 ? trimmedTitle : url;
+  };
+
   const addUrl = () => {
     if (!newUrl.trim()) return;
 
@@ -43,9 +48,9 @@ export const UrlWidgetSettings: React.FC<{ widget: WidgetData }> = ({
     }
 
     const newItem = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: crypto.randomUUID(),
       url: formattedUrl,
-      title: newTitle.trim(),
+      title: newTitle.trim() || undefined,
       color: newColor,
     };
 
@@ -99,6 +104,7 @@ export const UrlWidgetSettings: React.FC<{ widget: WidgetData }> = ({
             {COLORS.map((c) => (
               <button
                 key={c}
+                type="button"
                 onClick={() => setNewColor(c)}
                 className={`w-8 h-8 rounded-full border-2 transition-all ${
                   newColor === c
@@ -112,6 +118,7 @@ export const UrlWidgetSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
 
         <button
+          type="button"
           onClick={addUrl}
           disabled={!newUrl.trim()}
           className="w-full mt-2 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl font-bold transition-colors"
@@ -138,7 +145,7 @@ export const UrlWidgetSettings: React.FC<{ widget: WidgetData }> = ({
                   />
                   <div className="flex flex-col overflow-hidden">
                     <span className="font-bold text-sm text-slate-800 truncate">
-                      {u.title ?? u.url}
+                      {getDisplayLabel(u.title, u.url)}
                     </span>
                     <span className="text-xs text-slate-500 truncate">
                       {u.url}
@@ -146,6 +153,7 @@ export const UrlWidgetSettings: React.FC<{ widget: WidgetData }> = ({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => removeUrl(u.id)}
                   className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   title="Remove Link"

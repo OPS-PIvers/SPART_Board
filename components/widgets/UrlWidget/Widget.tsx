@@ -7,6 +7,10 @@ import { Globe, ExternalLink } from 'lucide-react';
 export const UrlWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as UrlWidgetConfig;
   const urls = config.urls ?? [];
+  const getDisplayLabel = (title?: string, url?: string) => {
+    const trimmedTitle = title?.trim();
+    return trimmedTitle && trimmedTitle.length > 0 ? trimmedTitle : url;
+  };
 
   // Calculate grid layout based on number of active URLs
   const { cols, rows } = useMemo(() => {
@@ -50,8 +54,11 @@ export const UrlWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             >
               {urls.map((urlItem) => (
                 <button
+                  type="button"
                   key={urlItem.id}
-                  onClick={() => window.open(urlItem.url, '_blank')}
+                  onClick={() =>
+                    window.open(urlItem.url, '_blank', 'noopener,noreferrer')
+                  }
                   className="relative overflow-hidden rounded-[min(16px,3cqmin)] flex flex-col items-center justify-center transition-all active:scale-95 group shadow-sm hover:shadow-md border border-white/20 hover:brightness-110"
                   style={{ backgroundColor: urlItem.color ?? '#10b981' }}
                 >
@@ -71,7 +78,7 @@ export const UrlWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                       padding: '0 min(8px, 1.5cqmin)',
                     }}
                   >
-                    {urlItem.title ?? urlItem.url}
+                    {getDisplayLabel(urlItem.title, urlItem.url)}
                   </span>
                 </button>
               ))}
