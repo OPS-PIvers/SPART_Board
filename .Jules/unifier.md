@@ -196,3 +196,13 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Identified remaining "snowflake" micro-typography hardcoded font sizes (`text-[10px]` and `text-[11px]`) in `components/admin/GlobalPermissionsManager.tsx`, `components/admin/WidgetBuilder/ConnectionsTab.tsx`, and `components/admin/WidgetBuilder/WidgetMetaEditor.tsx`.
 **Fix:** Refactored instances to use the closest standard Tailwind utility classes from the centralized design system (`text-[10px]` to `text-xxs`, `text-[11px]` to `text-xs`) and normalized associated font weight and tracking to align with micro-typography guidelines.
+
+## 2024-04-02 - Standardized Preview Pane Height
+
+**Drift:** Hardcoded inline style `style={{ height: '400px' }}` was used.
+**Fix:** Replaced with Tailwind utility class `h-[400px]`.
+
+## 2024-04-02 - Standardized Modal Minimum Heights
+
+**Drift:** Hardcoded inline styles like `style={{ minHeight: 240 }}` and `style={{ minHeight: 140 }}` were used across modal dialogs (`MiniAppLibraryModal.tsx` and `CatalystConfigurationModal.tsx`).
+**Fix:** Replaced with Tailwind utility classes `min-h-[240px]` and `min-h-[140px]`.

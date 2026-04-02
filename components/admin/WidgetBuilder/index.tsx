@@ -614,7 +614,7 @@ export const WidgetBuilderModal: React.FC<WidgetBuilderModalProps> = ({
                 </div>
 
                 {/* Preview */}
-                <div className="flex-1 min-h-0" style={{ height: '400px' }}>
+                <div className="flex-1 min-h-0 h-[400px]">
                   {state.mode === 'code' ? (
                     <PreviewPane
                       content={state.codeContent}

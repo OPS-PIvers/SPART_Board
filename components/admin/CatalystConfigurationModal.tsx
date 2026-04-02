@@ -541,8 +541,7 @@ export const CatalystConfigurationModal: React.FC<
                   <button
                     key={set.id}
                     onClick={() => openSetEditor(set)}
-                    className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm group hover:ring-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-left"
-                    style={{ minHeight: 140 }}
+                    className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm group hover:ring-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-left min-h-[140px]"
                   >
                     {set.imageUrl && isSafeIconUrl(set.imageUrl) ? (
                       <img
@@ -622,8 +621,7 @@ export const CatalystConfigurationModal: React.FC<
                       Set Image
                     </label>
                     <div
-                      className="relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors group"
-                      style={{ minHeight: 140 }}
+                      className="relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors group min-h-[140px]"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       {setEditor.imagePreview ||
@@ -864,8 +862,7 @@ export const CatalystConfigurationModal: React.FC<
                     Button Image
                   </label>
                   <div
-                    className="relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors group"
-                    style={{ minHeight: 140 }}
+                    className="relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors group min-h-[140px]"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {routineEditor.imagePreview ||
