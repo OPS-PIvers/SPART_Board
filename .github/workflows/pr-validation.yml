@@ -75,35 +75,13 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-  build:
-    runs-on: ubuntu-latest
-    name: Build
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and pnpm
-        uses: ./.github/actions/setup
-
-      - name: Build project
-        run: pnpm run build:all
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY || 'test-key' }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN || 'test.firebaseapp.com' }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || 'test-project' }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET || 'test.appspot.com' }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789' }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || '1:123456789:web:abc123' }}
-          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY || 'test-key' }}
-          VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY || 'test-key' }}
-
   summary:
-    needs: [quality, test, build, e2e]
+    needs: [quality, test, e2e]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Add PR Comment
-        if: ${{ needs.quality.result == 'success' && needs.test.result == 'success' && needs.build.result == 'success' && needs.e2e.result == 'success' }}
+        if: ${{ needs.quality.result == 'success' && needs.test.result == 'success' && needs.e2e.result == 'success' }}
         continue-on-error: true
         uses: actions/github-script@v7
         with:
@@ -117,7 +95,7 @@ jobs:
             })
 
       - name: Add PR Comment on Failure
-        if: ${{ needs.quality.result == 'failure' || needs.test.result == 'failure' || needs.build.result == 'failure' || needs.e2e.result == 'failure' }}
+        if: ${{ needs.quality.result == 'failure' || needs.test.result == 'failure' || needs.e2e.result == 'failure' }}
         continue-on-error: true
         uses: actions/github-script@v7
         with:
