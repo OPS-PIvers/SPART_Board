@@ -377,9 +377,12 @@ export const useRosters = (user: User | null) => {
       // Run migration first, then build rosters. Sequencing avoids a race
       // where buildRosters reads stale Firestore metadata before migration has
       // written the driveFileIds back to each roster document.
-      void runMigrationIfNeeded(metaList, rawDocs)
-        .then(() => buildRosters(metaList))
-        .then((full) => setRosters(full));
+      const runAsync = async () => {
+        await runMigrationIfNeeded(metaList, rawDocs);
+        const full = await buildRosters(metaList);
+        setRosters(full);
+      };
+      void runAsync();
     };
 
     const unsubscribe = onSnapshot(

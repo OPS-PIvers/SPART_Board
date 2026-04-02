@@ -76,8 +76,8 @@ describe('LunchCountWidget', () => {
           this.pointerType = params.pointerType ?? 'mouse';
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-      global.PointerEvent = PointerEvent as any;
+      global.PointerEvent =
+        PointerEvent as unknown as typeof global.PointerEvent;
     }
   });
 

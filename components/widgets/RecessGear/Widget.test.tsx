@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { render, screen } from '@testing-library/react';
 import { RecessGearWidget } from './Widget';
 import { RecessGearSettings } from './Settings';
@@ -81,7 +81,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboard>);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -96,7 +96,7 @@ describe('RecessGearWidget', () => {
     vi.mocked(useDashboard).mockReturnValue({
       activeDashboard: { widgets: [] },
       updateWidget: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboard>);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -120,7 +120,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboard>);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -149,7 +149,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboard>);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -177,7 +177,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboard>);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -210,7 +210,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboard>);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -233,7 +233,7 @@ describe('RecessGearWidget', () => {
         ],
       },
       updateWidget: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboard>);
 
     render(<RecessGearSettings widget={baseWidget} />);
 
