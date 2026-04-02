@@ -71,7 +71,6 @@ export const GuidedLearningEditor: React.FC<Props> = ({
   const [imageUrls, setImageUrls] = useState<string[]>(
     existingSet?.imageUrls ?? []
   );
-  const [imagePaths] = useState<string[]>(existingSet?.imagePaths ?? []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [steps, setSteps] = useState<GuidedLearningStep[]>(
     existingSet?.steps ?? []
@@ -126,15 +125,15 @@ export const GuidedLearningEditor: React.FC<Props> = ({
     if (!user || files.length === 0) return;
     setImageError('');
 
-    const uploadedUrls: string[] = [];
     try {
-      for (const file of files) {
-        const url = await uploadHotspotImage(user.uid, file);
-        uploadedUrls.push(url);
-      }
+      const uploadedUrls = await Promise.all(
+        files.map((file) => uploadHotspotImage(user.uid, file))
+      );
       if (uploadedUrls.length > 0) {
         setImageUrls((prev) => [...prev, ...uploadedUrls]);
-        setCurrentImageIndex(imageUrls.length + uploadedUrls.length - 1);
+        setCurrentImageIndex((prev) =>
+          Math.max(prev, imageUrls.length + uploadedUrls.length - 1)
+        );
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Upload failed';
@@ -150,16 +149,16 @@ export const GuidedLearningEditor: React.FC<Props> = ({
   };
 
   const handleDeleteImage = (deleteIndex: number) => {
-    setImageUrls((prev) => {
-      const updated = prev.filter((_, index) => index !== deleteIndex);
-      setCurrentImageIndex((curr) => {
-        if (updated.length === 0) return 0;
-        if (curr === deleteIndex)
-          return Math.min(deleteIndex, updated.length - 1);
-        if (curr > deleteIndex) return curr - 1;
-        return curr;
-      });
-      return updated;
+    const updatedImageUrls = imageUrls.filter(
+      (_, index) => index !== deleteIndex
+    );
+    setImageUrls(updatedImageUrls);
+    setCurrentImageIndex((curr) => {
+      if (updatedImageUrls.length === 0) return 0;
+      if (curr === deleteIndex)
+        return Math.min(deleteIndex, updatedImageUrls.length - 1);
+      if (curr > deleteIndex) return curr - 1;
+      return curr;
     });
 
     setSteps((prev) =>
@@ -277,7 +276,6 @@ export const GuidedLearningEditor: React.FC<Props> = ({
       title: title.trim(),
       description: description.trim() || undefined,
       imageUrls,
-      imagePaths: imagePaths.length > 0 ? imagePaths : undefined,
       steps,
       mode,
       createdAt: existingSet?.createdAt ?? now,
@@ -647,14 +645,24 @@ export const GuidedLearningEditor: React.FC<Props> = ({
                   disabled={currentImageIndex === 0}
                   className="text-slate-300 disabled:opacity-40"
                 >
-                  <ChevronUp />
+                  <ChevronUp
+                    style={{
+                      width: 'min(14px, 3.5cqmin)',
+                      height: 'min(14px, 3.5cqmin)',
+                    }}
+                  />
                 </button>
                 <button
                   onClick={() => handleMoveImage(currentImageIndex, 1)}
                   disabled={currentImageIndex === imageUrls.length - 1}
                   className="text-slate-300 disabled:opacity-40"
                 >
-                  <ChevronDown />
+                  <ChevronDown
+                    style={{
+                      width: 'min(14px, 3.5cqmin)',
+                      height: 'min(14px, 3.5cqmin)',
+                    }}
+                  />
                 </button>
                 <span className="text-slate-400 text-xs">
                   Reorder current image

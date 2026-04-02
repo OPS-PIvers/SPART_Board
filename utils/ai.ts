@@ -437,6 +437,7 @@ export async function generateGuidedLearning(
           id,
           xPct,
           yPct,
+          interactionType,
           imageIndex:
             typeof s.imageIndex === 'number' ? Math.max(0, s.imageIndex) : 0,
           showOverlay:
