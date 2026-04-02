@@ -290,7 +290,13 @@ export const useGuidedLearningSessionStudent = (
             imageUrls,
             publicSteps: raw.publicSteps.map((step) => ({
               ...step,
-              imageIndex: step.imageIndex ?? 0,
+              imageIndex:
+                imageUrls.length === 0
+                  ? 0
+                  : Math.min(
+                      Math.max(step.imageIndex ?? 0, 0),
+                      imageUrls.length - 1
+                    ),
               showOverlay: step.showOverlay ?? 'none',
             })),
           });
