@@ -369,10 +369,16 @@ const ActiveQuiz: React.FC<{
   const [fibAnswer, setFibAnswer] = useState('');
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [prevQuestionId, setPrevQuestionId] = useState<string | undefined>();
+  const [prevAlreadyAnswered, setPrevAlreadyAnswered] =
+    useState<boolean>(alreadyAnswered);
 
-  // Derived state: reset state on new question during render phase
-  if (currentQuestion?.id !== prevQuestionId) {
+  // Derived state: reset state on new question or when alreadyAnswered state arrives
+  if (
+    currentQuestion?.id !== prevQuestionId ||
+    alreadyAnswered !== prevAlreadyAnswered
+  ) {
     setPrevQuestionId(currentQuestion?.id);
+    setPrevAlreadyAnswered(alreadyAnswered);
     setSelectedAnswer(null);
     setSubmitted(alreadyAnswered);
     setFibAnswer('');
