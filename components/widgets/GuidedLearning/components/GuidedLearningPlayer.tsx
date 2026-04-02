@@ -11,6 +11,7 @@ import { AudioInteraction } from './interactions/AudioInteraction';
 import { VideoInteraction } from './interactions/VideoInteraction';
 import { SpotlightInteraction } from './interactions/SpotlightInteraction';
 import { QuestionInteraction } from './interactions/QuestionInteraction';
+import { BannerInteraction } from './interactions/BannerInteraction';
 import {
   calculateImageFootprint,
   toContainerCoords,
@@ -109,6 +110,11 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
   const currentStep = steps[currentIdx] ?? null;
   const activeStep = steps.find((s) => s.id === activeStepId) ?? null;
+  const currentImageIndex =
+    mode === 'explore'
+      ? (activeStep?.imageIndex ?? 0)
+      : (currentStep?.imageIndex ?? 0);
+  const currentImageUrl = set.imageUrls[currentImageIndex] ?? set.imageUrls[0];
 
   const toContainerStep = useCallback(
     (step: GuidedLearningPublicStep | null) => {
@@ -125,7 +131,17 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
   // Derive pan-zoom active state from current step (no effect needed)
   const panZoomActive =
-    currentStep?.interactionType === 'pan-zoom' ? currentStep.id : null;
+    currentStep?.interactionType === 'pan-zoom' ||
+    currentStep?.interactionType === 'pan-zoom-spotlight'
+      ? currentStep.id
+      : null;
+
+  useEffect(() => {
+    for (const url of set.imageUrls) {
+      const image = new Image();
+      image.src = url;
+    }
+  }, [set.imageUrls]);
 
   const goNext = useCallback(() => {
     if (steps.length === 0) return;
@@ -266,7 +282,10 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
       );
     }
 
-    if (type === 'spotlight' && activeStepInContainer) {
+    if (
+      (type === 'spotlight' || type === 'pan-zoom-spotlight') &&
+      activeStepInContainer
+    ) {
       return (
         <SpotlightInteraction
           step={activeStepInContainer}
@@ -299,6 +318,49 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
           />
         </div>
       );
+    }
+
+    if (
+      (type === 'pan-zoom' ||
+        type === 'spotlight' ||
+        type === 'pan-zoom-spotlight') &&
+      activeStepInContainer &&
+      activeStep.showOverlay === 'tooltip'
+    ) {
+      return (
+        <TooltipInteraction
+          step={activeStepInContainer}
+          containerWidth={containerSize.w}
+          containerHeight={containerSize.h}
+        />
+      );
+    }
+
+    if (
+      (type === 'pan-zoom' ||
+        type === 'spotlight' ||
+        type === 'pan-zoom-spotlight') &&
+      activeStep.showOverlay === 'popover'
+    ) {
+      return (
+        <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+          <div className="pointer-events-auto w-full h-full">
+            <TextPopoverInteraction
+              step={activeStep}
+              onClose={() => setActiveStepId(null)}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (
+      (type === 'pan-zoom' ||
+        type === 'spotlight' ||
+        type === 'pan-zoom-spotlight') &&
+      activeStep.showOverlay === 'banner'
+    ) {
+      return <BannerInteraction step={activeStep} />;
     }
 
     return null;
@@ -459,10 +521,10 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
         >
           {/* Image with optional pan-zoom transform */}
           <div className="w-full h-full relative" style={getPanZoomStyle()}>
-            {set.imageUrl && (
+            {currentImageUrl && (
               <img
                 ref={imgRef}
-                src={set.imageUrl}
+                src={currentImageUrl}
                 alt={set.title}
                 className="w-full h-full object-contain pointer-events-none"
                 draggable={false}
@@ -472,6 +534,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
             {/* Hotspot pins */}
             {steps.map((step, idx) => {
+              if (step.imageIndex !== currentImageIndex) return null;
               const isActive = activeStepId === step.id;
               const isCurrentStructured =
                 mode !== 'explore' && step.id === currentStep?.id;
@@ -512,7 +575,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
                       className="text-white font-bold select-none"
                       style={{ fontSize: 'min(12px, 3cqmin)' }}
                     >
-                      {idx + 1}
+                      {step.hideStepNumber ? '' : idx + 1}
                     </span>
                   </button>
                 </div>

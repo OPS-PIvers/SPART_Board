@@ -402,6 +402,7 @@ export async function generateGuidedLearning(
       'audio',
       'video',
       'pan-zoom',
+      'pan-zoom-spotlight',
       'spotlight',
       'question',
     ];
@@ -431,7 +432,20 @@ export async function generateGuidedLearning(
             : null;
         if (xPct === null || yPct === null || interactionType === null)
           return null;
-        return { ...s, id, xPct, yPct, interactionType } as GuidedLearningStep;
+        return {
+          ...s,
+          id,
+          xPct,
+          yPct,
+          imageIndex:
+            typeof s.imageIndex === 'number' ? Math.max(0, s.imageIndex) : 0,
+          showOverlay:
+            s.showOverlay === 'popover' ||
+            s.showOverlay === 'tooltip' ||
+            s.showOverlay === 'banner'
+              ? s.showOverlay
+              : 'none',
+        } as GuidedLearningStep;
       })
       .filter((s): s is GuidedLearningStep => s !== null);
 
