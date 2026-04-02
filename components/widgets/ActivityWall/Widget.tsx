@@ -14,7 +14,6 @@ import {
   Play,
   Plus,
   QrCode,
-  SquareUser,
   Trash2,
 } from 'lucide-react';
 import {
@@ -89,13 +88,64 @@ const getArchiveStatus = (
   return null;
 };
 
-const preloadImage = async (url: string): Promise<void> => {
-  await new Promise<void>((resolve, reject) => {
+const DRIVE_IMAGE_PROBE_TIMEOUT_MS = 5000;
+const ARCHIVE_BLOB_TIMEOUT_MS = 15000;
+
+const withTimeout = async <T,>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> => {
+  return await new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    );
+  });
+};
+
+const probeImageAvailability = async (url: string): Promise<boolean> => {
+  return await new Promise<boolean>((resolve) => {
     const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error('Drive image failed to load'));
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      img.onload = null;
+      img.onerror = null;
+    };
+    const settle = (result: boolean) => {
+      cleanup();
+      resolve(result);
+    };
+    const timeoutId = window.setTimeout(
+      () => settle(false),
+      DRIVE_IMAGE_PROBE_TIMEOUT_MS
+    );
+    img.onload = () => settle(true);
+    img.onerror = () => settle(false);
     img.src = url;
   });
+};
+
+const fetchBlobFromUrl = async (url: string): Promise<Blob> => {
+  const response = await withTimeout(
+    fetch(url),
+    ARCHIVE_BLOB_TIMEOUT_MS,
+    'Timed out downloading photo from URL'
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to download photo from URL (${response.status})`);
+  }
+  return response.blob();
 };
 
 const getFileExtension = (mimeType: string): string => {
@@ -108,6 +158,35 @@ const getFileExtension = (mimeType: string): string => {
 const buildArchiveError = (error: unknown): string => {
   const message = error instanceof Error ? error.message : String(error);
   return message.slice(0, 180);
+};
+
+const loadSubmissionBlob = async (
+  submission: Pick<ActivityWallSubmission, 'content' | 'storagePath'>
+): Promise<Blob> => {
+  if (submission.storagePath) {
+    try {
+      return await withTimeout(
+        getBlob(storageRef(storage, submission.storagePath)),
+        ARCHIVE_BLOB_TIMEOUT_MS,
+        'Timed out downloading photo from Firebase Storage'
+      );
+    } catch (error) {
+      if (isSafeHttpUrl(submission.content)) {
+        console.warn(
+          '[ActivityWall] Firebase blob download failed, retrying via submission URL:',
+          error
+        );
+        return fetchBlobFromUrl(submission.content);
+      }
+      throw error;
+    }
+  }
+
+  if (isSafeHttpUrl(submission.content)) {
+    return fetchBlobFromUrl(submission.content);
+  }
+
+  throw new Error('Missing photo source for archive');
 };
 
 const wordColor = (word: string): string => {
@@ -386,17 +465,13 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
       isArchivingRef.current = true;
 
       try {
-        if (!submission.storagePath) {
-          throw new Error('Missing Firebase storage path for photo submission');
-        }
-
         await updateDoc(submissionRef, {
           status: submission.status ?? 'approved',
           archiveStatus: 'syncing',
           archiveError: deleteField(),
         });
 
-        const blob = await getBlob(storageRef(storage, submission.storagePath));
+        const blob = await loadSubmissionBlob(submission);
 
         const driveFile = await driveService.uploadFile(
           blob,
@@ -406,7 +481,12 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
         await driveService.makePublic(driveFile.id, undefined);
 
         const driveUrl = `https://lh3.googleusercontent.com/d/${driveFile.id}`;
-        await preloadImage(driveUrl);
+        const driveImageReady = await probeImageAvailability(driveUrl);
+        if (!driveImageReady) {
+          console.warn(
+            '[ActivityWall] Drive image did not become readable before timeout; completing archive anyway.'
+          );
+        }
 
         await updateDoc(submissionRef, {
           content: driveUrl,
@@ -1202,8 +1282,7 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
                             <img
                               src={submission.content}
                               alt={submission.participantLabel ?? 'Photo'}
-                              className="w-full object-cover"
-                              style={{ aspectRatio: '4/3' }}
+                              className="block w-full h-auto"
                             />
                             {archiveStatus && (
                               <span
