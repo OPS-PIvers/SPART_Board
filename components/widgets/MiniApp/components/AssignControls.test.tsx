@@ -15,9 +15,7 @@ const miniApp: MiniAppItem = {
 
 const globalMiniApp: GlobalMiniAppItem = {
   ...miniApp,
-  authorId: 'teacher-1',
-  authorName: 'Teacher',
-  isOfficial: false,
+  buildings: [],
 };
 
 describe('Mini App assign controls', () => {
