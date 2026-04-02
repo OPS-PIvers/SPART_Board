@@ -364,6 +364,7 @@ export interface ActivityWallSubmission {
   participantLabel?: string;
   storagePath?: string;
   archiveStatus?: ActivityWallArchiveStatus;
+  archiveStartedAt?: number;
   driveFileId?: string;
   archiveError?: string;
   archivedAt?: number;

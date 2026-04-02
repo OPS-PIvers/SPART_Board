@@ -26,7 +26,7 @@ import {
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
-import { db, storage } from '@/config/firebase';
+import { db, functions } from '@/config/firebase';
 import {
   collection,
   deleteField,
@@ -35,7 +35,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { deleteObject, getBlob, ref as storageRef } from 'firebase/storage';
+import { httpsCallable } from 'firebase/functions';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 const encodeActivityData = (
@@ -89,30 +89,7 @@ const getArchiveStatus = (
 };
 
 const DRIVE_IMAGE_PROBE_TIMEOUT_MS = 5000;
-const ARCHIVE_BLOB_TIMEOUT_MS = 15000;
-
-const withTimeout = async <T,>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  errorMessage: string
-): Promise<T> => {
-  return await new Promise<T>((resolve, reject) => {
-    const timeoutId = window.setTimeout(() => {
-      reject(new Error(errorMessage));
-    }, timeoutMs);
-
-    promise.then(
-      (value) => {
-        window.clearTimeout(timeoutId);
-        resolve(value);
-      },
-      (error: unknown) => {
-        window.clearTimeout(timeoutId);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      }
-    );
-  });
-};
+const STALE_ARCHIVE_SYNC_TIMEOUT_MS = 30000;
 
 const probeImageAvailability = async (url: string): Promise<boolean> => {
   return await new Promise<boolean>((resolve) => {
@@ -136,57 +113,9 @@ const probeImageAvailability = async (url: string): Promise<boolean> => {
   });
 };
 
-const fetchBlobFromUrl = async (url: string): Promise<Blob> => {
-  const response = await withTimeout(
-    fetch(url),
-    ARCHIVE_BLOB_TIMEOUT_MS,
-    'Timed out downloading photo from URL'
-  );
-  if (!response.ok) {
-    throw new Error(`Failed to download photo from URL (${response.status})`);
-  }
-  return response.blob();
-};
-
-const getFileExtension = (mimeType: string): string => {
-  if (mimeType === 'image/png') return 'png';
-  if (mimeType === 'image/gif') return 'gif';
-  if (mimeType === 'image/webp') return 'webp';
-  return 'jpg';
-};
-
 const buildArchiveError = (error: unknown): string => {
   const message = error instanceof Error ? error.message : String(error);
   return message.slice(0, 180);
-};
-
-const loadSubmissionBlob = async (
-  submission: Pick<ActivityWallSubmission, 'content' | 'storagePath'>
-): Promise<Blob> => {
-  if (submission.storagePath) {
-    try {
-      return await withTimeout(
-        getBlob(storageRef(storage, submission.storagePath)),
-        ARCHIVE_BLOB_TIMEOUT_MS,
-        'Timed out downloading photo from Firebase Storage'
-      );
-    } catch (error) {
-      if (isSafeHttpUrl(submission.content)) {
-        console.warn(
-          '[ActivityWall] Firebase blob download failed, retrying via submission URL:',
-          error
-        );
-        return fetchBlobFromUrl(submission.content);
-      }
-      throw error;
-    }
-  }
-
-  if (isSafeHttpUrl(submission.content)) {
-    return fetchBlobFromUrl(submission.content);
-  }
-
-  throw new Error('Missing photo source for archive');
 };
 
 const wordColor = (word: string): string => {
@@ -266,6 +195,7 @@ interface LiveSubmission {
   participantLabel?: string;
   storagePath?: string;
   archiveStatus?: ActivityWallArchiveStatus;
+  archiveStartedAt?: number;
   driveFileId?: string;
   archiveError?: string;
   archivedAt?: number;
@@ -311,8 +241,8 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addWidget, addToast } = useDashboard();
-  const { user } = useAuth();
-  const { driveService, isConnected: isDriveConnected } = useGoogleDrive();
+  const { user, googleAccessToken, refreshGoogleToken } = useAuth();
+  const { isConnected: isDriveConnected } = useGoogleDrive();
   const config = widget.config as ActivityWallConfig;
   const activities = config.activities ?? [];
   const activeActivity =
@@ -381,6 +311,7 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
             archiveStatus: data.archiveStatus as
               | ActivityWallArchiveStatus
               | undefined,
+            archiveStartedAt: data.archiveStartedAt as number | undefined,
             driveFileId: data.driveFileId as string | undefined,
             archiveError: data.archiveError as string | undefined,
             archivedAt: data.archivedAt as number | undefined,
@@ -452,80 +383,83 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
 
   const archivePhotoSubmission = useCallback(
     async (submission: LiveSubmission) => {
-      if (!driveService || !activeActivity || !activeSessionId) return;
+      if (!activeActivity || !activeSessionId || !user) return;
 
-      const submissionRef = doc(
-        db,
-        'activity_wall_sessions',
-        activeSessionId,
-        'submissions',
-        submission.id
-      );
       syncingSubmissionIdsRef.current.add(submission.id);
       isArchivingRef.current = true;
 
       try {
-        await updateDoc(submissionRef, {
+        const accessToken = googleAccessToken ?? (await refreshGoogleToken());
+        if (!accessToken) {
+          throw new Error(
+            'Google Drive is not connected. Reconnect Drive and retry the photo sync.'
+          );
+        }
+
+        const archivePhoto = httpsCallable<
+          {
+            accessToken: string;
+            sessionId: string;
+            submissionId: string;
+            activityId: string;
+            status: 'approved' | 'pending';
+          },
+          {
+            archiveStatus: ActivityWallArchiveStatus;
+            driveFileId: string;
+            driveUrl: string;
+          }
+        >(functions, 'archiveActivityWallPhoto');
+
+        const result = await archivePhoto({
+          accessToken,
+          sessionId: activeSessionId,
+          submissionId: submission.id,
+          activityId: activeActivity.id,
           status: submission.status ?? 'approved',
-          archiveStatus: 'syncing',
-          archiveError: deleteField(),
         });
 
-        const blob = await loadSubmissionBlob(submission);
-
-        const driveFile = await driveService.uploadFile(
-          blob,
-          `${submission.id}.${getFileExtension(blob.type)}`,
-          `Activity Wall/${activeActivity.id}`
+        const driveImageReady = await probeImageAvailability(
+          result.data.driveUrl
         );
-        await driveService.makePublic(driveFile.id, undefined);
-
-        const driveUrl = `https://lh3.googleusercontent.com/d/${driveFile.id}`;
-        const driveImageReady = await probeImageAvailability(driveUrl);
         if (!driveImageReady) {
           console.warn(
             '[ActivityWall] Drive image did not become readable before timeout; completing archive anyway.'
           );
         }
-
-        await updateDoc(submissionRef, {
-          content: driveUrl,
-          status: submission.status ?? 'approved',
-          archiveStatus: 'archived',
-          driveFileId: driveFile.id,
-          archivedAt: Date.now(),
-          storagePath: deleteField(),
-          archiveError: deleteField(),
-        });
-
-        try {
-          await deleteObject(storageRef(storage, submission.storagePath));
-        } catch (cleanupError) {
-          console.warn(
-            '[ActivityWall] Archived photo but failed to delete Firebase copy:',
-            cleanupError
-          );
-        }
       } catch (error) {
         console.error('[ActivityWall] Photo archive failed:', error);
-        try {
-          await updateDoc(submissionRef, {
-            status: submission.status ?? 'approved',
-            archiveStatus: 'failed',
-            archiveError: buildArchiveError(error),
-          });
-        } catch (updateError) {
+
+        const submissionRef = doc(
+          db,
+          'activity_wall_sessions',
+          activeSessionId,
+          'submissions',
+          submission.id
+        );
+        void updateDoc(submissionRef, {
+          status: submission.status ?? 'approved',
+          archiveStatus: 'failed',
+          archiveStartedAt: deleteField(),
+          archiveError: buildArchiveError(error),
+        }).catch((updateError) => {
           console.error(
             '[ActivityWall] Failed to persist archive error state:',
             updateError
           );
-        }
+        });
       } finally {
         syncingSubmissionIdsRef.current.delete(submission.id);
         isArchivingRef.current = false;
       }
     },
-    [activeActivity, activeSessionId, driveService]
+    [
+      activeActivity,
+      activeSessionId,
+      googleAccessToken,
+      refreshGoogleToken,
+      user,
+    ]
   );
 
   useEffect(() => {
@@ -533,7 +467,7 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
       !activeActivity ||
       activeActivity.mode !== 'photo' ||
       !activeSessionId ||
-      !driveService ||
+      !isDriveConnected ||
       isArchivingRef.current
     ) {
       return;
@@ -555,12 +489,55 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
     activeActivity,
     activeSessionId,
     archivePhotoSubmission,
-    driveService,
     firestoreRaw,
+    isDriveConnected,
   ]);
 
+  useEffect(() => {
+    if (
+      !activeActivity ||
+      activeActivity.mode !== 'photo' ||
+      !activeSessionId ||
+      !isDriveConnected ||
+      isArchivingRef.current
+    ) {
+      return;
+    }
+
+    const staleSubmission = firestoreRaw.find((submission) => {
+      if (submission.archiveStatus !== 'syncing') return false;
+      if (syncingSubmissionIdsRef.current.has(submission.id)) return false;
+
+      const startedAt = submission.archiveStartedAt ?? submission.submittedAt;
+      return Date.now() - startedAt > STALE_ARCHIVE_SYNC_TIMEOUT_MS;
+    });
+
+    if (!staleSubmission) return;
+
+    const submissionRef = doc(
+      db,
+      'activity_wall_sessions',
+      activeSessionId,
+      'submissions',
+      staleSubmission.id
+    );
+
+    void updateDoc(submissionRef, {
+      status: staleSubmission.status ?? 'approved',
+      archiveStatus: 'failed',
+      archiveStartedAt: deleteField(),
+      archiveError:
+        'Drive sync timed out before completion. Retry after checking Drive connection and Firebase Storage CORS.',
+    }).catch((error) => {
+      console.error(
+        '[ActivityWall] Failed to mark stale photo sync as failed:',
+        error
+      );
+    });
+  }, [activeActivity, activeSessionId, firestoreRaw, isDriveConnected]);
+
   const retryFailedArchives = useCallback(async () => {
-    if (!driveService || isArchivingRef.current) return;
+    if (!isDriveConnected || isArchivingRef.current) return;
 
     const failedSubmissions = firestoreRaw.filter(
       (submission) =>
@@ -572,7 +549,7 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
     for (const submission of failedSubmissions) {
       await archivePhotoSubmission(submission);
     }
-  }, [archivePhotoSubmission, driveService, firestoreRaw]);
+  }, [archivePhotoSubmission, firestoreRaw, isDriveConnected]);
 
   const appendResponse = () => {
     if (!activeActivity || !draftResponse.trim()) return;

@@ -5,13 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActivityWallWidget } from './Widget';
 import { WidgetData } from '@/types';
 
-type MockDriveService = {
-  uploadFile: ReturnType<typeof vi.fn>;
-  makePublic: ReturnType<typeof vi.fn>;
-};
-
 type MockGoogleDriveHookResult = {
-  driveService: MockDriveService | null;
   isConnected: boolean;
 };
 
@@ -25,11 +19,10 @@ const {
   mockCollection,
   mockDoc,
   mockUser,
-  mockGetBlob,
-  mockDeleteObject,
-  mockStorageRef,
-  mockDriveService,
   mockUseGoogleDrive,
+  mockRefreshGoogleToken,
+  mockArchivePhotoCallable,
+  mockHttpsCallable,
 } = vi.hoisted(() => ({
   mockAddWidget: vi.fn(),
   mockAddToast: vi.fn(),
@@ -40,14 +33,10 @@ const {
   mockCollection: vi.fn(),
   mockDoc: vi.fn(),
   mockUser: { uid: 'teacher-1' },
-  mockGetBlob: vi.fn(),
-  mockDeleteObject: vi.fn(),
-  mockStorageRef: vi.fn((_, path: string) => path),
-  mockDriveService: {
-    uploadFile: vi.fn(),
-    makePublic: vi.fn(),
-  } as MockDriveService,
   mockUseGoogleDrive: vi.fn<() => MockGoogleDriveHookResult>(),
+  mockRefreshGoogleToken: vi.fn(),
+  mockArchivePhotoCallable: vi.fn(),
+  mockHttpsCallable: vi.fn(),
 }));
 
 let snapshotDocs: Record<string, unknown>[] = [];
@@ -63,6 +52,8 @@ vi.mock('@/context/useDashboard', () => ({
 vi.mock('@/context/useAuth', () => ({
   useAuth: () => ({
     user: mockUser,
+    googleAccessToken: 'google-access-token',
+    refreshGoogleToken: mockRefreshGoogleToken,
   }),
 }));
 
@@ -72,7 +63,11 @@ vi.mock('@/hooks/useGoogleDrive', () => ({
 
 vi.mock('@/config/firebase', () => ({
   db: {},
-  storage: {},
+  functions: {},
+}));
+
+vi.mock('firebase/functions', () => ({
+  httpsCallable: mockHttpsCallable,
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -82,12 +77,6 @@ vi.mock('firebase/firestore', () => ({
   setDoc: mockSetDoc,
   updateDoc: mockUpdateDoc,
   deleteField: vi.fn(() => '__delete__'),
-}));
-
-vi.mock('firebase/storage', () => ({
-  deleteObject: mockDeleteObject,
-  getBlob: mockGetBlob,
-  ref: mockStorageRef,
 }));
 
 describe('ActivityWallWidget', () => {
@@ -120,7 +109,6 @@ describe('ActivityWallWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseGoogleDrive.mockReturnValue({
-      driveService: null,
       isConnected: false,
     });
     snapshotDocs = [];
@@ -128,10 +116,15 @@ describe('ActivityWallWidget', () => {
     mockDoc.mockReturnValue('session-doc');
     mockSetDoc.mockResolvedValue(undefined);
     mockUpdateDoc.mockResolvedValue(undefined);
-    mockGetBlob.mockResolvedValue(new Blob(['photo'], { type: 'image/jpeg' }));
-    mockDeleteObject.mockResolvedValue(undefined);
-    mockDriveService.uploadFile.mockResolvedValue({ id: 'drive-file-1' });
-    mockDriveService.makePublic.mockResolvedValue(undefined);
+    mockRefreshGoogleToken.mockResolvedValue('refreshed-google-access-token');
+    mockArchivePhotoCallable.mockResolvedValue({
+      data: {
+        archiveStatus: 'archived',
+        driveFileId: 'drive-file-1',
+        driveUrl: 'https://lh3.googleusercontent.com/d/drive-file-1',
+      },
+    });
+    mockHttpsCallable.mockReturnValue(mockArchivePhotoCallable);
     mockOnSnapshot.mockImplementation(
       (
         _ref,
@@ -230,24 +223,22 @@ describe('ActivityWallWidget', () => {
     expect(image).toHaveClass('block', 'w-full', 'h-auto');
   });
 
-  it('completes photo archiving even if the Drive image probe never resolves', async () => {
-    vi.useFakeTimers();
-
+  it('archives photos through the callable backend flow instead of browser storage reads', async () => {
     mockUseGoogleDrive.mockReturnValue({
-      driveService: mockDriveService,
       isConnected: true,
     });
 
     const originalImage = window.Image;
-    class NeverLoadingImage {
+    class ReadyImage {
       onload: null | (() => void) = null;
       onerror: null | (() => void) = null;
       set src(_value: string) {
-        void _value;
+        this.onload?.();
       }
     }
     // @ts-expect-error test stub only implements the pieces this code uses
-    window.Image = NeverLoadingImage;
+    window.Image = ReadyImage;
+
     try {
       snapshotDocs = [
         {
@@ -282,109 +273,72 @@ describe('ActivityWallWidget', () => {
 
       render(<ActivityWallWidget widget={photoWidget} />);
 
-      await vi.advanceTimersByTimeAsync(5000);
-      await Promise.resolve();
-
-      expect(mockUpdateDoc).toHaveBeenCalledWith(
-        'session-doc',
-        expect.objectContaining({
-          content: 'https://lh3.googleusercontent.com/d/drive-file-1',
-          archiveStatus: 'archived',
-          driveFileId: 'drive-file-1',
-        })
-      );
+      await waitFor(() => {
+        expect(mockHttpsCallable).toHaveBeenCalledWith(
+          {},
+          'archiveActivityWallPhoto'
+        );
+        expect(mockArchivePhotoCallable).toHaveBeenCalledWith({
+          accessToken: 'google-access-token',
+          sessionId: 'teacher-1_activity-photo-sync',
+          submissionId: 'submission-photo-sync',
+          activityId: 'activity-photo-sync',
+          status: 'approved',
+        });
+      });
     } finally {
       window.Image = originalImage;
-      vi.useRealTimers();
     }
   });
 
-  it('falls back to the submission URL when Firebase blob download stalls', async () => {
-    vi.useFakeTimers();
-
+  it('marks stale syncing submissions as failed instead of leaving them stuck', async () => {
     mockUseGoogleDrive.mockReturnValue({
-      driveService: mockDriveService,
       isConnected: true,
     });
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      blob: vi
-        .fn()
-        .mockResolvedValue(new Blob(['fallback-photo'], { type: 'image/png' })),
-    });
-    const originalFetch = global.fetch;
-    const originalImage = window.Image;
+    snapshotDocs = [
+      {
+        id: 'submission-photo-stale-sync',
+        content: 'https://lh3.googleusercontent.com/d/stuck-file',
+        submittedAt: Date.now() - 60000,
+        status: 'approved',
+        participantLabel: 'Stale Sync',
+        storagePath: 'activity_wall_photos/session/submission-photo-stale-sync',
+        archiveStatus: 'syncing',
+        archiveStartedAt: Date.now() - 45000,
+      },
+    ];
 
-    class LoadingImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      set src(_value: string) {
-        this.onload?.();
-      }
-    }
+    const photoWidget: WidgetData = {
+      ...baseWidget,
+      config: {
+        activeActivityId: 'activity-photo-stale-sync',
+        activities: [
+          {
+            id: 'activity-photo-stale-sync',
+            title: 'Snapshot',
+            prompt: 'Share a photo',
+            mode: 'photo',
+            moderationEnabled: false,
+            identificationMode: 'anonymous',
+            submissions: [],
+            startedAt: Date.now(),
+          },
+        ],
+      },
+    } as WidgetData;
 
-    global.fetch = fetchMock as typeof fetch;
-    // @ts-expect-error test stub only implements the pieces this code uses
-    window.Image = LoadingImage;
-    mockGetBlob.mockImplementation(() => new Promise<Blob>(() => undefined));
+    render(<ActivityWallWidget widget={photoWidget} />);
 
-    try {
-      snapshotDocs = [
-        {
-          id: 'submission-photo-fallback',
-          content: 'https://firebasestorage.example/photo-token-url',
-          submittedAt: 222,
-          status: 'approved',
-          participantLabel: 'Fallback Photo',
-          storagePath: 'activity_wall_photos/session/submission-photo-fallback',
-          archiveStatus: 'firebase',
-        },
-      ];
-
-      const photoWidget: WidgetData = {
-        ...baseWidget,
-        config: {
-          activeActivityId: 'activity-photo-fallback',
-          activities: [
-            {
-              id: 'activity-photo-fallback',
-              title: 'Snapshot',
-              prompt: 'Share a photo',
-              mode: 'photo',
-              moderationEnabled: false,
-              identificationMode: 'anonymous',
-              submissions: [],
-              startedAt: Date.now(),
-            },
-          ],
-        },
-      } as WidgetData;
-
-      render(<ActivityWallWidget widget={photoWidget} />);
-
-      await vi.advanceTimersByTimeAsync(15000);
-      await Promise.resolve();
-
-      expect(fetchMock).toHaveBeenCalledWith(
-        'https://firebasestorage.example/photo-token-url'
-      );
-      expect(mockDriveService.uploadFile).toHaveBeenCalledWith(
-        expect.any(Blob),
-        'submission-photo-fallback.png',
-        'Activity Wall/activity-photo-fallback'
-      );
+    await waitFor(() => {
       expect(mockUpdateDoc).toHaveBeenCalledWith(
         'session-doc',
         expect.objectContaining({
-          archiveStatus: 'archived',
-          driveFileId: 'drive-file-1',
+          archiveStatus: 'failed',
+          archiveError:
+            'Drive sync timed out before completion. Retry after checking Drive connection and Firebase Storage CORS.',
         })
       );
-    } finally {
-      global.fetch = originalFetch;
-      window.Image = originalImage;
-      vi.useRealTimers();
-    }
+    });
   });
 });
