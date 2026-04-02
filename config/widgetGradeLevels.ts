@@ -29,6 +29,7 @@ export const WIDGET_GRADE_LEVELS: Record<
   WidgetType | InternalToolType,
   GradeLevel[]
 > = {
+  url: ALL_GRADE_LEVELS,
   soundboard: ALL_GRADE_LEVELS,
   // Clock & Time Tools
   clock: ALL_GRADE_LEVELS,
@@ -54,6 +55,7 @@ export const WIDGET_GRADE_LEVELS: Record<
 
   // Academic Tools
   poll: ['6-8', '9-12'],
+  'activity-wall': ALL_GRADE_LEVELS,
   scoreboard: ALL_GRADE_LEVELS,
   embed: ['6-8', '9-12'],
 

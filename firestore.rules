@@ -323,8 +323,26 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Only authenticated (non-anonymous) users can create sessions (teachers)
       allow create: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
-      // Sessions are immutable after creation (no updates needed)
-      allow update, delete: if false;
+      // Teacher owners may rename or end sessions, but not mutate session content.
+      allow update: if request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous' &&
+        resource.data.teacherUid == request.auth.uid &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.activityId == resource.data.activityId &&
+        request.resource.data.activityTitle == resource.data.activityTitle &&
+        request.resource.data.teacherUid == resource.data.teacherUid &&
+        request.resource.data.youtubeUrl == resource.data.youtubeUrl &&
+        request.resource.data.questions == resource.data.questions &&
+        request.resource.data.settings == resource.data.settings &&
+        request.resource.data.allowedPins == resource.data.allowedPins &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignmentName', 'status', 'endedAt', 'expiresAt']) &&
+        request.resource.data.assignmentName is string &&
+        request.resource.data.assignmentName.size() > 0 &&
+        request.resource.data.status in ['active', 'ended'] &&
+        (!('endedAt' in request.resource.data) || request.resource.data.endedAt is int) &&
+        (!('expiresAt' in request.resource.data) || request.resource.data.expiresAt is int);
+      allow delete: if false;
 
       match /responses/{studentUid} {
         // Teacher can read all responses; students can only read their own (doc ID == auth UID)
@@ -409,6 +427,54 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers', 'completedAt', 'pin']) &&
           request.resource.data.answers.size() >= resource.data.answers.size();
         allow delete: if false;
+      }
+    }
+
+    // Activity Wall Sessions — Teacher owns it (UID prefix in sessionId), students submit entries
+    // sessionId is formatted as {teacherUid}_{activityId}
+    match /activity_wall_sessions/{sessionId} {
+      // Any authenticated user can read the session metadata from a valid share link.
+      allow read: if request.auth != null;
+      // Only authenticated non-anonymous teachers/admins can create or update the session document itself.
+      allow create, update: if request.auth != null &&
+                            request.auth.token.firebase.sign_in_provider != 'anonymous' &&
+                            (isAdmin() || sessionId.matches(request.auth.uid + '_.*'));
+      allow delete: if false;
+
+      match /submissions/{submissionId} {
+        // Any authenticated user (including anonymous) can create a submission.
+        // Photo submissions may include Firebase storage metadata for later Drive archiving.
+        allow create: if request.auth != null &&
+          exists(/databases/$(database)/documents/activity_wall_sessions/$(sessionId)) &&
+          request.resource.data.id is string &&
+          request.resource.data.content is string &&
+          request.resource.data.content.size() > 0 &&
+          request.resource.data.content.size() <= 5000 &&
+          request.resource.data.submittedAt is int &&
+          request.resource.data.status in ['approved', 'pending'] &&
+          (!('participantLabel' in request.resource.data) || request.resource.data.participantLabel is string) &&
+          (!('storagePath' in request.resource.data) || request.resource.data.storagePath is string) &&
+          (!('archiveStatus' in request.resource.data) || request.resource.data.archiveStatus == 'firebase') &&
+          !('driveFileId' in request.resource.data) &&
+          !('archiveError' in request.resource.data) &&
+          !('archivedAt' in request.resource.data);
+        // Only teacher and admins can read or delete submissions.
+        allow read, delete: if request.auth != null &&
+                            (isAdmin() || sessionId.matches(request.auth.uid + '_.*'));
+        allow update: if request.auth != null &&
+                            (isAdmin() || sessionId.matches(request.auth.uid + '_.*')) &&
+                            request.resource.data.id is string &&
+                            request.resource.data.content is string &&
+                            request.resource.data.content.size() > 0 &&
+                            request.resource.data.content.size() <= 5000 &&
+                            request.resource.data.submittedAt is int &&
+                            request.resource.data.status in ['approved', 'pending'] &&
+                            (!('participantLabel' in request.resource.data) || request.resource.data.participantLabel is string) &&
+                            (!('storagePath' in request.resource.data) || request.resource.data.storagePath is string) &&
+                            (!('archiveStatus' in request.resource.data) || request.resource.data.archiveStatus in ['firebase', 'syncing', 'archived', 'failed']) &&
+                            (!('driveFileId' in request.resource.data) || request.resource.data.driveFileId is string) &&
+                            (!('archiveError' in request.resource.data) || request.resource.data.archiveError is string) &&
+                            (!('archivedAt' in request.resource.data) || request.resource.data.archivedAt is int);
       }
     }
 

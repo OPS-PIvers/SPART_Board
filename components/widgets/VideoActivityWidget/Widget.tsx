@@ -11,6 +11,7 @@ import {
   VideoActivityData,
   VideoActivitySessionSettings,
   VideoActivityGlobalConfig,
+  VideoActivitySession,
 } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
@@ -48,6 +49,12 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
 
   const {
     createSession,
+    sessions,
+    sessionsLoading,
+    subscribeToActivitySessions,
+    unsubscribeFromActivitySessions,
+    renameSession,
+    endSession,
     responses,
     subscribeToSession,
     unsubscribeFromSession,
@@ -57,6 +64,10 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
     useState<VideoActivityData | null>(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [selectedMeta, setSelectedMeta] =
+    useState<VideoActivityMetadata | null>(null);
+  const [selectedSession, setSelectedSession] =
+    useState<VideoActivitySession | null>(null);
+  const [resultsActivity, setResultsActivity] =
     useState<VideoActivityMetadata | null>(null);
 
   // Get global AI generation permission from feature permissions
@@ -221,15 +232,21 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  if (view === 'results' && loadedActivity) {
+  if (view === 'results' && selectedSession) {
     return (
       <Results
-        activity={loadedActivity}
+        session={selectedSession}
         responses={responses}
         onBack={() => {
           unsubscribeFromSession();
-          setLoadedActivity(null);
-          setView('manager');
+          setSelectedSession(null);
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              view: 'manager',
+              resultsSessionId: null,
+            } as VideoActivityConfig,
+          });
         }}
       />
     );
@@ -246,25 +263,36 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
         const data = await loadActivity(meta);
         if (data) setView('editor');
       }}
-      onResults={async (meta) => {
-        const data = await loadActivity(meta);
-        if (data) {
-          const sessionId = config.resultsSessionId;
-          if (sessionId) {
-            subscribeToSession(sessionId);
-          }
-          updateWidget(widget.id, {
-            config: {
-              ...config,
-              view: 'results',
-              selectedActivityId: meta.id,
-              selectedActivityTitle: meta.title,
-            } as VideoActivityConfig,
-          });
-        }
+      sessionResultsActivity={resultsActivity}
+      activitySessions={sessions}
+      sessionsLoading={sessionsLoading}
+      onResults={(meta) => {
+        setResultsActivity(meta);
+        subscribeToActivitySessions(meta.id, user.uid);
       }}
+      onCloseResults={() => {
+        setResultsActivity(null);
+        unsubscribeFromActivitySessions();
+      }}
+      onOpenSessionResults={(session) => {
+        subscribeToSession(session.id);
+        setSelectedSession(session);
+        setResultsActivity(null);
+        unsubscribeFromActivitySessions();
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            view: 'results',
+            selectedActivityId: session.activityId,
+            selectedActivityTitle: session.activityTitle,
+            resultsSessionId: session.id,
+          } as VideoActivityConfig,
+        });
+      }}
+      onRenameSession={renameSession}
+      onEndSession={endSession}
       defaultSessionSettings={defaultSessionSettings}
-      onAssign={async (meta, sessionSettings) => {
+      onAssign={async (meta, sessionSettings, assignmentName) => {
         // Use loadActivityData directly to avoid setting loadingActivity
         // which would cause the Manager component to unmount and destroy the modal
         const data = await loadActivityData(meta.driveFileId);
@@ -273,7 +301,8 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
           data,
           user.uid,
           [],
-          sessionSettings
+          sessionSettings,
+          assignmentName
         );
         updateWidget(widget.id, {
           config: {

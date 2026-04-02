@@ -4,12 +4,20 @@ import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { STICKY_NOTE_COLORS } from '@/config/colors';
 import { sanitizeHtml } from '@/utils/security';
 import { getFontClass } from '@/utils/styles';
+import { useDialog } from '@/context/useDialog';
 
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
+import { FormattingToolbar } from './FormattingToolbar';
 import { PLACEHOLDER_TEXT } from './constants';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, activeDashboard } = useDashboard();
+  const {
+    updateWidget,
+    activeDashboard,
+    selectedWidgetId,
+    setSelectedWidgetId,
+  } = useDashboard();
+  const { showPrompt } = useDialog();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as TextConfig;
   const {
@@ -21,6 +29,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   } = config;
 
   const fontClass = getFontClass(fontFamily, globalStyle.fontFamily);
+  const isSelected = selectedWidgetId === widget.id;
 
   const editorRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef(false);
@@ -47,11 +56,12 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const handleFocus = useCallback(() => {
     isEditingRef.current = true;
+    setSelectedWidgetId(widget.id);
     // Clear placeholder content when user focuses
     if (editorRef.current && isPlaceholder) {
       editorRef.current.innerHTML = '';
     }
-  }, [isPlaceholder]);
+  }, [isPlaceholder, setSelectedWidgetId, widget.id]);
 
   /** Normalize browser empty-editor markup (<br>, <div><br></div>) to '' */
   const readEditorContent = useCallback((): string => {
@@ -90,13 +100,32 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
   }, [widget.id, config, updateWidget, readEditorContent]);
 
+  const handleKeyDown = useCallback(
+    async (e: React.KeyboardEvent) => {
+      // Control+K for hyperlinking
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const url = await showPrompt('Enter the URL for the link:', {
+          placeholder: 'https://example.com',
+        });
+        if (url) {
+          document.execCommand('styleWithCSS', false, 'true');
+          document.execCommand('createLink', false, url);
+          // Trigger input to save changes
+          handleInput();
+        }
+      }
+    },
+    [showPrompt, handleInput]
+  );
+
   return (
     <WidgetLayout
       padding="p-0"
+      header={isSelected && <FormattingToolbar editorRef={editorRef} />}
       content={
         <div
-          className={`h-full w-full ${fontClass} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
-          style={{ padding: 'min(16px, 3.5cqmin)', color: fontColor }}
+          className={`h-full w-full ${fontClass} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative flex flex-col`}
         >
           {/* Background color overlay */}
           <div
@@ -105,8 +134,10 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           />
           <div
             ref={editorRef}
-            className="relative z-10 h-full w-full outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 empty:before:pointer-events-none"
+            className="relative z-10 flex-1 w-full outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 empty:before:pointer-events-none"
             style={{
+              padding: 'min(16px, 3.5cqmin)',
+              color: fontColor,
               fontSize: `min(${fontSize}px, ${fontSize * 0.5}cqmin)`,
               lineHeight: 1.5,
             }}
@@ -116,6 +147,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             onFocus={handleFocus}
             onBlur={handleBlur}
             onInput={handleInput}
+            onKeyDown={handleKeyDown}
           />
         </div>
       }

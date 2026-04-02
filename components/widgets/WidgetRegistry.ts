@@ -49,6 +49,7 @@ const MiniAppSettings = lazyNamed(
 );
 
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
+  url: lazyNamed(() => import('./UrlWidget/Widget'), 'UrlWidget'),
   soundboard: lazyNamed(
     () => import('./SoundboardWidget/Widget'),
     'SoundboardWidget'
@@ -173,11 +174,16 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./CustomWidget/Widget'),
     'CustomWidgetWidget'
   ),
+  'activity-wall': lazyNamed(
+    () => import('./ActivityWall/Widget'),
+    'ActivityWallWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
 > = {
+  url: lazyNamed(() => import('./UrlWidget/Settings'), 'UrlWidgetSettings'),
   soundboard: lazyNamed(
     () => import('./SoundboardWidget/Settings'),
     'SoundboardSettings'
@@ -297,6 +303,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./CustomWidget/Settings'),
     'CustomWidgetSettings'
   ),
+  'activity-wall': lazyNamed(
+    () => import('./ActivityWall/Settings'),
+    'ActivityWallSettings'
+  ),
 };
 
 export const WIDGET_APPEARANCE_COMPONENTS: Partial<
@@ -362,6 +372,10 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
     () => import('./StarterPack/Settings'),
     'StarterPackAppearanceSettings'
   ),
+  'activity-wall': lazyNamed(
+    () => import('./ActivityWall/Settings'),
+    'ActivityWallAppearanceSettings'
+  ),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
@@ -395,6 +409,13 @@ export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
  *  - sticker   – Decorative overlay; fixed size, no DraggableWindow wrapper.
  */
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
+  url: {
+    baseWidth: 320,
+    baseHeight: 280,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
   soundboard: {
     baseWidth: 320,
     baseHeight: 280,
@@ -501,6 +522,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   poll: {
     baseWidth: 300,
     baseHeight: 250,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'activity-wall': {
+    baseWidth: 520,
+    baseHeight: 420,
     canSpread: true,
     skipScaling: true,
     padding: 0,

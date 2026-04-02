@@ -42,6 +42,7 @@ import { MathToolsConfigurationPanel } from './MathToolsConfigurationPanel';
 import { NextUpConfigurationPanel } from './NextUpConfigurationPanel';
 import { CarRiderConfigurationPanel } from './CarRiderConfigurationPanel';
 import { PollConfigurationPanel } from './PollConfigurationPanel';
+import { ActivityWallConfigurationPanel } from './ActivityWallConfigurationPanel';
 import { QRConfigurationPanel } from './QRConfigurationPanel';
 import { EmbedConfigurationPanel } from './EmbedConfigurationPanel';
 import { BreathingConfigurationPanel } from './BreathingConfigurationPanel';
@@ -55,6 +56,7 @@ import { RecordConfigurationPanel } from './RecordConfigurationPanel';
 import { SeatingChartConfigurationPanel } from './SeatingChartConfigurationPanel';
 import { RevealGridConfigurationPanel } from './RevealGridConfigurationPanel';
 import { SmartNotebookConfigurationPanel } from './SmartNotebookConfigurationPanel';
+import { RemoteConfigurationPanel } from './RemoteConfigurationPanel';
 import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
@@ -67,6 +69,7 @@ type BuildingConfigPanel = React.ComponentType<{
 // Map from widget/tool type to its building-defaults configuration panel.
 // Catalyst is excluded here because it requires additional props.
 const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
+  url: RemoteConfigurationPanel as unknown as BuildingConfigPanel,
   soundboard: SoundboardConfigurationPanel as unknown as BuildingConfigPanel,
   schedule: ScheduleConfigurationPanel as unknown as BuildingConfigPanel,
   clock: ClockConfigurationPanel as unknown as BuildingConfigPanel,
@@ -84,6 +87,8 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   nextUp: NextUpConfigurationPanel as unknown as BuildingConfigPanel,
   'car-rider-pro': CarRiderConfigurationPanel as unknown as BuildingConfigPanel,
   poll: PollConfigurationPanel as unknown as BuildingConfigPanel,
+  'activity-wall':
+    ActivityWallConfigurationPanel as unknown as BuildingConfigPanel,
   qr: QRConfigurationPanel as unknown as BuildingConfigPanel,
   embed: EmbedConfigurationPanel as unknown as BuildingConfigPanel,
   breathing: BreathingConfigurationPanel as unknown as BuildingConfigPanel,
@@ -103,6 +108,7 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   record: RecordConfigurationPanel as unknown as BuildingConfigPanel,
   'guided-learning':
     GuidedLearningConfigurationPanel as unknown as BuildingConfigPanel,
+  remote: RemoteConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {

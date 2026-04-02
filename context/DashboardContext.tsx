@@ -21,6 +21,7 @@ import {
   NextUpConfig,
   GridPosition,
   FeaturePermission,
+  MaterialsGlobalConfig,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -40,6 +41,7 @@ import { useRosters } from '../hooks/useRosters';
 import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import { DashboardContext } from './DashboardContextValue';
 import { validateGridConfig, sanitizeAIConfig } from '../utils/ai_security';
+import { getMaterialsCatalog } from '../components/widgets/MaterialsWidget/constants';
 
 // Helper to migrate legacy visibleTools to dockItems
 const migrateToDockItems = (
@@ -1091,7 +1093,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
-      saveDashboard(active)
+      saveDashboard({
+        ...active,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+      })
         .then(() => {
           lastSavedDataRef.current = savedData;
           lastSavedFieldsRef.current = savedFields;
@@ -2157,8 +2163,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           }
           break;
         case 'materials':
-          if (Array.isArray(raw.selectedItems) && raw.selectedItems.length > 0)
-            out.selectedItems = raw.selectedItems;
+          if (
+            Array.isArray(raw.selectedItems) &&
+            raw.selectedItems.length > 0
+          ) {
+            const validMaterialIds = new Set(
+              getMaterialsCatalog(
+                perm?.config as Partial<MaterialsGlobalConfig>
+              ).map((item) => item.id)
+            );
+            out.selectedItems = raw.selectedItems.filter(
+              (item): item is string =>
+                typeof item === 'string' && validMaterialIds.has(item)
+            );
+          }
           break;
         case 'nextUp':
           if (raw) {

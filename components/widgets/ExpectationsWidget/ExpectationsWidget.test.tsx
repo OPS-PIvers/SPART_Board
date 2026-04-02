@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ExpectationsWidget, ExpectationsSettings } from './';
+import { ExpectationsWidget } from './';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { WidgetData, ExpectationsConfig } from '@/types';
@@ -71,19 +71,6 @@ describe('ExpectationsWidget', () => {
     });
   });
 
-  it('renders elementary layout correctly', () => {
-    const elementaryWidget: WidgetData = {
-      ...mockWidget,
-      config: {
-        ...(mockWidget.config as ExpectationsConfig),
-        layout: 'elementary',
-      } as ExpectationsConfig,
-    };
-    render(<ExpectationsWidget widget={elementaryWidget} />);
-    // In elementary layout, labels are different or presented differently
-    expect(screen.getByText('Silence')).toBeInTheDocument();
-  });
-
   it('navigates back to main menu from sub-views', () => {
     render(<ExpectationsWidget widget={mockWidget} />);
     fireEvent.click(screen.getByText('Silence'));
@@ -115,43 +102,5 @@ describe('ExpectationsWidget', () => {
         interactionMode: 'respectful',
       }) as ExpectationsConfig,
     });
-  });
-});
-
-describe('ExpectationsSettings', () => {
-  beforeEach(() => {
-    (useDashboard as Mock).mockReturnValue({
-      updateWidget: mockUpdateWidget,
-    });
-  });
-
-  it('renders layout options', () => {
-    render(<ExpectationsSettings widget={mockWidget} />);
-    expect(screen.getByText('Secondary')).toBeInTheDocument();
-    expect(screen.getByText('Elementary')).toBeInTheDocument();
-  });
-
-  it('changes layout configuration', () => {
-    render(<ExpectationsSettings widget={mockWidget} />);
-    fireEvent.click(screen.getByText('Elementary'));
-
-    expect(mockUpdateWidget).toHaveBeenCalledWith(mockWidget.id, {
-      config: expect.objectContaining({
-        layout: 'elementary',
-      }) as ExpectationsConfig,
-    });
-  });
-
-  it('shows selected layout with correct styling', () => {
-    const elementaryWidget: WidgetData = {
-      ...mockWidget,
-      config: {
-        ...(mockWidget.config as ExpectationsConfig),
-        layout: 'elementary',
-      } as ExpectationsConfig,
-    };
-    render(<ExpectationsSettings widget={elementaryWidget} />);
-    const elementaryButton = screen.getByText('Elementary').closest('button');
-    expect(elementaryButton).toHaveClass('border-blue-500');
   });
 });

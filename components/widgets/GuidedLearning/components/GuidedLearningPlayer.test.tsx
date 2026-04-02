@@ -20,6 +20,18 @@ vi.mock('./interactions/TooltipInteraction', () => ({
   }) => <div data-testid="tooltip-coords">{`${step.xPct},${step.yPct}`}</div>,
 }));
 
+vi.mock('./interactions/SpotlightInteraction', () => ({
+  SpotlightInteraction: ({ step }: { step: { id: string } }) => (
+    <div data-testid="spotlight">{step.id}</div>
+  ),
+}));
+
+vi.mock('./interactions/BannerInteraction', () => ({
+  BannerInteraction: ({ step }: { step: { text?: string } }) => (
+    <div data-testid="banner">{step.text}</div>
+  ),
+}));
+
 class ResizeObserverMock {
   private callback: ResizeObserverCallback;
 
@@ -108,12 +120,13 @@ describe('GuidedLearningPlayer', () => {
     const set: GuidedLearningSet = {
       id: 'set-1',
       title: 'Player Test',
-      imageUrl: 'https://example.com/image.png',
+      imageUrls: ['https://example.com/image.png'],
       steps: [
         {
           id: 'step-1',
           xPct: 10,
           yPct: 80,
+          imageIndex: 0,
           interactionType: 'tooltip',
           text: 'Hello',
         },
@@ -134,5 +147,62 @@ describe('GuidedLearningPlayer', () => {
       left: '30%',
       top: '80%',
     });
+  });
+
+  it('lets explore mode switch images and keeps pan-zoom spotlight overlays visible', () => {
+    const set: GuidedLearningSet = {
+      id: 'set-2',
+      title: 'Explore Test',
+      imageUrls: [
+        'https://example.com/image-1.png',
+        'https://example.com/image-2.png',
+      ],
+      steps: [
+        {
+          id: 'step-1',
+          xPct: 20,
+          yPct: 30,
+          imageIndex: 0,
+          interactionType: 'tooltip',
+          text: 'First image',
+        },
+        {
+          id: 'step-2',
+          xPct: 75,
+          yPct: 45,
+          imageIndex: 1,
+          interactionType: 'pan-zoom-spotlight',
+          showOverlay: 'banner',
+          text: 'Second image banner',
+        },
+      ],
+      mode: 'explore',
+      createdAt: 0,
+      updatedAt: 0,
+    };
+
+    render(<GuidedLearningPlayer set={set} />);
+
+    const image = screen.getByAltText('Explore Test');
+    if (!(image instanceof HTMLImageElement)) {
+      throw new Error(
+        'Expected explore mode image to render as an img element'
+      );
+    }
+
+    expect(image.src).toContain('image-1.png');
+    expect(screen.getByRole('button', { name: /step 1/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /step 2/i })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /show image 2/i }));
+    expect(image.src).toContain('image-2.png');
+
+    fireEvent.click(screen.getByRole('button', { name: /step 2/i }));
+    expect(screen.getByTestId('spotlight')).toHaveTextContent('step-2');
+    expect(screen.getByTestId('banner')).toHaveTextContent(
+      'Second image banner'
+    );
   });
 });

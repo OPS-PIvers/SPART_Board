@@ -51,7 +51,9 @@ export type WidgetType =
   | 'video-activity'
   | 'guided-learning'
   | 'custom-widget'
-  | 'soundboard';
+  | 'soundboard'
+  | 'url'
+  | 'activity-wall';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -212,6 +214,16 @@ export interface RoutineStep {
 }
 
 // Widget-specific config types
+
+export interface UrlWidgetConfig {
+  urls: {
+    id: string;
+    url: string;
+    title?: string;
+    color?: string;
+  }[];
+}
+
 export interface ClockConfig {
   format24: boolean;
   showSeconds: boolean;
@@ -312,6 +324,7 @@ export interface DrawingConfig {
 
 export interface QRConfig {
   url?: string;
+  showUrl?: boolean;
   syncWithTextWidget?: boolean;
   qrColor?: string;
   qrBgColor?: string;
@@ -340,6 +353,61 @@ export interface PollGlobalConfig {
 export interface PollConfig {
   question: string;
   options: PollOption[];
+}
+
+export type ActivityWallMode = 'text' | 'photo';
+export type ActivityWallIdentificationMode =
+  | 'anonymous'
+  | 'name'
+  | 'pin'
+  | 'name-pin';
+
+export type ActivityWallArchiveStatus =
+  | 'firebase'
+  | 'syncing'
+  | 'archived'
+  | 'failed';
+
+export interface ActivityWallSubmission {
+  id: string;
+  content: string;
+  submittedAt: number;
+  status: 'approved' | 'pending';
+  participantLabel?: string;
+  storagePath?: string;
+  archiveStatus?: ActivityWallArchiveStatus;
+  archiveStartedAt?: number;
+  driveFileId?: string;
+  archiveError?: string;
+  archivedAt?: number;
+}
+
+export interface ActivityWallActivity {
+  id: string;
+  title: string;
+  prompt: string;
+  mode: ActivityWallMode;
+  moderationEnabled: boolean;
+  identificationMode: ActivityWallIdentificationMode;
+  submissions: ActivityWallSubmission[];
+  startedAt: number | null;
+}
+
+export interface ActivityWallBuildingConfig {
+  defaultMode?: ActivityWallMode;
+  defaultIdentificationMode?: ActivityWallIdentificationMode;
+  defaultModerationEnabled?: boolean;
+}
+
+export interface ActivityWallGlobalConfig {
+  buildingDefaults?: Record<string, ActivityWallBuildingConfig>;
+  dockDefaults?: Record<string, boolean>;
+}
+
+export interface ActivityWallConfig {
+  activities?: ActivityWallActivity[];
+  activeActivityId?: string | null;
+  draftActivity?: ActivityWallActivity;
 }
 
 export interface WebcamConfig {
@@ -678,7 +746,16 @@ export interface BuildingMaterialsDefaults {
   selectedItems?: string[]; // IDs of materials selected by default
 }
 
+export interface MaterialDefinition {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  textColor?: string;
+}
+
 export interface MaterialsGlobalConfig {
+  customMaterials?: MaterialDefinition[];
   buildingDefaults: Record<string, BuildingMaterialsDefaults>;
 }
 
@@ -1291,7 +1368,7 @@ export interface VideoActivityConfig {
   view: VideoActivityView;
   selectedActivityId: string | null;
   selectedActivityTitle: string | null;
-  /** Session ID for the most recently created/viewed session. */
+  /** Session ID for the currently viewed results session. */
   resultsSessionId: string | null;
   /** Default settings for sessions created via this widget */
   autoPlay?: boolean;
@@ -1323,18 +1400,21 @@ export interface VideoActivitySession {
   id: string;
   activityId: string;
   activityTitle: string;
+  assignmentName: string;
   teacherUid: string;
   youtubeUrl: string;
   /** Full questions including correctAnswer — used server-side for grading. */
   questions: VideoActivityQuestion[];
   /** Session-level behavior controls configured at assignment time. */
   settings?: VideoActivitySessionSettings;
+  status: 'active' | 'ended';
   /**
    * Roster PINs allowed to join. Teacher sets this when assigning to a class.
    * Empty array means any PIN is accepted.
    */
   allowedPins: string[];
   createdAt: number;
+  endedAt?: number;
   /** Optional Unix timestamp when the session link expires. */
   expiresAt?: number;
 }
@@ -1743,8 +1823,14 @@ export type GuidedLearningInteractionType =
   | 'audio'
   | 'video'
   | 'pan-zoom'
+  | 'pan-zoom-spotlight'
   | 'spotlight'
   | 'question';
+export type GuidedLearningOverlayType =
+  | 'none'
+  | 'popover'
+  | 'tooltip'
+  | 'banner';
 export type GuidedLearningQuestionType =
   | 'multiple-choice'
   | 'matching'
@@ -1768,8 +1854,14 @@ export interface GuidedLearningStep {
   /** % position on image (0–100) */
   xPct: number;
   yPct: number;
+  /** Which image in set.imageUrls this step belongs to */
+  imageIndex: number;
   label?: string;
   interactionType: GuidedLearningInteractionType;
+  /** Optional hotspot style customization */
+  hideStepNumber?: boolean;
+  /** Overlay style for pan-zoom/spotlight interactions */
+  showOverlay?: GuidedLearningOverlayType;
   /** Content for text-popover and tooltip */
   text?: string;
   /** Firebase Storage URL for audio */
@@ -1792,9 +1884,9 @@ export interface GuidedLearningSet {
   id: string;
   title: string;
   description?: string;
-  /** Firebase Storage URL for the base image */
-  imageUrl: string;
-  imagePath?: string;
+  /** Firebase Storage URLs for one or more activity images */
+  imageUrls: string[];
+  imagePaths?: string[];
   steps: GuidedLearningStep[];
   mode: GuidedLearningMode;
   createdAt: number;
@@ -1826,8 +1918,11 @@ export interface GuidedLearningPublicStep {
   id: string;
   xPct: number;
   yPct: number;
+  imageIndex: number;
   label?: string;
   interactionType: GuidedLearningInteractionType;
+  hideStepNumber?: boolean;
+  showOverlay?: GuidedLearningOverlayType;
   text?: string;
   audioUrl?: string;
   videoUrl?: string;
@@ -1853,7 +1948,7 @@ export interface GuidedLearningSession {
   id: string;
   title: string;
   mode: GuidedLearningMode;
-  imageUrl: string;
+  imageUrls: string[];
   /** Student-safe steps (no answer keys) */
   publicSteps: GuidedLearningPublicStep[];
   teacherUid: string;
@@ -1891,6 +1986,7 @@ export interface GuidedLearningConfig {
 
 // Union of all widget configs
 export type WidgetConfig =
+  | UrlWidgetConfig
   | ClockConfig
   | TrafficConfig
   | TextConfig
@@ -1943,116 +2039,121 @@ export type WidgetConfig =
   | VideoActivityConfig
   | GuidedLearningConfig
   | CustomWidgetConfig
-  | SoundboardConfig;
+  | SoundboardConfig
+  | ActivityWallConfig;
 
 // Helper type to get config type for a specific widget
-export type ConfigForWidget<T extends WidgetType> = T extends 'soundboard'
-  ? SoundboardConfig
-  : T extends 'clock'
-    ? ClockConfig
-    : T extends 'traffic'
-      ? TrafficConfig
-      : T extends 'text'
-        ? TextConfig
-        : T extends 'checklist'
-          ? ChecklistConfig
-          : T extends 'random'
-            ? RandomConfig
-            : T extends 'dice'
-              ? DiceConfig
-              : T extends 'sound'
-                ? SoundConfig
-                : T extends 'drawing'
-                  ? DrawingConfig
-                  : T extends 'qr'
-                    ? QRConfig
-                    : T extends 'embed'
-                      ? EmbedConfig
-                      : T extends 'poll'
-                        ? PollConfig
-                        : T extends 'webcam'
-                          ? WebcamConfig
-                          : T extends 'scoreboard'
-                            ? ScoreboardConfig
-                            : T extends 'expectations'
-                              ? ExpectationsConfig
-                              : T extends 'weather'
-                                ? WeatherConfig
-                                : T extends 'schedule'
-                                  ? ScheduleConfig
-                                  : T extends 'calendar'
-                                    ? CalendarConfig
-                                    : T extends 'lunchCount'
-                                      ? LunchCountConfig
-                                      : T extends 'classes'
-                                        ? ClassesConfig
-                                        : T extends 'instructionalRoutines'
-                                          ? InstructionalRoutinesConfig
-                                          : T extends 'time-tool'
-                                            ? TimeToolConfig
-                                            : T extends 'miniApp'
-                                              ? MiniAppConfig
-                                              : T extends 'materials'
-                                                ? MaterialsConfig
-                                                : T extends 'stickers'
-                                                  ? StickerBookConfig
-                                                  : T extends 'sticker'
-                                                    ? StickerConfig
-                                                    : T extends 'seating-chart'
-                                                      ? SeatingChartConfig
-                                                      : T extends 'catalyst'
-                                                        ? CatalystConfig
-                                                        : T extends 'catalyst-instruction'
-                                                          ? CatalystInstructionConfig
-                                                          : T extends 'catalyst-visual'
-                                                            ? CatalystVisualConfig
-                                                            : T extends 'smartNotebook'
-                                                              ? SmartNotebookConfig
-                                                              : T extends 'recessGear'
-                                                                ? RecessGearConfig
-                                                                : T extends 'pdf'
-                                                                  ? PdfConfig
-                                                                  : T extends 'quiz'
-                                                                    ? QuizConfig
-                                                                    : T extends 'talking-tool'
-                                                                      ? TalkingToolConfig
-                                                                      : T extends 'breathing'
-                                                                        ? BreathingConfig
-                                                                        : T extends 'mathTools'
-                                                                          ? MathToolsConfig
-                                                                          : T extends 'mathTool'
-                                                                            ? MathToolConfig
-                                                                            : T extends 'nextUp'
-                                                                              ? NextUpConfig
-                                                                              : T extends 'onboarding'
-                                                                                ? OnboardingConfig
-                                                                                : T extends 'car-rider-pro'
-                                                                                  ? CarRiderProConfig
-                                                                                  : T extends 'music'
-                                                                                    ? MusicConfig
-                                                                                    : T extends 'specialist-schedule'
-                                                                                      ? SpecialistScheduleConfig
-                                                                                      : T extends 'graphic-organizer'
-                                                                                        ? GraphicOrganizerConfig
-                                                                                        : T extends 'concept-web'
-                                                                                          ? ConceptWebConfig
-                                                                                          : T extends 'reveal-grid'
-                                                                                            ? RevealGridConfig
-                                                                                            : T extends 'numberLine'
-                                                                                              ? NumberLineConfig
-                                                                                              : T extends 'syntax-framer'
-                                                                                                ? SyntaxFramerConfig
-                                                                                                : T extends 'hotspot-image'
-                                                                                                  ? HotspotImageConfig
-                                                                                                  : T extends 'starter-pack'
-                                                                                                    ? StarterPackConfig
-                                                                                                    : T extends 'video-activity'
-                                                                                                      ? VideoActivityConfig
-                                                                                                      : T extends 'guided-learning'
-                                                                                                        ? GuidedLearningConfig
-                                                                                                        : T extends 'custom-widget'
-                                                                                                          ? CustomWidgetConfig
-                                                                                                          : never;
+export type ConfigForWidget<T extends WidgetType> = T extends 'url'
+  ? UrlWidgetConfig
+  : T extends 'soundboard'
+    ? SoundboardConfig
+    : T extends 'clock'
+      ? ClockConfig
+      : T extends 'traffic'
+        ? TrafficConfig
+        : T extends 'text'
+          ? TextConfig
+          : T extends 'checklist'
+            ? ChecklistConfig
+            : T extends 'random'
+              ? RandomConfig
+              : T extends 'dice'
+                ? DiceConfig
+                : T extends 'sound'
+                  ? SoundConfig
+                  : T extends 'drawing'
+                    ? DrawingConfig
+                    : T extends 'qr'
+                      ? QRConfig
+                      : T extends 'embed'
+                        ? EmbedConfig
+                        : T extends 'poll'
+                          ? PollConfig
+                          : T extends 'webcam'
+                            ? WebcamConfig
+                            : T extends 'scoreboard'
+                              ? ScoreboardConfig
+                              : T extends 'expectations'
+                                ? ExpectationsConfig
+                                : T extends 'weather'
+                                  ? WeatherConfig
+                                  : T extends 'schedule'
+                                    ? ScheduleConfig
+                                    : T extends 'calendar'
+                                      ? CalendarConfig
+                                      : T extends 'lunchCount'
+                                        ? LunchCountConfig
+                                        : T extends 'classes'
+                                          ? ClassesConfig
+                                          : T extends 'instructionalRoutines'
+                                            ? InstructionalRoutinesConfig
+                                            : T extends 'time-tool'
+                                              ? TimeToolConfig
+                                              : T extends 'miniApp'
+                                                ? MiniAppConfig
+                                                : T extends 'materials'
+                                                  ? MaterialsConfig
+                                                  : T extends 'stickers'
+                                                    ? StickerBookConfig
+                                                    : T extends 'sticker'
+                                                      ? StickerConfig
+                                                      : T extends 'seating-chart'
+                                                        ? SeatingChartConfig
+                                                        : T extends 'catalyst'
+                                                          ? CatalystConfig
+                                                          : T extends 'catalyst-instruction'
+                                                            ? CatalystInstructionConfig
+                                                            : T extends 'catalyst-visual'
+                                                              ? CatalystVisualConfig
+                                                              : T extends 'smartNotebook'
+                                                                ? SmartNotebookConfig
+                                                                : T extends 'recessGear'
+                                                                  ? RecessGearConfig
+                                                                  : T extends 'pdf'
+                                                                    ? PdfConfig
+                                                                    : T extends 'quiz'
+                                                                      ? QuizConfig
+                                                                      : T extends 'talking-tool'
+                                                                        ? TalkingToolConfig
+                                                                        : T extends 'breathing'
+                                                                          ? BreathingConfig
+                                                                          : T extends 'mathTools'
+                                                                            ? MathToolsConfig
+                                                                            : T extends 'mathTool'
+                                                                              ? MathToolConfig
+                                                                              : T extends 'nextUp'
+                                                                                ? NextUpConfig
+                                                                                : T extends 'onboarding'
+                                                                                  ? OnboardingConfig
+                                                                                  : T extends 'car-rider-pro'
+                                                                                    ? CarRiderProConfig
+                                                                                    : T extends 'music'
+                                                                                      ? MusicConfig
+                                                                                      : T extends 'specialist-schedule'
+                                                                                        ? SpecialistScheduleConfig
+                                                                                        : T extends 'graphic-organizer'
+                                                                                          ? GraphicOrganizerConfig
+                                                                                          : T extends 'concept-web'
+                                                                                            ? ConceptWebConfig
+                                                                                            : T extends 'reveal-grid'
+                                                                                              ? RevealGridConfig
+                                                                                              : T extends 'numberLine'
+                                                                                                ? NumberLineConfig
+                                                                                                : T extends 'syntax-framer'
+                                                                                                  ? SyntaxFramerConfig
+                                                                                                  : T extends 'hotspot-image'
+                                                                                                    ? HotspotImageConfig
+                                                                                                    : T extends 'starter-pack'
+                                                                                                      ? StarterPackConfig
+                                                                                                      : T extends 'video-activity'
+                                                                                                        ? VideoActivityConfig
+                                                                                                        : T extends 'guided-learning'
+                                                                                                          ? GuidedLearningConfig
+                                                                                                          : T extends 'custom-widget'
+                                                                                                            ? CustomWidgetConfig
+                                                                                                            : T extends 'activity-wall'
+                                                                                                              ? ActivityWallConfig
+                                                                                                              : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
@@ -2204,6 +2305,10 @@ export interface Dashboard {
   settings?: DashboardSettings;
   libraryOrder?: (WidgetType | InternalToolType)[];
   updatedAt?: number;
+  /** Viewport width (px) when the dashboard was last saved. Used for proportional layout scaling on load. */
+  viewportWidth?: number;
+  /** Viewport height (px) when the dashboard was last saved. Used for proportional layout scaling on load. */
+  viewportHeight?: number;
 }
 
 export interface Toast {
@@ -2806,4 +2911,8 @@ export interface CustomWidgetConfig {
   customWidgetId: string;
   /** Admin-configured settings values (keyed by CustomWidgetSettingDef.key) */
   adminSettings?: Record<string, string | number | boolean>;
+}
+
+export interface RemoteGlobalConfig {
+  dockDefaults?: Record<string, boolean>;
 }

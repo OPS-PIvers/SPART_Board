@@ -11,6 +11,7 @@ import { AudioInteraction } from './interactions/AudioInteraction';
 import { VideoInteraction } from './interactions/VideoInteraction';
 import { SpotlightInteraction } from './interactions/SpotlightInteraction';
 import { QuestionInteraction } from './interactions/QuestionInteraction';
+import { BannerInteraction } from './interactions/BannerInteraction';
 import {
   calculateImageFootprint,
   toContainerCoords,
@@ -47,6 +48,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
   const [activeStepId, setActiveStepId] = useState<string | null>(
     mode !== 'explore' ? (steps[0]?.id ?? null) : null
   );
+  const [exploreImageIndex, setExploreImageIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0-1 for guided auto-advance
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
@@ -59,6 +61,9 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
     if (mode !== 'explore' && steps.length > 0) {
       setCurrentIdx(0);
       setActiveStepId(steps[0].id);
+    } else if (mode === 'explore') {
+      setActiveStepId(null);
+      setExploreImageIndex(0);
     }
   }
 
@@ -109,6 +114,16 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
   const currentStep = steps[currentIdx] ?? null;
   const activeStep = steps.find((s) => s.id === activeStepId) ?? null;
+  const rawCurrentImageIndex =
+    mode === 'explore' ? exploreImageIndex : (currentStep?.imageIndex ?? 0);
+  const currentImageIndex =
+    set.imageUrls.length === 0
+      ? 0
+      : Math.min(
+          Math.max(rawCurrentImageIndex, 0),
+          Math.max(set.imageUrls.length - 1, 0)
+        );
+  const currentImageUrl = set.imageUrls[currentImageIndex] ?? set.imageUrls[0];
 
   const toContainerStep = useCallback(
     (step: GuidedLearningPublicStep | null) => {
@@ -124,8 +139,19 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
   const activeStepInContainer = toContainerStep(activeStep);
 
   // Derive pan-zoom active state from current step (no effect needed)
+  const panZoomTargetStep = mode === 'explore' ? activeStep : currentStep;
   const panZoomActive =
-    currentStep?.interactionType === 'pan-zoom' ? currentStep.id : null;
+    panZoomTargetStep?.interactionType === 'pan-zoom' ||
+    panZoomTargetStep?.interactionType === 'pan-zoom-spotlight'
+      ? panZoomTargetStep.id
+      : null;
+
+  useEffect(() => {
+    for (const url of set.imageUrls) {
+      const image = new Image();
+      image.src = url;
+    }
+  }, [set.imageUrls]);
 
   const goNext = useCallback(() => {
     if (steps.length === 0) return;
@@ -186,6 +212,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
   const handlePinClick = (step: GuidedLearningPublicStep) => {
     if (mode === 'explore') {
+      setExploreImageIndex(step.imageIndex ?? 0);
       setActiveStepId((prev) => (prev === step.id ? null : step.id));
     }
   };
@@ -266,23 +293,13 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
       );
     }
 
-    if (type === 'spotlight' && activeStepInContainer) {
-      return (
-        <SpotlightInteraction
-          step={activeStepInContainer}
-          containerWidth={containerSize.w}
-          containerHeight={containerSize.h}
-        />
-      );
-    }
-
     if (type === 'question') {
       // Find original step for answer key (teacher mode only)
       const origStep = teacherMode
         ? set.steps.find((s) => s.id === activeStep.id)
         : null;
       return (
-        <div className="absolute inset-0 z-30 pointer-events-auto overflow-y-auto">
+        <div className="absolute inset-0 z-30 pointer-events-auto overflow-hidden">
           <QuestionInteraction
             step={activeStep}
             onAnswer={(answer, isCorrect) =>
@@ -299,6 +316,50 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
           />
         </div>
       );
+    }
+
+    if (
+      type === 'pan-zoom' ||
+      type === 'spotlight' ||
+      type === 'pan-zoom-spotlight'
+    ) {
+      const overlay =
+        activeStep.showOverlay === 'tooltip' && activeStepInContainer ? (
+          <TooltipInteraction
+            step={activeStepInContainer}
+            containerWidth={containerSize.w}
+            containerHeight={containerSize.h}
+          />
+        ) : activeStep.showOverlay === 'popover' ? (
+          <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+            <div className="pointer-events-auto w-full h-full">
+              <TextPopoverInteraction
+                step={activeStep}
+                onClose={() => setActiveStepId(null)}
+              />
+            </div>
+          </div>
+        ) : activeStep.showOverlay === 'banner' ? (
+          <BannerInteraction step={activeStep} />
+        ) : null;
+
+      if (
+        (type === 'spotlight' || type === 'pan-zoom-spotlight') &&
+        activeStepInContainer
+      ) {
+        return (
+          <>
+            <SpotlightInteraction
+              step={activeStepInContainer}
+              containerWidth={containerSize.w}
+              containerHeight={containerSize.h}
+            />
+            {overlay}
+          </>
+        );
+      }
+
+      return overlay;
     }
 
     return null;
@@ -429,12 +490,45 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
         )}
 
         {mode === 'explore' && (
-          <span
-            className="text-slate-400 font-medium"
-            style={{ fontSize: 'min(11px, 3cqmin)' }}
+          <div
+            className="flex items-center flex-wrap"
+            style={{ gap: 'min(8px, 2cqmin)' }}
           >
-            Click any pin to explore
-          </span>
+            <span
+              className="text-slate-400 font-medium"
+              style={{ fontSize: 'min(11px, 3cqmin)' }}
+            >
+              Click any pin to explore
+            </span>
+            {set.imageUrls.length > 1 && (
+              <div
+                className="flex items-center flex-wrap"
+                style={{ gap: 'min(6px, 1.5cqmin)' }}
+              >
+                {set.imageUrls.map((_, imageIndex) => (
+                  <button
+                    key={`image-${imageIndex}`}
+                    onClick={() => {
+                      setExploreImageIndex(imageIndex);
+                      setActiveStepId(null);
+                    }}
+                    className={`rounded border font-bold transition-colors ${
+                      imageIndex === currentImageIndex
+                        ? 'border-indigo-400 bg-indigo-500/20 text-indigo-200'
+                        : 'border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
+                    }`}
+                    style={{
+                      padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
+                      fontSize: 'min(10px, 2.6cqmin)',
+                    }}
+                    aria-label={`Show image ${imageIndex + 1}`}
+                  >
+                    Image {imageIndex + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -459,10 +553,10 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
         >
           {/* Image with optional pan-zoom transform */}
           <div className="w-full h-full relative" style={getPanZoomStyle()}>
-            {set.imageUrl && (
+            {currentImageUrl && (
               <img
                 ref={imgRef}
-                src={set.imageUrl}
+                src={currentImageUrl}
                 alt={set.title}
                 className="w-full h-full object-contain pointer-events-none"
                 draggable={false}
@@ -472,6 +566,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
             {/* Hotspot pins */}
             {steps.map((step, idx) => {
+              if (step.imageIndex !== currentImageIndex) return null;
               const isActive = activeStepId === step.id;
               const isCurrentStructured =
                 mode !== 'explore' && step.id === currentStep?.id;
@@ -512,7 +607,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
                       className="text-white font-bold select-none"
                       style={{ fontSize: 'min(12px, 3cqmin)' }}
                     >
-                      {idx + 1}
+                      {step.hideStepNumber ? '' : idx + 1}
                     </span>
                   </button>
                 </div>

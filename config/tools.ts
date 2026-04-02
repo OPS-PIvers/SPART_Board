@@ -41,12 +41,19 @@ import {
   MapPin,
   Share2,
   GraduationCap,
+  MessagesSquare,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
 import { RecordIcon } from '../components/layout/dock/RecordIcon';
 
 export const TOOLS: ToolMetadata[] = [
+  {
+    type: 'url',
+    icon: Globe,
+    label: 'Links',
+    color: 'bg-emerald-500',
+  },
   {
     type: 'soundboard',
     icon: Volume2,
@@ -75,6 +82,12 @@ export const TOOLS: ToolMetadata[] = [
   { type: 'qr', icon: QrCode, label: 'QR', color: 'bg-slate-700' },
   { type: 'embed', icon: Globe, label: 'Embed', color: 'bg-sky-600' },
   { type: 'poll', icon: BarChart2, label: 'Poll', color: 'bg-orange-500' },
+  {
+    type: 'activity-wall',
+    icon: MessagesSquare,
+    label: 'Activity Wall',
+    color: 'bg-fuchsia-600',
+  },
   { type: 'webcam', icon: Video, label: 'Camera', color: 'bg-gray-800' },
   { type: 'scoreboard', icon: Trophy, label: 'Scores', color: 'bg-yellow-600' },
   {

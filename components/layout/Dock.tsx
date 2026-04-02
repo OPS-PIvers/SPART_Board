@@ -57,6 +57,7 @@ import {
   createDefaultTextWidget,
 } from '@/utils/smartPaste';
 import { SmartPastePickerModal } from './dock/SmartPastePickerModal';
+import { ImagePastePickerModal } from './dock/ImagePastePickerModal';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { DockIcon } from './dock/DockIcon';
 import { DockLabel } from './dock/DockLabel';
@@ -133,14 +134,6 @@ export const Dock: React.FC = () => {
 
   const getBuildingAwareOverrides = useCallback(
     (type: WidgetType): AddWidgetOverrides | undefined => {
-      if (type === 'expectations') {
-        const isElementaryOnly =
-          userGradeLevels.length > 0 &&
-          userGradeLevels.every((gl) => gl === 'k-2' || gl === '3-5');
-        if (isElementaryOnly) {
-          return { config: { layout: 'elementary' } };
-        }
-      }
       if (type === 'lunchCount') {
         const schoolBuilding = selectedBuildings.find(isLunchCountBuilding);
         if (schoolBuilding) {
@@ -149,7 +142,7 @@ export const Dock: React.FC = () => {
       }
       return undefined;
     },
-    [userGradeLevels, selectedBuildings]
+    [selectedBuildings]
   );
 
   /**
@@ -221,6 +214,7 @@ export const Dock: React.FC = () => {
   const [smartPastePending, setSmartPastePending] = useState<string | null>(
     null
   );
+  const [imagePastePending, setImagePastePending] = useState<File | null>(null);
 
   // Drag-to-collapse state
   const [dragY, setDragY] = useState(0);
@@ -287,7 +281,7 @@ export const Dock: React.FC = () => {
   useEffect(() => {
     if (!canAccessFeature('smart-paste')) return;
 
-    const handlePaste = async (e: ClipboardEvent) => {
+    const handlePaste = (e: ClipboardEvent) => {
       // Don't intercept if user is typing in an input or textarea
       const target = e.target as HTMLElement;
       if (
@@ -304,17 +298,10 @@ export const Dock: React.FC = () => {
         const file = e.clipboardData.files[0];
         if (file.type.startsWith('image/')) {
           if (!user) {
-            addToast('Please sign in to add stickers', 'error');
+            addToast('Please sign in to add images', 'error');
             return;
           }
-          addToast('Processing image...', 'info');
-          const url = await processAndUploadImage(file);
-          if (url) {
-            addWidget('sticker', { config: { url, rotation: 0 } });
-            addToast('Sticker added!', 'success');
-          } else {
-            addToast('Failed to process image', 'error');
-          }
+          setImagePastePending(file);
           return;
         }
       }
@@ -608,6 +595,28 @@ export const Dock: React.FC = () => {
             setShowCatalystPicker(false);
           }}
           onClose={() => setShowCatalystPicker(false)}
+        />
+      )}
+
+      {imagePastePending !== null && (
+        <ImagePastePickerModal
+          globalStyle={globalStyle}
+          onClose={() => setImagePastePending(null)}
+          onSelect={async (type) => {
+            const file = imagePastePending;
+            if (!file) return;
+            setImagePastePending(null);
+
+            addToast('Processing image...', 'info');
+            const skipProcessing = type === 'full-image';
+            const url = await processAndUploadImage(file, { skipProcessing });
+            if (url) {
+              addWidget('sticker', { config: { url, rotation: 0 } });
+              addToast('Image added!', 'success');
+            } else {
+              addToast('Failed to process image', 'error');
+            }
+          }}
         />
       )}
 
