@@ -196,7 +196,8 @@ describe('ActivityWallStudentApp', () => {
       expect(mockSetDoc).toHaveBeenCalledWith(
         'submission-doc',
         expect.objectContaining({
-          content: '',
+          content:
+            'activity_wall_photos/teacher-1_activity-1/11111111-1111-1111-1111-111111111111',
           status: 'pending',
           storagePath:
             'activity_wall_photos/teacher-1_activity-1/11111111-1111-1111-1111-111111111111',

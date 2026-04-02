@@ -181,7 +181,7 @@ export const ActivityWallStudentApp: React.FC = () => {
         storagePath = `activity_wall_photos/${sessionId}/${submissionId}`;
         const storageRef = ref(storage, storagePath);
         await uploadBytes(storageRef, selectedFile);
-        content = '';
+        content = storagePath;
       } else {
         content = response.trim();
       }
@@ -206,7 +206,8 @@ export const ActivityWallStudentApp: React.FC = () => {
       });
 
       setSubmitted(true);
-    } catch {
+    } catch (error) {
+      console.error('[ActivityWallStudentApp] Submission failed:', error);
       setSubmitError(
         'Could not submit your response. Please check your connection and try again.'
       );
