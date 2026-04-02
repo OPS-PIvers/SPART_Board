@@ -56,7 +56,7 @@ const MenuButton: React.FC<{
     </button>
     {isOpen && (
       <div
-        className="absolute top-full left-0 mt-1 p-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[120px] animate-in fade-in zoom-in-95 duration-100"
+        className="absolute top-full left-0 mt-1 p-1 bg-white border border-slate-200 rounded-lg shadow-xl z-dropdown min-w-[120px] animate-in fade-in zoom-in-95 duration-100"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

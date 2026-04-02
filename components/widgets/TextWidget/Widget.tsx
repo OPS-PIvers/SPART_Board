@@ -11,7 +11,12 @@ import { FormattingToolbar } from './FormattingToolbar';
 import { PLACEHOLDER_TEXT } from './constants';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, activeDashboard, selectedWidgetId } = useDashboard();
+  const {
+    updateWidget,
+    activeDashboard,
+    selectedWidgetId,
+    setSelectedWidgetId,
+  } = useDashboard();
   const { showPrompt } = useDialog();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as TextConfig;
@@ -51,11 +56,12 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const handleFocus = useCallback(() => {
     isEditingRef.current = true;
+    setSelectedWidgetId(widget.id);
     // Clear placeholder content when user focuses
     if (editorRef.current && isPlaceholder) {
       editorRef.current.innerHTML = '';
     }
-  }, [isPlaceholder]);
+  }, [isPlaceholder, setSelectedWidgetId, widget.id]);
 
   /** Normalize browser empty-editor markup (<br>, <div><br></div>) to '' */
   const readEditorContent = useCallback((): string => {

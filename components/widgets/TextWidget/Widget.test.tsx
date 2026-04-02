@@ -7,9 +7,11 @@ import { useDashboard } from '@/context/useDashboard';
 
 // Mock useDashboard
 const mockUpdateWidget = vi.fn();
+const mockSetSelectedWidgetId = vi.fn();
 const mockDashboardContext = {
   updateWidget: mockUpdateWidget,
   selectedWidgetId: null,
+  setSelectedWidgetId: mockSetSelectedWidgetId,
   activeDashboard: {
     globalStyle: { fontFamily: 'sans' },
   },
@@ -155,6 +157,9 @@ describe('TextWidget', () => {
 
     // Empty innerHTML is expected
     expect(editableDiv.innerHTML).toBe('');
+    expect(mockSetSelectedWidgetId).toHaveBeenCalledWith(
+      String(emptyWidget.id)
+    );
   });
 
   it('clears placeholder content when focused (placeholder content)', () => {
@@ -175,6 +180,9 @@ describe('TextWidget', () => {
 
     // Empty innerHTML is expected
     expect(editableDiv.innerHTML).toBe('');
+    expect(mockSetSelectedWidgetId).toHaveBeenCalledWith(
+      String(placeholderWidget.id)
+    );
   });
 
   it('updates content when changed externally', () => {
