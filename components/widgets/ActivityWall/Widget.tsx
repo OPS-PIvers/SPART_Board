@@ -751,6 +751,7 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
       h: 250,
       config: {
         url: participantUrl,
+        showUrl: false,
       },
     });
     addToast(
@@ -1310,8 +1311,12 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
             ) : (
               <div
-                className="grid grid-cols-2"
-                style={{ gap: 'min(6px, 1.8cqmin)' }}
+                className="grid"
+                style={{
+                  gap: 'min(6px, 1.8cqmin)',
+                  gridTemplateColumns:
+                    'repeat(auto-fill, minmax(min(120px, 45%), 1fr))',
+                }}
               >
                 {visibleSubmissions.map((submission) => {
                   const archiveStatus = getArchiveStatus(submission);

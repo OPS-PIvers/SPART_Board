@@ -133,14 +133,6 @@ export const Dock: React.FC = () => {
 
   const getBuildingAwareOverrides = useCallback(
     (type: WidgetType): AddWidgetOverrides | undefined => {
-      if (type === 'expectations') {
-        const isElementaryOnly =
-          userGradeLevels.length > 0 &&
-          userGradeLevels.every((gl) => gl === 'k-2' || gl === '3-5');
-        if (isElementaryOnly) {
-          return { config: { layout: 'elementary' } };
-        }
-      }
       if (type === 'lunchCount') {
         const schoolBuilding = selectedBuildings.find(isLunchCountBuilding);
         if (schoolBuilding) {
@@ -149,7 +141,7 @@ export const Dock: React.FC = () => {
       }
       return undefined;
     },
-    [userGradeLevels, selectedBuildings]
+    [selectedBuildings]
   );
 
   /**

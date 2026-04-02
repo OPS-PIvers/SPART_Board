@@ -5,13 +5,23 @@ import { useLiveSession } from '@/hooks/useLiveSession';
 import { StudentLobby } from './StudentLobby';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { Snowflake, Radio } from 'lucide-react';
-import { WidgetData, DEFAULT_GLOBAL_STYLE } from '@/types';
+import { WidgetData, DEFAULT_GLOBAL_STYLE, LiveSession } from '@/types';
 import { getDefaultWidgetConfig } from '@/utils/widgetHelpers';
 
 const noop = () => undefined;
 const asyncNoop = async () => {
   await Promise.resolve();
 };
+const asyncNoopSession = (): Promise<LiveSession> =>
+  Promise.resolve({
+    id: '',
+    isActive: false,
+    activeWidgetId: null,
+    activeWidgetType: null,
+    code: '',
+    frozen: false,
+    createdAt: 0,
+  });
 
 export const StudentApp = () => {
   const [joinedCode, setJoinedCode] = useState<string | null>(null);
@@ -233,7 +243,7 @@ export const StudentApp = () => {
           students={[]}
           updateSessionConfig={asyncNoop}
           updateSessionBackground={asyncNoop}
-          startSession={asyncNoop}
+          startSession={asyncNoopSession}
           endSession={asyncNoop}
           removeStudent={asyncNoop}
           toggleFreezeStudent={asyncNoop}
