@@ -25,14 +25,9 @@ import { CapturedItem } from './types';
 export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   widget: _widget,
 }) => {
-  const { featurePermissions, canAccessFeature } = useAuth();
+  const { canAccessFeature } = useAuth();
   const { addWidget, addToast, updateWidget } = useDashboard();
   const { showAlert, showConfirm } = useDialog();
-  const webcamPermission = featurePermissions.find(
-    (p) => p.widgetType === 'webcam'
-  );
-  const config = webcamPermission?.config ?? {};
-  const ocrMode = (config.ocrMode as 'standard' | 'gemini') ?? 'standard';
   const widgetConfig = (_widget.config || {}) as WebcamConfig;
 
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -162,7 +157,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
       }
 
       let text = '';
-      if (ocrMode === 'gemini' && canAccessFeature('gemini-functions')) {
+      if (canAccessFeature('gemini-functions')) {
         text = await extractTextWithGemini(dataUrl);
       } else {
         const result = await Tesseract.recognize(dataUrl, 'eng');
@@ -186,7 +181,6 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
     }
   }, [
     isMirrored,
-    ocrMode,
     showAlert,
     widgetConfig.autoSendToNotes,
     widgetConfig.isRemoteMode,
