@@ -88,6 +88,30 @@ export const MobileRemoteView: React.FC = () => {
   const pendingWidgetIds = useRef<Set<string>>(new Set());
   const pendingSettingsWrite = useRef(false);
 
+  // Board ID requested via URL query param (e.g. /remote?boardId=<id>).
+  // If present, we switch to that board as soon as dashboards have loaded.
+  const targetBoardId = useRef(
+    new URLSearchParams(window.location.search).get('boardId')
+  ).current;
+  const hasTargetedBoard = useRef(false);
+
+  // Switch to the board specified in the URL, once dashboards are available.
+  useEffect(() => {
+    if (!targetBoardId || hasTargetedBoard.current || dashboards.length === 0)
+      return;
+    if (activeDashboard?.id === targetBoardId) {
+      hasTargetedBoard.current = true;
+      return;
+    }
+    const target = dashboards.find((d) => d.id === targetBoardId);
+    if (!target) return; // ID not found — fall back to default board
+    hasTargetedBoard.current = true;
+    setIsInitialized(false);
+    setLocalWidgets(null);
+    setLocalSettings(undefined);
+    loadDashboard(targetBoardId);
+  }, [dashboards, activeDashboard, targetBoardId, loadDashboard]);
+
   // Seed local snapshot when activeDashboard first becomes available.
   // We do this in the render phase to avoid "cascading renders" from useEffect.
   // React allows setting state during render as long as it's guarded to prevent loops.
