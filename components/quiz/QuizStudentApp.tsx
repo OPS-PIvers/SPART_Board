@@ -398,21 +398,20 @@ const ActiveQuiz: React.FC<{
   const fibAnswerRef = useRef(fibAnswer);
   const onAnswerRef = useRef(onAnswer);
 
-  // eslint-disable-next-line react-hooks/refs
-  currentQuestionRef.current = currentQuestion;
-  // eslint-disable-next-line react-hooks/refs
-  selectedAnswerRef.current = selectedAnswer;
-  // eslint-disable-next-line react-hooks/refs
-  fibAnswerRef.current = fibAnswer;
-  // eslint-disable-next-line react-hooks/refs
-  onAnswerRef.current = onAnswer;
+  useEffect(() => {
+    currentQuestionRef.current = currentQuestion;
+    selectedAnswerRef.current = selectedAnswer;
+    fibAnswerRef.current = fibAnswer;
+    onAnswerRef.current = onAnswer;
+  }, [currentQuestion, selectedAnswer, fibAnswer, onAnswer]);
 
   // Countdown
   useEffect(() => {
-    if (timeLeft === null || submitted) return;
+    if (timeLeft === null || submitted || submitting) return;
     if (timeLeft <= 0) {
       // Auto-submit empty answer when time runs out
-      if (currentQuestionRef.current && !submitted) {
+      if (currentQuestionRef.current && !submitted && !submitting) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSubmitted(true);
         void onAnswerRef.current(
           currentQuestionRef.current.id,
@@ -426,7 +425,7 @@ const ActiveQuiz: React.FC<{
       1000
     );
     return () => clearInterval(id);
-  }, [timeLeft, submitted]);
+  }, [timeLeft, submitted, submitting]);
 
   if (!currentQuestion) {
     return (
@@ -439,9 +438,9 @@ const ActiveQuiz: React.FC<{
   const handleSubmit = async (answer: string) => {
     if (submitting || submitted) return;
     setSubmitting(true);
+    setSubmitted(true); // Mark submitted immediately to prevent timer auto-submit races
     setSelectedAnswer(answer);
     await onAnswer(currentQuestion.id, answer);
-    setSubmitted(true);
     setSubmitting(false);
 
     // Auto-complete if on last question
