@@ -320,7 +320,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
           const url = `${window.location.origin}/quiz?code=${code}`;
           if (typeof navigator !== 'undefined' && navigator.clipboard) {
-            navigator.clipboard
+            void navigator.clipboard
               .writeText(url)
               .then(() =>
                 addToast('Assignment link copied to clipboard!', 'success')

@@ -313,7 +313,7 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
 
         const url = `${window.location.origin}/activity/${encodeURIComponent(sessionId)}`;
         if (typeof navigator !== 'undefined' && navigator.clipboard) {
-          navigator.clipboard
+          void navigator.clipboard
             .writeText(url)
             .then(() =>
               addToast('Assignment link copied to clipboard!', 'success')

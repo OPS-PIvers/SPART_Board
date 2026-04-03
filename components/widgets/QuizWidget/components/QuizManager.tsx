@@ -85,7 +85,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
               <div className="flex items-center gap-2 text-white">
                 <Play className="w-5 h-5 fill-current" />
                 <span className="font-black uppercase tracking-tight">
-                  Go Live
+                  Assign
                 </span>
               </div>
               <button

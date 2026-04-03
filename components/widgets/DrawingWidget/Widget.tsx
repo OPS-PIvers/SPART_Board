@@ -50,7 +50,7 @@ export const DrawingWidget: React.FC<{
         );
         const url = `${window.location.origin}/join?code=${newSession.code}`;
         if (typeof navigator !== 'undefined' && navigator.clipboard) {
-          navigator.clipboard
+          void navigator.clipboard
             .writeText(url)
             .then(() =>
               addToast('Assignment link copied to clipboard!', 'success')
