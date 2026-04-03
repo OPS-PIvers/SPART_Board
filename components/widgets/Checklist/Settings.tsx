@@ -48,19 +48,16 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   }, []);
 
   const configRef = React.useRef(config);
-  React.useEffect(() => {
-    configRef.current = config;
-  }, [config]);
+  // eslint-disable-next-line react-hooks/refs
+  configRef.current = config;
 
   const updateWidgetRef = React.useRef(updateWidget);
-  React.useEffect(() => {
-    updateWidgetRef.current = updateWidget;
-  }, [updateWidget]);
+  // eslint-disable-next-line react-hooks/refs
+  updateWidgetRef.current = updateWidget;
 
   const itemsRef = React.useRef(items);
-  React.useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
+  // eslint-disable-next-line react-hooks/refs
+  itemsRef.current = items;
 
   const handleBulkChange = (text: string) => {
     setLocalText(text);
