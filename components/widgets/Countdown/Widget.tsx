@@ -11,6 +11,7 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
     config;
 
   const calculatedDays = useMemo(() => {
+    const start = new Date(startDate);
     const event = new Date(eventDate);
     const now = new Date();
     const todayAtMidnight = new Date(
@@ -18,9 +19,13 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
       now.getMonth(),
       now.getDate()
     );
-    // Use current date for calculation if start date has passed
-    const calcStart = new Date(todayAtMidnight);
-    if (!countToday) {
+
+    const calcStart = new Date(
+      Math.max(todayAtMidnight.getTime(), start.getTime())
+    );
+    calcStart.setHours(0, 0, 0, 0);
+
+    if (!countToday && calcStart.getTime() === todayAtMidnight.getTime()) {
       calcStart.setDate(calcStart.getDate() + 1);
     }
 
@@ -46,7 +51,7 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
     }
 
     return days;
-  }, [eventDate, includeWeekends, countToday]);
+  }, [startDate, eventDate, includeWeekends, countToday]);
 
   const gridData = useMemo(() => {
     const start = new Date(startDate);
@@ -90,8 +95,8 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className="flex flex-col items-center justify-center w-full h-full p-4 overflow-hidden bg-white rounded-3xl"
-          style={{ containerType: 'size' }}
+          className="flex flex-col items-center justify-center w-full h-full overflow-hidden bg-white rounded-3xl"
+          style={{ containerType: 'size', padding: 'min(16px, 4cqmin)' }}
         >
           {viewMode === 'number' ? (
             <div className="flex flex-col items-center justify-center text-center w-full">
@@ -102,14 +107,22 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
                 {calculatedDays}
               </div>
               <div
-                className="font-medium text-slate-500 mt-2"
-                style={{ fontSize: 'min(24px, 8cqmin)' }}
+                className="font-medium text-slate-500"
+                style={{
+                  fontSize: 'min(24px, 8cqmin)',
+                  marginTop: 'min(8px, 2cqmin)',
+                }}
               >
                 day{calculatedDays !== 1 ? 's' : ''} until
               </div>
               <div
-                className="font-bold text-brand-blue-primary mt-1 px-4 text-center break-words"
-                style={{ fontSize: 'min(32px, 10cqmin)' }}
+                className="font-bold text-brand-blue-primary text-center break-words"
+                style={{
+                  fontSize: 'min(32px, 10cqmin)',
+                  marginTop: 'min(4px, 1cqmin)',
+                  paddingLeft: 'min(16px, 4cqmin)',
+                  paddingRight: 'min(16px, 4cqmin)',
+                }}
               >
                 {title}
               </div>
@@ -117,13 +130,19 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
           ) : (
             <div className="flex flex-col items-center justify-start w-full h-full">
               <div
-                className="font-bold text-brand-blue-primary mb-2 flex-shrink-0 text-center w-full truncate"
-                style={{ fontSize: 'min(24px, 8cqmin)' }}
+                className="font-bold text-brand-blue-primary flex-shrink-0 text-center w-full truncate"
+                style={{
+                  fontSize: 'min(24px, 8cqmin)',
+                  marginBottom: 'min(8px, 2cqmin)',
+                }}
               >
                 {title}
               </div>
               <div className="flex-1 w-full overflow-hidden flex items-center justify-center">
-                <div className="flex flex-wrap gap-1 justify-center items-center h-full w-full content-center overflow-y-auto">
+                <div
+                  className="flex flex-wrap justify-center items-center h-full w-full content-center overflow-y-auto"
+                  style={{ gap: 'min(4px, 1cqmin)' }}
+                >
                   {gridData.map((item) => (
                     <div
                       key={item.number}
