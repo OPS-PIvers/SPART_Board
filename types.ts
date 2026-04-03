@@ -259,6 +259,7 @@ export interface TextConfig {
   fontSize: number;
   fontFamily?: string;
   fontColor?: string;
+  textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   verticalAlign?: 'top' | 'center' | 'bottom';
 }
 
@@ -271,6 +272,7 @@ export interface ChecklistConfig {
   lastNames?: string;
   completedNames?: string[]; // Tracks IDs or Names checked in roster mode
   fontFamily?: string;
+  textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   cardColor?: string;
   cardOpacity?: number;
   fontColor?: string;
@@ -809,6 +811,7 @@ export interface ScheduleConfig {
   isBuildingSyncEnabled?: boolean;
   lastSyncedBuildingId?: string;
   fontFamily?: string;
+  textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   autoProgress?: boolean;
   /**
    * When true, the widget automatically scrolls to keep the active time slot
@@ -830,6 +833,7 @@ export interface CalendarConfig {
   /** Individual Google Calendar IDs added by the user */
   personalCalendarIds?: string[];
   fontFamily?: string;
+  textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */
   cardColor?: string;
   /** Card background opacity, 0 (fully transparent) to 1 (fully opaque). Default: 1. */
@@ -1634,6 +1638,7 @@ export interface SpecialistScheduleConfig {
   /** Items that repeat every day or on specific days of the week */
   recurringItems?: SpecialistScheduleRecurringItem[];
   fontFamily?: string;
+  textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   cardColor?: string;
   cardOpacity?: number;
 }

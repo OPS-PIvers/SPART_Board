@@ -94,7 +94,17 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     autoScroll = false,
     cardOpacity = 1,
     cardColor = '#ffffff',
+    textSizePreset,
   } = config;
+
+  const textScale =
+    textSizePreset === 'small'
+      ? 0.85
+      : textSizePreset === 'large'
+        ? 1.2
+        : textSizePreset === 'x-large'
+          ? 1.4
+          : 1;
 
   useEffect(() => {
     return subscribeToPermission('schedule', (perm) => {
@@ -505,6 +515,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                 format24={format24}
                 nowSeconds={nowSeconds}
                 isActive={i === activeIndex}
+                textScale={textScale}
               />
             ))}
             {displayItems.length === 0 && (

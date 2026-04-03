@@ -82,6 +82,7 @@ export interface ScheduleRowProps {
   nowSeconds: number;
   /** Whether this is the currently active schedule item. */
   isActive: boolean;
+  textScale?: number;
 }
 
 const areScheduleRowPropsEqual = (
@@ -96,6 +97,7 @@ const areScheduleRowPropsEqual = (
   if (prev.cardOpacity !== next.cardOpacity) return false;
   if (prev.cardColor !== next.cardColor) return false;
   if (prev.format24 !== next.format24) return false;
+  if (prev.textScale !== next.textScale) return false;
 
   // Optimized manual comparison for `item` object (ScheduleItem) instead of JSON.stringify
   // to avoid serialization overhead on every tick.
@@ -143,6 +145,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
   format24,
   nowSeconds,
   isActive,
+  textScale = 1,
 }) {
   const { t } = useTranslation();
 
@@ -175,7 +178,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
         <div
           className="absolute top-0 right-0 bg-brand-blue-primary text-white font-black uppercase tracking-widest z-20"
           style={{
-            fontSize: 'min(10px, 2.5cqmin)',
+            fontSize: `min(${Math.round(10 * textScale)}px, 2.5cqmin)`,
             padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
             borderBottomLeftRadius: 'min(12px, 3cqmin)',
           }}
@@ -215,14 +218,18 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
           ) : (
             <span
               className={`font-black leading-none ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
-              style={{ fontSize: 'min(24px, 6cqmin)' }}
+              style={{
+                fontSize: `min(${Math.round(24 * textScale)}px, 6cqmin)`,
+              }}
             >
               {formatScheduleTime(item.startTime ?? item.time, format24)}
             </span>
           )}
           <span
             className={`font-black leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-            style={{ fontSize: 'min(36px, 10cqmin)' }}
+            style={{
+              fontSize: `min(${Math.round(36 * textScale)}px, 10cqmin)`,
+            }}
           >
             {item.task}
           </span>
