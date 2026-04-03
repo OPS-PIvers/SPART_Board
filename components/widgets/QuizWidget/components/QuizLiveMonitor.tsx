@@ -643,10 +643,14 @@ const StudentRow: React.FC<{
   const warnings = response.tabSwitchWarnings ?? 0;
 
   // ⚡ Bolt Optimization: Use reduce instead of filter().length to avoid creating intermediate arrays on each render
-  const correctCount = response.answers.reduce((count, a) => {
-    const q = questions.find((qn) => qn.id === a.questionId);
-    return count + (q && gradeAnswer(q, a.answer) ? 1 : 0);
-  }, 0);
+  const correctCount = React.useMemo(
+    () =>
+      response.answers.reduce((count, a) => {
+        const q = questions.find((qn) => qn.id === a.questionId);
+        return count + (q && gradeAnswer(q, a.answer) ? 1 : 0);
+      }, 0),
+    [response.answers, questions]
+  );
 
   return (
     <div
