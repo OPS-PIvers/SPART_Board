@@ -11,6 +11,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useDialog } from '@/context/useDialog';
 import { FloatingPanel } from '@/components/common/FloatingPanel';
+import { useTranslation } from 'react-i18next';
 
 interface DraggableStickerProps {
   widget: WidgetData;
@@ -21,6 +22,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
   widget,
   children,
 }) => {
+  const { t } = useTranslation();
   const {
     updateWidget,
     removeWidget,
@@ -146,14 +148,11 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     if ((e.key === 'Delete' || e.key === 'Backspace') && e.altKey) {
       e.preventDefault();
       e.stopPropagation();
-      const confirmed = await showConfirm(
-        'Are you sure you want to clear the entire board?',
-        {
-          title: 'Clear Board',
-          variant: 'danger',
-          confirmLabel: 'Clear All',
-        }
-      );
+      const confirmed = await showConfirm(t('widgetWindow.clearEntireBoard'), {
+        title: t('widgetWindow.clearBoardTitle'),
+        variant: 'danger',
+        confirmLabel: t('common.clearAll'),
+      });
       if (confirmed) deleteAllWidgets();
       return;
     }
