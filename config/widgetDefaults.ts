@@ -294,6 +294,18 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       },
     },
   },
+  countdown: {
+    w: 300,
+    h: 250,
+    config: {
+      title: 'Special Event',
+      startDate: new Date().toISOString(),
+      eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      includeWeekends: true,
+      countToday: true,
+      viewMode: 'number',
+    } satisfies import('@/types').CountdownConfig,
+  },
   onboarding: {
     w: 380,
     h: 440,
