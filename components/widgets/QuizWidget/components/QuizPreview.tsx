@@ -59,7 +59,8 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
   useEffect(() => {
     if (timeLeft === null || showAnswer) return;
     if (timeLeft <= 0) {
-      setTimeout(() => setShowAnswer(true), 0);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowAnswer(true);
       return;
     }
     const id = setInterval(
