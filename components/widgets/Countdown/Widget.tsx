@@ -2,6 +2,14 @@ import React, { useMemo } from 'react';
 import { WidgetData, CountdownConfig } from '@/types';
 import { WidgetLayout } from '../WidgetLayout';
 
+interface CountdownDay {
+  date: Date;
+  isPast: boolean;
+  isEvent: boolean;
+  isToday: boolean;
+  number?: number;
+}
+
 export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -62,7 +70,7 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
     today.setHours(0, 0, 0, 0);
 
     // First, collect all valid days
-    const validDays = [];
+    const validDays: CountdownDay[] = [];
     const current = new Date(start);
     while (current <= event) {
       const dayOfWeek = current.getDay();

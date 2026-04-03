@@ -56,7 +56,11 @@ export const CountdownSettings: React.FC<{ widget: WidgetData }> = ({
     const date = parseLocalDateInput(value);
     if (!date) return;
 
-    update({ [field]: date.toISOString() });
+    update(
+      field === 'startDate'
+        ? { startDate: date.toISOString() }
+        : { eventDate: date.toISOString() }
+    );
   };
 
   return (
