@@ -61,14 +61,17 @@ export const RemoteDiceControl: React.FC<RemoteDiceControlProps> = ({
       : Array.from({ length: count }, () => Math.ceil(Math.random() * 6))
   );
   const [isRolling, setIsRolling] = useState(false);
+  const [prevLastRoll, setPrevLastRoll] = useState(config.lastRoll);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync display when a board-side roll updates config.lastRoll
-  useEffect(() => {
+  // We use the derived state pattern to avoid an extra render cycle from useEffect
+  if (config.lastRoll !== prevLastRoll) {
+    setPrevLastRoll(config.lastRoll);
     if (config.lastRoll?.length === count) {
       setValues(config.lastRoll);
     }
-  }, [config.lastRoll, count]);
+  }
 
   // Clean up any in-flight interval on unmount
   useEffect(() => {
