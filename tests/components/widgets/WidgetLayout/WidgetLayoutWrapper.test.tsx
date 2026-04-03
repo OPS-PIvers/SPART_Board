@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { WidgetLayoutWrapper } from '@/components/widgets/WidgetLayout/WidgetLayoutWrapper';
@@ -23,7 +22,11 @@ describe('WidgetLayoutWrapper', () => {
           h: 200,
           isLocked: false,
           flipped: false,
-          config: {},
+          config: {
+            content: 'Test content',
+            bgColor: '#ffffff',
+            fontSize: 16,
+          },
           z: 1,
         }}
         w={200}
@@ -45,7 +48,10 @@ describe('WidgetLayoutWrapper', () => {
           h: 200,
           isLocked: false,
           flipped: false,
-          config: {},
+          config: {
+            format24: false,
+            showSeconds: false,
+          },
           z: 1,
         }}
         w={200}
