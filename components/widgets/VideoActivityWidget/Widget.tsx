@@ -311,18 +311,22 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
           } as VideoActivityConfig,
         });
 
-        const url = `${window.location.origin}/join?code=${sessionId}`;
-        navigator.clipboard
-          .writeText(url)
-          .then(() =>
-            addToast('Assignment link copied to clipboard!', 'success')
-          )
-          .catch(() =>
-            addToast(
-              'Assignment created, but link could not be copied.',
-              'info'
+        const url = `${window.location.origin}/activity/${encodeURIComponent(sessionId)}`;
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          navigator.clipboard
+            .writeText(url)
+            .then(() =>
+              addToast('Assignment link copied to clipboard!', 'success')
             )
-          );
+            .catch(() =>
+              addToast(
+                'Assignment created, but link could not be copied.',
+                'info'
+              )
+            );
+        } else {
+          addToast('Assignment created, but link could not be copied.', 'info');
+        }
 
         return sessionId;
       }}

@@ -49,17 +49,21 @@ export const DrawingWidget: React.FC<{
           activeDashboard?.background
         );
         const url = `${window.location.origin}/join?code=${newSession.code}`;
-        navigator.clipboard
-          .writeText(url)
-          .then(() =>
-            addToast('Assignment link copied to clipboard!', 'success')
-          )
-          .catch(() =>
-            addToast(
-              'Assignment created, but link could not be copied.',
-              'info'
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          navigator.clipboard
+            .writeText(url)
+            .then(() =>
+              addToast('Assignment link copied to clipboard!', 'success')
             )
-          );
+            .catch(() =>
+              addToast(
+                'Assignment created, but link could not be copied.',
+                'info'
+              )
+            );
+        } else {
+          addToast('Assignment created, but link could not be copied.', 'info');
+        }
       }
     } catch (error) {
       console.error('Failed to toggle live session:', error);
