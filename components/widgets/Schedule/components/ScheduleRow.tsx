@@ -83,6 +83,7 @@ export interface ScheduleRowProps {
   /** Whether this is the currently active schedule item. */
   isActive: boolean;
   textScale?: number;
+  fontColor?: string;
 }
 
 const areScheduleRowPropsEqual = (
@@ -98,6 +99,7 @@ const areScheduleRowPropsEqual = (
   if (prev.cardColor !== next.cardColor) return false;
   if (prev.format24 !== next.format24) return false;
   if (prev.textScale !== next.textScale) return false;
+  if (prev.fontColor !== next.fontColor) return false;
 
   // Optimized manual comparison for `item` object (ScheduleItem) instead of JSON.stringify
   // to avoid serialization overhead on every tick.
@@ -146,6 +148,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
   nowSeconds,
   isActive,
   textScale = 1,
+  fontColor = '#334155',
 }) {
   const { t } = useTranslation();
 
@@ -220,6 +223,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
               className={`font-black leading-none ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
               style={{
                 fontSize: `min(${Math.round(24 * textScale)}px, 6cqmin)`,
+                color: !item.done ? fontColor : undefined,
               }}
             >
               {formatScheduleTime(item.startTime ?? item.time, format24)}
@@ -229,6 +233,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
             className={`font-black leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
             style={{
               fontSize: `min(${Math.round(36 * textScale)}px, 10cqmin)`,
+              color: !item.done ? fontColor : undefined,
             }}
           >
             {item.task}

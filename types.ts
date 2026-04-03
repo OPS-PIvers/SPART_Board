@@ -272,10 +272,10 @@ export interface ChecklistConfig {
   lastNames?: string;
   completedNames?: string[]; // Tracks IDs or Names checked in roster mode
   fontFamily?: string;
+  fontColor?: string;
   textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   cardColor?: string;
   cardOpacity?: number;
-  fontColor?: string;
 }
 
 export interface RandomGroup {
@@ -811,6 +811,7 @@ export interface ScheduleConfig {
   isBuildingSyncEnabled?: boolean;
   lastSyncedBuildingId?: string;
   fontFamily?: string;
+  fontColor?: string;
   textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   autoProgress?: boolean;
   /**
@@ -833,6 +834,7 @@ export interface CalendarConfig {
   /** Individual Google Calendar IDs added by the user */
   personalCalendarIds?: string[];
   fontFamily?: string;
+  fontColor?: string;
   textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */
   cardColor?: string;
@@ -1638,6 +1640,7 @@ export interface SpecialistScheduleConfig {
   /** Items that repeat every day or on specific days of the week */
   recurringItems?: SpecialistScheduleRecurringItem[];
   fontFamily?: string;
+  fontColor?: string;
   textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
   cardColor?: string;
   cardOpacity?: number;

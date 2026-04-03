@@ -27,6 +27,7 @@ import {
   parseScheduleTime,
 } from '@/components/widgets/Schedule/utils';
 import { ScheduleRow } from '@/components/widgets/Schedule/components/ScheduleRow';
+import { resolveTextPresetMultiplier } from '@/config/widgetAppearance';
 
 const GAP_STYLE = 'min(10px, 2cqmin)';
 
@@ -95,16 +96,10 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     cardOpacity = 1,
     cardColor = '#ffffff',
     textSizePreset,
+    fontColor = '#334155',
   } = config;
 
-  const textScale =
-    textSizePreset === 'small'
-      ? 0.85
-      : textSizePreset === 'large'
-        ? 1.2
-        : textSizePreset === 'x-large'
-          ? 1.4
-          : 1;
+  const textScale = resolveTextPresetMultiplier(textSizePreset, 1);
 
   useEffect(() => {
     return subscribeToPermission('schedule', (perm) => {
@@ -516,6 +511,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                 nowSeconds={nowSeconds}
                 isActive={i === activeIndex}
                 textScale={textScale}
+                fontColor={fontColor}
               />
             ))}
             {displayItems.length === 0 && (

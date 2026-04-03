@@ -51,6 +51,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
 
   const {
     fontFamily = 'global',
+    fontColor = '#334155',
     cardOpacity = 1,
     cardColor = '#ffffff',
   } = config;
@@ -303,9 +304,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                         className="font-black uppercase tracking-widest shrink-0"
                         style={{
                           fontSize: 'min(20px, 4.5cqmin)',
-                          color: isToday
-                            ? 'rgb(99, 102, 241)'
-                            : 'rgb(148, 163, 184)',
+                          color: isToday ? 'rgb(99, 102, 241)' : fontColor,
                         }}
                       >
                         {isToday ? 'Today' : event.date}
@@ -338,7 +337,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                       className="font-black truncate leading-tight"
                       style={{
                         fontSize: 'min(32px, 9cqmin)',
-                        color: isToday ? 'rgb(55, 65, 81)' : 'rgb(71, 85, 105)',
+                        color: isToday ? 'rgb(55, 65, 81)' : fontColor,
                       }}
                     >
                       {event.title}

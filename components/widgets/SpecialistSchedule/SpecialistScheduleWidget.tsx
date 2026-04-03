@@ -86,6 +86,7 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const {
     cycleDays = [],
     fontFamily = 'global',
+    fontColor = '#334155',
     cardColor = '#ffffff',
     cardOpacity = 1,
     specialistClass = '',
@@ -231,7 +232,7 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className={`h-full w-full flex flex-col overflow-hidden ${getFontClass()}`}
-          style={{ padding: 'min(12px, 2.5cqmin)' }}
+          style={{ padding: 'min(12px, 2.5cqmin)', color: fontColor }}
         >
           {/* Header with Day Number */}
           <div
