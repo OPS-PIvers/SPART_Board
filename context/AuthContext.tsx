@@ -641,6 +641,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (error) {
         if (!isCancelled) {
           console.error('Error loading user profile:', error);
+          setSelectedBuildingsState([]);
         }
         if (!isCancelled) setProfileLoaded(true);
       }
@@ -773,6 +774,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           { merge: true }
         );
       } catch (error: unknown) {
+        rootSyncedRef.current = false;
         console.error('Error syncing user root document:', error);
       }
     };
