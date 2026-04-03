@@ -42,11 +42,16 @@ describe('DiceWidget', () => {
   ): WidgetData => ({
     id: 'test-dice-1',
     type: 'dice',
+    x: 0,
+    y: 0,
+    z: 1,
+    w: 4,
+    h: 4,
+    flipped: false,
     config: {
       count,
       lastRoll,
     },
-    layout: { w: 4, h: 4, x: 0, y: 0, zIndex: 1 },
   });
 
   it('renders initial dice correctly', () => {
