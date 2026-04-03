@@ -943,6 +943,26 @@ export interface MiniAppGlobalConfig {
   botEmail: string;
 }
 
+/**
+ * A persistent assignment session for a MiniApp.
+ * Lives in the `/mini_app_sessions/{sessionId}` Firestore collection.
+ * Created by teachers; read by students via the `/miniapp/{sessionId}` route.
+ */
+export interface MiniAppSession {
+  id: string;
+  appId: string;
+  appTitle: string;
+  appHtml: string;
+  teacherUid: string;
+  assignmentName: string;
+  status: 'active' | 'ended';
+  createdAt: number;
+  endedAt?: number;
+  // Optional result collection via Apps Script
+  submissionUrl?: string;
+  googleSheetId?: string;
+}
+
 export interface PdfItem {
   id: string;
   name: string;
