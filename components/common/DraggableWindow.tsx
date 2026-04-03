@@ -392,7 +392,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     [handleSnapToZone]
   );
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
     // Stop propagation if we're in an input to prevent global shortcuts
     const target = e.target as HTMLElement;
     const isInput =
@@ -438,17 +438,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       return;
     }
 
-    // Alt + Delete: Clear all widgets
-    if (e.key === 'Delete' && e.altKey) {
+    // Alt + Delete or Alt + Backspace: Clear all widgets
+    if ((e.key === 'Delete' || e.key === 'Backspace') && e.altKey) {
       e.preventDefault();
       e.stopPropagation();
-      void showConfirmDialog(t('widgetWindow.clearEntireBoard'), {
-        title: 'Clear Board',
-        variant: 'danger',
-        confirmLabel: 'Clear All',
-      }).then((confirmed) => {
-        if (confirmed) deleteAllWidgets();
-      });
+      const confirmed = await showConfirmDialog(
+        t('widgetWindow.clearEntireBoard'),
+        {
+          title: t('widgetWindow.clearBoardTitle'),
+          variant: 'danger',
+          confirmLabel: t('widgetWindow.clearAll'),
+        }
+      );
+      if (confirmed) deleteAllWidgets();
       return;
     }
 
