@@ -99,18 +99,21 @@ describe('widgetHelpers', () => {
     });
 
     it.each([
-      ['random', 'Selector'],
-      ['expectations', 'Expectations'],
-      ['calendar', 'Class Events'],
-      ['lunchCount', 'Lunch Orders'],
-      ['classes', 'Class Roster'],
-      ['sticker', 'Sticker'],
-      ['seating-chart', 'Seating Chart'],
-      ['talking-tool', 'Talking Tool'],
-    ])('returns "%s" for %s widget', (type, expectedTitle) => {
-      const widget = { type } as WidgetData;
-      expect(getTitle(widget)).toBe(expectedTitle);
-    });
+      { type: 'random', expectedTitle: 'Selector' },
+      { type: 'expectations', expectedTitle: 'Expectations' },
+      { type: 'calendar', expectedTitle: 'Class Events' },
+      { type: 'lunchCount', expectedTitle: 'Lunch Orders' },
+      { type: 'classes', expectedTitle: 'Class Roster' },
+      { type: 'sticker', expectedTitle: 'Sticker' },
+      { type: 'seating-chart', expectedTitle: 'Seating Chart' },
+      { type: 'talking-tool', expectedTitle: 'Talking Tool' },
+    ])(
+      'returns "$expectedTitle" for $type widget',
+      ({ type, expectedTitle }) => {
+        const widget = { type } as WidgetData;
+        expect(getTitle(widget)).toBe(expectedTitle);
+      }
+    );
 
     it('returns correct title for catalyst-instruction widget', () => {
       const widget1 = {
