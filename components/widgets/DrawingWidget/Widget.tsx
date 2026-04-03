@@ -42,12 +42,22 @@ export const DrawingWidget: React.FC<{
       if (isLive) {
         await endSession();
       } else {
-        await startSession(
+        const newSession = await startSession(
           widget.id,
           widget.type,
           widget.config,
           activeDashboard?.background
         );
+        try {
+          const url = `${window.location.origin}/join?code=${newSession.code}`;
+          await navigator.clipboard.writeText(url);
+          addToast('Assignment link copied to clipboard!', 'success');
+        } catch (_err) {
+          addToast(
+            'Assignment created, but link could not be copied.',
+            'error'
+          );
+        }
       }
     } catch (error) {
       console.error('Failed to toggle live session:', error);
@@ -383,7 +393,7 @@ export const DrawingWidget: React.FC<{
             variant={isLive ? 'danger' : 'ghost'}
             size="icon"
             className={isLive ? 'animate-pulse' : ''}
-            title={isLive ? 'End Live Session' : 'Go Live'}
+            title={isLive ? 'End Assignment' : 'Assign (copy student link)'}
             icon={<Cast className="w-4 h-4" />}
           />
           <Button
