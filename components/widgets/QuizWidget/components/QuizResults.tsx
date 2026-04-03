@@ -591,12 +591,15 @@ const StudentsTab: React.FC<{
         return scoreB - scoreA;
       })
       .map((r) => {
-        const score = getResponseScore(r, questions);
-        // ⚡ Bolt Optimization: Use reduce instead of filter().length to avoid creating intermediate arrays on each render
+        // ⚡ Bolt Optimization: Compute 'correct' once instead of re-running the O(Q) question lookup via `getResponseScore`
         const correct = r.answers.reduce((count, a) => {
           const q = questions.find((qn) => qn.id === a.questionId);
           return count + (q && gradeAnswer(q, a.answer) ? 1 : 0);
         }, 0);
+        const score =
+          questions.length === 0
+            ? 0
+            : Math.round((correct / questions.length) * 100);
         const warnings = r.tabSwitchWarnings ?? 0;
 
         return (
