@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import {
   ChecklistConfig,
@@ -7,7 +7,6 @@ import {
   InstructionalRoutinesConfig,
   TextConfig,
 } from '@/types';
-import { useDebounce } from '@/hooks/useDebounce';
 import { RosterModeControl } from '@/components/common/RosterModeControl';
 import { ListPlus, Type, RefreshCw, BookOpen, Palette } from 'lucide-react';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
@@ -29,32 +28,68 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   const [localText, setLocalText] = React.useState(
     items.map((i) => i.text).join('\n')
   );
+  const [prevItems, setPrevItems] = React.useState(items);
 
-  const debouncedText = useDebounce(localText, 500);
+  // Sync external prop changes to local text
+  if (items !== prevItems) {
+    setPrevItems(items);
+    setLocalText(items.map((i) => i.text).join('\n'));
+  }
 
-  // Sync debounced text to widget config
-  useEffect(() => {
-    const currentText = items.map((i) => i.text).join('\n');
-    if (debouncedText === currentText) return;
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-    const lines = debouncedText.split('\n');
-    const newItems: ChecklistItem[] = lines
-      .filter((line) => line.trim() !== '')
-      .map((line) => {
-        const trimmedLine = line.trim();
-        const existing = items.find((i) => i.text === trimmedLine);
-        return {
-          id: existing?.id ?? crypto.randomUUID(),
-          text: trimmedLine,
-          completed: existing?.completed ?? false,
-        };
-      });
+  // Clean up timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
-    updateWidget(widget.id, { config: { ...config, items: newItems } });
-  }, [debouncedText, widget.id, updateWidget, config, items]);
+  const configRef = React.useRef(config);
+  React.useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  const updateWidgetRef = React.useRef(updateWidget);
+  React.useEffect(() => {
+    updateWidgetRef.current = updateWidget;
+  }, [updateWidget]);
+
+  const itemsRef = React.useRef(items);
+  React.useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const handleBulkChange = (text: string) => {
     setLocalText(text);
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      const currentText = itemsRef.current.map((i) => i.text).join('\n');
+      if (text === currentText) return;
+
+      const lines = text.split('\n');
+      const newItems: ChecklistItem[] = lines
+        .filter((line) => line.trim() !== '')
+        .map((line) => {
+          const trimmedLine = line.trim();
+          const existing = itemsRef.current.find((i) => i.text === trimmedLine);
+          return {
+            id: existing?.id ?? crypto.randomUUID(),
+            text: trimmedLine,
+            completed: existing?.completed ?? false,
+          };
+        });
+
+      updateWidgetRef.current(widget.id, {
+        config: { ...configRef.current, items: newItems },
+      });
+    }, 500);
   };
 
   // Nexus Connection: Import from Instructional Routines
