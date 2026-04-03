@@ -14,6 +14,7 @@ import {
   Plus,
   QrCode,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   WidgetData,
@@ -92,8 +93,14 @@ const getArchiveStatus = (
 
 const DRIVE_IMAGE_PROBE_TIMEOUT_MS = 5000;
 const STALE_ARCHIVE_SYNC_TIMEOUT_MS = 30000;
-const isLikelyVideoUrl = (url: string): boolean =>
-  /\.(mp4|webm|ogg|mov)$/i.test(url);
+const isLikelyVideoUrl = (url: string): boolean => {
+  try {
+    const { pathname } = new URL(url);
+    return /\.(mp4|webm|ogg|mov)$/i.test(pathname);
+  } catch {
+    return false;
+  }
+};
 
 const probeImageAvailability = async (url: string): Promise<boolean> => {
   return await new Promise<boolean>((resolve) => {
@@ -246,7 +253,10 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
   const { user, googleAccessToken, refreshGoogleToken } = useAuth();
   const { isConnected: isDriveConnected } = useGoogleDrive();
   const config = widget.config as ActivityWallConfig;
-  const activities = config.activities ?? [];
+  const activities = useMemo(
+    () => config.activities ?? [],
+    [config.activities]
+  );
   const activeActivity =
     activities.find((activity) => activity.id === config.activeActivityId) ??
     null;
@@ -450,9 +460,12 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
     return buildPublicActivityLink(activeActivity, user.uid);
   }, [activeActivity, user]);
 
-  const updateConfig = (updates: Partial<ActivityWallConfig>) => {
-    updateWidget(widget.id, { config: { ...config, ...updates } });
-  };
+  const updateConfig = useCallback(
+    (updates: Partial<ActivityWallConfig>) => {
+      updateWidget(widget.id, { config: { ...config, ...updates } });
+    },
+    [config, updateWidget, widget.id]
+  );
 
   const saveEditorDraft = () => {
     if (!editorDraft) return;
@@ -829,16 +842,23 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
           removedFromFirestore = true;
         }
 
-        const nextActivities = activities.map((activity) => {
-          if (activity.id !== activeActivity.id) return activity;
-          return {
-            ...activity,
-            submissions: (activity.submissions ?? []).filter(
-              (item) => item.id !== submission.id
-            ),
-          };
-        });
-        updateConfig({ activities: nextActivities });
+        const currentSubmissions = activeActivity.submissions ?? [];
+        const hasLocalSubmission = currentSubmissions.some(
+          (item) => item.id === submission.id
+        );
+
+        if (hasLocalSubmission) {
+          const nextActivities = activities.map((activity) => {
+            if (activity.id !== activeActivity.id) return activity;
+            return {
+              ...activity,
+              submissions: currentSubmissions.filter(
+                (item) => item.id !== submission.id
+              ),
+            };
+          });
+          updateConfig({ activities: nextActivities });
+        }
 
         setSelectedSubmissionId((prev) =>
           prev === submission.id ? null : prev
@@ -1633,7 +1653,15 @@ export const ActivityWallWidget: React.FC<{ widget: WidgetData }> = ({
         ariaLabel="Submission preview"
       >
         {fullscreenSubmission && (
-          <div className="rounded-2xl bg-slate-950/95 p-4 text-white">
+          <div className="relative rounded-2xl bg-slate-950/95 p-4 text-white">
+            <button
+              type="button"
+              onClick={() => setFullscreenSubmission(null)}
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 hover:bg-white/20"
+              aria-label="Close preview"
+            >
+              <X size={20} />
+            </button>
             {isSafeHttpUrl(fullscreenSubmission.content) &&
             isLikelyVideoUrl(fullscreenSubmission.content) ? (
               <video
