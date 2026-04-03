@@ -13,12 +13,16 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
   const calculatedDays = useMemo(() => {
     const event = new Date(eventDate);
     const now = new Date();
-
+    const todayAtMidnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
     // Use current date for calculation if start date has passed
-    const calcStart = countToday
-      ? new Date(now.setHours(0, 0, 0, 0))
-      : new Date(now.setDate(now.getDate() + 1));
-    calcStart.setHours(0, 0, 0, 0);
+    const calcStart = new Date(todayAtMidnight);
+    if (!countToday) {
+      calcStart.setDate(calcStart.getDate() + 1);
+    }
 
     const calcEvent = new Date(event);
     calcEvent.setHours(0, 0, 0, 0);
@@ -52,23 +56,11 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const items = [];
     const current = new Date(start);
 
-    // First, find total valid days to know the max number
-    let totalValidDays = 0;
-    const temp = new Date(start);
-    while (temp <= event) {
-      const dayOfWeek = temp.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      if (includeWeekends || !isWeekend) {
-        totalValidDays++;
-      }
-      temp.setDate(temp.getDate() + 1);
-    }
-
-    let currentRemaining = totalValidDays;
-
+    // First, collect all valid days
+    const validDays = [];
+    const current = new Date(start);
     while (current <= event) {
       const dayOfWeek = current.getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -78,18 +70,21 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
         const isEvent = current.getTime() === event.getTime();
         const isToday = current.getTime() === today.getTime();
 
-        items.push({
+        validDays.push({
           date: new Date(current),
-          number: currentRemaining,
           isPast,
           isEvent,
           isToday,
         });
-        currentRemaining--;
       }
       current.setDate(current.getDate() + 1);
     }
-    return items;
+
+    // Then, map over the collected days to add the countdown number
+    return validDays.map((item, index) => ({
+      ...item,
+      number: validDays.length - index,
+    }));
   }, [startDate, eventDate, includeWeekends]);
 
   return (
@@ -131,9 +126,9 @@ export const CountdownWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
               <div className="flex-1 w-full overflow-hidden flex items-center justify-center">
                 <div className="flex flex-wrap gap-1 justify-center items-center h-full w-full content-center overflow-y-auto">
-                  {gridData.map((item, i) => (
+                  {gridData.map((item) => (
                     <div
-                      key={i}
+                      key={item.number}
                       className={`relative flex items-center justify-center rounded-lg border-2
                                 ${
                                   item.isEvent
