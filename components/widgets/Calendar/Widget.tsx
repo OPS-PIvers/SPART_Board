@@ -52,6 +52,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const {
     fontFamily = 'global',
     fontColor = '#334155',
+    textSizePreset,
     cardOpacity = 1,
     cardColor = '#ffffff',
   } = config;
@@ -218,6 +219,14 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const bgColor = hexToRgba(cardColor, cardOpacity);
+  const textScale =
+    textSizePreset === 'small'
+      ? 0.85
+      : textSizePreset === 'large'
+        ? 1.2
+        : textSizePreset === 'x-large'
+          ? 1.4
+          : 1;
 
   if (isBlocked) {
     return (
@@ -303,7 +312,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                       <span
                         className="font-black uppercase tracking-widest shrink-0"
                         style={{
-                          fontSize: 'min(20px, 4.5cqmin)',
+                          fontSize: `min(${Math.round(20 * textScale)}px, ${(4.5 * textScale).toFixed(2)}cqmin)`,
                           color: isToday ? 'rgb(99, 102, 241)' : fontColor,
                         }}
                       >
@@ -312,7 +321,9 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                       {event.time && (
                         <span
                           className="font-medium text-slate-400 min-w-0 truncate"
-                          style={{ fontSize: 'min(20px, 4.5cqmin)' }}
+                          style={{
+                            fontSize: `min(${Math.round(20 * textScale)}px, ${(4.5 * textScale).toFixed(2)}cqmin)`,
+                          }}
                         >
                           · {event.time}
                         </span>
@@ -336,7 +347,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                     <span
                       className="font-black truncate leading-tight"
                       style={{
-                        fontSize: 'min(32px, 9cqmin)',
+                        fontSize: `min(${Math.round(32 * textScale)}px, ${(9 * textScale).toFixed(2)}cqmin)`,
                         color: isToday ? 'rgb(55, 65, 81)' : fontColor,
                       }}
                     >

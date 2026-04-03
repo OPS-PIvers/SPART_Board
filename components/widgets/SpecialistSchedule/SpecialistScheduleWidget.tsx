@@ -87,11 +87,21 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     cycleDays = [],
     fontFamily = 'global',
     fontColor = '#334155',
+    textSizePreset,
     cardColor = '#ffffff',
     cardOpacity = 1,
     specialistClass = '',
     recurringItems = [],
   } = config;
+
+  const textScale =
+    textSizePreset === 'small'
+      ? 0.85
+      : textSizePreset === 'large'
+        ? 1.2
+        : textSizePreset === 'x-large'
+          ? 1.4
+          : 1;
 
   const [now, setNow] = useState(new Date());
 
@@ -252,13 +262,17 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
               />
               <span
                 className="font-black text-slate-800"
-                style={{ fontSize: 'min(18px, 4.5cqmin)' }}
+                style={{
+                  fontSize: `min(${Math.round(18 * textScale)}px, ${(4.5 * textScale).toFixed(2)}cqmin)`,
+                }}
               >
                 {currentDayLabel}
                 {specialistClass && (
                   <span
                     className="ml-2 text-slate-400 font-bold"
-                    style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                    style={{
+                      fontSize: `min(${Math.round(14 * textScale)}px, ${(3.5 * textScale).toFixed(2)}cqmin)`,
+                    }}
                   >
                     ({specialistClass})
                   </span>
@@ -267,7 +281,9 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
             <div
               className="text-slate-400 font-bold"
-              style={{ fontSize: 'min(12px, 3cqmin)' }}
+              style={{
+                fontSize: `min(${Math.round(12 * textScale)}px, ${(3 * textScale).toFixed(2)}cqmin)`,
+              }}
             >
               {now.toLocaleDateString(undefined, {
                 weekday: 'short',
@@ -308,7 +324,9 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                   {isActive && (
                     <div
                       className="absolute top-0 right-0 bg-teal-600 text-white font-black uppercase tracking-widest px-2 py-1 rounded-bl-xl z-20"
-                      style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                      style={{
+                        fontSize: `min(${Math.round(10 * textScale)}px, ${(2.5 * textScale).toFixed(2)}cqmin)`,
+                      }}
                     >
                       Now
                     </div>
@@ -335,7 +353,9 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                   <div className="flex flex-col min-w-0 flex-1">
                     <span
                       className={`font-black leading-none ${isPast ? 'text-slate-400' : 'text-teal-600'}`}
-                      style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                      style={{
+                        fontSize: `min(${Math.round(14 * textScale)}px, ${(3.5 * textScale).toFixed(2)}cqmin)`,
+                      }}
                     >
                       {formatTime(item.startTime, format24)}
                       {item.endTime
@@ -344,7 +364,9 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                     </span>
                     <span
                       className={`font-black leading-tight truncate w-full ${isPast ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-                      style={{ fontSize: 'min(20px, 5cqmin)' }}
+                      style={{
+                        fontSize: `min(${Math.round(20 * textScale)}px, ${(5 * textScale).toFixed(2)}cqmin)`,
+                      }}
                     >
                       {item.task}
                     </span>

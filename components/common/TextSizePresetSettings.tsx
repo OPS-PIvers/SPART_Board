@@ -13,6 +13,7 @@ interface TextSizePresetSettingsProps<T extends WidgetConfig> {
   config: T;
   updateConfig: (updates: Partial<T>) => void;
   fallbackScale?: number;
+  writeScaleMultiplier?: boolean;
 }
 
 export const TextSizePresetSettings = <
@@ -24,6 +25,7 @@ export const TextSizePresetSettings = <
   config,
   updateConfig,
   fallbackScale = 1,
+  writeScaleMultiplier = false,
 }: TextSizePresetSettingsProps<T>) => {
   const selectedPreset =
     config.textSizePreset ??
@@ -42,7 +44,9 @@ export const TextSizePresetSettings = <
             onClick={() =>
               updateConfig({
                 textSizePreset: preset.id,
-                scaleMultiplier: preset.multiplier,
+                ...(writeScaleMultiplier
+                  ? { scaleMultiplier: preset.multiplier }
+                  : {}),
               } as Partial<T>)
             }
             className={`rounded-lg border px-3 py-2 text-xs font-bold uppercase tracking-wide ${

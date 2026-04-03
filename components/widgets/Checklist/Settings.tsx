@@ -283,6 +283,7 @@ export const ChecklistAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
     <div className="space-y-6">
       <TextSizePresetSettings
         config={config}
+        writeScaleMultiplier
         updateConfig={(updates) =>
           updateWidget(widget.id, {
             config: { ...config, ...updates } as ChecklistConfig,

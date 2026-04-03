@@ -181,7 +181,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
         <div
           className="absolute top-0 right-0 bg-brand-blue-primary text-white font-black uppercase tracking-widest z-20"
           style={{
-            fontSize: `min(${Math.round(10 * textScale)}px, 2.5cqmin)`,
+            fontSize: `min(${Math.round(10 * textScale)}px, ${(2.5 * textScale).toFixed(2)}cqmin)`,
             padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
             borderBottomLeftRadius: 'min(12px, 3cqmin)',
           }}
@@ -222,7 +222,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
             <span
               className={`font-black leading-none ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
               style={{
-                fontSize: `min(${Math.round(24 * textScale)}px, 6cqmin)`,
+                fontSize: `min(${Math.round(24 * textScale)}px, ${(6 * textScale).toFixed(2)}cqmin)`,
                 color: !item.done ? fontColor : undefined,
               }}
             >
@@ -232,7 +232,7 @@ export const ScheduleRow = React.memo<ScheduleRowProps>(function ScheduleRow({
           <span
             className={`font-black leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
             style={{
-              fontSize: `min(${Math.round(36 * textScale)}px, 10cqmin)`,
+              fontSize: `min(${Math.round(36 * textScale)}px, ${(10 * textScale).toFixed(2)}cqmin)`,
               color: !item.done ? fontColor : undefined,
             }}
           >

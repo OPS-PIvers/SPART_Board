@@ -73,25 +73,14 @@ export const TextAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
 
       <TextSizePresetSettings
         config={config}
-        updateConfig={(updates) => {
-          const nextPreset = updates.textSizePreset;
-          const nextFontSize =
-            nextPreset === 'small'
-              ? 14
-              : nextPreset === 'large'
-                ? 22
-                : nextPreset === 'x-large'
-                  ? 28
-                  : 18;
-
+        updateConfig={(updates) =>
           updateWidget(widget.id, {
             config: {
               ...config,
               ...updates,
-              fontSize: nextFontSize,
             } as TextConfig,
-          });
-        }}
+          })
+        }
       />
 
       <div>

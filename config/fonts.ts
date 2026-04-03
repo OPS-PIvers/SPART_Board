@@ -11,17 +11,12 @@ export const FONTS = [
   },
   { id: 'font-comic', label: 'Comic', icon: '☺', className: 'font-comic' },
   {
-    id: 'font-display',
-    label: 'Display',
-    icon: 'Ab',
-    className: 'font-display',
+    id: 'font-rounded',
+    label: 'Rounded',
+    icon: '◯',
+    className: 'font-rounded',
   },
-  {
-    id: 'font-condensed',
-    label: 'Condensed',
-    icon: 'A|',
-    className: 'font-condensed',
-  },
+  { id: 'font-fun', label: 'Fun', icon: '★', className: 'font-fun' },
 ] as const;
 
 export const FONT_COLORS = [
