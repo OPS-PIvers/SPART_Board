@@ -10,7 +10,8 @@ export type PasteResult =
     }
   | { action: 'import-board'; url: string }
   | { action: 'create-mini-app'; html: string; title?: string }
-  | { action: 'prompt-text-or-checklist'; text: string };
+  | { action: 'prompt-text-or-checklist'; text: string }
+  | { action: 'prompt-url-or-qr'; url: string };
 
 /**
  * Detects the most appropriate paste action based on the provided text.
@@ -98,7 +99,7 @@ function tryParseUrlBasedWidgets(text: string): PasteResult | null {
   return (
     tryParseImageWidget(normalizedUrl) ??
     tryParseEmbedWidget(normalizedUrl) ??
-    createQrWidget(normalizedUrl)
+    { action: 'prompt-url-or-qr', url: normalizedUrl }
   );
 }
 
@@ -131,13 +132,6 @@ function tryParseEmbedWidget(url: string): PasteResult | null {
   return null;
 }
 
-function createQrWidget(url: string): PasteResult {
-  return {
-    action: 'create-widget',
-    type: 'qr',
-    config: { url } as WidgetConfig,
-  };
-}
 
 // Max character length per item to be considered "short/medium"
 const CHECKLIST_ITEM_MAX_LENGTH = 250;

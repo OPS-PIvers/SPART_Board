@@ -57,6 +57,7 @@ import {
   createDefaultTextWidget,
 } from '@/utils/smartPaste';
 import { SmartPastePickerModal } from './dock/SmartPastePickerModal';
+import { UrlPickerModal } from './dock/UrlPickerModal';
 import { ImagePastePickerModal } from './dock/ImagePastePickerModal';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { DockIcon } from './dock/DockIcon';
@@ -211,6 +212,7 @@ export const Dock: React.FC = () => {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showMagicLayout, setShowMagicLayout] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [urlPastePending, setUrlPastePending] = useState<string | null>(null);
   const [smartPastePending, setSmartPastePending] = useState<string | null>(
     null
   );
@@ -340,6 +342,8 @@ export const Dock: React.FC = () => {
           } else if (result.action === 'prompt-text-or-checklist') {
             // Ambiguous: show a picker modal for the user to decide
             setSmartPastePending(result.text);
+          } else if (result.action === 'prompt-url-or-qr') {
+            setUrlPastePending(result.url);
           }
         }
       }
@@ -615,6 +619,26 @@ export const Dock: React.FC = () => {
               addToast('Image added!', 'success');
             } else {
               addToast('Failed to process image', 'error');
+            }
+          }}
+        />
+      )}
+
+
+      {urlPastePending !== null && (
+        <UrlPickerModal
+          url={urlPastePending}
+          globalStyle={globalStyle}
+          onClose={() => setUrlPastePending(null)}
+          onSelect={(type) => {
+            const url = urlPastePending;
+            setUrlPastePending(null);
+            if (type === 'qr') {
+              addWidget('qr', { config: { url } });
+              addToast('Added QR Code widget!', 'success');
+            } else {
+              addWidget('url', { config: { urls: [{ id: crypto.randomUUID(), url }] } });
+              addToast('Added Links widget!', 'success');
             }
           }}
         />
