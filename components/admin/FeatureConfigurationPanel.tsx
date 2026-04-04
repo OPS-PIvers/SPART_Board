@@ -57,6 +57,7 @@ import { RevealGridConfigurationPanel } from './RevealGridConfigurationPanel';
 import { SmartNotebookConfigurationPanel } from './SmartNotebookConfigurationPanel';
 import { RemoteConfigurationPanel } from './RemoteConfigurationPanel';
 import { UrlConfigurationPanel } from './UrlConfigurationPanel';
+import { CountdownConfigurationPanel } from './CountdownConfigurationPanel';
 import { DockDefaultsPanel } from './DockDefaultsPanel';
 import { Toggle } from '../common/Toggle';
 
@@ -70,6 +71,7 @@ type BuildingConfigPanel = React.ComponentType<{
 // Catalyst is excluded here because it requires additional props.
 const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   url: UrlConfigurationPanel as unknown as BuildingConfigPanel,
+  countdown: CountdownConfigurationPanel as unknown as BuildingConfigPanel,
   soundboard: SoundboardConfigurationPanel as unknown as BuildingConfigPanel,
   schedule: ScheduleConfigurationPanel as unknown as BuildingConfigPanel,
   clock: ClockConfigurationPanel as unknown as BuildingConfigPanel,
@@ -109,11 +111,6 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   'guided-learning':
     GuidedLearningConfigurationPanel as unknown as BuildingConfigPanel,
   remote: RemoteConfigurationPanel as unknown as BuildingConfigPanel,
-  countdown: () => (
-    <div className="p-4 text-sm text-slate-500">
-      No building-level configuration available for this widget.
-    </div>
-  ),
 };
 
 interface FeatureConfigurationPanelProps {

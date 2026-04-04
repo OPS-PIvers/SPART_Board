@@ -1556,6 +1556,24 @@ export interface CountdownConfig {
   viewMode: 'number' | 'grid';
 }
 
+export interface CountdownEvent {
+  id: string;
+  title: string;
+  date: string; // ISO datetime string (for example, from toISOString())
+}
+
+export interface CountdownBuildingConfig {
+  title?: string;
+  includeWeekends?: boolean;
+  countToday?: boolean;
+  viewMode?: 'number' | 'grid';
+  events?: CountdownEvent[];
+}
+
+export interface CountdownGlobalConfig {
+  buildingDefaults?: Record<string, CountdownBuildingConfig>;
+}
+
 export interface OnboardingConfig {
   completedTasks: string[];
 }
