@@ -6,7 +6,7 @@ import {
   MaterialsGlobalConfig,
 } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
-import { Package } from 'lucide-react';
+import { Package, ListPlus } from 'lucide-react';
 import { getMaterialMap } from './constants';
 import { MaterialsSettings } from './Settings';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
@@ -17,7 +17,8 @@ export { MaterialsSettings };
 import { WidgetLayout } from '../WidgetLayout';
 
 export const MaterialsWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
-  const { updateWidget, activeDashboard, selectedWidgetId } = useDashboard();
+  const { updateWidget, activeDashboard, selectedWidgetId, addToast } =
+    useDashboard();
   const { featurePermissions } = useAuth();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as MaterialsConfig;
@@ -125,15 +126,62 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
           style={{ padding: 'min(12px, 3cqmin)' }}
         >
           {/* Title */}
-          <div
-            className={`w-full text-center font-bold truncate mb-2 ${getTitleFontClass()}`}
-            style={{
-              fontSize: 'min(24px, max(14px, 7cqmin))',
-              color: titleColor,
-              opacity: gridItems.length === 0 ? 0.3 : 1,
-            }}
-          >
-            {title}
+          <div className="flex items-center justify-between w-full mb-2">
+            {/* Empty placeholder to center the title if button is present */}
+            {isFocused && gridItems.length > 0 && (
+              <div className="w-[min(32px,8cqmin)] flex-shrink-0" />
+            )}
+
+            <div
+              className={`flex-1 text-center font-bold truncate ${getTitleFontClass()}`}
+              style={{
+                fontSize: 'min(24px, max(14px, 7cqmin))',
+                color: titleColor,
+                opacity: gridItems.length === 0 ? 0.3 : 1,
+              }}
+            >
+              {title}
+            </div>
+
+            {isFocused && gridItems.length > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const checklistWidget = activeDashboard?.widgets.find(
+                    (w) => w.type === 'checklist'
+                  );
+                  if (checklistWidget) {
+                    const newItems = gridItems.map((item) => ({
+                      id: crypto.randomUUID(),
+                      text: item.label,
+                      completed: false,
+                    }));
+                    updateWidget(checklistWidget.id, {
+                      config: {
+                        ...checklistWidget.config,
+                        mode: 'manual',
+                        items: newItems,
+                      },
+                    });
+                    addToast('Checklist populated with materials!', 'success');
+                  } else {
+                    addToast(
+                      'Add a Checklist widget to the dashboard first',
+                      'error'
+                    );
+                  }
+                }}
+                className="text-blue-500 hover:text-blue-600 p-1 flex-shrink-0 transition-colors bg-blue-50 hover:bg-blue-100 rounded-lg shadow-sm border border-blue-100"
+                title="Send to Checklist"
+              >
+                <ListPlus
+                  style={{
+                    width: 'min(20px, 6cqmin)',
+                    height: 'min(20px, 6cqmin)',
+                  }}
+                />
+              </button>
+            )}
           </div>
 
           {/* Main Grid Area */}
