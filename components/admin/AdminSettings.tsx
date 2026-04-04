@@ -223,7 +223,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
                     key={tab.id}
                     id={'panel-' + tab.id}
                     role="tabpanel"
-                    aria-labelledby={'tab-' + tab.id}
+                    aria-label={tab.label}
                     className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
                   >
                     {tab.id === 'features' && (
