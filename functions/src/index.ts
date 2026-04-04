@@ -1924,6 +1924,7 @@ export const adminAnalytics = functionsV1
         let totalDashboards = 0;
         const totalWidgetCounts: Record<string, number> = {};
         const activeWidgetCounts: Record<string, number> = {};
+        const widgetToUserUids: Record<string, Set<string>> = {};
         const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
 
         const dashboardsStream = db
@@ -1939,6 +1940,9 @@ export const adminAnalytics = functionsV1
             typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
           const isActive = updatedAt > activeThreshold;
 
+          // Extract owner UID from path: users/{uid}/dashboards/{dashId}
+          const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
+
           if (dashData.widgets && Array.isArray(dashData.widgets)) {
             dashData.widgets.forEach((w: { type: string }) => {
               if (w && w.type) {
@@ -1948,12 +1952,56 @@ export const adminAnalytics = functionsV1
                   activeWidgetCounts[w.type] =
                     (activeWidgetCounts[w.type] || 0) + 1;
                 }
+                if (ownerUid) {
+                  if (!widgetToUserUids[w.type]) {
+                    widgetToUserUids[w.type] = new Set<string>();
+                  }
+                  widgetToUserUids[w.type].add(ownerUid);
+                }
               }
             });
           }
         }
 
         console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
+
+        // Resolve widget UIDs to emails (cap at 200 unique UIDs total)
+        const allWidgetUids = new Set<string>();
+        for (const uids of Object.values(widgetToUserUids)) {
+          for (const uid of uids) {
+            if (allWidgetUids.size >= 200) break;
+            allWidgetUids.add(uid);
+          }
+        }
+
+        const widgetUserEmails: Record<string, string> = {};
+        const allWidgetUidArray = Array.from(allWidgetUids);
+        for (let i = 0; i < allWidgetUidArray.length; i += 10) {
+          const uidChunk = allWidgetUidArray.slice(i, i + 10);
+          if (uidChunk.length === 0) continue;
+          const snapshot = await db
+            .collection('users')
+            .where(admin.firestore.FieldPath.documentId(), 'in', uidChunk)
+            .select('email')
+            .get();
+          snapshot.docs.forEach((d) => {
+            const userData = d.data();
+            if (
+              typeof userData['email'] === 'string' &&
+              userData['email'].length > 0
+            ) {
+              widgetUserEmails[d.id] = userData['email'];
+            }
+          });
+        }
+
+        const usersByType: Record<string, string[]> = {};
+        for (const [widgetType, uidSet] of Object.entries(widgetToUserUids)) {
+          usersByType[widgetType] = Array.from(uidSet)
+            .slice(0, 20)
+            .map((uid) => widgetUserEmails[uid] ?? `Unknown (${uid})`)
+            .sort();
+        }
 
         console.log('[getAdminAnalytics] Fetching AI usage...');
         // 5. Fetch AI Usage
@@ -2060,6 +2108,7 @@ export const adminAnalytics = functionsV1
           widgets: {
             totalInstances: totalWidgetCounts,
             activeInstances: activeWidgetCounts,
+            usersByType,
           },
           api: {
             totalCalls: totalAiCalls,
