@@ -17,23 +17,26 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, activeDashboard, addToast } = useDashboard();
   const config = widget.config as ChecklistConfig;
+  // Extract fields, but DO NOT default items to [] here, or we break reference
+  // equality checks in the derived state pattern below, causing infinite renders.
   const {
-    items = [],
+    items,
     mode = 'manual',
     rosterMode = 'class',
     firstNames = '',
     lastNames = '',
   } = config;
+  const safeItems = React.useMemo(() => items ?? [], [items]);
 
   const [localText, setLocalText] = React.useState(
-    items.map((i) => i.text).join('\n')
+    safeItems.map((i) => i.text).join('\n')
   );
   const [prevItems, setPrevItems] = React.useState(items);
 
   // Sync external prop changes to local text
   if (items !== prevItems) {
     setPrevItems(items);
-    setLocalText(items.map((i) => i.text).join('\n'));
+    setLocalText(safeItems.map((i) => i.text).join('\n'));
   }
 
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -48,16 +51,19 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   }, []);
 
   const configRef = React.useRef(config);
-  // eslint-disable-next-line react-hooks/refs
-  configRef.current = config;
+  React.useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const updateWidgetRef = React.useRef(updateWidget);
-  // eslint-disable-next-line react-hooks/refs
-  updateWidgetRef.current = updateWidget;
+  React.useEffect(() => {
+    updateWidgetRef.current = updateWidget;
+  }, [updateWidget]);
 
-  const itemsRef = React.useRef(items);
-  // eslint-disable-next-line react-hooks/refs
-  itemsRef.current = items;
+  const itemsRef = React.useRef(safeItems);
+  React.useEffect(() => {
+    itemsRef.current = safeItems;
+  }, [safeItems]);
 
   const handleBulkChange = (text: string) => {
     setLocalText(text);
