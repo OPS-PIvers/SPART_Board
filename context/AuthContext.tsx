@@ -670,6 +670,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       { merge: true }
     ).catch((err: unknown) => {
       console.error('Error syncing user root document:', err);
+      // Reset so the next render can retry
+      rootDocSyncedRef.current = false;
     });
   }, [user, profileLoaded, selectedBuildings]);
 

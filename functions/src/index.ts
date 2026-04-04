@@ -1995,12 +1995,16 @@ export const adminAnalytics = functionsV1
           });
         }
 
-        const usersByType: Record<string, string[]> = {};
+        const usersByType: Record<string, { count: number; emails: string[] }> =
+          {};
         for (const [widgetType, uidSet] of Object.entries(widgetToUserUids)) {
-          usersByType[widgetType] = Array.from(uidSet)
-            .slice(0, 20)
-            .map((uid) => widgetUserEmails[uid] ?? `Unknown (${uid})`)
-            .sort();
+          usersByType[widgetType] = {
+            count: uidSet.size,
+            emails: Array.from(uidSet)
+              .slice(0, 20)
+              .map((uid) => widgetUserEmails[uid] ?? `Unknown (${uid})`)
+              .sort(),
+          };
         }
 
         console.log('[getAdminAnalytics] Fetching AI usage...');

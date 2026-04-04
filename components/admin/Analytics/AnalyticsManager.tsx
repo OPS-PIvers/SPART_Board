@@ -53,7 +53,7 @@ interface AnalyticsData {
   widgets: {
     totalInstances: Record<string, number>;
     activeInstances: Record<string, number>;
-    usersByType?: Record<string, string[]>;
+    usersByType?: Record<string, { count: number; emails: string[] }>;
   };
   api: {
     totalCalls: number;
@@ -292,7 +292,13 @@ const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
         <div className="divide-y divide-slate-100">
           {widgetBarData.map(({ type, name, total, active }, index) => {
             const activeRate = total > 0 ? (active / total) * 100 : 0;
-            const users = data.widgets.usersByType?.[type] ?? null;
+            // Distinguish "not deployed" (usersByType === undefined) from
+            // "deployed but no entry" (key absent → 0 users)
+            const usersByTypeMap = data.widgets.usersByType;
+            const userEntry =
+              usersByTypeMap === undefined
+                ? null
+                : (usersByTypeMap[type] ?? { count: 0, emails: [] });
             const isExpanded = expandedWidget === type;
 
             return (
@@ -318,8 +324,8 @@ const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
                     {formatRate(activeRate)}
                   </span>
                   <span className="text-xs text-slate-400 w-20 text-right">
-                    {users !== null
-                      ? `${users.length} user${users.length !== 1 ? 's' : ''}`
+                    {userEntry !== null
+                      ? `${formatNumber(userEntry.count)} user${userEntry.count !== 1 ? 's' : ''}`
                       : '—'}
                   </span>
                   {isExpanded ? (
@@ -330,25 +336,33 @@ const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
                 </button>
                 {isExpanded && (
                   <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
-                    {users === null ? (
+                    {userEntry === null ? (
                       <p className="text-sm text-slate-500 italic">
                         User drilldown available after deploying the latest
                         Cloud Function.
                       </p>
-                    ) : users.length === 0 ? (
+                    ) : userEntry.emails.length === 0 ? (
                       <p className="text-sm text-slate-500">
                         No users found with this widget.
                       </p>
                     ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {users.map((email) => (
-                          <span
-                            key={email}
-                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-brand-blue-primary/10 text-brand-blue-primary"
-                          >
-                            {email}
-                          </span>
-                        ))}
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {userEntry.emails.map((email) => (
+                            <span
+                              key={email}
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-brand-blue-primary/10 text-brand-blue-primary"
+                            >
+                              {email}
+                            </span>
+                          ))}
+                        </div>
+                        {userEntry.count > userEntry.emails.length && (
+                          <p className="text-xs text-slate-400">
+                            Showing {userEntry.emails.length} of{' '}
+                            {formatNumber(userEntry.count)} users
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -375,13 +389,13 @@ const AiPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
       ? data.api.avgDailyCalls / data.api.activeUsers
       : 0;
 
+  // Use full email as the stable chart key to avoid Y-axis collisions when
+  // multiple users share the same local-part across domains.
   const aiBarData = useMemo(
     () =>
-      data.api.topUsers.slice(0, 10).map((u) => ({
-        name: u.email.includes('@') ? u.email.split('@')[0] : u.email,
-        email: u.email,
-        calls: u.count,
-      })),
+      data.api.topUsers
+        .slice(0, 10)
+        .map((u) => ({ email: u.email, calls: u.count })),
     [data.api.topUsers]
   );
 
@@ -436,19 +450,19 @@ const AiPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
               />
               <YAxis
                 type="category"
-                dataKey="name"
-                width={105}
+                dataKey="email"
+                width={120}
                 tick={{ fontSize: 12 }}
+                tickFormatter={(email: string) =>
+                  email.includes('@') ? email.split('@')[0] : email
+                }
               />
               <Tooltip
                 formatter={(value) => [
                   formatNumber(Number(value ?? 0)),
                   'API Calls',
                 ]}
-                labelFormatter={(label) => {
-                  const found = aiBarData.find((u) => u.name === String(label));
-                  return found?.email ?? String(label ?? '');
-                }}
+                labelFormatter={(label) => String(label ?? '')}
               />
               <Bar
                 dataKey="calls"
@@ -963,11 +977,15 @@ export const AnalyticsManager: React.FC = () => {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div role="tablist" className="flex gap-1 border-b border-slate-200">
         {TABS.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
             type="button"
+            aria-selected={selectedTab === tab.id}
+            aria-controls={`panel-${tab.id}`}
+            id={`tab-${tab.id}`}
             onClick={() => setSelectedTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-colors ${
               selectedTab === tab.id
@@ -984,16 +1002,34 @@ export const AnalyticsManager: React.FC = () => {
       {/* Tab panels */}
       <div className="animate-in fade-in duration-200">
         {selectedTab === 'overview' && (
-          <OverviewPanel
-            data={data}
-            filteredTotalUsers={filteredTotalUsers}
-            filteredMonthly={filteredMonthly}
-            filteredDaily={filteredDaily}
-          />
+          <div
+            role="tabpanel"
+            id="panel-overview"
+            aria-labelledby="tab-overview"
+          >
+            <OverviewPanel
+              data={data}
+              filteredTotalUsers={filteredTotalUsers}
+              filteredMonthly={filteredMonthly}
+              filteredDaily={filteredDaily}
+            />
+          </div>
         )}
-        {selectedTab === 'widgets' && <WidgetsPanel data={data} />}
-        {selectedTab === 'ai' && <AiPanel data={data} />}
-        {selectedTab === 'users' && <UsersPanel data={data} />}
+        {selectedTab === 'widgets' && (
+          <div role="tabpanel" id="panel-widgets" aria-labelledby="tab-widgets">
+            <WidgetsPanel data={data} />
+          </div>
+        )}
+        {selectedTab === 'ai' && (
+          <div role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
+            <AiPanel data={data} />
+          </div>
+        )}
+        {selectedTab === 'users' && (
+          <div role="tabpanel" id="panel-users" aria-labelledby="tab-users">
+            <UsersPanel data={data} />
+          </div>
+        )}
       </div>
     </div>
   );
