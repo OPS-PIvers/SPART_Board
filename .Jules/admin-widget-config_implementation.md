@@ -642,3 +642,12 @@ Config: `components/admin/UrlConfigurationPanel.tsx` _(dedicated panel via `BUIL
         -- urls: Default list of active links pre-populated on creation.
     - [Admin-Only Settings]
         -- dockDefaults: Per-building dock visibility.
+
+[x] Countdown
+    - [Default User-Level Settings]
+        -- title: Default Event Title
+        -- viewMode: Default View Mode (number or grid)
+        -- includeWeekends: Whether weekends are included by default
+        -- countToday: Whether today is counted by default
+    - [Admin-Only Settings]
+        -- dockDefaults: Per-building dock visibility.
