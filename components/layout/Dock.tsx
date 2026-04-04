@@ -624,7 +624,6 @@ export const Dock: React.FC = () => {
         />
       )}
 
-
       {urlPastePending !== null && (
         <UrlPickerModal
           url={urlPastePending}
@@ -637,7 +636,9 @@ export const Dock: React.FC = () => {
               addWidget('qr', { config: { url } });
               addToast('Added QR Code widget!', 'success');
             } else {
-              addWidget('url', { config: { urls: [{ id: crypto.randomUUID(), url }] } });
+              addWidget('url', {
+                config: { urls: [{ id: crypto.randomUUID(), url }] },
+              });
               addToast('Added Links widget!', 'success');
             }
           }}

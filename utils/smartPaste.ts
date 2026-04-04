@@ -98,8 +98,10 @@ function tryParseUrlBasedWidgets(text: string): PasteResult | null {
 
   return (
     tryParseImageWidget(normalizedUrl) ??
-    tryParseEmbedWidget(normalizedUrl) ??
-    { action: 'prompt-url-or-qr', url: normalizedUrl }
+    tryParseEmbedWidget(normalizedUrl) ?? {
+      action: 'prompt-url-or-qr',
+      url: normalizedUrl,
+    }
   );
 }
 
@@ -131,7 +133,6 @@ function tryParseEmbedWidget(url: string): PasteResult | null {
   }
   return null;
 }
-
 
 // Max character length per item to be considered "short/medium"
 const CHECKLIST_ITEM_MAX_LENGTH = 250;
