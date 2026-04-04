@@ -71,7 +71,7 @@ export const UrlWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                       e.stopPropagation();
                       addWidget('qr', { config: { url: urlItem.url } });
                     }}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 outline-none z-20"
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white opacity-70 group-hover:opacity-100 transition-all focus:opacity-100 outline-none z-20"
                     title="Create QR Code"
                   >
                     <QrCode
