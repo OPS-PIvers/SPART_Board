@@ -4,6 +4,7 @@ import {
   getTitle,
   getDefaultWidgetConfig,
   isWidgetLayout,
+  createBoardSnapshot,
 } from './widgetHelpers';
 import {
   WidgetData,
@@ -99,6 +100,82 @@ describe('widgetHelpers', () => {
       expect(getTitle(widget)).toBe('Clock');
     });
 
+    it('returns "Selector" for random widget', () => {
+      const widget = { type: 'random' } as WidgetData;
+      expect(getTitle(widget)).toBe('Selector');
+    });
+
+    it('returns "Expectations" for expectations widget', () => {
+      const widget = { type: 'expectations' } as WidgetData;
+      expect(getTitle(widget)).toBe('Expectations');
+    });
+
+    it('returns "Lunch Orders" for lunchCount widget', () => {
+      const widget = { type: 'lunchCount' } as WidgetData;
+      expect(getTitle(widget)).toBe('Lunch Orders');
+    });
+
+    it('returns "Class Roster" for classes widget', () => {
+      const widget = { type: 'classes' } as WidgetData;
+      expect(getTitle(widget)).toBe('Class Roster');
+    });
+
+    it('returns "Sticker" for sticker widget', () => {
+      const widget = { type: 'sticker' } as WidgetData;
+      expect(getTitle(widget)).toBe('Sticker');
+    });
+
+    it('returns "Seating Chart" for seating-chart widget', () => {
+      const widget = { type: 'seating-chart' } as WidgetData;
+      expect(getTitle(widget)).toBe('Seating Chart');
+    });
+
+    it('returns "Talking Tool" for talking-tool widget', () => {
+      const widget = { type: 'talking-tool' } as WidgetData;
+      expect(getTitle(widget)).toBe('Talking Tool');
+    });
+
+    it('handles catalyst-instruction with and without config title', () => {
+      const widgetWithTitle = {
+        type: 'catalyst-instruction',
+        config: { title: 'Math Guide' },
+      } as WidgetData;
+      const widgetWithoutTitle = {
+        type: 'catalyst-instruction',
+        config: {},
+      } as WidgetData;
+      expect(getTitle(widgetWithTitle)).toBe('Guide: Math Guide');
+      expect(getTitle(widgetWithoutTitle)).toBe('Guide: Instruction Guide');
+    });
+
+    it('handles catalyst-visual with and without config title', () => {
+      const widgetWithTitle = {
+        type: 'catalyst-visual',
+        config: { title: 'Daily Goal' },
+      } as WidgetData;
+      const widgetWithoutTitle = {
+        type: 'catalyst-visual',
+        config: {},
+      } as WidgetData;
+      expect(getTitle(widgetWithTitle)).toBe('Daily Goal');
+      expect(getTitle(widgetWithoutTitle)).toBe('Visual Anchor');
+    });
+
+    it('handles quiz with and without selectedQuizTitle', () => {
+      const widgetWithTitle = {
+        type: 'quiz',
+        config: { selectedQuizTitle: 'Math 101' },
+      } as WidgetData;
+      const widgetWithoutTitle = { type: 'quiz', config: {} } as WidgetData;
+      expect(getTitle(widgetWithTitle)).toBe('Quiz: Math 101');
+      expect(getTitle(widgetWithoutTitle)).toBe('Quiz');
+    });
+
+    it('returns "Starter Pack" for starter-pack widget', () => {
+      const widget = { type: 'starter-pack' } as WidgetData;
+      expect(getTitle(widget)).toBe('Starter Pack');
+    });
+
     it('handles empty or null customTitle by falling back to type-based title', () => {
       const widget1 = { customTitle: '', type: 'clock' } as WidgetData;
       const widget2 = {
@@ -189,6 +266,66 @@ describe('widgetHelpers', () => {
         expect(config).toBeDefined();
         expect(typeof config).toBe('object');
       });
+    });
+  });
+
+  describe('createBoardSnapshot', () => {
+    it('removes id from widgets and deeply clones their config', () => {
+      const widgets: WidgetData[] = [
+        {
+          id: 'w1',
+          type: 'text',
+          x: 0,
+          y: 0,
+          w: 2,
+          h: 2,
+          z: 1,
+          isLocked: false,
+          flipped: false,
+          config: { content: 'test', html: '<p>test</p>' },
+        },
+        {
+          id: 'w2',
+          type: 'clock',
+          x: 2,
+          y: 2,
+          w: 2,
+          h: 2,
+          z: 2,
+          isLocked: false,
+          flipped: false,
+          config: {},
+        },
+      ] as WidgetData[];
+
+      const snapshot = createBoardSnapshot(widgets);
+
+      // Verify id is removed
+      expect(snapshot[0]).not.toHaveProperty('id');
+      expect(snapshot[1]).not.toHaveProperty('id');
+
+      // Verify other props remain
+      expect(snapshot[0]).toMatchObject({
+        type: 'text',
+        x: 0,
+        y: 0,
+        w: 2,
+        h: 2,
+        z: 1,
+        isLocked: false,
+        flipped: false,
+      });
+
+      // Verify config is cloned, not referenced
+      expect(snapshot[0].config).toEqual({
+        content: 'test',
+        html: '<p>test</p>',
+      });
+      (snapshot[0].config as { content: string }).content = 'updated';
+      expect(widgets[0].config).toEqual({
+        content: 'test',
+        html: '<p>test</p>',
+      }); // original unchanged
     });
   });
 });
