@@ -52,19 +52,25 @@ describe('UrlWidget', () => {
     expect(screen.getByText('Example')).toBeInTheDocument();
   });
 
-  it('opens URL in a new tab when ExternalLink button is clicked', () => {
+  it('opens URL in a new tab when the card is clicked', () => {
     const widget = createMockWidget();
     render(<UrlWidget widget={widget} />);
 
-    // Find the open in new tab button
-    const externalLinkButton = screen.getByTitle('Open in new tab');
-    fireEvent.click(externalLinkButton);
+    // The entire card has the text 'Example' inside it, but we can target the whole card element which is the wrapper of the text
+    const textElement = screen.getByText('Example');
+    // Traverse up to find the clickable container (the div that handles onClick)
+    const cardElement = textElement.closest('div.cursor-pointer');
 
-    expect(mockOpen).toHaveBeenCalledWith(
-      'https://example.com',
-      '_blank',
-      'noopener,noreferrer'
-    );
+    if (cardElement) {
+      fireEvent.click(cardElement);
+      expect(mockOpen).toHaveBeenCalledWith(
+        'https://example.com',
+        '_blank',
+        'noopener,noreferrer'
+      );
+    } else {
+      throw new Error('Card element not found');
+    }
   });
 
   it('spawns a QR widget when QrCode button is clicked', () => {
