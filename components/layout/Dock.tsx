@@ -57,6 +57,7 @@ import {
   createDefaultTextWidget,
 } from '@/utils/smartPaste';
 import { SmartPastePickerModal } from './dock/SmartPastePickerModal';
+import { UrlPickerModal } from './dock/UrlPickerModal';
 import { ImagePastePickerModal } from './dock/ImagePastePickerModal';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { DockIcon } from './dock/DockIcon';
@@ -211,6 +212,7 @@ export const Dock: React.FC = () => {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showMagicLayout, setShowMagicLayout] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [urlPastePending, setUrlPastePending] = useState<string | null>(null);
   const [smartPastePending, setSmartPastePending] = useState<string | null>(
     null
   );
@@ -282,6 +284,11 @@ export const Dock: React.FC = () => {
     if (!canAccessFeature('smart-paste')) return;
 
     const handlePaste = (e: ClipboardEvent) => {
+      // Prevent multiple paste modals from stacking
+      if (imagePastePending || smartPastePending || urlPastePending) {
+        return;
+      }
+
       // Don't intercept if user is typing in an input or textarea
       const target = e.target as HTMLElement;
       if (
@@ -340,6 +347,8 @@ export const Dock: React.FC = () => {
           } else if (result.action === 'prompt-text-or-checklist') {
             // Ambiguous: show a picker modal for the user to decide
             setSmartPastePending(result.text);
+          } else if (result.action === 'prompt-url-or-qr') {
+            setUrlPastePending(result.url);
           }
         }
       }
@@ -347,7 +356,16 @@ export const Dock: React.FC = () => {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addWidget, addToast, canAccessFeature, processAndUploadImage, user]);
+  }, [
+    addWidget,
+    addToast,
+    canAccessFeature,
+    processAndUploadImage,
+    user,
+    imagePastePending,
+    smartPastePending,
+    urlPastePending,
+  ]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const remoteButtonRef = useRef<HTMLButtonElement>(null);
@@ -615,6 +633,27 @@ export const Dock: React.FC = () => {
               addToast('Image added!', 'success');
             } else {
               addToast('Failed to process image', 'error');
+            }
+          }}
+        />
+      )}
+
+      {urlPastePending !== null && (
+        <UrlPickerModal
+          url={urlPastePending}
+          globalStyle={globalStyle}
+          onClose={() => setUrlPastePending(null)}
+          onSelect={(type) => {
+            const url = urlPastePending;
+            setUrlPastePending(null);
+            if (type === 'qr') {
+              addWidget('qr', { config: { url } });
+              addToast('Added QR Code widget!', 'success');
+            } else {
+              addWidget('url', {
+                config: { urls: [{ id: crypto.randomUUID(), url }] },
+              });
+              addToast('Added Links widget!', 'success');
             }
           }}
         />

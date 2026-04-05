@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectWidgetType } from './smartPaste';
-import { EmbedConfig, QRConfig, ChecklistConfig } from '../types';
+import { EmbedConfig, ChecklistConfig } from '../types';
 
 describe('detectWidgetType (Smart Paste)', () => {
   it('detects Google Slides and converts to preview URL', () => {
@@ -50,17 +50,15 @@ describe('detectWidgetType (Smart Paste)', () => {
     }
   });
 
-  it('detects other URLs and defaults to QR widget', () => {
+  it('detects other URLs and returns prompt-url-or-qr action', () => {
     const input = 'https://google.com';
     const result = detectWidgetType(input);
 
     expect(result).not.toBeNull();
-    if (result?.action === 'create-widget') {
-      expect(result.type).toBe('qr');
-      const config = result.config as QRConfig;
-      expect(config.url).toBe('https://google.com');
+    if (result?.action === 'prompt-url-or-qr') {
+      expect(result.url).toBe('https://google.com');
     } else {
-      throw new Error('Expected create-widget action');
+      throw new Error('Expected prompt-url-or-qr action');
     }
   });
 
