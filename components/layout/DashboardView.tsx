@@ -296,7 +296,12 @@ export const DashboardView: React.FC = () => {
     canAccessFeature('live-session')
   );
 
-  const [prevIndex, setPrevIndex] = React.useState<number>(-1);
+  const [lastDashboardId, setLastDashboardId] = React.useState<
+    string | undefined
+  >(activeDashboard?.id);
+  // Store the previous index in a ref so we can compare it to currentIndex
+  // during render to determine animation direction, without causing an extra render.
+  const prevIndexRef = React.useRef<number>(-1);
   const [isMinimized, setIsMinimized] = React.useState(false);
 
   const dashboardRef = React.useRef<HTMLDivElement>(null);
@@ -575,26 +580,33 @@ export const DashboardView: React.FC = () => {
     return dashboards.findIndex((d) => d.id === activeDashboard.id);
   }, [activeDashboard, dashboards]);
 
-  // Compute animation class from prevIndex (which lags one render behind currentIndex).
-  // prevIndex is updated in the effect below, after commit, so on the render where
-  // currentIndex changes, prevIndex still holds the old value — giving us the direction.
+  // Compute animation class by comparing current index with the previous one
+  // tracked in our ref. This correctly evaluates the direction during the render
+  // where the index changed.
   const animationClass = useMemo(() => {
+    const prevIndex = prevIndexRef.current;
     if (prevIndex === -1 || currentIndex === -1 || prevIndex === currentIndex) {
       return 'animate-fade-in';
     }
     return currentIndex > prevIndex
       ? 'animate-slide-left-in'
       : 'animate-slide-right-in';
-  }, [currentIndex, prevIndex]);
+  }, [currentIndex]);
 
-  React.useEffect(() => {
+  if (activeDashboard?.id !== lastDashboardId) {
+    setLastDashboardId(activeDashboard?.id);
     setIsMinimized(false);
     setZoom(1);
     setPanOffset({ x: 0, y: 0 });
+  }
+
+  // Keep prevIndexRef in sync AFTER we've computed the animationClass
+  // so the next render will have the updated previous value.
+  React.useEffect(() => {
     if (currentIndex !== -1) {
-      setPrevIndex(currentIndex);
+      prevIndexRef.current = currentIndex;
     }
-  }, [activeDashboard?.id, currentIndex, setZoom]);
+  }, [currentIndex]);
 
   // Reset panOffset during render when zoom is 1 to avoid useEffect and extra re-renders
   if (zoom === 1 && (panOffset.x !== 0 || panOffset.y !== 0)) {
