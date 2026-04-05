@@ -42,4 +42,4 @@
 
 ## 2026-04-03 - [Redundant Frontend Build] **Bottleneck:** The PR validation workflow had a standalone build job running build:all, duplicating the frontend build already performed by the E2E test job's webServer command and wasting pipeline minutes. **Fix:** Optimized the build job to only compile the backend functions (pnpm -C functions run build), relying on the E2E job to verify the frontend build.
 
-## 2026-04-05 - [Playwright Env Mapping] **Config Drift:** Playwright tests were hardcoding dummy environment variables, causing CI to ignore injected secrets and potentially failing tests or breaking real backend interactions when needed. **Fix:** Mapped frontend environment variables in playwright.config.ts to process.env dynamically.
+## 2026-04-05 - [Playwright Env Mapping] **Bottleneck:** Playwright tests were hardcoding dummy environment variables, causing CI to ignore injected secrets and potentially failing tests or breaking real backend interactions when needed. **Fix:** Mapped frontend environment variables in playwright.config.ts to process.env dynamically.
