@@ -38,13 +38,6 @@ export const CountdownConfigurationPanel: React.FC<
     });
   };
 
-  const formatLocalDateForInput = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const parseLocalDateInput = (value: string) => {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (!match) return null;
@@ -70,7 +63,7 @@ export const CountdownConfigurationPanel: React.FC<
     if (/^\d{4}-\d{2}-\d{2}$/.test(storedValue)) return storedValue;
     const date = new Date(storedValue);
     if (Number.isNaN(date.getTime())) return '';
-    return formatLocalDateForInput(date);
+    return storedValue.split('T')[0];
   };
 
   const handleDateChange = (
@@ -160,7 +153,8 @@ export const CountdownConfigurationPanel: React.FC<
             <button
               onClick={() => handleUpdateBuilding({ viewMode: 'number' })}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-                currentBuildingConfig.viewMode === 'number'
+                currentBuildingConfig.viewMode === 'number' ||
+                !currentBuildingConfig.viewMode
                   ? 'bg-brand-blue-primary text-white shadow'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
