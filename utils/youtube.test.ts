@@ -127,6 +127,15 @@ describe('loadYouTubeApi', () => {
   });
 
   afterEach(() => {
+    // Flush any pending callbacks to prevent leakage between tests
+    if (typeof window.onYouTubeIframeAPIReady === 'function') {
+      try {
+        window.onYouTubeIframeAPIReady();
+      } catch {
+        // Ignore errors during cleanup
+      }
+    }
+
     // Restore global properties
     window.YT = originalYT;
     window.onYouTubeIframeAPIReady = originalOnYouTubeIframeAPIReady;
