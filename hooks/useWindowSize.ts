@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 
 interface WindowSize {
   width: number;
   height: number;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const emptySubscribe = () => () => {};
 
 /**
  * Hook that returns the current window dimensions.
@@ -12,40 +15,46 @@ interface WindowSize {
  *                  to resizes (e.g. when not maximized).
  */
 export const useWindowSize = (enabled: boolean = true): WindowSize => {
-  const [windowSize, setWindowSize] = useState<WindowSize>(() => ({
-    width: typeof window !== 'undefined' ? window.innerWidth : 0,
-    height: typeof window !== 'undefined' ? window.innerHeight : 0,
-  }));
-
-  const handleResize = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    setWindowSize((prev) => {
-      // Optimization: skip state update if dimensions haven't actually changed
-      if (
-        prev.width === window.innerWidth &&
-        prev.height === window.innerHeight
-      ) {
-        return prev;
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      if (!enabled || typeof window === 'undefined') {
+        return emptySubscribe();
       }
-      return {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      };
-    });
+      window.addEventListener('resize', callback);
+      return () => window.removeEventListener('resize', callback);
+    },
+    [enabled]
+  );
+
+  // For getServerSnapshot, we provide a stable empty result for SSR
+  const getServerSnapshot = useCallback((): WindowSize => {
+    return { width: 0, height: 0 };
   }, []);
 
-  useEffect(() => {
-    if (!enabled || typeof window === 'undefined') return;
+  // React requires the snapshot to be referentially stable if the values haven't changed.
+  // We can't return a new object every time getSnapshot is called unless the size actually changed.
+  // We'll wrap getSnapshot to cache the result based on innerWidth/innerHeight.
+  // However, useSyncExternalStore internally calls getSnapshot and expects it to return the same reference
+  // if nothing changed. Since window.innerWidth/innerHeight might be the same but we create a new object,
+  // we need a module-level or stable cache for the snapshot.
 
-    window.addEventListener('resize', handleResize);
+  return useSyncExternalStore(subscribe, getSnapshotWrapper, getServerSnapshot);
+};
 
-    // Initial sync in case window size changed while disabled or before mount
-    // The state update is guarded by an equality check inside handleResize to prevent infinite loops.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    handleResize();
+let cachedSnapshot: WindowSize | null = null;
+const getSnapshotWrapper = (): WindowSize => {
+  if (typeof window === 'undefined') {
+    return { width: 0, height: 0 };
+  }
+  const currentWidth = window.innerWidth;
+  const currentHeight = window.innerHeight;
 
-    return () => window.removeEventListener('resize', handleResize);
-  }, [enabled, handleResize]);
-
-  return windowSize;
+  if (
+    !cachedSnapshot ||
+    cachedSnapshot.width !== currentWidth ||
+    cachedSnapshot.height !== currentHeight
+  ) {
+    cachedSnapshot = { width: currentWidth, height: currentHeight };
+  }
+  return cachedSnapshot;
 };
