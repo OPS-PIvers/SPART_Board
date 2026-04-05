@@ -785,22 +785,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                       version: keepLocalConfig ? lw.version : sw.version,
                       config: keepLocalConfig ? lw.config : sw.config,
                       ...(keepLocalLayout
-                        ? LAYOUT_FIELDS.reduce(
-                            (acc, field) => ({
-                              ...acc,
-                              [field]: lw[field as keyof WidgetData],
-                            }),
-                            {}
-                          )
+                        ? (() => {
+                            const acc: Record<string, unknown> = {};
+                            for (const f of LAYOUT_FIELDS)
+                              acc[f] = lw[f as keyof WidgetData];
+                            return acc as Partial<WidgetData>;
+                          })()
                         : {}),
                       ...(keepLocalStyle
-                        ? STYLE_FIELDS.reduce(
-                            (acc, field) => ({
-                              ...acc,
-                              [field]: lw[field as keyof WidgetData],
-                            }),
-                            {}
-                          )
+                        ? (() => {
+                            const acc: Record<string, unknown> = {};
+                            for (const f of STYLE_FIELDS)
+                              acc[f] = lw[f as keyof WidgetData];
+                            return acc as Partial<WidgetData>;
+                          })()
                         : {}),
                     };
                   }
@@ -853,22 +851,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     version: keepLocalConfig ? saved.version : sw.version,
                     config: keepLocalConfig ? saved.config : sw.config,
                     ...(keepLocalLayout
-                      ? LAYOUT_FIELDS.reduce(
-                          (acc, field) => ({
-                            ...acc,
-                            [field]: saved[field as keyof WidgetData],
-                          }),
-                          {}
-                        )
+                      ? (() => {
+                          const acc: Record<string, unknown> = {};
+                          for (const f of LAYOUT_FIELDS)
+                            acc[f] = saved[f as keyof WidgetData];
+                          return acc as Partial<WidgetData>;
+                        })()
                       : {}),
                     ...(keepLocalStyle
-                      ? STYLE_FIELDS.reduce(
-                          (acc, field) => ({
-                            ...acc,
-                            [field]: saved[field as keyof WidgetData],
-                          }),
-                          {}
-                        )
+                      ? (() => {
+                          const acc: Record<string, unknown> = {};
+                          for (const f of STYLE_FIELDS)
+                            acc[f] = saved[f as keyof WidgetData];
+                          return acc as Partial<WidgetData>;
+                        })()
                       : {}),
                   };
                 }
