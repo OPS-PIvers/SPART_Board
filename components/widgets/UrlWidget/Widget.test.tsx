@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 import { UrlWidget } from './Widget';
 import { WidgetData, UrlWidgetConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
@@ -10,7 +10,7 @@ vi.mock('@/context/useDashboard', () => ({
 }));
 
 const mockAddWidget = vi.fn();
-const mockOpen = vi.fn();
+let mockOpen: ReturnType<typeof vi.spyOn>;
 
 const createMockWidget = (
   config: Partial<UrlWidgetConfig> = {}
@@ -43,7 +43,11 @@ describe('UrlWidget', () => {
       addWidget: mockAddWidget,
     });
     // Mock window.open
-    global.window.open = mockOpen;
+    mockOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('renders correctly with URLs', () => {
@@ -56,21 +60,14 @@ describe('UrlWidget', () => {
     const widget = createMockWidget();
     render(<UrlWidget widget={widget} />);
 
-    // The entire card has the text 'Example' inside it, but we can target the whole card element which is the wrapper of the text
     const textElement = screen.getByText('Example');
-    // Traverse up to find the clickable container (the div that handles onClick)
-    const cardElement = textElement.closest('div.cursor-pointer');
+    fireEvent.click(textElement);
 
-    if (cardElement) {
-      fireEvent.click(cardElement);
-      expect(mockOpen).toHaveBeenCalledWith(
-        'https://example.com',
-        '_blank',
-        'noopener,noreferrer'
-      );
-    } else {
-      throw new Error('Card element not found');
-    }
+    expect(mockOpen).toHaveBeenCalledWith(
+      'https://example.com',
+      '_blank',
+      'noopener,noreferrer'
+    );
   });
 
   it('spawns a QR widget when QrCode button is clicked', () => {

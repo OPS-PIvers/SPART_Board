@@ -56,12 +56,20 @@ export const UrlWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             >
               {urls.map((urlItem) => (
                 <div
+                  role="button"
+                  tabIndex={0}
                   key={urlItem.id}
-                  className="relative overflow-hidden rounded-[min(16px,3cqmin)] flex flex-col items-center justify-center transition-all active:scale-95 group shadow-sm hover:shadow-md border border-white/20 hover:brightness-110 cursor-pointer"
+                  className="relative overflow-hidden rounded-[min(16px,3cqmin)] flex flex-col items-center justify-center transition-all active:scale-95 group shadow-sm hover:shadow-md border border-white/20 hover:brightness-110 cursor-pointer text-left"
                   style={{ backgroundColor: urlItem.color ?? '#10b981' }}
                   onClick={() =>
                     window.open(urlItem.url, '_blank', 'noopener,noreferrer')
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      window.open(urlItem.url, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
                 >
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 group-active:bg-black/10 transition-colors" />
 
@@ -71,8 +79,14 @@ export const UrlWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                       e.stopPropagation();
                       addWidget('qr', { config: { url: urlItem.url } });
                     }}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white opacity-70 group-hover:opacity-100 transition-all focus:opacity-100 outline-none z-20"
+                    className="absolute z-20 rounded-full bg-black/20 text-white opacity-70 transition-all outline-none hover:bg-black/40 group-hover:opacity-100 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
+                    style={{
+                      top: 'min(8px, 2cqmin)',
+                      right: 'min(8px, 2cqmin)',
+                      padding: 'min(6px, 1.5cqmin)',
+                    }}
                     title="Create QR Code"
+                    aria-label="Create QR Code"
                   >
                     <QrCode
                       style={{
