@@ -392,6 +392,21 @@ const ActiveQuiz: React.FC<{
     setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
   }
 
+  // Adjusting state during rendering for auto-submission trigger
+  const [autoSubmitTriggeredFor, setAutoSubmitTriggeredFor] = useState<
+    string | undefined
+  >(undefined);
+
+  if (
+    timeLeft === 0 &&
+    !submitted &&
+    !submitting &&
+    autoSubmitTriggeredFor !== currentQuestion?.id
+  ) {
+    setSubmitted(true);
+    setAutoSubmitTriggeredFor(currentQuestion?.id);
+  }
+
   // Keep refs for volatile state used by the countdown effect so the timer
   // doesn't restart on every keystroke or selection change.
   const currentQuestionRef = useRef(currentQuestion);
@@ -409,24 +424,28 @@ const ActiveQuiz: React.FC<{
   // Countdown
   useEffect(() => {
     if (timeLeft === null || submitted || submitting) return;
-    if (timeLeft <= 0) {
-      // Auto-submit empty answer when time runs out
-      if (currentQuestionRef.current && !submitted && !submitting) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSubmitted(true);
-        void onAnswerRef.current(
-          currentQuestionRef.current.id,
-          selectedAnswerRef.current ?? fibAnswerRef.current ?? ''
-        );
-      }
-      return;
-    }
+    if (timeLeft <= 0) return;
+
     const id = setInterval(
       () => setTimeLeft((t) => (t !== null ? t - 1 : null)),
       1000
     );
     return () => clearInterval(id);
   }, [timeLeft, submitted, submitting]);
+
+  // Handle side-effects of auto-submission
+  useEffect(() => {
+    if (
+      timeLeft === 0 &&
+      autoSubmitTriggeredFor === currentQuestionRef.current?.id &&
+      currentQuestionRef.current
+    ) {
+      void onAnswerRef.current(
+        currentQuestionRef.current.id,
+        selectedAnswerRef.current ?? fibAnswerRef.current ?? ''
+      );
+    }
+  }, [timeLeft, autoSubmitTriggeredFor]);
 
   if (!currentQuestion) {
     return (

@@ -49,8 +49,7 @@ export const CustomWidgetSettings: React.FC<SettingsProps> = ({ widget }) => {
   >(() => buildDefaults(settingDefs, adminSettings));
 
   // "Adjusting state while rendering" pattern: re-merge defaults whenever the
-  // widget doc changes (async load or switch to a different widget). This avoids
-  // calling setState inside an effect, which triggers react-hooks/set-state-in-effect.
+  // widget doc changes (async load or switch to a different widget).
   const [prevDocId, setPrevDocId] = useState<string | undefined>(undefined);
   if (prevDocId !== widgetDoc?.id) {
     setPrevDocId(widgetDoc?.id);

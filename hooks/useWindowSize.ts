@@ -16,6 +16,28 @@ export const useWindowSize = (enabled: boolean = true): WindowSize => {
     width: typeof window !== 'undefined' ? window.innerWidth : 0,
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   }));
+  const [prevEnabled, setPrevEnabled] = useState(enabled);
+
+  // "Adjusting state during rendering" pattern: if enabled changes, or on initial render,
+  // we check if dimensions have drifted while disabled/unmounted.
+  if (enabled && typeof window !== 'undefined') {
+    if (
+      windowSize.width !== window.innerWidth ||
+      windowSize.height !== window.innerHeight
+    ) {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+  }
+
+  // We still need to track prevEnabled to ensure we don't infinitely re-render
+  // if dimensions drift continuously, but actually the equality check above is sufficient
+  // because if windowSize already matches window.inner*, it won't set state again.
+  if (enabled !== prevEnabled) {
+    setPrevEnabled(enabled);
+  }
 
   const handleResize = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -38,12 +60,6 @@ export const useWindowSize = (enabled: boolean = true): WindowSize => {
     if (!enabled || typeof window === 'undefined') return;
 
     window.addEventListener('resize', handleResize);
-
-    // Initial sync in case window size changed while disabled or before mount
-    // The state update is guarded by an equality check inside handleResize to prevent infinite loops.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    handleResize();
-
     return () => window.removeEventListener('resize', handleResize);
   }, [enabled, handleResize]);
 
