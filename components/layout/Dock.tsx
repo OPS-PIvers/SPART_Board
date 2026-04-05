@@ -284,6 +284,11 @@ export const Dock: React.FC = () => {
     if (!canAccessFeature('smart-paste')) return;
 
     const handlePaste = (e: ClipboardEvent) => {
+      // Prevent multiple paste modals from stacking
+      if (imagePastePending || smartPastePending || urlPastePending) {
+        return;
+      }
+
       // Don't intercept if user is typing in an input or textarea
       const target = e.target as HTMLElement;
       if (
@@ -351,7 +356,16 @@ export const Dock: React.FC = () => {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addWidget, addToast, canAccessFeature, processAndUploadImage, user]);
+  }, [
+    addWidget,
+    addToast,
+    canAccessFeature,
+    processAndUploadImage,
+    user,
+    imagePastePending,
+    smartPastePending,
+    urlPastePending,
+  ]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const remoteButtonRef = useRef<HTMLButtonElement>(null);
