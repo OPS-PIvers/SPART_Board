@@ -29,12 +29,15 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: WEBSERVER_TIMEOUT,
     env: {
-      VITE_FIREBASE_API_KEY: 'dummy',
-      VITE_FIREBASE_AUTH_DOMAIN: 'dummy',
-      VITE_FIREBASE_PROJECT_ID: 'dummy',
-      VITE_FIREBASE_STORAGE_BUCKET: 'dummy',
-      VITE_FIREBASE_MESSAGING_SENDER_ID: 'dummy',
-      VITE_FIREBASE_APP_ID: 'dummy',
+      VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY || 'dummy',
+      VITE_FIREBASE_AUTH_DOMAIN:
+        process.env.VITE_FIREBASE_AUTH_DOMAIN || 'dummy',
+      VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID || 'dummy',
+      VITE_FIREBASE_STORAGE_BUCKET:
+        process.env.VITE_FIREBASE_STORAGE_BUCKET || 'dummy',
+      VITE_FIREBASE_MESSAGING_SENDER_ID:
+        process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || 'dummy',
+      VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID || 'dummy',
       VITE_GOOGLE_CLIENT_ID: process.env.VITE_GOOGLE_CLIENT_ID || 'dummy',
       VITE_GEMINI_API_KEY: process.env.VITE_GEMINI_API_KEY || 'dummy',
       VITE_OPENWEATHER_API_KEY: process.env.VITE_OPENWEATHER_API_KEY || 'dummy',
