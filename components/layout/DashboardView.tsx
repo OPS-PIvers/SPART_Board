@@ -600,7 +600,7 @@ export const DashboardView: React.FC = () => {
   const [prevZoom, setPrevZoom] = React.useState(zoom);
   if (zoom !== prevZoom) {
     setPrevZoom(zoom);
-    if (zoom === 1) {
+    if (zoom === 1 && (panOffset.x !== 0 || panOffset.y !== 0)) {
       setPanOffset({ x: 0, y: 0 });
     }
   }
