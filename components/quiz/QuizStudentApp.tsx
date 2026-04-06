@@ -446,7 +446,13 @@ const ActiveQuiz: React.FC<{
     ) {
       void onAnswerRef.current(
         currentQuestionRef.current.id,
-        selectedAnswerRef.current ?? fibAnswerRef.current ?? ''
+        selectedAnswerRef.current !== null && selectedAnswerRef.current !== ''
+          ? selectedAnswerRef.current
+          : fibAnswerRef.current !== ''
+            ? fibAnswerRef.current
+            : structuredAnswerRef.current !== ''
+              ? structuredAnswerRef.current
+              : ''
       );
     }
   }, [timeLeft, autoSubmitTriggeredFor]);
@@ -676,7 +682,7 @@ const ActiveQuiz: React.FC<{
             question={currentQuestion}
             submitted={submitted}
             onSubmit={(answer) => void handleSubmit(answer)}
-            onChange={(answer) => setStructuredAnswer(answer)}
+            onChange={setStructuredAnswer}
             submitting={submitting}
             isStudentPaced={isStudentPaced}
             isLastQuestion={currentIndex >= session.totalQuestions - 1}
