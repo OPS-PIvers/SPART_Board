@@ -414,12 +414,15 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
             }}
           >
             <textarea
-              className="w-full h-full text-center bg-transparent border-none resize-none focus:outline-none focus:ring-2 focus:ring-slate-400 font-medium text-slate-800 leading-tight"
-              style={{
-                borderRadius: '0.5cqmin',
-                padding: '0.5cqmin',
-                fontSize: '15cqmin',
-              }}
+              className="w-full h-full text-center bg-transparent border-none resize-none focus:outline-none focus:ring-[var(--ring-width)] focus:ring-slate-400 font-medium text-slate-800 leading-tight"
+              style={
+                {
+                  borderRadius: '0.5cqmin',
+                  padding: '0.5cqmin',
+                  fontSize: '15cqmin',
+                  '--ring-width': '0.2cqmin',
+                } as React.CSSProperties
+              }
               value={node.text}
               onChange={(e) => handleNodeTextChange(node.id, e.target.value)}
               placeholder="Idea..."
