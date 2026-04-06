@@ -1765,11 +1765,8 @@ interface EngagementCounts {
   daily: number;
 }
 
-const REGISTERED_USERS_CACHE_TTL_MS = 15 * 60 * 1000;
-let registeredUsersCache: {
-  value: number;
-  fetchedAt: number;
-} | null = null;
+// registeredUsersCache removed – Auth data is now collected in a single
+// listUsers pass that also provides MAU/DAU, so a separate cache is unnecessary.
 
 /**
  * Cloud Function to fetch administrative analytics.
@@ -1823,16 +1820,52 @@ export const adminAnalytics = functionsV1
 
       try {
         const now = Date.now();
-        console.log('[getAdminAnalytics] Fetching users...');
+        // 3a. Collect ALL user data from Firebase Auth (authoritative source
+        // for MAU/DAU). This replaces the previous Firestore-only approach
+        // which missed users without a /users/{uid} root doc.
+        console.log('[getAdminAnalytics] Fetching users from Firebase Auth...');
+        const authUsersMap = new Map<
+          string,
+          { email: string; lastSignInMs: number }
+        >();
+        let authPageToken: string | undefined;
+        do {
+          const listResult = await admin.auth().listUsers(1000, authPageToken);
+          for (const u of listResult.users) {
+            const lastSignIn = u.metadata.lastSignInTime
+              ? new Date(u.metadata.lastSignInTime).getTime()
+              : 0;
+            authUsersMap.set(u.uid, {
+              email: u.email ?? '',
+              lastSignInMs: lastSignIn,
+            });
+          }
+          authPageToken = listResult.pageToken;
+        } while (authPageToken);
 
-        // 3. Fetch Users
-        // Using .stream() combined with .select() limits the memory footprint
-        // by streaming documents one-by-one with only the necessary fields
+        console.log(
+          `[getAdminAnalytics] Found ${authUsersMap.size} Auth users`
+        );
+
+        // 3b. Stream Firestore /users/{uid} docs for building assignments only
+        const buildingsMap = new Map<string, string[]>();
         const usersStream = db
           .collection('users')
-          .select('email', 'lastLogin', 'buildings')
+          .select('buildings')
           .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
 
+        for await (const userDoc of usersStream) {
+          if (!userDoc.exists) continue;
+          const userData = userDoc.data();
+          if (
+            Array.isArray(userData.buildings) &&
+            userData.buildings.length > 0
+          ) {
+            buildingsMap.set(userDoc.id, userData.buildings.map(String));
+          }
+        }
+
+        // 3c. Compute engagement from Auth data + buildings from Firestore
         const usersByDomain: Record<string, EngagementCounts> = {};
         const usersByBuilding: Record<string, EngagementCounts> = {};
         const usersByDomainAndBuilding: Record<
@@ -1861,25 +1894,14 @@ export const adminAnalytics = functionsV1
           if (isDailyActive) bucket[key].daily += 1;
         };
 
-        for await (const userDoc of usersStream) {
-          if (!userDoc.exists) continue;
-          const userData = userDoc.data();
-          const userEmail =
-            typeof userData.email === 'string' ? userData.email : '';
+        for (const [uid, { email: userEmail, lastSignInMs }] of authUsersMap) {
           const domain = userEmail.includes('@')
             ? userEmail.split('@')[1]
             : 'unknown';
-
-          let buildings: string[] = [];
-          if (Array.isArray(userData.buildings)) {
-            buildings = userData.buildings.map(String);
-          }
-
-          const lastLogin =
-            typeof userData.lastLogin === 'number' ? userData.lastLogin : 0;
           const isMonthlyActive =
-            lastLogin > 0 && now - lastLogin <= thirtyDaysMs;
-          const isDailyActive = lastLogin > 0 && now - lastLogin <= oneDayMs;
+            lastSignInMs > 0 && now - lastSignInMs <= thirtyDaysMs;
+          const isDailyActive =
+            lastSignInMs > 0 && now - lastSignInMs <= oneDayMs;
 
           totalEngagement.total += 1;
           if (isMonthlyActive) totalEngagement.monthly += 1;
@@ -1887,6 +1909,7 @@ export const adminAnalytics = functionsV1
 
           increment(usersByDomain, domain, isMonthlyActive, isDailyActive);
 
+          const buildings = buildingsMap.get(uid) ?? [];
           if (buildings.length === 0) {
             increment(usersByBuilding, 'none', isMonthlyActive, isDailyActive);
             if (!usersByDomainAndBuilding[domain]) {
@@ -1898,30 +1921,31 @@ export const adminAnalytics = functionsV1
               isMonthlyActive,
               isDailyActive
             );
-            continue;
-          }
-
-          for (const building of buildings) {
-            increment(
-              usersByBuilding,
-              building,
-              isMonthlyActive,
-              isDailyActive
-            );
-            if (!usersByDomainAndBuilding[domain]) {
-              usersByDomainAndBuilding[domain] = {};
+          } else {
+            for (const building of buildings) {
+              increment(
+                usersByBuilding,
+                building,
+                isMonthlyActive,
+                isDailyActive
+              );
+              if (!usersByDomainAndBuilding[domain]) {
+                usersByDomainAndBuilding[domain] = {};
+              }
+              increment(
+                usersByDomainAndBuilding[domain],
+                building,
+                isMonthlyActive,
+                isDailyActive
+              );
             }
-            increment(
-              usersByDomainAndBuilding[domain],
-              building,
-              isMonthlyActive,
-              isDailyActive
-            );
           }
         }
 
-        const totalUsers = totalEngagement.total;
-        console.log(`[getAdminAnalytics] Found ${totalUsers} user documents`);
+        const totalUsers = authUsersMap.size;
+        console.log(
+          `[getAdminAnalytics] Computed engagement for ${totalUsers} users`
+        );
 
         console.log(
           '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
@@ -1992,37 +2016,9 @@ export const adminAnalytics = functionsV1
 
         console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
 
-        // Get authoritative registered user count from Firebase Auth
-        // Cached in-memory per function instance to reduce repeated full scans.
-        let totalRegisteredUsers = totalEngagement.total;
-        let registeredIsFallback = false;
-        const isCacheFresh =
-          registeredUsersCache !== null &&
-          now - registeredUsersCache.fetchedAt <= REGISTERED_USERS_CACHE_TTL_MS;
-        if (isCacheFresh && registeredUsersCache !== null) {
-          totalRegisteredUsers = registeredUsersCache.value;
-        } else {
-          try {
-            totalRegisteredUsers = 0;
-            let pageToken: string | undefined = undefined;
-            do {
-              const listResult = await admin.auth().listUsers(1000, pageToken);
-              totalRegisteredUsers += listResult.users.length;
-              pageToken = listResult.pageToken;
-            } while (pageToken);
-            registeredUsersCache = {
-              value: totalRegisteredUsers,
-              fetchedAt: now,
-            };
-          } catch (authErr) {
-            console.error(
-              '[getAdminAnalytics] Could not list Auth users:',
-              authErr
-            );
-            totalRegisteredUsers = totalEngagement.total;
-            registeredIsFallback = true;
-          }
-        }
+        // Auth data was already collected in step 3a – no separate scan needed
+        const totalRegisteredUsers = authUsersMap.size;
+        const registeredIsFallback = false;
 
         // Resolve widget UIDs to emails (cap at 200 unique UIDs total)
         const allWidgetUids = new Set<string>();

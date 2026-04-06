@@ -11,11 +11,6 @@ import {
   CartesianGrid,
   Cell,
   Legend,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -85,19 +80,19 @@ const WIDGET_LABELS: Record<string, string> = TOOLS.reduce(
 );
 
 const KNOWN_BUILDINGS = new Map(BUILDINGS.map((b) => [b.id, b]));
-const CHART_COLORS = [
+const _CHART_COLORS = [
   '#2d3f89',
-  '#4356a0',
-  '#6d80c0',
-  '#9aaad8',
-  '#ad2122',
-  '#c13435',
-  '#e05d5e',
-  '#14b8a6',
-  '#0d9488',
-  '#a855f7',
-  '#f59e0b',
+  '#3b82f6',
   '#10b981',
+  '#f59e0b',
+  '#6366f1',
+  '#8b5cf6',
+  '#ec4899',
+  '#ef4444',
+  '#06b6d4',
+  '#84cc16',
+  '#f97316',
+  '#64748b',
 ];
 
 const NUMBER_FORMATTER = new Intl.NumberFormat();
@@ -106,8 +101,8 @@ const formatRate = (value: number) =>
   Number.isFinite(value) ? `${value.toFixed(1)}%` : '0.0%';
 
 const chartTheme = {
-  grid: '#ffffff15',
-  axisText: '#94a3b8',
+  grid: '#e2e8f0',
+  axisText: '#64748b',
 };
 
 const CustomTooltip = ({
@@ -143,18 +138,18 @@ const KpiCard: React.FC<{
   accentBg: string;
   icon: React.ReactNode;
 }> = ({ title, value, subtitle, accentColor, accentBg, icon }) => (
-  <div className="bg-slate-800/60 backdrop-blur-sm border border-white/10 rounded-2xl p-5 relative overflow-hidden">
+  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
     <div
       className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
       style={{ background: accentColor }}
     />
     <div className="flex items-start justify-between gap-3">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           {title}
         </p>
-        <p className="text-3xl font-black text-white mt-1">{value}</p>
-        {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
+        <p className="text-3xl font-black text-slate-900 mt-1">{value}</p>
+        {subtitle && <p className="text-sm text-slate-500 mt-1">{subtitle}</p>}
       </div>
       <div className="p-3 rounded-xl" style={{ background: accentBg }}>
         {icon}
@@ -167,8 +162,8 @@ const PanelCard: React.FC<React.PropsWithChildren<{ title: string }>> = ({
   title,
   children,
 }) => (
-  <div className="bg-slate-800/60 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
-    <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">
+  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">
       {title}
     </h3>
     {children}
@@ -196,10 +191,10 @@ const OverviewPanel: React.FC<{
 }) => {
   const funnel = useMemo(
     () => [
-      { name: 'Registered', value: registeredUsers, fill: '#4356a0' },
-      { name: 'With Dashboards', value: usersWithDashboards, fill: '#14b8a6' },
-      { name: 'Monthly Active', value: filteredMonthly, fill: '#a855f7' },
-      { name: 'Daily Active', value: filteredDaily, fill: '#10b981' },
+      { name: 'Registered', value: registeredUsers, fill: '#2d3f89' },
+      { name: 'With Dashboards', value: usersWithDashboards, fill: '#10b981' },
+      { name: 'Monthly Active', value: filteredMonthly, fill: '#3b82f6' },
+      { name: 'Daily Active', value: filteredDaily, fill: '#f59e0b' },
     ],
     [filteredDaily, filteredMonthly, registeredUsers, usersWithDashboards]
   );
@@ -230,31 +225,31 @@ const OverviewPanel: React.FC<{
           }
           accentColor="#4356a0"
           accentBg="rgba(67,86,160,0.2)"
-          icon={<Users className="w-5 h-5 text-blue-200" />}
+          icon={<Users className="w-5 h-5 text-blue-700" />}
         />
         <KpiCard
           title="Users with Dashboards"
           value={formatNumber(usersWithDashboards)}
           subtitle="Unique dashboard owners"
-          accentColor="#14b8a6"
-          accentBg="rgba(20,184,166,0.2)"
-          icon={<LayoutGrid className="w-5 h-5 text-teal-200" />}
+          accentColor="#10b981"
+          accentBg="rgba(16,185,129,0.12)"
+          icon={<LayoutGrid className="w-5 h-5 text-emerald-600" />}
         />
         <KpiCard
           title="Monthly Active"
           value={formatNumber(filteredMonthly)}
           subtitle={`${formatRate(filteredTotalUsers > 0 ? (filteredMonthly / filteredTotalUsers) * 100 : 0)} of visible users`}
-          accentColor="#a855f7"
-          accentBg="rgba(168,85,247,0.2)"
-          icon={<BarChart2 className="w-5 h-5 text-purple-200" />}
+          accentColor="#3b82f6"
+          accentBg="rgba(59,130,246,0.12)"
+          icon={<BarChart2 className="w-5 h-5 text-blue-500" />}
         />
         <KpiCard
           title="Daily Active"
           value={formatNumber(filteredDaily)}
           subtitle={`${formatRate(filteredTotalUsers > 0 ? (filteredDaily / filteredTotalUsers) * 100 : 0)} of visible users`}
-          accentColor="#10b981"
-          accentBg="rgba(16,185,129,0.2)"
-          icon={<Zap className="w-5 h-5 text-emerald-200" />}
+          accentColor="#f59e0b"
+          accentBg="rgba(245,158,11,0.12)"
+          icon={<Zap className="w-5 h-5 text-amber-500" />}
         />
       </div>
 
@@ -262,16 +257,16 @@ const OverviewPanel: React.FC<{
         <KpiCard
           title="Total Dashboards"
           value={formatNumber(dashboards.total)}
-          accentColor="#6d80c0"
-          accentBg="rgba(109,128,192,0.2)"
-          icon={<LayoutGrid className="w-5 h-5 text-blue-200" />}
+          accentColor="#6366f1"
+          accentBg="rgba(99,102,241,0.12)"
+          icon={<LayoutGrid className="w-5 h-5 text-indigo-500" />}
         />
         <KpiCard
           title="Avg Widgets / Dashboard"
           value={dashboards.avgWidgetsPerDashboard.toFixed(1)}
           accentColor="#f59e0b"
-          accentBg="rgba(245,158,11,0.2)"
-          icon={<WandSparkles className="w-5 h-5 text-amber-200" />}
+          accentBg="rgba(245,158,11,0.12)"
+          icon={<WandSparkles className="w-5 h-5 text-amber-500" />}
         />
       </div>
 
@@ -328,14 +323,14 @@ const OverviewPanel: React.FC<{
             <Legend wrapperStyle={{ color: chartTheme.axisText }} />
             <Bar
               dataKey="total"
-              fill="#4356a0"
+              fill="#2d3f89"
               name="Total"
               radius={[0, 8, 8, 0]}
               barSize={16}
             />
             <Bar
               dataKey="monthly"
-              fill="#14b8a6"
+              fill="#3b82f6"
               name="Monthly Active"
               radius={[0, 8, 8, 0]}
               barSize={16}
@@ -347,8 +342,16 @@ const OverviewPanel: React.FC<{
   );
 };
 
+type WidgetSortKey = 'name' | 'total' | 'active' | 'activeRate' | 'users';
+
 const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
+  const [widgetSearch, setWidgetSearch] = useState('');
+  const [emailSearch, setEmailSearch] = useState('');
+  const [widgetSort, setWidgetSort] = useState<{
+    key: WidgetSortKey;
+    dir: 'asc' | 'desc';
+  }>({ key: 'total', dir: 'desc' });
 
   const rows = useMemo(() => {
     const usersByType = data.widgets.usersByType;
@@ -371,40 +374,87 @@ const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
       .sort((a, b) => b.total - a.total);
   }, [data.widgets]);
 
-  const radarData = useMemo(
+  const filteredRows = useMemo(() => {
+    let result = rows;
+    if (widgetSearch) {
+      const q = widgetSearch.toLowerCase();
+      result = result.filter((r) => r.name.toLowerCase().includes(q));
+    }
+    const { key, dir } = widgetSort;
+    return [...result].sort((a, b) => {
+      const av = a[key];
+      const bv = b[key];
+      if (typeof av === 'string' && typeof bv === 'string') {
+        return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
+      return dir === 'asc' ? Number(av) - Number(bv) : Number(bv) - Number(av);
+    });
+  }, [rows, widgetSearch, widgetSort]);
+
+  const chartRows = useMemo(
     () =>
-      rows.slice(0, 8).map((row) => ({
-        widget: row.name,
-        total: row.total,
-        active: row.active,
+      rows.slice(0, 12).map((r) => ({
+        name: r.name,
+        total: r.total,
+        active: r.active,
+        users: r.users,
       })),
     [rows]
   );
 
+  const toggleWidgetSort = (key: WidgetSortKey) => {
+    setWidgetSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
+        : { key, dir: 'desc' }
+    );
+  };
+
+  const widgetHeader = (
+    label: string,
+    key: WidgetSortKey,
+    align = 'text-right'
+  ) => {
+    const ariaSort =
+      widgetSort.key === key
+        ? widgetSort.dir === 'desc'
+          ? 'descending'
+          : 'ascending'
+        : 'none';
+    return (
+      <th
+        scope="col"
+        aria-sort={ariaSort}
+        className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 ${align}`}
+      >
+        <button
+          type="button"
+          onClick={() => toggleWidgetSort(key)}
+          className="hover:text-slate-900 transition-colors"
+        >
+          {label}
+          {widgetSort.key === key
+            ? widgetSort.dir === 'desc'
+              ? ' ↓'
+              : ' ↑'
+            : ' ↕'}
+        </button>
+      </th>
+    );
+  };
+
   return (
     <div className="space-y-5">
-      <PanelCard title="Widget Popularity + Active Users">
+      <PanelCard title="Top Widgets (Total / Active / Users)">
         <ResponsiveContainer
           width="100%"
-          height={Math.max(300, rows.slice(0, 12).length * 38)}
+          height={Math.max(300, chartRows.length * 38)}
         >
           <BarChart
-            data={rows.slice(0, 12)}
+            data={chartRows}
             layout="vertical"
             margin={{ left: 120, right: 30 }}
           >
-            <defs>
-              <linearGradient
-                id="widgetTotalGradient"
-                x1="0"
-                y1="0"
-                x2="1"
-                y2="0"
-              >
-                <stop offset="0%" stopColor="#4356a0" />
-                <stop offset="100%" stopColor="#6d80c0" />
-              </linearGradient>
-            </defs>
             <CartesianGrid stroke={chartTheme.grid} horizontal={false} />
             <XAxis
               type="number"
@@ -421,21 +471,21 @@ const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
             <Bar
               dataKey="total"
               name="Total"
-              fill="url(#widgetTotalGradient)"
+              fill="#2d3f89"
               barSize={20}
               radius={[0, 8, 8, 0]}
             />
             <Bar
               dataKey="active"
               name="Active (30d)"
-              fill="#14b8a6"
+              fill="#3b82f6"
               barSize={20}
               radius={[0, 8, 8, 0]}
             />
             <Bar
               dataKey="users"
               name="Users"
-              fill="#a855f7"
+              fill="#10b981"
               barSize={20}
               radius={[0, 8, 8, 0]}
             />
@@ -443,132 +493,158 @@ const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
         </ResponsiveContainer>
       </PanelCard>
 
-      {radarData.length > 0 && (
-        <PanelCard title="Top Widget Comparison (Radar)">
-          <ResponsiveContainer width="100%" height={320}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke={chartTheme.grid} />
-              <PolarAngleAxis
-                dataKey="widget"
-                tick={{ fill: chartTheme.axisText, fontSize: 11 }}
-              />
-              <PolarRadiusAxis
-                tick={{ fill: chartTheme.axisText, fontSize: 10 }}
-              />
-              <Radar
-                name="Total"
-                dataKey="total"
-                stroke="#6d80c0"
-                fill="#6d80c0"
-                fillOpacity={0.35}
-              />
-              <Radar
-                name="Active"
-                dataKey="active"
-                stroke="#14b8a6"
-                fill="#14b8a6"
-                fillOpacity={0.28}
-              />
-              <Legend wrapperStyle={{ color: chartTheme.axisText }} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </PanelCard>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {rows.map((row, index) => {
-          const expanded = expandedWidget === row.type;
-          const color = CHART_COLORS[index % CHART_COLORS.length];
-          return (
-            <div
-              key={row.type}
-              className="bg-slate-800/60 backdrop-blur-sm border border-white/10 rounded-2xl p-4"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ background: color }}
-                  />
-                  <h4 className="text-sm font-semibold text-white truncate">
-                    {row.name}
-                  </h4>
-                </div>
-                <span className="text-xs text-slate-400">#{index + 1}</span>
-              </div>
-              <div className="mt-4 flex items-end justify-between">
-                <div>
-                  <p className="text-xs text-slate-400 uppercase tracking-wide">
-                    Total instances
-                  </p>
-                  <p className="text-2xl font-black text-white">
-                    {formatNumber(row.total)}
-                  </p>
-                </div>
-                <span className="rounded-full bg-purple-500/20 text-purple-200 text-xs px-2.5 py-1 font-semibold">
-                  {row.usersAvailable
-                    ? `${formatNumber(row.users)} users`
-                    : 'Users unavailable'}
-                </span>
-              </div>
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-slate-400">
-                  <span>Active 30d: {formatNumber(row.active)}</span>
-                  <span>{formatRate(row.activeRate)}</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/10 mt-1.5 overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${Math.min(100, row.activeRate)}%`,
-                      background: color,
-                    }}
-                  />
-                </div>
-              </div>
-              <button
-                type="button"
-                disabled={!row.usersAvailable}
-                onClick={() =>
-                  setExpandedWidget((prev) =>
-                    prev === row.type ? null : row.type
-                  )
-                }
-                className="mt-4 w-full rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 text-xs font-semibold px-2 py-1.5 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {expanded ? 'Hide emails' : 'Show emails'}
-                {expanded ? (
-                  <ChevronUp className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
-              </button>
-              {expanded && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {!row.usersAvailable ? (
-                    <p className="text-xs text-slate-400">
-                      User drilldown is unavailable until the latest Cloud
-                      Function is deployed.
-                    </p>
-                  ) : row.emails.length === 0 ? (
-                    <p className="text-xs text-slate-400">
-                      No users found with this widget.
-                    </p>
-                  ) : (
-                    row.emails.map((email) => (
-                      <span
-                        key={email}
-                        className="text-[11px] rounded-full bg-blue-500/15 text-blue-200 px-2 py-1"
-                      >
-                        {email}
-                      </span>
-                    ))
-                  )}
-                </div>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+            All Widgets
+          </h3>
+          <input
+            type="text"
+            placeholder="Search widgets..."
+            value={widgetSearch}
+            onChange={(e) => setWidgetSearch(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 w-48"
+          />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px]">
+            <thead className="border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 text-right w-12"
+                >
+                  #
+                </th>
+                {widgetHeader('Widget Name', 'name', 'text-left')}
+                {widgetHeader('Total', 'total')}
+                {widgetHeader('Active (30d)', 'active')}
+                {widgetHeader('Active %', 'activeRate')}
+                {widgetHeader('Users', 'users')}
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 w-16"
+                />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredRows.map((row, index) => {
+                const expanded = expandedWidget === row.type;
+                const filteredEmails = emailSearch
+                  ? row.emails.filter((e) =>
+                      e.toLowerCase().includes(emailSearch.toLowerCase())
+                    )
+                  : [...row.emails].sort();
+                return (
+                  <React.Fragment key={row.type}>
+                    <tr className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-slate-400 text-right">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                        {row.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700 text-right font-semibold">
+                        {formatNumber(row.total)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700 text-right">
+                        {formatNumber(row.active)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex items-center gap-2 w-28 justify-end">
+                          <span className="text-sm text-slate-700">
+                            {formatRate(row.activeRate)}
+                          </span>
+                          <span className="relative h-1.5 w-12 rounded-full bg-slate-200 overflow-hidden">
+                            <span
+                              className="absolute inset-y-0 left-0 rounded-full bg-blue-500"
+                              style={{
+                                width: `${Math.min(100, row.activeRate)}%`,
+                              }}
+                            />
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700 text-right">
+                        {row.usersAvailable ? formatNumber(row.users) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          disabled={!row.usersAvailable}
+                          onClick={() => {
+                            setExpandedWidget((prev) =>
+                              prev === row.type ? null : row.type
+                            );
+                            setEmailSearch('');
+                          }}
+                          className="text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          {expanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-3 bg-slate-50">
+                          {!row.usersAvailable ? (
+                            <p className="text-sm text-slate-500">
+                              User drilldown is unavailable until the latest
+                              Cloud Function is deployed.
+                            </p>
+                          ) : row.emails.length === 0 ? (
+                            <p className="text-sm text-slate-500">
+                              No users found with this widget.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                placeholder="Search emails..."
+                                value={emailSearch}
+                                onChange={(e) => setEmailSearch(e.target.value)}
+                                className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                              />
+                              <div className="max-h-48 overflow-y-auto space-y-0.5">
+                                {filteredEmails.map((email) => (
+                                  <div
+                                    key={email}
+                                    className="text-sm text-slate-700 py-0.5 px-1"
+                                  >
+                                    {email}
+                                  </div>
+                                ))}
+                                {filteredEmails.length === 0 && (
+                                  <p className="text-sm text-slate-400 py-1">
+                                    No matching emails.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+              {filteredRows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-slate-400 text-sm"
+                  >
+                    No widgets found.
+                  </td>
+                </tr>
               )}
-            </div>
-          );
-        })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -599,35 +675,35 @@ const AiPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
           title="Total API Calls"
           value={formatNumber(data.api.totalCalls)}
           accentColor="#ad2122"
-          accentBg="rgba(173,33,34,0.2)"
-          icon={<Zap className="w-5 h-5 text-red-200" />}
+          accentBg="rgba(173,33,34,0.12)"
+          icon={<Zap className="w-5 h-5 text-red-600" />}
         />
         <KpiCard
           title="Active AI Users"
           value={formatNumber(data.api.activeUsers)}
-          accentColor="#e05d5e"
-          accentBg="rgba(224,93,94,0.2)"
-          icon={<Users className="w-5 h-5 text-red-200" />}
+          accentColor="#c13435"
+          accentBg="rgba(193,52,53,0.12)"
+          icon={<Users className="w-5 h-5 text-red-500" />}
         />
         <KpiCard
           title="Avg Daily Calls"
           value={formatNumber(data.api.avgDailyCalls)}
-          accentColor="#a855f7"
-          accentBg="rgba(168,85,247,0.2)"
-          icon={<BarChart2 className="w-5 h-5 text-purple-200" />}
+          accentColor="#6366f1"
+          accentBg="rgba(99,102,241,0.12)"
+          icon={<BarChart2 className="w-5 h-5 text-indigo-500" />}
         />
         <KpiCard
           title="Avg Per User/Day"
           value={data.api.avgDailyCallsPerUser.toFixed(1)}
           accentColor="#10b981"
-          accentBg="rgba(16,185,129,0.2)"
-          icon={<WandSparkles className="w-5 h-5 text-emerald-200" />}
+          accentBg="rgba(16,185,129,0.12)"
+          icon={<WandSparkles className="w-5 h-5 text-emerald-500" />}
         />
       </div>
 
       <PanelCard title="AI Feature Breakdown">
         {featureRows.length === 0 ? (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-500">
             No feature-level usage data available yet.
           </p>
         ) : (
@@ -654,7 +730,7 @@ const AiPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
               <Tooltip content={<CustomTooltip />} />
               <Bar
                 dataKey="count"
-                fill="#14b8a6"
+                fill="#ad2122"
                 radius={[0, 8, 8, 0]}
                 barSize={20}
               />
@@ -665,7 +741,7 @@ const AiPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
 
       <PanelCard title="Top AI Users">
         {userRows.length === 0 ? (
-          <p className="text-sm text-slate-400">No AI users found.</p>
+          <p className="text-sm text-slate-500">No AI users found.</p>
         ) : (
           <ResponsiveContainer
             width="100%"
@@ -685,7 +761,7 @@ const AiPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
                   y2="0"
                 >
                   <stop offset="0%" stopColor="#ad2122" />
-                  <stop offset="100%" stopColor="#e05d5e" />
+                  <stop offset="100%" stopColor="#c13435" />
                 </linearGradient>
               </defs>
               <CartesianGrid stroke={chartTheme.grid} horizontal={false} />
@@ -829,7 +905,7 @@ const UsersPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
             <Tooltip content={<CustomTooltip />} />
             <Bar
               dataKey="total"
-              fill="#0d9488"
+              fill="#2d3f89"
               radius={[0, 8, 8, 0]}
               barSize={20}
             />
@@ -837,13 +913,13 @@ const UsersPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
         </ResponsiveContainer>
       </PanelCard>
 
-      <DarkTable
+      <DataTable
         title="Users by Domain"
         rows={domainRows}
         sort={domainSort}
         onSort={(key) => toggleSort(setDomainSort, key)}
       />
-      <DarkTable
+      <DataTable
         title="Users by Building"
         rows={buildingRows}
         sort={buildingSort}
@@ -853,7 +929,7 @@ const UsersPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
   );
 };
 
-const DarkTable: React.FC<{
+const DataTable: React.FC<{
   title: string;
   rows: SortableRow[];
   sort: SortState;
@@ -870,12 +946,12 @@ const DarkTable: React.FC<{
       <th
         scope="col"
         aria-sort={ariaSort}
-        className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${align}`}
+        className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 ${align}`}
       >
         <button
           type="button"
           onClick={() => onSort(key)}
-          className="hover:text-white transition-colors"
+          className="hover:text-slate-900 transition-colors"
         >
           {label}
           {sort.key === key ? (sort.dir === 'desc' ? ' ↓' : ' ↑') : ' ↕'}
@@ -885,15 +961,15 @@ const DarkTable: React.FC<{
   };
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/10">
-        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-200">
+        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
           {title}
         </h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[680px]">
-          <thead className="border-b border-white/10 bg-slate-900/40">
+          <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
               {header('Name', 'name', 'text-left')}
               {header('Total', 'total')}
@@ -902,32 +978,35 @@ const DarkTable: React.FC<{
               {header('Daily', 'daily')}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-100">
             {rows.map((row) => (
-              <tr key={row.name} className="hover:bg-white/5 transition-colors">
-                <td className="px-4 py-3 text-sm font-medium text-slate-200">
+              <tr
+                key={row.name}
+                className="hover:bg-slate-50 transition-colors"
+              >
+                <td className="px-4 py-3 text-sm font-medium text-slate-900">
                   {row.name}
                 </td>
-                <td className="px-4 py-3 text-sm text-slate-300 text-right">
+                <td className="px-4 py-3 text-sm text-slate-700 text-right">
                   {formatNumber(row.total)}
                 </td>
-                <td className="px-4 py-3 text-sm text-slate-300 text-right">
+                <td className="px-4 py-3 text-sm text-slate-700 text-right">
                   {formatNumber(row.monthly)}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-2 w-32 justify-end">
-                    <span className="text-sm text-teal-300">
+                    <span className="text-sm text-blue-600">
                       {formatRate(row.monthlyRate)}
                     </span>
-                    <span className="relative h-1.5 w-12 rounded-full bg-white/15 overflow-hidden">
+                    <span className="relative h-1.5 w-12 rounded-full bg-slate-200 overflow-hidden">
                       <span
-                        className="absolute inset-y-0 left-0 rounded-full bg-teal-400"
+                        className="absolute inset-y-0 left-0 rounded-full bg-blue-500"
                         style={{ width: `${Math.min(100, row.monthlyRate)}%` }}
                       />
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-slate-300 text-right">
+                <td className="px-4 py-3 text-sm text-slate-700 text-right">
                   {formatNumber(row.daily)}
                 </td>
               </tr>
@@ -1138,10 +1217,10 @@ export const AnalyticsManager: React.FC = () => {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="bg-slate-800/60 border border-white/10 rounded-2xl p-5 animate-pulse"
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm animate-pulse"
             >
-              <div className="h-3 w-20 bg-slate-700 rounded mb-3" />
-              <div className="h-8 w-16 bg-slate-700 rounded" />
+              <div className="h-3 w-20 bg-slate-200 rounded mb-3" />
+              <div className="h-8 w-16 bg-slate-200 rounded" />
             </div>
           ))}
         </div>
@@ -1151,7 +1230,7 @@ export const AnalyticsManager: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-red-900/25 border border-red-400/30 text-red-200 p-6 rounded-2xl flex items-start gap-3">
+      <div className="bg-red-50 border border-red-200 text-red-800 p-6 rounded-2xl flex items-start gap-3">
         <AlertCircle className="w-6 h-6 shrink-0 mt-0.5" />
         <div>
           <h3 className="font-bold mb-1">Failed to Load Analytics</h3>
@@ -1171,7 +1250,7 @@ export const AnalyticsManager: React.FC = () => {
             value={selectedDomain}
             onChange={(e) => setSelectedDomain(e.target.value)}
             aria-label="Filter by domain"
-            className="border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 bg-slate-900/60 outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Domains</option>
             {uniqueDomains.map((d) => (
@@ -1184,7 +1263,7 @@ export const AnalyticsManager: React.FC = () => {
             value={selectedBuilding}
             onChange={(e) => setSelectedBuilding(e.target.value)}
             aria-label="Filter by building"
-            className="border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 bg-slate-900/60 outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Buildings</option>
             {hasNoBuildingUsers && (
@@ -1202,7 +1281,7 @@ export const AnalyticsManager: React.FC = () => {
           type="button"
           disabled={loading}
           onClick={() => void fetchAnalytics()}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-1.5 text-sm font-semibold text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -1210,7 +1289,7 @@ export const AnalyticsManager: React.FC = () => {
       </div>
 
       <div
-        className="sticky top-0 z-10 bg-slate-950/70 backdrop-blur-md rounded-xl border border-white/10 p-1.5"
+        className="sticky top-0 z-10 bg-slate-100 rounded-xl border border-slate-200 p-1.5"
         role="tablist"
       >
         <div className="flex gap-1">
@@ -1227,8 +1306,8 @@ export const AnalyticsManager: React.FC = () => {
               onClick={() => setSelectedTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold border transition-colors ${
                 selectedTab === tab.id
-                  ? 'bg-blue-500/20 border-blue-400/60 text-blue-100'
-                  : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-white border-slate-300 text-slate-900 shadow-sm'
+                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60'
               }`}
             >
               {tab.icon}
