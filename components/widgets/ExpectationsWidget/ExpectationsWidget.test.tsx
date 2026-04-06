@@ -3,7 +3,12 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ExpectationsWidget } from './';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
-import { WidgetData, ExpectationsConfig } from '@/types';
+import {
+  WidgetData,
+  ExpectationsConfig,
+  WidgetType,
+  AddWidgetOverrides,
+} from '@/types';
 
 vi.mock('@/context/useDashboard', () => ({
   useDashboard: vi.fn(),
@@ -79,12 +84,17 @@ describe('ExpectationsWidget', () => {
     fireEvent.click(screen.getByText('Silence'));
     fireEvent.click(screen.getByText('Whisper'));
 
-    expect(mockAddWidget).toHaveBeenCalledWith('sticker', expect.objectContaining({
-      config: expect.objectContaining({
-        icon: 'MessageCircle',
-        label: 'Whisper',
-      })
-    }));
+    expect(mockAddWidget).toHaveBeenCalled();
+    const calls = mockAddWidget.mock.calls as [
+      WidgetType,
+      AddWidgetOverrides,
+    ][];
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall[0]).toBe('sticker');
+    expect(lastCall[1].config).toMatchObject({
+      icon: 'MessageCircle',
+      label: 'Whisper',
+    });
   });
 
   it('renders "Level" label and number for volume options', () => {
