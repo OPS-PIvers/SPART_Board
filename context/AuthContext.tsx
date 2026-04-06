@@ -420,6 +420,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   /** Clear the Google Drive token without touching Firebase auth. */
   const disconnectGoogleDrive = useCallback(() => {
+    localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
     setGoogleAccessToken(null);
   }, []);
 

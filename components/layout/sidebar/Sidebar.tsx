@@ -33,7 +33,6 @@ import { IconButton } from '@/components/common/IconButton';
 import { StylePanel } from './StylePanel';
 import { SidebarBoards } from './SidebarBoards';
 import { SidebarBackgrounds } from './SidebarBackgrounds';
-// SidebarSettings removed - settings broken into dedicated pages
 import { SidebarQuickAccess } from './SidebarQuickAccess';
 import { SidebarGoogleDrive } from './SidebarGoogleDrive';
 import { SidebarLanguageRegion } from './SidebarLanguageRegion';

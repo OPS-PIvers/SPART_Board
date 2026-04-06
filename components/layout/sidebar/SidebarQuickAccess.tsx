@@ -95,6 +95,7 @@ export const SidebarQuickAccess: React.FC<SidebarQuickAccessProps> = ({
                       updateDashboardSettings({ quickAccessWidgets: next });
                     }}
                     disabled={disabled}
+                    aria-label={tool.label}
                     className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all ${
                       isSelected
                         ? 'bg-brand-blue-primary text-white shadow-md ring-2 ring-brand-blue-primary/20 scale-105'

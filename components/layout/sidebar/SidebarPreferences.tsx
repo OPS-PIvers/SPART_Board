@@ -47,7 +47,7 @@ export const SidebarPreferences: React.FC<SidebarPreferencesProps> = ({
             {/* Close Warning Toggle */}
             <div className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <ShieldX className="w-4.5 h-4.5 text-red-400" />
+                <ShieldX className="w-[18px] h-[18px] text-red-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-3">
@@ -81,7 +81,7 @@ export const SidebarPreferences: React.FC<SidebarPreferencesProps> = ({
             {/* Remote Control Toggle */}
             <div className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <MousePointerClick className="w-4.5 h-4.5 text-blue-400" />
+                <MousePointerClick className="w-[18px] h-[18px] text-blue-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-3">
