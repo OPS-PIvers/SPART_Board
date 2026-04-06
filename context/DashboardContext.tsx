@@ -132,11 +132,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [zoom, setZoom] = useState<number>(1);
-  const [prevActiveId, setPrevActiveId] = useState<string | null>(null);
-  if (activeId !== prevActiveId) {
-    setPrevActiveId(activeId);
+
+  // Helper to centralize active dashboard switching and its side-effects (like zoom reset)
+  const updateActiveId = useCallback((id: string | null) => {
+    setActiveId(id);
     setZoom(1);
-  }
+  }, []);
 
   const [isDockInitialized, setIsDockInitialized] = useState<boolean>(() => {
     return localStorage.getItem('classroom_dock_initialized') === 'true';
@@ -924,7 +925,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         if (migratedDashboards.length > 0 && !activeIdRef.current) {
           // Try to load default dashboard first
           const defaultDb = migratedDashboards.find((d) => d.isDefault);
-          setActiveId(defaultDb ? defaultDb.id : migratedDashboards[0].id);
+          updateActiveId(defaultDb ? defaultDb.id : migratedDashboards[0].id);
         }
 
         // Create default dashboard if none exist
@@ -987,7 +988,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       unsubscribe();
     };
-  }, [user, subscribeToDashboards, migrated, saveDashboard]);
+  }, [user, subscribeToDashboards, migrated, saveDashboard, updateActiveId]);
 
   // Auto-save to Firestore with debouncing
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1427,7 +1428,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
           if (!mounted) return;
 
-          setActiveId(newDb.id);
+          updateActiveId(newDb.id);
           addToast('Board imported successfully', 'success');
           clearPendingShare();
         } else {
@@ -1467,6 +1468,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     saveDashboard,
     addToast,
     clearPendingShare,
+    updateActiveId,
   ]);
 
   // --- FOLDER ACTIONS ---
@@ -1702,7 +1704,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       saveDashboard(newDb)
         .then(() => {
-          setActiveId(newDb.id);
+          updateActiveId(newDb.id);
           addToast(`Dashboard "${name}" ready`);
         })
         .catch((err) => {
@@ -1710,7 +1712,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           addToast('Failed to create dashboard', 'error');
         });
     },
-    [user, dashboards, saveDashboard, addToast]
+    [user, dashboards, saveDashboard, addToast, updateActiveId]
   );
 
   const saveCurrentDashboard = useCallback(() => {
@@ -1743,7 +1745,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         .then(() => {
           if (activeId === id) {
             const filtered = dashboards.filter((d) => d.id !== id);
-            setActiveId(filtered.length > 0 ? filtered[0].id : null);
+            updateActiveId(filtered.length > 0 ? filtered[0].id : null);
           }
           addToast('Dashboard removed');
         })
@@ -1752,7 +1754,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           addToast('Delete failed', 'error');
         });
     },
-    [user, activeId, dashboards, handleDeleteDashboard, addToast]
+    [
+      user,
+      activeId,
+      dashboards,
+      handleDeleteDashboard,
+      addToast,
+      updateActiveId,
+    ]
   );
 
   const duplicateDashboard = useCallback(
@@ -1914,10 +1923,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const loadDashboard = useCallback(
     (id: string) => {
-      setActiveId(id);
+      updateActiveId(id);
       addToast('Board loaded');
     },
-    [addToast]
+    [addToast, updateActiveId]
   );
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
