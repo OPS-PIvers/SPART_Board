@@ -141,7 +141,9 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const getIcon = (iconName: string, fallback: React.ElementType) => {
-    return (Icons as Record<string, React.ElementType>)[iconName] ?? fallback;
+    return (
+      (Icons as any) as Record<string, React.ElementType>
+    )[iconName] ?? fallback;
   };
 
   const renderVolumeView = () => (

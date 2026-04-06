@@ -14,6 +14,7 @@ vi.mock('@/context/useAuth', () => ({
 }));
 
 const mockUpdateWidget = vi.fn();
+const mockAddWidget = vi.fn();
 
 const mockWidget: WidgetData = {
   id: 'test-expectations',
@@ -36,8 +37,10 @@ const mockWidget: WidgetData = {
 
 describe('ExpectationsWidget', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     (useDashboard as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
+      addWidget: mockAddWidget,
     });
     (useAuth as Mock).mockReturnValue({
       featurePermissions: [],
@@ -69,6 +72,19 @@ describe('ExpectationsWidget', () => {
         voiceLevel: 1,
       }) as ExpectationsConfig,
     });
+  });
+
+  it('launches a sticker when selecting a new option', () => {
+    render(<ExpectationsWidget widget={mockWidget} />);
+    fireEvent.click(screen.getByText('Silence'));
+    fireEvent.click(screen.getByText('Whisper'));
+
+    expect(mockAddWidget).toHaveBeenCalledWith('sticker', expect.objectContaining({
+      config: expect.objectContaining({
+        icon: 'MessageCircle',
+        label: 'Whisper',
+      })
+    }));
   });
 
   it('renders "Level" label and number for volume options', () => {
