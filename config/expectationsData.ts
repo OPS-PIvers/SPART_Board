@@ -6,6 +6,11 @@ import {
   Ear,
   CheckCircle2,
   MessagesSquare,
+  MicOff,
+  Volume,
+  Volume1,
+  Volume2,
+  Megaphone,
 } from 'lucide-react';
 import { ExpectationsConfig } from '../types';
 
@@ -16,6 +21,7 @@ export const VOLUME_OPTIONS = [
     sub: 'Independent',
     color: 'text-blue-600',
     bg: 'bg-blue-50',
+    icon: MicOff,
   },
   {
     id: 1,
@@ -23,6 +29,7 @@ export const VOLUME_OPTIONS = [
     sub: 'Partner Talk',
     color: 'text-green-600',
     bg: 'bg-green-50',
+    icon: Volume,
   },
   {
     id: 2,
@@ -30,6 +37,7 @@ export const VOLUME_OPTIONS = [
     sub: 'Table Talk',
     color: 'text-yellow-600',
     bg: 'bg-yellow-50',
+    icon: Volume1,
   },
   {
     id: 3,
@@ -37,6 +45,7 @@ export const VOLUME_OPTIONS = [
     sub: 'Speaking',
     color: 'text-orange-600',
     bg: 'bg-orange-50',
+    icon: Volume2,
   },
   {
     id: 4,
@@ -44,6 +53,7 @@ export const VOLUME_OPTIONS = [
     sub: 'Recess',
     color: 'text-red-600',
     bg: 'bg-red-50',
+    icon: Megaphone,
   },
 ];
 

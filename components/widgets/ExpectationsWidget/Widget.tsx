@@ -150,15 +150,35 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 padding: 'min(12px, 2.5cqmin)',
               }}
             >
-              <span
-                className="font-black opacity-40"
+              <div
+                className={`rounded-xl flex items-center justify-center shrink-0 relative ${
+                  voiceLevel === v.id ? 'bg-white' : 'bg-slate-50'
+                }`}
                 style={{
-                  fontSize: 'min(36px, 9cqmin)',
-                  width: 'min(36px, 9cqmin)',
+                  width: 'min(56px, 14cqmin)',
+                  height: 'min(56px, 14cqmin)',
+                  padding: 'min(12px, 3cqmin)',
                 }}
               >
-                {v.id}
-              </span>
+                <v.icon
+                  style={{ width: '100%', height: '100%' }}
+                  strokeWidth={2.5}
+                />
+                <div
+                  className={`absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center font-black border-2 ${
+                    voiceLevel === v.id
+                      ? 'bg-white border-current shadow-sm'
+                      : 'bg-slate-200 border-slate-300 text-slate-600'
+                  }`}
+                  style={{
+                    width: 'min(24px, 6cqmin)',
+                    height: 'min(24px, 6cqmin)',
+                    fontSize: 'min(12px, 3.5cqmin)',
+                  }}
+                >
+                  {v.id}
+                </div>
+              </div>
               <div className="text-left">
                 <div
                   className="font-black uppercase leading-tight"
@@ -356,7 +376,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               }}
             >
               <div
-                className={`rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
+                className={`rounded-xl transition-colors relative ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
                 style={{
                   width: '18cqmin',
                   height: '18cqmin',
@@ -366,10 +386,29 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                   justifyContent: 'center',
                 }}
               >
-                <Volume2
-                  style={{ width: '100%', height: '100%' }}
-                  strokeWidth={2.5}
-                />
+                {selectedVolume ? (
+                  <>
+                    <selectedVolume.icon
+                      style={{ width: '100%', height: '100%' }}
+                      strokeWidth={2.5}
+                    />
+                    <div
+                      className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center font-black bg-white shadow-sm border-2 border-current"
+                      style={{
+                        width: 'min(28px, 7cqmin)',
+                        height: 'min(28px, 7cqmin)',
+                        fontSize: 'min(16px, 4cqmin)',
+                      }}
+                    >
+                      {selectedVolume.id}
+                    </div>
+                  </>
+                ) : (
+                  <Volume2
+                    style={{ width: '100%', height: '100%' }}
+                    strokeWidth={2.5}
+                  />
+                )}
               </div>
               <div className="text-left flex-1 min-w-0">
                 <div
