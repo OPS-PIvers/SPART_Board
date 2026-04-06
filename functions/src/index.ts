@@ -1765,6 +1765,12 @@ interface EngagementCounts {
   daily: number;
 }
 
+const REGISTERED_USERS_CACHE_TTL_MS = 15 * 60 * 1000;
+let registeredUsersCache: {
+  value: number;
+  fetchedAt: number;
+} | null = null;
+
 /**
  * Cloud Function to fetch administrative analytics.
  * Uses onRequest with explicit CORS to avoid preflight issues with onCall.
@@ -1924,6 +1930,8 @@ export const adminAnalytics = functionsV1
         let totalDashboards = 0;
         const totalWidgetCounts: Record<string, number> = {};
         const activeWidgetCounts: Record<string, number> = {};
+        const allDashboardOwnerUids = new Set<string>();
+        let totalWidgetInstances = 0;
         // Bounded at MAX_WIDGET_USER_TRACK UIDs per type: memory is
         // O(widget_types × limit) instead of O(widget_types × all_users).
         // count = Set.size is exact up to the cap; above the cap it means "≥ cap".
@@ -1946,6 +1954,14 @@ export const adminAnalytics = functionsV1
 
           // Extract owner UID from path: users/{uid}/dashboards/{dashId}
           const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
+          if (ownerUid) {
+            allDashboardOwnerUids.add(ownerUid);
+          }
+
+          const widgetCount = Array.isArray(dashData.widgets)
+            ? dashData.widgets.length
+            : 0;
+          totalWidgetInstances += widgetCount;
 
           if (dashData.widgets && Array.isArray(dashData.widgets)) {
             dashData.widgets.forEach((w: { type: string }) => {
@@ -1976,6 +1992,38 @@ export const adminAnalytics = functionsV1
 
         console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
 
+        // Get authoritative registered user count from Firebase Auth
+        // Cached in-memory per function instance to reduce repeated full scans.
+        let totalRegisteredUsers = totalEngagement.total;
+        let registeredIsFallback = false;
+        const isCacheFresh =
+          registeredUsersCache !== null &&
+          now - registeredUsersCache.fetchedAt <= REGISTERED_USERS_CACHE_TTL_MS;
+        if (isCacheFresh && registeredUsersCache !== null) {
+          totalRegisteredUsers = registeredUsersCache.value;
+        } else {
+          try {
+            totalRegisteredUsers = 0;
+            let pageToken: string | undefined = undefined;
+            do {
+              const listResult = await admin.auth().listUsers(1000, pageToken);
+              totalRegisteredUsers += listResult.users.length;
+              pageToken = listResult.pageToken;
+            } while (pageToken);
+            registeredUsersCache = {
+              value: totalRegisteredUsers,
+              fetchedAt: now,
+            };
+          } catch (authErr) {
+            console.error(
+              '[getAdminAnalytics] Could not list Auth users:',
+              authErr
+            );
+            totalRegisteredUsers = totalEngagement.total;
+            registeredIsFallback = true;
+          }
+        }
+
         // Resolve widget UIDs to emails (cap at 200 unique UIDs total)
         const allWidgetUids = new Set<string>();
         outer: for (const uids of Object.values(widgetToUserUids)) {
@@ -1986,6 +2034,36 @@ export const adminAnalytics = functionsV1
         }
 
         const widgetUserEmails: Record<string, string> = {};
+        const resolveUserEmailsViaAuthFallback = async (
+          uids: string[],
+          targetMap: Record<string, string>,
+          warningContext: string
+        ): Promise<void> => {
+          const identifiers = uids.map((uid) => ({ uid }));
+          for (let i = 0; i < identifiers.length; i += 100) {
+            const chunk = identifiers.slice(i, i + 100);
+            if (chunk.length === 0) continue;
+            try {
+              const result = await admin.auth().getUsers(chunk);
+              result.users.forEach((u) => {
+                if (u.email) {
+                  targetMap[u.uid] = u.email;
+                }
+              });
+            } catch (error) {
+              console.warn(
+                `[getAdminAnalytics] Failed to resolve user emails via auth fallback for ${warningContext}`,
+                {
+                  chunkSize: chunk.length,
+                  chunkStart: i,
+                  totalIdentifiers: identifiers.length,
+                  totalUids: uids.length,
+                  error,
+                }
+              );
+            }
+          }
+        };
         const allWidgetUidArray = Array.from(allWidgetUids);
         for (let i = 0; i < allWidgetUidArray.length; i += 30) {
           const uidChunk = allWidgetUidArray.slice(i, i + 30);
@@ -2004,6 +2082,16 @@ export const adminAnalytics = functionsV1
               widgetUserEmails[d.id] = userData['email'];
             }
           });
+        }
+        const unresolvedWidgetUids = allWidgetUidArray.filter(
+          (uid) => !widgetUserEmails[uid]
+        );
+        if (unresolvedWidgetUids.length > 0) {
+          await resolveUserEmailsViaAuthFallback(
+            unresolvedWidgetUids,
+            widgetUserEmails,
+            'widget drilldowns'
+          );
         }
 
         const usersByType: Record<string, { count: number; emails: string[] }> =
@@ -2024,6 +2112,7 @@ export const adminAnalytics = functionsV1
         let totalAiCalls = 0;
         const callsPerUser: Record<string, number> = {};
         const dailyCallCounts: Record<string, number> = {};
+        const aiCallsByFeature: Record<string, number> = {};
 
         const GEMINI_SPECIFIC_FEATURES = [
           'smart-poll',
@@ -2056,6 +2145,11 @@ export const adminAnalytics = functionsV1
           const usageData = usageDoc.data();
           const count =
             typeof usageData.count === 'number' ? usageData.count : 0;
+
+          if (isSpecificFeature) {
+            aiCallsByFeature[secondToLast] =
+              (aiCallsByFeature[secondToLast] ?? 0) + count;
+          }
 
           // ONLY count the "overall" records for total analytics to avoid double counting
           // (Specific feature records are for enforcement, overall records track everything)
@@ -2102,6 +2196,16 @@ export const adminAnalytics = functionsV1
             }
           });
         }
+        const unresolvedTopUserUids = topUserUids.filter(
+          (uid) => !topUserEmails[uid]
+        );
+        if (unresolvedTopUserUids.length > 0) {
+          await resolveUserEmailsViaAuthFallback(
+            unresolvedTopUserUids,
+            topUserEmails,
+            'AI top users'
+          );
+        }
 
         const topUsers = Object.entries(callsPerUser)
           .sort(([, a], [, b]) => b - a)
@@ -2115,7 +2219,12 @@ export const adminAnalytics = functionsV1
         console.log('[getAdminAnalytics] Analysis complete, returning results');
         res.json({
           users: {
-            ...totalEngagement,
+            total: totalEngagement.total,
+            registered: totalRegisteredUsers,
+            registeredIsFallback,
+            monthly: totalEngagement.monthly,
+            daily: totalEngagement.daily,
+            withDashboards: allDashboardOwnerUids.size,
             domains: usersByDomain,
             buildings: usersByBuilding,
             domainBuilding: usersByDomainAndBuilding,
@@ -2125,12 +2234,20 @@ export const adminAnalytics = functionsV1
             activeInstances: activeWidgetCounts,
             usersByType,
           },
+          dashboards: {
+            total: totalDashboards,
+            avgWidgetsPerDashboard:
+              totalDashboards > 0
+                ? Math.round((totalWidgetInstances / totalDashboards) * 10) / 10
+                : 0,
+          },
           api: {
             totalCalls: totalAiCalls,
             activeUsers: Object.keys(callsPerUser).length,
             topUsers,
             avgDailyCalls,
             avgDailyCallsPerUser,
+            byFeature: aiCallsByFeature,
           },
         });
       } catch (err: unknown) {
