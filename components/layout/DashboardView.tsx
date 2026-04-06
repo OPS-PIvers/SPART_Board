@@ -595,8 +595,12 @@ export const DashboardView: React.FC = () => {
 
   if (activeDashboard?.id !== lastDashboardId) {
     setLastDashboardId(activeDashboard?.id);
-    setIsMinimized(false);
-    setPanOffset({ x: 0, y: 0 });
+    if (isMinimized) {
+      setIsMinimized(false);
+    }
+    if (panOffset.x !== 0 || panOffset.y !== 0) {
+      setPanOffset({ x: 0, y: 0 });
+    }
   }
 
   // Keep prevIndexRef in sync AFTER we've computed the animationClass
@@ -605,10 +609,13 @@ export const DashboardView: React.FC = () => {
     if (currentIndex !== -1) {
       prevIndexRef.current = currentIndex;
     }
-    // Reset zoom when the active dashboard changes. This must happen in an effect
-    // because setZoom updates the parent DashboardContext.
+  }, [currentIndex]);
+
+  // Reset zoom when the active dashboard changes. This must happen in an effect
+  // because setZoom updates the parent DashboardContext.
+  React.useEffect(() => {
     setZoom(1);
-  }, [activeDashboard?.id, currentIndex, setZoom]);
+  }, [activeDashboard?.id, setZoom]);
 
   // Reset panOffset during render when zoom is 1 to avoid useEffect and extra re-renders
   if (zoom === 1 && (panOffset.x !== 0 || panOffset.y !== 0)) {
