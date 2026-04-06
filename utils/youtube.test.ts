@@ -137,8 +137,18 @@ describe('loadYouTubeApi', () => {
     }
 
     // Restore global properties
-    window.YT = originalYT;
-    window.onYouTubeIframeAPIReady = originalOnYouTubeIframeAPIReady;
+    if (originalYT !== undefined) {
+      window.YT = originalYT;
+    } else {
+      delete window.YT;
+    }
+
+    if (originalOnYouTubeIframeAPIReady !== undefined) {
+      window.onYouTubeIframeAPIReady = originalOnYouTubeIframeAPIReady;
+    } else {
+      delete window.onYouTubeIframeAPIReady;
+    }
+
     document.head.innerHTML = '';
   });
 
