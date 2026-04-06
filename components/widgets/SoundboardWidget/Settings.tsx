@@ -1,14 +1,9 @@
 import React, { useMemo } from 'react';
-import {
-  WidgetData,
-  SoundboardConfig,
-  SoundboardGlobalConfig,
-  SoundboardSound,
-} from '@/types';
+import { WidgetData, SoundboardConfig, SoundboardGlobalConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
 import { Toggle } from '@/components/common/Toggle';
-import { SOUND_LIBRARY } from '@/config/soundLibrary';
+import { getAvailableSoundboardSounds } from '@/utils/soundboardConfig';
 
 export const SoundboardSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -25,35 +20,10 @@ export const SoundboardSettings: React.FC<{ widget: WidgetData }> = ({
     return perm?.config as SoundboardGlobalConfig | undefined;
   }, [featurePermissions]);
 
-  const availableSounds = useMemo(() => {
-    let sounds: SoundboardSound[] = [];
-    if (!buildingId) {
-      // Aggregate all sounds if no building is specifically selected
-      const allDefaults = globalConfig?.buildingDefaults ?? {};
-      sounds = Object.values(allDefaults).flatMap((d) => {
-        const custom = d.availableSounds ?? [];
-        const library = SOUND_LIBRARY.filter((s) =>
-          d.enabledLibrarySoundIds?.includes(s.id)
-        );
-        return [...library, ...custom];
-      });
-    } else {
-      const bConfig = globalConfig?.buildingDefaults?.[buildingId];
-      const custom = bConfig?.availableSounds ?? [];
-      const library = SOUND_LIBRARY.filter((s) =>
-        bConfig?.enabledLibrarySoundIds?.includes(s.id)
-      );
-      sounds = [...library, ...custom];
-    }
-
-    // Deduplicate by ID
-    const seenIds = new Set<string>();
-    return sounds.filter((s) => {
-      if (seenIds.has(s.id)) return false;
-      seenIds.add(s.id);
-      return true;
-    });
-  }, [globalConfig, buildingId]);
+  const availableSounds = useMemo(
+    () => getAvailableSoundboardSounds(globalConfig, buildingId),
+    [globalConfig, buildingId]
+  );
 
   const handleToggleSound = (id: string, isSelected: boolean) => {
     let newSelection = [...selectedSoundIds];

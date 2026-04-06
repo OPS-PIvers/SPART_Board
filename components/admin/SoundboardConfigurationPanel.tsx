@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
-import { BuildingSelector } from './BuildingSelector';
 import {
   SoundboardGlobalConfig,
   SoundboardBuildingConfig,
   SoundboardSound,
 } from '@/types';
 import { Button } from '@/components/common/Button';
-import { Plus, Trash2, Play, CheckCircle2, Music } from 'lucide-react';
+import { Plus, Trash2, Play, Music } from 'lucide-react';
 import { SOUND_LIBRARY } from '@/config/soundLibrary';
 import { ensureProtocol, extractGoogleFileId } from '@/utils/urlHelpers';
 import { normalizeSoundboardAudioUrl } from '@/utils/soundboardAudioUrl';
@@ -17,12 +16,11 @@ interface SoundboardConfigurationPanelProps {
   onChange: (newConfig: SoundboardGlobalConfig) => void;
 }
 
+const ALL_BUILDING_IDS = BUILDINGS.map((building) => building.id);
+
 export const SoundboardConfigurationPanel: React.FC<
   SoundboardConfigurationPanelProps
 > = ({ config, onChange }) => {
-  const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
-    BUILDINGS[0].id
-  );
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [playbackErrors, setPlaybackErrors] = useState<Record<string, string>>(
     {}
@@ -93,23 +91,67 @@ export const SoundboardConfigurationPanel: React.FC<
   }, []);
 
   const buildingDefaults = config.buildingDefaults ?? {};
-  const currentBuildingConfig: SoundboardBuildingConfig = buildingDefaults[
-    selectedBuildingId
-  ] ?? {
-    availableSounds: [],
-    enabledLibrarySoundIds: [],
-  };
+  const sharedCustomSounds = config.customLibrarySounds ?? [];
 
-  const handleUpdateBuilding = (updates: Partial<SoundboardBuildingConfig>) => {
+  const getBuildingConfig = (buildingId: string): SoundboardBuildingConfig =>
+    buildingDefaults[buildingId] ?? {
+      availableSounds: [],
+      enabledLibrarySoundIds: [],
+      enabledCustomSoundIds: [],
+    };
+
+  const updateBuilding = (
+    buildingId: string,
+    updates: Partial<SoundboardBuildingConfig>
+  ) => {
+    const current = getBuildingConfig(buildingId);
     onChange({
       ...config,
       buildingDefaults: {
         ...buildingDefaults,
-        [selectedBuildingId]: {
-          ...currentBuildingConfig,
+        [buildingId]: {
+          ...current,
           ...updates,
         },
       },
+    });
+  };
+
+  const setSoundEnabledForBuilding = (
+    soundId: string,
+    buildingId: string,
+    key: 'enabledLibrarySoundIds' | 'enabledCustomSoundIds',
+    isEnabled: boolean
+  ) => {
+    const current = getBuildingConfig(buildingId);
+    const currentIds = current[key] ?? [];
+    const nextIds = isEnabled
+      ? Array.from(new Set([...currentIds, soundId]))
+      : currentIds.filter((id) => id !== soundId);
+
+    updateBuilding(buildingId, { [key]: nextIds });
+  };
+
+  const toggleSoundForBuilding = (
+    soundId: string,
+    buildingId: string,
+    key: 'enabledLibrarySoundIds' | 'enabledCustomSoundIds'
+  ) => {
+    const currentIds = getBuildingConfig(buildingId)[key] ?? [];
+    const isEnabled = currentIds.includes(soundId);
+    setSoundEnabledForBuilding(soundId, buildingId, key, !isEnabled);
+  };
+
+  const toggleSoundForAllBuildings = (
+    soundId: string,
+    key: 'enabledLibrarySoundIds' | 'enabledCustomSoundIds'
+  ) => {
+    const allEnabled = ALL_BUILDING_IDS.every((buildingId) =>
+      (getBuildingConfig(buildingId)[key] ?? []).includes(soundId)
+    );
+
+    ALL_BUILDING_IDS.forEach((buildingId) => {
+      setSoundEnabledForBuilding(soundId, buildingId, key, !allEnabled);
     });
   };
 
@@ -153,50 +195,110 @@ export const SoundboardConfigurationPanel: React.FC<
     }
   };
 
-  const sounds = currentBuildingConfig.availableSounds ?? [];
-  const enabledLibraryIds = currentBuildingConfig.enabledLibrarySoundIds ?? [];
-
-  const addSound = () => {
+  const addCustomSound = () => {
     const newSound: SoundboardSound = {
       id: crypto.randomUUID(),
       label: 'New Sound',
       url: '',
       color: '#6366f1',
     };
-    handleUpdateBuilding({ availableSounds: [...sounds, newSound] });
+
+    onChange({
+      ...config,
+      customLibrarySounds: [...sharedCustomSounds, newSound],
+    });
   };
 
-  const updateSound = (index: number, updates: Partial<SoundboardSound>) => {
-    const newSounds = [...sounds];
-    newSounds[index] = { ...newSounds[index], ...updates };
-    handleUpdateBuilding({ availableSounds: newSounds });
+  const updateCustomSound = (
+    index: number,
+    updates: Partial<SoundboardSound>
+  ) => {
+    const nextSounds = [...sharedCustomSounds];
+    nextSounds[index] = { ...nextSounds[index], ...updates };
+
+    onChange({
+      ...config,
+      customLibrarySounds: nextSounds,
+    });
   };
 
-  const removeSound = (index: number) => {
-    const newSounds = sounds.filter((_, i) => i !== index);
-    handleUpdateBuilding({ availableSounds: newSounds });
+  const removeCustomSound = (index: number) => {
+    const removedSound = sharedCustomSounds[index];
+    const nextSounds = sharedCustomSounds.filter((_, i) => i !== index);
+
+    const nextBuildingDefaults = Object.fromEntries(
+      Object.entries(buildingDefaults).map(([buildingId, buildingConfig]) => {
+        const nextCustomIds = (
+          buildingConfig.enabledCustomSoundIds ?? []
+        ).filter((id) => id !== removedSound.id);
+        return [
+          buildingId,
+          {
+            ...buildingConfig,
+            enabledCustomSoundIds: nextCustomIds,
+          },
+        ];
+      })
+    );
+
+    onChange({
+      ...config,
+      customLibrarySounds: nextSounds,
+      buildingDefaults: nextBuildingDefaults,
+    });
   };
 
-  const toggleLibrarySound = (id: string) => {
-    const newIds = enabledLibraryIds.includes(id)
-      ? enabledLibraryIds.filter((libId) => libId !== id)
-      : [...enabledLibraryIds, id];
-    handleUpdateBuilding({ enabledLibrarySoundIds: newIds });
+  const getEnabledBuildingsForSound = (
+    soundId: string,
+    key: 'enabledLibrarySoundIds' | 'enabledCustomSoundIds'
+  ) =>
+    ALL_BUILDING_IDS.filter((buildingId) =>
+      (getBuildingConfig(buildingId)[key] ?? []).includes(soundId)
+    );
+
+  const renderGradeBandAssignments = (
+    soundId: string,
+    key: 'enabledLibrarySoundIds' | 'enabledCustomSoundIds'
+  ) => {
+    const enabledBuildings = getEnabledBuildingsForSound(soundId, key);
+    const allSelected = enabledBuildings.length === ALL_BUILDING_IDS.length;
+
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        <button
+          type="button"
+          className={`px-2 py-1 rounded-md text-xxs font-bold border transition-all ${
+            allSelected
+              ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+          }`}
+          onClick={() => toggleSoundForAllBuildings(soundId, key)}
+        >
+          All
+        </button>
+        {BUILDINGS.map((building) => {
+          const selected = enabledBuildings.includes(building.id);
+          return (
+            <button
+              key={`${soundId}-${building.id}-${key}`}
+              type="button"
+              className={`px-2 py-1 rounded-md text-xxs font-bold border transition-all ${
+                selected
+                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+              onClick={() => toggleSoundForBuilding(soundId, building.id, key)}
+            >
+              {building.gradeLabel}
+            </button>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
     <div className="space-y-6">
-      {/* Building Selector */}
-      <div>
-        <label className="text-xxs font-bold text-slate-500 uppercase mb-2 block">
-          Configure Building Defaults
-        </label>
-        <BuildingSelector
-          selectedId={selectedBuildingId}
-          onSelect={setSelectedBuildingId}
-        />
-      </div>
-
       {/* Standard Library Section */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
@@ -206,49 +308,35 @@ export const SoundboardConfigurationPanel: React.FC<
           </h3>
         </div>
         <p className="text-xxs text-slate-400 mb-4">
-          Enable or disable high-quality pre-made sounds for teachers in this
-          building.
+          Assign pre-made sounds by grade band. Use “All” to enable the sound
+          for every building.
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="space-y-3">
           {SOUND_LIBRARY.map((libSound) => {
-            const isEnabled = enabledLibraryIds.includes(libSound.id);
             const isPlaying = playingId === libSound.id;
-
             return (
               <div
                 key={libSound.id}
-                className={`relative rounded-lg border p-2 transition-all ${
-                  isEnabled
-                    ? 'border-brand-blue-primary bg-brand-blue-lighter/30 ring-1 ring-brand-blue-primary/20'
-                    : 'border-slate-200 bg-slate-50'
-                }`}
+                className="rounded-lg border border-slate-200 bg-slate-50 p-3"
               >
-                <button
-                  type="button"
-                  onClick={() => toggleLibrarySound(libSound.id)}
-                  className={`w-full text-left transition-colors ${
-                    isEnabled
-                      ? 'text-brand-blue-dark'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-xxs font-bold">{libSound.label}</span>
-                    {isEnabled && (
-                      <CheckCircle2
-                        size={12}
-                        className="text-brand-blue-primary"
-                      />
-                    )}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: libSound.color }}
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-700">
+                        {libSound.label}
+                      </p>
+                      {renderGradeBandAssignments(
+                        libSound.id,
+                        'enabledLibrarySoundIds'
+                      )}
+                    </div>
                   </div>
-                  <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: libSound.color }}
-                  />
-                </button>
 
-                <div className="mt-2 flex justify-end">
                   <button
                     type="button"
                     onClick={() => void testSound(libSound.id, libSound.url)}
@@ -277,12 +365,12 @@ export const SoundboardConfigurationPanel: React.FC<
           <div className="flex items-center gap-2">
             <Plus size={16} className="text-brand-blue-primary" />
             <h3 className="text-sm font-bold text-slate-700">
-              Custom Building Sounds
+              Shared Custom Library
             </h3>
           </div>
           <Button
             size="sm"
-            onClick={addSound}
+            onClick={addCustomSound}
             className="flex-shrink-0 shadow-sm"
           >
             <Plus size={16} className="mr-1.5" />
@@ -290,16 +378,16 @@ export const SoundboardConfigurationPanel: React.FC<
           </Button>
         </div>
         <p className="text-xxs text-slate-500 leading-tight mb-4">
-          Admins can add specific URLs for sounds unique to this building.
+          Add each custom sound once, then assign it to grade bands below.
         </p>
 
-        {sounds.length === 0 ? (
+        {sharedCustomSounds.length === 0 ? (
           <div className="text-center py-8 text-sm text-slate-400 italic border-2 border-dashed border-slate-200 rounded-xl bg-white/50">
             No custom sounds added yet.
           </div>
         ) : (
           <div className="space-y-3">
-            {sounds.map((sound, index) => {
+            {sharedCustomSounds.map((sound, index) => {
               const isPlaying = playingId === sound.id;
               const validation = validateAudioUrl(sound.url);
               const showUrlError =
@@ -321,7 +409,7 @@ export const SoundboardConfigurationPanel: React.FC<
                           type="text"
                           value={sound.label}
                           onChange={(e) =>
-                            updateSound(index, { label: e.target.value })
+                            updateCustomSound(index, { label: e.target.value })
                           }
                           className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-blue-primary outline-none"
                           placeholder="e.g., School Song"
@@ -336,7 +424,9 @@ export const SoundboardConfigurationPanel: React.FC<
                             type="color"
                             value={sound.color ?? '#6366f1'}
                             onChange={(e) =>
-                              updateSound(index, { color: e.target.value })
+                              updateCustomSound(index, {
+                                color: e.target.value,
+                              })
                             }
                             className="h-8 w-8 rounded cursor-pointer border-0 p-0"
                           />
@@ -344,13 +434,16 @@ export const SoundboardConfigurationPanel: React.FC<
                             type="text"
                             value={sound.color ?? '#6366f1'}
                             onChange={(e) =>
-                              updateSound(index, { color: e.target.value })
+                              updateCustomSound(index, {
+                                color: e.target.value,
+                              })
                             }
                             className="flex-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-blue-primary outline-none"
                           />
                         </div>
                       </div>
                     </div>
+
                     <div>
                       <label className="block text-xxs font-bold text-slate-500 uppercase mb-1">
                         Audio URL (mp3/wav)
@@ -364,7 +457,7 @@ export const SoundboardConfigurationPanel: React.FC<
                               ...prev,
                               [sound.id]: '',
                             }));
-                            updateSound(index, { url: e.target.value });
+                            updateCustomSound(index, { url: e.target.value });
                           }}
                           className={`flex-1 px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-brand-blue-primary outline-none ${
                             showUrlError ? 'border-red-300' : 'border-slate-200'
@@ -390,6 +483,7 @@ export const SoundboardConfigurationPanel: React.FC<
                           </span>
                         </button>
                       </div>
+
                       {validation.isGoogleDriveUrl && (
                         <p className="mt-1 text-xxs text-slate-500">
                           File must be shared publicly or with your domain to
@@ -407,10 +501,20 @@ export const SoundboardConfigurationPanel: React.FC<
                         </p>
                       )}
                     </div>
+
+                    <div>
+                      <p className="text-xxs font-bold text-slate-500 uppercase mb-1">
+                        Assign to Grade Bands
+                      </p>
+                      {renderGradeBandAssignments(
+                        sound.id,
+                        'enabledCustomSoundIds'
+                      )}
+                    </div>
                   </div>
 
                   <button
-                    onClick={() => removeSound(index)}
+                    onClick={() => removeCustomSound(index)}
                     className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-6"
                     title="Remove sound"
                   >

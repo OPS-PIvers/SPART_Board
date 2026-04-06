@@ -319,12 +319,14 @@ export interface SoundboardConfig {
 }
 
 export interface SoundboardBuildingConfig {
-  availableSounds: SoundboardSound[]; // Sounds configured by admin for this building
+  availableSounds: SoundboardSound[]; // Legacy: sounds configured directly on a building
   enabledLibrarySoundIds?: string[]; // IDs from the standard library
+  enabledCustomSoundIds?: string[]; // IDs from the shared custom library
 }
 
 export interface SoundboardGlobalConfig {
   buildingDefaults?: Record<string, SoundboardBuildingConfig>;
+  customLibrarySounds?: SoundboardSound[]; // Shared custom sounds managed once by admins
 }
 
 export interface SoundConfig {

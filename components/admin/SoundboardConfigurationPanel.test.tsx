@@ -38,17 +38,19 @@ describe('SoundboardConfigurationPanel', () => {
 
   it('normalizes Google Drive share links before test playback', () => {
     const config: SoundboardGlobalConfig = {
+      customLibrarySounds: [
+        {
+          id: 'drive-sound-1',
+          label: 'Drive Chime',
+          url: 'https://drive.google.com/file/d/1EjE5Dnmrx2H8um03srzcoMm1LCdtO8Xp/view?usp=sharing',
+          color: '#6366f1',
+        },
+      ],
       buildingDefaults: {
         'schumann-elementary': {
-          availableSounds: [
-            {
-              id: 'drive-sound-1',
-              label: 'Drive Chime',
-              url: 'https://drive.google.com/file/d/1EjE5Dnmrx2H8um03srzcoMm1LCdtO8Xp/view?usp=sharing',
-              color: '#6366f1',
-            },
-          ],
+          availableSounds: [],
           enabledLibrarySoundIds: [],
+          enabledCustomSoundIds: ['drive-sound-1'],
         },
       },
     };
