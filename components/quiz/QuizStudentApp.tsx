@@ -389,6 +389,7 @@ const ActiveQuiz: React.FC<{
     setSelectedAnswer(null);
     setSubmitted(alreadyAnswered);
     setFibAnswer('');
+    setStructuredAnswer('');
     const tl = currentQuestion?.timeLimit ?? 0;
     setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
   }
@@ -724,18 +725,10 @@ const StructuredQuestionInput: React.FC<{
     [isMatching, question.matchingRight]
   );
 
-  // Adjust state if leftItems change
-  const [prevLeftItems, setPrevLeftItems] = useState(leftItems);
   const [matchings, setMatchings] = useState<Record<string, string>>(() =>
     Object.fromEntries(leftItems.map((l: string) => [l, '']))
   );
   const [order, setOrder] = useState<string[]>(() => [...leftItems]);
-
-  if (leftItems !== prevLeftItems) {
-    setPrevLeftItems(leftItems);
-    setMatchings(Object.fromEntries(leftItems.map((l: string) => [l, ''])));
-    setOrder([...leftItems]);
-  }
 
   useEffect(() => {
     let answer = '';

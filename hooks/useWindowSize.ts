@@ -24,6 +24,8 @@ function getSnapshot() {
   return windowSizeCache.getSnapshot();
 }
 
+const noopSubscribe = () => () => undefined;
+
 const windowSizeCache = {
   currentSize: emptySize,
   getSnapshot() {
@@ -45,8 +47,8 @@ const windowSizeCache = {
  */
 export const useWindowSize = (enabled: boolean = true): WindowSize => {
   // useSyncExternalStore requires a stable subscribe function.
-  // We can pass a dummy subscribe function when disabled.
-  const activeSubscribe = enabled ? subscribe : () => () => undefined;
+  // We pass a dummy subscribe function when disabled.
+  const activeSubscribe = enabled ? subscribe : noopSubscribe;
 
   return useSyncExternalStore(activeSubscribe, getSnapshot, () => emptySize);
 };
