@@ -15,16 +15,27 @@ export const SidebarGoogleDrive: React.FC<SidebarGoogleDriveProps> = ({
   isVisible,
 }) => {
   const { t } = useTranslation();
-  const { signOut, connectGoogleDrive, refreshGoogleToken } = useAuth();
+  const { disconnectGoogleDrive, connectGoogleDrive, refreshGoogleToken } =
+    useAuth();
   const { isConnected: isDriveConnected } = useGoogleDrive();
   const { addToast } = useDashboard();
 
   const handleRefreshDrive = async () => {
     const token = await refreshGoogleToken();
     if (token) {
-      addToast('Google Drive session refreshed', 'success');
+      addToast(
+        t('sidebar.settings.driveRefreshed', {
+          defaultValue: 'Google Drive session refreshed',
+        }),
+        'success'
+      );
     } else {
-      addToast('Failed to refresh Google Drive session', 'error');
+      addToast(
+        t('sidebar.settings.driveRefreshFailed', {
+          defaultValue: 'Failed to refresh Google Drive session',
+        }),
+        'error'
+      );
     }
   };
 
@@ -114,7 +125,7 @@ export const SidebarGoogleDrive: React.FC<SidebarGoogleDriveProps> = ({
                     Refresh
                   </button>
                   <button
-                    onClick={() => void signOut()}
+                    onClick={() => disconnectGoogleDrive()}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xxs font-bold text-slate-500 uppercase tracking-wider hover:text-brand-red-primary hover:border-brand-red-lighter hover:bg-red-50 transition-all shadow-sm"
                   >
                     <Unlink className="w-3.5 h-3.5" />

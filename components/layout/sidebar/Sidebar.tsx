@@ -331,17 +331,9 @@ export const Sidebar: React.FC = () => {
                 <span className="text-xxs font-bold tracking-wider uppercase text-slate-500">
                   {activeSection === 'main'
                     ? t('sidebar.header.classroomManager')
-                    : activeSection === 'quick-access'
-                      ? 'Quick Access'
-                      : activeSection === 'google-drive'
-                        ? 'Google Drive'
-                        : activeSection === 'language'
-                          ? 'Language & Region'
-                          : activeSection === 'preferences'
-                            ? 'Preferences'
-                            : t(`sidebar.nav.${activeSection}`, {
-                                defaultValue: activeSection.replace('-', ' '),
-                              })}
+                    : t(`sidebar.nav.${activeSection}`, {
+                        defaultValue: activeSection.replace('-', ' '),
+                      })}
                 </span>
               </div>
               <IconButton
@@ -432,7 +424,11 @@ export const Sidebar: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-amber-50 group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
                       <Zap className="w-4 h-4 text-amber-400 group-hover:text-brand-blue-primary transition-colors" />
                     </div>
-                    <span className="flex-grow text-[13px]">Quick Access</span>
+                    <span className="flex-grow text-[13px]">
+                      {t('sidebar.nav.quickAccess', {
+                        defaultValue: 'Quick Access',
+                      })}
+                    </span>
                     <span className="text-xxs bg-amber-50 text-amber-500 px-2 py-0.5 rounded-full font-bold">
                       {activeDashboard?.settings?.quickAccessWidgets?.length ??
                         0}
@@ -447,7 +443,7 @@ export const Sidebar: React.FC = () => {
                 {/* ACCOUNT Section */}
                 <div className="px-5 mb-1.5">
                   <span className="text-xxs font-bold text-slate-400 uppercase tracking-[0.15em]">
-                    Account
+                    {t('sidebar.nav.account', { defaultValue: 'Account' })}
                   </span>
                 </div>
                 <div className="flex flex-col px-2.5">

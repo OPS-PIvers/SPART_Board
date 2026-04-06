@@ -30,7 +30,11 @@ export const SidebarPreferences: React.FC<SidebarPreferencesProps> = ({
               <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                 <SlidersHorizontal className="w-4 h-4 text-slate-500" />
               </div>
-              <h2 className="text-sm font-bold text-slate-800">Preferences</h2>
+              <h2 className="text-sm font-bold text-slate-800">
+                {t('sidebar.nav.preferences', {
+                  defaultValue: 'Preferences',
+                })}
+              </h2>
             </div>
             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
               Customize how your board behaves. These settings apply to the

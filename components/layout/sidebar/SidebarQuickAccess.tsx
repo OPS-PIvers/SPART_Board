@@ -51,7 +51,9 @@ export const SidebarQuickAccess: React.FC<SidebarQuickAccessProps> = ({
           {/* Selection Counter */}
           <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
             <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">
-              Slots used
+              {t('sidebar.settings.slotsUsed', {
+                defaultValue: 'Slots used',
+              })}
             </span>
             <div className="flex items-center gap-1.5">
               {Array.from({ length: maxSlots }).map((_, i) => (
