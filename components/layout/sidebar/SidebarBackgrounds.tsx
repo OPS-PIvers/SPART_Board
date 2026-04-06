@@ -61,6 +61,14 @@ interface SidebarBackgroundsProps {
 const imgKey = (category: string) => `img:${category}`;
 const VIDEOS_KEY = 'vid';
 
+// Produce a DOM-safe id from an arbitrary category string (which may contain
+// spaces or special chars from Firestore admin input).
+const toPanelId = (category: string) =>
+  `bg-panel-${category
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')}`;
+
 export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
   isVisible,
 }) => {
@@ -266,7 +274,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
               aria-label="Search backgrounds"
               className="w-full pl-8 pr-8 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-blue-primary transition-colors"
             />
-            {searchQuery && (
+            {searchQuery.trim() && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
@@ -304,7 +312,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
               {groupedImagePresets.map(({ category, items }) => {
                 const key = imgKey(category);
                 const isOpen = openCategories.has(key);
-                const panelId = `bg-panel-${key}`;
+                const panelId = toPanelId(category);
                 return (
                   <div
                     key={category}
