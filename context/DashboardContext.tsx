@@ -132,6 +132,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [zoom, setZoom] = useState<number>(1);
+  const [prevActiveId, setPrevActiveId] = useState<string | null>(null);
+  if (activeId !== prevActiveId) {
+    setPrevActiveId(activeId);
+    setZoom(1);
+  }
+
   const [isDockInitialized, setIsDockInitialized] = useState<boolean>(() => {
     return localStorage.getItem('classroom_dock_initialized') === 'true';
   });
@@ -1909,10 +1915,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const loadDashboard = useCallback(
     (id: string) => {
       setActiveId(id);
-      setZoom(1);
       addToast('Board loaded');
     },
-    [addToast, setZoom]
+    [addToast]
   );
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
