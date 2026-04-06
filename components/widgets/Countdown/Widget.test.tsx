@@ -68,9 +68,7 @@ describe('CountdownWidget', () => {
   });
 
   it('applies eventColor to the event title and does not use the hardcoded brand-blue class', () => {
-    render(
-      <CountdownWidget widget={buildWidget({ eventColor: '#ff0000' })} />
-    );
+    render(<CountdownWidget widget={buildWidget({ eventColor: '#ff0000' })} />);
 
     const titleEl = screen.getByText('Field Trip');
     expect(titleEl).toHaveStyle({ color: '#ff0000' });
