@@ -56,7 +56,10 @@ interface SidebarBackgroundsProps {
   isVisible: boolean;
 }
 
-const VIDEOS_KEY = '__videos__';
+// Namespaced keys for the openCategories Set to prevent collision between
+// image category names and the special ambient-videos section.
+const imgKey = (category: string) => `img:${category}`;
+const VIDEOS_KEY = 'vid';
 
 export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
   isVisible,
@@ -73,6 +76,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
     'media'
   );
   const [searchQuery, setSearchQuery] = useState('');
+  // Stores namespaced keys (imgKey(category) or VIDEOS_KEY) for open sections
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
   // My Uploads state
@@ -117,27 +121,29 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
       .map((c) => ({ category: c, items: groups.get(c) ?? [] }));
   }, [imagePresets]);
 
-  // Search results (null = no active search)
+  // Search results across all presets (images + videos); null = no active search
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
     const q = searchQuery.toLowerCase();
-    return imagePresets.filter(
+    return presets.filter(
       (bg) =>
         bg.label.toLowerCase().includes(q) ||
         bg.category.toLowerCase().includes(q)
     );
-  }, [imagePresets, searchQuery]);
+  }, [presets, searchQuery]);
 
-  const toggleCategory = (cat: string) => {
+  const toggleCategory = (key: string) => {
     setOpenCategories((prev) => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
 
-  // Reset search when switching away from media tab
+  // Reset search when switching away from media tab.
+  // openCategories is intentionally preserved across tab switches so expanded
+  // sections remain open when the user returns to the Media tab.
   const handleTabChange = (tab: typeof designTab) => {
     setDesignTab(tab);
     if (tab !== 'media') setSearchQuery('');
@@ -257,6 +263,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search backgrounds…"
+              aria-label="Search backgrounds"
               className="w-full pl-8 pr-8 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-blue-primary transition-colors"
             />
             {searchQuery && (
@@ -295,7 +302,9 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
             /* Accordion view — no active search */
             <div className="flex flex-col gap-2">
               {groupedImagePresets.map(({ category, items }) => {
-                const isOpen = openCategories.has(category);
+                const key = imgKey(category);
+                const isOpen = openCategories.has(key);
+                const panelId = `bg-panel-${key}`;
                 return (
                   <div
                     key={category}
@@ -303,7 +312,9 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
                   >
                     <button
                       type="button"
-                      onClick={() => toggleCategory(category)}
+                      onClick={() => toggleCategory(key)}
+                      aria-expanded={isOpen}
+                      aria-controls={panelId}
                       className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors"
                     >
                       <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">
@@ -317,7 +328,10 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
                       />
                     </button>
                     {isOpen && (
-                      <div className="p-2 grid grid-cols-2 gap-2">
+                      <div
+                        id={panelId}
+                        className="p-2 grid grid-cols-2 gap-2"
+                      >
                         {items.map((bg) => (
                           <ThumbnailButton
                             key={bg.id}
@@ -333,38 +347,46 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
               })}
 
               {/* Ambient Videos accordion section */}
-              {videoPresets.length > 0 && (
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => toggleCategory(VIDEOS_KEY)}
-                    className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors"
-                  >
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
-                      <Video className="w-3.5 h-3.5" />
-                      Ambient Videos
-                      <span className="text-slate-400 font-normal normal-case tracking-normal">
-                        ({videoPresets.length})
+              {videoPresets.length > 0 && (() => {
+                const isVideosOpen = openCategories.has(VIDEOS_KEY);
+                return (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(VIDEOS_KEY)}
+                      aria-expanded={isVideosOpen}
+                      aria-controls="bg-panel-vid"
+                      className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors"
+                    >
+                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
+                        <Video className="w-3.5 h-3.5" />
+                        Ambient Videos
+                        <span className="text-slate-400 font-normal normal-case tracking-normal">
+                          ({videoPresets.length})
+                        </span>
                       </span>
-                    </span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-slate-400 transition-transform ${openCategories.has(VIDEOS_KEY) ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {openCategories.has(VIDEOS_KEY) && (
-                    <div className="p-2 grid grid-cols-2 gap-2">
-                      {videoPresets.map((bg) => (
-                        <ThumbnailButton
-                          key={bg.id}
-                          {...bg}
-                          isActive={activeDashboard?.background === bg.id}
-                          onSelect={setBackground}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 transition-transform ${isVideosOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {isVideosOpen && (
+                      <div
+                        id="bg-panel-vid"
+                        className="p-2 grid grid-cols-2 gap-2"
+                      >
+                        {videoPresets.map((bg) => (
+                          <ThumbnailButton
+                            key={bg.id}
+                            {...bg}
+                            isActive={activeDashboard?.background === bg.id}
+                            onSelect={setBackground}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {groupedImagePresets.length === 0 &&
                 videoPresets.length === 0 && (
