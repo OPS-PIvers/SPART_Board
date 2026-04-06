@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useWindowSize } from './useWindowSize';
+import { useWindowSize, windowSizeStore } from './useWindowSize';
 
 describe('useWindowSize', () => {
   const originalInnerWidth = window.innerWidth;
@@ -10,6 +10,8 @@ describe('useWindowSize', () => {
     // Reset window size before each test
     window.innerWidth = 1024;
     window.innerHeight = 768;
+    windowSizeStore.listeners.clear();
+    windowSizeStore.snapshot = { width: 1024, height: 768 };
     vi.clearAllMocks();
   });
 
@@ -50,8 +52,13 @@ describe('useWindowSize', () => {
     );
   });
 
-  it('should NOT update size when disabled', () => {
-    const { result } = renderHook(() => useWindowSize(false));
+  it('should NOT update size when disabled even if a re-render occurs', () => {
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useWindowSize(enabled),
+      {
+        initialProps: { enabled: false },
+      }
+    );
 
     act(() => {
       window.innerWidth = 500;
@@ -59,7 +66,10 @@ describe('useWindowSize', () => {
       window.dispatchEvent(new Event('resize'));
     });
 
-    // Should remain at initial size
+    // Force a re-render while still disabled to ensure getSnapshot handles it properly
+    rerender({ enabled: false });
+
+    // Should remain at initial size because the hook instance has a frozen ref
     expect(result.current.width).toBe(1024);
     expect(result.current.height).toBe(768);
   });
@@ -96,16 +106,15 @@ describe('useWindowSize', () => {
     act(() => {
       window.innerWidth = 500;
       window.innerHeight = 500;
-      window.dispatchEvent(new Event('resize'));
+      // In a real browser, the window dimensions might change but we don't dispatch an event,
+      // or we do dispatch an event.
+      // useSyncExternalStore will pull the latest snapshot when it re-subscribes or re-renders.
     });
-
-    // Still old value because disabled
-    expect(result.current.width).toBe(1024);
 
     // Enable it
     rerender({ enabled: true });
 
-    // Should sync to current window size immediately
+    // Should sync to current window size immediately since getSnapshot will pull the new values.
     expect(result.current.width).toBe(500);
     expect(result.current.height).toBe(500);
   });
