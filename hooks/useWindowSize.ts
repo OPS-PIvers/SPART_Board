@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback } from 'react';
+import { useSyncExternalStore, useCallback, useRef } from 'react';
 
 interface WindowSize {
   width: number;
@@ -6,24 +6,9 @@ interface WindowSize {
 }
 
 const INITIAL_SIZE: WindowSize = { width: 0, height: 0 };
-let cachedSnapshot: WindowSize = INITIAL_SIZE;
+let globalCachedSnapshot: WindowSize = INITIAL_SIZE;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-const noop = () => {};
-
-const getSnapshot = (): WindowSize => {
-  if (typeof window === 'undefined') {
-    return INITIAL_SIZE;
-  }
-
-  const { innerWidth: width, innerHeight: height } = window;
-
-  if (cachedSnapshot.width !== width || cachedSnapshot.height !== height) {
-    cachedSnapshot = { width, height };
-  }
-
-  return cachedSnapshot;
-};
+const noop = (): void => undefined;
 
 const getServerSnapshot = () => INITIAL_SIZE;
 
@@ -34,6 +19,9 @@ const getServerSnapshot = () => INITIAL_SIZE;
  *                  to resizes (e.g. when not maximized).
  */
 export const useWindowSize = (enabled: boolean = true): WindowSize => {
+  // Store the last known size specifically for this hook instance when disabled
+  const disabledSnapshotRef = useRef<WindowSize | null>(null);
+
   const subscribe = useCallback(
     (callback: () => void) => {
       if (!enabled || typeof window === 'undefined') {
@@ -44,6 +32,33 @@ export const useWindowSize = (enabled: boolean = true): WindowSize => {
     },
     [enabled]
   );
+
+  const getSnapshot = useCallback((): WindowSize => {
+    if (typeof window === 'undefined') {
+      return INITIAL_SIZE;
+    }
+
+    const { innerWidth: width, innerHeight: height } = window;
+
+    // Determine the latest real snapshot
+    if (
+      globalCachedSnapshot.width !== width ||
+      globalCachedSnapshot.height !== height
+    ) {
+      globalCachedSnapshot = { width, height };
+    }
+
+    if (enabled) {
+      // Sync the ref and return the global snapshot
+      disabledSnapshotRef.current = globalCachedSnapshot;
+      return globalCachedSnapshot;
+    }
+
+    // If disabled, freeze the snapshot to the last known value.
+    disabledSnapshotRef.current ??= globalCachedSnapshot;
+
+    return disabledSnapshotRef.current;
+  }, [enabled]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 };

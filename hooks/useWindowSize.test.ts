@@ -50,15 +50,13 @@ describe('useWindowSize', () => {
     );
   });
 
-  it('should NOT update size when disabled', () => {
-    // We expect useWindowSize to pull the latest snapshot on mount (or first render),
-    // but if we resize WHILE disabled, and useSyncExternalStore does not subscribe,
-    // will it update? Actually, useSyncExternalStore calls getSnapshot during render.
-    // If the component re-renders for some other reason, it WILL get the new size.
-    // But if we just dispatch an event, it won't force a re-render.
-
-    // First let's render it
-    const { result } = renderHook(() => useWindowSize(false));
+  it('should NOT update size when disabled even if a re-render occurs', () => {
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useWindowSize(enabled),
+      {
+        initialProps: { enabled: false },
+      }
+    );
 
     act(() => {
       window.innerWidth = 500;
@@ -66,10 +64,10 @@ describe('useWindowSize', () => {
       window.dispatchEvent(new Event('resize'));
     });
 
-    // Since it's disabled, no event listener was attached, so it shouldn't have re-rendered!
-    // However, in our test environment, act() might not behave exactly like a real browser
-    // in terms of NOT re-rendering. But we expect result.current to remain the old value
-    // because no state update was triggered.
+    // Force a re-render while still disabled to ensure getSnapshot handles it properly
+    rerender({ enabled: false });
+
+    // Should remain at initial size because the hook instance has a frozen ref
     expect(result.current.width).toBe(1024);
     expect(result.current.height).toBe(768);
   });
