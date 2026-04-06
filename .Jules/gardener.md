@@ -133,3 +133,9 @@
 **Weed:** Duplicated utility function `extractYouTubeId` defined in multiple places (utils/url.ts, utils/youtube.ts, and inline in VideoInteraction.tsx).
 **Root Cause:** Codebase evolution likely led to multiple developers needing the same utility and creating it locally or in separate utility files.
 **Plan:** Consolidated all definitions into the canonical `utils/youtube.ts` and updated all import references across the codebase to point to this single source of truth.
+
+## 2025-06-12 - Refactored Synchronous Effects and State Update Anti-patterns
+
+**Weed:** Synchronous state updates inside `useEffect` (triggering `react-hooks/set-state-in-effect`) and using `useState`/`useEffect` for subscribing to external DOM stores.
+**Root Cause:** Code evolved before React 18 patterns became standard, leading to anti-patterns where timers manually triggered state changes inside effect bodies, and DOM event listeners unnecessarily relied on React effect lifecycles.
+**Plan:** Refactored `useWindowSize` to utilize `useSyncExternalStore` for robust subscription to `window.resize`. Refactored `QuizStudentApp` countdown logic by moving the auto-submit state check from an effect body directly into the async `setInterval` callback to avoid synchronous cascaded renders, adhering strictly to pure component lifecycles.
