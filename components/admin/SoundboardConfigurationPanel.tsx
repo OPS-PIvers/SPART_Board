@@ -225,9 +225,13 @@ export const SoundboardConfigurationPanel: React.FC<
     const audio = new Audio(audioSrc);
     audioRef.current = audio;
 
-    const cleanup = () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
+    // Revoke the blob URL only after playback finishes or fails — not on the
+    // 1s UI-reset timeout, which would cut off longer audio mid-stream.
+    if (blobUrl) {
+      const revoke = () => URL.revokeObjectURL(blobUrl);
+      audio.addEventListener('ended', revoke, { once: true });
+      audio.addEventListener('error', revoke, { once: true });
+    }
 
     try {
       await audio.play();
@@ -237,7 +241,6 @@ export const SoundboardConfigurationPanel: React.FC<
           audioRef.current = null;
         }
         playbackResetTimeoutRef.current = null;
-        cleanup();
       }, 1000);
     } catch {
       if (audioRef.current === audio) {
@@ -248,7 +251,7 @@ export const SoundboardConfigurationPanel: React.FC<
         ...prev,
         [id]: 'Playback failed. Check the URL and file sharing permissions.',
       }));
-      cleanup();
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
     }
   };
 
