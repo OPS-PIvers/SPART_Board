@@ -56,11 +56,15 @@ vi.mock('@/context/useAuth', () => ({
     setLanguage: vi.fn(),
     refreshGoogleToken: vi.fn(),
     connectGoogleDrive: vi.fn(),
+    disconnectGoogleDrive: vi.fn(),
     savedWidgetConfigs: {},
     saveWidgetConfig: vi.fn(),
     profileLoaded: true,
     setupCompleted: true,
     completeSetup: vi.fn(),
+    disableCloseConfirmation: false,
+    remoteControlEnabled: true,
+    updateAccountPreferences: vi.fn(),
   })),
 }));
 
@@ -382,11 +386,15 @@ describe('EmbedWidget', () => {
         setLanguage: vi.fn(),
         refreshGoogleToken: vi.fn(),
         connectGoogleDrive: vi.fn(),
+        disconnectGoogleDrive: vi.fn(),
         savedWidgetConfigs: {},
         saveWidgetConfig: vi.fn(),
         profileLoaded: true,
         setupCompleted: true,
         completeSetup: vi.fn(),
+        disableCloseConfirmation: false,
+        remoteControlEnabled: true,
+        updateAccountPreferences: vi.fn(),
       });
 
       render(<EmbedWidget widget={validWidget} />);

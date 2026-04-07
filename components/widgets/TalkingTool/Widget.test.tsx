@@ -53,6 +53,9 @@ const mockAuthContext = (
   },
   refreshGoogleToken: () => Promise.resolve(null),
   connectGoogleDrive: () => Promise.resolve(),
+  disconnectGoogleDrive: () => {
+    /* mock */
+  },
   savedWidgetConfigs: {},
   saveWidgetConfig: () => {
     /* mock */
@@ -60,6 +63,11 @@ const mockAuthContext = (
   profileLoaded: true,
   setupCompleted: true,
   completeSetup: async () => {
+    /* mock */
+  },
+  disableCloseConfirmation: false,
+  remoteControlEnabled: true,
+  updateAccountPreferences: async () => {
     /* mock */
   },
   ...overrides,

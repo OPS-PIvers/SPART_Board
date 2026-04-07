@@ -7,7 +7,7 @@ import {
   ConceptEdge,
 } from '@/types';
 import { Trash2 } from 'lucide-react';
-import { getFontClass } from '@/utils/styles';
+import { getFontClass, hexToRgba } from '@/utils/styles';
 
 export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
   widget,
@@ -44,6 +44,8 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
   // Default dimensions
   const DEFAULT_WIDTH = config.defaultNodeWidth ?? 15;
   const DEFAULT_HEIGHT = config.defaultNodeHeight ?? 15;
+  const cardColor = config.cardColor ?? '#ffffff';
+  const cardOpacity = config.cardOpacity ?? 1;
 
   const handleAddNode = () => {
     if (isStudentView) return;
@@ -312,7 +314,8 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden bg-slate-50 rounded-xl select-none ${fontClassName}`}
+      className={`relative w-full h-full overflow-hidden rounded-xl select-none ${fontClassName}`}
+      style={{ backgroundColor: hexToRgba(cardColor, cardOpacity) }}
     >
       {!isStudentView && (
         <button
@@ -414,7 +417,15 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
             }}
           >
             <textarea
-              className="w-full h-full text-center bg-transparent border-none resize-none focus:outline-none focus:ring-[0.2cqmin] focus:ring-slate-400 rounded-[0.5cqmin] p-[0.5cqmin] text-[15cqmin] font-medium text-slate-800 leading-tight"
+              className="w-full h-full text-center bg-transparent border-none resize-none focus:outline-none focus:ring-[var(--ring-width)] focus:ring-slate-400 font-medium text-slate-800 leading-tight"
+              style={
+                {
+                  borderRadius: '0.5cqmin',
+                  padding: '0.5cqmin',
+                  fontSize: '15cqmin',
+                  '--ring-width': '0.2cqmin',
+                } as React.CSSProperties
+              }
               value={node.text}
               onChange={(e) => handleNodeTextChange(node.id, e.target.value)}
               placeholder="Idea..."

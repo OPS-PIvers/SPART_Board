@@ -191,11 +191,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [profileLoaded, setProfileLoaded] = useState(isAuthBypass);
   const [setupCompleted, setSetupCompletedState] = useState(isAuthBypass);
+  const [disableCloseConfirmation, setDisableCloseConfirmationState] =
+    useState(false);
+  const [remoteControlEnabled, setRemoteControlEnabledState] = useState(true);
   // Tracks the latest setSelectedBuildings / setLanguage call to detect and suppress stale writes
   const writeTokenRef = useRef(0);
   const widgetConfigTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Prevents concurrent proactive token refresh calls from the checkToken interval
   const isRefreshingRef = useRef(false);
+  // Prevents duplicate root-doc syncs within the same session
+  const rootDocSyncedRef = useRef(false);
 
   // Keep language state in sync with i18next, including the async startup
   // detection that may resolve after the first render.
@@ -416,6 +421,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => clearInterval(interval);
   }, [refreshGoogleToken]);
 
+  /** Clear the Google Drive token without touching Firebase auth. */
+  const disconnectGoogleDrive = useCallback(() => {
+    localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
+    setGoogleAccessToken(null);
+  }, []);
+
   // Persist googleAccessToken to localStorage
   useEffect(() => {
     if (isAuthBypass) return;
@@ -559,6 +571,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setProfileLoaded(false);
       setSetupCompletedState(false);
       setSavedWidgetConfigs({});
+      setDisableCloseConfirmationState(false);
+      setRemoteControlEnabledState(true);
 
       if (!user) {
         setSelectedBuildingsState([]);
@@ -629,6 +643,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             !('setupCompleted' in data) || data.setupCompleted === true
           );
 
+          // Load account-level preferences
+          if (
+            'disableCloseConfirmation' in data &&
+            typeof data.disableCloseConfirmation === 'boolean'
+          ) {
+            setDisableCloseConfirmationState(data.disableCloseConfirmation);
+          } else {
+            setDisableCloseConfirmationState(false);
+          }
+          if (
+            'remoteControlEnabled' in data &&
+            typeof data.remoteControlEnabled === 'boolean'
+          ) {
+            setRemoteControlEnabledState(data.remoteControlEnabled);
+          } else {
+            // Default to true if not explicitly set
+            setRemoteControlEnabledState(true);
+          }
+
           setProfileLoaded(true);
           return;
         }
@@ -651,6 +684,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [user]);
 
+  // Sync the root users/{uid} document so the admin analytics Cloud Function can
+  // read email, lastLogin, and buildings without querying subcollections.
+  useEffect(() => {
+    if (!user || isAuthBypass || !profileLoaded) return;
+    if (rootDocSyncedRef.current) return;
+    rootDocSyncedRef.current = true;
+
+    void setDoc(
+      doc(db, 'users', user.uid),
+      {
+        email: user.email ?? '',
+        lastLogin: Date.now(),
+        buildings: selectedBuildings,
+      },
+      { merge: true }
+    ).catch((err: unknown) => {
+      console.error('Error syncing user root document:', err);
+      // Reset so the next render can retry
+      rootDocSyncedRef.current = false;
+    });
+  }, [user, profileLoaded, selectedBuildings]);
+
   const setSelectedBuildings = useCallback(
     async (buildings: string[]) => {
       setSelectedBuildingsState(buildings);
@@ -662,6 +717,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           doc(db, 'users', user.uid, 'userProfile', 'profile'),
           { selectedBuildings: buildings },
           { merge: true }
+        );
+        // Keep root doc buildings in sync for admin analytics
+        void setDoc(
+          doc(db, 'users', user.uid),
+          { buildings },
+          { merge: true }
+        ).catch((err: unknown) =>
+          console.error('Error updating root doc buildings:', err)
         );
       } catch (error) {
         // Only log if this is still the latest write (not superseded by a newer one)
@@ -708,6 +771,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error('Error saving setup completion:', error);
     }
   }, [user]);
+
+  const updateAccountPreferences = useCallback(
+    async (updates: {
+      disableCloseConfirmation?: boolean;
+      remoteControlEnabled?: boolean;
+    }) => {
+      if (updates.disableCloseConfirmation !== undefined) {
+        setDisableCloseConfirmationState(updates.disableCloseConfirmation);
+      }
+      if (updates.remoteControlEnabled !== undefined) {
+        setRemoteControlEnabledState(updates.remoteControlEnabled);
+      }
+
+      // Build a sanitized payload — Firestore rejects `undefined` field values
+      const sanitizedUpdates: {
+        disableCloseConfirmation?: boolean;
+        remoteControlEnabled?: boolean;
+      } = {};
+      if (typeof updates.disableCloseConfirmation === 'boolean') {
+        sanitizedUpdates.disableCloseConfirmation =
+          updates.disableCloseConfirmation;
+      }
+      if (typeof updates.remoteControlEnabled === 'boolean') {
+        sanitizedUpdates.remoteControlEnabled = updates.remoteControlEnabled;
+      }
+
+      if (!user || isAuthBypass || Object.keys(sanitizedUpdates).length === 0) {
+        return;
+      }
+      const myToken = ++writeTokenRef.current;
+      try {
+        await setDoc(
+          doc(db, 'users', user.uid, 'userProfile', 'profile'),
+          sanitizedUpdates,
+          { merge: true }
+        );
+      } catch (error) {
+        if (myToken === writeTokenRef.current) {
+          console.error('Error saving account preferences:', error);
+        }
+      }
+    },
+    [user]
+  );
 
   const saveWidgetConfig = useCallback(
     (type: WidgetType, config: Partial<WidgetConfig>) => {
@@ -757,6 +864,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(user);
       if (!user) {
         setGoogleAccessToken(null);
+        rootDocSyncedRef.current = false;
       }
       setLoading(false);
     });
@@ -932,11 +1040,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setLanguage,
         refreshGoogleToken,
         connectGoogleDrive,
+        disconnectGoogleDrive,
         savedWidgetConfigs,
         saveWidgetConfig,
         profileLoaded,
         setupCompleted,
         completeSetup,
+        disableCloseConfirmation,
+        remoteControlEnabled,
+        updateAccountPreferences,
       }}
     >
       {children}

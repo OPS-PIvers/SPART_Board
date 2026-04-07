@@ -52,3 +52,6 @@ coverage/
 .gemini/
 gha-creds-*.json
 eslint-output.txt
+
+# Verification / QA test artifacts
+verification/

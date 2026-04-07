@@ -1,11 +1,15 @@
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ActivityWallAppearanceSettings,
   ActivityWallSettings,
 } from './Settings';
 import { WidgetData } from '@/types';
+
+vi.mock('@/context/useDashboard', () => ({
+  useDashboard: () => ({ updateWidget: vi.fn() }),
+}));
 
 describe('ActivityWallSettings', () => {
   const widget: WidgetData = {
@@ -36,13 +40,9 @@ describe('ActivityWallSettings', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the appearance settings guidance', () => {
+  it('renders typography and surface color settings', () => {
     render(<ActivityWallAppearanceSettings widget={widget} />);
 
-    expect(
-      screen.getByText(
-        /this widget uses the standard window appearance controls/i
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByText(/typography/i)).toBeInTheDocument();
   });
 });

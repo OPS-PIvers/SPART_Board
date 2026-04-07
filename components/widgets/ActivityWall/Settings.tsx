@@ -1,5 +1,8 @@
 import React from 'react';
-import { WidgetData } from '@/types';
+import { WidgetData, ActivityWallConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
+import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
+import { TypographySettings } from '@/components/common/TypographySettings';
 
 export const ActivityWallSettings: React.FC<{ widget: WidgetData }> = () => {
   return (
@@ -17,10 +20,16 @@ export const ActivityWallSettings: React.FC<{ widget: WidgetData }> = () => {
 
 export const ActivityWallAppearanceSettings: React.FC<{
   widget: WidgetData;
-}> = () => {
+}> = ({ widget }) => {
+  const { updateWidget } = useDashboard();
+  const config = widget.config as ActivityWallConfig;
+  const updateConfig = (updates: Partial<ActivityWallConfig>) =>
+    updateWidget(widget.id, { config: { ...config, ...updates } });
+
   return (
-    <div className="p-4 text-sm text-slate-600">
-      This widget uses the standard window appearance controls.
+    <div className="space-y-6">
+      <TypographySettings config={config} updateConfig={updateConfig} />
+      <SurfaceColorSettings config={config} updateConfig={updateConfig} />
     </div>
   );
 };

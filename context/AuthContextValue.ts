@@ -50,6 +50,8 @@ export interface AuthContextType {
    * Safe to call from user-triggered UI (e.g. the disconnect banner).
    */
   connectGoogleDrive: () => Promise<void>;
+  /** Disconnect Google Drive without signing the user out of the app. */
+  disconnectGoogleDrive: () => void;
   /** Global saved configs for complex widgets */
   savedWidgetConfigs: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
   /** Save a widget's config globally (debounced Firestore write) */
@@ -60,6 +62,15 @@ export interface AuthContextType {
   setupCompleted: boolean;
   /** Mark setup as done — writes setupCompleted:true to Firestore */
   completeSetup: () => Promise<void>;
+  /** Whether to skip the close-widget confirmation dialog (account-level preference) */
+  disableCloseConfirmation: boolean;
+  /** Whether remote control is enabled (account-level preference) */
+  remoteControlEnabled: boolean;
+  /** Update account-level preferences (disableCloseConfirmation, remoteControlEnabled) */
+  updateAccountPreferences: (updates: {
+    disableCloseConfirmation?: boolean;
+    remoteControlEnabled?: boolean;
+  }) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

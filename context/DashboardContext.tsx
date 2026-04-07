@@ -100,6 +100,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     selectedBuildings,
     savedWidgetConfigs,
     saveWidgetConfig,
+    remoteControlEnabled: accountRemoteControlEnabled,
   } = useAuth();
   const { driveService, userDomain } = useGoogleDrive();
   const {
@@ -128,10 +129,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = useRef(activeId);
+  // Keep a ref to account-level remote control so the Firestore snapshot
+  // handler can read the latest value without triggering a re-subscription.
+  const accountRemoteControlEnabledRef = useRef(accountRemoteControlEnabled);
+  accountRemoteControlEnabledRef.current = accountRemoteControlEnabled;
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [zoom, setZoom] = useState<number>(1);
+
+  // Helper to centralize active dashboard switching and its side-effects (like zoom reset)
+  const updateActiveId = useCallback((id: string | null) => {
+    setActiveId(id);
+    setZoom(1);
+  }, []);
+
   const [isDockInitialized, setIsDockInitialized] = useState<boolean>(() => {
     return localStorage.getItem('classroom_dock_initialized') === 'true';
   });
@@ -559,21 +571,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
     if (!user) {
-      const timer = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(timer);
+      setLoading(false);
+      return;
     }
 
-    const timer = setTimeout(() => setLoading(true), 0);
+    setLoading(true);
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards(
       (updatedDashboards, hasPendingWrites) => {
-        // Cancel the loading timer — in bypass mode the mock store fires the
-        // callback synchronously (before the 0ms timer fires), so without this
-        // the timer would override setLoading(false) and lock the UI on the
-        // full-page loader indefinitely. Safe to call after the timer has fired.
-        clearTimeout(timer);
-
         // Sort dashboards: default first, then by order, then by createdAt
         const sortedDashboards = [...updatedDashboards].sort((a, b) => {
           if (a.isDefault && !b.isDefault) return -1;
@@ -725,7 +731,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               ] as const;
 
               const remoteControlEnabled =
-                currentActive.settings?.remoteControlEnabled ?? true;
+                accountRemoteControlEnabledRef.current;
 
               // Pre-calculate merge decisions for all incoming server widgets
               const widgetMergeDecisions = db.widgets.map((sw) => {
@@ -791,22 +797,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                       version: keepLocalConfig ? lw.version : sw.version,
                       config: keepLocalConfig ? lw.config : sw.config,
                       ...(keepLocalLayout
-                        ? LAYOUT_FIELDS.reduce(
-                            (acc, field) => ({
-                              ...acc,
-                              [field]: lw[field as keyof WidgetData],
-                            }),
-                            {}
-                          )
+                        ? (() => {
+                            const acc: Record<string, unknown> = {};
+                            for (const f of LAYOUT_FIELDS)
+                              acc[f] = lw[f as keyof WidgetData];
+                            return acc as Partial<WidgetData>;
+                          })()
                         : {}),
                       ...(keepLocalStyle
-                        ? STYLE_FIELDS.reduce(
-                            (acc, field) => ({
-                              ...acc,
-                              [field]: lw[field as keyof WidgetData],
-                            }),
-                            {}
-                          )
+                        ? (() => {
+                            const acc: Record<string, unknown> = {};
+                            for (const f of STYLE_FIELDS)
+                              acc[f] = lw[f as keyof WidgetData];
+                            return acc as Partial<WidgetData>;
+                          })()
                         : {}),
                     };
                   }
@@ -859,22 +863,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     version: keepLocalConfig ? saved.version : sw.version,
                     config: keepLocalConfig ? saved.config : sw.config,
                     ...(keepLocalLayout
-                      ? LAYOUT_FIELDS.reduce(
-                          (acc, field) => ({
-                            ...acc,
-                            [field]: saved[field as keyof WidgetData],
-                          }),
-                          {}
-                        )
+                      ? (() => {
+                          const acc: Record<string, unknown> = {};
+                          for (const f of LAYOUT_FIELDS)
+                            acc[f] = saved[f as keyof WidgetData];
+                          return acc as Partial<WidgetData>;
+                        })()
                       : {}),
                     ...(keepLocalStyle
-                      ? STYLE_FIELDS.reduce(
-                          (acc, field) => ({
-                            ...acc,
-                            [field]: saved[field as keyof WidgetData],
-                          }),
-                          {}
-                        )
+                      ? (() => {
+                          const acc: Record<string, unknown> = {};
+                          for (const f of STYLE_FIELDS)
+                            acc[f] = saved[f as keyof WidgetData];
+                          return acc as Partial<WidgetData>;
+                        })()
                       : {}),
                   };
                 }
@@ -928,7 +930,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         if (migratedDashboards.length > 0 && !activeIdRef.current) {
           // Try to load default dashboard first
           const defaultDb = migratedDashboards.find((d) => d.isDefault);
-          setActiveId(defaultDb ? defaultDb.id : migratedDashboards[0].id);
+          updateActiveId(defaultDb ? defaultDb.id : migratedDashboards[0].id);
         }
 
         // Create default dashboard if none exist
@@ -989,10 +991,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     return () => {
-      clearTimeout(timer);
       unsubscribe();
     };
-  }, [user, subscribeToDashboards, migrated, saveDashboard]);
+  }, [user, subscribeToDashboards, migrated, saveDashboard, updateActiveId]);
 
   // Auto-save to Firestore with debouncing
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1432,7 +1433,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
           if (!mounted) return;
 
-          setActiveId(newDb.id);
+          updateActiveId(newDb.id);
           addToast('Board imported successfully', 'success');
           clearPendingShare();
         } else {
@@ -1472,6 +1473,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     saveDashboard,
     addToast,
     clearPendingShare,
+    updateActiveId,
   ]);
 
   // --- FOLDER ACTIONS ---
@@ -1707,7 +1709,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       saveDashboard(newDb)
         .then(() => {
-          setActiveId(newDb.id);
+          updateActiveId(newDb.id);
           addToast(`Dashboard "${name}" ready`);
         })
         .catch((err) => {
@@ -1715,7 +1717,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           addToast('Failed to create dashboard', 'error');
         });
     },
-    [user, dashboards, saveDashboard, addToast]
+    [user, dashboards, saveDashboard, addToast, updateActiveId]
   );
 
   const saveCurrentDashboard = useCallback(() => {
@@ -1748,7 +1750,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         .then(() => {
           if (activeId === id) {
             const filtered = dashboards.filter((d) => d.id !== id);
-            setActiveId(filtered.length > 0 ? filtered[0].id : null);
+            updateActiveId(filtered.length > 0 ? filtered[0].id : null);
           }
           addToast('Dashboard removed');
         })
@@ -1757,7 +1759,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           addToast('Delete failed', 'error');
         });
     },
-    [user, activeId, dashboards, handleDeleteDashboard, addToast]
+    [
+      user,
+      activeId,
+      dashboards,
+      handleDeleteDashboard,
+      addToast,
+      updateActiveId,
+    ]
   );
 
   const duplicateDashboard = useCallback(
@@ -1919,10 +1928,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const loadDashboard = useCallback(
     (id: string) => {
-      setActiveId(id);
+      updateActiveId(id);
       addToast('Board loaded');
     },
-    [addToast]
+    [addToast, updateActiveId]
   );
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;

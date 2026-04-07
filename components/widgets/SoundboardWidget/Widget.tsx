@@ -10,8 +10,8 @@ import { useDashboard } from '@/context/useDashboard';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Volume2, Music } from 'lucide-react';
-import { SOUND_LIBRARY } from '@/config/soundLibrary';
 import { normalizeSoundboardAudioUrl } from '@/utils/soundboardAudioUrl';
+import { getAvailableSoundboardSounds } from '@/utils/soundboardConfig';
 
 // ─── Web Audio API synthesis ─────────────────────────────────────────────────
 
@@ -215,34 +215,12 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   // All sounds the teacher has made available (selectedSoundIds pool)
   const visibleSounds = useMemo(() => {
-    let availableSounds: SoundboardSound[] = [];
+    const availableSounds = getAvailableSoundboardSounds(
+      globalConfig,
+      buildingId
+    );
 
-    if (!buildingId) {
-      const allDefaults = globalConfig?.buildingDefaults ?? {};
-      availableSounds = Object.values(allDefaults).flatMap((d) => {
-        const custom = d.availableSounds ?? [];
-        const library = SOUND_LIBRARY.filter((s) =>
-          d.enabledLibrarySoundIds?.includes(s.id)
-        );
-        return [...library, ...custom];
-      });
-    } else {
-      const bConfig = globalConfig?.buildingDefaults?.[buildingId];
-      const custom = bConfig?.availableSounds ?? [];
-      const library = SOUND_LIBRARY.filter((s) =>
-        bConfig?.enabledLibrarySoundIds?.includes(s.id)
-      );
-      availableSounds = [...library, ...custom];
-    }
-
-    const seenIds = new Set<string>();
-    const uniqueSounds = availableSounds.filter((s) => {
-      if (seenIds.has(s.id)) return false;
-      seenIds.add(s.id);
-      return true;
-    });
-
-    return uniqueSounds.filter(
+    return availableSounds.filter(
       (sound) =>
         selectedSoundIds.includes(sound.id) &&
         (sound.synthesized === true ||

@@ -54,7 +54,8 @@ export type WidgetType =
   | 'custom-widget'
   | 'soundboard'
   | 'url'
-  | 'activity-wall';
+  | 'activity-wall'
+  | 'first-5';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -253,12 +254,16 @@ export interface TrafficConfig {
   active?: string;
 }
 
+export type TextSizePreset = 'small' | 'medium' | 'large' | 'x-large';
+
 export interface TextConfig {
   content: string;
   bgColor: string;
   fontSize: number;
   fontFamily?: string;
   fontColor?: string;
+  textSizePreset?: TextSizePreset;
+  verticalAlign?: 'top' | 'center' | 'bottom';
 }
 
 export interface ChecklistConfig {
@@ -270,9 +275,10 @@ export interface ChecklistConfig {
   lastNames?: string;
   completedNames?: string[]; // Tracks IDs or Names checked in roster mode
   fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
   cardColor?: string;
   cardOpacity?: number;
-  fontColor?: string;
 }
 
 export interface RandomGroup {
@@ -314,12 +320,14 @@ export interface SoundboardConfig {
 }
 
 export interface SoundboardBuildingConfig {
-  availableSounds: SoundboardSound[]; // Sounds configured by admin for this building
+  availableSounds: SoundboardSound[]; // Legacy: sounds configured directly on a building
   enabledLibrarySoundIds?: string[]; // IDs from the standard library
+  enabledCustomSoundIds?: string[]; // IDs from the shared custom library
 }
 
 export interface SoundboardGlobalConfig {
   buildingDefaults?: Record<string, SoundboardBuildingConfig>;
+  customLibrarySounds?: SoundboardSound[]; // Shared custom sounds managed once by admins
 }
 
 export interface SoundConfig {
@@ -424,6 +432,10 @@ export interface ActivityWallConfig {
   activities?: ActivityWallActivity[];
   activeActivityId?: string | null;
   draftActivity?: ActivityWallActivity;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
 }
 
 export interface WebcamConfig {
@@ -571,8 +583,9 @@ export interface GlobalWeatherData {
   source?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface WebcamGlobalConfig {
-  ocrMode?: 'standard' | 'gemini';
+  // Config properties will go here if added in the future
 }
 
 export interface BuildingScheduleDefaults {
@@ -807,6 +820,8 @@ export interface ScheduleConfig {
   isBuildingSyncEnabled?: boolean;
   lastSyncedBuildingId?: string;
   fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
   autoProgress?: boolean;
   /**
    * When true, the widget automatically scrolls to keep the active time slot
@@ -828,6 +843,8 @@ export interface CalendarConfig {
   /** Individual Google Calendar IDs added by the user */
   personalCalendarIds?: string[];
   fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
   /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */
   cardColor?: string;
   /** Card background opacity, 0 (fully transparent) to 1 (fully opaque). Default: 1. */
@@ -862,6 +879,10 @@ export interface LunchCountConfig {
   lunchTimeMinute?: string;
   /** Selected grade level (K, 1, 2, MAC for Schumann; 3, 4, 5 for Intermediate) */
   gradeLevel?: string;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
 }
 
 export interface BuildingClassesDefaults {
@@ -941,6 +962,26 @@ export interface MiniAppGlobalConfig {
   botEmail: string;
 }
 
+/**
+ * A persistent assignment session for a MiniApp.
+ * Lives in the `/mini_app_sessions/{sessionId}` Firestore collection.
+ * Created by teachers; read by students via the `/miniapp/{sessionId}` route.
+ */
+export interface MiniAppSession {
+  id: string;
+  appId: string;
+  appTitle: string;
+  appHtml: string;
+  teacherUid: string;
+  assignmentName: string;
+  status: 'active' | 'ended';
+  createdAt: number;
+  endedAt?: number;
+  // Optional result collection via Apps Script
+  submissionUrl?: string;
+  googleSheetId?: string;
+}
+
 export interface PdfItem {
   id: string;
   name: string;
@@ -964,6 +1005,10 @@ export interface BreathingConfig {
   pattern: '4-4-4-4' | '4-7-8' | '5-5';
   visual: 'circle' | 'lotus' | 'wave';
   color: string;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
 }
 
 // --- MATH TOOLS TYPES ---
@@ -1001,6 +1046,10 @@ export interface MathToolsGlobalConfig {
 export interface MathToolsConfig {
   /** DPI calibration override stored locally; admin may override at building level */
   dpiCalibration?: number;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
 }
 
 /** Number line display mode */
@@ -1118,6 +1167,10 @@ export interface StickerBookConfig {
   uploadedUrls?: string[];
   favorites?: string[];
   stickerOrder?: string[];
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
 }
 
 export interface GlobalSticker {
@@ -1173,6 +1226,10 @@ export interface NotebookItem {
 export interface SmartNotebookConfig {
   activeNotebookId: string | null;
   storageLimitMb?: number;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
 }
 
 export interface BuildingSmartNotebookDefaults {
@@ -1461,7 +1518,12 @@ export interface VideoActivityResponse {
   score: number | null;
 }
 
-export type TalkingToolConfig = Record<string, never>;
+export interface TalkingToolConfig {
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
+}
 
 export interface NextUpQueueItem {
   id: string;
@@ -1524,6 +1586,26 @@ export interface CountdownConfig {
   includeWeekends: boolean;
   countToday: boolean;
   viewMode: 'number' | 'grid';
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
+  eventColor?: string;
+}
+
+export interface BuildingCountdownDefaults {
+  buildingId: string;
+  title?: string;
+  startDate?: string;
+  eventDate?: string;
+  includeWeekends?: boolean;
+  countToday?: boolean;
+  viewMode?: 'number' | 'grid';
+}
+
+export interface CountdownGlobalConfig {
+  buildingDefaults?: Record<string, BuildingCountdownDefaults>;
+  dockDefaults?: Record<string, boolean>;
 }
 
 export interface OnboardingConfig {
@@ -1572,6 +1654,10 @@ export interface NumberLineConfig {
   markers: NumberLineMarker[];
   jumps: NumberLineJump[];
   showArrows: boolean;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontFamily?: GlobalFontFamily;
+  fontColor?: string;
 }
 
 export type BuildingNumberLineDefaults = Pick<
@@ -1612,6 +1698,8 @@ export interface SpecialistScheduleConfig {
   /** Items that repeat every day or on specific days of the week */
   recurringItems?: SpecialistScheduleRecurringItem[];
   fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
   cardColor?: string;
   cardOpacity?: number;
 }
@@ -1706,6 +1794,9 @@ export interface GraphicOrganizerConfig {
   templateType: GraphicOrganizerLayoutType | GraphicOrganizerTemplateId;
   nodes: Record<string, OrganizerNode>;
   fontFamily?: GlobalFontFamily;
+  cardColor?: string;
+  cardOpacity?: number;
+  fontColor?: string;
 }
 export interface CarRiderProConfig {
   iframeUrl?: string;
@@ -1768,6 +1859,9 @@ export interface ConceptWebConfig {
   fontFamily?: GlobalFontFamily;
   defaultNodeWidth?: number; // Width as a percentage of container
   defaultNodeHeight?: number; // Height as a percentage of container
+  cardColor?: string;
+  cardOpacity?: number;
+  fontColor?: string;
 }
 
 export interface BuildingConceptWebDefaults {
@@ -2291,7 +2385,7 @@ export interface UserRolesConfig {
 }
 
 /**
- * Per-user profile data stored in Firestore at /users/{userId}/userProfile.
+ * Per-user profile data stored in Firestore at /users/{userId}/userProfile/profile.
  * This is separate from dashboard settings and persists across dashboards.
  */
 export interface UserProfile {
@@ -2303,6 +2397,10 @@ export interface UserProfile {
   savedWidgetConfigs?: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
   /** True after the user has completed the first-time setup wizard */
   setupCompleted?: boolean;
+  /** Skip the confirmation dialog when closing widgets (account-level) */
+  disableCloseConfirmation?: boolean;
+  /** Whether remote control is enabled for all boards (account-level) */
+  remoteControlEnabled?: boolean;
 }
 
 export interface SharedGroup {
@@ -2446,6 +2544,13 @@ export interface FeaturePermission {
 export interface CarRiderProGlobalConfig {
   /** District portal login URL for the Car Rider Pro dismissal widget */
   url?: string;
+}
+
+export interface First5GlobalConfig {
+  /** The day number as of the reference date */
+  activeDayNumber?: number;
+  /** ISO date string (YYYY-MM-DD) when activeDayNumber was last set */
+  referenceDate?: string;
 }
 
 export interface LunchCountGlobalConfig {

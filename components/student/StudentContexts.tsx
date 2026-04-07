@@ -40,6 +40,9 @@ const mockAuth: AuthContextType = {
   refreshGoogleToken: () => {
     return Promise.resolve(null);
   },
+  disconnectGoogleDrive: () => {
+    // No-op in student view
+  },
   connectGoogleDrive: async () => {
     // No-op in student view
   },
@@ -50,6 +53,11 @@ const mockAuth: AuthContextType = {
   profileLoaded: true,
   setupCompleted: true,
   completeSetup: async () => {
+    // No-op in student view
+  },
+  disableCloseConfirmation: false,
+  remoteControlEnabled: true,
+  updateAccountPreferences: async () => {
     // No-op in student view
   },
 };
