@@ -786,18 +786,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                       config: keepLocalConfig ? lw.config : sw.config,
                       ...(keepLocalLayout
                         ? (() => {
-                            const acc: Record<string, unknown> = {};
-                            for (const f of LAYOUT_FIELDS)
-                              acc[f] = lw[f as keyof WidgetData];
-                            return acc as Partial<WidgetData>;
+                            const acc: Partial<WidgetData> = {};
+                            for (let i = 0; i < LAYOUT_FIELDS.length; i++) {
+                              const f = LAYOUT_FIELDS[i] as keyof WidgetData;
+                              // @ts-expect-error dynamic assignment
+                              acc[f] = lw[f];
+                            }
+                            return acc;
                           })()
                         : {}),
                       ...(keepLocalStyle
                         ? (() => {
-                            const acc: Record<string, unknown> = {};
-                            for (const f of STYLE_FIELDS)
-                              acc[f] = lw[f as keyof WidgetData];
-                            return acc as Partial<WidgetData>;
+                            const acc: Partial<WidgetData> = {};
+                            for (let i = 0; i < STYLE_FIELDS.length; i++) {
+                              const f = STYLE_FIELDS[i] as keyof WidgetData;
+                              // @ts-expect-error dynamic assignment
+                              acc[f] = lw[f];
+                            }
+                            return acc;
                           })()
                         : {}),
                     };
@@ -852,18 +858,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     config: keepLocalConfig ? saved.config : sw.config,
                     ...(keepLocalLayout
                       ? (() => {
-                          const acc: Record<string, unknown> = {};
-                          for (const f of LAYOUT_FIELDS)
-                            acc[f] = saved[f as keyof WidgetData];
-                          return acc as Partial<WidgetData>;
+                          const acc: Partial<WidgetData> = {};
+                          for (let i = 0; i < LAYOUT_FIELDS.length; i++) {
+                            const f = LAYOUT_FIELDS[i] as keyof WidgetData;
+                            // @ts-expect-error dynamic assignment
+                            acc[f] = saved[f];
+                          }
+                          return acc;
                         })()
                       : {}),
                     ...(keepLocalStyle
                       ? (() => {
-                          const acc: Record<string, unknown> = {};
-                          for (const f of STYLE_FIELDS)
-                            acc[f] = saved[f as keyof WidgetData];
-                          return acc as Partial<WidgetData>;
+                          const acc: Partial<WidgetData> = {};
+                          for (let i = 0; i < STYLE_FIELDS.length; i++) {
+                            const f = STYLE_FIELDS[i] as keyof WidgetData;
+                            // @ts-expect-error dynamic assignment
+                            acc[f] = saved[f];
+                          }
+                          return acc;
                         })()
                       : {}),
                   };
