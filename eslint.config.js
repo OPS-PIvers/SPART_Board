@@ -119,6 +119,14 @@ export default tseslint.config(
     },
   },
   {
+    files: ['tests/**/*.{ts,tsx}'],
+    rules: {
+      // expect.objectContaining / expect.stringContaining return `any`;
+      // nesting them inside matchers is standard Vitest/Jest practice.
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+    },
+  },
+  {
     files: ['functions/**/*.ts'],
     languageOptions: {
       globals: {

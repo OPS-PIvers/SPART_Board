@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GoogleDriveService } from '@/utils/googleDriveService';
+import { GoogleDriveService, DriveFile } from '@/utils/googleDriveService';
 import { Dashboard } from '@/types';
 
 // Helper to mock fetch responses
@@ -200,8 +199,7 @@ describe('GoogleDriveService', () => {
       );
 
       const lastCall = fetchSpy.mock.calls[0];
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      const body = JSON.parse((lastCall[1] as any)?.body as string);
+      const body: unknown = JSON.parse(lastCall[1]?.body as string);
       expect(body).toEqual({
         name: 'MySheet',
         mimeType: 'application/vnd.google-apps.spreadsheet',
@@ -222,8 +220,9 @@ describe('GoogleDriveService', () => {
 
       const sheet = await service.createSpreadsheet('NoParent');
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      const body = JSON.parse((fetchSpy.mock.calls[0][1] as any)?.body as string);
+      const body: unknown = JSON.parse(
+        fetchSpy.mock.calls[0][1]?.body as string
+      );
       expect(body).toEqual({
         name: 'NoParent',
         mimeType: 'application/vnd.google-apps.spreadsheet',
@@ -523,14 +522,13 @@ describe('GoogleDriveService', () => {
 
   describe('getBackgroundImages', () => {
     it('should delegate to listFiles and return the result', async () => {
-      const mockImages = [
-        { id: 'bg1', name: 'Background 1' },
-        { id: 'bg2', name: 'Background 2' },
+      const mockImages: DriveFile[] = [
+        { id: 'bg1', name: 'Background 1', mimeType: 'image/png' },
+        { id: 'bg2', name: 'Background 2', mimeType: 'image/jpeg' },
       ];
       const listFilesSpy = vi
         .spyOn(service, 'listFiles')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-        .mockResolvedValue(mockImages as any);
+        .mockResolvedValue(mockImages);
       const result = await service.getBackgroundImages();
       expect(listFilesSpy).toHaveBeenCalled();
       expect(result).toEqual(mockImages);
