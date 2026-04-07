@@ -135,6 +135,7 @@
 **Plan:** Consolidated all definitions into the canonical `utils/youtube.ts` and updated all import references across the codebase to point to this single source of truth.
 
 ## 2025-04-07 - Refactored promises to async/await in DashboardContext
+
 **Weed:** .then().catch() chains where async/await would be cleaner.
 **Root Cause:** Legacy artifacts where Promise chains were used instead of modern async/await syntax.
 **Plan:** Refactored createNewDashboard, saveCurrentDashboard, deleteDashboard, duplicateDashboard, and renameDashboard in context/DashboardContext.tsx to use async/await with try/catch blocks for improved readability.
