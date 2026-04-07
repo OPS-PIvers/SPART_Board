@@ -22,7 +22,16 @@ export const useBackgrounds = () => {
   const [managedBackgrounds, setManagedBackgrounds] = useState<
     BackgroundPreset[]
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!user);
+
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
+    if (!user) {
+      setManagedBackgrounds([]);
+      setLoading(false);
+    }
+  }
 
   // Refs to prevent race conditions when both queries update simultaneously
   // (Used when not admin)
@@ -30,14 +39,7 @@ export const useBackgrounds = () => {
   const betaBgsRef = useRef<BackgroundPreset[]>([]);
 
   useEffect(() => {
-    if (!user) {
-      // Use timeout to defer state updates and avoid synchronous setState in effect
-      const timer = setTimeout(() => {
-        setManagedBackgrounds([]);
-        setLoading(false);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
+    if (!user) return;
 
     const baseRef = collection(db, 'admin_backgrounds');
     const unsubscribes: (() => void)[] = [];
