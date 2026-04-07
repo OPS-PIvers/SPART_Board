@@ -1871,18 +1871,8 @@ export const adminAnalytics = functionsV1
           }
         }
 
-        // 3c. Compute engagement from Auth data + buildings from Firestore
-        const usersByDomain: Record<string, EngagementCounts> = {};
-        const usersByBuilding: Record<string, EngagementCounts> = {};
-        const usersByDomainAndBuilding: Record<
-          string,
-          Record<string, EngagementCounts>
-        > = {};
-        const totalEngagement: EngagementCounts = {
-          total: 0,
-          monthly: 0,
-          daily: 0,
-        };
+        // 3c. Time constants & helpers (engagement computed after dashboard
+        //     stream so we can use last-edit timestamps instead of last-login)
         const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
         const oneDayMs = 24 * 60 * 60 * 1000;
 
@@ -1900,14 +1890,107 @@ export const adminAnalytics = functionsV1
           if (isDailyActive) bucket[key].daily += 1;
         };
 
-        for (const [uid, { email: userEmail, lastSignInMs }] of authUsersMap) {
+        console.log(
+          '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
+        );
+        // 4. Fetch Dashboards for Widget Stats
+        let totalDashboards = 0;
+        const totalWidgetCounts: Record<string, number> = {};
+        const activeWidgetCounts: Record<string, number> = {};
+        const allDashboardOwnerUids = new Set<string>();
+        let totalWidgetInstances = 0;
+        // Bounded at MAX_WIDGET_USER_TRACK UIDs per type: memory is
+        // O(widget_types × limit) instead of O(widget_types × all_users).
+        // count = Set.size is exact up to the cap; above the cap it means "≥ cap".
+        const MAX_WIDGET_USER_TRACK = 100;
+        const widgetToUserUids: Record<string, Set<string>> = {};
+        const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
+        // Track most recent dashboard edit per user for edit-based DAU/MAU
+        const lastEditByUser = new Map<string, number>();
+
+        const dashboardsStream = db
+          .collectionGroup('dashboards')
+          .select('widgets', 'updatedAt')
+          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+
+        for await (const dashDoc of dashboardsStream) {
+          if (!dashDoc.exists) continue;
+          totalDashboards++;
+          const dashData = dashDoc.data() as DashboardData;
+          const updatedAt =
+            typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
+          const isActive = updatedAt > activeThreshold;
+
+          // Extract owner UID from path: users/{uid}/dashboards/{dashId}
+          const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
+
+          // Skip dashboards owned by anonymous users (not in filtered auth map)
+          if (!ownerUid || !authUsersMap.has(ownerUid)) continue;
+
+          allDashboardOwnerUids.add(ownerUid);
+
+          // Track the most recent edit across all of this user's dashboards
+          const prevEdit = lastEditByUser.get(ownerUid) ?? 0;
+          if (updatedAt > prevEdit) {
+            lastEditByUser.set(ownerUid, updatedAt);
+          }
+
+          const widgetCount = Array.isArray(dashData.widgets)
+            ? dashData.widgets.length
+            : 0;
+          totalWidgetInstances += widgetCount;
+
+          if (dashData.widgets && Array.isArray(dashData.widgets)) {
+            dashData.widgets.forEach((w: { type: string }) => {
+              if (w && w.type) {
+                totalWidgetCounts[w.type] =
+                  (totalWidgetCounts[w.type] || 0) + 1;
+                if (isActive) {
+                  activeWidgetCounts[w.type] =
+                    (activeWidgetCounts[w.type] || 0) + 1;
+                }
+                if (ownerUid) {
+                  if (!widgetToUserUids[w.type]) {
+                    widgetToUserUids[w.type] = new Set<string>();
+                  }
+                  const uidSet = widgetToUserUids[w.type];
+                  // Only grow the Set while under the cap (or if already present)
+                  if (
+                    uidSet.size < MAX_WIDGET_USER_TRACK ||
+                    uidSet.has(ownerUid)
+                  ) {
+                    uidSet.add(ownerUid);
+                  }
+                }
+              }
+            });
+          }
+        }
+
+        console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
+
+        // 4b. Compute engagement using last-edit timestamps (not last-login)
+        //     A user is "active" if they edited a dashboard within the window.
+        const usersByDomain: Record<string, EngagementCounts> = {};
+        const usersByBuilding: Record<string, EngagementCounts> = {};
+        const usersByDomainAndBuilding: Record<
+          string,
+          Record<string, EngagementCounts>
+        > = {};
+        const totalEngagement: EngagementCounts = {
+          total: 0,
+          monthly: 0,
+          daily: 0,
+        };
+
+        for (const [uid, { email: userEmail }] of authUsersMap) {
           const domain = userEmail.includes('@')
             ? userEmail.split('@')[1]
             : 'unknown';
+          const lastEditMs = lastEditByUser.get(uid) ?? 0;
           const isMonthlyActive =
-            lastSignInMs > 0 && now - lastSignInMs <= thirtyDaysMs;
-          const isDailyActive =
-            lastSignInMs > 0 && now - lastSignInMs <= oneDayMs;
+            lastEditMs > 0 && now - lastEditMs <= thirtyDaysMs;
+          const isDailyActive = lastEditMs > 0 && now - lastEditMs <= oneDayMs;
 
           totalEngagement.total += 1;
           if (isMonthlyActive) totalEngagement.monthly += 1;
@@ -1953,88 +2036,21 @@ export const adminAnalytics = functionsV1
           `[getAdminAnalytics] Computed engagement for ${totalUsers} users`
         );
 
-        console.log(
-          '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
-        );
-        // 4. Fetch Dashboards for Widget Stats
-        let totalDashboards = 0;
-        const totalWidgetCounts: Record<string, number> = {};
-        const activeWidgetCounts: Record<string, number> = {};
-        const allDashboardOwnerUids = new Set<string>();
-        let totalWidgetInstances = 0;
-        // Bounded at MAX_WIDGET_USER_TRACK UIDs per type: memory is
-        // O(widget_types × limit) instead of O(widget_types × all_users).
-        // count = Set.size is exact up to the cap; above the cap it means "≥ cap".
-        const MAX_WIDGET_USER_TRACK = 100;
-        const widgetToUserUids: Record<string, Set<string>> = {};
-        const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
-
-        const dashboardsStream = db
-          .collectionGroup('dashboards')
-          .select('widgets', 'updatedAt')
-          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
-
-        for await (const dashDoc of dashboardsStream) {
-          if (!dashDoc.exists) continue;
-          totalDashboards++;
-          const dashData = dashDoc.data() as DashboardData;
-          const updatedAt =
-            typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
-          const isActive = updatedAt > activeThreshold;
-
-          // Extract owner UID from path: users/{uid}/dashboards/{dashId}
-          const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
-
-          // Skip dashboards owned by anonymous users (not in filtered auth map)
-          if (!ownerUid || !authUsersMap.has(ownerUid)) continue;
-
-          allDashboardOwnerUids.add(ownerUid);
-
-          const widgetCount = Array.isArray(dashData.widgets)
-            ? dashData.widgets.length
-            : 0;
-          totalWidgetInstances += widgetCount;
-
-          if (dashData.widgets && Array.isArray(dashData.widgets)) {
-            dashData.widgets.forEach((w: { type: string }) => {
-              if (w && w.type) {
-                totalWidgetCounts[w.type] =
-                  (totalWidgetCounts[w.type] || 0) + 1;
-                if (isActive) {
-                  activeWidgetCounts[w.type] =
-                    (activeWidgetCounts[w.type] || 0) + 1;
-                }
-                if (ownerUid) {
-                  if (!widgetToUserUids[w.type]) {
-                    widgetToUserUids[w.type] = new Set<string>();
-                  }
-                  const uidSet = widgetToUserUids[w.type];
-                  // Only grow the Set while under the cap (or if already present)
-                  if (
-                    uidSet.size < MAX_WIDGET_USER_TRACK ||
-                    uidSet.has(ownerUid)
-                  ) {
-                    uidSet.add(ownerUid);
-                  }
-                }
-              }
-            });
-          }
-        }
-
-        console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
-
-        // 4b. Build per-user detail list for KPI drilldowns
+        // 4c. Build per-user detail list for KPI drilldowns
         const userList = Array.from(authUsersMap.entries()).map(
-          ([uid, { email: userEmail, lastSignInMs }]) => ({
-            email: userEmail,
-            buildings: buildingsMap.get(uid) ?? [],
-            lastSignInMs,
-            hasDashboard: allDashboardOwnerUids.has(uid),
-            isMonthlyActive:
-              lastSignInMs > 0 && now - lastSignInMs <= thirtyDaysMs,
-            isDailyActive: lastSignInMs > 0 && now - lastSignInMs <= oneDayMs,
-          })
+          ([uid, { email: userEmail, lastSignInMs }]) => {
+            const lastEditMs = lastEditByUser.get(uid) ?? 0;
+            return {
+              email: userEmail,
+              buildings: buildingsMap.get(uid) ?? [],
+              lastSignInMs,
+              lastEditMs,
+              hasDashboard: allDashboardOwnerUids.has(uid),
+              isMonthlyActive:
+                lastEditMs > 0 && now - lastEditMs <= thirtyDaysMs,
+              isDailyActive: lastEditMs > 0 && now - lastEditMs <= oneDayMs,
+            };
+          }
         );
 
         // Auth data was already collected in step 3a – no separate scan needed
