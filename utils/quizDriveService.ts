@@ -427,16 +427,47 @@ export class QuizDriveService {
   // ─── Results export ─────────────────────────────────────────────────────────
 
   /**
-   * Export quiz results to a new Google Sheet.
-   * Returns the URL of the newly created spreadsheet.
+   * Extract a Google Sheets spreadsheet ID from a URL.
+   * Handles URLs like https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/...
+   */
+  private extractSpreadsheetId(url: string): string {
+    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (!match) throw new Error('Invalid Google Sheets URL');
+    return match[1];
+  }
+
+  /**
+   * Export quiz results to a Google Sheet.
+   * In solo mode (default), creates a new spreadsheet.
+   * In PLC mode, appends rows to the shared sheet at plcSheetUrl.
+   * Returns the URL of the spreadsheet.
    */
   async exportResultsToSheet(
     quizTitle: string,
     responses: QuizResponse[],
-    questions: QuizQuestion[]
+    questions: QuizQuestion[],
+    options?: {
+      pinToName?: Record<string, string>;
+      teacherName?: string;
+      periodName?: string;
+      plcMode?: boolean;
+      plcSheetUrl?: string;
+    }
   ): Promise<string> {
+    const pinToName = options?.pinToName ?? {};
+    const teacherName = options?.teacherName ?? 'Unknown Teacher';
+    const periodName = options?.periodName ?? 'Unknown Period';
+    const timestamp = new Date().toISOString();
+
+    const resolveStudent = (pin: string): string =>
+      pinToName[pin] ?? `Student (PIN: ${pin})`;
+
     // Build header row
     const headers = [
+      'Timestamp',
+      'Teacher',
+      'Period',
+      'Student',
       'PIN',
       'Status',
       'Score (%)',
@@ -454,11 +485,9 @@ export class QuizDriveService {
       const answerCols = questions.map((q) => {
         const ans = r.answers.find((a) => a.questionId === q.id);
         if (!ans) return '';
-        // Re-grade answers authoritatively so forged isCorrect values are ignored.
         const isCorrect = gradeAnswer(q, ans.answer);
         return `${ans.answer}${isCorrect ? ' ✓' : ' ✗'}`;
       });
-      // Re-grade to compute score, ignoring any student-written isCorrect fields.
       const correct = r.answers.filter((a) => {
         const q = questions.find((qn) => qn.id === a.questionId);
         return q ? gradeAnswer(q, a.answer) : false;
@@ -468,6 +497,10 @@ export class QuizDriveService {
           ? `${Math.round((correct / questions.length) * 100)}%`
           : '';
       return [
+        timestamp,
+        teacherName,
+        periodName,
+        resolveStudent(r.pin),
         r.pin,
         r.status,
         scoreDisplay,
@@ -476,6 +509,18 @@ export class QuizDriveService {
         ...answerCols,
       ];
     });
+
+    // PLC mode: append to existing shared sheet
+    if (options?.plcMode) {
+      if (!options.plcSheetUrl) {
+        throw new Error(
+          'No shared sheet URL configured. Please add one in Quiz settings.'
+        );
+      }
+      return this.appendToExistingSheet(options.plcSheetUrl, headers, dataRows);
+    }
+
+    // Solo mode: create a new spreadsheet with full results + stats
 
     // Question-level stats
     const statsRows: string[][] = [];
@@ -510,32 +555,29 @@ export class QuizDriveService {
     const allRows = [headers, ...dataRows, ...statsRows];
 
     // Create the spreadsheet
-    const createRes = await fetch(
-      'https://sheets.googleapis.com/v4/spreadsheets',
-      {
-        method: 'POST',
-        headers: this.jsonHeaders,
-        body: JSON.stringify({
-          properties: { title: `${quizTitle} – Results` },
-          sheets: [
-            {
-              properties: { title: 'Results' },
-              data: [
-                {
-                  startRow: 0,
-                  startColumn: 0,
-                  rowData: allRows.map((row) => ({
-                    values: row.map((cell) => ({
-                      userEnteredValue: { stringValue: cell },
-                    })),
+    const createRes = await fetch(SHEETS_API_URL, {
+      method: 'POST',
+      headers: this.jsonHeaders,
+      body: JSON.stringify({
+        properties: { title: `${quizTitle} – Results` },
+        sheets: [
+          {
+            properties: { title: 'Results' },
+            data: [
+              {
+                startRow: 0,
+                startColumn: 0,
+                rowData: allRows.map((row) => ({
+                  values: row.map((cell) => ({
+                    userEnteredValue: { stringValue: cell },
                   })),
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+                })),
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
     if (!createRes.ok) {
       const err = await createRes.text();
@@ -545,6 +587,63 @@ export class QuizDriveService {
 
     const sheet = (await createRes.json()) as { spreadsheetUrl: string };
     return sheet.spreadsheetUrl;
+  }
+
+  /**
+   * Append rows to an existing Google Sheet (used for PLC mode).
+   * If the sheet is empty, writes headers first, then appends data rows.
+   * If the sheet already has data, appends only data rows (skips headers).
+   */
+  private async appendToExistingSheet(
+    sheetUrl: string,
+    headers: string[],
+    dataRows: string[][]
+  ): Promise<string> {
+    const spreadsheetId = this.extractSpreadsheetId(sheetUrl);
+
+    // Check if sheet already has content by reading A1
+    const checkRes = await fetch(
+      `${SHEETS_API_URL}/${spreadsheetId}/values/Sheet1!A1`,
+      { headers: this.authHeaders }
+    );
+
+    if (!checkRes.ok) {
+      const err = await checkRes.text();
+      console.error('Sheets read error:', err);
+      throw new Error(
+        'Failed to access the shared sheet. Check that the URL is correct and the sheet is shared with you.'
+      );
+    }
+
+    const checkData = (await checkRes.json()) as {
+      values?: string[][];
+    };
+    const sheetIsEmpty = !checkData.values || checkData.values.length === 0;
+
+    // Build rows to append: include headers if sheet is empty
+    const rowsToAppend = sheetIsEmpty ? [headers, ...dataRows] : dataRows;
+
+    // Append via Sheets API
+    const appendRes = await fetch(
+      `${SHEETS_API_URL}/${spreadsheetId}/values/Sheet1!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+      {
+        method: 'POST',
+        headers: this.jsonHeaders,
+        body: JSON.stringify({
+          values: rowsToAppend,
+        }),
+      }
+    );
+
+    if (!appendRes.ok) {
+      const err = await appendRes.text();
+      console.error('Sheets append error:', err);
+      throw new Error(
+        'Failed to append results to the shared sheet. Check your permissions.'
+      );
+    }
+
+    return `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
   }
 
   /**
