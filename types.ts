@@ -2385,7 +2385,7 @@ export interface UserRolesConfig {
 }
 
 /**
- * Per-user profile data stored in Firestore at /users/{userId}/userProfile.
+ * Per-user profile data stored in Firestore at /users/{userId}/userProfile/profile.
  * This is separate from dashboard settings and persists across dashboards.
  */
 export interface UserProfile {
@@ -2397,6 +2397,10 @@ export interface UserProfile {
   savedWidgetConfigs?: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
   /** True after the user has completed the first-time setup wizard */
   setupCompleted?: boolean;
+  /** Skip the confirmation dialog when closing widgets (account-level) */
+  disableCloseConfirmation?: boolean;
+  /** Whether remote control is enabled for all boards (account-level) */
+  remoteControlEnabled?: boolean;
 }
 
 export interface SharedGroup {

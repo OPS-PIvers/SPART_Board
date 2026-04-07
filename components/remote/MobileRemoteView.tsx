@@ -32,6 +32,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import { WidgetData, WidgetType, DashboardSettings } from '@/types';
 import { RemoteWidgetCard } from './RemoteWidgetCard';
 
@@ -72,6 +73,7 @@ export const MobileRemoteView: React.FC = () => {
     loadDashboard,
     dashboards,
   } = useDashboard();
+  const { remoteControlEnabled: accountRemoteEnabled } = useAuth();
 
   // ---- Local snapshot state ----
   // Initialised once from activeDashboard, then only updated on manual Sync.
@@ -274,7 +276,7 @@ export const MobileRemoteView: React.FC = () => {
     );
   }
 
-  const remoteEnabled = activeDashboard.settings?.remoteControlEnabled ?? true;
+  const remoteEnabled = accountRemoteEnabled;
 
   if (!remoteEnabled) {
     return (
@@ -282,8 +284,8 @@ export const MobileRemoteView: React.FC = () => {
         <Smartphone className="w-12 h-12 text-white/20" />
         <p className="text-white/60 font-semibold">Remote Control Disabled</p>
         <p className="text-white/40 text-sm">
-          Enable Remote Control from the Dock on your main board to start
-          controlling widgets here.
+          Enable Remote Control in your account Preferences to start controlling
+          widgets here.
         </p>
       </div>
     );
