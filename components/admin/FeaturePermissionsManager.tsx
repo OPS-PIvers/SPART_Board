@@ -28,7 +28,7 @@ import {
   Filter,
   ChevronDown,
 } from 'lucide-react';
-import { useWindowSize } from '@/hooks/useWindowSize';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { Toggle } from '@/components/common/Toggle';
 import { Toast } from '@/components/common/Toast';
 
@@ -50,8 +50,7 @@ import { useDialog } from '@/context/useDialog';
 
 export const FeaturePermissionsManager: React.FC = () => {
   const { showConfirm } = useDialog();
-  const { width: windowWidth } = useWindowSize();
-  const isMobile = windowWidth > 0 && windowWidth < 768;
+  const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const effectiveViewMode = isMobile ? 'grid' : viewMode;
   const [showFilters, setShowFilters] = useState(false);
@@ -323,6 +322,65 @@ export const FeaturePermissionsManager: React.FC = () => {
     });
   }, [permissions, filterEnabled, filterAvailability, filterBuilding]);
 
+  const btnClass = (active: boolean) =>
+    `px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+      active
+        ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+    }`;
+
+  const renderEnabledFilter = () => (
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-xs text-slate-500 font-medium">Enabled:</span>
+      {(['all', 'on', 'off'] as const).map((val) => (
+        <button
+          key={val}
+          onClick={() => setFilterEnabled(val)}
+          className={btnClass(filterEnabled === val)}
+        >
+          {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderAvailabilityFilter = () => (
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-xs text-slate-500 font-medium">Availability:</span>
+      {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
+        <button
+          key={val}
+          onClick={() => setFilterAvailability(val)}
+          className={btnClass(filterAvailability === val)}
+        >
+          {val === 'all' ? 'All' : val.charAt(0).toUpperCase() + val.slice(1)}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderBuildingFilter = () => (
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-xs text-slate-500 font-medium">Building:</span>
+      <button
+        onClick={() => setFilterBuilding('all')}
+        className={btnClass(filterBuilding === 'all')}
+      >
+        All
+      </button>
+      {BUILDINGS.map((b) => (
+        <button
+          key={b.id}
+          onClick={() => setFilterBuilding(b.id)}
+          className={btnClass(filterBuilding === b.id)}
+          title={b.name}
+        >
+          {b.gradeLabel}
+        </button>
+      ))}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -350,6 +408,8 @@ export const FeaturePermissionsManager: React.FC = () => {
           <button
             onClick={() => setShowFilters((v) => !v)}
             className="flex items-center gap-1.5 text-slate-500 md:hidden"
+            aria-expanded={showFilters}
+            aria-controls="feature-perm-mobile-filters"
           >
             <Filter className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wide">
@@ -368,83 +428,11 @@ export const FeaturePermissionsManager: React.FC = () => {
                 Filter
               </span>
             </div>
-
-            {/* Enabled filter */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-slate-500 font-medium">
-                Enabled:
-              </span>
-              {(['all', 'on', 'off'] as const).map((val) => (
-                <button
-                  key={val}
-                  onClick={() => setFilterEnabled(val)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                    filterEnabled === val
-                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
-                </button>
-              ))}
-            </div>
-
+            {renderEnabledFilter()}
             <div className="w-px h-5 bg-slate-200" />
-
-            {/* Availability filter */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-slate-500 font-medium">
-                Availability:
-              </span>
-              {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
-                <button
-                  key={val}
-                  onClick={() => setFilterAvailability(val)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                    filterAvailability === val
-                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {val === 'all'
-                    ? 'All'
-                    : val.charAt(0).toUpperCase() + val.slice(1)}
-                </button>
-              ))}
-            </div>
-
+            {renderAvailabilityFilter()}
             <div className="w-px h-5 bg-slate-200" />
-
-            {/* Building filter */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-slate-500 font-medium">
-                Building:
-              </span>
-              <button
-                onClick={() => setFilterBuilding('all')}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                  filterBuilding === 'all'
-                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                All
-              </button>
-              {BUILDINGS.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setFilterBuilding(b.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                    filterBuilding === b.id
-                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                  title={b.name}
-                >
-                  {b.gradeLabel}
-                </button>
-              ))}
-            </div>
+            {renderBuildingFilter()}
           </div>
 
           {/* View Mode Toggle - hidden on mobile */}
@@ -480,79 +468,13 @@ export const FeaturePermissionsManager: React.FC = () => {
 
         {/* Mobile: collapsible filter content */}
         {showFilters && (
-          <div className="flex flex-col gap-3 px-3 pb-3 border-t border-slate-200 pt-3 md:hidden">
-            {/* Enabled filter */}
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-xs text-slate-500 font-medium">
-                Enabled:
-              </span>
-              {(['all', 'on', 'off'] as const).map((val) => (
-                <button
-                  key={val}
-                  onClick={() => setFilterEnabled(val)}
-                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
-                    filterEnabled === val
-                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
-                </button>
-              ))}
-            </div>
-
-            {/* Availability filter */}
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-xs text-slate-500 font-medium">
-                Availability:
-              </span>
-              {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
-                <button
-                  key={val}
-                  onClick={() => setFilterAvailability(val)}
-                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
-                    filterAvailability === val
-                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {val === 'all'
-                    ? 'All'
-                    : val.charAt(0).toUpperCase() + val.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {/* Building filter */}
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-xs text-slate-500 font-medium">
-                Building:
-              </span>
-              <button
-                onClick={() => setFilterBuilding('all')}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
-                  filterBuilding === 'all'
-                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                All
-              </button>
-              {BUILDINGS.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setFilterBuilding(b.id)}
-                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
-                    filterBuilding === b.id
-                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                  title={b.name}
-                >
-                  {b.gradeLabel}
-                </button>
-              ))}
-            </div>
+          <div
+            id="feature-perm-mobile-filters"
+            className="flex flex-col gap-3 px-3 pb-3 border-t border-slate-200 pt-3 md:hidden"
+          >
+            {renderEnabledFilter()}
+            {renderAvailabilityFilter()}
+            {renderBuildingFilter()}
           </div>
         )}
       </div>
