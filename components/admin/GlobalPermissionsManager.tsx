@@ -361,8 +361,8 @@ export const GlobalPermissionsManager: React.FC = () => {
           <div>
             <h4 className="font-bold text-slate-800 text-lg">Custom Logo</h4>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Upload a custom logo to replace the default SpartBoard logo in
-              the sidebar header.
+              Upload a custom logo to replace the default SpartBoard logo in the
+              sidebar header.
             </p>
           </div>
         </div>
