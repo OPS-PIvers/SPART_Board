@@ -251,7 +251,7 @@ export const SidebarBackgrounds: React.FC<SidebarBackgroundsProps> = ({
     const m = activeCustomValue.match(
       /^linear-gradient\(\s*([^,]+?)\s*,\s*(#[0-9a-fA-F]{3,8})\s*,\s*(#[0-9a-fA-F]{3,8})\s*\)$/
     );
-    if (m) {
+    if (m?.[1] && m[2] && m[3]) {
       setGradientAngle(m[1].trim());
       setGradientColor1(m[2]);
       setGradientColor2(m[3]);
