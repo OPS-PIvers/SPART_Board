@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { STICKY_NOTE_COLORS } from '@/config/colors';
@@ -6,6 +6,7 @@ import { resolveTextPresetMultiplier } from '@/config/widgetAppearance';
 import { sanitizeHtml } from '@/utils/security';
 import { getFontClass } from '@/utils/styles';
 import { useDialog } from '@/context/useDialog';
+import { rewriteTextWithGemini } from '@/utils/ai';
 
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { FormattingToolbar } from './FormattingToolbar';
@@ -42,6 +43,8 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const isEditingRef = useRef(false);
   const lastExternalContent = useRef(content);
   const didInit = useRef(false);
+  const [isRewriting, setIsRewriting] = useState(false);
+  const { addToast } = useDashboard();
 
   // On first render, set initial content. On subsequent renders, sync external
   // content changes into the DOM only when not actively editing and only when
@@ -107,6 +110,48 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
   }, [widget.id, config, updateWidget, readEditorContent]);
 
+  const handleRewrite = useCallback(
+    async (instruction: string) => {
+      const currentText = readEditorContent();
+
+      // Ensure there is actually text content, not just empty tags
+      const hasContent = currentText.replace(/<[^>]+>/g, '').trim().length > 0;
+
+      if (!hasContent) {
+        addToast('No text to rewrite.', 'warning');
+        return;
+      }
+
+      setIsRewriting(true);
+      try {
+        const result = await rewriteTextWithGemini(currentText, instruction);
+
+        // Update both local and global state
+        if (editorRef.current) {
+          editorRef.current.innerHTML = sanitizeHtml(result);
+        }
+
+        lastExternalContent.current = result;
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            content: result,
+          } as TextConfig,
+        });
+
+        addToast('Text rewritten successfully!', 'success');
+      } catch (error) {
+        addToast(
+          error instanceof Error ? error.message : 'Failed to rewrite text',
+          'error'
+        );
+      } finally {
+        setIsRewriting(false);
+      }
+    },
+    [readEditorContent, addToast, config, updateWidget, widget.id]
+  );
+
   const handleKeyDown = useCallback(
     async (e: React.KeyboardEvent) => {
       // Control+K for hyperlinking
@@ -142,6 +187,8 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 } as TextConfig,
               })
             }
+            onRewrite={handleRewrite}
+            isRewriting={isRewriting}
           />
         )
       }

@@ -49,7 +49,8 @@ export type AIGenerationType =
   | 'ocr'
   | 'quiz'
   | 'video-activity'
-  | 'guided-learning';
+  | 'guided-learning'
+  | 'text-rewrite';
 
 export interface GeneratedVideoQuestion extends GeneratedQuestion {
   /** Seconds from video start when this question should trigger. */
@@ -101,6 +102,32 @@ async function callAI(
 
     throw new Error(errorMessage);
   }
+}
+
+/**
+ * Rewrites text based on a specific instruction using Gemini AI.
+ *
+ * @param text - The original text to rewrite.
+ * @param instruction - The instruction to apply (e.g., "Simplify for kids").
+ * @returns A promise resolving to the rewritten text.
+ */
+export async function rewriteTextWithGemini(
+  text: string,
+  instruction: string
+): Promise<string> {
+  const data = await callAI(
+    {
+      type: 'text-rewrite',
+      prompt: JSON.stringify({ text, instruction }),
+    },
+    'Failed to rewrite text. Please try again.'
+  );
+
+  if (typeof data.text !== 'string') {
+    throw new Error('Invalid response format from AI');
+  }
+
+  return data.text;
 }
 
 /**

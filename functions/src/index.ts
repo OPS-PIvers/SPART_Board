@@ -45,7 +45,8 @@ interface AIData {
     | 'ocr'
     | 'quiz'
     | 'widget-builder'
-    | 'widget-explainer';
+    | 'widget-explainer'
+    | 'text-rewrite';
   prompt?: string;
   image?: string; // base64 data
 }
@@ -724,6 +725,29 @@ export const generateWithAI = functionsV1
           `,
           userPrompt: sanitizedUserInput,
         }),
+        'text-rewrite': () => {
+          let text = '';
+          let instruction = '';
+          try {
+            const parsed = JSON.parse(sanitizedUserInput) as {
+              text?: string;
+              instruction?: string;
+            };
+            text = parsed.text || '';
+            instruction = parsed.instruction || '';
+          } catch {
+            text = sanitizedUserInput;
+          }
+          return {
+            systemPrompt: `
+          You are an expert teacher. Rewrite the provided text (which may contain HTML formatting) according to the specific instruction.
+          You MUST preserve all HTML formatting (e.g. <b>, <i>, <br>, <ul>, <li>) in the output. Do not strip tags.
+          Return ONLY a JSON object in this exact format:
+          { "text": "The rewritten text with HTML tags preserved goes here." }
+          `,
+            userPrompt: `Instruction: ${instruction}\n\nText to rewrite:\n${text}`,
+          };
+        },
       };
 
       const promptDataFn = promptMap[genType];

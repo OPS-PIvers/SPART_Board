@@ -19,6 +19,8 @@ import {
   Highlighter,
   Link as LinkIcon,
   ChevronDown,
+  Wand2,
+  Loader2,
 } from 'lucide-react';
 import { IconButton } from '@/components/common/IconButton';
 import { FONT_COLORS, FONTS } from '@/config/fonts';
@@ -29,6 +31,8 @@ interface FormattingToolbarProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
   verticalAlign: 'top' | 'center' | 'bottom';
   onVerticalAlignChange: (value: 'top' | 'center' | 'bottom') => void;
+  onRewrite?: (instruction: string) => void;
+  isRewriting?: boolean;
 }
 
 const FONT_SIZES = [
@@ -116,12 +120,15 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   editorRef,
   verticalAlign,
   onVerticalAlignChange,
+  onRewrite,
+  isRewriting,
 }) => {
   const { showPrompt } = useDialog();
   const [showFontMenu, setShowFontMenu] = useState(false);
   const [showSizeMenu, setShowSizeMenu] = useState(false);
   const [showColorMenu, setShowColorMenu] = useState(false);
   const [showHighlightMenu, setShowHighlightMenu] = useState(false);
+  const [showRewriteMenu, setShowRewriteMenu] = useState(false);
   const savedRangeRef = useRef<Range | null>(null);
 
   useEffect(() => {
@@ -187,6 +194,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
       setShowSizeMenu(false);
       setShowColorMenu(false);
       setShowHighlightMenu(false);
+      setShowRewriteMenu(false);
     };
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
@@ -208,6 +216,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           setShowSizeMenu(false);
           setShowColorMenu(false);
           setShowHighlightMenu(false);
+          setShowRewriteMenu(false);
         }}
       >
         <div className="flex flex-col gap-0.5">
@@ -253,6 +262,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           setShowFontMenu(false);
           setShowColorMenu(false);
           setShowHighlightMenu(false);
+          setShowRewriteMenu(false);
         }}
       >
         <div className="flex flex-col gap-0.5">
@@ -313,6 +323,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           setShowFontMenu(false);
           setShowSizeMenu(false);
           setShowHighlightMenu(false);
+          setShowRewriteMenu(false);
         }}
       >
         <div className="grid grid-cols-4 gap-1 p-1">
@@ -342,6 +353,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           setShowFontMenu(false);
           setShowSizeMenu(false);
           setShowColorMenu(false);
+          setShowRewriteMenu(false);
         }}
       >
         <div className="grid grid-cols-4 gap-1 p-1">
@@ -478,6 +490,73 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         variant="ghost"
         onMouseDown={(e) => e.preventDefault()}
       />
+
+      <div className="w-px h-4 bg-slate-200 mx-1" />
+
+      {/* AI Rewrite */}
+      {onRewrite && (
+        <MenuButton
+          icon={
+            isRewriting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+            ) : (
+              <Wand2 className="w-3.5 h-3.5 text-indigo-500" />
+            )
+          }
+          label="AI Rewrite"
+          isOpen={showRewriteMenu}
+          onClick={() => {
+            const wasOpen = showRewriteMenu;
+            setShowRewriteMenu(!wasOpen);
+            setShowFontMenu(false);
+            setShowSizeMenu(false);
+            setShowColorMenu(false);
+            setShowHighlightMenu(false);
+          }}
+        >
+          <div className="flex flex-col gap-0.5 min-w-[150px]">
+            <div className="text-[10px] font-bold text-slate-400 uppercase px-2 py-1 tracking-wider border-b border-slate-100 mb-1">
+              AI Tools
+            </div>
+            {[
+              {
+                label: 'Simplify for Kids',
+                value:
+                  'Rewrite this to be easily understood by young kids, using simple vocabulary and short sentences.',
+              },
+              {
+                label: 'Fix Grammar',
+                value:
+                  'Fix all grammar and spelling mistakes without changing the overall meaning or style.',
+              },
+              {
+                label: 'Summarize',
+                value:
+                  'Provide a concise summary of this text, extracting the main points.',
+              },
+              {
+                label: 'Translate to Spanish',
+                value: 'Translate this text to Spanish.',
+              },
+            ].map((option) => (
+              <button
+                key={option.label}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (!isRewriting) {
+                    onRewrite(option.value);
+                  }
+                  setShowRewriteMenu(false);
+                }}
+                disabled={isRewriting}
+                className="text-left px-3 py-1.5 hover:bg-indigo-50 rounded text-xs text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </MenuButton>
+      )}
     </div>
   );
 };
