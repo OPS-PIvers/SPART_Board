@@ -2,7 +2,7 @@
  * Guided Learning Drive Service
  *
  * Handles Google Drive API interactions for the Guided Learning widget:
- * - Saving full GuidedLearningSet JSON to "SPART Board/Guided Learning/" folder
+ * - Saving full GuidedLearningSet JSON to "SpartBoard/Guided Learning/" folder
  * - Loading set data from Drive
  * - Deleting set files from Drive
  *
@@ -14,7 +14,7 @@ import { GuidedLearningSet } from '@/types';
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
 
-const APP_FOLDER_NAME = 'SPART Board';
+const APP_FOLDER_NAME = 'SpartBoard';
 const GL_FOLDER_NAME = 'Guided Learning';
 
 function driveQueryEscape(s: string): string {
