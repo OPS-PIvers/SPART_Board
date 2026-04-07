@@ -8,8 +8,14 @@ import {
 import { Button } from '@/components/common/Button';
 import { Plus, Trash2, Play, Music } from 'lucide-react';
 import { SOUND_LIBRARY } from '@/config/soundLibrary';
+import { useAuth } from '@/context/useAuth';
 import { ensureProtocol, extractGoogleFileId } from '@/utils/urlHelpers';
-import { normalizeSoundboardAudioUrl } from '@/utils/soundboardAudioUrl';
+import {
+  normalizeSoundboardAudioUrl,
+  isDriveUrl,
+  extractDriveAudioFileId,
+  fetchDriveAudioBlobUrl,
+} from '@/utils/soundboardAudioUrl';
 
 interface SoundboardConfigurationPanelProps {
   config: SoundboardGlobalConfig;
@@ -21,6 +27,7 @@ const ALL_BUILDING_IDS = BUILDINGS.map((building) => building.id);
 export const SoundboardConfigurationPanel: React.FC<
   SoundboardConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const { googleAccessToken } = useAuth();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [playbackErrors, setPlaybackErrors] = useState<Record<string, string>>(
     {}
@@ -181,8 +188,48 @@ export const SoundboardConfigurationPanel: React.FC<
     setPlaybackErrors((prev) => ({ ...prev, [id]: '' }));
     setPlayingId(id);
 
-    const audio = new Audio(validation.normalizedUrl);
+    let audioSrc: string;
+    let blobUrl: string | null = null;
+
+    // For Google Drive URLs, download via the authenticated API to avoid
+    // CORS / redirect issues with the public uc?export=download endpoint.
+    if (validation.isGoogleDriveUrl && validation.driveFileId) {
+      if (!googleAccessToken) {
+        setPlayingId(null);
+        setPlaybackErrors((prev) => ({
+          ...prev,
+          [id]: 'Sign in with Google to test Google Drive audio.',
+        }));
+        return;
+      }
+
+      try {
+        blobUrl = await fetchDriveAudioBlobUrl(
+          validation.driveFileId,
+          googleAccessToken,
+        );
+        audioSrc = blobUrl;
+      } catch (err) {
+        setPlayingId(null);
+        setPlaybackErrors((prev) => ({
+          ...prev,
+          [id]:
+            err instanceof Error
+              ? err.message
+              : 'Failed to fetch audio from Google Drive.',
+        }));
+        return;
+      }
+    } else {
+      audioSrc = validation.normalizedUrl;
+    }
+
+    const audio = new Audio(audioSrc);
     audioRef.current = audio;
+
+    const cleanup = () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
 
     try {
       await audio.play();
@@ -192,6 +239,7 @@ export const SoundboardConfigurationPanel: React.FC<
           audioRef.current = null;
         }
         playbackResetTimeoutRef.current = null;
+        cleanup();
       }, 1000);
     } catch {
       if (audioRef.current === audio) {
@@ -202,6 +250,7 @@ export const SoundboardConfigurationPanel: React.FC<
         ...prev,
         [id]: 'Playback failed. Check the URL and file sharing permissions.',
       }));
+      cleanup();
     }
   };
 
@@ -496,8 +545,9 @@ export const SoundboardConfigurationPanel: React.FC<
 
                       {validation.isGoogleDriveUrl && (
                         <p className="mt-1 text-xxs text-slate-500">
-                          File must be shared publicly or with your domain to
-                          play for all users.
+                          Google Drive file will be streamed via the Drive API.
+                          Users must be signed in with Google to play this
+                          sound.
                         </p>
                       )}
                       {showUrlError && (
