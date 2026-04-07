@@ -1835,7 +1835,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const reorderDashboards = useCallback(
-    (ids: string[]) => {
+    async (ids: string[]) => {
       if (!user) return;
 
       const updatedDashboards: Dashboard[] = [];
@@ -1864,9 +1864,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Save to Firestore
-      void saveDashboards(updatedDashboards).catch((err) => {
+      try {
+        await saveDashboards(updatedDashboards);
+      } catch (err) {
         console.error('Failed to save reordered dashboards:', err);
-      });
+      }
     },
     [user, dashboards, saveDashboards]
   );
