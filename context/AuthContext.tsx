@@ -571,6 +571,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setProfileLoaded(false);
       setSetupCompletedState(false);
       setSavedWidgetConfigs({});
+      setDisableCloseConfirmationState(false);
+      setRemoteControlEnabledState(true);
 
       if (!user) {
         setSelectedBuildingsState([]);
@@ -781,12 +783,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (updates.remoteControlEnabled !== undefined) {
         setRemoteControlEnabledState(updates.remoteControlEnabled);
       }
-      if (!user || isAuthBypass) return;
+
+      // Build a sanitized payload — Firestore rejects `undefined` field values
+      const sanitizedUpdates: {
+        disableCloseConfirmation?: boolean;
+        remoteControlEnabled?: boolean;
+      } = {};
+      if (typeof updates.disableCloseConfirmation === 'boolean') {
+        sanitizedUpdates.disableCloseConfirmation =
+          updates.disableCloseConfirmation;
+      }
+      if (typeof updates.remoteControlEnabled === 'boolean') {
+        sanitizedUpdates.remoteControlEnabled = updates.remoteControlEnabled;
+      }
+
+      if (!user || isAuthBypass || Object.keys(sanitizedUpdates).length === 0) {
+        return;
+      }
       const myToken = ++writeTokenRef.current;
       try {
         await setDoc(
           doc(db, 'users', user.uid, 'userProfile', 'profile'),
-          updates,
+          sanitizedUpdates,
           { merge: true }
         );
       } catch (error) {
