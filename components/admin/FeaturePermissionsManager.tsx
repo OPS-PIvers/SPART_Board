@@ -26,7 +26,9 @@ import {
   LayoutGrid,
   List,
   Filter,
+  ChevronDown,
 } from 'lucide-react';
+import { useWindowSize } from '@/hooks/useWindowSize';
 import { Toggle } from '@/components/common/Toggle';
 import { Toast } from '@/components/common/Toast';
 
@@ -48,7 +50,11 @@ import { useDialog } from '@/context/useDialog';
 
 export const FeaturePermissionsManager: React.FC = () => {
   const { showConfirm } = useDialog();
+  const { width: windowWidth } = useWindowSize();
+  const isMobile = windowWidth > 0 && windowWidth < 768;
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const effectiveViewMode = isMobile ? 'grid' : viewMode;
+  const [showFilters, setShowFilters] = useState(false);
   const [permissions, setPermissions] = useState<
     Map<WidgetType | InternalToolType, FeaturePermission>
   >(new Map());
@@ -337,116 +343,218 @@ export const FeaturePermissionsManager: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl mb-2">
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Filter className="w-4 h-4" />
-          <span className="text-xs font-bold uppercase tracking-wide">
-            Filter
-          </span>
-        </div>
-
-        {/* Enabled filter */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 font-medium">Enabled:</span>
-          {(['all', 'on', 'off'] as const).map((val) => (
-            <button
-              key={val}
-              onClick={() => setFilterEnabled(val)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterEnabled === val
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
-            </button>
-          ))}
-        </div>
-
-        <div className="w-px h-5 bg-slate-200" />
-
-        {/* Availability filter */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 font-medium">
-            Availability:
-          </span>
-          {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
-            <button
-              key={val}
-              onClick={() => setFilterAvailability(val)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterAvailability === val
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {val === 'all'
-                ? 'All'
-                : val.charAt(0).toUpperCase() + val.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        <div className="w-px h-5 bg-slate-200" />
-
-        {/* Building filter */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 font-medium">Building:</span>
+      <div className="bg-slate-50 border border-slate-200 rounded-xl mb-2">
+        {/* Filter header row */}
+        <div className="flex items-center gap-2 p-2 md:p-3">
+          {/* Mobile: collapsible filter toggle */}
           <button
-            onClick={() => setFilterBuilding('all')}
-            className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-              filterBuilding === 'all'
-                ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-            }`}
+            onClick={() => setShowFilters((v) => !v)}
+            className="flex items-center gap-1.5 text-slate-500 md:hidden"
           >
-            All
+            <Filter className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wide">
+              Filters
+            </span>
+            <ChevronDown
+              className={`w-3 h-3 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+            />
           </button>
-          {BUILDINGS.map((b) => (
+
+          {/* Desktop: inline filters */}
+          <div className="hidden md:flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <Filter className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wide">
+                Filter
+              </span>
+            </div>
+
+            {/* Enabled filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-slate-500 font-medium">
+                Enabled:
+              </span>
+              {(['all', 'on', 'off'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterEnabled(val)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                    filterEnabled === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-5 bg-slate-200" />
+
+            {/* Availability filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-slate-500 font-medium">
+                Availability:
+              </span>
+              {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterAvailability(val)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                    filterAvailability === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all'
+                    ? 'All'
+                    : val.charAt(0).toUpperCase() + val.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-5 bg-slate-200" />
+
+            {/* Building filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-slate-500 font-medium">
+                Building:
+              </span>
+              <button
+                onClick={() => setFilterBuilding('all')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                  filterBuilding === 'all'
+                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                All
+              </button>
+              {BUILDINGS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setFilterBuilding(b.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                    filterBuilding === b.id
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                  title={b.name}
+                >
+                  {b.gradeLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* View Mode Toggle - hidden on mobile */}
+          <div className="ml-auto hidden md:flex bg-white p-0.5 rounded-lg border border-slate-200">
             <button
-              key={b.id}
-              onClick={() => setFilterBuilding(b.id)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterBuilding === b.id
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600'
               }`}
-              title={b.name}
+              title="Grid View"
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
             >
-              {b.gradeLabel}
+              <LayoutGrid size={16} />
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === 'list'
+                  ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+              title="List View"
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
+            >
+              <List size={16} />
+            </button>
+          </div>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="ml-auto flex bg-white p-0.5 rounded-lg border border-slate-200">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded-md transition-all ${
-              viewMode === 'grid'
-                ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-            title="Grid View"
-            aria-label="Grid view"
-            aria-pressed={viewMode === 'grid'}
-          >
-            <LayoutGrid size={16} />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded-md transition-all ${
-              viewMode === 'list'
-                ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-            title="List View"
-            aria-label="List view"
-            aria-pressed={viewMode === 'list'}
-          >
-            <List size={16} />
-          </button>
-        </div>
+        {/* Mobile: collapsible filter content */}
+        {showFilters && (
+          <div className="flex flex-col gap-3 px-3 pb-3 border-t border-slate-200 pt-3 md:hidden">
+            {/* Enabled filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Enabled:
+              </span>
+              {(['all', 'on', 'off'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterEnabled(val)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                    filterEnabled === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
+                </button>
+              ))}
+            </div>
+
+            {/* Availability filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Availability:
+              </span>
+              {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterAvailability(val)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                    filterAvailability === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all'
+                    ? 'All'
+                    : val.charAt(0).toUpperCase() + val.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Building filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Building:
+              </span>
+              <button
+                onClick={() => setFilterBuilding('all')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                  filterBuilding === 'all'
+                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                All
+              </button>
+              {BUILDINGS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setFilterBuilding(b.id)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                    filterBuilding === b.id
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                  title={b.name}
+                >
+                  {b.gradeLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Widget Permission Cards */}
@@ -459,8 +567,8 @@ export const FeaturePermissionsManager: React.FC = () => {
         )}
         <div
           className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+            effectiveViewMode === 'grid'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
               : 'space-y-3'
           }
         >
@@ -474,7 +582,7 @@ export const FeaturePermissionsManager: React.FC = () => {
               currentLevels.includes(l)
             );
 
-            if (viewMode === 'list') {
+            if (effectiveViewMode === 'list') {
               return (
                 <div
                   key={tool.type}
@@ -483,7 +591,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                   {/* Top Bar */}
                   <div className="flex items-center gap-4 p-3">
                     {/* Identity Section: Icon + Name Input */}
-                    <div className="flex items-center gap-3 w-64 shrink-0">
+                    <div className="flex items-center gap-3 w-56 xl:w-64 shrink-0">
                       <div
                         className={`${tool.color} p-2 rounded-lg text-white shrink-0`}
                       >

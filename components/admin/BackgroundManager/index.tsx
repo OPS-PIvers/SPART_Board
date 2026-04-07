@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { Toast } from '@/components/common/Toast';
 import { Button } from '@/components/common/Button';
+import { useWindowSize } from '@/hooks/useWindowSize';
 import { useDialog } from '@/context/useDialog';
 import { ListPresetRow } from './ListPresetRow';
 import { GridPresetCard } from './GridPresetCard';
@@ -104,6 +105,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const BackgroundManager: React.FC = () => {
   const { showConfirm } = useDialog();
+  const { width: windowWidth } = useWindowSize();
+  const isMobile = windowWidth > 0 && windowWidth < 768;
   const [presets, setPresets] = useState<BackgroundPreset[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -125,6 +128,8 @@ export const BackgroundManager: React.FC = () => {
 
   // View state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const effectiveViewMode = isMobile ? 'grid' : viewMode;
+  const [showFilters, setShowFilters] = useState(false);
   const [mediaType, setMediaType] = useState<'all' | 'images' | 'videos'>(
     'all'
   );
@@ -633,7 +638,7 @@ export const BackgroundManager: React.FC = () => {
       {/* Filters and Actions */}
       <div className="flex flex-col gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl mb-2">
         {/* Top Row: Actions */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
           <div className="flex gap-2 flex-wrap">
             <Button
               variant="dark"
@@ -769,144 +774,194 @@ export const BackgroundManager: React.FC = () => {
         <div className="h-px bg-slate-200 w-full" />
 
         {/* Bottom Row: Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5 text-slate-500">
+        <div className="flex items-center gap-2 px-1">
+          {/* Mobile: collapsible filter toggle */}
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className="flex items-center gap-1.5 text-slate-500 md:hidden"
+          >
             <Filter className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wide">
-              Filter
+              Filters
             </span>
-          </div>
+            <ChevronDown
+              className={`w-3 h-3 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+            />
+          </button>
 
-          {/* Active filter */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-500 font-medium">Active:</span>
-            {(['all', 'on', 'off'] as const).map((val) => (
+          {/* Desktop: inline filters */}
+          <div className="hidden md:flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <Filter className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wide">
+                Filter
+              </span>
+            </div>
+
+            {/* Active filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-slate-500 font-medium">
+                Active:
+              </span>
+              {(['all', 'on', 'off'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterActive(val)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                    filterActive === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-5 bg-slate-200" />
+
+            {/* Availability filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-slate-500 font-medium">
+                Availability:
+              </span>
+              {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterAvailability(val)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                    filterAvailability === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all'
+                    ? 'All'
+                    : val.charAt(0).toUpperCase() + val.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-5 bg-slate-200" />
+
+            {/* Category filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Category:
+              </span>
               <button
-                key={val}
-                onClick={() => setFilterActive(val)}
+                onClick={() => setFilterCategory('all')}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                  filterActive === val
+                  filterCategory === 'all'
                     ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                 }`}
               >
-                {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
+                All
               </button>
-            ))}
-          </div>
-
-          <div className="w-px h-5 bg-slate-200" />
-
-          {/* Availability filter */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-500 font-medium">
-              Availability:
-            </span>
-            {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
               <button
-                key={val}
-                onClick={() => setFilterAvailability(val)}
+                onClick={() => setFilterCategory('__uncategorized__')}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                  filterAvailability === val
+                  filterCategory === '__uncategorized__'
                     ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                 }`}
               >
-                {val === 'all'
-                  ? 'All'
-                  : val.charAt(0).toUpperCase() + val.slice(1)}
+                Uncategorized
               </button>
-            ))}
-          </div>
+              {allCategories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCategory(cat)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                    filterCategory === cat
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
 
-          <div className="w-px h-5 bg-slate-200" />
+            <div className="w-px h-5 bg-slate-200" />
 
-          {/* Category filter */}
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-slate-500 font-medium">
-              Category:
-            </span>
-            <button
-              onClick={() => setFilterCategory('all')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterCategory === 'all'
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
+            {/* Building filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Building:
+              </span>
+              <button
+                onClick={() => setFilterBuilding('all')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                  filterBuilding === 'all'
+                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                All
+              </button>
+              {BUILDINGS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setFilterBuilding(b.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                    filterBuilding === b.id
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                  title={b.name}
+                >
+                  {b.gradeLabel}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-5 bg-slate-200" />
+
+            {/* Media Type Toggle */}
+            <div
+              className="flex bg-white p-0.5 rounded-lg border border-slate-200"
+              role="group"
+              aria-label="Media type toggle"
             >
-              All
-            </button>
-            <button
-              onClick={() => setFilterCategory('__uncategorized__')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterCategory === '__uncategorized__'
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              Uncategorized
-            </button>
-            {allCategories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilterCategory(cat)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                  filterCategory === cat
-                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+              {(
+                [
+                  { value: 'all', label: 'All' },
+                  { value: 'images', label: 'Images', icon: ImageIcon },
+                  { value: 'videos', label: 'Videos', icon: Video },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setMediaType(tab.value)}
+                  aria-pressed={mediaType === tab.value}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    mediaType === tab.value
+                      ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  {tab.value === 'images' && <ImageIcon size={14} />}
+                  {tab.value === 'videos' && <Video size={14} />}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="w-px h-5 bg-slate-200" />
-
-          {/* Building filter */}
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-slate-500 font-medium">
-              Building:
-            </span>
-            <button
-              onClick={() => setFilterBuilding('all')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterBuilding === 'all'
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              All
-            </button>
-            {BUILDINGS.map((b) => (
-              <button
-                key={b.id}
-                onClick={() => setFilterBuilding(b.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                  filterBuilding === b.id
-                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                }`}
-                title={b.name}
-              >
-                {b.gradeLabel}
-              </button>
-            ))}
-          </div>
-
-          <div className="w-px h-5 bg-slate-200" />
-
-          {/* Media Type Toggle */}
+          {/* Media Type Toggle - mobile */}
           <div
-            className="flex bg-white p-0.5 rounded-lg border border-slate-200"
+            className="flex md:hidden bg-white p-0.5 rounded-lg border border-slate-200 ml-auto"
             role="group"
             aria-label="Media type toggle"
           >
             {(
               [
                 { value: 'all', label: 'All' },
-                { value: 'images', label: 'Images', icon: ImageIcon },
-                { value: 'videos', label: 'Videos', icon: Video },
+                { value: 'images', label: 'Img', icon: ImageIcon },
+                { value: 'videos', label: 'Vid', icon: Video },
               ] as const
             ).map((tab) => (
               <button
@@ -914,21 +969,21 @@ export const BackgroundManager: React.FC = () => {
                 type="button"
                 onClick={() => setMediaType(tab.value)}
                 aria-pressed={mediaType === tab.value}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   mediaType === tab.value
                     ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
                     : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
-                {tab.value === 'images' && <ImageIcon size={14} />}
-                {tab.value === 'videos' && <Video size={14} />}
+                {tab.value === 'images' && <ImageIcon size={12} />}
+                {tab.value === 'videos' && <Video size={12} />}
                 {tab.label}
               </button>
             ))}
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="ml-auto flex bg-white p-0.5 rounded-lg border border-slate-200">
+          {/* View Mode Toggle - hidden on mobile */}
+          <div className="ml-auto hidden md:flex bg-white p-0.5 rounded-lg border border-slate-200">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
@@ -959,6 +1014,124 @@ export const BackgroundManager: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Mobile: collapsible filter content */}
+        {showFilters && (
+          <div className="flex flex-col gap-3 px-3 pb-3 border-t border-slate-200 pt-3 md:hidden">
+            {/* Active filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Active:
+              </span>
+              {(['all', 'on', 'off'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterActive(val)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                    filterActive === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
+                </button>
+              ))}
+            </div>
+
+            {/* Availability filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Availability:
+              </span>
+              {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
+                <button
+                  key={val}
+                  onClick={() => setFilterAvailability(val)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                    filterAvailability === val
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {val === 'all'
+                    ? 'All'
+                    : val.charAt(0).toUpperCase() + val.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Category filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Category:
+              </span>
+              <button
+                onClick={() => setFilterCategory('all')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                  filterCategory === 'all'
+                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilterCategory('__uncategorized__')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                  filterCategory === '__uncategorized__'
+                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                Uncategorized
+              </button>
+              {allCategories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCategory(cat)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                    filterCategory === cat
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Building filter */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">
+                Building:
+              </span>
+              <button
+                onClick={() => setFilterBuilding('all')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                  filterBuilding === 'all'
+                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                All
+              </button>
+              {BUILDINGS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setFilterBuilding(b.id)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                    filterBuilding === b.id
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                  title={b.name}
+                >
+                  {b.gradeLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* YouTube Video Preset Form */}
@@ -980,7 +1153,7 @@ export const BackgroundManager: React.FC = () => {
             placeholder='Label (e.g. "Cozy Rain Cafe")'
             value={youtubeLabel}
             onChange={(e) => setYoutubeLabel(e.target.value)}
-            className="w-full sm:w-52 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+            className="w-full sm:max-w-[200px] px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
           />
           <Button
             variant="primary"
@@ -1077,7 +1250,7 @@ export const BackgroundManager: React.FC = () => {
               </>
             )}
           </div>
-        ) : viewMode === 'list' ? (
+        ) : effectiveViewMode === 'list' ? (
           /* List View */
           <div className="space-y-2">
             {filteredPresets.map((preset) => (
@@ -1106,7 +1279,7 @@ export const BackgroundManager: React.FC = () => {
           </div>
         ) : (
           /* Grid View */
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 items-start">
             {filteredPresets.map((preset) => (
               <GridPresetCard
                 key={preset.id}
