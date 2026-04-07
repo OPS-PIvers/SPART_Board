@@ -4,17 +4,21 @@
 
 ## 📋 Overview
 
-SPART Board is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 20 specialized classroom tools—from timers and noise meters to polling and lunch counts. All data is synchronized in real-time using **Firebase**.
+SPART Board is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 55 specialized classroom tools—from timers and noise meters to quizzes, guided learning, and music stations. All data is synchronized in real-time using **Firebase**.
 
 ## ✨ Key Features
 
-- **🧩 Widget System:** 21+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, Traffic Lights, Expectations, and more.
+- **🧩 Widget System:** 57 interactive widgets including Timers, Noise Meters, Drawing Boards, Quizzes, Video Activities, Guided Learning, Music Stations, Seating Charts, and more.
 - **☁️ Real-Time Persistence:** Dashboards are saved and synced instantly via Firebase Firestore.
 - **🔐 Authentication:** Secure Google Sign-In integration.
 - **🛡️ Admin Controls:** Granular feature permissions (Public/Beta/Admin) and user management.
 - **🎨 Customization:** Drag-and-drop layout, resizable widgets, custom backgrounds, and a professional design system featuring 'Lexend' and 'Patrick Hand' fonts.
 - **🤖 AI Integration:** Features powered by Google Gemini (e.g., OCR text extraction in the Webcam widget, intelligent mini-app generation).
 - **📶 Resilience:** Multi-proxy fallback mechanism for weather and API-driven widgets to bypass CORS restrictions.
+- **🎓 Student Apps:** Live quiz sessions, video activities, guided learning, activity walls, and mini-apps accessible via join codes.
+- **📱 Remote Control:** Mobile-friendly remote for controlling widgets from a phone.
+- **🌐 Internationalization:** Multi-language support via i18next.
+- **📋 Roster Integration:** ClassLink roster import and student management.
 
 ## 🛠 Tech Stack
 
@@ -22,7 +26,7 @@ SPART Board is an interactive, widget-based application built with **React 19**,
 - **Styling:** Tailwind CSS (Custom Brand Theme), Lucide React (Icons)
 - **Fonts:** Lexend (UI), Patrick Hand (Handwritten), Roboto Mono (Code)
 - **Backend:** Firebase (Auth, Firestore, Storage, Cloud Functions)
-- **State Management:** React Context (`DashboardContext`, `AuthContext`) + Firestore (real-time)
+- **State Management:** React Context (4 contexts: Dashboard, Auth, CustomWidgets, Dialog) + Firestore (real-time)
 - **AI:** Google Gemini API (`@google/genai`)
 - **Testing:** Vitest (Unit & Coverage via `@vitest/coverage-v8`), Playwright (E2E)
 - **Tooling:** ESLint, Prettier, Husky, Lint-staged
@@ -109,6 +113,7 @@ This project primarily uses a **flat file structure**, with most source code res
 - `functions/` - Firebase Cloud Functions (Node.js)
 - `docs/` - Project documentation, setup guides, and architectural notes
 - `scripts/` - Automation scripts (versioning, admin setup, PDM tools)
+- `i18n/` & `locales/` - Internationalization setup and translation files
 - `tests/` - Test setup and E2E test suites
 - `types.ts` - Centralized TypeScript definitions and Widget registry
 
