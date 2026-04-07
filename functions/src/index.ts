@@ -1871,7 +1871,8 @@ export const adminAnalytics = functionsV1
               Array.isArray(data.selectedBuildings) &&
               data.selectedBuildings.length > 0
             ) {
-              const uid = snap.ref.parent.parent!.id;
+              const uid = snap.ref.parent.parent?.id;
+              if (!uid) continue;
               buildingsMap.set(uid, data.selectedBuildings.map(String));
             }
           }
