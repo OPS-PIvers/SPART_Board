@@ -204,7 +204,7 @@ export const SoundboardConfigurationPanel: React.FC<
       try {
         blobUrl = await fetchDriveAudioBlobUrl(
           validation.driveFileId,
-          googleAccessToken,
+          googleAccessToken
         );
         audioSrc = blobUrl;
       } catch (err) {

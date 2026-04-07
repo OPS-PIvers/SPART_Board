@@ -9,16 +9,18 @@ vi.mock('@/context/useAuth', () => ({
   useAuth: vi.fn().mockReturnValue({ googleAccessToken: 'test-token' }),
 }));
 
-const FAKE_BLOB_URL = 'blob:http://localhost/fake-audio';
 vi.mock('@/utils/soundboardAudioUrl', async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import('@/utils/soundboardAudioUrl')
-  >();
+  const actual =
+    await importOriginal<typeof import('@/utils/soundboardAudioUrl')>();
   return {
     ...actual,
-    fetchDriveAudioBlobUrl: vi.fn().mockResolvedValue(FAKE_BLOB_URL),
+    fetchDriveAudioBlobUrl: vi
+      .fn()
+      .mockResolvedValue('blob:http://localhost/fake-audio'),
   };
 });
+
+const FAKE_BLOB_URL = 'blob:http://localhost/fake-audio';
 
 const mockPlay = vi
   .fn<() => Promise<void>>()

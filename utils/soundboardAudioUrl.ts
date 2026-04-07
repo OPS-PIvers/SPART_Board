@@ -30,16 +30,15 @@ export const extractDriveAudioFileId = (url: string): string | null =>
  */
 export const fetchDriveAudioBlobUrl = async (
   fileId: string,
-  accessToken: string,
+  accessToken: string
 ): Promise<string> => {
-  const response = await fetch(
-    `${DRIVE_API_URL}/files/${fileId}?alt=media`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  );
+  const response = await fetch(`${DRIVE_API_URL}/files/${fileId}?alt=media`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch Drive audio (${response.status}). Check sharing permissions.`,
+      `Failed to fetch Drive audio (${response.status}). Check sharing permissions.`
     );
   }
 

@@ -287,8 +287,7 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
     }
 
     const url = sound.url;
-    const driveFileId =
-      isDriveUrl(url) ? extractDriveAudioFileId(url) : null;
+    const driveFileId = isDriveUrl(url) ? extractDriveAudioFileId(url) : null;
 
     if (driveFileId && googleAccessToken) {
       void fetchDriveAudioBlobUrl(driveFileId, googleAccessToken)
@@ -297,23 +296,21 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
           audio.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), {
             once: true,
           });
-          audio.addEventListener(
-            'error',
-            () => URL.revokeObjectURL(blobUrl),
-            { once: true },
-          );
+          audio.addEventListener('error', () => URL.revokeObjectURL(blobUrl), {
+            once: true,
+          });
           void audio.play().catch((err: unknown) => {
             URL.revokeObjectURL(blobUrl);
             console.error(
               `[Soundboard] Failed to play sound ${sound.id}:`,
-              err,
+              err
             );
           });
         })
         .catch((err: unknown) => {
           console.error(
             `[Soundboard] Failed to fetch Drive audio ${sound.id}:`,
-            err,
+            err
           );
         });
     } else {

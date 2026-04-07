@@ -53,14 +53,12 @@ describe('normalizeSoundboardAudioUrl', () => {
 describe('isDriveUrl', () => {
   it('returns true for drive.google.com URLs', () => {
     expect(isDriveUrl('https://drive.google.com/file/d/abc123/view')).toBe(
-      true,
+      true
     );
   });
 
   it('returns true for docs.google.com URLs', () => {
-    expect(isDriveUrl('https://docs.google.com/file/d/abc123/view')).toBe(
-      true,
-    );
+    expect(isDriveUrl('https://docs.google.com/file/d/abc123/view')).toBe(true);
   });
 
   it('returns false for non-Drive URLs', () => {
@@ -76,14 +74,14 @@ describe('extractDriveAudioFileId', () => {
   it('extracts file ID from /file/d/<id>/view links', () => {
     expect(
       extractDriveAudioFileId(
-        'https://drive.google.com/file/d/abc123_XYZ/view?usp=sharing',
-      ),
+        'https://drive.google.com/file/d/abc123_XYZ/view?usp=sharing'
+      )
     ).toBe('abc123_XYZ');
   });
 
   it('extracts file ID from open?id=<id> links', () => {
     expect(
-      extractDriveAudioFileId('https://drive.google.com/open?id=abc123_XYZ'),
+      extractDriveAudioFileId('https://drive.google.com/open?id=abc123_XYZ')
     ).toBe('abc123_XYZ');
   });
 
@@ -107,25 +105,25 @@ describe('fetchDriveAudioBlobUrl', () => {
   it('fetches the file via the Drive API and returns a blob URL', async () => {
     const blob = new Blob(['audio'], { type: 'audio/mpeg' });
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(blob, { status: 200 }),
+      new Response(blob, { status: 200 })
     );
 
     const result = await fetchDriveAudioBlobUrl('file123', 'token');
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       'https://www.googleapis.com/drive/v3/files/file123?alt=media',
-      { headers: { Authorization: 'Bearer token' } },
+      { headers: { Authorization: 'Bearer token' } }
     );
     expect(result).toBe(FAKE_BLOB_URL);
   });
 
   it('throws on non-OK response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, { status: 403 }),
+      new Response(null, { status: 403 })
     );
 
     await expect(fetchDriveAudioBlobUrl('file123', 'token')).rejects.toThrow(
-      /Failed to fetch Drive audio \(403\)/,
+      /Failed to fetch Drive audio \(403\)/
     );
   });
 });
