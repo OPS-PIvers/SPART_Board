@@ -2384,7 +2384,7 @@ export interface UserRolesConfig {
 }
 
 /**
- * Per-user profile data stored in Firestore at /users/{userId}/userProfile.
+ * Per-user profile data stored in Firestore at /users/{userId}/userProfile/profile.
  * This is separate from dashboard settings and persists across dashboards.
  */
 export interface UserProfile {

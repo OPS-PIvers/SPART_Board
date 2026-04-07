@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
+import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 
@@ -11,11 +12,12 @@ interface SidebarLanguageRegionProps {
 export const SidebarLanguageRegion: React.FC<SidebarLanguageRegionProps> = ({
   isVisible,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { setLanguage, language } = useAuth();
   const { addToast } = useDashboard();
 
   const handleLanguageChange = (code: string) => {
-    void i18n.changeLanguage(code);
+    void setLanguage(code);
     addToast(t('toasts.settingsSaved'), 'success');
   };
 
@@ -50,7 +52,7 @@ export const SidebarLanguageRegion: React.FC<SidebarLanguageRegionProps> = ({
 
             <div className="grid grid-cols-2 gap-2.5">
               {SUPPORTED_LANGUAGES.map((lang) => {
-                const isActive = i18n.language === lang.code;
+                const isActive = language === lang.code;
                 return (
                   <button
                     key={lang.code}

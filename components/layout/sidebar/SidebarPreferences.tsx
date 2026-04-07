@@ -106,7 +106,7 @@ export const SidebarPreferences: React.FC<SidebarPreferencesProps> = ({
                 <p className="text-xxs text-slate-500 mt-1 leading-relaxed pr-2">
                   {t('sidebar.settings.remoteControlDescription', {
                     defaultValue:
-                      'Allow controlling this board remotely from another device.',
+                      'Allow controlling your boards remotely from another device.',
                   })}
                 </p>
               </div>

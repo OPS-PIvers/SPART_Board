@@ -57,6 +57,8 @@ export const SidebarBuildings: React.FC<SidebarBuildingsProps> = ({
                       : [...selectedBuildings, building.id];
                     void setSelectedBuildings(next);
                   }}
+                  type="button"
+                  aria-pressed={isSelected}
                   className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
                     isSelected
                       ? 'bg-brand-blue-primary border-brand-blue-primary text-white shadow-md shadow-brand-blue-primary/15'
