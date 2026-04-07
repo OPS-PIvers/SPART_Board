@@ -440,10 +440,14 @@ const ActiveQuiz: React.FC<{
     if (!autoSubmitTriggeredFor) return;
     const question = currentQuestionRef.current;
     if (!question || question.id !== autoSubmitTriggeredFor) return;
-    void onAnswerRef.current(
-      autoSubmitTriggeredFor,
-      selectedAnswerRef.current ?? fibAnswerRef.current ?? ''
-    );
+    void onAnswerRef
+      .current(
+        autoSubmitTriggeredFor,
+        selectedAnswerRef.current ?? fibAnswerRef.current ?? ''
+      )
+      .catch((err: unknown) => {
+        console.error('[QuizStudentApp] auto-submit failed:', err);
+      });
   }, [autoSubmitTriggeredFor]);
 
   if (!currentQuestion) {

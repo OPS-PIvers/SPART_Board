@@ -149,6 +149,8 @@ export const MobileRemoteView: React.FC = () => {
     if (!activeDashboard || initializedDashboardId !== activeDashboard.id) {
       return;
     }
+    const currentWidgetIds = new Set(activeDashboard.widgets.map((w) => w.id));
+
     setLocalWidgets((prev) => {
       if (!prev) return [...activeDashboard.widgets];
       const prevMap = new Map(prev.map((w) => [w.id, w]));
@@ -159,6 +161,15 @@ export const MobileRemoteView: React.FC = () => {
         return fw;
       });
     });
+
+    // Clear timers for widgets that were deleted on the desktop.
+    pendingWidgetTimers.current.forEach((timer, widgetId) => {
+      if (!currentWidgetIds.has(widgetId)) {
+        clearTimeout(timer);
+        pendingWidgetTimers.current.delete(widgetId);
+      }
+    });
+
     if (pendingSettingsTimer.current === null) {
       setLocalSettings(
         activeDashboard.settings ? { ...activeDashboard.settings } : undefined
