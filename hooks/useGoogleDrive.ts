@@ -5,6 +5,7 @@ import { APP_NAME } from '../config/constants';
 
 const BACKGROUNDS_FOLDER = 'Backgrounds';
 const LEGACY_FOLDER_NAME = 'SPART Board';
+const MIGRATION_COMPLETED_FLAG = 'true';
 const migrationKey = (uid: string) => `spart_drive_folder_migrated_v2_${uid}`;
 
 export const useGoogleDrive = () => {
@@ -27,7 +28,7 @@ export const useGoogleDrive = () => {
 
     driveService
       .migrateAppFolderName(LEGACY_FOLDER_NAME, APP_NAME)
-      .then(() => localStorage.setItem(key, '1'))
+      .then(() => localStorage.setItem(key, MIGRATION_COMPLETED_FLAG))
       .catch((error) => {
         // Silent fail — will retry on next page load
         console.error('Failed to migrate Google Drive folder name:', error);
