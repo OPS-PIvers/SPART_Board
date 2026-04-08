@@ -133,6 +133,15 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     null
   );
   const prevResponsesJsonRef = useRef<string>('');
+  const creatingScoreboardRef = useRef(false);
+
+  // Use refs for values the effect reads but should not re-trigger on:
+  // - configRef: avoids re-triggering when unrelated config fields change
+  // - widgetsRef: avoids re-triggering when the scoreboard widget we just wrote is updated
+  const configRef = useRef(config);
+  configRef.current = config;
+  const widgetsRef = useRef(activeDashboard?.widgets);
+  widgetsRef.current = activeDashboard?.widgets;
 
   useEffect(() => {
     if (!config.liveScoreboardEnabled || !loadedQuizData || !liveSession) {
@@ -156,9 +165,10 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
 
     liveScoreboardTimerRef.current = setTimeout(() => {
-      const scoringMode = config.liveScoreboardScoring ?? 'completion';
-      const displayMode = config.liveScoreboardMode ?? 'pin';
-      const pinToName = buildPinToNameMap(rosters, config.periodName);
+      const currentConfig = configRef.current;
+      const scoringMode = currentConfig.liveScoreboardScoring ?? 'completion';
+      const displayMode = currentConfig.liveScoreboardMode ?? 'pin';
+      const pinToName = buildPinToNameMap(rosters, currentConfig.periodName);
 
       const eligibleResponses =
         scoringMode === 'completion'
@@ -168,7 +178,10 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       let newTeams: ScoreboardTeam[];
       if (scoringMode === 'per-question') {
-        // For per-question mode, compute running scores weighted by point values
+        // Per-question mode: running accuracy — percentage of answered questions
+        // scored correctly (not total quiz points). This gives meaningful live
+        // feedback before quiz completion, unlike the final score which divides
+        // by total points and would show low percentages for students mid-quiz.
         const questions = loadedQuizData.questions;
         newTeams = eligibleResponses
           .map((r) => {
@@ -210,25 +223,28 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
 
       // Find or create scoreboard widget
-      const existingId = config.liveScoreboardWidgetId;
+      const widgets = widgetsRef.current;
+      const existingId = currentConfig.liveScoreboardWidgetId;
       const existingScoreboard = existingId
-        ? activeDashboard?.widgets.find((w) => w.id === existingId)
-        : activeDashboard?.widgets.find((w) => w.type === 'scoreboard');
+        ? widgets?.find((w) => w.id === existingId)
+        : widgets?.find((w) => w.type === 'scoreboard');
 
       if (existingScoreboard) {
         updateWidget(existingScoreboard.id, {
           config: { ...existingScoreboard.config, teams: newTeams },
         });
-        if (config.liveScoreboardWidgetId !== existingScoreboard.id) {
+        if (currentConfig.liveScoreboardWidgetId !== existingScoreboard.id) {
           updateWidget(widget.id, {
             config: {
-              ...config,
+              ...currentConfig,
               liveScoreboardWidgetId: existingScoreboard.id,
             } as QuizConfig,
           });
         }
-      } else {
-        // Create a new scoreboard widget; the next sync cycle will find it by type
+        creatingScoreboardRef.current = false;
+      } else if (!creatingScoreboardRef.current) {
+        // Guard against creating duplicate scoreboards while addWidget is async
+        creatingScoreboardRef.current = true;
         addWidget('scoreboard', {
           config: { teams: newTeams },
         });
@@ -240,6 +256,9 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         clearTimeout(liveScoreboardTimerRef.current);
       }
     };
+    // Only re-trigger on actual data changes (responses) and primitive config flags.
+    // config object and activeDashboard.widgets are read via refs to avoid
+    // infinite re-trigger cycles (this effect writes to both).
   }, [
     config.liveScoreboardEnabled,
     config.liveScoreboardScoring,
@@ -250,11 +269,9 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     loadedQuizData,
     liveSession,
     rosters,
-    activeDashboard?.widgets,
     updateWidget,
     addWidget,
     widget.id,
-    config,
   ]);
 
   // Auto-disable live scoreboard when session ends
@@ -444,7 +461,6 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           setView('manager');
         }}
         config={config}
-        widgetId={widget.id}
         rosters={rosters}
         onUpdateConfig={handleUpdateQuizConfig}
       />

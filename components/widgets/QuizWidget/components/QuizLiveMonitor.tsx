@@ -4,7 +4,7 @@
  * and real-time per-question answer distribution.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Copy,
   CheckCircle2,
@@ -41,7 +41,6 @@ interface QuizLiveMonitorProps {
   onAdvance: () => Promise<void>;
   onEnd: () => Promise<void>;
   config: QuizConfig;
-  widgetId: string;
   rosters: ClassRoster[];
   onUpdateConfig: (updates: Partial<QuizConfig>) => void;
 }
@@ -53,11 +52,13 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   onAdvance,
   onEnd,
   config,
-  widgetId: _widgetId,
   rosters,
   onUpdateConfig,
 }) => {
-  const pinToName = buildPinToNameMap(rosters, config.periodName);
+  const pinToName = useMemo(
+    () => buildPinToNameMap(rosters, config.periodName),
+    [rosters, config.periodName]
+  );
   const hasNames = Object.keys(pinToName).length > 0;
 
   const [copied, setCopied] = useState(false);

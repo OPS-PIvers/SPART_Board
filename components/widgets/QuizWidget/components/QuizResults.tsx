@@ -4,7 +4,13 @@
  * Allows exporting to Google Sheets.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   ArrowLeft,
   Download,
@@ -30,27 +36,9 @@ import { useDashboard } from '@/context/useDashboard';
 import {
   buildPinToNameMap,
   buildScoreboardTeams,
+  getResponseScore,
+  getEarnedPoints,
 } from '../utils/quizScoreboard';
-
-/**
- * Compute the raw points a student earned.
- */
-function getEarnedPoints(r: QuizResponse, questions: QuizQuestion[]): number {
-  return questions.reduce((sum, q) => {
-    const ans = r.answers.find((a) => a.questionId === q.id);
-    if (!ans) return sum;
-    return sum + (gradeAnswer(q, ans.answer) ? (q.points ?? 1) : 0);
-  }, 0);
-}
-
-/**
- * Compute a student's percentage score using per-question point values.
- */
-function getResponseScore(r: QuizResponse, questions: QuizQuestion[]): number {
-  const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
-  if (maxPoints === 0) return 0;
-  return Math.round((getEarnedPoints(r, questions) / maxPoints) * 100);
-}
 
 interface QuizResultsProps {
   quiz: QuizData;
@@ -110,7 +98,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         )
       : null;
 
-  const pinToName = buildPinToNameMap(rosters, config.periodName);
+  const pinToName = useMemo(
+    () => buildPinToNameMap(rosters, config.periodName),
+    [rosters, config.periodName]
+  );
   const hasNames = Object.keys(pinToName).length > 0;
 
   const handleSendToScoreboard = useCallback(

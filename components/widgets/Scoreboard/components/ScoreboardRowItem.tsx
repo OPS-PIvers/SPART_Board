@@ -2,10 +2,7 @@ import React from 'react';
 import { ScoreboardTeam } from '@/types';
 import { Plus, Minus } from 'lucide-react';
 
-import {
-  SCOREBOARD_COLORS as TEAM_COLORS,
-  ScoreboardColor,
-} from '@/config/scoreboard';
+import { ScoreboardColor } from '@/config/scoreboard';
 
 const COLOR_BG: Record<ScoreboardColor, string> = {
   'bg-blue-500': 'bg-blue-500/15',
@@ -152,5 +149,3 @@ export const ScoreboardRowItem = React.memo(
 );
 
 ScoreboardRowItem.displayName = 'ScoreboardRowItem';
-
-export { TEAM_COLORS };

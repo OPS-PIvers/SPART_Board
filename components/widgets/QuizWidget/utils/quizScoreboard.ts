@@ -15,7 +15,10 @@ import { SCOREBOARD_COLORS } from '@/config/scoreboard';
 /**
  * Compute the raw points a student earned.
  */
-function getEarnedPoints(r: QuizResponse, questions: QuizQuestion[]): number {
+export function getEarnedPoints(
+  r: QuizResponse,
+  questions: QuizQuestion[]
+): number {
   return questions.reduce((sum, q) => {
     const ans = r.answers.find((a) => a.questionId === q.id);
     if (!ans) return sum;
