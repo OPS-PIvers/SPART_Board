@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
@@ -6,9 +6,10 @@ import {
   ScoreboardTeam,
   DEFAULT_GLOBAL_STYLE,
 } from '@/types';
-import { Trophy } from 'lucide-react';
+import { Trophy, LayoutGrid, List } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { ScoreboardItem } from './components/ScoreboardItem';
+import { ScoreboardRowItem } from './components/ScoreboardRowItem';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
 const DEFAULT_TEAMS: ScoreboardTeam[] = [
@@ -47,6 +48,22 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   }, [config, widget.id, updateWidget]);
 
   const teams = Array.isArray(config.teams) ? config.teams : DEFAULT_TEAMS;
+  const layout = config.layout ?? 'cards';
+
+  const sortedTeams = useMemo(
+    () =>
+      layout === 'rows' ? [...teams].sort((a, b) => b.score - a.score) : teams,
+    [teams, layout]
+  );
+
+  const toggleLayout = useCallback(() => {
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        layout: layout === 'cards' ? 'rows' : 'cards',
+      },
+    });
+  }, [widget.id, updateWidget, config, layout]);
 
   // Keep a ref to the latest config to ensure handleUpdateScore is stable
   const configRef = useRef(config);
@@ -105,27 +122,107 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className={`grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] auto-rows-[1fr] h-full w-full bg-transparent overflow-y-auto custom-scrollbar font-${globalStyle.fontFamily}`}
-          style={{
-            gap: 'min(16px, 3.5cqmin)',
-            padding: 'min(16px, 3.5cqmin)',
-          }}
+          className={`relative h-full w-full font-${globalStyle.fontFamily}`}
         >
-          {teams.map((team) => (
-            <ScoreboardItem
-              key={team.id}
-              team={team}
-              onUpdateScore={handleUpdateScore}
-            />
-          ))}
-          {teams.length === 0 && (
-            <div className="col-span-full h-full">
+          {/* LIVE badge when being synced from a quiz widget */}
+          {config.liveQuizWidgetId && (
+            <div
+              className="absolute z-10 flex items-center bg-red-500 text-white rounded-full"
+              style={{
+                top: 'min(4px, 1cqmin)',
+                left: 'min(4px, 1cqmin)',
+                fontSize: 'min(10px, 3cqmin)',
+                padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
+                gap: 'min(4px, 1cqmin)',
+              }}
+            >
+              <span
+                className="bg-white rounded-full animate-pulse"
+                style={{
+                  width: 'min(6px, 1.5cqmin)',
+                  height: 'min(6px, 1.5cqmin)',
+                }}
+              />
+              LIVE
+            </div>
+          )}
+
+          {/* Layout toggle button */}
+          {teams.length > 0 && (
+            <button
+              onClick={toggleLayout}
+              className="absolute z-10 bg-white/70 hover:bg-white/90 text-slate-500 hover:text-slate-700 backdrop-blur-sm transition-all active:scale-95"
+              style={{
+                top: 'min(4px, 1cqmin)',
+                right: 'min(4px, 1cqmin)',
+                padding: 'min(4px, 1cqmin)',
+                borderRadius: 'min(8px, 2cqmin)',
+              }}
+              aria-label={
+                layout === 'cards'
+                  ? 'Switch to list view'
+                  : 'Switch to card view'
+              }
+            >
+              {layout === 'cards' ? (
+                <List
+                  style={{
+                    width: 'min(14px, 4cqmin)',
+                    height: 'min(14px, 4cqmin)',
+                  }}
+                />
+              ) : (
+                <LayoutGrid
+                  style={{
+                    width: 'min(14px, 4cqmin)',
+                    height: 'min(14px, 4cqmin)',
+                  }}
+                />
+              )}
+            </button>
+          )}
+
+          {teams.length === 0 ? (
+            <div className="h-full">
               <ScaledEmptyState
                 icon={Trophy}
                 title="No Teams"
                 subtitle="Flip to add teams."
                 className="opacity-40"
               />
+            </div>
+          ) : layout === 'cards' ? (
+            <div
+              className="grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] auto-rows-[1fr] h-full w-full bg-transparent overflow-y-auto custom-scrollbar"
+              style={{
+                gap: 'min(16px, 3.5cqmin)',
+                padding: 'min(16px, 3.5cqmin)',
+              }}
+            >
+              {teams.map((team) => (
+                <ScoreboardItem
+                  key={team.id}
+                  team={team}
+                  onUpdateScore={handleUpdateScore}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="flex flex-col h-full w-full overflow-y-auto custom-scrollbar"
+              style={{
+                gap: 'min(4px, 1cqmin)',
+                padding: 'min(8px, 2cqmin)',
+              }}
+            >
+              {sortedTeams.map((team, index) => (
+                <ScoreboardRowItem
+                  key={team.id}
+                  team={team}
+                  rank={index + 1}
+                  onUpdateScore={handleUpdateScore}
+                />
+              ))}
             </div>
           )}
         </div>

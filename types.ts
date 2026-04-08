@@ -467,6 +467,10 @@ export interface ScoreboardConfig {
   /** @deprecated use teams array instead */
   teamB?: string;
   teams?: ScoreboardTeam[];
+  /** Display layout: card grid or compact rows */
+  layout?: 'cards' | 'rows';
+  /** When set, indicates this scoreboard is being live-synced from a quiz widget */
+  liveQuizWidgetId?: string;
 }
 
 export interface ExpectationsConfig {
@@ -1411,6 +1415,14 @@ export interface QuizConfig {
   periodName?: string;
   /** PLC member emails (informational only for v1) */
   plcMemberEmails?: string[];
+  /** Whether the live scoreboard sync is enabled during a quiz session */
+  liveScoreboardEnabled?: boolean;
+  /** Widget ID of the synced scoreboard widget */
+  liveScoreboardWidgetId?: string;
+  /** Whether to display student names or PINs on the live scoreboard */
+  liveScoreboardMode?: 'pin' | 'name';
+  /** When to update scores: on quiz completion or after each question */
+  liveScoreboardScoring?: 'completion' | 'per-question';
 }
 
 // --- VIDEO ACTIVITY TYPES ---
@@ -1590,7 +1602,8 @@ export interface StarterPackGlobalConfig {
   dockDefaults?: Record<string, boolean>;
 }
 
-export type StarterPackConfig = Record<string, never>;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Required: Record<string, never> breaks WidgetConfig union spreads in DashboardContext
+export interface StarterPackConfig {}
 
 export interface CountdownConfig {
   title: string;
