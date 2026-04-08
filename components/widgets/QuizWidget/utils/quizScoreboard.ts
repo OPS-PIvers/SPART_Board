@@ -69,13 +69,16 @@ export function buildScoreboardTeams(
       score: getResponseScore(r, questions),
     }))
     .sort((a, b) => b.score - a.score)
-    .map(({ response, score }, index) => ({
-      id: crypto.randomUUID(),
+    .map(({ response, score }) => ({
+      id: `pin-${response.pin}`,
       name:
         mode === 'name'
           ? (pinToName[response.pin] ?? `PIN ${response.pin}`)
           : `PIN ${response.pin}`,
       score,
-      color: SCOREBOARD_COLORS[index % SCOREBOARD_COLORS.length],
+      color:
+        SCOREBOARD_COLORS[
+          parseInt(response.pin, 10) % SCOREBOARD_COLORS.length
+        ],
     }));
 }

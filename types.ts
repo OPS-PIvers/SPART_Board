@@ -1600,7 +1600,8 @@ export interface StarterPackGlobalConfig {
   dockDefaults?: Record<string, boolean>;
 }
 
-export type StarterPackConfig = Record<string, never>;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface StarterPackConfig {}
 
 export interface CountdownConfig {
   title: string;

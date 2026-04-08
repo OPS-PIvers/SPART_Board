@@ -139,9 +139,12 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       return;
     }
 
-    // Compute a lightweight fingerprint to avoid redundant updates
+    // Compute a fingerprint including answer content to detect changes
     const fingerprint = responses
-      .map((r) => `${r.pin}:${r.status}:${r.answers.length}`)
+      .map(
+        (r) =>
+          `${r.pin}:${r.status}:${r.answers.map((a) => `${a.questionId}=${a.answer}`).join(',')}`
+      )
       .sort()
       .join('|');
     if (fingerprint === prevResponsesJsonRef.current) return;
@@ -167,33 +170,37 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       let newTeams: ScoreboardTeam[];
       if (scoringMode === 'per-question') {
-        // For per-question mode, compute running scores inline
+        // For per-question mode, compute running scores weighted by point values
         const questions = loadedQuizData.questions;
         newTeams = eligibleResponses
           .map((r) => {
-            const answeredQuestions = r.answers.filter((a) =>
-              questions.some((q) => q.id === a.questionId)
-            );
-            const correctCount = answeredQuestions.filter((a) => {
+            let earnedPoints = 0;
+            let maxAnsweredPoints = 0;
+            for (const a of r.answers) {
               const q = questions.find((qn) => qn.id === a.questionId);
-              return q ? gradeAnswer(q, a.answer) : false;
-            }).length;
-            const totalAnswered = answeredQuestions.length;
+              if (!q) continue;
+              const pts = q.points ?? 1;
+              maxAnsweredPoints += pts;
+              if (gradeAnswer(q, a.answer)) earnedPoints += pts;
+            }
             const score =
-              totalAnswered > 0
-                ? Math.round((correctCount / totalAnswered) * 100)
+              maxAnsweredPoints > 0
+                ? Math.round((earnedPoints / maxAnsweredPoints) * 100)
                 : 0;
             return { response: r, score };
           })
           .sort((a, b) => b.score - a.score)
-          .map(({ response, score }, index) => ({
-            id: crypto.randomUUID(),
+          .map(({ response, score }) => ({
+            id: `pin-${response.pin}`,
             name:
               displayMode === 'name'
                 ? (pinToName[response.pin] ?? `PIN ${response.pin}`)
                 : `PIN ${response.pin}`,
             score,
-            color: SCOREBOARD_COLORS[index % SCOREBOARD_COLORS.length],
+            color:
+              SCOREBOARD_COLORS[
+                parseInt(response.pin, 10) % SCOREBOARD_COLORS.length
+              ],
           }));
       } else {
         newTeams = buildScoreboardTeams(

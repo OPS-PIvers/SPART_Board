@@ -113,18 +113,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const pinToName = buildPinToNameMap(rosters, config.periodName);
   const hasNames = Object.keys(pinToName).length > 0;
 
-  const handleScoreboardClick = useCallback(() => {
-    if (completed.length === 0) {
-      addToast('No completed students yet', 'error');
-      return;
-    }
-    if (hasNames) {
-      setShowScoreboardPrompt(true);
-    } else {
-      handleSendToScoreboard('pin');
-    }
-  }, [completed.length, hasNames, addToast]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleSendToScoreboard = useCallback(
     (mode: 'pin' | 'name') => {
       setShowScoreboardPrompt(false);
@@ -177,6 +165,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       addToast,
     ]
   );
+
+  const handleScoreboardClick = useCallback(() => {
+    if (completed.length === 0) {
+      addToast('No completed students yet', 'error');
+      return;
+    }
+    if (hasNames) {
+      setShowScoreboardPrompt(true);
+    } else {
+      handleSendToScoreboard('pin');
+    }
+  }, [completed.length, hasNames, addToast, handleSendToScoreboard]);
 
   const handleExport = async () => {
     if (!googleAccessToken) {

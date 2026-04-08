@@ -57,6 +57,9 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   rosters,
   onUpdateConfig,
 }) => {
+  const pinToName = buildPinToNameMap(rosters, config.periodName);
+  const hasNames = Object.keys(pinToName).length > 0;
+
   const [copied, setCopied] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [advancing, setAdvancing] = useState(false);
@@ -65,15 +68,12 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
   const [showLiveScoreboardSetup, setShowLiveScoreboardSetup] = useState(false);
   const [liveScoreboardMode, setLiveScoreboardMode] = useState<'pin' | 'name'>(
-    'name'
+    hasNames ? 'name' : 'pin'
   );
   const [liveScoreboardScoring, setLiveScoreboardScoring] = useState<
     'completion' | 'per-question'
   >('completion');
   const liveScoreboardSetupRef = useRef<HTMLDivElement>(null);
-
-  const pinToName = buildPinToNameMap(rosters, config.periodName);
-  const hasNames = Object.keys(pinToName).length > 0;
   const isLiveScoreboardActive = config.liveScoreboardEnabled ?? false;
 
   // Close live scoreboard setup popup on click-outside or Escape

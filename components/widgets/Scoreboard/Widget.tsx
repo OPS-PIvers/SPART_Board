@@ -128,8 +128,13 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
           {teams.length > 0 && (
             <button
               onClick={toggleLayout}
-              className="absolute top-1 right-1 z-10 bg-white/70 hover:bg-white/90 text-slate-500 hover:text-slate-700 rounded-lg backdrop-blur-sm transition-all active:scale-95"
-              style={{ padding: 'min(4px, 1cqmin)' }}
+              className="absolute z-10 bg-white/70 hover:bg-white/90 text-slate-500 hover:text-slate-700 backdrop-blur-sm transition-all active:scale-95"
+              style={{
+                top: 'min(4px, 1cqmin)',
+                right: 'min(4px, 1cqmin)',
+                padding: 'min(4px, 1cqmin)',
+                borderRadius: 'min(8px, 2cqmin)',
+              }}
               aria-label={
                 layout === 'cards'
                   ? 'Switch to list view'
