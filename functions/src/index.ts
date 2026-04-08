@@ -64,6 +64,33 @@ interface GlobalPermission {
   config?: GlobalPermConfig;
 }
 
+/** Trim and treat empty-after-trim as undefined so fallback defaults apply. */
+function normalizeModelName(name?: string): string | undefined {
+  const trimmed = name?.trim();
+  return trimmed || undefined;
+}
+
+/** Read Gemini model config from Firestore with graceful fallback to defaults. */
+async function getGeminiModelConfig(
+  db: admin.firestore.Firestore
+): Promise<GlobalPermConfig | undefined> {
+  try {
+    const doc = await db
+      .collection('global_permissions')
+      .doc('gemini-functions')
+      .get();
+    return doc.exists
+      ? (doc.data()?.config as GlobalPermConfig | undefined)
+      : undefined;
+  } catch (error) {
+    console.warn(
+      'Failed to read Gemini model config from Firestore; using defaults.',
+      error
+    );
+    return undefined;
+  }
+}
+
 interface ArchiveActivityWallPhotoData {
   accessToken?: string;
   sessionId?: string;
@@ -540,13 +567,7 @@ export const generateWithAI = functionsV1
     }
 
     // Read model config from Firestore (for both admins and non-admins)
-    const geminiPermDoc = await db
-      .collection('global_permissions')
-      .doc('gemini-functions')
-      .get();
-    const geminiConfig = geminiPermDoc.exists
-      ? (geminiPermDoc.data()?.config as GlobalPermConfig | undefined)
-      : undefined;
+    const geminiConfig = await getGeminiModelConfig(db);
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -783,9 +804,11 @@ export const generateWithAI = functionsV1
       // Use higher complexity model for code generation, and lite for OCR and simple JSON tasks
       // Model names are admin-configurable via global_permissions/gemini-functions
       const advancedModel =
-        geminiConfig?.advancedModel || 'gemini-3-flash-preview';
+        normalizeModelName(geminiConfig?.advancedModel) ??
+        'gemini-3-flash-preview';
       const standardModel =
-        geminiConfig?.standardModel || 'gemini-3.1-flash-lite-preview';
+        normalizeModelName(geminiConfig?.standardModel) ??
+        'gemini-3.1-flash-lite-preview';
       const model =
         genType === 'mini-app' || genType === 'widget-builder'
           ? advancedModel
@@ -1230,15 +1253,10 @@ export const generateVideoActivity = functionsV1
       }
 
       // Read model config from Firestore
-      const geminiPermDoc = await db
-        .collection('global_permissions')
-        .doc('gemini-functions')
-        .get();
-      const geminiConfig = geminiPermDoc.exists
-        ? (geminiPermDoc.data()?.config as GlobalPermConfig | undefined)
-        : undefined;
+      const geminiConfig = await getGeminiModelConfig(db);
       const videoModel =
-        geminiConfig?.standardModel || 'gemini-3.1-flash-lite-preview';
+        normalizeModelName(geminiConfig?.standardModel) ??
+        'gemini-3.1-flash-lite-preview';
 
       const ai = new GoogleGenAI({ apiKey });
 
@@ -1686,15 +1704,10 @@ export const generateGuidedLearning = functionsV1
 
       // Read model config from Firestore
       const db = admin.firestore();
-      const geminiPermDoc = await db
-        .collection('global_permissions')
-        .doc('gemini-functions')
-        .get();
-      const geminiConfig = geminiPermDoc.exists
-        ? (geminiPermDoc.data()?.config as GlobalPermConfig | undefined)
-        : undefined;
+      const geminiConfig = await getGeminiModelConfig(db);
       const guidedLearningModel =
-        geminiConfig?.advancedModel || 'gemini-3-flash-preview';
+        normalizeModelName(geminiConfig?.advancedModel) ??
+        'gemini-3-flash-preview';
 
       try {
         const ai = new GoogleGenAI({ apiKey });

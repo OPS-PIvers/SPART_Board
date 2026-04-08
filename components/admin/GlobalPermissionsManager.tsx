@@ -782,6 +782,15 @@ export const GlobalPermissionsManager: React.FC = () => {
                                 },
                               })
                             }
+                            onBlur={(e) => {
+                              const trimmed = e.target.value.trim();
+                              updatePermission(feature.id, {
+                                config: {
+                                  ...permission.config,
+                                  advancedModel: trimmed || undefined,
+                                },
+                              });
+                            }}
                             className="w-full px-3 py-1.5 border border-purple-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white"
                           />
                           <span className="text-xxs text-purple-400 mt-0.5 block">
@@ -806,6 +815,15 @@ export const GlobalPermissionsManager: React.FC = () => {
                                 },
                               })
                             }
+                            onBlur={(e) => {
+                              const trimmed = e.target.value.trim();
+                              updatePermission(feature.id, {
+                                config: {
+                                  ...permission.config,
+                                  standardModel: trimmed || undefined,
+                                },
+                              });
+                            }}
                             className="w-full px-3 py-1.5 border border-purple-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white"
                           />
                           <span className="text-xxs text-purple-400 mt-0.5 block">
@@ -1039,6 +1057,15 @@ export const GlobalPermissionsManager: React.FC = () => {
                               },
                             })
                           }
+                          onBlur={(e) => {
+                            const trimmed = e.target.value.trim();
+                            updatePermission(feature.id, {
+                              config: {
+                                ...permission.config,
+                                advancedModel: trimmed || undefined,
+                              },
+                            });
+                          }}
                           className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                         />
                         <span className="text-xxs text-purple-400 mt-1 block">
@@ -1063,6 +1090,15 @@ export const GlobalPermissionsManager: React.FC = () => {
                               },
                             })
                           }
+                          onBlur={(e) => {
+                            const trimmed = e.target.value.trim();
+                            updatePermission(feature.id, {
+                              config: {
+                                ...permission.config,
+                                standardModel: trimmed || undefined,
+                              },
+                            });
+                          }}
                           className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                         />
                         <span className="text-xxs text-purple-400 mt-1 block">
