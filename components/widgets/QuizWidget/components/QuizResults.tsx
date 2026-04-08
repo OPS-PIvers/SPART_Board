@@ -604,6 +604,7 @@ const StudentsTab: React.FC<{
   questions: QuizQuestion[];
 }> = ({ responses, questions }) => {
   const [showResults, setShowResults] = useState(false);
+  const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
 
   return (
     <div className="space-y-2">
@@ -661,15 +662,12 @@ const StudentsTab: React.FC<{
           })
           .map((r) => {
             const score = getResponseScore(r, questions);
+            const answerMap = new Map(r.answers.map((a) => [a.questionId, a]));
             const earned = questions.reduce((sum, q) => {
-              const ans = r.answers.find((a) => a.questionId === q.id);
+              const ans = answerMap.get(q.id);
               if (!ans) return sum;
               return sum + (gradeAnswer(q, ans.answer) ? (q.points ?? 1) : 0);
             }, 0);
-            const maxPoints = questions.reduce(
-              (sum, q) => sum + (q.points ?? 1),
-              0
-            );
             const warnings = r.tabSwitchWarnings ?? 0;
 
             return (

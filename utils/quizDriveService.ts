@@ -482,14 +482,15 @@ export class QuizDriveService {
         ? new Date(r.submittedAt).toLocaleString()
         : '';
       const warnings = r.tabSwitchWarnings?.toString() ?? '0';
+      const answerMap = new Map(r.answers.map((a) => [a.questionId, a]));
       const answerCols = questions.map((q) => {
-        const ans = r.answers.find((a) => a.questionId === q.id);
+        const ans = answerMap.get(q.id);
         if (!ans) return '';
         const isCorrect = gradeAnswer(q, ans.answer);
         return isCorrect ? String(q.points ?? 1) : '0';
       });
       const earnedPoints = questions.reduce((sum, q) => {
-        const ans = r.answers.find((a) => a.questionId === q.id);
+        const ans = answerMap.get(q.id);
         if (!ans) return sum;
         return sum + (gradeAnswer(q, ans.answer) ? (q.points ?? 1) : 0);
       }, 0);

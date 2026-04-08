@@ -156,12 +156,27 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
     }
   };
 
+  const copiedTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  // Clean up timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+    };
+  }, []);
+
   const handleCopyTemplate = async () => {
     try {
       const tsv = QuizDriveService.getQuizTemplateTSV();
       await navigator.clipboard.writeText(tsv);
       setCopiedTemplate(true);
-      setTimeout(() => setCopiedTemplate(false), 2000);
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+      copiedTimeoutRef.current = setTimeout(
+        () => setCopiedTemplate(false),
+        2000
+      );
     } catch {
       setError('Failed to copy template to clipboard.');
     }
