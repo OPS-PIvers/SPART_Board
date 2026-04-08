@@ -79,7 +79,7 @@ export const DriveDisconnectBanner: React.FC = () => {
           <button
             onClick={() => void handleConnect()}
             disabled={isConnecting}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-brand-blue-primary text-white text-xxxs font-black uppercase tracking-widest rounded-lg hover:bg-brand-blue-dark transition-all disabled:opacity-60"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-brand-blue-primary text-white text-xxxs font-black uppercase tracking-widest rounded-lg hover:bg-brand-blue-dark transition-colors disabled:opacity-60"
           >
             {isConnecting ? (
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -90,7 +90,7 @@ export const DriveDisconnectBanner: React.FC = () => {
 
           <button
             onClick={handleDismiss}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all"
+            className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
             title="Dismiss for 5 minutes"
             aria-label="Dismiss notification"
           >

@@ -186,7 +186,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('settings')}
-            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-all ${
+            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-[color,background-color,box-shadow] ${
               activeTab === 'settings'
                 ? 'bg-white shadow-sm text-slate-800'
                 : 'text-slate-500 hover:text-slate-700'
@@ -197,7 +197,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('style')}
-            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-all ${
+            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-[color,background-color,box-shadow] ${
               activeTab === 'style'
                 ? 'bg-white shadow-sm text-slate-800'
                 : 'text-slate-500 hover:text-slate-700'

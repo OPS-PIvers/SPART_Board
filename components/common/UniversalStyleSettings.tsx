@@ -76,7 +76,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
                     backgroundColor: nextBackgroundColor,
                   });
                 }}
-                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                className={`w-8 h-8 rounded-full border-2 transition ${
                   color.value ? color.value : 'bg-transparent border-dashed'
                 } ${
                   isSelected
@@ -124,7 +124,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
                     fontFamily: nextFontFamily,
                   });
                 }}
-                className={`px-3 py-2 rounded-lg text-sm transition-all text-center ${
+                className={`px-3 py-2 rounded-lg text-sm transition-[color,background-color,border-color,box-shadow] text-center ${
                   isSelected
                     ? 'bg-indigo-500 text-white font-bold shadow-md'
                     : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'

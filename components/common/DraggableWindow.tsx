@@ -1712,7 +1712,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                                       e.stopPropagation();
                                       handleSnapToZone(zone);
                                     }}
-                                    className="absolute bg-slate-300 hover:bg-indigo-500 transition-all rounded-[2px] border border-white/50 active:scale-90"
+                                    className="absolute bg-slate-300 hover:bg-indigo-500 transition rounded-[2px] border border-white/50 active:scale-90"
                                     style={{
                                       left: `${zone.x * 100}%`,
                                       top: `${zone.y * 100}%`,

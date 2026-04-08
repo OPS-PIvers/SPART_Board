@@ -75,7 +75,7 @@ export const Toggle: React.FC<ToggleProps> = ({
       onClick={() => !disabled && onChange(!checked)}
       className={`
         ${currentSize.button}
-        rounded-full relative transition-all duration-200 ease-in-out
+        rounded-full relative transition-colors duration-200 ease-in-out
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue-primary
         ${checked ? activeColor : inactiveColor}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

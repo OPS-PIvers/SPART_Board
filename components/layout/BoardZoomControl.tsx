@@ -20,7 +20,7 @@ export const BoardZoomControl: React.FC = () => {
       <button
         onClick={() => setZoom(INITIAL_ZOOM)}
         title={t('common.zoom') ?? 'Zoom (Ctrl + scroll)'}
-        className="fixed bottom-16 right-4 z-critical w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-all backdrop-blur-sm"
+        className="fixed bottom-16 right-4 z-critical w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm"
         aria-label={t('common.zoom') ?? 'Zoom'}
       >
         <Search className="w-4 h-4" />
@@ -45,7 +45,7 @@ export const BoardZoomControl: React.FC = () => {
           />
           <button
             onClick={() => setZoom(1)}
-            className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-all group active:scale-95"
+            className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition group active:scale-95"
             title="Reset to 100%"
           >
             <span className="text-xs font-black tabular-nums">

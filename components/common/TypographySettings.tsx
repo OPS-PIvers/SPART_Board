@@ -27,7 +27,7 @@ export const TypographySettings = <
             <button
               key={f.id}
               onClick={() => updateConfig({ fontFamily: f.id } as Partial<T>)}
-              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
+              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-[border-color,background-color] ${
                 fontFamily === f.id || (!fontFamily && f.id === 'global')
                   ? 'border-indigo-500 bg-indigo-50'
                   : 'border-slate-100 hover:border-slate-200'
@@ -51,7 +51,7 @@ export const TypographySettings = <
             <button
               key={color}
               onClick={() => updateConfig({ fontColor: color } as Partial<T>)}
-              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${
+              className={`w-6 h-6 rounded-full border-2 transition hover:scale-110 ${
                 fontColor === color
                   ? 'border-slate-800 scale-110 shadow-sm'
                   : color === '#ffffff'

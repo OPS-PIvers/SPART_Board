@@ -70,7 +70,7 @@ export const MagicInput = <T,>({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isLoading}
-          className="w-full pl-9 pr-24 py-2.5 text-sm bg-indigo-50/50 border border-indigo-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-indigo-300 text-slate-700"
+          className="w-full pl-9 pr-24 py-2.5 text-sm bg-indigo-50/50 border border-indigo-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-[border-color,box-shadow] placeholder:text-indigo-300 text-slate-700"
         />
         <button
           onClick={handleGenerate}

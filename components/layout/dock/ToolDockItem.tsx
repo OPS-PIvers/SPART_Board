@@ -184,7 +184,7 @@ export const ToolDockItem = React.memo(
                         onDelete(widget.id);
                         if (minimizedWidgets.length <= 1) setShowPopover(false);
                       }}
-                      className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50/50 rounded-md transition-all opacity-0 group-hover:opacity-100 touch-target-expand"
+                      className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50/50 rounded-md transition-colors opacity-0 group-hover:opacity-100 touch-target-expand"
                       aria-label="Close Widget"
                       title="Close Widget"
                     >
@@ -229,7 +229,7 @@ export const ToolDockItem = React.memo(
                 e.stopPropagation();
                 onRemoveFromDock();
               }}
-              className="absolute -top-2 -right-2 z-controls bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all animate-in zoom-in duration-200 touch-target-expand"
+              className="absolute -top-2 -right-2 z-controls bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-transform animate-in zoom-in duration-200 touch-target-expand"
               aria-label="Remove from Dock"
               title="Remove from Dock"
             >

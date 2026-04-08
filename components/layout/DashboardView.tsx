@@ -104,7 +104,7 @@ const ToastContainer: React.FC = () => {
                     toast.action?.onClick();
                     removeToast(toast.id);
                   }}
-                  className="w-fit px-2 py-1 bg-black/5 hover:bg-black/10 rounded-lg text-xxs font-black uppercase tracking-widest transition-all"
+                  className="w-fit px-2 py-1 bg-black/5 hover:bg-black/10 rounded-lg text-xxs font-black uppercase tracking-widest transition-colors"
                 >
                   {toast.action.label}
                 </button>
@@ -1069,7 +1069,7 @@ export const DashboardView: React.FC = () => {
         {/* Dynamic Widget Surface */}
         <div
           key={activeDashboard.id}
-          className={`relative w-full h-full ${animationClass} transition-all duration-500 ease-in-out`}
+          className={`relative w-full h-full ${animationClass} transition-opacity duration-500 ease-in-out`}
           style={{
             // Note: transform and opacity transitions here create CSS stacking contexts.
             // Spotlighted widgets escape this by portaling to document.body.
@@ -1124,7 +1124,7 @@ export const DashboardView: React.FC = () => {
       {activeDashboard.settings?.spotlightWidgetId &&
         createPortal(
           <div
-            className="fixed inset-0 z-backdrop bg-slate-900/80 transition-all duration-500 ease-in-out"
+            className="fixed inset-0 z-backdrop bg-slate-900/80 transition-opacity duration-500 ease-in-out"
             onClick={() => updateDashboardSettings({ spotlightWidgetId: null })}
             aria-hidden="true"
           />,
@@ -1143,7 +1143,7 @@ export const DashboardView: React.FC = () => {
               ? 'Enable background video sound'
               : 'Mute background video'
           }
-          className="fixed bottom-6 left-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-all backdrop-blur-sm"
+          className="fixed bottom-6 left-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm"
           aria-label="Toggle background video sound"
         >
           <div className="relative flex items-center justify-center w-full h-full">
@@ -1172,7 +1172,7 @@ export const DashboardView: React.FC = () => {
       <button
         onClick={() => setIsCheatSheetOpen(true)}
         title={`${t('widgets.cheatSheet.title')} (Ctrl+/)`}
-        className="fixed bottom-6 right-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-all backdrop-blur-sm"
+        className="fixed bottom-6 right-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm"
         aria-label={t('widgets.cheatSheet.title')}
       >
         <HelpCircle className="w-4 h-4" />

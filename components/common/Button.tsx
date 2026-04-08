@@ -32,7 +32,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    'transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variantStyles: Record<ButtonVariant, string> = {
     primary:

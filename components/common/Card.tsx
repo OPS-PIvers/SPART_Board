@@ -37,7 +37,7 @@ export const Card: React.FC<CardProps> = ({
     baseStyles,
     paddingStyles[padding],
     roundedStyles[rounded],
-    hoverable && 'hover:shadow-md transition-all',
+    hoverable && 'hover:shadow-md transition-shadow',
     className,
   ]
     .filter(Boolean)

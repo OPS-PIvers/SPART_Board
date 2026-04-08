@@ -1161,7 +1161,7 @@ export const Dock: React.FC = () => {
                       >
                         <DockIcon
                           color="bg-purple-600 shadow-lg shadow-purple-600/20"
-                          className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-purple-500 transition-all"
+                          className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-purple-500 transition"
                         >
                           <Puzzle className="w-5 h-5 md:w-6 md:h-6" />
                         </DockIcon>
@@ -1182,7 +1182,7 @@ export const Dock: React.FC = () => {
                 >
                   <DockIcon
                     color="bg-brand-blue-primary shadow-lg shadow-brand-blue-primary/20"
-                    className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-brand-blue-dark transition-all"
+                    className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-brand-blue-dark transition"
                   >
                     <LayoutGrid className="w-5 h-5 md:w-6 md:h-6" />
                   </DockIcon>
@@ -1237,7 +1237,7 @@ export const Dock: React.FC = () => {
             )}
             <button
               onClick={() => setIsExpanded(true)}
-              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 ${
+              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition shadow-xl shadow-brand-blue-primary/40 ${
                 globalStyle.dockBorderRadius === 'none'
                   ? 'rounded-none'
                   : globalStyle.dockBorderRadius === 'full'
