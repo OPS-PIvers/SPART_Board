@@ -2692,15 +2692,17 @@ export interface Announcement {
   dismissalDurationSeconds?: number;
   /**
    * Building IDs this announcement targets.
-   * An empty array means ALL buildings (broadcast to everyone).
+   * An empty array means no building-level targeting.
+   * This is a broadcast to everyone only when targetUsers is also empty.
    */
   targetBuildings: string[];
   /**
    * Email addresses this announcement targets.
    * An empty array means no user-level targeting (falls back to building targeting).
    * When both targetBuildings and targetUsers are set, OR logic is used.
+   * Older Firestore documents may omit this field; treat an omitted value the same as [].
    */
-  targetUsers: string[];
+  targetUsers?: string[];
   createdAt: number;
   updatedAt: number;
   /** Email of the admin who created/last modified this announcement */

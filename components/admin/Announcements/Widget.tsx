@@ -1266,13 +1266,6 @@ export const AnnouncementsManager: React.FC = () => {
                   </div>
                 ))}
               </div>
-              {form.targetBuildings.length === 0 &&
-                form.targetUsers.length === 0 && (
-                  <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                    No buildings selected — this announcement will be sent to
-                    all users.
-                  </div>
-                )}
             </FormSection>
 
             {/* Target Users */}
