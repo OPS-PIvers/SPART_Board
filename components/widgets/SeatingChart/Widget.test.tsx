@@ -158,7 +158,7 @@ describe('SeatingChartWidget', () => {
 
     // 2. Find the furniture item and canvas
     const furnitureItem = container.querySelector('div[style*="left: 100px"]');
-    const canvas = container.querySelector('.flex-1.relative.bg-white');
+    const canvas = container.querySelector('.flex-1.relative.bg-white\\/90');
 
     if (!furnitureItem || !canvas) throw new Error('Elements not found');
 
