@@ -45,7 +45,7 @@ export const BoardZoomControl: React.FC = () => {
           />
           <button
             onClick={() => setZoom(1)}
-            className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition group active:scale-95"
+            className="px-2 py-1 rounded-lg bg-brand-blue-lighter hover:bg-brand-blue-lighter/80 text-brand-blue-primary transition group active:scale-95"
             title="Reset to 100%"
           >
             <span className="text-xs font-black tabular-nums">
@@ -67,7 +67,7 @@ export const BoardZoomControl: React.FC = () => {
           size="sm"
           variant="ghost"
           label="Reset Zoom"
-          className="text-slate-400 hover:text-indigo-600"
+          className="text-slate-400 hover:text-brand-blue-primary"
         />
       </div>
     </div>

@@ -29,7 +29,7 @@ export const TypographySettings = <
               onClick={() => updateConfig({ fontFamily: f.id } as Partial<T>)}
               className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-[border-color,background-color] ${
                 fontFamily === f.id || (!fontFamily && f.id === 'global')
-                  ? 'border-indigo-500 bg-indigo-50'
+                  ? 'border-brand-blue-primary bg-brand-blue-lighter'
                   : 'border-slate-100 hover:border-slate-200'
               }`}
             >

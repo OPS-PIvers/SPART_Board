@@ -58,7 +58,7 @@ export const TextSizePresetSettings: React.FC<TextSizePresetSettingsProps> = ({
             }
             className={`rounded-lg border px-3 py-2 text-xs font-bold uppercase tracking-wide ${
               selectedPreset === preset.id
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-dark'
                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
             }`}
           >

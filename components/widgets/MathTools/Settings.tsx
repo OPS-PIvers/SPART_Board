@@ -16,11 +16,11 @@ export const MathToolsSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-5 p-1">
-      <div className="space-y-2 p-3 bg-purple-50 rounded-xl border border-purple-100">
-        <h3 className="text-xxs font-black text-purple-700 uppercase tracking-widest">
+      <div className="space-y-2 p-3 bg-brand-blue-lighter rounded-xl border border-brand-blue-lighter">
+        <h3 className="text-xxs font-black text-brand-blue-dark uppercase tracking-widest">
           Math Tools Palette
         </h3>
-        <p className="text-xxs text-purple-600 leading-relaxed">
+        <p className="text-xxs text-brand-blue-primary leading-relaxed">
           <strong>Measurement</strong> tools (rulers, protractor) place a
           true-scale sticker on your board. <strong>Manipulatives</strong> spawn
           individual tile pieces. <strong>Interactive</strong> tools open
@@ -52,7 +52,7 @@ export const MathToolsSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, dpiCalibration: ppi },
               });
             }}
-            className="px-3 py-1.5 text-xxs font-black bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-3 py-1.5 text-xxs font-black bg-brand-blue-primary text-white rounded-lg hover:bg-brand-blue-dark transition-colors"
           >
             Apply
           </button>

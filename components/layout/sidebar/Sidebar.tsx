@@ -371,8 +371,8 @@ export const Sidebar: React.FC = () => {
                     onClick={() => setActiveSection('boards')}
                     className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-brand-blue-lighter/40 transition-colors text-left"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
-                      <SquareSquare className="w-4 h-4 text-indigo-400 group-hover:text-brand-blue-primary transition-colors" />
+                    <div className="w-8 h-8 rounded-lg bg-brand-blue-lighter group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
+                      <SquareSquare className="w-4 h-4 text-brand-blue-light group-hover:text-brand-blue-primary transition-colors" />
                     </div>
                     <span className="flex-grow text-[13px]">
                       {t('sidebar.nav.boards')}
@@ -411,8 +411,8 @@ export const Sidebar: React.FC = () => {
                     onClick={() => setActiveSection('style')}
                     className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-brand-blue-lighter/40 transition-colors text-left"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-purple-50 group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
-                      <Palette className="w-4 h-4 text-purple-400 group-hover:text-brand-blue-primary transition-colors" />
+                    <div className="w-8 h-8 rounded-lg bg-brand-blue-lighter group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
+                      <Palette className="w-4 h-4 text-brand-blue-light group-hover:text-brand-blue-primary transition-colors" />
                     </div>
                     <span className="flex-grow text-[13px]">
                       {t('sidebar.nav.globalStyle')}

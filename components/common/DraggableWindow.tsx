@@ -1368,7 +1368,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     e.stopPropagation();
                     setIsAnnotating(false);
                   }}
-                  className="px-2 py-0.5 text-xxs font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
+                  className="px-2 py-0.5 text-xxs font-bold bg-brand-blue-primary text-white rounded-full hover:bg-brand-blue-dark transition-colors"
                 >
                   {t('widgetWindow.done')}
                 </button>
@@ -1475,7 +1475,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         createPortal(
           <div
             data-testid="snap-preview"
-            className="fixed z-snap-preview bg-indigo-500/20 border-2 border-indigo-400/50 backdrop-blur-[2px] rounded-2xl transition-all duration-200 ease-out pointer-events-none"
+            className="fixed z-snap-preview bg-brand-blue-primary/20 border-2 border-brand-blue-light/50 backdrop-blur-[2px] rounded-2xl transition-all duration-200 ease-out pointer-events-none"
             style={
               snapPreviewZone === 'maximize'
                 ? { top: 0, left: 0, width: '100vw', height: '100vh' }
@@ -1590,7 +1590,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       active={widget.flipped}
                       className={
                         widget.flipped
-                          ? '!bg-indigo-100/60 !text-indigo-600'
+                          ? '!bg-brand-blue-lighter/60 !text-brand-blue-primary'
                           : ''
                       }
                     />
@@ -1655,7 +1655,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   variant="glass"
                   active={isAnnotating}
                   className={
-                    isAnnotating ? '!bg-indigo-50 !text-indigo-600' : ''
+                    isAnnotating
+                      ? '!bg-brand-blue-lighter !text-brand-blue-primary'
+                      : ''
                   }
                 />
                 <IconButton
@@ -1692,7 +1694,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         onPointerDown={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center gap-2 mb-2 px-1">
-                          <LayoutTemplate className="w-3.5 h-3.5 text-indigo-500" />
+                          <LayoutTemplate className="w-3.5 h-3.5 text-brand-blue-primary" />
                           <span className="text-xxs font-black text-slate-500 uppercase tracking-widest">
                             {t('widgetWindow.chooseLayout')}
                           </span>
@@ -1712,7 +1714,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                                       e.stopPropagation();
                                       handleSnapToZone(zone);
                                     }}
-                                    className="absolute bg-slate-300 hover:bg-indigo-500 transition rounded-[2px] border border-white/50 active:scale-90"
+                                    className="absolute bg-slate-300 hover:bg-brand-blue-primary transition rounded-[2px] border border-white/50 active:scale-90"
                                     style={{
                                       left: `${zone.x * 100}%`,
                                       top: `${zone.y * 100}%`,
@@ -1731,12 +1733,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         <div className="my-2 border-t border-slate-200" />
 
                         <div className="flex items-center gap-2 mb-1.5 px-1">
-                          <LayoutGrid className="w-3.5 h-3.5 text-indigo-500" />
+                          <LayoutGrid className="w-3.5 h-3.5 text-brand-blue-primary" />
                           <span className="text-xxs font-black text-slate-500 uppercase tracking-widest">
                             Custom Size
                           </span>
                           {customGrid.start && customGrid.end && (
-                            <span className="ml-auto text-xxs font-bold text-indigo-600">
+                            <span className="ml-auto text-xxs font-bold text-brand-blue-primary">
                               {Math.abs(
                                 customGrid.end.col - customGrid.start.col
                               ) + 1}{' '}
@@ -1815,7 +1817,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                               return (
                                 <div
                                   key={i}
-                                  className={`rounded-[2px] transition-colors ${selected ? 'bg-indigo-400' : 'bg-slate-300'}`}
+                                  className={`rounded-[2px] transition-colors ${selected ? 'bg-brand-blue-light' : 'bg-slate-300'}`}
                                   style={{ height: '14px' }}
                                 />
                               );

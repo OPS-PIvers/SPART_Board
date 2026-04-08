@@ -133,10 +133,8 @@ body.is-dragging-widget video {
 }
 
 /* WCAG 2.5.8 — Minimum 44×44px touch target for small interactive elements.
-   Applied via ::after to expand the hit area without affecting visual layout. */
-.touch-target-expand {
-  position: relative;
-}
+   Applied via ::after to expand the hit area without affecting visual layout.
+   The element must already be positioned (relative, absolute, etc.). */
 .touch-target-expand::after {
   content: '';
   position: absolute;
@@ -148,14 +146,20 @@ body.is-dragging-widget video {
   transform: translate(-50%, -50%);
 }
 
-/* Respect reduced motion preferences (WCAG 2.1 SC 2.3.3) */
+/* Respect reduced motion preferences (WCAG 2.1 SC 2.3.3).
+   Only suppress decorative/looping animations — preserve functional
+   transitions (color, opacity, position) and entrance animations. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .animate-spin,
+  .animate-spin-slow,
+  .animate-pulse,
+  .animate-jiggle,
+  .animate-shimmer,
+  .animate-marquee {
+    animation: none !important;
+  }
+
+  * {
     scroll-behavior: auto !important;
   }
 }

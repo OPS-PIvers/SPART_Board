@@ -54,7 +54,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
               onClick={() =>
                 updateWidget(widget.id, { backgroundColor: undefined })
               }
-              className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
+              className="text-xxs font-black text-brand-blue-primary hover:text-brand-blue-dark uppercase"
             >
               Reset
             </button>
@@ -80,7 +80,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
                   color.value ? color.value : 'bg-transparent border-dashed'
                 } ${
                   isSelected
-                    ? 'border-indigo-500 scale-110 shadow-sm'
+                    ? 'border-brand-blue-primary scale-110 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300 hover:scale-105'
                 }`}
                 title={color.label}
@@ -102,7 +102,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
             <button
               type="button"
               onClick={() => updateWidget(widget.id, { fontFamily: undefined })}
-              className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
+              className="text-xxs font-black text-brand-blue-primary hover:text-brand-blue-dark uppercase"
             >
               Reset
             </button>
@@ -126,7 +126,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
                 }}
                 className={`px-3 py-2 rounded-lg text-sm transition-[color,background-color,border-color,box-shadow] text-center ${
                   isSelected
-                    ? 'bg-indigo-500 text-white font-bold shadow-md'
+                    ? 'bg-brand-blue-primary text-white font-bold shadow-md'
                     : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 } ${font.value ? `font-${font.value}` : ''}`}
                 aria-pressed={isSelected}
@@ -150,7 +150,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
               onClick={() =>
                 updateWidget(widget.id, { baseTextSize: undefined })
               }
-              className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
+              className="text-xxs font-black text-brand-blue-primary hover:text-brand-blue-dark uppercase"
             >
               Reset
             </button>
@@ -167,7 +167,7 @@ export const UniversalStyleSettings: React.FC<UniversalStyleSettingsProps> = ({
               baseTextSize: nextBaseTextSize,
             });
           }}
-          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue-primary focus:border-brand-blue-primary"
           aria-label="Select default text size"
         >
           {SIZES.map((size) => (

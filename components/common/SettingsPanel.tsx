@@ -251,7 +251,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       onClick={() =>
                         updateWidget(widget.id, { transparency: undefined })
                       }
-                      className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                      className="text-xxs font-black text-brand-blue-primary hover:text-brand-blue-dark uppercase"
                       aria-label="Reset transparency to global default"
                     >
                       Reset

@@ -1123,7 +1123,7 @@ export const Dock: React.FC = () => {
                         <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
                           {t('dock.liveSession')}
                         </h3>
-                        <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
+                        <div className="text-3xl font-black text-brand-blue-dark font-mono tracking-widest my-1 drop-shadow-sm">
                           {session.code}
                         </div>
                         <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
@@ -1160,8 +1160,8 @@ export const Dock: React.FC = () => {
                         title={`Restore: ${customWidgetTitleById.get((cw.config as { customWidgetId?: string }).customWidgetId ?? '') ?? 'Custom Widget'}`}
                       >
                         <DockIcon
-                          color="bg-purple-600 shadow-lg shadow-purple-600/20"
-                          className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-purple-500 transition"
+                          color="bg-brand-blue-primary shadow-lg shadow-brand-blue-primary/20"
+                          className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-brand-blue-light transition"
                         >
                           <Puzzle className="w-5 h-5 md:w-6 md:h-6" />
                         </DockIcon>

@@ -29,7 +29,7 @@ export const SurfaceColorSettings = <
               onClick={() => updateConfig({ cardColor: color } as Partial<T>)}
               className={`h-6 w-6 rounded-md border transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary ${
                 cardColor === color
-                  ? 'border-indigo-500 ring-2 ring-indigo-200'
+                  ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter'
                   : 'border-slate-200'
               }`}
               style={{ backgroundColor: color }}

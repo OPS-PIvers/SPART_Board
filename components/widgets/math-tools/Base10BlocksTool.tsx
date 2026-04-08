@@ -152,7 +152,7 @@ export const Base10BlocksTool: React.FC = () => {
           className="ml-auto font-black text-slate-700 tabular-nums"
           style={{ fontSize: 'min(14px, 4cqmin)' }}
         >
-          Total: <span className="text-indigo-600">{total}</span>
+          Total: <span className="text-brand-blue-primary">{total}</span>
         </span>
       </div>
 

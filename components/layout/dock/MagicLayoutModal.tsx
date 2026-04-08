@@ -67,7 +67,7 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
           onChange={(e) => setDescription(e.target.value)}
           autoFocus
           placeholder="e.g., Math rotations with 4 groups, a 15-minute timer, and a noise meter."
-          className="w-full h-32 px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium mb-4 resize-none"
+          className="w-full h-32 px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-brand-blue-primary text-sm font-medium mb-4 resize-none"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();

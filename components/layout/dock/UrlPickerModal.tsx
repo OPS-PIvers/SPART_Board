@@ -80,16 +80,16 @@ export const UrlPickerModal: React.FC<UrlPickerModalProps> = ({
 
           <button
             onClick={() => onSelect('qr')}
-            className="group flex flex-col items-center gap-3 p-5 bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 hover:border-purple-400 rounded-2xl transition-all active:scale-95 text-left"
+            className="group flex flex-col items-center gap-3 p-5 bg-brand-blue-lighter hover:bg-brand-blue-lighter/80 border-2 border-brand-blue-lighter hover:border-brand-blue-light rounded-2xl transition-all active:scale-95 text-left"
           >
-            <div className="w-11 h-11 rounded-xl bg-purple-500 flex items-center justify-center shadow-md shadow-purple-400/40 group-hover:scale-110 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-brand-blue-primary flex items-center justify-center shadow-md shadow-brand-blue-primary/40 group-hover:scale-110 transition-transform">
               <QrCode className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-purple-800">
+              <p className="text-xs font-black uppercase tracking-widest text-brand-blue-dark">
                 QR Code
               </p>
-              <p className="text-xxs text-purple-600 font-bold mt-0.5 leading-tight">
+              <p className="text-xxs text-brand-blue-primary font-bold mt-0.5 leading-tight">
                 Scannable by student devices
               </p>
             </div>
