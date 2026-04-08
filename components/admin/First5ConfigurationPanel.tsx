@@ -31,12 +31,20 @@ function stripTime(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+const ROLLOVER_HOUR = 6;
+
 function computeTodaysDayNumber(
   activeDayNumber: number,
   referenceDate: string
 ): number {
   const ref = stripTime(new Date(referenceDate + 'T00:00:00'));
-  const today = stripTime(new Date());
+
+  const now = new Date();
+  if (now.getHours() < ROLLOVER_HOUR) {
+    now.setDate(now.getDate() - 1);
+  }
+  const today = stripTime(now);
+
   return activeDayNumber + countWeekdaysBetween(ref, today);
 }
 
@@ -51,7 +59,12 @@ export const First5ConfigurationPanel: React.FC<
       ? computeTodaysDayNumber(activeDayNumber, referenceDate)
       : null;
 
-  const todayISO = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const localTodayISO = new Date(
+    now.getTime() - now.getTimezoneOffset() * 60000
+  )
+    .toISOString()
+    .split('T')[0];
 
   const handleDayNumberChange = (value: string) => {
     const num = parseInt(value, 10);
@@ -59,7 +72,7 @@ export const First5ConfigurationPanel: React.FC<
       onChange({
         ...config,
         activeDayNumber: Math.max(1, num),
-        referenceDate: todayISO,
+        referenceDate: localTodayISO,
       });
     }
   };
@@ -69,7 +82,7 @@ export const First5ConfigurationPanel: React.FC<
       onChange({
         ...config,
         activeDayNumber: Math.max(1, todaysDayNumber),
-        referenceDate: todayISO,
+        referenceDate: localTodayISO,
       });
     }
   };
@@ -93,7 +106,7 @@ export const First5ConfigurationPanel: React.FC<
             placeholder="e.g. 777"
             className="w-32 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue-primary outline-none text-sm"
           />
-          {referenceDate && referenceDate !== todayISO && (
+          {referenceDate && referenceDate !== localTodayISO && (
             <button
               type="button"
               onClick={handleResetToToday}
