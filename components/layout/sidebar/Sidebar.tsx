@@ -306,19 +306,19 @@ export const Sidebar: React.FC = () => {
           <div className="relative w-full max-w-80 h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300 border-r border-slate-200">
             {/* Header */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 shrink-0 bg-white z-10">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 {activeSection !== 'main' ? (
                   <IconButton
                     onClick={() => setActiveSection('main')}
-                    icon={<ArrowLeft className="w-4 h-4" />}
+                    icon={<ArrowLeft className="w-5 h-5" />}
                     label={t('sidebar.header.back')}
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     shape="square"
                     className="-ml-1.5"
                   />
                 ) : (
-                  <div className="w-9 h-9 bg-brand-blue-primary rounded-lg flex items-center justify-center overflow-hidden">
+                  <div className="w-9 h-9 flex-shrink-0 bg-brand-blue-primary rounded-lg flex items-center justify-center overflow-hidden">
                     {appSettings?.logoUrl ? (
                       <img
                         src={appSettings.logoUrl}
@@ -330,7 +330,7 @@ export const Sidebar: React.FC = () => {
                     )}
                   </div>
                 )}
-                <span className="text-sm font-bold tracking-wider uppercase text-slate-500">
+                <span className="text-sm font-bold tracking-wider uppercase text-slate-500 truncate">
                   {activeSection === 'main'
                     ? t('sidebar.header.classroomManager')
                     : t(`sidebar.nav.${activeSection}`, {
