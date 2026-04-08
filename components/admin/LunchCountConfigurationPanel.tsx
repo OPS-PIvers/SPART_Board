@@ -37,7 +37,7 @@ export const LunchCountConfigurationPanel: React.FC<
             value={config.schumannSheetId ?? ''}
             onChange={(e) =>
               onChange({
-                ...(config as Record<string, unknown>),
+                ...config,
                 schumannSheetId: e.target.value.trim(),
               })
             }
@@ -64,7 +64,7 @@ export const LunchCountConfigurationPanel: React.FC<
             value={config.intermediateSheetId ?? ''}
             onChange={(e) =>
               onChange({
-                ...(config as Record<string, unknown>),
+                ...config,
                 intermediateSheetId: e.target.value.trim(),
               })
             }
@@ -91,7 +91,7 @@ export const LunchCountConfigurationPanel: React.FC<
             value={config.submissionUrl ?? ''}
             onChange={(e) =>
               onChange({
-                ...(config as Record<string, unknown>),
+                ...config,
                 submissionUrl: e.target.value.trim(),
               })
             }
