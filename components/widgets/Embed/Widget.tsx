@@ -41,6 +41,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     isEmbeddable = true,
     blockedReason = '',
     zoom = 1,
+    autoplay = false,
   } = config;
 
   const ZOOM_STEPS = [
@@ -78,6 +79,26 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
   const sanitizedUrl = ensureProtocol(url);
   const embedUrl = convertToEmbedUrl(sanitizedUrl);
+
+  // When autoplay is enabled, append ?autoplay=1 for supported hosts
+  const finalEmbedUrl = React.useMemo(() => {
+    if (!autoplay || !embedUrl) return embedUrl;
+    try {
+      const u = new URL(embedUrl);
+      const host = u.hostname.toLowerCase();
+      if (
+        host.includes('youtube.com') ||
+        host.includes('drive.google.com') ||
+        host.includes('vids.google.com')
+      ) {
+        u.searchParams.set('autoplay', '1');
+      }
+      return u.toString();
+    } catch {
+      return embedUrl;
+    }
+  }, [embedUrl, autoplay]);
+
   const [refreshKey, setRefreshKey] = useState(0);
 
   const isActuallyEmbeddable = React.useMemo(() => {
@@ -408,7 +429,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <iframe
                 key={refreshKey}
                 title="Embed Content"
-                src={displayMode === 'url' ? embedUrl : undefined}
+                src={displayMode === 'url' ? finalEmbedUrl : undefined}
                 srcDoc={displayMode === 'code' ? html : undefined}
                 className="absolute top-0 left-0 border-none block"
                 style={{

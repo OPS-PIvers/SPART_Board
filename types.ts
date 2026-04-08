@@ -362,6 +362,7 @@ export interface EmbedConfig {
   isEmbeddable?: boolean;
   blockedReason?: string;
   zoom?: number;
+  autoplay?: boolean;
 }
 
 export interface BuildingPollDefaults {
@@ -2694,6 +2695,12 @@ export interface Announcement {
    * An empty array means ALL buildings (broadcast to everyone).
    */
   targetBuildings: string[];
+  /**
+   * Email addresses this announcement targets.
+   * An empty array means no user-level targeting (falls back to building targeting).
+   * When both targetBuildings and targetUsers are set, OR logic is used.
+   */
+  targetUsers: string[];
   createdAt: number;
   updatedAt: number;
   /** Email of the admin who created/last modified this announcement */
