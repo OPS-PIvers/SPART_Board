@@ -638,7 +638,7 @@ export const AnnouncementsManager: React.FC = () => {
       dismissalDurationSeconds: isMinutes ? durationSec / 60 : durationSec,
       dismissalDurationUnit: isMinutes ? 'minutes' : 'seconds',
       targetBuildings: a.targetBuildings,
-      targetUsers: a.targetUsers ?? [],
+      targetUsers: (a.targetUsers ?? []).map((e) => e.trim().toLowerCase()),
     });
     setEditingId(a.id);
     setIsCreating(true);
@@ -732,7 +732,9 @@ export const AnnouncementsManager: React.FC = () => {
         dismissalDurationSeconds:
           form.dismissalType === 'duration' ? durationSeconds : undefined,
         targetBuildings: form.targetBuildings,
-        targetUsers: form.targetUsers,
+        targetUsers: [
+          ...new Set(form.targetUsers.map((e) => e.trim().toLowerCase())),
+        ],
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
         createdBy: user?.email ?? 'admin',

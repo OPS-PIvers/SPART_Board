@@ -430,7 +430,7 @@ export const AnnouncementOverlay: React.FC = () => {
 
         return true;
       }),
-    [announcements, dismissed, selectedBuildings, nowMinutes, user]
+    [announcements, dismissed, selectedBuildings, nowMinutes, user?.email]
   );
 
   if (visible.length === 0) return null;

@@ -24,6 +24,8 @@ import { useEmbedConfig } from './hooks/useEmbedConfig';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { useAuth } from '@/context/useAuth';
 
+import { applyAutoplay } from './applyAutoplay';
+
 const NEW_WIDGET_SPACING = 20;
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
@@ -81,23 +83,10 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const embedUrl = convertToEmbedUrl(sanitizedUrl);
 
   // When autoplay is enabled, append ?autoplay=1 for supported hosts
-  const finalEmbedUrl = React.useMemo(() => {
-    if (!autoplay || !embedUrl) return embedUrl;
-    try {
-      const u = new URL(embedUrl);
-      const host = u.hostname.toLowerCase();
-      if (
-        host.includes('youtube.com') ||
-        host.includes('drive.google.com') ||
-        host.includes('vids.google.com')
-      ) {
-        u.searchParams.set('autoplay', '1');
-      }
-      return u.toString();
-    } catch {
-      return embedUrl;
-    }
-  }, [embedUrl, autoplay]);
+  const finalEmbedUrl = React.useMemo(
+    () => applyAutoplay(embedUrl, autoplay),
+    [embedUrl, autoplay]
+  );
 
   const [refreshKey, setRefreshKey] = useState(0);
 
