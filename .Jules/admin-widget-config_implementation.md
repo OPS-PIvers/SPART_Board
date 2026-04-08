@@ -243,15 +243,16 @@ Config: `components/admin/InstructionalRoutinesManager.tsx` _(separate modal; do
 
 ---
 
-[x] Lunch Count — Type: `lunchCount` | Label: "Lunch"
+[X] Lunch Count — Type: `lunchCount` | Label: "Lunch"
 Config: `components/admin/LunchCountConfigurationPanel.tsx` _(dedicated panel via `BUILDING_CONFIG_PANELS`)_
-    - [Default User-Level Settings]
-        -- None natively configurable.
-    - [Admin-Only Settings]
-        -- schumannSheetId: Google Sheet ID for Schumann Elementary.
-        -- intermediateSheetId: Google Sheet ID for Intermediate School.
-        -- submissionUrl: Apps Script URL for data POSTing.
-        -- dockDefaults: Per-building dock visibility.
+
+- **User-level Defaults:**
+  - None natively configurable.
+- **Admin-only Settings:**
+  - `schumannSheetId`: Google Sheet ID for Schumann Elementary.
+  - `intermediateSheetId`: Google Sheet ID for Intermediate School.
+  - `submissionUrl`: Apps Script URL for data POSTing.
+  - `dockDefaults`: Per-building dock visibility.
 
 ---
 
