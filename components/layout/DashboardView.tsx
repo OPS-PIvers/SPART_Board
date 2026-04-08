@@ -151,7 +151,20 @@ export const DashboardView: React.FC = () => {
     if (!pendingQuizShareId || !user) return;
     void importSharedQuiz(pendingQuizShareId)
       .then(() => addToast('Shared quiz imported to your library!', 'success'))
-      .catch(() => addToast('Failed to import shared quiz.', 'error'))
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : '';
+        addToast(
+          msg
+            ? `Failed to import shared quiz: ${msg}`
+            : 'Failed to import shared quiz.',
+          'error'
+        );
+      })
       .finally(() => clearPendingQuizShare());
   }, [
     pendingQuizShareId,

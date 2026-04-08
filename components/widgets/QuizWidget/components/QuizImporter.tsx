@@ -172,7 +172,7 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
     setError(null);
     try {
       const url = await createQuizTemplate();
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to create template'

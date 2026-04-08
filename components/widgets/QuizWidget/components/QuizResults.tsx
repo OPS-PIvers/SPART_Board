@@ -661,10 +661,15 @@ const StudentsTab: React.FC<{
           })
           .map((r) => {
             const score = getResponseScore(r, questions);
-            const correct = r.answers.filter((a) => {
-              const q = questions.find((qn) => qn.id === a.questionId);
-              return q ? gradeAnswer(q, a.answer) : false;
-            }).length;
+            const earned = questions.reduce((sum, q) => {
+              const ans = r.answers.find((a) => a.questionId === q.id);
+              if (!ans) return sum;
+              return sum + (gradeAnswer(q, ans.answer) ? (q.points ?? 1) : 0);
+            }, 0);
+            const maxPoints = questions.reduce(
+              (sum, q) => sum + (q.points ?? 1),
+              0
+            );
             const warnings = r.tabSwitchWarnings ?? 0;
 
             return (
@@ -706,7 +711,7 @@ const StudentsTab: React.FC<{
                         className="text-brand-blue-primary/60 font-bold"
                         style={{ fontSize: 'min(10px, 3cqmin)' }}
                       >
-                        {correct}/{questions.length} Correct
+                        {earned}/{maxPoints} pts
                         {r.status === 'in-progress' && ' (In Progress)'}
                       </p>
                     </>

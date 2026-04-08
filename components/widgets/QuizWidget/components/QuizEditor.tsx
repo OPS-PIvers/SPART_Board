@@ -364,9 +364,9 @@ export const QuizEditor: React.FC<QuizEditorProps> = ({
                         value={q.points ?? 1}
                         onChange={(e) =>
                           updateQuestion(q.id, {
-                            points: Math.max(
-                              1,
-                              parseInt(e.target.value, 10) || 1
+                            points: Math.min(
+                              100,
+                              Math.max(1, parseInt(e.target.value, 10) || 1)
                             ),
                           })
                         }

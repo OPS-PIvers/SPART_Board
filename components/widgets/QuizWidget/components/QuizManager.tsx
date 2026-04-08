@@ -627,7 +627,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                         />
                       }
                       label="Share"
-                      onClick={() => onShare(quiz)}
+                      onClick={() => void onShare(quiz)}
                       variant="ghost"
                     />
                     <ActionButton

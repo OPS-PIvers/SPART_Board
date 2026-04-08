@@ -369,15 +369,21 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }
       }}
       onShare={async (meta) => {
+        let url: string;
         try {
-          const url = await shareQuiz(meta);
-          await navigator.clipboard.writeText(url);
-          addToast('Share link copied to clipboard!', 'success');
+          url = await shareQuiz(meta);
         } catch (err) {
           addToast(
             err instanceof Error ? err.message : 'Share failed',
             'error'
           );
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          addToast('Share link copied to clipboard!', 'success');
+        } catch {
+          addToast(`Share link: ${url}`, 'info');
         }
       }}
     />
