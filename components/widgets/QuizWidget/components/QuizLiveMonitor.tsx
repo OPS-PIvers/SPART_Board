@@ -4,7 +4,13 @@
  * and real-time per-question answer distribution.
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   Copy,
   CheckCircle2,
@@ -33,6 +39,7 @@ import {
 } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import { buildPinToNameMap } from '../utils/quizScoreboard';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface QuizLiveMonitorProps {
   session: QuizSession;
@@ -78,25 +85,17 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   const isLiveScoreboardActive = config.liveScoreboardEnabled ?? false;
 
   // Close live scoreboard setup popup on click-outside or Escape
+  const closeLiveScoreboardSetup = useCallback(() => {
+    setShowLiveScoreboardSetup(false);
+  }, []);
+  useClickOutside(liveScoreboardSetupRef, closeLiveScoreboardSetup);
   useEffect(() => {
     if (!showLiveScoreboardSetup) return;
-    const handleClick = (e: MouseEvent) => {
-      if (
-        liveScoreboardSetupRef.current &&
-        !liveScoreboardSetupRef.current.contains(e.target as Node)
-      ) {
-        setShowLiveScoreboardSetup(false);
-      }
-    };
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setShowLiveScoreboardSetup(false);
     };
-    document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('keydown', handleKey);
-    };
+    return () => document.removeEventListener('keydown', handleKey);
   }, [showLiveScoreboardSetup]);
 
   const handleToggleLiveScoreboard = () => {

@@ -124,6 +124,29 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           className={`relative h-full w-full font-${globalStyle.fontFamily}`}
         >
+          {/* LIVE badge when being synced from a quiz widget */}
+          {config.liveQuizWidgetId && (
+            <div
+              className="absolute z-10 flex items-center bg-red-500 text-white rounded-full"
+              style={{
+                top: 'min(4px, 1cqmin)',
+                left: 'min(4px, 1cqmin)',
+                fontSize: 'min(10px, 3cqmin)',
+                padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
+                gap: 'min(4px, 1cqmin)',
+              }}
+            >
+              <span
+                className="bg-white rounded-full animate-pulse"
+                style={{
+                  width: 'min(6px, 1.5cqmin)',
+                  height: 'min(6px, 1.5cqmin)',
+                }}
+              />
+              LIVE
+            </div>
+          )}
+
           {/* Layout toggle button */}
           {teams.length > 0 && (
             <button

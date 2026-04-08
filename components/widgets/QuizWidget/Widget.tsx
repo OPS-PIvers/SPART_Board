@@ -118,16 +118,6 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setView,
   ]);
 
-  // ─── Callback for child components to update quiz config ────────────────────
-  const handleUpdateQuizConfig = useCallback(
-    (updates: Partial<QuizConfig>) => {
-      updateWidget(widget.id, {
-        config: { ...config, ...updates } as QuizConfig,
-      });
-    },
-    [updateWidget, widget.id, config]
-  );
-
   // ─── Live Scoreboard Sync ──────────────────────────────────────────────────
   const liveScoreboardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -142,6 +132,16 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   configRef.current = config;
   const widgetsRef = useRef(activeDashboard?.widgets);
   widgetsRef.current = activeDashboard?.widgets;
+
+  // ─── Callback for child components to update quiz config ────────────────────
+  const handleUpdateQuizConfig = useCallback(
+    (updates: Partial<QuizConfig>) => {
+      updateWidget(widget.id, {
+        config: { ...configRef.current, ...updates } as QuizConfig,
+      });
+    },
+    [updateWidget, widget.id]
+  );
 
   useEffect(() => {
     if (!config.liveScoreboardEnabled || !loadedQuizData || !liveSession) {
@@ -231,7 +231,11 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       if (existingScoreboard) {
         updateWidget(existingScoreboard.id, {
-          config: { ...existingScoreboard.config, teams: newTeams },
+          config: {
+            ...existingScoreboard.config,
+            teams: newTeams,
+            liveQuizWidgetId: widget.id,
+          },
         });
         if (currentConfig.liveScoreboardWidgetId !== existingScoreboard.id) {
           updateWidget(widget.id, {
@@ -246,7 +250,11 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         // Guard against creating duplicate scoreboards while addWidget is async
         creatingScoreboardRef.current = true;
         addWidget('scoreboard', {
-          config: { teams: newTeams },
+          config: {
+            teams: newTeams,
+            layout: 'rows',
+            liveQuizWidgetId: widget.id,
+          },
         });
       }
     }, 2000);
@@ -281,9 +289,25 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       liveSession &&
       liveSession.status === 'ended'
     ) {
+      // Clear the liveQuizWidgetId on the scoreboard to remove the LIVE badge
+      const scoreboardId = configRef.current.liveScoreboardWidgetId;
+      if (scoreboardId) {
+        const widgets = widgetsRef.current;
+        const scoreboard = widgets?.find((w) => w.id === scoreboardId);
+        if (scoreboard) {
+          updateWidget(scoreboardId, {
+            config: { ...scoreboard.config, liveQuizWidgetId: undefined },
+          });
+        }
+      }
       handleUpdateQuizConfig({ liveScoreboardEnabled: false });
     }
-  }, [liveSession, config.liveScoreboardEnabled, handleUpdateQuizConfig]);
+  }, [
+    liveSession,
+    config.liveScoreboardEnabled,
+    handleUpdateQuizConfig,
+    updateWidget,
+  ]);
 
   // ─── Guard: not signed in ──────────────────────────────────────────────────
   if (!user) {

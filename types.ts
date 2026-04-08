@@ -469,6 +469,8 @@ export interface ScoreboardConfig {
   teams?: ScoreboardTeam[];
   /** Display layout: card grid or compact rows */
   layout?: 'cards' | 'rows';
+  /** When set, indicates this scoreboard is being live-synced from a quiz widget */
+  liveQuizWidgetId?: string;
 }
 
 export interface ExpectationsConfig {
@@ -1600,7 +1602,7 @@ export interface StarterPackGlobalConfig {
   dockDefaults?: Record<string, boolean>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Required: Record<string, never> breaks WidgetConfig union spreads in DashboardContext
 export interface StarterPackConfig {}
 
 export interface CountdownConfig {

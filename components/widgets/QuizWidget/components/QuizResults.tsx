@@ -39,6 +39,7 @@ import {
   getResponseScore,
   getEarnedPoints,
 } from '../utils/quizScoreboard';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface QuizResultsProps {
   quiz: QuizData;
@@ -66,25 +67,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const scoreboardPromptRef = useRef<HTMLDivElement>(null);
 
   // Close popup on click-outside or Escape
+  const closeScoreboardPrompt = useCallback(() => {
+    setShowScoreboardPrompt(false);
+  }, []);
+  useClickOutside(scoreboardPromptRef, closeScoreboardPrompt);
   useEffect(() => {
     if (!showScoreboardPrompt) return;
-    const handleClick = (e: MouseEvent) => {
-      if (
-        scoreboardPromptRef.current &&
-        !scoreboardPromptRef.current.contains(e.target as Node)
-      ) {
-        setShowScoreboardPrompt(false);
-      }
-    };
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setShowScoreboardPrompt(false);
     };
-    document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('keydown', handleKey);
-    };
+    return () => document.removeEventListener('keydown', handleKey);
   }, [showScoreboardPrompt]);
 
   const completed = responses.filter((r) => r.status === 'completed');
