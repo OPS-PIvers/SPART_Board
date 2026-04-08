@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   X,
   FileText,
@@ -78,8 +78,12 @@ export const GraphicOrganizerConfigurationModal: React.FC<
     BUILDINGS.length > 0 ? BUILDINGS[0].id : ''
   );
   const [globalConfig, setGlobalConfig] =
-    useState<GraphicOrganizerGlobalConfig>({ buildings: {} });
-  const [isLoading, setIsLoading] = useState(true);
+    useState<GraphicOrganizerGlobalConfig>(
+      (permission.config as unknown as GraphicOrganizerGlobalConfig) || {
+        buildings: {},
+      }
+    );
+  const isLoading = false;
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -91,15 +95,16 @@ export const GraphicOrganizerConfigurationModal: React.FC<
     useState<GraphicOrganizerTemplate | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Initialize config from permission
-  useEffect(() => {
+  // Sync state if permission.config changes externally, avoiding useEffect.
+  const [prevConfigRef, setPrevConfigRef] = useState(permission.config);
+  if (permission.config !== prevConfigRef) {
+    setPrevConfigRef(permission.config);
     if (permission.config) {
       setGlobalConfig(
         permission.config as unknown as GraphicOrganizerGlobalConfig
       );
     }
-    setIsLoading(false);
-  }, [permission.config]);
+  }
 
   const handleSave = () => {
     if (editingTemplateId) {
