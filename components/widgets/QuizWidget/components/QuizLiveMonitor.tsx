@@ -384,7 +384,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                   </span>
                   {autoCountdown !== null && (
                     <div
-                      className="flex items-center gap-1 text-brand-red-primary font-black animate-bounce"
+                      className="flex items-center gap-1 text-brand-red-primary font-black animate-pulse"
                       style={{ fontSize: 'min(10px, 3cqmin)' }}
                     >
                       <Zap className="w-3 h-3 fill-current" />

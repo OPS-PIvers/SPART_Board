@@ -7,6 +7,11 @@ export interface ToggleProps {
   className?: string;
   size?: 'xs' | 'sm' | 'md';
   /**
+   * Accessible label for the toggle (required for screen readers).
+   * Rendered as aria-label on the switch element.
+   */
+  label?: string;
+  /**
    * Tailwind class for the active background color.
    * Defaults to 'bg-brand-blue-primary'.
    */
@@ -30,6 +35,7 @@ export const Toggle: React.FC<ToggleProps> = ({
   disabled = false,
   className = '',
   size = 'md',
+  label,
   activeColor = 'bg-brand-blue-primary',
   showLabels = true,
   variant = 'standard',
@@ -64,6 +70,7 @@ export const Toggle: React.FC<ToggleProps> = ({
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       disabled={disabled}
       onClick={() => !disabled && onChange(!checked)}
       className={`

@@ -584,7 +584,7 @@ export const Sidebar: React.FC = () => {
                     }
                   >
                     {isSaving ? (
-                      <Cloud className="w-4 h-4 animate-bounce" />
+                      <Cloud className="w-4 h-4 animate-pulse" />
                     ) : (
                       <CloudCheck className="w-4 h-4" />
                     )}
