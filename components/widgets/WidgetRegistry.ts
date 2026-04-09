@@ -180,6 +180,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./ActivityWall/Widget'),
     'ActivityWallWidget'
   ),
+  'work-symbols': lazyNamed(
+    () => import('./WorkSymbols/Widget'),
+    'WorkSymbolsWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -314,6 +318,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./ActivityWall/Settings'),
     'ActivityWallSettings'
   ),
+  'work-symbols': lazyNamed(
+    () => import('./WorkSymbols/Settings'),
+    'WorkSymbolsSettings'
+  ),
   'talking-tool': lazyNamed(
     () => import('./TalkingTool'),
     'TalkingToolSettings'
@@ -414,6 +422,10 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
   stickers: lazyNamed(
     () => import('./stickers/StickerBookSettings'),
     'StickerBookAppearanceSettings'
+  ),
+  'work-symbols': lazyNamed(
+    () => import('./WorkSymbols/Settings'),
+    'WorkSymbolsAppearanceSettings'
   ),
 };
 
@@ -824,6 +836,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   },
   'custom-widget': {
     baseWidth: 400,
+    baseHeight: 300,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'work-symbols': {
+    baseWidth: 300,
     baseHeight: 300,
     canSpread: true,
     skipScaling: true,

@@ -55,7 +55,8 @@ export type WidgetType =
   | 'soundboard'
   | 'url'
   | 'activity-wall'
-  | 'first-5';
+  | 'first-5'
+  | 'work-symbols';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -506,6 +507,30 @@ export interface ExpectationsBuildingConfig {
 
 export interface ExpectationsGlobalConfig {
   buildings: Record<string, ExpectationsBuildingConfig>;
+}
+
+// --- WORK SYMBOLS ---
+
+export interface WorkSymbolsConfig {
+  selectedSymbolId: string | null;
+  fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
+  titlePosition?: 'bottom' | 'top';
+}
+
+export interface WorkSymbol {
+  id: string;
+  title: string;
+  imageUrl: string;
+}
+
+export interface WorkSymbolsBuildingConfig {
+  symbols: WorkSymbol[];
+}
+
+export interface WorkSymbolsGlobalConfig {
+  buildings: Record<string, WorkSymbolsBuildingConfig>;
 }
 
 export interface TalkingToolStem {
@@ -2186,7 +2211,8 @@ export type WidgetConfig =
   | GuidedLearningConfig
   | CustomWidgetConfig
   | SoundboardConfig
-  | ActivityWallConfig;
+  | ActivityWallConfig
+  | WorkSymbolsConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'url'
@@ -2301,7 +2327,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'url'
                                                                                                               ? CustomWidgetConfig
                                                                                                               : T extends 'activity-wall'
                                                                                                                 ? ActivityWallConfig
-                                                                                                                : never;
+                                                                                                                : T extends 'work-symbols'
+                                                                                                                  ? WorkSymbolsConfig
+                                                                                                                  : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

@@ -42,6 +42,7 @@ import {
   Share2,
   GraduationCap,
   MessagesSquare,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -265,5 +266,11 @@ export const TOOLS: ToolMetadata[] = [
     icon: CalendarDays,
     label: 'Countdown',
     color: 'bg-orange-500',
+  },
+  {
+    type: 'work-symbols',
+    icon: ImageIcon,
+    label: 'Work Symbols',
+    color: 'bg-violet-500',
   },
 ];

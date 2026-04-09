@@ -236,6 +236,11 @@ export const useStorage = () => {
     return uploadFile(`admin_stickers/${timestamp}-${file.name}`, file);
   };
 
+  const uploadAdminWorkSymbol = async (file: File): Promise<string> => {
+    const timestamp = Date.now();
+    return uploadFile(`admin_work_symbols/${timestamp}-${file.name}`, file);
+  };
+
   const uploadAdminLogo = async (file: File): Promise<string> => {
     return uploadFile(`admin_logos/custom_logo`, file);
   };
@@ -356,6 +361,7 @@ export const useStorage = () => {
     uploadAdminBackground,
     uploadWeatherImage,
     uploadAdminSticker,
+    uploadAdminWorkSymbol,
     uploadAdminLogo,
     deleteAdminLogo,
     uploadCatalystImage,

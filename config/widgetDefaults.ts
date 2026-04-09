@@ -474,4 +474,11 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       customWidgetId: '',
     },
   },
+  'work-symbols': {
+    w: 300,
+    h: 300,
+    config: {
+      selectedSymbolId: null,
+    },
+  },
 };
