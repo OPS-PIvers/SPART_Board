@@ -1178,7 +1178,11 @@ export const DashboardView: React.FC = () => {
               : undefined;
             if (!selectedGroupId) return null;
             const members = activeDashboard.widgets.filter(
-              (w) => w.groupId === selectedGroupId
+              (w) =>
+                w.groupId === selectedGroupId &&
+                !w.minimized &&
+                !w.isLocked &&
+                !w.isPinned
             );
             return <GroupBoundingBox groupWidgets={members} zoom={zoom} />;
           })()}

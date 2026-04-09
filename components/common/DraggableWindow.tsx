@@ -600,7 +600,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             w.groupId === widget.groupId &&
             w.id !== widget.id &&
             !w.minimized &&
-            !w.isLocked
+            !w.isLocked &&
+            !w.isPinned
         )
         .map((w) => {
           const el = widgetRefRegistry.get(w.id);
