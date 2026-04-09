@@ -483,7 +483,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         case 'p': // Pin/Unpin position
           if (isLocked) break;
           e.preventDefault();
+          if (!isPinned) setShowSnapMenu(false);
           updateWidget(widget.id, { isPinned: !isPinned });
+          handleCloseTools();
           break;
       }
     }
