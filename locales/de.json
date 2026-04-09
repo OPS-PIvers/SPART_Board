@@ -103,6 +103,8 @@
     "undo": "Rückgängig",
     "clearAll": "Alles löschen",
     "done": "Fertig",
+    "pin": "Position fixieren",
+    "unpin": "Position lösen",
     "snapLayout": "Layout anpassen",
     "chooseLayout": "Layout wählen",
     "snapTo": "Anpassen an",

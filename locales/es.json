@@ -112,6 +112,8 @@
     "undo": "Deshacer",
     "clearAll": "Borrar Todo",
     "done": "Listo",
+    "pin": "Fijar posición",
+    "unpin": "Soltar posición",
     "snapLayout": "Ajustar Diseño",
     "chooseLayout": "Elegir Diseño",
     "snapTo": "Ajustar a",
