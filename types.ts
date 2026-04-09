@@ -523,14 +523,12 @@ export interface WorkSymbol {
   id: string;
   title: string;
   imageUrl: string;
-}
-
-export interface WorkSymbolsBuildingConfig {
-  symbols: WorkSymbol[];
+  /** Building IDs this symbol is available in. Empty = all buildings. */
+  buildings: string[];
 }
 
 export interface WorkSymbolsGlobalConfig {
-  buildings: Record<string, WorkSymbolsBuildingConfig>;
+  symbols: WorkSymbol[];
 }
 
 export interface TalkingToolStem {

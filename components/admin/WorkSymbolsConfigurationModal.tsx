@@ -12,11 +12,11 @@ import {
   FeaturePermission,
   WorkSymbol,
   WorkSymbolsGlobalConfig,
-  WorkSymbolsBuildingConfig,
 } from '@/types';
 import { useStorage } from '@/hooks/useStorage';
 import { Toast } from '../common/Toast';
 import { Button } from '../common/Button';
+import { Card } from '../common/Card';
 
 interface WorkSymbolsConfigurationModalProps {
   isOpen: boolean;
@@ -27,15 +27,12 @@ interface WorkSymbolsConfigurationModalProps {
 
 const normalizeConfig = (raw: unknown): WorkSymbolsGlobalConfig => {
   const config = raw as WorkSymbolsGlobalConfig | undefined;
-  return { buildings: config?.buildings ?? {} };
+  return { symbols: config?.symbols ?? [] };
 };
 
 export const WorkSymbolsConfigurationModal: React.FC<
   WorkSymbolsConfigurationModalProps
 > = ({ isOpen, onClose, permission, onSave }) => {
-  const [selectedBuilding, setSelectedBuilding] = useState(
-    BUILDINGS.length > 0 ? BUILDINGS[0].id : ''
-  );
   const [globalConfig, setGlobalConfig] = useState<WorkSymbolsGlobalConfig>(
     () => normalizeConfig(permission.config)
   );
@@ -56,27 +53,9 @@ export const WorkSymbolsConfigurationModal: React.FC<
     setGlobalConfig(normalizeConfig(permission.config));
   }
 
-  const getBuildingConfig = useCallback(
-    (buildingId: string): WorkSymbolsBuildingConfig => {
-      return globalConfig.buildings[buildingId] ?? { symbols: [] };
-    },
-    [globalConfig]
-  );
-
-  const setBuildingSymbols = useCallback(
-    (buildingId: string, symbols: WorkSymbol[]) => {
-      setGlobalConfig((prev) => ({
-        ...prev,
-        buildings: {
-          ...prev.buildings,
-          [buildingId]: { symbols },
-        },
-      }));
-    },
-    []
-  );
-
-  const currentSymbols = getBuildingConfig(selectedBuilding).symbols;
+  const setSymbols = useCallback((symbols: WorkSymbol[]) => {
+    setGlobalConfig((prev) => ({ ...prev, symbols }));
+  }, []);
 
   // --- Upload ---
   const handleFiles = useCallback(
@@ -97,6 +76,7 @@ export const WorkSymbolsConfigurationModal: React.FC<
               id: crypto.randomUUID(),
               title: file.name.replace(/\.[^.]+$/, ''),
               imageUrl: url,
+              buildings: [],
             });
           }
         } catch (e) {
@@ -104,19 +84,11 @@ export const WorkSymbolsConfigurationModal: React.FC<
         }
       }
       if (newSymbols.length > 0) {
-        setBuildingSymbols(selectedBuilding, [
-          ...currentSymbols,
-          ...newSymbols,
-        ]);
+        setSymbols([...globalConfig.symbols, ...newSymbols]);
       }
       setUploading(false);
     },
-    [
-      currentSymbols,
-      selectedBuilding,
-      setBuildingSymbols,
-      uploadAdminWorkSymbol,
-    ]
+    [globalConfig.symbols, setSymbols, uploadAdminWorkSymbol]
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,16 +109,25 @@ export const WorkSymbolsConfigurationModal: React.FC<
       uploadedThisSessionRef.current.delete(symbol.imageUrl);
       void deleteFile(symbol.imageUrl);
     }
-    setBuildingSymbols(
-      selectedBuilding,
-      currentSymbols.filter((s) => s.id !== symbol.id)
-    );
+    setSymbols(globalConfig.symbols.filter((s) => s.id !== symbol.id));
   };
 
   const updateSymbolTitle = (symbolId: string, title: string) => {
-    setBuildingSymbols(
-      selectedBuilding,
-      currentSymbols.map((s) => (s.id === symbolId ? { ...s, title } : s))
+    setSymbols(
+      globalConfig.symbols.map((s) => (s.id === symbolId ? { ...s, title } : s))
+    );
+  };
+
+  const toggleBuilding = (symbolId: string, buildingId: string) => {
+    setSymbols(
+      globalConfig.symbols.map((s) => {
+        if (s.id !== symbolId) return s;
+        const current = s.buildings;
+        const next = current.includes(buildingId)
+          ? current.filter((b) => b !== buildingId)
+          : [...current, buildingId];
+        return { ...s, buildings: next };
+      })
     );
   };
 
@@ -169,7 +150,6 @@ export const WorkSymbolsConfigurationModal: React.FC<
   };
 
   const handleClose = () => {
-    // Clean up any uploads from this session that weren't saved
     for (const url of uploadedThisSessionRef.current) {
       void deleteFile(url);
     }
@@ -191,7 +171,7 @@ export const WorkSymbolsConfigurationModal: React.FC<
             <div>
               <h2 className="text-lg font-bold text-slate-900">Work Symbols</h2>
               <p className="text-xs text-slate-500">
-                Upload images for work-time expectations
+                Upload images and assign them to buildings
               </p>
             </div>
           </div>
@@ -203,67 +183,8 @@ export const WorkSymbolsConfigurationModal: React.FC<
           </button>
         </div>
 
-        {/* Building Selector */}
-        {BUILDINGS.length > 1 && (
-          <div className="px-4 pt-3 pb-1">
-            <div className="flex gap-2 flex-wrap">
-              {BUILDINGS.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setSelectedBuilding(b.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    selectedBuilding === b.id
-                      ? 'bg-violet-100 text-violet-700 border border-violet-200'
-                      : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {b.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-          {/* Symbol Grid */}
-          {currentSymbols.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {currentSymbols.map((symbol) => (
-                <div
-                  key={symbol.id}
-                  className="group relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50"
-                >
-                  <div className="aspect-square p-2">
-                    <img
-                      src={symbol.imageUrl}
-                      alt={symbol.title}
-                      className="w-full h-full object-contain rounded-lg"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="px-2 pb-2">
-                    <input
-                      type="text"
-                      value={symbol.title}
-                      onChange={(e) =>
-                        updateSymbolTitle(symbol.id, e.target.value)
-                      }
-                      className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-400 focus:outline-none"
-                      placeholder="Symbol title..."
-                    />
-                  </div>
-                  <button
-                    onClick={() => removeSymbol(symbol)}
-                    className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-red-50 rounded-lg shadow-sm border border-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Upload Zone */}
           <div
             onDragOver={(e) => {
@@ -273,27 +194,32 @@ export const WorkSymbolsConfigurationModal: React.FC<
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all p-8 gap-3 ${
               isDragging
                 ? 'border-violet-400 bg-violet-50'
-                : 'border-slate-300 hover:border-violet-300 hover:bg-violet-50/50'
-            }`}
+                : 'border-slate-300 bg-white hover:border-violet-300 hover:bg-violet-50/30'
+            } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
           >
             {uploading ? (
-              <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+              <>
+                <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                <p className="text-sm font-bold text-slate-500">Uploading...</p>
+              </>
             ) : (
-              <Upload className="w-8 h-8 text-slate-400" />
+              <>
+                <div className="p-3 bg-slate-100 rounded-xl">
+                  <Upload className="w-6 h-6 text-slate-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-slate-600 uppercase tracking-tight">
+                    Drop images here or click to upload
+                  </p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                    PNG, JPG, or WebP
+                  </p>
+                </div>
+              </>
             )}
-            <div className="text-center">
-              <p className="text-sm font-medium text-slate-700">
-                {uploading
-                  ? 'Uploading...'
-                  : 'Drop images here or click to upload'}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                PNG, JPG, or WebP images
-              </p>
-            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -301,8 +227,122 @@ export const WorkSymbolsConfigurationModal: React.FC<
               multiple
               className="hidden"
               onChange={handleFileInput}
+              disabled={uploading}
             />
           </div>
+
+          {/* Symbol Grid */}
+          {globalConfig.symbols.length === 0 ? (
+            <div className="py-12 flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 rounded-3xl text-slate-400">
+              <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
+              <p className="font-black uppercase tracking-widest text-xs">
+                No work symbols yet
+              </p>
+              <p className="text-xs mt-1">
+                Upload images above to create work symbols.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {globalConfig.symbols.map((symbol) => (
+                <Card
+                  key={symbol.id}
+                  padding="sm"
+                  hoverable
+                  className="flex flex-col gap-3 group"
+                >
+                  {/* Image preview */}
+                  <div className="relative aspect-square bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden">
+                    <img
+                      src={symbol.imageUrl}
+                      alt={symbol.title}
+                      className="w-full h-full object-contain p-4"
+                      loading="lazy"
+                    />
+                    <button
+                      onClick={() => removeSymbol(symbol)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 p-1.5 z-10"
+                      title="Remove symbol"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Title input */}
+                  <input
+                    type="text"
+                    value={symbol.title}
+                    onChange={(e) =>
+                      updateSymbolTitle(symbol.id, e.target.value)
+                    }
+                    className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                    placeholder="Symbol title..."
+                  />
+
+                  {/* Building toggles */}
+                  {BUILDINGS.length > 1 && (
+                    <div className="space-y-1.5">
+                      <label className="text-xxs font-black uppercase text-slate-400 tracking-widest block px-1">
+                        Buildings
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {BUILDINGS.map((b) => {
+                          const isAssigned =
+                            symbol.buildings.length === 0 ||
+                            symbol.buildings.includes(b.id);
+                          const isExplicit = symbol.buildings.includes(b.id);
+                          const isAllBuildings = symbol.buildings.length === 0;
+                          return (
+                            <button
+                              key={b.id}
+                              onClick={() => {
+                                if (isAllBuildings) {
+                                  // Switching from "all" to explicit: set all except this one
+                                  const allExcept = BUILDINGS.map(
+                                    (x) => x.id
+                                  ).filter((id) => id !== b.id);
+                                  setSymbols(
+                                    globalConfig.symbols.map((s) =>
+                                      s.id === symbol.id
+                                        ? { ...s, buildings: allExcept }
+                                        : s
+                                    )
+                                  );
+                                } else {
+                                  toggleBuilding(symbol.id, b.id);
+                                }
+                              }}
+                              className={`px-2 py-1 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
+                                isAssigned
+                                  ? isExplicit || isAllBuildings
+                                    ? 'bg-violet-500 text-white border-violet-500 shadow-sm'
+                                    : 'bg-violet-100 text-violet-600 border-violet-200'
+                                  : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:text-slate-500'
+                              }`}
+                              title={
+                                isAllBuildings
+                                  ? 'Available to all buildings (click to remove)'
+                                  : isExplicit
+                                    ? 'Click to remove from this building'
+                                    : 'Click to add to this building'
+                              }
+                            >
+                              {b.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {symbol.buildings.length === 0 && (
+                        <p className="text-xxs text-slate-400 px-1">
+                          Available to all buildings
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
