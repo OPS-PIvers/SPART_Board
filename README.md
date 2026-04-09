@@ -4,7 +4,7 @@
 
 ## 📋 Overview
 
-SPART Board is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 55 specialized classroom tools—from timers and noise meters to quizzes, guided learning, and music stations. All data is synchronized in real-time using **Firebase**.
+SpartBoard is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 55 specialized classroom tools—from timers and noise meters to quizzes, guided learning, and music stations. All data is synchronized in real-time using **Firebase**.
 
 ## ✨ Key Features
 
