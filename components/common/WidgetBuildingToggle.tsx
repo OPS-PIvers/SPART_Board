@@ -1,6 +1,5 @@
-import React from 'react';
-import { useAuth } from '@/context/useAuth';
-import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
+import React, { useContext } from 'react';
+import { AuthContext } from '@/context/AuthContextValue';
 import { BUILDINGS } from '@/config/buildings';
 import { WidgetData } from '@/types';
 
@@ -12,25 +11,31 @@ interface WidgetBuildingToggleProps {
 /**
  * Compact inline building toggle for the settings panel header.
  * Shows grade-level labels (e.g. "6-8 | 9-12") as a small segmented control.
- * Only renders when the user has 2+ buildings selected.
+ * Only renders when the user has 2+ valid buildings selected.
+ * Uses useContext directly (instead of useAuth) so it gracefully returns null
+ * when rendered outside an AuthProvider (e.g. in tests).
  */
 export const WidgetBuildingToggle: React.FC<WidgetBuildingToggleProps> = ({
   widget,
   updateWidget,
 }) => {
-  const { selectedBuildings = [] } = useAuth();
-  const effectiveBuildingId = useWidgetBuildingId(widget);
-
-  if (selectedBuildings.length < 2) return null;
+  const auth = useContext(AuthContext);
+  const selectedBuildings = auth?.selectedBuildings ?? [];
 
   const userBuildings = BUILDINGS.filter((b) =>
     selectedBuildings.includes(b.id)
   );
 
+  if (userBuildings.length < 2) return null;
+
+  const effectiveBuildingId =
+    widget.buildingId && selectedBuildings.includes(widget.buildingId)
+      ? widget.buildingId
+      : selectedBuildings[0];
+
   return (
     <div
       className="flex items-center bg-slate-200/80 rounded-lg p-0.5 shrink-0"
-      role="radiogroup"
       aria-label="Building"
     >
       {userBuildings.map((building) => {
@@ -39,8 +44,7 @@ export const WidgetBuildingToggle: React.FC<WidgetBuildingToggleProps> = ({
           <button
             key={building.id}
             type="button"
-            role="radio"
-            aria-checked={isActive}
+            aria-pressed={isActive}
             aria-label={building.name}
             onClick={() => {
               if (isActive) return;

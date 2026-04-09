@@ -145,6 +145,18 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     })
   );
 
+  // ── Schedule tab selection ──────────────────────────────────────────────────
+
+  const handleScheduleSelect = (id: string) => {
+    setSelectedScheduleId(id);
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        settingsSelectedScheduleId: id,
+      } as ScheduleConfig,
+    });
+  };
+
   // ── Schedule CRUD ──────────────────────────────────────────────────────────
 
   const handleAddSchedule = () => {
@@ -233,16 +245,25 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         id === 'default' && (config.schedules?.length ?? 0) === 0;
       if (isLegacy) {
         updateWidget(widget.id, {
-          config: { ...config, items: [] } as ScheduleConfig,
+          config: {
+            ...config,
+            items: [],
+            settingsSelectedScheduleId: null,
+          } as ScheduleConfig,
         });
       } else {
         const newSchedules = schedules
           .filter((s) => s.id !== 'default')
           .filter((s) => s.id !== id);
         updateWidget(widget.id, {
-          config: { ...config, schedules: newSchedules } as ScheduleConfig,
+          config: {
+            ...config,
+            schedules: newSchedules,
+            settingsSelectedScheduleId: null,
+          } as ScheduleConfig,
         });
       }
+      setSelectedScheduleId(null);
     }
   };
 
@@ -417,15 +438,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedScheduleId(s.id);
-                    updateWidget(widget.id, {
-                      config: {
-                        ...config,
-                        settingsSelectedScheduleId: s.id,
-                      } as ScheduleConfig,
-                    });
-                  }}
+                  onClick={() => handleScheduleSelect(s.id)}
                   className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                     effectiveSelectedId === s.id
                       ? 'bg-brand-blue-primary text-white'
