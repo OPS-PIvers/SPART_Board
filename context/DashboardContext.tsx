@@ -24,6 +24,7 @@ import {
   MaterialsGlobalConfig,
 } from '../types';
 import { useAuth } from './useAuth';
+import { stripTransientKeys } from '../utils/widgetConfigPersistence';
 import { useFirestore } from '../hooks/useFirestore';
 import { TOOLS } from '../config/tools';
 import { WIDGET_DEFAULTS } from '../config/widgetDefaults';
@@ -78,76 +79,6 @@ const getDashboardSaveState = (d: Dashboard) => ({
     settings: JSON.stringify(d.settings ?? {}),
   },
 });
-
-/**
- * Config keys that should NOT be persisted globally when saving widget settings.
- * These are either runtime state (would cause broken initial state on new widgets)
- * or large instance-specific data (would bloat the user profile document).
- */
-const TRANSIENT_CONFIG_KEYS = new Set<string>([
-  // Timer/stopwatch runtime state
-  'isRunning',
-  'elapsedTime',
-  'startTime',
-
-  // Live session identifiers (ephemeral, would reference dead sessions)
-  'activeLiveSessionCode',
-  'resultsSessionId',
-  'liveScoreboardWidgetId',
-  'liveScoreboardEnabled',
-  'activeActivityId',
-  'playerSetId',
-
-  // Navigation view state (should reset to landing page)
-  'view',
-  'selectedQuizId',
-  'selectedQuizTitle',
-  'selectedActivityId',
-  'selectedActivityTitle',
-
-  // Remote/capture ephemeral data
-  'remoteCaptureDataUrl',
-  'remoteCaptureTimestamp',
-
-  // Cross-widget instance references (widget IDs don't survive across sessions)
-  'liveQuizWidgetId',
-  'linkedWeatherWidgetId',
-  'externalTrigger',
-
-  // Instance-specific runtime data
-  'isActive',
-  'startedAt',
-  'createdAt',
-  'lastUpdated',
-  'activeDriveFileId',
-  'sessionName',
-  'activities',
-  'draftActivity',
-  'activeApp',
-  'activeAppUnsaved',
-  'activeNotebookId',
-  'lastResult',
-  'remainingStudents',
-
-  // Large instance data / per-session game state
-  'paths',
-  'furniture',
-  'assignments',
-  'completedNames',
-  'cards',
-  'memoryCards',
-  'hotspots',
-]);
-
-function stripTransientKeys(
-  config: Partial<WidgetConfig>
-): Partial<WidgetConfig> {
-  const stripped = { ...config };
-  for (const key of TRANSIENT_CONFIG_KEYS) {
-    delete (stripped as Record<string, unknown>)[key];
-  }
-  return stripped;
-}
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -2345,7 +2276,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               {},
               defaults.config ?? {},
               adminConfig,
-              savedWidgetConfigs?.[type] ?? {},
+              stripTransientKeys(savedWidgetConfigs?.[type] ?? {}),
               overrides?.config ?? {}
             ) as WidgetConfig,
           };
@@ -2424,7 +2355,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               {},
               defaults.config ?? {},
               adminConfig,
-              savedWidgetConfigs?.[item.type] ?? {},
+              stripTransientKeys(savedWidgetConfigs?.[item.type] ?? {}),
               sanitizedInputConfig
             ) as WidgetConfig;
 
@@ -2597,12 +2528,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             return w;
           });
 
-          // Save non-transient config fields globally so new instances inherit them
+          // Save config globally so new instances inherit settings.
+          // saveWidgetConfig handles transient-key stripping and no-op detection.
           if (widgetType && updates.config) {
-            const persistable = stripTransientKeys(updates.config);
-            if (Object.keys(persistable).length > 0) {
-              saveWidgetConfig(widgetType, persistable);
-            }
+            saveWidgetConfig(widgetType, updates.config);
           }
 
           return {
