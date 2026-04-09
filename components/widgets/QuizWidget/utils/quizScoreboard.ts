@@ -35,6 +35,9 @@ export function getEarnedPoints(
   const speedEnabled = session?.speedBonusEnabled ?? false;
   const streakEnabled = session?.streakBonusEnabled ?? false;
 
+  // Precompute question lookup map for O(1) access
+  const qMap = new Map(questions.map((q) => [q.id, q]));
+
   // Sort answers by answeredAt to compute streaks in chronological order
   const sortedAnswers = [...r.answers].sort(
     (a, b) => (a.answeredAt ?? 0) - (b.answeredAt ?? 0)
@@ -44,7 +47,7 @@ export function getEarnedPoints(
   let streak = 0;
 
   for (const ans of sortedAnswers) {
-    const q = questions.find((qn) => qn.id === ans.questionId);
+    const q = qMap.get(ans.questionId);
     if (!q) continue;
 
     const basePts = q.points ?? 1;
@@ -114,12 +117,13 @@ export function buildScoreboardTeams(
   completedResponses: QuizResponse[],
   questions: QuizQuestion[],
   mode: 'pin' | 'name',
-  pinToName: Record<string, string>
+  pinToName: Record<string, string>,
+  session?: QuizSession | null
 ): ScoreboardTeam[] {
   return completedResponses
     .map((r) => ({
       response: r,
-      score: getResponseScore(r, questions),
+      score: getResponseScore(r, questions, session),
     }))
     .sort((a, b) => b.score - a.score)
     .map(({ response, score }) => ({

@@ -161,7 +161,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     const fingerprint = responses
       .map(
         (r) =>
-          `${r.pin}:${r.status}:${r.answers.map((a) => `${a.questionId}=${a.answer}`).join(',')}`
+          `${r.pin}:${r.status}:${r.answers.map((a) => `${a.questionId}=${a.answer}@${a.answeredAt ?? 0}+${a.speedBonus ?? 0}`).join(',')}`
       )
       .sort()
       .join('|');
@@ -233,7 +233,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             allResponses,
             loadedQuizData.questions,
             displayMode,
-            pinToName
+            pinToName,
+            liveSession
           );
         }
 

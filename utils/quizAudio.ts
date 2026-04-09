@@ -26,9 +26,7 @@ function getCtx(): AudioContext {
 function ensureResumed() {
   const ctx = getCtx();
   if (ctx.state === 'suspended') {
-    // Silently swallow rejection (e.g. no user gesture yet)
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    void ctx.resume().catch(() => {});
+    void ctx.resume().catch(() => undefined);
   }
 }
 

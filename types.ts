@@ -1378,8 +1378,8 @@ export interface QuizSession {
   showCorrectOnBoard?: boolean;
   /**
    * Teacher-written map of questionId → correct answer text.
-   * Students read from this after submitting; only populated when teacher
-   * reveals or (in student-paced mode) after the student answers.
+   * Students read from this after submitting; only populated when the
+   * teacher reveals an answer.
    */
   revealedAnswers?: Record<string, string>;
 

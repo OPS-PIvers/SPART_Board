@@ -455,18 +455,23 @@ const ActiveQuiz: React.FC<{
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || submitted || submitting) return;
     const id = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t === null) return null;
-        const next = t - 1;
-        // Play tick sound for last 5 seconds
-        if (next > 0 && next <= 5 && session.soundEffectsEnabled) {
-          playCountdownTick();
-        }
-        return next;
-      });
+      setTimeLeft((t) => (t === null ? null : t - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, [timeLeft, submitted, submitting, session.soundEffectsEnabled]);
+  }, [timeLeft, submitted, submitting]);
+
+  // Play tick sound for last 5 seconds (separate from state updater)
+  useEffect(() => {
+    if (
+      timeLeft !== null &&
+      timeLeft > 0 &&
+      timeLeft <= 5 &&
+      !submitted &&
+      session.soundEffectsEnabled
+    ) {
+      playCountdownTick();
+    }
+  }, [timeLeft, submitted, session.soundEffectsEnabled]);
 
   // Side-effect: submit the answer when auto-submit is triggered.
   useEffect(() => {
