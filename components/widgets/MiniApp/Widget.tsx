@@ -386,6 +386,8 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
+  const [fileContext, setFileContext] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Unsaved paste state: shown as an overlay when activeAppUnsaved is true
@@ -476,7 +478,11 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
 
     setIsGenerating(true);
     try {
-      const result = await generateMiniAppCode(prompt);
+      let fullPrompt = prompt;
+      if (fileContext) {
+        fullPrompt = `Context from attached file (${fileName}):\n\n${fileContext}\n\n${prompt}`;
+      }
+      const result = await generateMiniAppCode(fullPrompt);
       setEditTitle(result.title);
       setEditCode(result.html);
       setShowPromptInput(false);
@@ -862,6 +868,10 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
         onGenerate={handleGenerate}
         onSave={handleSave}
         onCancel={() => setView('list')}
+        onFileContent={(content, name) => {
+          setFileContext(content);
+          setFileName(name);
+        }}
       />
     );
   }
