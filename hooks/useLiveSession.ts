@@ -134,7 +134,7 @@ export const useLiveSession = (
 
     // 2. Synchronously adjust derived states
     const targetId = role === 'teacher' ? userId : joinCode;
-    if (!targetId && role === 'student' && !joinCode) {
+    if (!targetId) {
       setSession(null);
       setLoading(false);
     }
