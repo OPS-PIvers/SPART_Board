@@ -323,8 +323,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const handleMaximizeToggle = useCallback(() => {
-    if (isLocked || isPinned) return;
+    if (isLocked) return;
     const newMaximized = !isMaximized;
+    if (isPinned && newMaximized) return;
     updateWidget(widget.id, { maximized: newMaximized, flipped: false });
     if (newMaximized) {
       bringToFront(widget.id);
@@ -475,10 +476,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           handleMaximizeToggle();
           break;
         case 'r': // Reset size
+          if (isLocked || isPinned) break;
           e.preventDefault();
           resetWidgetSize(widget.id);
           break;
         case 'p': // Pin/Unpin position
+          if (isLocked) break;
           e.preventDefault();
           updateWidget(widget.id, { isPinned: !isPinned });
           break;
@@ -1609,9 +1612,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               <div className="flex items-center gap-1">
                 {!isLocked && (
                   <IconButton
-                    onClick={() =>
-                      updateWidget(widget.id, { isPinned: !isPinned })
-                    }
+                    onClick={() => {
+                      const nextPinned = !isPinned;
+                      if (nextPinned) setShowSnapMenu(false);
+                      updateWidget(widget.id, { isPinned: nextPinned });
+                    }}
                     icon={<Pin className="w-3.5 h-3.5" />}
                     label={
                       isPinned
@@ -1706,9 +1711,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     size="sm"
                     variant="glass"
                     active={showSnapMenu}
-                    disabled={isPinned}
+                    disabled={isPinned || isLocked}
                   />
-
                   {showSnapMenu &&
                     typeof document !== 'undefined' &&
                     createPortal(
@@ -1873,7 +1877,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   }
                   size="sm"
                   variant="glass"
-                  disabled={isPinned}
+                  disabled={isLocked || (isPinned && !isMaximized)}
                 />
                 <IconButton
                   onClick={() =>
