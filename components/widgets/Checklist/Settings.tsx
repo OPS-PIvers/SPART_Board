@@ -34,14 +34,18 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     safeItems.map((i) => i.text).join('\n')
   );
   const [prevItems, setPrevItems] = React.useState(items);
+  const [skipNextSync, setSkipNextSync] = React.useState(false);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Sync external prop changes to local text
+  // Sync external prop changes to local text (skip self-inflicted updates from debounced save)
   if (items !== prevItems) {
     setPrevItems(items);
-    setLocalText(safeItems.map((i) => i.text).join('\n'));
+    if (skipNextSync) {
+      setSkipNextSync(false);
+    } else {
+      setLocalText(safeItems.map((i) => i.text).join('\n'));
+    }
   }
-
-  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Clean up timeout on unmount
   React.useEffect(() => {
@@ -96,6 +100,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
           };
         });
 
+      setSkipNextSync(true);
       updateWidgetRef.current(widget.id, {
         config: { ...configRef.current, items: newItems },
       });
