@@ -6,6 +6,7 @@ import {
 } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
 import { TypographySettings } from '@/components/common/TypographySettings';
 import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
@@ -14,10 +15,9 @@ export const GraphicOrganizerSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const { selectedBuildings, featurePermissions } = useAuth();
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget) ?? 'global';
   const config = widget.config as GraphicOrganizerConfig;
-
-  const buildingId = widget.buildingId ?? selectedBuildings[0] ?? 'global';
   const featureObj = featurePermissions?.find(
     (p) => p.widgetType === 'graphic-organizer'
   );

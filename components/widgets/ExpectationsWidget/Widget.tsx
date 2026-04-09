@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import {
   WidgetData,
   ExpectationsConfig,
@@ -28,7 +29,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addWidget } = useDashboard();
-  const { featurePermissions, selectedBuildings } = useAuth();
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget);
   const config = widget.config as ExpectationsConfig;
   const { voiceLevel = null, workMode = null, interactionMode = null } = config;
 
@@ -41,9 +43,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
     | undefined;
 
   // Get current building's config
-  const primaryBuildingId = widget.buildingId ?? selectedBuildings?.[0];
-  const buildingConfig = primaryBuildingId
-    ? globalConfig?.buildings?.[primaryBuildingId]
+  const buildingConfig = buildingId
+    ? globalConfig?.buildings?.[buildingId]
     : undefined;
 
   // Compute active options based on overrides and category toggles

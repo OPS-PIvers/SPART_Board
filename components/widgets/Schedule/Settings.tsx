@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useDashboard } from '@/context/useDashboard';
-import { useAuth } from '@/context/useAuth';
 import { useDialog } from '@/context/useDialog';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import {
   WidgetData,
   ScheduleConfig,
@@ -79,9 +79,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, activeDashboard } = useDashboard();
-  const { selectedBuildings } = useAuth();
   const { showConfirm } = useDialog();
   const { subscribeToPermission } = useFeaturePermissions();
+  const buildingId = useWidgetBuildingId(widget);
   const config = widget.config as ScheduleConfig;
 
   const [adminPermission, setAdminPermission] =
@@ -91,16 +91,14 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     return subscribeToPermission('schedule', setAdminPermission);
   }, [subscribeToPermission]);
 
-  const effectiveBuildingId = widget.buildingId ?? selectedBuildings?.[0];
-
   const buildingSchedules = useMemo((): DailySchedule[] => {
-    if (!effectiveBuildingId) return [];
+    if (!buildingId) return [];
     const adminConfig = adminPermission?.config as
       | ScheduleGlobalConfig
       | undefined;
-    const raw = adminConfig?.buildingDefaults?.[effectiveBuildingId];
+    const raw = adminConfig?.buildingDefaults?.[buildingId];
     return raw?.schedules ?? [];
-  }, [effectiveBuildingId, adminPermission]);
+  }, [buildingId, adminPermission]);
 
   const schedules = useMemo(() => {
     const list = [...(config.schedules ?? [])];

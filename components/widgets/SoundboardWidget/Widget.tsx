@@ -7,6 +7,7 @@ import {
 } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Volume2, Music } from 'lucide-react';
@@ -208,13 +209,10 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as SoundboardConfig;
   const { selectedSoundIds = [], activeSoundIds } = config;
 
-  const { featurePermissions, selectedBuildings, googleAccessToken } =
-    useAuth();
+  const { featurePermissions, googleAccessToken } = useAuth();
   const { updateWidget, selectedWidgetId } = useDashboard();
   const isFocused = selectedWidgetId === widget.id;
-  const buildingId =
-    widget.buildingId ??
-    (selectedBuildings.length > 0 ? selectedBuildings[0] : null);
+  const buildingId = useWidgetBuildingId(widget) ?? null;
 
   const globalConfig = useMemo(() => {
     const perm = featurePermissions.find((p) => p.widgetType === 'soundboard');

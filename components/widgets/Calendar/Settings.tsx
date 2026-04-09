@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
 import { Toggle } from '@/components/common/Toggle';
@@ -24,7 +25,8 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const { signInWithGoogle, selectedBuildings } = useAuth();
+  const { signInWithGoogle } = useAuth();
+  const buildingId = useWidgetBuildingId(widget);
   const { isConnected } = useGoogleCalendar();
   const { subscribeToPermission } = useFeaturePermissions();
   const config = widget.config as CalendarConfig;
@@ -52,7 +54,6 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
     });
   }, [subscribeToPermission]);
 
-  const buildingId = widget.buildingId ?? selectedBuildings?.[0];
   const lastSyncAt = buildingId
     ? globalConfig?.buildingDefaults?.[buildingId]?.lastProxySync
     : null;

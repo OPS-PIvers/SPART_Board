@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import {
   WidgetData,
   SpecialistScheduleConfig,
@@ -46,7 +47,8 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { activeDashboard } = useDashboard();
-  const { featurePermissions, selectedBuildings } = useAuth();
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget) ?? 'schumann-elementary';
   const config = widget.config as SpecialistScheduleConfig;
 
   // Fetch Global Configuration
@@ -56,9 +58,6 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     );
     return perm?.config as SpecialistScheduleGlobalConfig | undefined;
   }, [featurePermissions]);
-
-  const buildingId =
-    widget.buildingId ?? selectedBuildings[0] ?? 'schumann-elementary';
   const buildingConfig = globalConfig?.buildingDefaults?.[buildingId] ?? {
     cycleLength: 6,
     startDate: toDateStr(new Date()),

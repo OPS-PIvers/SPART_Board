@@ -17,7 +17,7 @@ interface WidgetBuildingSelectorProps {
 export const WidgetBuildingSelector: React.FC<WidgetBuildingSelectorProps> = ({
   widget,
 }) => {
-  const { selectedBuildings } = useAuth();
+  const { selectedBuildings = [] } = useAuth();
   const { updateWidget } = useDashboard();
 
   // Only show when user works across multiple buildings
@@ -28,21 +28,35 @@ export const WidgetBuildingSelector: React.FC<WidgetBuildingSelectorProps> = ({
     selectedBuildings.includes(b.id)
   );
 
-  const effectiveBuildingId = widget.buildingId ?? selectedBuildings[0];
+  // Constrain to the user's current selection — if the widget's saved
+  // buildingId is no longer among their selected buildings, fall back.
+  const effectiveBuildingId =
+    widget.buildingId && selectedBuildings.includes(widget.buildingId)
+      ? widget.buildingId
+      : selectedBuildings[0];
 
   return (
     <div className="mb-3">
-      <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 mb-1.5">
-        <Building2 className="w-3.5 h-3.5" />
+      <div
+        className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 mb-1.5"
+        id={`building-label-${widget.id}`}
+      >
+        <Building2 className="w-3.5 h-3.5" aria-hidden="true" />
         Building
-      </label>
-      <div className="flex gap-1.5 flex-wrap">
+      </div>
+      <div
+        className="flex gap-1.5 flex-wrap"
+        role="radiogroup"
+        aria-labelledby={`building-label-${widget.id}`}
+      >
         {userBuildings.map((building) => {
           const isActive = building.id === effectiveBuildingId;
           return (
             <button
               key={building.id}
               type="button"
+              role="radio"
+              aria-checked={isActive}
               onClick={() =>
                 updateWidget(widget.id, { buildingId: building.id })
               }

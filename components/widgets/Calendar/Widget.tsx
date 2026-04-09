@@ -11,7 +11,7 @@ import { Calendar as CalendarIcon, Ban, Timer } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { WidgetLayout } from '../WidgetLayout';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
-import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { GAP_STYLE } from './constants';
 import { hexToRgba } from '@/utils/styles';
@@ -39,7 +39,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { activeDashboard, addWidget } = useDashboard();
-  const { selectedBuildings } = useAuth();
+  const buildingId = useWidgetBuildingId(widget);
   const { subscribeToPermission } = useFeaturePermissions();
   const { calendarService, isConnected } = useGoogleCalendar();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
@@ -109,7 +109,6 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Combined events for display (Local + Building Synced + Personal)
   const displayEvents = useMemo(() => {
-    const buildingId = widget.buildingId ?? selectedBuildings?.[0];
     const buildingDefaults = buildingId
       ? globalConfig?.buildingDefaults?.[buildingId]
       : null;
@@ -166,8 +165,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     localEvents,
     globalConfig,
     isBuildingSyncEnabled,
-    widget.buildingId,
-    selectedBuildings,
+    buildingId,
     config.daysVisible,
     personalEvents,
     isConnected,

@@ -6,13 +6,15 @@ import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { Type, Palette, Edit3 } from 'lucide-react';
 import { WIDGET_PALETTE } from '@/config/colors';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
 
 export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const { featurePermissions, selectedBuildings } = useAuth();
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget);
   const config = widget.config as MaterialsConfig;
   const {
     selectedItems = [],
@@ -25,9 +27,8 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
     (item) => item.widgetType === 'materials'
   );
   const materialsConfig = permission?.config as Partial<MaterialsGlobalConfig>;
-  const effectiveBuildingId = widget.buildingId ?? selectedBuildings[0];
-  const buildingAssignedIds = effectiveBuildingId
-    ? materialsConfig.buildingDefaults?.[effectiveBuildingId]?.selectedItems
+  const buildingAssignedIds = buildingId
+    ? materialsConfig.buildingDefaults?.[buildingId]?.selectedItems
     : undefined;
   const materialsCatalog = React.useMemo(() => {
     const fullCatalog = getMaterialsCatalog(materialsConfig);
