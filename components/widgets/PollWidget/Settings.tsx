@@ -187,7 +187,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <MagicInput<GeneratedPoll>
             onGenerate={(topic) => {
               const fullPrompt = fileContext
-                ? `Context from file (${fileName}):\n\n${fileContext}\n\nGenerate a poll about: ${topic}`
+                ? `Context from attached file (${fileName}):\n\n${fileContext}\n\nGenerate a poll about: ${topic}`
                 : topic;
               return generatePoll(fullPrompt);
             }}

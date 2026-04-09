@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FileText, X, Loader2, HardDrive, AlertCircle } from 'lucide-react';
 import { useGooglePicker, PickedFile } from '@/hooks/useGooglePicker';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
@@ -30,6 +30,22 @@ export const DriveFileAttachment: React.FC<DriveFileAttachmentProps> = ({
   const [selectedFile, setSelectedFile] = useState<PickedFile | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasFileRef = useRef(false);
+
+  // Track whether a file is currently attached so the cleanup effect
+  // can clear parent state on unmount if the overlay closes while a
+  // file is still selected.
+  hasFileRef.current = selectedFile !== null && !isExtracting;
+
+  useEffect(() => {
+    return () => {
+      if (hasFileRef.current) {
+        onFileContent(null, null);
+      }
+    };
+    // Only run cleanup on unmount — onFileContent identity is stable per parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePick = useCallback(async () => {
     if (disabled || isExtracting) return;
