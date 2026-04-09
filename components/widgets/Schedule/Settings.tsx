@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useDashboard } from '@/context/useDashboard';
-import { useAuth } from '@/context/useAuth';
 import { useDialog } from '@/context/useDialog';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import {
   WidgetData,
   ScheduleConfig,
@@ -43,6 +43,7 @@ import { Toggle } from '@/components/common/Toggle';
 import { TypographySettings } from '@/components/common/TypographySettings';
 import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
 import { TextSizePresetSettings } from '@/components/common/TextSizePresetSettings';
+import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
 import { getTodayStr } from './utils';
 import { SortableScheduleItem } from './components/SortableScheduleItem';
 
@@ -78,9 +79,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, activeDashboard } = useDashboard();
-  const { selectedBuildings } = useAuth();
   const { showConfirm } = useDialog();
   const { subscribeToPermission } = useFeaturePermissions();
+  const buildingId = useWidgetBuildingId(widget);
   const config = widget.config as ScheduleConfig;
 
   const [adminPermission, setAdminPermission] =
@@ -91,14 +92,13 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   }, [subscribeToPermission]);
 
   const buildingSchedules = useMemo((): DailySchedule[] => {
-    if (!selectedBuildings?.length) return [];
-    const buildingId = selectedBuildings[0];
+    if (!buildingId) return [];
     const adminConfig = adminPermission?.config as
       | ScheduleGlobalConfig
       | undefined;
     const raw = adminConfig?.buildingDefaults?.[buildingId];
     return raw?.schedules ?? [];
-  }, [selectedBuildings, adminPermission]);
+  }, [buildingId, adminPermission]);
 
   const schedules = useMemo(() => {
     const list = [...(config.schedules ?? [])];
@@ -395,6 +395,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-4">
+      <WidgetBuildingSelector widget={widget} />
       {/* ── Schedule picker ─────────────────────────────────────── */}
       {schedules.length === 0 ? (
         <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">

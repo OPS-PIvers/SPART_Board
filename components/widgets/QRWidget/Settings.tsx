@@ -3,6 +3,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, QRConfig } from '@/types';
 import { Link, AlertCircle } from 'lucide-react';
 import { Toggle } from '@/components/common/Toggle';
+import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
 
 export const QRSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -12,6 +13,7 @@ export const QRSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="space-y-6">
+      <WidgetBuildingSelector widget={widget} />
       <div className="space-y-2">
         <label className="text-xs text-slate-500 uppercase font-bold tracking-wider">
           Destination URL

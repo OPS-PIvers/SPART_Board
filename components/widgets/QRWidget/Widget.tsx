@@ -10,7 +10,7 @@ import {
 import { Link } from 'lucide-react';
 import { WidgetLayout } from '../WidgetLayout';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
-import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser === 'undefined') {
@@ -31,7 +31,7 @@ const stripHtml = (html: string) => {
 export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard, updateWidget } = useDashboard();
   const { subscribeToPermission } = useFeaturePermissions();
-  const { selectedBuildings } = useAuth();
+  const buildingId = useWidgetBuildingId(widget);
   const config = widget.config as QRConfig;
   const [permission, setPermission] = useState<FeaturePermission | null>(null);
 
@@ -42,7 +42,6 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const globalConfig = permission?.config as unknown as
     | QRGlobalConfig
     | undefined;
-  const buildingId = selectedBuildings?.[0];
   const defaults =
     globalConfig && buildingId
       ? globalConfig.buildingDefaults?.[buildingId]

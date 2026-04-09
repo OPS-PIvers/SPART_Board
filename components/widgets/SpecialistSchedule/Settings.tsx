@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import {
   WidgetData,
   SpecialistScheduleConfig,
@@ -22,6 +23,7 @@ import { Button } from '@/components/common/Button';
 import { TypographySettings } from '@/components/common/TypographySettings';
 import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
 import { TextSizePresetSettings } from '@/components/common/TextSizePresetSettings';
+import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
 
 const RECURRING_DEFAULTS = [
   { task: '🍴 Lunch', startTime: '11:00', endTime: '11:30' },
@@ -43,7 +45,8 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const { featurePermissions, selectedBuildings } = useAuth();
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget) ?? 'schumann-elementary';
   const config = widget.config as SpecialistScheduleConfig;
 
   // Fetch Global Configuration to know current cycleLength and dayLabel
@@ -53,8 +56,6 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     );
     return perm?.config as SpecialistScheduleGlobalConfig | undefined;
   }, [featurePermissions]);
-
-  const buildingId = selectedBuildings[0] ?? 'schumann-elementary';
   const buildingConfig = globalConfig?.buildingDefaults?.[buildingId] ?? {
     cycleLength: 6,
     dayLabel: 'Day',
@@ -216,6 +217,7 @@ export const SpecialistScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-4">
+      <WidgetBuildingSelector widget={widget} />
       {/* Tabs */}
       <div className="flex border-b border-slate-200">
         <button

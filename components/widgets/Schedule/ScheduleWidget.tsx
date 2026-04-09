@@ -19,7 +19,7 @@ import { Clock } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
-import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import {
   getTodayStr,
   resolveActiveSchedule,
@@ -35,7 +35,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, activeDashboard, addWidget } = useDashboard();
-  const { selectedBuildings } = useAuth();
+  const buildingId = useWidgetBuildingId(widget);
   const { subscribeToPermission } = useFeaturePermissions();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
@@ -115,10 +115,9 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
           isBuildingSyncEnabled &&
           schedules.length === 0 &&
           legacyItems.length === 0 &&
-          selectedBuildings?.[0] &&
-          config.lastSyncedBuildingId !== selectedBuildings[0]
+          buildingId &&
+          config.lastSyncedBuildingId !== buildingId
         ) {
-          const buildingId = selectedBuildings[0];
           const defaults = gConfig.buildingDefaults?.[buildingId];
           if (defaults && defaults.items?.length > 0) {
             updateWidget(widget.id, {
@@ -137,7 +136,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     isBuildingSyncEnabled,
     schedules.length,
     legacyItems.length,
-    selectedBuildings,
+    buildingId,
     config,
     widget.id,
     updateWidget,
