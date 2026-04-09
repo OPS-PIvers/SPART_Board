@@ -75,6 +75,19 @@ export interface DashboardContextValue {
   selectedWidgetId: string | null;
   setSelectedWidgetId: (id: string | null) => void;
 
+  // Widget grouping
+  groupWidgets: (widgetIds: string[]) => void;
+  ungroupWidgets: (groupId: string) => void;
+  removeFromGroup: (widgetId: string) => void;
+  getGroupWidgets: (groupId: string) => WidgetData[];
+  updateWidgets: (
+    updates: Array<{ id: string; changes: Partial<WidgetData> }>
+  ) => void;
+  selectedWidgetIds: string[];
+  setSelectedWidgetIds: (ids: string[]) => void;
+  groupBuildMode: boolean;
+  setGroupBuildMode: (active: boolean) => void;
+
   // Sharing system
   shareDashboard: (dashboard: Dashboard) => Promise<string>;
   loadSharedDashboard: (shareId: string) => Promise<Dashboard | null>;

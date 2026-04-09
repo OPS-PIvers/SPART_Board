@@ -143,6 +143,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const accountRemoteControlEnabledRef = useRef(accountRemoteControlEnabled);
   accountRemoteControlEnabledRef.current = accountRemoteControlEnabled;
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
+  const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
+  const [groupBuildMode, setGroupBuildMode] = useState(false);
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [zoom, setZoom] = useState<number>(1);
@@ -2414,11 +2416,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       lastLocalUpdateAt.current = Date.now();
       lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
-        prev.map((d) =>
-          d.id === activeId
-            ? { ...d, widgets: d.widgets.filter((w) => w.id !== id) }
-            : d
-        )
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          const target = d.widgets.find((w) => w.id === id);
+          const gid = target?.groupId;
+          let widgets = d.widgets.filter((w) => w.id !== id);
+          // Auto-dissolve group if only 1 member left
+          if (gid) {
+            const remaining = widgets.filter((w) => w.groupId === gid);
+            if (remaining.length <= 1) {
+              widgets = widgets.map((w) =>
+                w.groupId === gid ? { ...w, groupId: undefined } : w
+              );
+            }
+          }
+          return { ...d, widgets };
+        })
       );
     },
     [activeId]
@@ -2443,6 +2456,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             y: target.y + 20,
             z: maxZ + 1,
             version: 1,
+            groupId: undefined, // Duplicated widgets are independent
             config: structuredClone(target.config),
           };
           return { ...d, widgets: [...d.widgets, duplicated] };
@@ -2457,12 +2471,27 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
       lastUpdateWasSettingsOnly.current = false;
+      const idSet = new Set(ids);
       setDashboards((prev) =>
-        prev.map((d) =>
-          d.id === activeId
-            ? { ...d, widgets: d.widgets.filter((w) => !ids.includes(w.id)) }
-            : d
-        )
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          // Collect groupIds of removed widgets for auto-dissolve check
+          const affectedGroupIds = new Set<string>();
+          d.widgets.forEach((w) => {
+            if (idSet.has(w.id) && w.groupId) affectedGroupIds.add(w.groupId);
+          });
+          let widgets = d.widgets.filter((w) => !idSet.has(w.id));
+          // Auto-dissolve groups with <=1 remaining member
+          for (const gid of affectedGroupIds) {
+            const remaining = widgets.filter((w) => w.groupId === gid);
+            if (remaining.length <= 1) {
+              widgets = widgets.map((w) =>
+                w.groupId === gid ? { ...w, groupId: undefined } : w
+              );
+            }
+          }
+          return { ...d, widgets };
+        })
       );
     },
     [activeId]
@@ -2551,6 +2580,105 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [saveWidgetConfig]
   );
 
+  // --- Widget grouping ---
+
+  const updateWidgets = useCallback(
+    (updates: Array<{ id: string; changes: Partial<WidgetData> }>) => {
+      if (!activeIdRef.current) return;
+      lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
+      const updateMap = new Map(updates.map((u) => [u.id, u.changes]));
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeIdRef.current) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) => {
+              const changes = updateMap.get(w.id);
+              if (!changes) return w;
+              return { ...w, ...changes };
+            }),
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+          };
+        })
+      );
+    },
+    []
+  );
+
+  const groupWidgets = useCallback((widgetIds: string[]) => {
+    if (!activeIdRef.current || widgetIds.length < 2) return;
+    const gid = crypto.randomUUID();
+    lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
+    const idSet = new Set(widgetIds);
+    setDashboards((prev) =>
+      prev.map((d) => {
+        if (d.id !== activeIdRef.current) return d;
+        return {
+          ...d,
+          widgets: d.widgets.map((w) =>
+            idSet.has(w.id) ? { ...w, groupId: gid } : w
+          ),
+        };
+      })
+    );
+  }, []);
+
+  const ungroupWidgets = useCallback((groupId: string) => {
+    if (!activeIdRef.current) return;
+    lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
+    setDashboards((prev) =>
+      prev.map((d) => {
+        if (d.id !== activeIdRef.current) return d;
+        return {
+          ...d,
+          widgets: d.widgets.map((w) =>
+            w.groupId === groupId ? { ...w, groupId: undefined } : w
+          ),
+        };
+      })
+    );
+  }, []);
+
+  const removeFromGroup = useCallback((widgetId: string) => {
+    if (!activeIdRef.current) return;
+    lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
+    setDashboards((prev) =>
+      prev.map((d) => {
+        if (d.id !== activeIdRef.current) return d;
+        const target = d.widgets.find((w) => w.id === widgetId);
+        if (!target?.groupId) return d;
+        const gid = target.groupId;
+        const groupMembers = d.widgets.filter(
+          (w) => w.groupId === gid && w.id !== widgetId
+        );
+        // Auto-dissolve: if only 1 member left, clear its groupId too
+        const dissolve = groupMembers.length <= 1;
+        return {
+          ...d,
+          widgets: d.widgets.map((w) => {
+            if (w.id === widgetId) return { ...w, groupId: undefined };
+            if (dissolve && w.groupId === gid)
+              return { ...w, groupId: undefined };
+            return w;
+          }),
+        };
+      })
+    );
+  }, []);
+
+  const getGroupWidgets = useCallback((groupId: string): WidgetData[] => {
+    const active = dashboardsRef.current.find(
+      (d) => d.id === activeIdRef.current
+    );
+    if (!active) return [];
+    return active.widgets.filter((w) => w.groupId === groupId);
+  }, []);
+
   const bringToFront = useCallback((id: string) => {
     if (!activeIdRef.current) return;
 
@@ -2560,8 +2688,33 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const maxZ = active.widgets.reduce((max, w) => Math.max(max, w.z), 0);
       const target = active.widgets.find((w) => w.id === id);
+      if (!target) return prev;
 
-      if (target && target.z < maxZ) {
+      // If widget is in a group, bring the entire group to front
+      if (target.groupId) {
+        const groupMembers = active.widgets
+          .filter((w) => w.groupId === target.groupId)
+          .sort((a, b) => a.z - b.z);
+        const groupMaxZ = Math.max(...groupMembers.map((w) => w.z));
+        if (groupMaxZ >= maxZ) return prev; // already on top
+        lastLocalUpdateAt.current = Date.now();
+        lastUpdateWasSettingsOnly.current = false;
+        const groupIds = new Set(groupMembers.map((w) => w.id));
+        return prev.map((d) => {
+          if (d.id !== activeIdRef.current) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) => {
+              if (!groupIds.has(w.id)) return w;
+              // Preserve internal z-order within the group
+              const idx = groupMembers.findIndex((gw) => gw.id === w.id);
+              return { ...w, z: maxZ + 1 + idx };
+            }),
+          };
+        });
+      }
+
+      if (target.z < maxZ) {
         lastLocalUpdateAt.current = Date.now();
         lastUpdateWasSettingsOnly.current = false;
         return prev.map((d) => {
@@ -2811,6 +2964,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setAllToolsVisibility,
       selectedWidgetId,
       setSelectedWidgetId,
+      groupWidgets,
+      ungroupWidgets,
+      removeFromGroup,
+      getGroupWidgets,
+      updateWidgets,
+      selectedWidgetIds,
+      setSelectedWidgetIds,
+      groupBuildMode,
+      setGroupBuildMode,
       reorderTools,
       reorderLibrary,
       reorderDockItems,
@@ -2881,6 +3043,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setAllToolsVisibility,
       selectedWidgetId,
       setSelectedWidgetId,
+      groupWidgets,
+      ungroupWidgets,
+      removeFromGroup,
+      getGroupWidgets,
+      updateWidgets,
+      selectedWidgetIds,
+      groupBuildMode,
       reorderTools,
       reorderLibrary,
       reorderDockItems,

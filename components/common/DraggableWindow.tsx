@@ -25,7 +25,11 @@ import {
   LayoutGrid,
   Lock,
   Pin,
+  Link,
+  Unlink,
 } from 'lucide-react';
+
+import { widgetRefRegistry } from './widgetRefRegistry';
 import {
   WidgetData,
   WidgetType,
@@ -140,6 +144,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     deleteAllWidgets,
     selectedWidgetId,
     setSelectedWidgetId,
+    activeDashboard,
+    updateWidgets,
+    ungroupWidgets,
+    groupBuildMode,
+    setGroupBuildMode,
+    selectedWidgetIds,
+    setSelectedWidgetIds,
     zoom,
   } = useDashboard();
   const { showConfirm: showConfirmDialog } = useDialog();
@@ -148,6 +159,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const showTools = selectedWidgetId === widget.id;
+
+  // Group visual state
+  const isInGroup = !!widget.groupId;
+  const isGroupActive =
+    isInGroup &&
+    activeDashboard?.widgets.some(
+      (w) => w.groupId === widget.groupId && w.id === selectedWidgetId
+    );
+  const isGroupBuildSelected =
+    groupBuildMode && selectedWidgetIds.includes(widget.id);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
@@ -251,10 +272,32 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   );
 
   const windowRef = useRef<HTMLDivElement>(null);
+
+  // Register this widget's DOM element in the shared registry for group operations
+  useEffect(() => {
+    const el = windowRef.current;
+    if (el) widgetRefRegistry.set(widget.id, el);
+    return () => {
+      widgetRefRegistry.delete(widget.id);
+    };
+  }, [widget.id]);
+
   const menuRef = useRef<HTMLDivElement>(null);
   const snapMenuRef = useRef<HTMLDivElement>(null);
   const snapButtonRef = useRef<HTMLButtonElement>(null);
   const dragDistanceRef = useRef(0);
+
+  // Group drag/resize: store sibling initial positions and DOM refs
+  const groupSiblingsRef = useRef<
+    Array<{
+      id: string;
+      startX: number;
+      startY: number;
+      startW: number;
+      startH: number;
+      el: HTMLDivElement;
+    }>
+  >([]);
 
   const saveTitle = useCallback(() => {
     if (tempTitle.trim()) {
@@ -316,6 +359,17 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    // In group-building mode, toggle selection instead of normal behavior
+    if (groupBuildMode) {
+      e.stopPropagation();
+      e.preventDefault();
+      setSelectedWidgetIds(
+        selectedWidgetIds.includes(widget.id)
+          ? selectedWidgetIds.filter((id) => id !== widget.id)
+          : [...selectedWidgetIds, widget.id]
+      );
+      return;
+    }
     // DO NOT stop propagation here, otherwise DashboardView misses 2-finger swipes
     bringToFront(widget.id);
     // Explicitly focus the widget so it can receive keyboard events
@@ -535,6 +589,35 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     dragState.current = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
     dragDistanceRef.current = 0;
 
+    // Collect group siblings for coordinated drag
+    const hasGroup = !!widget.groupId;
+    if (hasGroup && activeDashboard) {
+      groupSiblingsRef.current = activeDashboard.widgets
+        .filter(
+          (w) =>
+            w.groupId === widget.groupId &&
+            w.id !== widget.id &&
+            !w.minimized &&
+            !w.isLocked
+        )
+        .map((w) => {
+          const el = widgetRefRegistry.get(w.id);
+          return el
+            ? {
+                id: w.id,
+                startX: w.x,
+                startY: w.y,
+                startW: w.w,
+                startH: w.h,
+                el,
+              }
+            : null;
+        })
+        .filter(Boolean) as typeof groupSiblingsRef.current;
+    } else {
+      groupSiblingsRef.current = [];
+    }
+
     document.body.classList.add('is-dragging-widget');
     const initialMouseX = e.clientX;
     const initialMouseY = e.clientY;
@@ -571,39 +654,42 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             Math.pow(moveEvent.clientY - initialMouseY, 2)
         );
 
-        // Edge Detection Threshold for Large Touch Panels
-        const screenW = window.innerWidth;
-        const screenH = window.innerHeight;
-        const threshold = SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
+        // Skip snap-to-edge detection for grouped widgets
+        if (!hasGroup) {
+          // Edge Detection Threshold for Large Touch Panels
+          const screenW = window.innerWidth;
+          const screenH = window.innerHeight;
+          const threshold = SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
 
-        const isLeftEdge = moveEvent.clientX <= threshold;
-        const isRightEdge = moveEvent.clientX >= screenW - threshold;
-        const isTopEdge = moveEvent.clientY <= threshold;
-        const isBottomEdge = moveEvent.clientY >= screenH - threshold;
+          const isLeftEdge = moveEvent.clientX <= threshold;
+          const isRightEdge = moveEvent.clientX >= screenW - threshold;
+          const isTopEdge = moveEvent.clientY <= threshold;
+          const isBottomEdge = moveEvent.clientY >= screenH - threshold;
 
-        let newZone: SnapZone | 'maximize' | 'minimize' | null = null;
+          let newZone: SnapZone | 'maximize' | 'minimize' | null = null;
 
-        if (isLeftEdge && isTopEdge) {
-          newZone = topLeftZone;
-        } else if (isRightEdge && isTopEdge) {
-          newZone = topRightZone;
-        } else if (isLeftEdge && isBottomEdge) {
-          newZone = bottomLeftZone;
-        } else if (isRightEdge && isBottomEdge) {
-          newZone = bottomRightZone;
-        } else if (isLeftEdge) {
-          newZone = leftHalfZone;
-        } else if (isRightEdge) {
-          newZone = rightHalfZone;
-        } else if (isTopEdge) {
-          newZone = topHalfZone;
-        } else if (isBottomEdge) {
-          newZone = 'minimize';
-        }
+          if (isLeftEdge && isTopEdge) {
+            newZone = topLeftZone;
+          } else if (isRightEdge && isTopEdge) {
+            newZone = topRightZone;
+          } else if (isLeftEdge && isBottomEdge) {
+            newZone = bottomLeftZone;
+          } else if (isRightEdge && isBottomEdge) {
+            newZone = bottomRightZone;
+          } else if (isLeftEdge) {
+            newZone = leftHalfZone;
+          } else if (isRightEdge) {
+            newZone = rightHalfZone;
+          } else if (isTopEdge) {
+            newZone = topHalfZone;
+          } else if (isBottomEdge) {
+            newZone = 'minimize';
+          }
 
-        if (snapPreviewZoneRef.current !== newZone) {
-          snapPreviewZoneRef.current = newZone;
-          setSnapPreviewZone(newZone);
+          if (snapPreviewZoneRef.current !== newZone) {
+            snapPreviewZoneRef.current = newZone;
+            setSnapPreviewZone(newZone);
+          }
         }
 
         // Calculate movements relative to initial position, scaled by current zoom
@@ -629,6 +715,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             x: newX,
             y: newY,
           });
+        }
+
+        // Move group siblings via direct DOM manipulation
+        for (const sib of groupSiblingsRef.current) {
+          const sibX = sib.startX + deltaX;
+          const sibY = sib.startY + deltaY;
+          sib.el.style.left = `${sibX}px`;
+          sib.el.style.top = `${sibY}px`;
         }
       });
     };
@@ -678,6 +772,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             y: dragState.current.y,
           });
         }
+      }
+
+      // Commit group sibling positions via batch update
+      if (groupSiblingsRef.current.length > 0 && dragState.current) {
+        const deltaX = dragState.current.x - widget.x;
+        const deltaY = dragState.current.y - widget.y;
+        updateWidgets(
+          groupSiblingsRef.current.map((sib) => ({
+            id: sib.id,
+            changes: {
+              x: sib.startX + deltaX,
+              y: sib.startY + deltaY,
+            },
+          }))
+        );
+        groupSiblingsRef.current = [];
       }
     };
 
@@ -1202,7 +1312,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       cornerRadius={isMaximized ? 'none' : undefined}
       className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
         isMaximized ? 'border-none !shadow-none' : ''
-      }`}
+      } ${isGroupActive || isGroupBuildSelected ? 'ring-2 ring-blue-400/60' : ''}`}
       bgClass={widget.backgroundColor}
       style={{
         left: isMaximized
@@ -1235,6 +1345,62 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         ...style, // Merge custom styles
       }}
     >
+      {/* Group indicator dot */}
+      {isInGroup && !isMaximized && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 6,
+            left: 6,
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: 'rgba(59, 130, 246, 0.7)',
+            border: '1.5px solid rgba(255,255,255,0.6)',
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
+      {/* Group-build mode selection overlay */}
+      {groupBuildMode && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: isGroupBuildSelected
+              ? 'rgba(59, 130, 246, 0.15)'
+              : 'rgba(0,0,0,0.05)',
+            borderRadius: 'inherit',
+            pointerEvents: 'none',
+          }}
+        >
+          {isGroupBuildSelected && (
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'rgba(59, 130, 246, 0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: 18,
+                fontWeight: 'bold',
+              }}
+            >
+              ✓
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Widget Content (always visible) */}
       <div
         data-testid="drag-surface"
@@ -1697,6 +1863,35 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   size="sm"
                   variant="glass"
                 />
+
+                {/* Group / Ungroup button */}
+                {!isLocked &&
+                  !isPinned &&
+                  (widget.groupId ? (
+                    <IconButton
+                      onClick={() => {
+                        if (widget.groupId) ungroupWidgets(widget.groupId);
+                        handleCloseTools();
+                      }}
+                      icon={<Unlink className="w-3.5 h-3.5" />}
+                      label="Ungroup"
+                      size="sm"
+                      variant="glass"
+                      className="!text-blue-600"
+                    />
+                  ) : (
+                    <IconButton
+                      onClick={() => {
+                        setSelectedWidgetIds([widget.id]);
+                        setGroupBuildMode(true);
+                        handleCloseTools();
+                      }}
+                      icon={<Link className="w-3.5 h-3.5" />}
+                      label="Group with..."
+                      size="sm"
+                      variant="glass"
+                    />
+                  ))}
 
                 {/* NEW: Snap Layouts Button & Popover */}
                 <div className="relative flex items-center">
