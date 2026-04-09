@@ -27,7 +27,12 @@ import {
   buildPinToNameMap,
   buildScoreboardTeams,
 } from './quizScoreboard';
-import type { QuizResponse, QuizQuestion, ClassRoster } from '@/types';
+import type {
+  QuizResponse,
+  QuizQuestion,
+  ClassRoster,
+  QuizSession,
+} from '@/types';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -49,7 +54,12 @@ function makeQuestion(
 
 function makeResponse(
   pin: string,
-  answers: { questionId: string; answer: string }[],
+  answers: {
+    questionId: string;
+    answer: string;
+    answeredAt?: number;
+    speedBonus?: number;
+  }[],
   status: 'joined' | 'in-progress' | 'completed' = 'completed'
 ): QuizResponse {
   return {
@@ -57,13 +67,30 @@ function makeResponse(
     pin,
     joinedAt: Date.now(),
     status,
-    answers: answers.map((a) => ({
-      ...a,
-      answeredAt: Date.now(),
+    answers: answers.map((a, i) => ({
+      questionId: a.questionId,
+      answer: a.answer,
+      answeredAt: a.answeredAt ?? Date.now() + i,
+      ...(a.speedBonus != null ? { speedBonus: a.speedBonus } : {}),
     })),
     score: null,
     submittedAt: status === 'completed' ? Date.now() : null,
   };
+}
+
+function makeSession(overrides: Partial<QuizSession> = {}): QuizSession {
+  return {
+    teacherUid: 'teacher1',
+    code: '1234',
+    quizId: 'quiz1',
+    quizTitle: 'Test Quiz',
+    status: 'active',
+    mode: 'teacher',
+    currentQuestionIndex: 0,
+    totalQuestions: 3,
+    createdAt: Date.now(),
+    ...overrides,
+  } as QuizSession;
 }
 
 function makeRoster(
@@ -124,6 +151,118 @@ describe('quizScoreboard', () => {
       const questions = [makeQuestion('q1', 'A')];
       const response = makeResponse('01', [{ questionId: 'q1', answer: 'A' }]);
       expect(getEarnedPoints(response, questions)).toBe(1);
+    });
+
+    describe('streak multiplier', () => {
+      it('applies 1.5x at 2 consecutive correct', () => {
+        const questions = [makeQuestion('q1', 'A'), makeQuestion('q2', 'B')];
+        const session = makeSession({ streakBonusEnabled: true });
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A', answeredAt: 100 },
+          { questionId: 'q2', answer: 'B', answeredAt: 200 },
+        ]);
+        // q1: 1pt * 1x = 1, q2: 1pt * 1.5x = 1.5 → total 2.5 → rounds to 3
+        expect(getEarnedPoints(response, questions, session)).toBe(3);
+      });
+
+      it('applies 2x at 3+ consecutive correct', () => {
+        const questions = [
+          makeQuestion('q1', 'A'),
+          makeQuestion('q2', 'B'),
+          makeQuestion('q3', 'C'),
+        ];
+        const session = makeSession({ streakBonusEnabled: true });
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A', answeredAt: 100 },
+          { questionId: 'q2', answer: 'B', answeredAt: 200 },
+          { questionId: 'q3', answer: 'C', answeredAt: 300 },
+        ]);
+        // q1: 1*1 = 1, q2: 1*1.5 = 1.5, q3: 1*2 = 2 → 4.5 → rounds to 5
+        expect(getEarnedPoints(response, questions, session)).toBe(5);
+      });
+
+      it('resets streak on wrong answer', () => {
+        const questions = [
+          makeQuestion('q1', 'A'),
+          makeQuestion('q2', 'B'),
+          makeQuestion('q3', 'C'),
+        ];
+        const session = makeSession({ streakBonusEnabled: true });
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A', answeredAt: 100 },
+          { questionId: 'q2', answer: 'wrong', answeredAt: 200 },
+          { questionId: 'q3', answer: 'C', answeredAt: 300 },
+        ]);
+        // q1: 1*1 = 1, q2: wrong (streak resets), q3: 1*1 = 1 → 2
+        expect(getEarnedPoints(response, questions, session)).toBe(2);
+      });
+
+      it('does not apply streak when streakBonusEnabled is false', () => {
+        const questions = [makeQuestion('q1', 'A'), makeQuestion('q2', 'B')];
+        const session = makeSession({ streakBonusEnabled: false });
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A', answeredAt: 100 },
+          { questionId: 'q2', answer: 'B', answeredAt: 200 },
+        ]);
+        expect(getEarnedPoints(response, questions, session)).toBe(2);
+      });
+    });
+
+    describe('speed bonus', () => {
+      it('applies speed bonus percentage to correct answers', () => {
+        const questions = [makeQuestion('q1', 'A')];
+        questions[0].timeLimit = 30;
+        const session = makeSession({ speedBonusEnabled: true });
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A', answeredAt: 100, speedBonus: 50 },
+        ]);
+        // 1pt * (1 + 50/100) = 1.5 → rounds to 2
+        expect(getEarnedPoints(response, questions, session)).toBe(2);
+      });
+
+      it('does not apply speed bonus when disabled', () => {
+        const questions = [makeQuestion('q1', 'A')];
+        questions[0].timeLimit = 30;
+        const session = makeSession({ speedBonusEnabled: false });
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A', answeredAt: 100, speedBonus: 50 },
+        ]);
+        expect(getEarnedPoints(response, questions, session)).toBe(1);
+      });
+
+      it('ignores speed bonus when timeLimit is 0', () => {
+        const questions = [makeQuestion('q1', 'A')];
+        // timeLimit defaults to 0
+        const session = makeSession({ speedBonusEnabled: true });
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A', answeredAt: 100, speedBonus: 50 },
+        ]);
+        expect(getEarnedPoints(response, questions, session)).toBe(1);
+      });
+    });
+
+    describe('answeredAt ordering', () => {
+      it('computes streak based on chronological answeredAt order', () => {
+        const questions = [makeQuestion('q1', 'A'), makeQuestion('q2', 'B')];
+        const session = makeSession({ streakBonusEnabled: true });
+        // Answers stored in reverse order but answeredAt determines real order
+        const response = makeResponse('01', [
+          { questionId: 'q2', answer: 'B', answeredAt: 200 },
+          { questionId: 'q1', answer: 'A', answeredAt: 100 },
+        ]);
+        // Sorted: q1 first (100), q2 second (200) → streak = 2 on q2
+        // q1: 1*1 = 1, q2: 1*1.5 = 1.5 → 2.5 → rounds to 3
+        expect(getEarnedPoints(response, questions, session)).toBe(3);
+      });
+
+      it('handles missing answeredAt with fallback to 0', () => {
+        const questions = [makeQuestion('q1', 'A')];
+        const response = makeResponse('01', [
+          { questionId: 'q1', answer: 'A' },
+        ]);
+        // answeredAt defaults from helper, should not throw
+        expect(getEarnedPoints(response, questions)).toBe(1);
+      });
     });
   });
 

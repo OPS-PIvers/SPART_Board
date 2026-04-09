@@ -431,12 +431,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                 disabled={!selectedMode}
                 onClick={() => {
                   if (!selectedMode) return;
-                  onAssign(
-                    selectedForLive,
-                    selectedMode,
-                    buildPlcOptions(),
-                    buildSessionOptions()
-                  );
+                  void Promise.resolve(
+                    onAssign(
+                      selectedForLive,
+                      selectedMode,
+                      buildPlcOptions(),
+                      buildSessionOptions()
+                    )
+                  ).catch((err: unknown) => {
+                    console.error('Failed to assign quiz:', err);
+                  });
                   setSelectedForLive(null);
                   setSelectedMode(null);
                 }}

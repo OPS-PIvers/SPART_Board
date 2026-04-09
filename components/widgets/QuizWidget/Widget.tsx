@@ -157,7 +157,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
 
     // Compute a fingerprint including answer content to detect changes.
-    // Also include the config flag itself so we trigger on first enable.
+    // First-run detection uses the empty-prev check below.
     const fingerprint = responses
       .map(
         (r) =>
