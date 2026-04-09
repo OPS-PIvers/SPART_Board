@@ -19,12 +19,22 @@ import {
   ArrowRight,
   Trophy,
   AlertCircle,
+  Flame,
+  Zap,
+  X as XIcon,
+  Check,
 } from 'lucide-react';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { useQuizSessionStudent } from '@/hooks/useQuizSession';
 import { QuizSession, QuizPublicQuestion } from '@/types';
 import { useDialog } from '@/context/useDialog';
+import {
+  playCorrectChime,
+  playIncorrectBuzz,
+  playCountdownTick,
+  playStreakSound,
+} from '@/utils/quizAudio';
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
@@ -287,8 +297,12 @@ const ActiveQuiz: React.FC<{
     await onComplete();
   }, [showAlert, onComplete]);
 
-  // The Visibility Tracker
+  // The Visibility Tracker — only active when tabWarningsEnabled
+  const tabWarningsEnabled = session.tabWarningsEnabled !== false;
+
   useEffect(() => {
+    if (!tabWarningsEnabled) return; // Skip entirely when disabled
+
     const handleVisibilityChange = async () => {
       // Don't track if the quiz isn't active, if we're already showing a warning,
       // or if the student has already completed the quiz.
@@ -338,6 +352,7 @@ const ActiveQuiz: React.FC<{
       window.removeEventListener('blur', handleVisibilityChange);
     };
   }, [
+    tabWarningsEnabled,
     session.status,
     reportTabSwitch,
     onComplete,
@@ -383,6 +398,14 @@ const ActiveQuiz: React.FC<{
     string | null
   >(null);
 
+  // ─── Gamification state ─────────────────────────────────────────────────────
+  const [answerFeedback, setAnswerFeedback] = useState<
+    'correct' | 'incorrect' | null
+  >(null);
+  const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
+  const [speedBonusEarned, setSpeedBonusEarned] = useState<number | null>(null);
+  const [streakCount, setStreakCount] = useState(0);
+
   // Derived state: reset local UI state on new question or when global alreadyAnswered state arrives
   if (
     currentQuestion?.id !== prevQuestionId ||
@@ -394,6 +417,9 @@ const ActiveQuiz: React.FC<{
     setSubmitted(alreadyAnswered);
     setFibAnswer('');
     setAutoSubmitTriggeredFor(null);
+    setAnswerFeedback(null);
+    setRevealedAnswer(null);
+    setSpeedBonusEarned(null);
     const tl = currentQuestion?.timeLimit ?? 0;
     setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
   }
@@ -428,12 +454,19 @@ const ActiveQuiz: React.FC<{
   // Countdown — only runs the interval; auto-submit is handled above.
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || submitted || submitting) return;
-    const id = setInterval(
-      () => setTimeLeft((t) => (t !== null ? t - 1 : null)),
-      1000
-    );
+    const id = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t === null) return null;
+        const next = t - 1;
+        // Play tick sound for last 5 seconds
+        if (next > 0 && next <= 5 && session.soundEffectsEnabled) {
+          playCountdownTick();
+        }
+        return next;
+      });
+    }, 1000);
     return () => clearInterval(id);
-  }, [timeLeft, submitted, submitting]);
+  }, [timeLeft, submitted, submitting, session.soundEffectsEnabled]);
 
   // Side-effect: submit the answer when auto-submit is triggered.
   useEffect(() => {
@@ -450,6 +483,42 @@ const ActiveQuiz: React.FC<{
       });
   }, [autoSubmitTriggeredFor]);
 
+  // Watch for teacher revealing answers after student already submitted.
+  // Uses "adjusting state during render" pattern to avoid setState-in-effect.
+  const currentRevealed = currentQuestion
+    ? session.revealedAnswers?.[currentQuestion.id]
+    : undefined;
+  const [prevRevealed, setPrevRevealed] = useState(currentRevealed);
+
+  if (currentRevealed !== prevRevealed) {
+    setPrevRevealed(currentRevealed);
+    if (
+      currentRevealed &&
+      submitted &&
+      session.showResultToStudent &&
+      answerFeedback === null
+    ) {
+      const studentAns =
+        selectedAnswer ??
+        myResponse?.answers.find((a) => a.questionId === currentQuestion?.id)
+          ?.answer;
+      if (studentAns) {
+        const isCorrect =
+          studentAns.trim().toLowerCase() ===
+          currentRevealed.trim().toLowerCase();
+        setAnswerFeedback(isCorrect ? 'correct' : 'incorrect');
+        if (isCorrect) {
+          setStreakCount((s) => s + 1);
+        } else {
+          setStreakCount(0);
+        }
+        if (session.showCorrectAnswerToStudent) {
+          setRevealedAnswer(currentRevealed);
+        }
+      }
+    }
+  }
+
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -465,6 +534,57 @@ const ActiveQuiz: React.FC<{
     setSelectedAnswer(answer);
     await onAnswer(currentQuestion.id, answer);
     setSubmitting(false);
+
+    // ─── Answer feedback & gamification ──────────────────────────────────────
+    // Check if answer is correct by reading revealedAnswers from session
+    // (teacher-controlled). For student-paced mode, the teacher may auto-reveal.
+    if (session.showResultToStudent) {
+      const revealed = session.revealedAnswers?.[currentQuestion.id];
+      if (revealed) {
+        const isCorrect =
+          answer.trim().toLowerCase() === revealed.trim().toLowerCase();
+        setAnswerFeedback(isCorrect ? 'correct' : 'incorrect');
+
+        // Sound effects
+        if (session.soundEffectsEnabled) {
+          if (isCorrect) {
+            playCorrectChime();
+          } else {
+            playIncorrectBuzz();
+          }
+        }
+
+        // Streak tracking
+        if (isCorrect) {
+          const newStreak = streakCount + 1;
+          setStreakCount(newStreak);
+          if (
+            session.streakBonusEnabled &&
+            newStreak >= 2 &&
+            session.soundEffectsEnabled
+          ) {
+            playStreakSound();
+          }
+        } else {
+          setStreakCount(0);
+        }
+
+        // Show correct answer text if enabled
+        if (session.showCorrectAnswerToStudent) {
+          setRevealedAnswer(revealed);
+        }
+      }
+    }
+
+    // Speed bonus calculation (visual only — actual scoring in quizScoreboard)
+    // Use timeLeft (from countdown state) to avoid calling Date.now() in render scope
+    if (session.speedBonusEnabled && currentQuestion.timeLimit > 0) {
+      const remaining = Math.max(0, timeLeft ?? 0);
+      const bonusPct = Math.round((remaining / currentQuestion.timeLimit) * 50);
+      if (bonusPct > 0) {
+        setSpeedBonusEarned(bonusPct);
+      }
+    }
 
     // Auto-complete if on last question
     if (
@@ -592,7 +712,14 @@ const ActiveQuiz: React.FC<{
             })}
 
             {submitted && (
-              <div className="pt-4 animate-in fade-in slide-in-from-bottom-2">
+              <div className="pt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
+                <AnswerFeedbackBanner
+                  feedback={answerFeedback}
+                  revealedAnswer={revealedAnswer}
+                  speedBonus={speedBonusEarned}
+                  streakCount={streakCount}
+                  streakEnabled={session.streakBonusEnabled}
+                />
                 {isStudentPaced && currentIndex < session.totalQuestions - 1 ? (
                   <button
                     onClick={handleNext}
@@ -646,22 +773,33 @@ const ActiveQuiz: React.FC<{
                     'Submit Answer'
                   )}
                 </button>
-              ) : isStudentPaced &&
-                currentIndex < session.totalQuestions - 1 ? (
-                <button
-                  onClick={handleNext}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
-                >
-                  NEXT QUESTION <ArrowRight className="w-5 h-5" />
-                </button>
               ) : (
-                <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  <p className="text-emerald-300 text-sm font-bold">
-                    {currentIndex < session.totalQuestions - 1
-                      ? 'Waiting for teacher…'
-                      : 'Quiz complete!'}
-                  </p>
+                <div className="space-y-3">
+                  <AnswerFeedbackBanner
+                    feedback={answerFeedback}
+                    revealedAnswer={revealedAnswer}
+                    speedBonus={speedBonusEarned}
+                    streakCount={streakCount}
+                    streakEnabled={session.streakBonusEnabled}
+                  />
+                  {isStudentPaced &&
+                  currentIndex < session.totalQuestions - 1 ? (
+                    <button
+                      onClick={handleNext}
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                    >
+                      NEXT QUESTION <ArrowRight className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                      <p className="text-emerald-300 text-sm font-bold">
+                        {currentIndex < session.totalQuestions - 1
+                          ? 'Waiting for teacher…'
+                          : 'Quiz complete!'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -869,6 +1007,61 @@ const StructuredQuestionInput: React.FC<{
               </p>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Answer feedback banner ──────────────────────────────────────────────────
+
+const AnswerFeedbackBanner: React.FC<{
+  feedback: 'correct' | 'incorrect' | null;
+  revealedAnswer: string | null;
+  speedBonus: number | null;
+  streakCount: number;
+  streakEnabled?: boolean;
+}> = ({ feedback, revealedAnswer, speedBonus, streakCount, streakEnabled }) => {
+  if (!feedback && !speedBonus && !(streakEnabled && streakCount >= 2))
+    return null;
+
+  return (
+    <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
+      {feedback === 'correct' && (
+        <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center gap-3">
+          <Check className="w-6 h-6 text-emerald-400 shrink-0" />
+          <p className="text-emerald-300 font-bold text-sm">Correct!</p>
+        </div>
+      )}
+      {feedback === 'incorrect' && (
+        <div className="p-3 bg-red-500/20 border border-red-500/40 rounded-2xl">
+          <div className="flex items-center gap-3">
+            <XIcon className="w-6 h-6 text-red-400 shrink-0" />
+            <p className="text-red-300 font-bold text-sm">Incorrect</p>
+          </div>
+          {revealedAnswer && (
+            <p className="text-slate-400 text-xs mt-2 ml-9">
+              Correct answer:{' '}
+              <span className="text-emerald-400 font-semibold">
+                {revealedAnswer}
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+      {speedBonus !== null && speedBonus > 0 && (
+        <div className="flex items-center gap-2 text-amber-400">
+          <Zap className="w-4 h-4" />
+          <span className="text-xs font-bold">+{speedBonus}% speed bonus!</span>
+        </div>
+      )}
+      {streakEnabled && streakCount >= 2 && (
+        <div className="flex items-center gap-2 text-orange-400">
+          <Flame className="w-4 h-4" />
+          <span className="text-xs font-bold">
+            {streakCount} in a row! {streakCount >= 3 ? '2x' : '1.5x'}{' '}
+            multiplier
+          </span>
         </div>
       )}
     </div>

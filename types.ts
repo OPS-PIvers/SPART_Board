@@ -1366,6 +1366,32 @@ export interface QuizSession {
    * full QuizData loaded from Drive, not from this field.
    */
   publicQuestions: QuizPublicQuestion[];
+
+  // ─── Toggles (Phase 1) ─────────────────────────────────────────────────────
+  /** Whether tab-switch detection is active on student devices (default true) */
+  tabWarningsEnabled?: boolean;
+  /** Show right/wrong indicator to students after they submit (default false) */
+  showResultToStudent?: boolean;
+  /** Reveal the correct answer text to students after submit (default false) */
+  showCorrectAnswerToStudent?: boolean;
+  /** Show the correct answer on the teacher's projected board (default false) */
+  showCorrectOnBoard?: boolean;
+  /**
+   * Teacher-written map of questionId → correct answer text.
+   * Students read from this after submitting; only populated when teacher
+   * reveals or (in student-paced mode) after the student answers.
+   */
+  revealedAnswers?: Record<string, string>;
+
+  // ─── Gamification (Phase 2) ─────────────────────────────────────────────────
+  /** Award bonus points for fast answers (default false) */
+  speedBonusEnabled?: boolean;
+  /** Award streak multipliers for consecutive correct answers (default false) */
+  streakBonusEnabled?: boolean;
+  /** Show a podium/leaderboard between questions (default false) */
+  showPodiumBetweenQuestions?: boolean;
+  /** Play sound effects during the quiz (default false) */
+  soundEffectsEnabled?: boolean;
 }
 
 export interface QuizResponseAnswer {
@@ -1380,6 +1406,8 @@ export interface QuizResponseAnswer {
    * stored value are still valid.
    */
   isCorrect?: boolean;
+  /** Bonus points earned from answering quickly (speed bonus feature) */
+  speedBonus?: number;
 }
 
 export type QuizResponseStatus = 'joined' | 'in-progress' | 'completed';

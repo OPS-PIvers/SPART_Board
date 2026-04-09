@@ -9,7 +9,11 @@ import {
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { useQuiz } from '@/hooks/useQuiz';
-import { useQuizSessionTeacher, gradeAnswer } from '@/hooks/useQuizSession';
+import {
+  useQuizSessionTeacher,
+  gradeAnswer,
+  type QuizSessionOptions,
+} from '@/hooks/useQuizSession';
 import { QuizManager, PlcOptions } from './components/QuizManager';
 import { QuizImporter } from './components/QuizImporter';
 import { QuizEditor } from './components/QuizEditor';
@@ -49,6 +53,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     startQuizSession,
     advanceQuestion,
     endQuizSession,
+    removeStudent,
+    revealAnswer,
   } = useQuizSessionTeacher(user?.uid);
 
   // Local state for views that need loaded data
@@ -148,7 +154,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       return;
     }
 
-    // Compute a fingerprint including answer content to detect changes
+    // Compute a fingerprint including answer content to detect changes.
+    // Also include the config flag itself so we trigger on first enable.
     const fingerprint = responses
       .map(
         (r) =>
@@ -156,7 +163,10 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       )
       .sort()
       .join('|');
-    if (fingerprint === prevResponsesJsonRef.current) return;
+
+    // Allow first-run when the scoreboard was just enabled (prev is empty)
+    const isFirstRun = prevResponsesJsonRef.current === '';
+    if (!isFirstRun && fingerprint === prevResponsesJsonRef.current) return;
     prevResponsesJsonRef.current = fingerprint;
 
     // Debounce the scoreboard update
@@ -164,100 +174,108 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       clearTimeout(liveScoreboardTimerRef.current);
     }
 
-    liveScoreboardTimerRef.current = setTimeout(() => {
-      const currentConfig = configRef.current;
-      const scoringMode = currentConfig.liveScoreboardScoring ?? 'completion';
-      const displayMode = currentConfig.liveScoreboardMode ?? 'pin';
-      const pinToName = buildPinToNameMap(rosters, currentConfig.periodName);
+    liveScoreboardTimerRef.current = setTimeout(
+      () => {
+        const currentConfig = configRef.current;
+        const scoringMode =
+          currentConfig.liveScoreboardScoring ?? 'per-question';
+        const displayMode = currentConfig.liveScoreboardMode ?? 'pin';
+        const pinToName = buildPinToNameMap(rosters, currentConfig.periodName);
 
-      const eligibleResponses =
-        scoringMode === 'completion'
-          ? responses.filter((r) => r.status === 'completed')
-          : // per-question: include anyone with at least one answer
-            responses.filter((r) => r.answers.length > 0);
+        // Include ALL responses — joined students appear at 0 score, in-progress
+        // get a running score, completed get their final score.
+        const allResponses = responses;
 
-      let newTeams: ScoreboardTeam[];
-      if (scoringMode === 'per-question') {
-        // Per-question mode: running accuracy — percentage of answered questions
-        // scored correctly (not total quiz points). This gives meaningful live
-        // feedback before quiz completion, unlike the final score which divides
-        // by total points and would show low percentages for students mid-quiz.
-        const questions = loadedQuizData.questions;
-        newTeams = eligibleResponses
-          .map((r) => {
-            let earnedPoints = 0;
-            let maxAnsweredPoints = 0;
-            for (const a of r.answers) {
-              const q = questions.find((qn) => qn.id === a.questionId);
-              if (!q) continue;
-              const pts = q.points ?? 1;
-              maxAnsweredPoints += pts;
-              if (gradeAnswer(q, a.answer)) earnedPoints += pts;
-            }
-            const score =
-              maxAnsweredPoints > 0
-                ? Math.round((earnedPoints / maxAnsweredPoints) * 100)
-                : 0;
-            return { response: r, score };
-          })
-          .sort((a, b) => b.score - a.score)
-          .map(({ response, score }) => ({
-            id: `pin-${response.pin}`,
-            name:
-              displayMode === 'name'
-                ? (pinToName[response.pin] ?? `PIN ${response.pin}`)
-                : `PIN ${response.pin}`,
-            score,
-            color:
-              SCOREBOARD_COLORS[
-                parseInt(response.pin, 10) % SCOREBOARD_COLORS.length
-              ],
-          }));
-      } else {
-        newTeams = buildScoreboardTeams(
-          eligibleResponses,
-          loadedQuizData.questions,
-          displayMode,
-          pinToName
-        );
-      }
+        let newTeams: ScoreboardTeam[];
+        if (scoringMode === 'per-question') {
+          // Per-question mode: running accuracy — percentage of answered questions
+          // scored correctly (not total quiz points). This gives meaningful live
+          // feedback before quiz completion, unlike the final score which divides
+          // by total points and would show low percentages for students mid-quiz.
+          const questions = loadedQuizData.questions;
+          newTeams = allResponses
+            .map((r) => {
+              let earnedPoints = 0;
+              let maxAnsweredPoints = 0;
+              for (const a of r.answers) {
+                const q = questions.find((qn) => qn.id === a.questionId);
+                if (!q) continue;
+                const pts = q.points ?? 1;
+                maxAnsweredPoints += pts;
+                if (gradeAnswer(q, a.answer)) earnedPoints += pts;
+              }
+              const score =
+                maxAnsweredPoints > 0
+                  ? Math.round((earnedPoints / maxAnsweredPoints) * 100)
+                  : 0;
+              return { response: r, score };
+            })
+            .sort((a, b) => b.score - a.score)
+            .map(({ response, score }) => ({
+              id: `pin-${response.pin}`,
+              name:
+                displayMode === 'name'
+                  ? (pinToName[response.pin] ?? `PIN ${response.pin}`)
+                  : `PIN ${response.pin}`,
+              score,
+              color:
+                SCOREBOARD_COLORS[
+                  parseInt(response.pin, 10) % SCOREBOARD_COLORS.length
+                ],
+            }));
+        } else {
+          // Completion mode: include ALL responses — show 0% for non-completed
+          newTeams = buildScoreboardTeams(
+            allResponses,
+            loadedQuizData.questions,
+            displayMode,
+            pinToName
+          );
+        }
 
-      // Find or create scoreboard widget
-      const widgets = widgetsRef.current;
-      const existingId = currentConfig.liveScoreboardWidgetId;
-      const existingScoreboard = existingId
-        ? widgets?.find((w) => w.id === existingId)
-        : widgets?.find((w) => w.type === 'scoreboard');
+        // Find or create scoreboard widget
+        const widgets = widgetsRef.current;
+        const existingId = currentConfig.liveScoreboardWidgetId;
+        const existingScoreboard = existingId
+          ? widgets?.find((w) => w.id === existingId)
+          : widgets?.find((w) => w.type === 'scoreboard');
 
-      if (existingScoreboard) {
-        updateWidget(existingScoreboard.id, {
-          config: {
-            ...existingScoreboard.config,
-            teams: newTeams,
-            liveQuizWidgetId: widget.id,
-          },
-        });
-        if (currentConfig.liveScoreboardWidgetId !== existingScoreboard.id) {
-          updateWidget(widget.id, {
+        if (existingScoreboard) {
+          updateWidget(existingScoreboard.id, {
             config: {
-              ...currentConfig,
-              liveScoreboardWidgetId: existingScoreboard.id,
-            } as QuizConfig,
+              ...existingScoreboard.config,
+              teams: newTeams,
+              liveQuizWidgetId: widget.id,
+            },
+          });
+          if (currentConfig.liveScoreboardWidgetId !== existingScoreboard.id) {
+            updateWidget(widget.id, {
+              config: {
+                ...currentConfig,
+                liveScoreboardWidgetId: existingScoreboard.id,
+              } as QuizConfig,
+            });
+          }
+          creatingScoreboardRef.current = false;
+        } else if (!creatingScoreboardRef.current) {
+          // Guard against creating duplicate scoreboards while addWidget is async
+          creatingScoreboardRef.current = true;
+          addWidget('scoreboard', {
+            config: {
+              teams: newTeams,
+              layout: 'rows',
+              liveQuizWidgetId: widget.id,
+            },
+          });
+          // Reset the lock after a tick so subsequent updates can find and update
+          // the newly created scoreboard.
+          requestAnimationFrame(() => {
+            creatingScoreboardRef.current = false;
           });
         }
-        creatingScoreboardRef.current = false;
-      } else if (!creatingScoreboardRef.current) {
-        // Guard against creating duplicate scoreboards while addWidget is async
-        creatingScoreboardRef.current = true;
-        addWidget('scoreboard', {
-          config: {
-            teams: newTeams,
-            layout: 'rows',
-            liveQuizWidgetId: widget.id,
-          },
-        });
-      }
-    }, 2000);
+      },
+      isFirstRun ? 500 : 2000
+    ); // Shorter delay on first enable
 
     return () => {
       if (liveScoreboardTimerRef.current) {
@@ -487,6 +505,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         config={config}
         rosters={rosters}
         onUpdateConfig={handleUpdateQuizConfig}
+        onRemoveStudent={removeStudent}
+        onRevealAnswer={revealAnswer}
       />
     );
   }
@@ -515,11 +535,16 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }}
       rosters={rosters}
       config={config}
-      onAssign={async (meta, mode, plcOptions: PlcOptions) => {
+      onAssign={async (
+        meta,
+        mode,
+        plcOptions: PlcOptions,
+        sessionOptions: QuizSessionOptions
+      ) => {
         const data = await loadQuiz(meta);
         if (!data) return;
         try {
-          const code = await startQuizSession(data, mode);
+          const code = await startQuizSession(data, mode, sessionOptions);
           updateWidget(widget.id, {
             config: {
               ...config,

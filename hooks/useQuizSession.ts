@@ -22,6 +22,7 @@ import {
   updateDoc,
   getDocs,
   getDoc,
+  deleteDoc,
   query,
   where,
   writeBatch,
@@ -114,6 +115,18 @@ export function gradeAnswer(
 
 // ─── Teacher hook ─────────────────────────────────────────────────────────────
 
+/** Options passed from the assignment modal to configure session toggles. */
+export interface QuizSessionOptions {
+  tabWarningsEnabled?: boolean;
+  showResultToStudent?: boolean;
+  showCorrectAnswerToStudent?: boolean;
+  showCorrectOnBoard?: boolean;
+  speedBonusEnabled?: boolean;
+  streakBonusEnabled?: boolean;
+  showPodiumBetweenQuestions?: boolean;
+  soundEffectsEnabled?: boolean;
+}
+
 export interface UseQuizSessionTeacherResult {
   session: QuizSession | null;
   responses: QuizResponse[];
@@ -124,10 +137,15 @@ export interface UseQuizSessionTeacherResult {
       title: string;
       questions: QuizQuestion[];
     },
-    mode?: QuizSessionMode
+    mode?: QuizSessionMode,
+    options?: QuizSessionOptions
   ) => Promise<string>;
   advanceQuestion: () => Promise<void>;
   endQuizSession: () => Promise<void>;
+  /** Remove a student from the live session roster */
+  removeStudent: (studentUid: string) => Promise<void>;
+  /** Reveal the correct answer for a question (writes to session doc) */
+  revealAnswer: (questionId: string, correctAnswer: string) => Promise<void>;
 }
 
 export const useQuizSessionTeacher = (
@@ -201,6 +219,32 @@ export const useQuizSessionTeacher = (
       await batch.commit();
     }
   }, [teacherUid]);
+
+  const removeStudent = useCallback(
+    async (studentUid: string) => {
+      if (!teacherUid) return;
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        teacherUid,
+        RESPONSES_COLLECTION,
+        studentUid
+      );
+      await deleteDoc(responseRef);
+    },
+    [teacherUid]
+  );
+
+  const revealAnswer = useCallback(
+    async (questionId: string, correctAnswer: string) => {
+      if (!teacherUid) return;
+      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+      await updateDoc(sessionRef, {
+        [`revealedAnswers.${questionId}`]: correctAnswer,
+      });
+    },
+    [teacherUid]
+  );
 
   const advanceQuestion = useCallback(async () => {
     if (!teacherUid || !session) return;
@@ -288,7 +332,8 @@ export const useQuizSessionTeacher = (
         title: string;
         questions: QuizQuestion[];
       },
-      mode: QuizSessionMode = 'teacher'
+      mode: QuizSessionMode = 'teacher',
+      options?: QuizSessionOptions
     ): Promise<string> => {
       if (!teacherUid) throw new Error('Not authenticated');
 
@@ -351,6 +396,19 @@ export const useQuizSessionTeacher = (
         code,
         totalQuestions: quiz.questions.length,
         publicQuestions: quiz.questions.map(toPublicQuestion),
+        // Phase 1 toggles
+        tabWarningsEnabled: options?.tabWarningsEnabled ?? true,
+        showResultToStudent: options?.showResultToStudent ?? false,
+        showCorrectAnswerToStudent:
+          options?.showCorrectAnswerToStudent ?? false,
+        showCorrectOnBoard: options?.showCorrectOnBoard ?? false,
+        revealedAnswers: {},
+        // Phase 2 gamification
+        speedBonusEnabled: options?.speedBonusEnabled ?? false,
+        streakBonusEnabled: options?.streakBonusEnabled ?? false,
+        showPodiumBetweenQuestions:
+          options?.showPodiumBetweenQuestions ?? false,
+        soundEffectsEnabled: options?.soundEffectsEnabled ?? false,
       };
       await setDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), newSession);
       return code;
@@ -365,6 +423,8 @@ export const useQuizSessionTeacher = (
     startQuizSession,
     advanceQuestion,
     endQuizSession,
+    removeStudent,
+    revealAnswer,
   };
 };
 

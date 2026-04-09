@@ -31,6 +31,7 @@ import {
   QuizConfig,
   ClassRoster,
 } from '@/types';
+import { type QuizSessionOptions } from '@/hooks/useQuizSession';
 import { Toggle } from '@/components/common/Toggle';
 
 export interface PlcOptions {
@@ -50,7 +51,8 @@ interface QuizManagerProps {
   onAssign: (
     quiz: QuizMetadata,
     mode: QuizSessionMode,
-    plcOptions: PlcOptions
+    plcOptions: PlcOptions,
+    sessionOptions: QuizSessionOptions
   ) => void;
   onResume: () => void;
   onEndSession: () => Promise<void>;
@@ -108,6 +110,41 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   if (!selectedForLive && prevSelectedForLive) {
     setPrevSelectedForLive(null);
   }
+
+  // ─── Session option toggles ────────────────────────────────────────────────
+  const [tabWarningsEnabled, setTabWarningsEnabled] = useState(true);
+  const [showResultToStudent, setShowResultToStudent] = useState(false);
+  const [showCorrectAnswerToStudent, setShowCorrectAnswerToStudent] =
+    useState(false);
+  const [showCorrectOnBoard, setShowCorrectOnBoard] = useState(false);
+  const [speedBonusEnabled, setSpeedBonusEnabled] = useState(false);
+  const [streakBonusEnabled, setStreakBonusEnabled] = useState(false);
+  const [showPodiumBetweenQuestions, setShowPodiumBetweenQuestions] =
+    useState(false);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
+
+  // Reset session options when modal re-opens
+  if (selectedForLive && selectedForLive !== prevSelectedForLive) {
+    setTabWarningsEnabled(true);
+    setShowResultToStudent(false);
+    setShowCorrectAnswerToStudent(false);
+    setShowCorrectOnBoard(false);
+    setSpeedBonusEnabled(false);
+    setStreakBonusEnabled(false);
+    setShowPodiumBetweenQuestions(false);
+    setSoundEffectsEnabled(false);
+  }
+
+  const buildSessionOptions = (): QuizSessionOptions => ({
+    tabWarningsEnabled,
+    showResultToStudent,
+    showCorrectAnswerToStudent,
+    showCorrectOnBoard,
+    speedBonusEnabled,
+    streakBonusEnabled,
+    showPodiumBetweenQuestions,
+    soundEffectsEnabled,
+  });
 
   const plcSheetUrlInvalid =
     !!plcSheetUrl &&
@@ -195,6 +232,83 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                   desc="Students move through questions at their own speed."
                   selected={selectedMode === 'student'}
                   onClick={() => setSelectedMode('student')}
+                />
+              </div>
+
+              {/* ─── Quiz Behavior Toggles ─────────────────────────── */}
+              <div className="border-t border-slate-100 pt-4 space-y-3">
+                <p
+                  className="text-brand-blue-primary/60 font-black uppercase tracking-widest"
+                  style={{ fontSize: 'min(10px, 3cqmin)' }}
+                >
+                  Quiz Integrity
+                </p>
+                <ToggleRow
+                  label="Tab Switch Detection"
+                  checked={tabWarningsEnabled}
+                  onChange={setTabWarningsEnabled}
+                  hint="Warn students who leave the quiz tab"
+                />
+              </div>
+
+              <div className="border-t border-slate-100 pt-4 space-y-3">
+                <p
+                  className="text-brand-blue-primary/60 font-black uppercase tracking-widest"
+                  style={{ fontSize: 'min(10px, 3cqmin)' }}
+                >
+                  Answer Feedback
+                </p>
+                <ToggleRow
+                  label="Show right/wrong to students"
+                  checked={showResultToStudent}
+                  onChange={setShowResultToStudent}
+                  hint="Students see ✓ or ✗ after submitting"
+                />
+                <ToggleRow
+                  label="Reveal correct answer to students"
+                  checked={showCorrectAnswerToStudent}
+                  onChange={setShowCorrectAnswerToStudent}
+                  disabled={!showResultToStudent}
+                  hint="Also show what the correct answer was"
+                />
+                <ToggleRow
+                  label="Show correct answer on board"
+                  checked={showCorrectOnBoard}
+                  onChange={setShowCorrectOnBoard}
+                  hint="Display correct answer on the projected screen"
+                />
+              </div>
+
+              <div className="border-t border-slate-100 pt-4 space-y-3">
+                <p
+                  className="text-brand-blue-primary/60 font-black uppercase tracking-widest"
+                  style={{ fontSize: 'min(10px, 3cqmin)' }}
+                >
+                  Gamification
+                </p>
+                <ToggleRow
+                  label="Speed Bonus Points"
+                  checked={speedBonusEnabled}
+                  onChange={setSpeedBonusEnabled}
+                  hint="Up to 50% bonus for fast answers"
+                />
+                <ToggleRow
+                  label="Streak Bonuses"
+                  checked={streakBonusEnabled}
+                  onChange={setStreakBonusEnabled}
+                  hint="Multiplier for consecutive correct answers"
+                />
+                <ToggleRow
+                  label="Podium Between Questions"
+                  checked={showPodiumBetweenQuestions}
+                  onChange={setShowPodiumBetweenQuestions}
+                  hint="Show top 3 leaderboard after each question"
+                />
+                <ToggleRow
+                  label="Sound Effects"
+                  checked={soundEffectsEnabled}
+                  onChange={setSoundEffectsEnabled}
+                  hint="Chimes, ticks, and fanfares during the quiz"
                 />
               </div>
 
@@ -317,7 +431,12 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                 disabled={!selectedMode}
                 onClick={() => {
                   if (!selectedMode) return;
-                  onAssign(selectedForLive, selectedMode, buildPlcOptions());
+                  onAssign(
+                    selectedForLive,
+                    selectedMode,
+                    buildPlcOptions(),
+                    buildSessionOptions()
+                  );
                   setSelectedForLive(null);
                   setSelectedMode(null);
                 }}
@@ -751,6 +870,22 @@ const ModeButton: React.FC<{
       </p>
     </div>
   </button>
+);
+
+const ToggleRow: React.FC<{
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  hint?: string;
+  disabled?: boolean;
+}> = ({ label, checked, onChange, hint, disabled }) => (
+  <div className={disabled ? 'opacity-40 pointer-events-none' : ''}>
+    <div className="flex items-center justify-between">
+      <span className="text-sm font-bold text-brand-blue-dark">{label}</span>
+      <Toggle checked={checked} onChange={onChange} size="sm" showLabels />
+    </div>
+    {hint && <p className="text-xxs text-slate-500 mt-0.5">{hint}</p>}
+  </div>
 );
 
 const ActionButton: React.FC<{

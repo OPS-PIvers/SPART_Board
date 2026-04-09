@@ -8,22 +8,71 @@ import {
   QuizQuestion,
   ClassRoster,
   ScoreboardTeam,
+  QuizSession,
 } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import { SCOREBOARD_COLORS } from '@/config/scoreboard';
 
 /**
- * Compute the raw points a student earned.
+ * Compute the streak multiplier for the i-th answer in a sequence.
+ * Returns 1x for streak<2, 1.5x for streak==2, 2x for streak>=3.
+ */
+function streakMultiplier(consecutiveCorrect: number): number {
+  if (consecutiveCorrect >= 3) return 2;
+  if (consecutiveCorrect === 2) return 1.5;
+  return 1;
+}
+
+/**
+ * Compute the raw points a student earned, optionally including
+ * speed bonus and streak multiplier when the session has them enabled.
  */
 export function getEarnedPoints(
   r: QuizResponse,
-  questions: QuizQuestion[]
+  questions: QuizQuestion[],
+  session?: QuizSession | null
 ): number {
-  return questions.reduce((sum, q) => {
-    const ans = r.answers.find((a) => a.questionId === q.id);
-    if (!ans) return sum;
-    return sum + (gradeAnswer(q, ans.answer) ? (q.points ?? 1) : 0);
-  }, 0);
+  const speedEnabled = session?.speedBonusEnabled ?? false;
+  const streakEnabled = session?.streakBonusEnabled ?? false;
+
+  // Sort answers by answeredAt to compute streaks in chronological order
+  const sortedAnswers = [...r.answers].sort(
+    (a, b) => a.answeredAt - b.answeredAt
+  );
+
+  let totalPoints = 0;
+  let streak = 0;
+
+  for (const ans of sortedAnswers) {
+    const q = questions.find((qn) => qn.id === ans.questionId);
+    if (!q) continue;
+
+    const basePts = q.points ?? 1;
+    const isCorrect = gradeAnswer(q, ans.answer);
+
+    if (!isCorrect) {
+      streak = 0;
+      continue;
+    }
+
+    streak++;
+
+    let pts = basePts;
+
+    // Speed bonus: up to 50% extra for fast answers
+    if (speedEnabled && q.timeLimit > 0 && ans.speedBonus) {
+      pts *= 1 + ans.speedBonus / 100;
+    }
+
+    // Streak multiplier
+    if (streakEnabled) {
+      pts *= streakMultiplier(streak);
+    }
+
+    totalPoints += pts;
+  }
+
+  return Math.round(totalPoints);
 }
 
 /**
@@ -31,11 +80,12 @@ export function getEarnedPoints(
  */
 export function getResponseScore(
   r: QuizResponse,
-  questions: QuizQuestion[]
+  questions: QuizQuestion[],
+  session?: QuizSession | null
 ): number {
   const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
   if (maxPoints === 0) return 0;
-  return Math.round((getEarnedPoints(r, questions) / maxPoints) * 100);
+  return Math.round((getEarnedPoints(r, questions, session) / maxPoints) * 100);
 }
 
 /**
