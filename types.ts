@@ -2379,6 +2379,7 @@ export interface WidgetData {
   customTitle?: string | null;
   isLive?: boolean;
   isLocked?: boolean; // When true: widget cannot be moved, resized, or deleted by end-users
+  isPinned?: boolean; // User-pinned: drag, resize, maximize, snap disabled
   transparency?: number;
   annotation?: DrawingConfig;
   /** Override which building's admin defaults this widget uses (falls back to user's primary building) */

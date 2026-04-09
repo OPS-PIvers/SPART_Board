@@ -103,6 +103,8 @@
     "undo": "Annuler",
     "clearAll": "Tout effacer",
     "done": "Terminé",
+    "pin": "Épingler la position",
+    "unpin": "Désépingler la position",
     "snapLayout": "Ajuster la mise en page",
     "chooseLayout": "Choisir la mise en page",
     "snapTo": "Ajuster à",

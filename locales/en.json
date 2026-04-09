@@ -121,6 +121,8 @@
     "undo": "Undo",
     "clearAll": "Clear All",
     "done": "Done",
+    "pin": "Pin Position",
+    "unpin": "Unpin Position",
     "snapLayout": "Snap Layout",
     "chooseLayout": "Choose Layout",
     "snapTo": "Snap to",

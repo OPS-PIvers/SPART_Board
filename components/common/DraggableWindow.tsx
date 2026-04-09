@@ -24,6 +24,7 @@ import {
   LayoutTemplate,
   LayoutGrid,
   Lock,
+  Pin,
 } from 'lucide-react';
 import {
   WidgetData,
@@ -311,6 +312,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const isMaximized = widget.maximized ?? false;
   const isLocked = widget.isLocked ?? false;
+  const isPinned = widget.isPinned ?? false;
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -323,15 +325,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const handleMaximizeToggle = useCallback(() => {
     if (isLocked) return;
     const newMaximized = !isMaximized;
+    if (isPinned && newMaximized) return;
     updateWidget(widget.id, { maximized: newMaximized, flipped: false });
     if (newMaximized) {
       bringToFront(widget.id);
     }
-  }, [isLocked, isMaximized, widget.id, updateWidget, bringToFront]);
+  }, [isLocked, isPinned, isMaximized, widget.id, updateWidget, bringToFront]);
 
   const handleSnapToZone = useCallback(
     (zone: SnapZone) => {
-      if (isLocked) return;
+      if (isLocked || isPinned) return;
       const { x, y, w, h } = calculateSnapBounds(zone);
 
       updateWidget(widget.id, {
@@ -346,7 +349,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       setShowSnapMenu(false);
       handleCloseTools();
     },
-    [isLocked, widget.id, updateWidget, handleCloseTools]
+    [isLocked, isPinned, widget.id, updateWidget, handleCloseTools]
   );
 
   const getCellFromPointer = (
@@ -473,8 +476,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           handleMaximizeToggle();
           break;
         case 'r': // Reset size
+          if (isLocked || isPinned) break;
           e.preventDefault();
           resetWidgetSize(widget.id);
+          break;
+        case 'p': // Pin/Unpin position
+          if (isLocked) break;
+          e.preventDefault();
+          if (!isPinned) setShowSnapMenu(false);
+          updateWidget(widget.id, { isPinned: !isPinned });
+          handleCloseTools();
           break;
       }
     }
@@ -489,7 +500,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleDragStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
-    if (isLocked) return;
+    if (isLocked || isPinned) return;
 
     // Don't drag if clicking interactive elements or resize handle
     const target = e.target as HTMLElement;
@@ -677,7 +688,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleResizeStart = (e: React.PointerEvent, direction: string) => {
     if (isMaximized) return;
-    if (isLocked) return;
+    if (isLocked || isPinned) return;
     e.stopPropagation();
     e.preventDefault();
 
@@ -1378,7 +1389,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         </div>
 
         {/* Resize Handles (Corners Only) */}
-        {!isLocked && (
+        {!isLocked && !isPinned && (
           <>
             <div
               onPointerDown={(e) => handleResizeStart(e, 'nw')}
@@ -1408,7 +1419,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       {/* Invisible edge grab zones — extend INVISIBLE_EDGE_PAD px outside the widget's visual
           bounds so users can reliably grab and drag widgets whose content fills edge-to-edge.
           No visual appearance; only the pointer hit area is expanded. */}
-      {!isMaximized && !isAnnotating && (
+      {!isMaximized && !isAnnotating && !isPinned && !isLocked && (
         <>
           {/* Top */}
           <div
@@ -1601,6 +1612,27 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               <div className="h-4 w-px bg-slate-300/50 mx-1" />
 
               <div className="flex items-center gap-1">
+                {!isLocked && (
+                  <IconButton
+                    onClick={() => {
+                      const nextPinned = !isPinned;
+                      if (nextPinned) setShowSnapMenu(false);
+                      updateWidget(widget.id, { isPinned: nextPinned });
+                    }}
+                    icon={<Pin className="w-3.5 h-3.5" />}
+                    label={
+                      isPinned
+                        ? `${t('widgetWindow.unpin')} (Alt+P)`
+                        : `${t('widgetWindow.pin')} (Alt+P)`
+                    }
+                    size="sm"
+                    variant="glass"
+                    active={isPinned}
+                    className={
+                      isPinned ? '!bg-amber-500/20 !text-amber-600' : ''
+                    }
+                  />
+                )}
                 {headerActions && (
                   <div className="flex items-center text-slate-700">
                     {headerActions}
@@ -1681,8 +1713,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     size="sm"
                     variant="glass"
                     active={showSnapMenu}
+                    disabled={isPinned || isLocked}
                   />
-
                   {showSnapMenu &&
                     typeof document !== 'undefined' &&
                     createPortal(
@@ -1847,6 +1879,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   }
                   size="sm"
                   variant="glass"
+                  disabled={isLocked || (isPinned && !isMaximized)}
                 />
                 <IconButton
                   onClick={() =>
