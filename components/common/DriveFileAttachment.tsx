@@ -31,20 +31,28 @@ export const DriveFileAttachment: React.FC<DriveFileAttachmentProps> = ({
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasFileRef = useRef(false);
+  const onFileContentRef = useRef(onFileContent);
+
+  const hasFile = selectedFile !== null && !isExtracting;
 
   // Track whether a file is currently attached so the cleanup effect
   // can clear parent state on unmount if the overlay closes while a
   // file is still selected.
-  hasFileRef.current = selectedFile !== null && !isExtracting;
+  useEffect(() => {
+    hasFileRef.current = hasFile;
+  }, [hasFile]);
+
+  // Keep callback ref fresh to avoid stale closure in cleanup.
+  useEffect(() => {
+    onFileContentRef.current = onFileContent;
+  }, [onFileContent]);
 
   useEffect(() => {
     return () => {
       if (hasFileRef.current) {
-        onFileContent(null, null);
+        onFileContentRef.current(null, null);
       }
     };
-    // Only run cleanup on unmount — onFileContent identity is stable per parent.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePick = useCallback(async () => {
