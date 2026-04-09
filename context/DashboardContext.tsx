@@ -79,15 +79,48 @@ const getDashboardSaveState = (d: Dashboard) => ({
   },
 });
 
-const PERSISTED_WIDGET_TYPES: WidgetType[] = [
-  'schedule',
-  'calendar',
-  'lunchCount',
-  'weather',
-  'instructionalRoutines',
-  'nextUp',
-  'specialist-schedule',
-];
+/**
+ * Config keys that should NOT be persisted globally when saving widget settings.
+ * These are either runtime state (would cause broken initial state on new widgets)
+ * or large instance-specific data (would bloat the user profile document).
+ */
+const TRANSIENT_CONFIG_KEYS = new Set<string>([
+  // Runtime state
+  'isRunning',
+  'elapsedTime',
+  'startTime',
+  'activeLiveSessionCode',
+  'resultsSessionId',
+  'activeActivityId',
+  'draftActivity',
+  'view',
+  'activeApp',
+  'activeAppUnsaved',
+  'liveScoreboardWidgetId',
+  'liveScoreboardEnabled',
+  'startedAt',
+  'selectedQuizId',
+  'selectedQuizTitle',
+  'selectedActivityId',
+  'selectedActivityTitle',
+  'playerSetId',
+  'activeNotebookId',
+  // Large instance data
+  'paths',
+  'furniture',
+  'assignments',
+  'activities',
+]);
+
+function stripTransientKeys(
+  config: Partial<WidgetConfig>
+): Partial<WidgetConfig> {
+  const stripped = { ...config };
+  for (const key of TRANSIENT_CONFIG_KEYS) {
+    delete (stripped as Record<string, unknown>)[key];
+  }
+  return stripped;
+}
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -2285,9 +2318,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               {},
               defaults.config ?? {},
               adminConfig,
-              PERSISTED_WIDGET_TYPES.includes(type)
-                ? (savedWidgetConfigs?.[type] ?? {})
-                : {},
+              savedWidgetConfigs?.[type] ?? {},
               overrides?.config ?? {}
             ) as WidgetConfig,
           };
@@ -2366,9 +2397,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               {},
               defaults.config ?? {},
               adminConfig,
-              PERSISTED_WIDGET_TYPES.includes(item.type)
-                ? (savedWidgetConfigs?.[item.type] ?? {})
-                : {},
+              savedWidgetConfigs?.[item.type] ?? {},
               sanitizedInputConfig
             ) as WidgetConfig;
 
@@ -2542,12 +2571,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           });
 
           // If the widget type is in our persistence list, and config was updated, save it globally
-          if (
-            widgetType &&
-            updates.config &&
-            PERSISTED_WIDGET_TYPES.includes(widgetType)
-          ) {
-            saveWidgetConfig(widgetType, updates.config);
+          if (widgetType && updates.config) {
+            saveWidgetConfig(widgetType, stripTransientKeys(updates.config));
           }
 
           return {
