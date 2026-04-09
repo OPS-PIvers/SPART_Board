@@ -3,6 +3,8 @@ import { WidgetData, QuizConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { useQuizSessionTeacher } from '@/hooks/useQuizSession';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { Info } from 'lucide-react';
 
 // Settings panel (back of the widget) — minimal since all management is front-facing
 export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
@@ -15,16 +17,17 @@ export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
   const hasActiveSession = !!(session && session.status !== 'ended');
 
   return (
-    <div className="p-4 space-y-4">
-      <p className="text-sm font-semibold text-white">Quiz Widget Settings</p>
-      <div className="p-3 bg-blue-500/15 border border-blue-500/30 rounded-xl text-xs text-blue-300">
-        All quiz management (import, edit, preview, live sessions) is available
-        on the front of this widget. Flip back to access it.
+    <div className="space-y-5">
+      <div className="flex items-start gap-2 p-3 bg-brand-blue-lighter/30 border border-brand-blue-primary/10 rounded-xl text-xs text-brand-blue-primary">
+        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+        <span>
+          All quiz management (import, edit, preview, live sessions) is
+          available on the front of this widget. Flip back to access it.
+        </span>
       </div>
+
       <div>
-        <label className="block text-xs text-slate-400 mb-1">
-          Widget Label
-        </label>
+        <SettingsLabel>Widget Label</SettingsLabel>
         <input
           type="text"
           value={widget.customTitle ?? ''}
@@ -32,7 +35,7 @@ export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
             updateWidget(widget.id, { customTitle: e.target.value || null })
           }
           placeholder="Quiz"
-          className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
         />
       </div>
 
@@ -42,7 +45,7 @@ export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
             await endQuizSession();
             addToast('Active session ended.', 'success');
           }}
-          className="w-full py-2 bg-brand-red-primary hover:bg-brand-red-dark text-white text-sm rounded-xl transition-colors font-bold"
+          className="w-full py-2 bg-brand-red-primary hover:bg-brand-red-dark text-white text-sm rounded-lg transition-colors font-bold"
         >
           Force End Active Session
         </button>
@@ -61,7 +64,7 @@ export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
             } as QuizConfig,
           })
         }
-        className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-xl transition-colors"
+        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg transition-colors border border-slate-200"
       >
         Reset to Manager View
       </button>

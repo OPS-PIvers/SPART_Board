@@ -119,7 +119,7 @@ export const PatternBlocksTool: React.FC = () => {
         <div className="flex gap-2 items-center justify-end">
           <button
             onClick={rotateSelected}
-            className="text-xxs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded-lg font-black uppercase tracking-wider transition-colors"
+            className="text-xxs bg-brand-blue-lighter text-brand-blue-dark hover:bg-brand-blue-lighter/80 px-2 py-1 rounded-lg font-black uppercase tracking-wider transition-colors"
           >
             Rotate 30°
           </button>
@@ -134,7 +134,7 @@ export const PatternBlocksTool: React.FC = () => {
 
       {/* Canvas */}
       <div
-        className="rounded-xl border border-slate-100 bg-white overflow-hidden"
+        className="rounded-xl border border-slate-100 bg-white/90 overflow-hidden"
         onClick={() => setSelected(null)}
       >
         <svg

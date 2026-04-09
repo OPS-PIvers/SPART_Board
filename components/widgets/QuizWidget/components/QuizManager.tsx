@@ -19,8 +19,26 @@ import {
   User,
   Zap,
   X,
+  AlertTriangle,
+  Share2,
+  ArrowLeft,
+  ChevronRight,
+  Link2,
 } from 'lucide-react';
-import { QuizMetadata, QuizSessionMode } from '@/types';
+import {
+  QuizMetadata,
+  QuizSessionMode,
+  QuizConfig,
+  ClassRoster,
+} from '@/types';
+import { Toggle } from '@/components/common/Toggle';
+
+export interface PlcOptions {
+  plcMode: boolean;
+  teacherName?: string;
+  periodName?: string;
+  plcSheetUrl?: string;
+}
 
 interface QuizManagerProps {
   quizzes: QuizMetadata[];
@@ -29,13 +47,20 @@ interface QuizManagerProps {
   onImport: () => void;
   onEdit: (quiz: QuizMetadata) => void;
   onPreview: (quiz: QuizMetadata) => void;
-  onAssign: (quiz: QuizMetadata, mode: QuizSessionMode) => void;
+  onAssign: (
+    quiz: QuizMetadata,
+    mode: QuizSessionMode,
+    plcOptions: PlcOptions
+  ) => void;
   onResume: () => void;
   onEndSession: () => Promise<void>;
   onResults: (quiz: QuizMetadata) => void;
   onDelete: (quiz: QuizMetadata) => void;
+  onShare: (quiz: QuizMetadata) => void;
   hasActiveSession: boolean;
   activeQuizId: string | null;
+  rosters: ClassRoster[];
+  config: QuizConfig;
 }
 
 export const QuizManager: React.FC<QuizManagerProps> = ({
@@ -50,13 +75,50 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onEndSession,
   onResults,
   onDelete,
+  onShare,
   hasActiveSession,
   activeQuizId,
+  rosters,
+  config,
 }) => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [selectedForLive, setSelectedForLive] = useState<QuizMetadata | null>(
     null
   );
+  const [selectedMode, setSelectedMode] = useState<
+    'teacher' | 'auto' | 'student' | null
+  >(null);
+
+  // PLC form state — initialized from config defaults, reset when modal opens
+  const [plcMode, setPlcMode] = useState(config.plcMode ?? false);
+  const [teacherName, setTeacherName] = useState(config.teacherName ?? '');
+  const [periodName, setPeriodName] = useState(config.periodName ?? '');
+  const [plcSheetUrl, setPlcSheetUrl] = useState(config.plcSheetUrl ?? '');
+  const [prevSelectedForLive, setPrevSelectedForLive] =
+    useState(selectedForLive);
+
+  // Reset PLC form state when the modal re-opens (adjusting state during render)
+  if (selectedForLive && selectedForLive !== prevSelectedForLive) {
+    setPrevSelectedForLive(selectedForLive);
+    setPlcMode(config.plcMode ?? false);
+    setTeacherName(config.teacherName ?? '');
+    setPeriodName(config.periodName ?? '');
+    setPlcSheetUrl(config.plcSheetUrl ?? '');
+  }
+  if (!selectedForLive && prevSelectedForLive) {
+    setPrevSelectedForLive(null);
+  }
+
+  const plcSheetUrlInvalid =
+    !!plcSheetUrl &&
+    !plcSheetUrl.startsWith('https://docs.google.com/spreadsheets/');
+
+  const buildPlcOptions = (): PlcOptions => ({
+    plcMode,
+    teacherName: teacherName || undefined,
+    periodName: periodName || undefined,
+    plcSheetUrl: plcSheetUrl || undefined,
+  });
 
   if (loading) {
     return (
@@ -80,8 +142,8 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       {/* Mode Selection Modal */}
       {selectedForLive && (
         <div className="absolute inset-0 z-overlay bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="bg-brand-blue-primary p-4 flex items-center justify-between">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-full">
+            <div className="bg-brand-blue-primary p-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 text-white">
                 <Play className="w-5 h-5 fill-current" />
                 <span className="font-black uppercase tracking-tight">
@@ -89,14 +151,17 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                 </span>
               </div>
               <button
-                onClick={() => setSelectedForLive(null)}
+                onClick={() => {
+                  setSelectedForLive(null);
+                  setSelectedMode(null);
+                }}
                 className="text-white/60 hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div className="text-center">
                 <p className="font-bold text-brand-blue-dark text-base truncate px-2">
                   {selectedForLive.title}
@@ -114,30 +179,153 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                   icon={<User className="w-5 h-5" />}
                   title="Teacher-paced"
                   desc="You control when to move to the next question."
-                  onClick={() => {
-                    onAssign(selectedForLive, 'teacher');
-                    setSelectedForLive(null);
-                  }}
+                  selected={selectedMode === 'teacher'}
+                  onClick={() => setSelectedMode('teacher')}
                 />
                 <ModeButton
                   icon={<Zap className="w-5 h-5" />}
                   title="Auto-progress"
                   desc="Moves automatically once everyone has answered."
-                  onClick={() => {
-                    onAssign(selectedForLive, 'auto');
-                    setSelectedForLive(null);
-                  }}
+                  selected={selectedMode === 'auto'}
+                  onClick={() => setSelectedMode('auto')}
                 />
                 <ModeButton
                   icon={<Clock className="w-5 h-5" />}
                   title="Self-paced"
                   desc="Students move through questions at their own speed."
-                  onClick={() => {
-                    onAssign(selectedForLive, 'student');
-                    setSelectedForLive(null);
-                  }}
+                  selected={selectedMode === 'student'}
+                  onClick={() => setSelectedMode('student')}
                 />
               </div>
+
+              {/* PLC / Share with PLC Section */}
+              <div className="border-t border-slate-100 pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-brand-blue-primary" />
+                    <span className="text-sm font-bold text-brand-blue-dark">
+                      Share with PLC
+                    </span>
+                  </div>
+                  <Toggle
+                    checked={plcMode}
+                    onChange={setPlcMode}
+                    size="sm"
+                    showLabels={true}
+                  />
+                </div>
+                <p className="text-xxs text-slate-500 mt-1">
+                  Export results to a shared Google Sheet for your PLC team.
+                </p>
+
+                {plcMode && (
+                  <div className="mt-3 space-y-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    {/* Teacher Name */}
+                    <div>
+                      <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                        Your Name
+                      </label>
+                      <input
+                        type="text"
+                        value={teacherName}
+                        onChange={(e) => setTeacherName(e.target.value)}
+                        placeholder="e.g. Ms. Smith"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-xxs text-slate-400 mt-0.5">
+                        Appears in the &quot;Teacher&quot; column of the shared
+                        sheet
+                      </p>
+                    </div>
+
+                    {/* Class Period */}
+                    <div>
+                      <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                        Class Period
+                      </label>
+                      {rosters.length > 0 ? (
+                        <select
+                          value={periodName}
+                          onChange={(e) => setPeriodName(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">Select a class...</option>
+                          {rosters.map((r) => (
+                            <option key={r.id} value={r.name}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={periodName}
+                          onChange={(e) => setPeriodName(e.target.value)}
+                          placeholder="e.g. Period 3"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      )}
+                      <p className="text-xxs text-slate-400 mt-0.5">
+                        Must match your Class widget roster name for student
+                        name lookup
+                      </p>
+                    </div>
+
+                    {/* Shared Sheet URL */}
+                    <div>
+                      <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                        Shared Google Sheet URL
+                      </label>
+                      <input
+                        type="text"
+                        value={plcSheetUrl}
+                        onChange={(e) => setPlcSheetUrl(e.target.value)}
+                        placeholder="https://docs.google.com/spreadsheets/d/..."
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      {plcSheetUrlInvalid && (
+                        <div className="flex items-center gap-1 mt-1 text-amber-600">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span className="text-xxs">
+                            This doesn&apos;t look like a Google Sheets URL
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-xxs text-slate-400 mt-0.5">
+                        Paste the URL of the Google Sheet shared by your PLC
+                        lead
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sticky bottom bar */}
+            <div className="flex items-center justify-between border-t border-slate-200 p-4 shrink-0">
+              <button
+                onClick={() => {
+                  setSelectedForLive(null);
+                  setSelectedMode(null);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 text-brand-blue-primary hover:bg-brand-blue-lighter/40 font-bold rounded-xl transition-colors text-sm"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Go Back
+              </button>
+              <button
+                disabled={!selectedMode}
+                onClick={() => {
+                  if (!selectedMode) return;
+                  onAssign(selectedForLive, selectedMode, buildPlcOptions());
+                  setSelectedForLive(null);
+                  setSelectedMode(null);
+                }}
+                className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-brand-gray-lighter disabled:cursor-not-allowed text-white font-black rounded-xl transition-all shadow-md active:scale-95 text-sm"
+              >
+                Assign
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -145,7 +333,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
 
       {/* Header */}
       <div
-        className="flex items-center justify-between border-b border-brand-blue-primary/10 bg-brand-blue-lighter/30"
+        className="flex items-center justify-between border-b border-brand-blue-primary/10"
         style={{ padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)' }}
       >
         <div className="flex items-center" style={{ gap: 'min(8px, 2cqmin)' }}>
@@ -431,6 +619,19 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                     />
                     <ActionButton
                       icon={
+                        <Link2
+                          style={{
+                            width: 'min(14px, 4cqmin)',
+                            height: 'min(14px, 4cqmin)',
+                          }}
+                        />
+                      }
+                      label="Share"
+                      onClick={() => void onShare(quiz)}
+                      variant="ghost"
+                    />
+                    <ActionButton
+                      icon={
                         <Trash2
                           style={{
                             width: 'min(14px, 4cqmin)',
@@ -518,13 +719,24 @@ const ModeButton: React.FC<{
   icon: React.ReactNode;
   title: string;
   desc: string;
+  selected?: boolean;
   onClick: () => void;
-}> = ({ icon, title, desc, onClick }) => (
+}> = ({ icon, title, desc, selected, onClick }) => (
   <button
     onClick={onClick}
-    className="w-full text-left p-3 rounded-2xl border-2 border-brand-blue-primary/10 hover:border-brand-blue-primary hover:bg-brand-blue-lighter/30 transition-all flex items-start gap-3 group"
+    className={`w-full text-left p-3 rounded-2xl border-2 transition-all flex items-start gap-3 group ${
+      selected
+        ? 'border-brand-blue-primary bg-brand-blue-lighter/30'
+        : 'border-brand-blue-primary/10 hover:border-brand-blue-primary hover:bg-brand-blue-lighter/30'
+    }`}
   >
-    <div className="bg-brand-blue-lighter text-brand-blue-primary p-2 rounded-xl group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
+    <div
+      className={`p-2 rounded-xl transition-colors ${
+        selected
+          ? 'bg-brand-blue-primary text-white'
+          : 'bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white'
+      }`}
+    >
       {icon}
     </div>
     <div>

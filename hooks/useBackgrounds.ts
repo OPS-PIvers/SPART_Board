@@ -3,7 +3,11 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { BackgroundPreset } from '@/types';
-import { BACKGROUND_COLORS, BACKGROUND_GRADIENTS } from '@/config/backgrounds';
+import {
+  BACKGROUND_COLORS,
+  BACKGROUND_GRADIENTS,
+  BACKGROUND_PATTERNS,
+} from '@/config/backgrounds';
 import { resolveCategory } from '@/utils/backgroundCategories';
 
 export interface BackgroundPresetItem {
@@ -18,7 +22,11 @@ export const useBackgrounds = () => {
   const [managedBackgrounds, setManagedBackgrounds] = useState<
     BackgroundPreset[]
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
+    setManagedBackgrounds([]);
+  }
 
   // Refs to prevent race conditions when both queries update simultaneously
   // (Used when not admin)
@@ -26,14 +34,7 @@ export const useBackgrounds = () => {
   const betaBgsRef = useRef<BackgroundPreset[]>([]);
 
   useEffect(() => {
-    if (!user) {
-      // Use timeout to defer state updates and avoid synchronous setState in effect
-      const timer = setTimeout(() => {
-        setManagedBackgrounds([]);
-        setLoading(false);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
+    if (!user) return;
 
     const baseRef = collection(db, 'admin_backgrounds');
     const unsubscribes: (() => void)[] = [];
@@ -53,11 +54,9 @@ export const useBackgrounds = () => {
             setManagedBackgrounds(
               backgrounds.sort((a, b) => b.createdAt - a.createdAt)
             );
-            setLoading(false);
           },
           (error) => {
             console.error('Error fetching admin backgrounds:', error);
-            setLoading(false);
           }
         )
       );
@@ -67,7 +66,6 @@ export const useBackgrounds = () => {
         const all = [...publicBgsRef.current, ...betaBgsRef.current];
         const unique = Array.from(new Map(all.map((b) => [b.id, b])).values());
         setManagedBackgrounds(unique.sort((a, b) => b.createdAt - a.createdAt));
-        setLoading(false);
       };
 
       // Query 1: Public backgrounds
@@ -97,7 +95,7 @@ export const useBackgrounds = () => {
             },
             (error) => {
               console.error('Error fetching beta backgrounds:', error);
-              // Don't update loading here; let the public query completion handle it
+              // Beta query errors are non-fatal; public backgrounds still load
             }
           )
         );
@@ -115,7 +113,6 @@ export const useBackgrounds = () => {
           },
           (error) => {
             console.error('Error fetching public backgrounds:', error);
-            setLoading(false);
           }
         )
       );
@@ -150,7 +147,7 @@ export const useBackgrounds = () => {
   return {
     presets,
     colors: BACKGROUND_COLORS,
+    patterns: BACKGROUND_PATTERNS,
     gradients: BACKGROUND_GRADIENTS,
-    loading,
   };
 };

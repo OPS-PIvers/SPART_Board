@@ -175,7 +175,7 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
                 onClick={() => onModeChange(m)}
                 className={`px-2 py-0.5 rounded-full font-black uppercase tracking-wider transition-colors border ${
                   mode === m
-                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
                     : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
                 }`}
                 style={{ fontSize: 'min(10px, 3.5cqmin)' }}

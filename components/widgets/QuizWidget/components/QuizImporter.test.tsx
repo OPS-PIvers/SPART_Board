@@ -9,15 +9,17 @@ import { useAuth } from '@/context/useAuth';
 vi.mock('@/context/useAuth');
 
 // Mock generateQuiz
-vi.mock('@/utils/ai', () => ({
-  generateQuiz: vi.fn(),
-}));
+vi.mock('@/utils/ai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/ai')>();
+  return { ...actual, generateQuiz: vi.fn() };
+});
 
 describe('QuizImporter', () => {
   const mockOnBack = vi.fn();
   const mockOnSave = vi.fn();
   const mockImportFromSheet = vi.fn();
   const mockImportFromCSV = vi.fn();
+  const mockCreateQuizTemplate = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,6 +35,7 @@ describe('QuizImporter', () => {
         onSave={mockOnSave}
         importFromSheet={mockImportFromSheet}
         importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
       />
     );
 
@@ -46,6 +49,7 @@ describe('QuizImporter', () => {
         onSave={mockOnSave}
         importFromSheet={mockImportFromSheet}
         importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
       />
     );
 
@@ -75,6 +79,7 @@ describe('QuizImporter', () => {
         onSave={mockOnSave}
         importFromSheet={mockImportFromSheet}
         importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
       />
     );
 
@@ -142,6 +147,7 @@ describe('QuizImporter', () => {
         onSave={mockOnSave}
         importFromSheet={mockImportFromSheet}
         importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
       />
     );
 
@@ -203,6 +209,7 @@ describe('QuizImporter', () => {
         onSave={mockOnSave}
         importFromSheet={mockImportFromSheet}
         importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
       />
     );
 
@@ -233,6 +240,7 @@ describe('QuizImporter', () => {
         onSave={mockOnSave}
         importFromSheet={mockImportFromSheet}
         importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
       />
     );
 
@@ -252,6 +260,88 @@ describe('QuizImporter', () => {
     // Check for error message
     await waitFor(() => {
       expect(screen.getByText('API Error')).toBeInTheDocument();
+    });
+  });
+
+  it('copies template TSV to clipboard on COPY TEMPLATE click', async () => {
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: mockWriteText },
+    });
+
+    render(
+      <QuizImporter
+        onBack={mockOnBack}
+        onSave={mockOnSave}
+        importFromSheet={mockImportFromSheet}
+        importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
+      />
+    );
+
+    // Expand the template format section
+    fireEvent.click(screen.getByText('Required Template Format'));
+
+    const copyBtn = screen.getByText('COPY TEMPLATE');
+    fireEvent.click(copyBtn);
+
+    await waitFor(() => {
+      expect(mockWriteText).toHaveBeenCalled();
+    });
+
+    // Should show "Copied!" state
+    await waitFor(() => {
+      expect(screen.getByText(/Copied/)).toBeInTheDocument();
+    });
+  });
+
+  it('calls createQuizTemplate on CREATE SHEET click', async () => {
+    mockCreateQuizTemplate.mockResolvedValue(
+      'https://docs.google.com/spreadsheets/d/abc123'
+    );
+
+    render(
+      <QuizImporter
+        onBack={mockOnBack}
+        onSave={mockOnSave}
+        importFromSheet={mockImportFromSheet}
+        importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
+      />
+    );
+
+    // Expand the template format section
+    fireEvent.click(screen.getByText('Required Template Format'));
+
+    const createBtn = screen.getByText('CREATE SHEET');
+    fireEvent.click(createBtn);
+
+    await waitFor(() => {
+      expect(mockCreateQuizTemplate).toHaveBeenCalled();
+    });
+  });
+
+  it('shows error when CREATE SHEET fails', async () => {
+    mockCreateQuizTemplate.mockRejectedValue(new Error('Drive error'));
+
+    render(
+      <QuizImporter
+        onBack={mockOnBack}
+        onSave={mockOnSave}
+        importFromSheet={mockImportFromSheet}
+        importFromCSV={mockImportFromCSV}
+        createQuizTemplate={mockCreateQuizTemplate}
+      />
+    );
+
+    // Expand the template format section
+    fireEvent.click(screen.getByText('Required Template Format'));
+
+    const createBtn = screen.getByText('CREATE SHEET');
+    fireEvent.click(createBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Drive error')).toBeInTheDocument();
     });
   });
 });

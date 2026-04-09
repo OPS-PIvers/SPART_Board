@@ -4,16 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SPART Board is an interactive classroom management dashboard built with React 19, TypeScript, and Vite. It provides teachers with drag-and-drop widgets for classroom management including timers, noise meters, drawing boards, webcams, polls, schedules, and more.
+SpartBoard is an interactive classroom management dashboard built with React 19, TypeScript, and Vite. It provides teachers with drag-and-drop widgets for classroom management including timers, noise meters, drawing boards, webcams, polls, schedules, and more.
 
 **Key Features:**
 
-- 21+ widget types for classroom management
+- 57 widget types for classroom management
 - Firebase Authentication with Google Sign-In
 - Cloud-synced dashboards via Firestore
 - Feature permissions system for widget access control
-- Admin panel for user management
-- Real-time collaboration support
+- Admin panel with analytics, user management, and widget builder
+- Student-facing apps: live quiz, video activity, guided learning, activity wall, mini-apps
+- Internationalization (i18n) with multi-language support
+- Google Drive dashboard sync and ClassLink roster integration
+- Remote control for mobile devices
+- AI-powered features via Google Gemini (OCR, quiz generation, mini-app generation)
 - Drag-and-drop, resizable widgets
 - Custom backgrounds (colors, gradients, images)
 
@@ -24,34 +28,70 @@ SPART Board is an interactive classroom management dashboard built with React 19
 ```
 /
 ├── components/           # All React components
-│   ├── admin/           # Admin-only components (FeaturePermissionsManager, AdminSettings)
+│   ├── admin/           # Admin panel (Analytics, Announcements, BackgroundManager, UserManagement, WidgetBuilder)
 │   ├── auth/            # Authentication UI (LoginScreen)
-│   ├── common/          # Shared components (DraggableWindow)
+│   ├── common/          # Shared components (DraggableWindow, ScaledEmptyState, TypographySettings, etc.)
 │   ├── layout/          # Layout components (Sidebar, Dock, DashboardView)
-│   └── widgets/         # 21 widget implementations + WidgetRenderer
-├── context/             # React Context providers
-│   ├── AuthContext.tsx       # Authentication and permissions
-│   ├── DashboardContext.tsx  # Dashboard state management
-│   └── *.ts files            # Type definitions for contexts
-├── hooks/               # Custom React hooks
-│   ├── useFirestore.ts  # Firestore CRUD operations
-│   └── useStorage.ts    # Firebase Storage operations
+│   ├── widgets/         # 57 widget implementations + WidgetRegistry
+│   ├── student/         # Student-facing apps (StudentApp, StudentLobby, NextUpStudentApp)
+│   ├── remote/          # Mobile remote control
+│   ├── quiz/            # Quiz session components
+│   ├── videoActivity/   # Video activity session
+│   ├── guidedLearning/  # Guided learning session
+│   ├── miniApp/         # Mini-app runner
+│   ├── activityWall/    # Activity wall
+│   └── announcements/   # Announcement system
+├── context/             # React Context providers (4 contexts)
+│   ├── AuthContext.tsx           # Authentication and permissions
+│   ├── DashboardContext.tsx      # Dashboard state management
+│   ├── CustomWidgetsContext.tsx  # Custom widget system
+│   ├── DialogContext.tsx         # Dialog/modal management
+│   └── *.ts files               # Type definitions + hook exports (useAuth, useDashboard, useCustomWidgets, useDialog)
+├── hooks/               # Custom React hooks (31 files)
+│   ├── useFirestore.ts      # Firestore CRUD operations
+│   ├── useStorage.ts        # Firebase Storage operations
+│   ├── useGoogleDrive.ts    # Google Drive dashboard sync
+│   ├── useRosters.ts        # ClassLink roster management
+│   ├── useLiveSession.ts    # Live student session management
+│   ├── useQuizSession.ts    # Quiz session orchestration
+│   └── ...                  # 25 more hooks (see hooks/ directory)
 ├── config/              # Configuration files
-│   └── firebase.ts      # Firebase initialization
-├── utils/               # Utility functions
-│   └── migration.ts     # localStorage to Firestore migration
+│   ├── firebase.ts          # Firebase initialization
+│   ├── tools.ts             # Widget metadata (icon, label, color) for the dock
+│   ├── widgetDefaults.ts    # Default widget dimensions and initial config
+│   ├── widgetGradeLevels.ts # Grade-level widget filtering
+│   ├── widgetAppearance.ts  # Widget visual appearance config
+│   ├── fonts.ts             # Font configuration
+│   └── zIndex.ts            # Z-index layering constants
+├── utils/               # Utility functions (37+ files)
+│   ├── migration.ts         # localStorage to Firestore migration
+│   ├── ai.ts                # Gemini AI integrations (mini-app, poll, quiz generation, etc.)
+│   ├── ai_security.ts       # AI prompt security
+│   ├── googleDriveService.ts # Google Drive sync service
+│   ├── classlinkService.ts  # ClassLink roster service
+│   └── ...                  # 32 more utils (see utils/ directory)
 ├── scripts/             # Setup and maintenance scripts
-│   └── setup-admins.js  # Admin user setup script
+│   ├── setup-admins.js      # Admin user setup script
+│   ├── generate-version.js  # Version generation (runs pre-dev/build)
+│   └── init-global-perms.js # Initialize global permissions
+├── i18n/                # Internationalization setup (i18next)
+├── locales/             # Translation files
+├── tests/               # Test suites (components, e2e, hooks, i18n, utils)
+├── docs/                # Project documentation (ADMIN_SETUP, DEV_WORKFLOW, LINTING_SETUP, DEPLOY_CHECK)
+├── functions/           # Firebase Cloud Functions (Node.js)
 ├── .github/workflows/   # CI/CD GitHub Actions
 │   ├── pr-validation.yml        # PR validation checks
 │   ├── firebase-deploy.yml      # Production deployment
 │   └── firebase-dev-deploy.yml  # Dev branch previews
-├── App.tsx              # Root component
+├── App.tsx              # Root component with BrowserRouter
 ├── index.tsx            # Application entry point
 ├── types.ts             # Global TypeScript types
 ├── vite.config.ts       # Vite configuration
+├── vitest.config.ts     # Vitest test configuration
+├── playwright.config.ts # Playwright E2E configuration
 ├── tsconfig.json        # TypeScript configuration
 ├── eslint.config.js     # ESLint configuration
+├── firebase.json        # Firebase hosting/functions config
 └── firestore.rules      # Firestore security rules
 ```
 
@@ -67,15 +107,25 @@ SPART Board is an interactive classroom management dashboard built with React 19
 ### Code Quality Commands
 
 - **Type checking**: `pnpm run type-check`
+- **Type checking (all)**: `pnpm run type-check:all` (root + functions)
 - **Linting**: `pnpm run lint` (fails on errors **and** warnings — uses `--max-warnings 0`)
 - **Auto-fix linting**: `pnpm run lint:fix`
 - **Format code**: `pnpm run format`
 - **Check formatting**: `pnpm run format:check`
 - **Validate all**: `pnpm run validate` (type-check + lint + format-check + tests)
+- **Build all**: `pnpm run build:all` (root + functions)
+- **Install CI**: `pnpm run install:ci` (frozen lockfile install for CI)
+
+### Testing Commands
+
+- **Run unit tests**: `pnpm run test`
+- **Run E2E tests**: `pnpm run test:e2e`
+- **Watch mode**: `pnpm run test:watch`
+- **Coverage report**: `pnpm run test:coverage`
 
 > **IMPORTANT — Pre-push requirement:** You **must not push any commit** that contains TypeScript type errors, ESLint errors or warnings, or Prettier formatting violations. Always run `pnpm run validate` (or at minimum `pnpm run lint` and `pnpm run format:check`) before committing and pushing. If the environment does not have node_modules installed, note that CI will still enforce these checks and will block the PR. Fix all issues before pushing.
 
-See [LINTING_SETUP.md](LINTING_SETUP.md) for detailed linting and CI/CD configuration.
+See [docs/LINTING_SETUP.md](docs/LINTING_SETUP.md) for detailed linting and CI/CD configuration.
 
 ## Environment Configuration
 
@@ -124,17 +174,28 @@ For development and automated testing, you can enable an authentication bypass m
   - Automatic migration from localStorage to Firestore on first sign-in
 
 - **AuthContext** (`context/AuthContext.tsx`): Authentication and permissions
-  - Firebase Authentication with Google Sign-In
+  - Firebase Authentication with Google Sign-In (with OAuth scopes for Drive, Calendar, Sheets)
   - Admin status checking via Firestore `admins` collection
   - Feature permissions for widget access control
-  - Provides `useAuth()` hook with `user`, `isAdmin`, `canAccessWidget()`
+  - Google token auto-refresh with 1-hour TTL
+  - Building-based access filtering
+  - Provides `useAuth()` hook with `user`, `isAdmin`, `canAccessWidget()`, `canAccessFeature()`
+
+- **CustomWidgetsContext** (`context/CustomWidgetsContext.tsx`): Custom widget creation and management
+  - Provides `useCustomWidgets()` hook
+
+- **DialogContext** (`context/DialogContext.tsx`): Dialog/modal state management
+  - Provides `useDialog()` hook
 
 **Widget System**: Plugin-based architecture
 
 - Each widget is a self-contained component in `components/widgets/`
-- Widget types are defined in `types.ts` with the `WidgetType` union (21 types) and `TOOLS` metadata array
+- Widget types are defined in `types.ts` with the `WidgetType` union (57 types)
+- `TOOLS` metadata array is in `config/tools.ts` with icon, label, and color per widget
 - All widgets follow the pattern: `<WidgetName>Widget` component + optional `<WidgetName>Settings` component
-- Widgets are rendered through `WidgetRenderer.tsx` which maps widget types to components
+- Widgets are registered in `components/widgets/WidgetRegistry.ts` which lazily loads components
+- Default dimensions and config are in `config/widgetDefaults.ts`
+- Grade-level filtering is in `config/widgetGradeLevels.ts`
 - Each widget receives a `widget: WidgetData` prop containing position, size, z-index, and config
 
 **Data Model**:
@@ -146,52 +207,93 @@ For development and automated testing, you can enable an authentication bypass m
 **Component Hierarchy**:
 
 ```
-App.tsx (root)
-└── AuthProvider (authentication context)
-    └── DashboardProvider (dashboard context wrapper)
-        └── Conditional: isAuthenticated?
-            ├── DashboardView (main app)
-            │   ├── Background layer
-            │   ├── WidgetRenderer (one per widget)
-            │   │   └── DraggableWindow (wraps all widgets)
-            │   │       ├── Front face (widget content)
-            │   │       └── Back face (settings panel)
-            │   ├── Sidebar (dashboard + background management)
-            │   ├── Dock (widget toolbar)
-            │   └── AdminSettings (admin-only)
-            └── ToastContainer (notifications)
-            OR
-            └── LoginScreen (if not authenticated)
+App.tsx (root, BrowserRouter)
+├── Student routes (lazy-loaded, no auth required):
+│   ├── /join → StudentApp (student lobby & live session)
+│   ├── /quiz → QuizStudentApp
+│   ├── /activity → VideoActivityStudentApp
+│   ├── /activity-wall → ActivityWallStudentApp
+│   ├── /guided-learning → GuidedLearningStudentApp
+│   ├── /miniapp → MiniAppStudentApp
+│   └── /nextup → NextUpStudentApp
+├── /remote → MobileRemoteView (mobile remote control)
+└── / → Teacher app:
+    └── AuthProvider
+        └── DashboardProvider
+            └── CustomWidgetsProvider
+                └── DialogProvider
+                    └── Conditional: isAuthenticated?
+                        ├── DashboardView (main app)
+                        │   ├── Background layer
+                        │   ├── WidgetRenderer (one per widget)
+                        │   │   └── DraggableWindow (wraps all widgets)
+                        │   │       ├── Front face (widget content)
+                        │   │       └── Back face (settings panel)
+                        │   ├── Sidebar (dashboard + background management)
+                        │   ├── Dock (widget toolbar)
+                        │   └── AdminSettings (admin-only)
+                        └── ToastContainer (notifications)
+                        OR
+                        └── LoginScreen (if not authenticated)
 ```
 
 ### Key Files
 
 **Root Level:**
 
-- `App.tsx`: Root component with AuthProvider, DashboardProvider, and conditional rendering
+- `App.tsx`: Root component with BrowserRouter, lazy-loaded student routes, and teacher app providers
 - `index.tsx`: Application entry point, mounts App to DOM
-- `types.ts`: All TypeScript type definitions
+- `types.ts`: All TypeScript type definitions (WidgetType union, WidgetData, Dashboard, etc.)
 
 **Context:**
 
 - `context/DashboardContext.tsx`: Global state management with 15+ actions for dashboard/widget manipulation
-- `context/AuthContext.tsx`: Authentication state, admin status, and permission checking
+- `context/AuthContext.tsx`: Authentication state, admin status, permission checking, Google token management
+- `context/CustomWidgetsContext.tsx`: Custom widget creation and management
+- `context/DialogContext.tsx`: Dialog/modal state management
 
 **Components:**
 
 - `components/common/DraggableWindow.tsx`: Universal wrapper providing drag/resize/flip/z-index for all widgets
-- `components/layout/Sidebar.tsx`: Dashboard switcher, background selector (presets/colors/gradients), and tool visibility manager
+- `components/common/ScaledEmptyState.tsx`: Shared container-query-scaled empty state for widgets
+- `components/common/TypographySettings.tsx`: Shared font family and text color settings
+- `components/common/TextSizePresetSettings.tsx`: Shared text size preset selector
+- `components/common/SurfaceColorSettings.tsx`: Shared card/surface color settings
+- `components/layout/Sidebar.tsx`: Dashboard switcher, background selector, and tool visibility manager
 - `components/layout/Dock.tsx`: Collapsible bottom toolbar for adding widgets (respects permissions)
 - `components/layout/DashboardView.tsx`: Main dashboard view with widget rendering
-- `components/widgets/WidgetRenderer.tsx`: Central router mapping widget types to component implementations
+- `components/widgets/WidgetRegistry.ts`: Central registry mapping widget types to lazily-loaded components
+- `components/widgets/WidgetRenderer.tsx`: Renders widgets using WidgetRegistry
 - `components/admin/FeaturePermissionsManager.tsx`: Admin UI for managing widget access permissions
-- `components/admin/AdminSettings.tsx`: Admin panel with user management tools
+- `components/admin/AdminSettings.tsx`: Admin panel hub
+- `components/admin/Analytics/AnalyticsManager.tsx`: Usage analytics dashboard
+- `components/student/StudentApp.tsx`: Main student entry point
 - `components/auth/LoginScreen.tsx`: Google Sign-In UI
 
-**Hooks:**
+**Hooks (key hooks from 31 total):**
 
 - `hooks/useFirestore.ts`: Firestore CRUD operations for dashboards
 - `hooks/useStorage.ts`: Firebase Storage operations for file uploads
+- `hooks/useGoogleDrive.ts`: Google Drive dashboard sync
+- `hooks/useRosters.ts`: ClassLink roster management
+- `hooks/useLiveSession.ts`: Live student session management
+- `hooks/useQuizSession.ts`: Quiz session orchestration
+- `hooks/useVideoActivitySession.ts`: Video activity session management
+- `hooks/useGuidedLearningSession.ts`: Guided learning session management
+- `hooks/useMiniAppSession.ts`: Mini-app session management
+- `hooks/useStarterPacks.ts`: Starter pack dashboard templates
+- `hooks/useScreenRecord.ts`: Screen recording functionality
+- `hooks/useMusicStations.ts`: Music station management
+
+**Config:**
+
+- `config/firebase.ts`: Firebase initialization with auth, firestore, and storage
+- `config/tools.ts`: Widget metadata (icon, label, color) for the dock
+- `config/widgetDefaults.ts`: Default widget dimensions and initial config
+- `config/widgetGradeLevels.ts`: Grade-level widget filtering (K-2, 3-5, 6-8, 9-12)
+- `config/widgetAppearance.ts`: Widget visual appearance configuration
+- `config/fonts.ts`: Font family configuration
+- `config/zIndex.ts`: Z-index layering constants
 
 **Config:**
 
@@ -210,34 +312,61 @@ The project uses `@/` as an alias for the **root directory** (not `src/`):
 ### Collections
 
 ```
-/users/{userId}/dashboards/{dashboardId}
-  - id: string
-  - name: string
-  - background: string
-  - widgets: WidgetData[]
-  - createdAt: number
+# User-scoped collections (owner read/write only)
+/users/{userId}/dashboards/{dashboardId}    # Dashboard state and widgets
+/users/{userId}/rosters/{rosterId}          # Student rosters
+/users/{userId}/quizzes/{quizId}            # Quiz definitions
+/users/{userId}/guided_learning/{setId}     # Guided learning sets
+/users/{userId}/video_activities/{actId}    # Video activities
+/users/{userId}/miniapps/{appId}            # Mini-app definitions
+/users/{userId}/notebooks/{notebookId}      # Notes
+/users/{userId}/pdfs/{pdfId}                # PDFs
+/users/{userId}/userProfile/{profileId}     # User profile / building selection
 
-/admins/{email}
-  - (document exists = user is admin)
+# Admin collections (admin read/write, authenticated read)
+/admins/{email}                             # Admin users (existence = admin)
+/feature_permissions/{widgetType}           # Widget access levels
+/global_permissions/{featureId}             # Global feature permissions
+/admin_settings/{document}                  # Admin-only configuration
+/admin_backgrounds/{backgroundId}           # Admin background images
+/dashboard_templates/{templateId}           # Shared dashboard templates
+/instructional_routines/{routineId}         # Instructional routines library
 
-/feature_permissions/{widgetType}
-  - widgetType: WidgetType
-  - accessLevel: 'admin' | 'beta' | 'public'
-  - betaUsers: string[] (email addresses)
-  - enabled: boolean
+# Shared/global collections
+/shared_boards/{shareId}                    # Shared dashboards
+/global_weather/{document}                  # Cached weather data
+/global_music_stations/{document}           # Shared music stations
+/global_pdfs/{pdfId}                        # Shared PDF library
+/global_mini_apps/{appId}                   # Shared mini-apps library
+/global_video_activities/{activityId}       # Shared video activities
+/custom_widgets/{widgetId}                  # Custom widgets (user-built)
+/announcements/{announcementId}             # School announcements
+
+# Live session collections
+/sessions/{userId}/students/{studentId}     # Live session students
+/quiz_sessions/{teacherUid}/responses/...   # Quiz responses
+/video_activity_sessions/{sessionId}/...    # Video activity responses
+/guided_learning_sessions/{sessionId}/...   # GL session responses
+/mini_app_sessions/{sessionId}              # Mini-app assignment sessions
+/activity_wall_sessions/{sessionId}/...     # Activity wall submissions
+/nextup_sessions/{sessionId}/entries/...    # Next-up queue entries
+
+# Tracking
+/ai_usage/{usageId}                         # AI quota tracking
 ```
 
 ### Security Rules
 
-- Dashboards: Users can only read/write their own dashboards
-- Admins: Only admins can create admin documents (via Admin SDK or Console)
-- Feature Permissions: All authenticated users can read, only admins can write
+- User-scoped collections: Only owner can read/write
+- Admin collections: Only admins can write, all authenticated users can read
+- Session collections: Students use anonymous Firebase Auth with PIN for privacy
+- Global collections: All authenticated users can read
 
 See `firestore.rules` for complete security rules.
 
 ## Feature Permissions System
 
-**New in v1.1.0** - Granular access control for widgets
+Granular access control for widgets
 
 ### How It Works
 
@@ -360,69 +489,29 @@ export const YourNewWidgetSettings: React.FC<{ widget: WidgetData }> = ({ widget
 
 ### 3. Add Default Config
 
-In `context/DashboardContext.tsx`, in the `addWidget` function (around line 255-340):
+In `config/widgetDefaults.ts`, add default dimensions and config for your widget:
 
 ```typescript
-const defaults: Record<string, Partial<WidgetData>> = {
-  // ... existing defaults
-  yourNewWidget: {
-    w: 300,
-    h: 200,
-    config: {
-      someSetting: 'defaultValue',
-      anotherSetting: true,
-    },
+yourNewWidget: {
+  w: 300,
+  h: 200,
+  config: {
+    someSetting: 'defaultValue',
+    anotherSetting: true,
   },
-};
+},
 ```
 
-### 4. Register in WidgetRenderer
+### 4. Register in WidgetRegistry
 
-In `components/widgets/WidgetRenderer.tsx`:
-
-**a) Import component** (top of file):
+In `components/widgets/WidgetRegistry.ts`, add a lazy-loaded entry for your widget:
 
 ```typescript
-import { YourNewWidget, YourNewWidgetSettings } from './YourNewWidget';
-```
-
-**b) Add to getWidgetContent()** (around line 28-77):
-
-```typescript
-const getWidgetContent = (widget: WidgetData) => {
-  switch (widget.type) {
-    // ... existing cases
-    case 'yourNewWidget':
-      return <YourNewWidget widget={widget} />;
-    // ... rest
-  }
-};
-```
-
-**c) Add to getWidgetSettings()** if settings exist (around line 79-116):
-
-```typescript
-const getWidgetSettings = (widget: WidgetData) => {
-  switch (widget.type) {
-    // ... existing cases
-    case 'yourNewWidget':
-      return <YourNewWidgetSettings widget={widget} />;
-    // ... rest
-  }
-};
-```
-
-**d) Optionally customize title in getTitle()** (around line 118-126):
-
-```typescript
-const getTitle = (widget: WidgetData) => {
-  switch (widget.type) {
-    // ... existing cases
-    case 'yourNewWidget':
-      return widget.config.customTitle || 'Your Widget';
-    // ... rest
-  }
-};
+yourNewWidget: {
+  component: lazyNamed(() => import('./YourNewWidget/YourNewWidget'), 'YourNewWidget'),
+  settings: lazyNamed(() => import('./YourNewWidget/YourNewWidget'), 'YourNewWidgetSettings'),
+  skipScaling: true,
+},
 ```
 
 ### 5. Test Your Widget
@@ -553,7 +642,7 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
 
 **Reference implementations:** `WeatherWidget.tsx`, `RecessGearWidget.tsx`, `LunchCount/Widget.tsx`
 
-**For complete scaling standards and patterns**, see [WIDGET_SCALING_STANDARDS.md](WIDGET_SCALING_STANDARDS.md).
+**Reference implementations:** `WeatherWidget.tsx`, `RecessGearWidget.tsx`, `LunchCount/Widget.tsx`
 
 ### Audio Context Management
 
@@ -684,7 +773,7 @@ See `metadata.json` for manifest configuration.
 
 ## Admin User Management
 
-The app uses Firebase Authentication with admin role management through Firestore. See [ADMIN_SETUP.md](ADMIN_SETUP.md) for detailed setup instructions.
+The app uses Firebase Authentication with admin role management through Firestore. See [docs/ADMIN_SETUP.md](docs/ADMIN_SETUP.md) for detailed setup instructions.
 
 ### Admin Access Control
 
@@ -759,7 +848,7 @@ function MyComponent() {
 - Creates persistent preview URLs (30 days)
 - Pattern: `https://spartboard--dev-{branch}-XXXXXXXX.web.app`
 
-See [DEV_WORKFLOW.md](DEV_WORKFLOW.md) for development branch workflow.
+See [docs/DEV_WORKFLOW.md](docs/DEV_WORKFLOW.md) for development branch workflow.
 
 ### Pre-commit Hooks
 
@@ -775,7 +864,7 @@ See [DEV_WORKFLOW.md](DEV_WORKFLOW.md) for development branch workflow.
 - **Prettier**: All files must be formatted
 - **Tests**: (Not yet implemented)
 
-See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
+See [docs/LINTING_SETUP.md](docs/LINTING_SETUP.md) for complete linting documentation.
 
 ## Common Gotchas
 
@@ -801,7 +890,7 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
   - Use aggressive `cqmin` values: primary content should be 20-30cqmin, secondary 5-8cqmin, tertiary 3.5-5cqmin
   - Example: `style={{ fontSize: 'min(24px, 25cqmin)' }}` for hero text, NOT `style={{ fontSize: 'min(14px, 3.5cqmin)' }}`
   - Minimize header/footer size to maximize content area
-  - See [WIDGET_SCALING_STANDARDS.md](WIDGET_SCALING_STANDARDS.md) for complete guidelines
+  - See the "Content Scaling with Container Queries" section in this file for complete guidelines
 - **Empty states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`) instead of hand-rolling empty/error state UI in each widget.
 
 ### Authentication & Permissions
@@ -831,13 +920,20 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 
 ## Testing
 
-**Current Status**: No automated tests yet
+**Framework**: Vitest (unit/integration) + Playwright (E2E)
 
-**Future Plans**:
+- **Run unit tests**: `pnpm run test`
+- **Run E2E tests**: `pnpm run test:e2e`
+- **Watch mode**: `pnpm run test:watch`
+- **Coverage report**: `pnpm run test:coverage`
 
-- Vitest for unit tests
-- React Testing Library for component tests
-- Playwright for E2E tests
+Test directories:
+
+- `tests/components/` - Component tests
+- `tests/hooks/` - Hook tests (useClickOutside, useFeaturePermissions, useWindowSize, useMusicStations)
+- `tests/utils/` - Utility function tests (migration, security, smartPaste, widgetHelpers)
+- `tests/i18n/` - Internationalization tests
+- `tests/e2e/` - Playwright E2E tests
 
 ## Performance Considerations
 
@@ -881,11 +977,11 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 
 - Run `pnpm lint:fix` to auto-fix
 - Check pre-commit hook output for specific errors
-- See [LINTING_SETUP.md](LINTING_SETUP.md)
+- See [docs/LINTING_SETUP.md](docs/LINTING_SETUP.md)
 
 ## Resources
 
-- **Documentation**: See `*.md` files in root
+- **Documentation**: See `docs/` directory and CLAUDE.md in root
 - **Firebase Console**: https://console.firebase.google.com
 - **Vite Docs**: https://vitejs.dev
 - **React 19 Docs**: https://react.dev
@@ -905,8 +1001,8 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 
 ---
 
-**Last Updated**: 2025-12-22
-**Version**: 1.1.0
+**Last Updated**: 2026-04-07
+**Version**: 2.0.0
 
 ## Widget Appearance Standard (Visual System)
 
@@ -925,3 +1021,45 @@ All agents must follow the shared widget appearance model when building or updat
 - Keep universal transparency in the global settings shell; do not duplicate full-widget transparency controls inside widget-specific style tabs.
 - Ensure front-face widgets actually consume settings values (no dead controls).
 - Default widget roots should remain visually transparent; only add localized readability surfaces where content legibility requires it.
+
+## Design Context
+
+### Users
+
+Teachers (K-12) managing live classrooms on projected screens, tablets, and desktops. They are often multitasking -- running a lesson, managing behavior, and tracking time simultaneously. The tool must be instantly legible at a glance, even from across a room on a projector. Students interact through separate lightweight views (quiz, activity wall, guided learning) on personal devices.
+
+### Brand Personality
+
+**Clean. Professional. Calm.**
+SpartBoard is the quiet, competent tool that just works. It doesn't demand attention -- it gives teachers control. Every surface should feel considered and deliberate, never cluttered or decorative for decoration's sake.
+
+### Aesthetic Direction
+
+- **Visual tone**: Premium, restrained, Apple/Arc Browser-caliber polish. Surfaces feel like frosted glass (glassmorphism is already the core visual language). Generous whitespace, subtle depth via shadows and blur, minimal ornamentation.
+- **Theme**: Dark mode primary (slate-900 base), light mode for student-facing and login screens. Widgets float on transparent/glass surfaces over user-chosen backgrounds.
+- **Typography**: Lexend for UI (clean, high-legibility), Patrick Hand for classroom warmth where appropriate. Type hierarchy is the primary tool for visual organization -- not borders, dividers, or heavy color blocks.
+- **Color**: Brand blue (#2d3f89) and brand red (#ad2122) as anchors. Widget accent colors from the Tailwind palette. Color is used sparingly and purposefully -- to indicate state, draw attention, or differentiate widgets. Never decorative noise.
+- **Motion**: Subtle and purposeful. Transitions ease state changes; nothing bounces, jiggles, or pulses unless it's communicating urgency (e.g., timer alarm). Respect `prefers-reduced-motion`.
+- **Anti-references**: Must NOT feel overwhelming like Canva. No rainbow palettes, no competing visual elements, no "everything is customizable" overload. Also not sterile like a spreadsheet -- the glassmorphism and careful shadows provide warmth without clutter.
+
+### Design Principles
+
+1. **Clarity over cleverness** -- Every element earns its place. If it doesn't help the teacher understand or act, remove it. UI should be self-explanatory; if you need a tooltip, the design isn't done.
+
+2. **Calm confidence** -- The interface should feel like a deep breath. Neutral surfaces, consistent spacing, predictable interactions. Teachers are managing 30 kids -- the tool must never add cognitive load.
+
+3. **Glanceable at distance** -- Content must be legible on a projected screen from across a classroom. Strong type hierarchy, high contrast where it matters, container-query scaling that actually fills the widget. No tiny metadata that only works on a laptop.
+
+4. **Purposeful restraint** -- Use color, motion, and decoration only when they communicate something. A red badge means something is wrong. A subtle fade means something changed. Silence is the default.
+
+5. **Premium materiality** -- Glassmorphism, soft shadows, and backdrop blur create depth without heaviness. Surfaces feel like they exist in physical space -- layered, translucent, real. This is the visual signature that makes SpartBoard feel high-end.
+
+### Accessibility Baseline
+
+- **WCAG AA compliance** as the minimum standard
+- Sufficient contrast ratios on all text (4.5:1 for normal text, 3:1 for large text)
+- Keyboard navigation support for all interactive elements
+- Respect `prefers-reduced-motion` -- disable non-essential animations
+- Focus indicators visible on all interactive elements
+- Screen reader labels on icon-only buttons
+- Projector-friendly: designs must hold up on washed-out, low-contrast display environments

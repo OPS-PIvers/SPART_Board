@@ -1,19 +1,31 @@
-import React, { useState, useCallback } from 'react';
-import { WidgetData, QuizConfig, QuizMetadata, QuizData } from '@/types';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  WidgetData,
+  QuizConfig,
+  QuizMetadata,
+  QuizData,
+  ScoreboardTeam,
+} from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { useQuiz } from '@/hooks/useQuiz';
-import { useQuizSessionTeacher } from '@/hooks/useQuizSession';
-import { QuizManager } from './components/QuizManager';
+import { useQuizSessionTeacher, gradeAnswer } from '@/hooks/useQuizSession';
+import { QuizManager, PlcOptions } from './components/QuizManager';
 import { QuizImporter } from './components/QuizImporter';
 import { QuizEditor } from './components/QuizEditor';
 import { QuizPreview } from './components/QuizPreview';
 import { QuizResults } from './components/QuizResults';
+import {
+  buildPinToNameMap,
+  buildScoreboardTeams,
+} from './utils/quizScoreboard';
 import { QuizLiveMonitor } from './components/QuizLiveMonitor';
 import { Loader2, AlertTriangle, LogIn } from 'lucide-react';
+import { SCOREBOARD_COLORS } from '@/config/scoreboard';
 
 export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addWidget, addToast, rosters, activeDashboard } =
+    useDashboard();
   const { user, googleAccessToken } = useAuth();
   const config = widget.config as QuizConfig;
 
@@ -26,6 +38,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     deleteQuiz,
     importFromSheet,
     importFromCSV,
+    createQuizTemplate,
+    shareQuiz,
     isDriveConnected,
   } = useQuiz(user?.uid);
 
@@ -102,6 +116,197 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     quizzesLoading,
     endQuizSession,
     setView,
+  ]);
+
+  // ─── Live Scoreboard Sync ──────────────────────────────────────────────────
+  const liveScoreboardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const prevResponsesJsonRef = useRef<string>('');
+  const creatingScoreboardRef = useRef(false);
+
+  // Use refs for values the effect reads but should not re-trigger on:
+  // - configRef: avoids re-triggering when unrelated config fields change
+  // - widgetsRef: avoids re-triggering when the scoreboard widget we just wrote is updated
+  const configRef = useRef(config);
+  configRef.current = config;
+  const widgetsRef = useRef(activeDashboard?.widgets);
+  widgetsRef.current = activeDashboard?.widgets;
+
+  // ─── Callback for child components to update quiz config ────────────────────
+  const handleUpdateQuizConfig = useCallback(
+    (updates: Partial<QuizConfig>) => {
+      updateWidget(widget.id, {
+        config: { ...configRef.current, ...updates } as QuizConfig,
+      });
+    },
+    [updateWidget, widget.id]
+  );
+
+  useEffect(() => {
+    if (!config.liveScoreboardEnabled || !loadedQuizData || !liveSession) {
+      return;
+    }
+
+    // Compute a fingerprint including answer content to detect changes
+    const fingerprint = responses
+      .map(
+        (r) =>
+          `${r.pin}:${r.status}:${r.answers.map((a) => `${a.questionId}=${a.answer}`).join(',')}`
+      )
+      .sort()
+      .join('|');
+    if (fingerprint === prevResponsesJsonRef.current) return;
+    prevResponsesJsonRef.current = fingerprint;
+
+    // Debounce the scoreboard update
+    if (liveScoreboardTimerRef.current) {
+      clearTimeout(liveScoreboardTimerRef.current);
+    }
+
+    liveScoreboardTimerRef.current = setTimeout(() => {
+      const currentConfig = configRef.current;
+      const scoringMode = currentConfig.liveScoreboardScoring ?? 'completion';
+      const displayMode = currentConfig.liveScoreboardMode ?? 'pin';
+      const pinToName = buildPinToNameMap(rosters, currentConfig.periodName);
+
+      const eligibleResponses =
+        scoringMode === 'completion'
+          ? responses.filter((r) => r.status === 'completed')
+          : // per-question: include anyone with at least one answer
+            responses.filter((r) => r.answers.length > 0);
+
+      let newTeams: ScoreboardTeam[];
+      if (scoringMode === 'per-question') {
+        // Per-question mode: running accuracy — percentage of answered questions
+        // scored correctly (not total quiz points). This gives meaningful live
+        // feedback before quiz completion, unlike the final score which divides
+        // by total points and would show low percentages for students mid-quiz.
+        const questions = loadedQuizData.questions;
+        newTeams = eligibleResponses
+          .map((r) => {
+            let earnedPoints = 0;
+            let maxAnsweredPoints = 0;
+            for (const a of r.answers) {
+              const q = questions.find((qn) => qn.id === a.questionId);
+              if (!q) continue;
+              const pts = q.points ?? 1;
+              maxAnsweredPoints += pts;
+              if (gradeAnswer(q, a.answer)) earnedPoints += pts;
+            }
+            const score =
+              maxAnsweredPoints > 0
+                ? Math.round((earnedPoints / maxAnsweredPoints) * 100)
+                : 0;
+            return { response: r, score };
+          })
+          .sort((a, b) => b.score - a.score)
+          .map(({ response, score }) => ({
+            id: `pin-${response.pin}`,
+            name:
+              displayMode === 'name'
+                ? (pinToName[response.pin] ?? `PIN ${response.pin}`)
+                : `PIN ${response.pin}`,
+            score,
+            color:
+              SCOREBOARD_COLORS[
+                parseInt(response.pin, 10) % SCOREBOARD_COLORS.length
+              ],
+          }));
+      } else {
+        newTeams = buildScoreboardTeams(
+          eligibleResponses,
+          loadedQuizData.questions,
+          displayMode,
+          pinToName
+        );
+      }
+
+      // Find or create scoreboard widget
+      const widgets = widgetsRef.current;
+      const existingId = currentConfig.liveScoreboardWidgetId;
+      const existingScoreboard = existingId
+        ? widgets?.find((w) => w.id === existingId)
+        : widgets?.find((w) => w.type === 'scoreboard');
+
+      if (existingScoreboard) {
+        updateWidget(existingScoreboard.id, {
+          config: {
+            ...existingScoreboard.config,
+            teams: newTeams,
+            liveQuizWidgetId: widget.id,
+          },
+        });
+        if (currentConfig.liveScoreboardWidgetId !== existingScoreboard.id) {
+          updateWidget(widget.id, {
+            config: {
+              ...currentConfig,
+              liveScoreboardWidgetId: existingScoreboard.id,
+            } as QuizConfig,
+          });
+        }
+        creatingScoreboardRef.current = false;
+      } else if (!creatingScoreboardRef.current) {
+        // Guard against creating duplicate scoreboards while addWidget is async
+        creatingScoreboardRef.current = true;
+        addWidget('scoreboard', {
+          config: {
+            teams: newTeams,
+            layout: 'rows',
+            liveQuizWidgetId: widget.id,
+          },
+        });
+      }
+    }, 2000);
+
+    return () => {
+      if (liveScoreboardTimerRef.current) {
+        clearTimeout(liveScoreboardTimerRef.current);
+      }
+    };
+    // Only re-trigger on actual data changes (responses) and primitive config flags.
+    // config object and activeDashboard.widgets are read via refs to avoid
+    // infinite re-trigger cycles (this effect writes to both).
+  }, [
+    config.liveScoreboardEnabled,
+    config.liveScoreboardScoring,
+    config.liveScoreboardMode,
+    config.liveScoreboardWidgetId,
+    config.periodName,
+    responses,
+    loadedQuizData,
+    liveSession,
+    rosters,
+    updateWidget,
+    addWidget,
+    widget.id,
+  ]);
+
+  // Auto-disable live scoreboard when session ends
+  useEffect(() => {
+    if (
+      config.liveScoreboardEnabled &&
+      liveSession &&
+      liveSession.status === 'ended'
+    ) {
+      // Clear the liveQuizWidgetId on the scoreboard to remove the LIVE badge
+      const scoreboardId = configRef.current.liveScoreboardWidgetId;
+      if (scoreboardId) {
+        const widgets = widgetsRef.current;
+        const scoreboard = widgets?.find((w) => w.id === scoreboardId);
+        if (scoreboard) {
+          updateWidget(scoreboardId, {
+            config: { ...scoreboard.config, liveQuizWidgetId: undefined },
+          });
+        }
+      }
+      handleUpdateQuizConfig({ liveScoreboardEnabled: false });
+    }
+  }, [
+    liveSession,
+    config.liveScoreboardEnabled,
+    handleUpdateQuizConfig,
+    updateWidget,
   ]);
 
   // ─── Guard: not signed in ──────────────────────────────────────────────────
@@ -185,6 +390,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onBack={() => setView('manager')}
         importFromSheet={importFromSheet}
         importFromCSV={importFromCSV}
+        createQuizTemplate={createQuizTemplate}
         onSave={async (quiz) => {
           try {
             await saveQuiz(quiz);
@@ -240,6 +446,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <QuizResults
         quiz={loadedQuizData}
         responses={responses}
+        config={config}
         onBack={() => {
           setLoadedQuizData(null);
           setView('manager');
@@ -277,6 +484,9 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           await endQuizSession();
           setView('manager');
         }}
+        config={config}
+        rosters={rosters}
+        onUpdateConfig={handleUpdateQuizConfig}
       />
     );
   }
@@ -303,7 +513,9 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         const data = await loadQuiz(meta);
         if (data) setView('preview');
       }}
-      onAssign={async (meta, mode) => {
+      rosters={rosters}
+      config={config}
+      onAssign={async (meta, mode, plcOptions: PlcOptions) => {
         const data = await loadQuiz(meta);
         if (!data) return;
         try {
@@ -315,6 +527,10 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               selectedQuizId: meta.id,
               selectedQuizTitle: meta.title,
               activeLiveSessionCode: code,
+              plcMode: plcOptions.plcMode,
+              teacherName: plcOptions.teacherName ?? '',
+              periodName: plcOptions.periodName ?? '',
+              plcSheetUrl: plcOptions.plcSheetUrl ?? '',
             } as QuizConfig,
           });
           const url = `${window.location.origin}/quiz?code=${code}`;
@@ -356,6 +572,24 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             err instanceof Error ? err.message : 'Delete failed',
             'error'
           );
+        }
+      }}
+      onShare={async (meta) => {
+        let url: string;
+        try {
+          url = await shareQuiz(meta);
+        } catch (err) {
+          addToast(
+            err instanceof Error ? err.message : 'Share failed',
+            'error'
+          );
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          addToast('Share link copied to clipboard!', 'success');
+        } catch {
+          addToast(`Share link: ${url}`, 'info');
         }
       }}
     />

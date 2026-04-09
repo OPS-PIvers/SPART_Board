@@ -47,6 +47,7 @@ interface KpiUser {
   email: string;
   buildings: string[];
   lastSignInMs: number;
+  lastEditMs: number;
   hasDashboard: boolean;
   isMonthlyActive: boolean;
   isDailyActive: boolean;
@@ -700,11 +701,23 @@ const WidgetsPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
   );
 };
 
+const AI_FEATURE_LABELS: Record<string, string> = {
+  'smart-poll': 'Smart Poll',
+  'embed-mini-app': 'Mini App',
+  'video-activity-audio-transcription': 'Video Activity',
+  quiz: 'Quiz Generation',
+  ocr: 'OCR',
+  'guided-learning': 'Guided Learning',
+};
+
 const AiPanel: React.FC<{ data: AnalyticsData }> = ({ data }) => {
   const featureRows = useMemo(
     () =>
       Object.entries(data.api.byFeature ?? {})
-        .map(([feature, count]) => ({ feature, count }))
+        .map(([feature, count]) => ({
+          feature: AI_FEATURE_LABELS[feature] ?? feature,
+          count,
+        }))
         .sort((a, b) => b.count - a.count),
     [data.api.byFeature]
   );
@@ -995,7 +1008,7 @@ const formatRelativeTime = (ms: number): string => {
   return new Date(ms).toLocaleDateString();
 };
 
-type KpiSortKey = 'email' | 'building' | 'lastSignIn';
+type KpiSortKey = 'email' | 'building' | 'lastEdit';
 
 const KpiUserModal: React.FC<{
   isOpen: boolean;
@@ -1086,8 +1099,8 @@ const KpiUserModal: React.FC<{
           cmp = aName.localeCompare(bName);
           break;
         }
-        case 'lastSignIn':
-          cmp = a.lastSignInMs - b.lastSignInMs;
+        case 'lastEdit':
+          cmp = (a.lastEditMs ?? 0) - (b.lastEditMs ?? 0);
           break;
       }
       return sortDir === 'asc' ? cmp : -cmp;
@@ -1160,10 +1173,10 @@ const KpiUserModal: React.FC<{
                 </th>
                 <th
                   className="text-left px-4 py-2.5 font-semibold text-slate-600 cursor-pointer select-none hover:bg-slate-100 transition-colors"
-                  onClick={() => handleSort('lastSignIn')}
+                  onClick={() => handleSort('lastEdit')}
                 >
                   <span className="inline-flex items-center gap-1">
-                    Last Sign-In {renderSortIcon('lastSignIn')}
+                    Last Edit {renderSortIcon('lastEdit')}
                   </span>
                 </th>
               </tr>
@@ -1200,12 +1213,12 @@ const KpiUserModal: React.FC<{
                     <td
                       className="px-4 py-2.5 text-slate-600"
                       title={
-                        u.lastSignInMs > 0
-                          ? new Date(u.lastSignInMs).toLocaleString()
-                          : 'Never signed in'
+                        (u.lastEditMs ?? 0) > 0
+                          ? new Date(u.lastEditMs).toLocaleString()
+                          : 'No edits'
                       }
                     >
-                      {formatRelativeTime(u.lastSignInMs)}
+                      {formatRelativeTime(u.lastEditMs ?? 0)}
                     </td>
                   </tr>
                 ))

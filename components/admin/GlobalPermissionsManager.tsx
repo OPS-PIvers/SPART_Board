@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { AccessLevel, GlobalFeature, GlobalFeaturePermission } from '@/types';
 import {
@@ -20,9 +27,12 @@ import {
   LayoutGrid,
   List,
   Filter,
+  ChevronDown,
+  FileUp,
 } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
 import { useStorage } from '@/hooks/useStorage';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { Toggle } from '../common/Toggle';
 import { Toast } from '../common/Toast';
 
@@ -95,6 +105,13 @@ const GLOBAL_FEATURES: {
     description:
       'Allow generating quizzes from videos that do not have captions, using Gemini AI audio transcription.',
   },
+  {
+    id: 'ai-file-context',
+    label: 'AI File Context (Drive)',
+    icon: FileUp,
+    description:
+      'Allow attaching Google Drive files as context when generating with AI.',
+  },
 ];
 
 const GEMINI_FEATURES: GlobalFeature[] = [
@@ -102,10 +119,229 @@ const GEMINI_FEATURES: GlobalFeature[] = [
   'smart-poll',
   'embed-mini-app',
   'video-activity-audio-transcription',
+  'ai-file-context',
 ];
 
+const KNOWN_GEMINI_MODELS = [
+  {
+    value: 'gemini-3-flash-preview',
+    label: 'Gemini 3 Flash (Preview)',
+    tier: 'advanced',
+  },
+  {
+    value: 'gemini-3.1-flash-lite-preview',
+    label: 'Gemini 3.1 Flash Lite (Preview)',
+    tier: 'standard',
+  },
+  {
+    value: 'gemini-2.5-flash',
+    label: 'Gemini 2.5 Flash',
+    tier: 'advanced',
+  },
+  {
+    value: 'gemini-2.5-flash-lite',
+    label: 'Gemini 2.5 Flash Lite',
+    tier: 'standard',
+  },
+  {
+    value: 'gemini-2.0-flash',
+    label: 'Gemini 2.0 Flash',
+    tier: 'advanced',
+  },
+  {
+    value: 'gemini-2.0-flash-lite',
+    label: 'Gemini 2.0 Flash Lite',
+    tier: 'standard',
+  },
+] as const;
+
+const GEMINI_MODEL_REGEX = /^gemini-[\w.-]+$/;
+
+const DEFAULT_ADVANCED_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_STANDARD_MODEL = 'gemini-3.1-flash-lite-preview';
+
+/**
+ * Shared UI for configuring Gemini model overrides on the `gemini-functions`
+ * permission. Renders in two visual variants: `inline` for list view and
+ * `expanded` for grid view.
+ */
+const GeminiModelConfigSection: React.FC<{
+  variant: 'inline' | 'expanded';
+  permission: GlobalFeaturePermission;
+  onUpdate: (updates: Partial<GlobalFeaturePermission>) => void;
+}> = ({ variant, permission, onUpdate }) => {
+  const advancedModel = (permission.config?.advancedModel as string) ?? '';
+  const standardModel = (permission.config?.standardModel as string) ?? '';
+
+  const isCustomAdvanced =
+    advancedModel !== '' &&
+    !KNOWN_GEMINI_MODELS.some((m) => m.value === advancedModel);
+  const isCustomStandard =
+    standardModel !== '' &&
+    !KNOWN_GEMINI_MODELS.some((m) => m.value === standardModel);
+
+  const [showCustomAdvanced, setShowCustomAdvanced] =
+    React.useState(isCustomAdvanced);
+  const [showCustomStandard, setShowCustomStandard] =
+    React.useState(isCustomStandard);
+
+  const advancedError =
+    showCustomAdvanced &&
+    advancedModel !== '' &&
+    !GEMINI_MODEL_REGEX.test(advancedModel);
+  const standardError =
+    showCustomStandard &&
+    standardModel !== '' &&
+    !GEMINI_MODEL_REGEX.test(standardModel);
+
+  const handleSelectChange = (
+    field: 'advancedModel' | 'standardModel',
+    value: string,
+    setShowCustom: (v: boolean) => void
+  ) => {
+    if (value === '__custom__') {
+      setShowCustom(true);
+      onUpdate({
+        config: { ...permission.config, [field]: '' },
+      });
+    } else {
+      setShowCustom(false);
+      onUpdate({
+        config: { ...permission.config, [field]: value },
+      });
+    }
+  };
+
+  const handleCustomInput = (
+    field: 'advancedModel' | 'standardModel',
+    value: string
+  ) => {
+    onUpdate({
+      config: { ...permission.config, [field]: value },
+    });
+  };
+
+  const getSelectValue = (
+    currentValue: string,
+    showCustom: boolean
+  ): string => {
+    if (showCustom) return '__custom__';
+    if (currentValue === '') return '';
+    const known = KNOWN_GEMINI_MODELS.find((m) => m.value === currentValue);
+    return known ? currentValue : '__custom__';
+  };
+
+  const isInline = variant === 'inline';
+
+  const containerClass = isInline
+    ? 'border-t border-slate-100 bg-purple-50 p-4'
+    : 'mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100';
+
+  const layoutClass = isInline
+    ? 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+    : 'space-y-3';
+
+  const inputClass = isInline
+    ? 'w-full px-3 py-1.5 border rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-500'
+    : 'w-full px-3 py-2 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500';
+
+  const selectClass = isInline
+    ? 'w-full px-3 py-1.5 border border-purple-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white'
+    : 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white';
+
+  const renderModelField = (
+    label: string,
+    field: 'advancedModel' | 'standardModel',
+    currentValue: string,
+    defaultModel: string,
+    tier: string,
+    showCustom: boolean,
+    setShowCustom: (v: boolean) => void,
+    hasError: boolean
+  ) => (
+    <div>
+      <label className="text-xxs font-bold text-purple-700 uppercase tracking-widest mb-1 block">
+        {label}
+      </label>
+      <select
+        value={getSelectValue(currentValue, showCustom)}
+        onChange={(e) =>
+          handleSelectChange(field, e.target.value, setShowCustom)
+        }
+        className={selectClass}
+      >
+        <option value="">Default ({defaultModel})</option>
+        {KNOWN_GEMINI_MODELS.filter((m) => m.tier === tier).map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
+        <option value="__custom__">Custom...</option>
+      </select>
+      {showCustom && (
+        <div className="mt-1.5">
+          <input
+            type="text"
+            placeholder="e.g. gemini-2.5-flash"
+            value={currentValue}
+            onChange={(e) => handleCustomInput(field, e.target.value)}
+            className={`${inputClass} ${
+              hasError
+                ? 'border-red-400 focus:ring-red-400'
+                : 'border-purple-200'
+            }`}
+          />
+          {hasError && (
+            <p className="text-xxs text-red-600 mt-0.5">
+              Must match pattern: gemini-[name] (letters, digits, dots, hyphens,
+              underscores)
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className={containerClass}>
+      <label className="text-xs font-bold text-purple-700 uppercase tracking-widest mb-2 block">
+        Gemini Model Overrides
+      </label>
+      <div className={layoutClass}>
+        {renderModelField(
+          'Advanced Model (mini-apps, guided learning)',
+          'advancedModel',
+          advancedModel,
+          DEFAULT_ADVANCED_MODEL,
+          'advanced',
+          showCustomAdvanced,
+          setShowCustomAdvanced,
+          advancedError
+        )}
+        {renderModelField(
+          'Standard Model (OCR, polls, quizzes)',
+          'standardModel',
+          standardModel,
+          DEFAULT_STANDARD_MODEL,
+          'standard',
+          showCustomStandard,
+          setShowCustomStandard,
+          standardError
+        )}
+      </div>
+      <p className="text-xxs text-purple-500 mt-2 leading-tight">
+        Override the AI models used by Cloud Functions. Leave as
+        &quot;Default&quot; to use the built-in model for each tier.
+      </p>
+    </div>
+  );
+};
+
 export const GlobalPermissionsManager: React.FC = () => {
+  const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const effectiveViewMode = isMobile ? 'grid' : viewMode;
+  const [showFilters, setShowFilters] = useState(false);
   const [permissions, setPermissions] = useState<
     Map<string, GlobalFeaturePermission>
   >(new Map());
@@ -117,7 +353,7 @@ export const GlobalPermissionsManager: React.FC = () => {
   } | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState<Set<string>>(new Set());
 
-  const { appSettings, updateAppSettings } = useAuth();
+  const { user, appSettings, updateAppSettings } = useAuth();
   const { uploadAdminLogo, deleteAdminLogo, uploading } = useStorage();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -243,6 +479,27 @@ export const GlobalPermissionsManager: React.FC = () => {
 
       await setDoc(doc(db, 'global_permissions', featureId), permission);
 
+      // Audit log for model config changes
+      if (
+        featureId === 'gemini-functions' &&
+        (permission.config?.advancedModel || permission.config?.standardModel)
+      ) {
+        try {
+          await addDoc(collection(db, 'admin_audit_log'), {
+            action: 'model_config_change',
+            email: user?.email ?? '(unknown)',
+            timestamp: serverTimestamp(),
+            advancedModel:
+              (permission.config?.advancedModel as string) || '(default)',
+            standardModel:
+              (permission.config?.standardModel as string) || '(default)',
+          });
+        } catch (auditErr) {
+          // Non-blocking — don't fail the save if audit logging fails
+          console.error('Failed to write audit log:', auditErr);
+        }
+      }
+
       setUnsavedChanges((prev) => {
         const next = new Set(prev);
         next.delete(featureId);
@@ -334,6 +591,43 @@ export const GlobalPermissionsManager: React.FC = () => {
     });
   }, [permissions, filterEnabled, filterAvailability]);
 
+  const btnClass = (active: boolean) =>
+    `px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+      active
+        ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
+        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+    }`;
+
+  const renderEnabledFilter = () => (
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-xs text-slate-500 font-medium">Enabled:</span>
+      {(['all', 'on', 'off'] as const).map((val) => (
+        <button
+          key={val}
+          onClick={() => setFilterEnabled(val)}
+          className={btnClass(filterEnabled === val)}
+        >
+          {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderAvailabilityFilter = () => (
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-xs text-slate-500 font-medium">Availability:</span>
+      {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
+        <button
+          key={val}
+          onClick={() => setFilterAvailability(val)}
+          className={btnClass(filterAvailability === val)}
+        >
+          {val === 'all' ? 'All' : val.charAt(0).toUpperCase() + val.slice(1)}
+        </button>
+      ))}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -361,13 +655,13 @@ export const GlobalPermissionsManager: React.FC = () => {
           <div>
             <h4 className="font-bold text-slate-800 text-lg">Custom Logo</h4>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Upload a custom logo to replace the default SPART Board logo in
-              the sidebar header.
+              Upload a custom logo to replace the default SpartBoard logo in the
+              sidebar header.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
           <div className="w-16 h-16 bg-slate-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-slate-300">
             {appSettings?.logoUrl ? (
               <img
@@ -410,87 +704,81 @@ export const GlobalPermissionsManager: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl mb-2">
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Filter className="w-4 h-4" />
-          <span className="text-xs font-bold uppercase tracking-wide">
-            Filter
-          </span>
-        </div>
-
-        {/* Enabled filter */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 font-medium">Enabled:</span>
-          {(['all', 'on', 'off'] as const).map((val) => (
-            <button
-              key={val}
-              onClick={() => setFilterEnabled(val)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterEnabled === val
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {val === 'all' ? 'All' : val === 'on' ? 'On' : 'Off'}
-            </button>
-          ))}
-        </div>
-
-        <div className="w-px h-5 bg-slate-200" />
-
-        {/* Availability filter */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 font-medium">
-            Availability:
-          </span>
-          {(['all', 'admin', 'beta', 'public'] as const).map((val) => (
-            <button
-              key={val}
-              onClick={() => setFilterAvailability(val)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                filterAvailability === val
-                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {val === 'all'
-                ? 'All'
-                : val.charAt(0).toUpperCase() + val.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        {/* View Mode Toggle */}
-        <div className="ml-auto flex bg-white p-0.5 rounded-lg border border-slate-200">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl mb-2">
+        {/* Filter header row */}
+        <div className="flex items-center gap-2 p-2 md:p-3">
+          {/* Mobile: collapsible filter toggle */}
           <button
-            type="button"
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded-md transition-all ${
-              viewMode === 'grid'
-                ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-            title="Grid View"
-            aria-label="Grid view"
-            aria-pressed={viewMode === 'grid'}
+            onClick={() => setShowFilters((v) => !v)}
+            className="flex items-center gap-1.5 text-slate-500 md:hidden"
+            aria-expanded={showFilters}
+            aria-controls="global-perm-mobile-filters"
           >
-            <LayoutGrid size={16} />
+            <Filter className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wide">
+              Filters
+            </span>
+            <ChevronDown
+              className={`w-3 h-3 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+            />
           </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded-md transition-all ${
-              viewMode === 'list'
-                ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-            title="List View"
-            aria-label="List view"
-            aria-pressed={viewMode === 'list'}
-          >
-            <List size={16} />
-          </button>
+
+          {/* Desktop: inline filters */}
+          <div className="hidden md:flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <Filter className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wide">
+                Filter
+              </span>
+            </div>
+            {renderEnabledFilter()}
+            <div className="w-px h-5 bg-slate-200" />
+            {renderAvailabilityFilter()}
+          </div>
+
+          {/* View Mode Toggle - hidden on mobile */}
+          <div className="ml-auto hidden md:flex bg-white p-0.5 rounded-lg border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+              title="Grid View"
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === 'list'
+                  ? 'bg-slate-100 text-brand-blue-primary shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+              title="List View"
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
+            >
+              <List size={16} />
+            </button>
+          </div>
         </div>
+
+        {/* Mobile: collapsible filter content */}
+        {showFilters && (
+          <div
+            id="global-perm-mobile-filters"
+            className="flex flex-col gap-3 px-3 pb-3 border-t border-slate-200 pt-3 md:hidden"
+          >
+            {renderEnabledFilter()}
+            {renderAvailabilityFilter()}
+          </div>
+        )}
       </div>
 
       <>
@@ -504,8 +792,8 @@ export const GlobalPermissionsManager: React.FC = () => {
         )}
         <div
           className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 gap-6'
+            effectiveViewMode === 'grid'
+              ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6'
               : 'space-y-3'
           }
         >
@@ -513,7 +801,7 @@ export const GlobalPermissionsManager: React.FC = () => {
             const permission = getPermission(feature.id);
             const isSaving = saving.has(feature.id);
 
-            if (viewMode === 'list') {
+            if (effectiveViewMode === 'list') {
               return (
                 <div
                   key={feature.id}
@@ -521,7 +809,7 @@ export const GlobalPermissionsManager: React.FC = () => {
                 >
                   <div className="flex items-center gap-4 p-3">
                     {/* Identity Section */}
-                    <div className="flex items-center gap-3 w-72 shrink-0">
+                    <div className="flex items-center gap-3 w-56 xl:w-72 shrink-0">
                       <div className="bg-brand-blue-lighter p-2 rounded-lg text-brand-blue-primary shrink-0">
                         <feature.icon className="w-5 h-5" />
                       </div>
@@ -716,6 +1004,17 @@ export const GlobalPermissionsManager: React.FC = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Gemini Model Config (gemini-functions only) */}
+                  {feature.id === 'gemini-functions' && (
+                    <GeminiModelConfigSection
+                      variant="inline"
+                      permission={permission}
+                      onUpdate={(updates) =>
+                        updatePermission(feature.id, updates)
+                      }
+                    />
+                  )}
                 </div>
               );
             }
@@ -909,6 +1208,17 @@ export const GlobalPermissionsManager: React.FC = () => {
                       generations.
                     </p>
                   </div>
+                )}
+
+                {/* Gemini Model Config (gemini-functions only) */}
+                {feature.id === 'gemini-functions' && (
+                  <GeminiModelConfigSection
+                    variant="expanded"
+                    permission={permission}
+                    onUpdate={(updates) =>
+                      updatePermission(feature.id, updates)
+                    }
+                  />
                 )}
 
                 {/* Save Button */}

@@ -27,13 +27,13 @@ export interface DashboardContextValue {
   setGradeFilter: (filter: GradeFilter) => void;
   addToast: (message: string, type?: Toast['type']) => void;
   removeToast: (id: string) => void;
-  createNewDashboard: (name: string, data?: Dashboard) => void;
-  saveCurrentDashboard: () => void;
-  deleteDashboard: (id: string) => void;
-  duplicateDashboard: (id: string) => void;
-  renameDashboard: (id: string, name: string) => void;
+  createNewDashboard: (name: string, data?: Dashboard) => Promise<void>;
+  saveCurrentDashboard: () => Promise<void>;
+  deleteDashboard: (id: string) => Promise<void>;
+  duplicateDashboard: (id: string) => Promise<void>;
+  renameDashboard: (id: string, name: string) => Promise<void>;
   loadDashboard: (id: string) => void;
-  reorderDashboards: (ids: string[]) => void;
+  reorderDashboards: (ids: string[]) => Promise<void>;
   setDefaultDashboard: (id: string) => void;
   resetDockToDefaults: () => void;
   addWidget: (type: WidgetType, overrides?: AddWidgetOverrides) => void;
@@ -80,6 +80,8 @@ export interface DashboardContextValue {
   loadSharedDashboard: (shareId: string) => Promise<Dashboard | null>;
   pendingShareId: string | null;
   clearPendingShare: () => void;
+  pendingQuizShareId: string | null;
+  clearPendingQuizShare: () => void;
 
   // Roster system
   rosters: ClassRoster[];

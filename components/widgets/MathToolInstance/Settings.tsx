@@ -41,7 +41,7 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
               }
               className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xxs font-bold border transition-all text-left ${
                 config.toolType === type
-                  ? 'bg-purple-600 text-white border-purple-600'
+                  ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
@@ -54,16 +54,16 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Rotation control */}
       {isRotatable && (
-        <div className="space-y-2 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+        <div className="space-y-2 p-3 bg-brand-blue-lighter/50 rounded-xl border border-brand-blue-lighter">
           <div className="flex justify-between items-center">
-            <label className="text-xxs font-black text-indigo-400 uppercase tracking-widest block">
+            <label className="text-xxs font-black text-brand-blue-light uppercase tracking-widest block">
               Rotation ({config.rotation ?? 0}°)
             </label>
             <button
               onClick={() =>
                 updateWidget(widget.id, { config: { ...config, rotation: 0 } })
               }
-              className="text-xxs font-black text-indigo-600 hover:underline"
+              className="text-xxs font-black text-brand-blue-primary hover:underline"
             >
               Reset
             </button>
@@ -79,7 +79,7 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, rotation: Number(e.target.value) },
               })
             }
-            className="w-full h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            className="w-full h-1.5 bg-brand-blue-lighter rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
           />
           <div className="flex gap-1 justify-center mt-1">
             {[0, 45, 90, 180, 270].map((deg) => (
@@ -90,7 +90,7 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
                     config: { ...config, rotation: deg },
                   })
                 }
-                className="px-1.5 py-0.5 text-xxxs font-bold bg-white border border-indigo-100 rounded text-indigo-600 hover:bg-indigo-50"
+                className="px-1.5 py-0.5 text-xxxs font-bold bg-white border border-brand-blue-lighter rounded text-brand-blue-primary hover:bg-brand-blue-lighter"
               >
                 {deg}°
               </button>
@@ -117,7 +117,7 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
                   }
                   className={`px-2 py-1 rounded-lg text-xxs font-black border transition-all ${
                     (config.numberLineMode ?? 'integers') === m
-                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      ? 'bg-brand-blue-primary text-white border-brand-blue-primary'
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -229,7 +229,7 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, pixelsPerInch: ppi },
               });
             }}
-            className="px-3 py-1.5 text-xxs font-black bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-3 py-1.5 text-xxs font-black bg-brand-blue-primary text-white rounded-lg hover:bg-brand-blue-dark transition-colors"
           >
             Apply
           </button>

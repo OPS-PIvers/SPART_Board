@@ -62,6 +62,58 @@ interface GlobalPermission {
   config?: GlobalPermConfig;
 }
 
+const DEFAULT_ADVANCED_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_STANDARD_MODEL = 'gemini-3.1-flash-lite-preview';
+
+/**
+ * Validates and normalises a Gemini model name.
+ * Returns `undefined` when the supplied value is falsy or fails the pattern
+ * check, so callers can fall back to a default.
+ */
+function normalizeModelName(raw: unknown): string | undefined {
+  if (!raw || typeof raw !== 'string') return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  if (!/^gemini-[\w.-]+$/.test(trimmed)) return undefined;
+  return trimmed;
+}
+
+interface GeminiModelConfig {
+  advancedModel?: string;
+  standardModel?: string;
+}
+
+/**
+ * Reads the admin-configured model overrides from the `gemini-functions`
+ * global permissions document. Returns validated model names (or defaults).
+ */
+async function getGeminiModelConfig(
+  db: admin.firestore.Firestore
+): Promise<{ advancedModel: string; standardModel: string }> {
+  try {
+    const doc = await db
+      .collection('global_permissions')
+      .doc('gemini-functions')
+      .get();
+    const cfg = doc.data()?.config as GeminiModelConfig | undefined;
+    return {
+      advancedModel:
+        normalizeModelName(cfg?.advancedModel) ?? DEFAULT_ADVANCED_MODEL,
+      standardModel:
+        normalizeModelName(cfg?.standardModel) ?? DEFAULT_STANDARD_MODEL,
+    };
+  } catch (error) {
+    console.warn(
+      'Failed to read Gemini model config from Firestore; using defaults.',
+      error
+    );
+    return {
+      advancedModel: DEFAULT_ADVANCED_MODEL,
+      standardModel: DEFAULT_STANDARD_MODEL,
+    };
+  }
+}
+
 interface ArchiveActivityWallPhotoData {
   accessToken?: string;
   sessionId?: string;
@@ -72,7 +124,7 @@ interface ArchiveActivityWallPhotoData {
 
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
-const APP_DRIVE_FOLDER = 'SPART Board';
+const APP_DRIVE_FOLDER = 'SpartBoard';
 
 const getDriveHeaders = (accessToken: string) => ({
   Authorization: `Bearer ${accessToken}`,
@@ -397,20 +449,47 @@ export const generateWithAI = functionsV1
       .get();
     const isAdmin = adminDoc.exists;
 
-    if (!isAdmin) {
-      // 1. Determine specific feature ID if applicable
-      let specificFeatureId: string | null = null;
-      const genType = String(data?.type || '')
-        .toLowerCase()
-        .trim();
-      if (genType === 'mini-app') specificFeatureId = 'embed-mini-app';
-      if (genType === 'poll') specificFeatureId = 'smart-poll';
+    // 1. Determine specific feature ID if applicable
+    let specificFeatureId: string | null = null;
+    const genType = String(data?.type || '')
+      .toLowerCase()
+      .trim();
+    if (genType === 'mini-app') specificFeatureId = 'embed-mini-app';
+    if (genType === 'poll') specificFeatureId = 'smart-poll';
+    if (genType === 'quiz') specificFeatureId = 'quiz';
+    if (genType === 'video-activity')
+      specificFeatureId = 'video-activity-audio-transcription';
+    if (genType === 'ocr') specificFeatureId = 'ocr';
+    if (genType === 'guided-learning') specificFeatureId = 'guided-learning';
 
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-      try {
-        await db.runTransaction(async (transaction) => {
-          // --- Check Overall Gemini Limit ---
+    try {
+      await db.runTransaction(async (transaction) => {
+        // --- Read current usage (needed for both tracking and limits) ---
+        const overallUsageRef = db
+          .collection('ai_usage')
+          .doc(`${uid}_${today}`);
+        const overallUsageDoc = await transaction.get(overallUsageRef);
+        const currentOverallUsage = overallUsageDoc.exists
+          ? (overallUsageDoc.data()?.count as number) || 0
+          : 0;
+
+        let specificUsageRef: admin.firestore.DocumentReference | null = null;
+        let currentSpecificUsage = 0;
+
+        if (specificFeatureId) {
+          specificUsageRef = db
+            .collection('ai_usage')
+            .doc(`${uid}_${specificFeatureId}_${today}`);
+          const specUsageDoc = await transaction.get(specificUsageRef);
+          currentSpecificUsage = specUsageDoc.exists
+            ? (specUsageDoc.data()?.count as number) || 0
+            : 0;
+        }
+
+        // --- Rate-limit checks (non-admin only) ---
+        if (!isAdmin) {
           const globalPermDoc = await transaction.get(
             db.collection('global_permissions').doc('gemini-functions')
           );
@@ -448,14 +527,6 @@ export const generateWithAI = functionsV1
             globalPerm?.config?.dailyLimitEnabled !== false;
           const overallLimit = globalPerm?.config?.dailyLimit ?? 20;
 
-          const overallUsageRef = db
-            .collection('ai_usage')
-            .doc(`${uid}_${today}`);
-          const overallUsageDoc = await transaction.get(overallUsageRef);
-          const currentOverallUsage = overallUsageDoc.exists
-            ? (overallUsageDoc.data()?.count as number) || 0
-            : 0;
-
           if (overallLimitEnabled && currentOverallUsage >= overallLimit) {
             throw new functionsV1.https.HttpsError(
               'resource-exhausted',
@@ -464,11 +535,6 @@ export const generateWithAI = functionsV1
           }
 
           // --- Check Specific Feature Limit ---
-          let specificLimitReached = false;
-          let specificLimit = 0;
-          let specificUsageRef = null;
-          let currentSpecificUsage = 0;
-
           if (specificFeatureId) {
             const specPermDoc = await transaction.get(
               db.collection('global_permissions').doc(specificFeatureId)
@@ -477,65 +543,52 @@ export const generateWithAI = functionsV1
               const specPerm = specPermDoc.data() as GlobalPermission;
               const specLimitEnabled =
                 specPerm.config?.dailyLimitEnabled !== false;
-              specificLimit = specPerm.config?.dailyLimit ?? 20;
+              const specificLimit = specPerm.config?.dailyLimit ?? 20;
 
-              if (specLimitEnabled) {
-                specificUsageRef = db
-                  .collection('ai_usage')
-                  .doc(`${uid}_${specificFeatureId}_${today}`);
-                const specUsageDoc = await transaction.get(specificUsageRef);
-                currentSpecificUsage = specUsageDoc.exists
-                  ? (specUsageDoc.data()?.count as number) || 0
-                  : 0;
-
-                if (currentSpecificUsage >= specificLimit) {
-                  specificLimitReached = true;
-                }
+              if (specLimitEnabled && currentSpecificUsage >= specificLimit) {
+                throw new functionsV1.https.HttpsError(
+                  'resource-exhausted',
+                  `Daily limit for ${specificFeatureId} reached (${specificLimit} per day). Please try again tomorrow.`
+                );
               }
             }
           }
+        }
 
-          if (specificLimitReached) {
-            throw new functionsV1.https.HttpsError(
-              'resource-exhausted',
-              `Daily limit for ${specificFeatureId} reached (${specificLimit} per day). Please try again tomorrow.`
-            );
-          }
+        // --- Increment usage counters (all users including admins) ---
+        transaction.set(
+          overallUsageRef,
+          {
+            count: currentOverallUsage + 1,
+            email: email,
+            lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
 
-          // --- Increment Both ---
+        if (specificUsageRef) {
           transaction.set(
-            overallUsageRef,
+            specificUsageRef,
             {
-              count: currentOverallUsage + 1,
+              count: currentSpecificUsage + 1,
               email: email,
               lastUsed: admin.firestore.FieldValue.serverTimestamp(),
             },
             { merge: true }
           );
-
-          if (specificUsageRef) {
-            transaction.set(
-              specificUsageRef,
-              {
-                count: currentSpecificUsage + 1,
-                email: email,
-                lastUsed: admin.firestore.FieldValue.serverTimestamp(),
-              },
-              { merge: true }
-            );
-          }
-        });
-      } catch (error) {
-        if (error instanceof functionsV1.https.HttpsError) {
-          throw error;
         }
-        console.error('Usage tracking error:', error);
-        throw new functionsV1.https.HttpsError(
-          'internal',
-          'Failed to verify AI usage limits.'
-        );
+      });
+    } catch (error) {
+      if (error instanceof functionsV1.https.HttpsError) {
+        throw error;
       }
+      console.error('Usage tracking error:', error);
+      // Don't block AI generation if tracking fails
+      console.warn('AI usage tracking failed, proceeding with generation.');
     }
+
+    // Read model config from Firestore (for both admins and non-admins)
+    const geminiConfig = await getGeminiModelConfig(db);
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -581,7 +634,7 @@ export const generateWithAI = functionsV1
         'dashboard-layout': () => ({
           systemPrompt: `
           You are an expert instructional designer and classroom space planner. Based on the user's lesson description provided within <lesson_description> tags, suggest a set of interactive widgets and arrange them on a 12x12 grid (columns 0-11, rows 0-11).
-          
+
           Available Widgets (use EXACT type strings):
           - clock: Digital/analog clock
           - time-tool: Timer/Stopwatch
@@ -609,7 +662,7 @@ export const generateWithAI = functionsV1
           - stickers: Reward/decorative stickers
           - seating-chart: Classroom layout manager
           - catalyst: Instructional warm-ups/activities
-          
+
           Spatial Grid Rules (12x12):
           1. Total grid width is 12 columns (0-11). Total grid height is 12 rows (0-11).
           2. Avoid overlapping widgets.
@@ -770,10 +823,11 @@ export const generateWithAI = functionsV1
       }
 
       // Use higher complexity model for code generation, and lite for OCR and simple JSON tasks
+      // Model names are admin-configurable via global_permissions/gemini-functions
       const model =
         genType === 'mini-app' || genType === 'widget-builder'
-          ? 'gemini-3-flash-preview'
-          : 'gemini-3.1-flash-lite-preview';
+          ? geminiConfig.advancedModel
+          : geminiConfig.standardModel;
 
       const result = await ai.models.generateContent({
         model,
@@ -812,9 +866,11 @@ export const generateWithAI = functionsV1
         throw error;
       }
 
-      const msg =
-        error instanceof Error ? error.message : 'AI Generation failed';
-      throw new functionsV1.https.HttpsError('internal', msg);
+      const detail = error instanceof Error ? error.message : 'unknown error';
+      throw new functionsV1.https.HttpsError(
+        'internal',
+        `AI generation failed: ${detail}`
+      );
     }
   });
 
@@ -1213,6 +1269,10 @@ export const generateVideoActivity = functionsV1
         );
       }
 
+      // Read model config from Firestore
+      const geminiConfig = await getGeminiModelConfig(db);
+      const videoModel = geminiConfig.standardModel;
+
       const ai = new GoogleGenAI({ apiKey });
 
       const systemPrompt = `You are an expert teacher creating a video comprehension activity.
@@ -1243,7 +1303,7 @@ Return JSON in this exact format:
 
       try {
         const result = await ai.models.generateContent({
-          model: 'gemini-3.1-flash-lite-preview',
+          model: videoModel,
           contents: [
             {
               role: 'user',
@@ -1277,9 +1337,11 @@ Return JSON in this exact format:
         return parsed;
       } catch (error: unknown) {
         console.error('[generateVideoActivity] Gemini error:', error);
-        const msg =
-          error instanceof Error ? error.message : 'AI generation failed';
-        throw new functionsV1.https.HttpsError('internal', msg);
+        const detail = error instanceof Error ? error.message : 'unknown error';
+        throw new functionsV1.https.HttpsError(
+          'internal',
+          `AI generation failed (model: ${videoModel}): ${detail}`
+        );
       }
     }
   );
@@ -1564,8 +1626,8 @@ Return JSON:
         return parsed;
       } catch (error: unknown) {
         console.error('[transcribeVideoWithGemini] Gemini error:', error);
-        const msg =
-          error instanceof Error ? error.message : 'AI generation failed';
+        const detail = error instanceof Error ? error.message : 'unknown error';
+        const msg = `AI generation failed (model: ${model}): ${detail}`;
         throw new functionsV1.https.HttpsError('internal', msg);
       }
     }
@@ -1629,8 +1691,8 @@ export const generateGuidedLearning = functionsV1
           'Authenticated user must have an email address.'
         );
       }
-      const adminDoc = await admin
-        .firestore()
+      const db = admin.firestore();
+      const adminDoc = await db
         .collection('admins')
         .doc(userEmail.toLowerCase())
         .get();
@@ -1656,6 +1718,10 @@ export const generateGuidedLearning = functionsV1
           'AI service is not configured.'
         );
       }
+
+      // Read model config from Firestore
+      const geminiConfig = await getGeminiModelConfig(db);
+      const guidedLearningModel = geminiConfig.advancedModel;
 
       try {
         const ai = new GoogleGenAI({ apiKey });
@@ -1707,7 +1773,7 @@ Guidelines:
           : 'Analyze this educational image and create an engaging guided learning experience.';
 
         const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: guidedLearningModel,
           contents: [
             {
               role: 'user',
@@ -1748,8 +1814,8 @@ Guidelines:
         return parsed;
       } catch (error: unknown) {
         console.error('[generateGuidedLearning] Gemini error:', error);
-        const msg =
-          error instanceof Error ? error.message : 'AI generation failed';
+        const detail = error instanceof Error ? error.message : 'unknown error';
+        const msg = `AI generation failed (model: ${guidedLearningModel}): ${detail}`;
         throw new functionsV1.https.HttpsError('internal', msg);
       }
     }
@@ -1851,38 +1917,35 @@ export const adminAnalytics = functionsV1
           `[getAdminAnalytics] Found ${authUsersMap.size} Auth users`
         );
 
-        // 3b. Stream Firestore /users/{uid} docs for building assignments only
+        // 3b. Batch-read /users/{uid}/userProfile/profile for building assignments
+        // The source of truth for buildings is the profile subcollection, not the
+        // root user doc (which is only populated on recent logins).
         const buildingsMap = new Map<string, string[]>();
-        const usersStream = db
-          .collection('users')
-          .select('buildings')
-          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
-
-        for await (const userDoc of usersStream) {
-          if (!userDoc.exists) continue;
-          // Skip users not in the filtered auth map (e.g. anonymous students)
-          if (!authUsersMap.has(userDoc.id)) continue;
-          const userData = userDoc.data();
-          if (
-            Array.isArray(userData.buildings) &&
-            userData.buildings.length > 0
-          ) {
-            buildingsMap.set(userDoc.id, userData.buildings.map(String));
+        const authUids = Array.from(authUsersMap.keys());
+        const PROFILE_BATCH = 500;
+        for (let i = 0; i < authUids.length; i += PROFILE_BATCH) {
+          const batch = authUids.slice(i, i + PROFILE_BATCH);
+          const refs = batch.map((uid) =>
+            db.doc(`users/${uid}/userProfile/profile`)
+          );
+          const snapshots = await db.getAll(...refs);
+          for (const snap of snapshots) {
+            if (!snap.exists) continue;
+            const data = snap.data();
+            if (
+              data &&
+              Array.isArray(data.selectedBuildings) &&
+              data.selectedBuildings.length > 0
+            ) {
+              const uid = snap.ref.parent.parent?.id;
+              if (!uid) continue;
+              buildingsMap.set(uid, data.selectedBuildings.map(String));
+            }
           }
         }
 
-        // 3c. Compute engagement from Auth data + buildings from Firestore
-        const usersByDomain: Record<string, EngagementCounts> = {};
-        const usersByBuilding: Record<string, EngagementCounts> = {};
-        const usersByDomainAndBuilding: Record<
-          string,
-          Record<string, EngagementCounts>
-        > = {};
-        const totalEngagement: EngagementCounts = {
-          total: 0,
-          monthly: 0,
-          daily: 0,
-        };
+        // 3c. Time constants & helpers (engagement computed after dashboard
+        //     stream so we can use last-edit timestamps instead of last-login)
         const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
         const oneDayMs = 24 * 60 * 60 * 1000;
 
@@ -1900,14 +1963,107 @@ export const adminAnalytics = functionsV1
           if (isDailyActive) bucket[key].daily += 1;
         };
 
-        for (const [uid, { email: userEmail, lastSignInMs }] of authUsersMap) {
+        console.log(
+          '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
+        );
+        // 4. Fetch Dashboards for Widget Stats
+        let totalDashboards = 0;
+        const totalWidgetCounts: Record<string, number> = {};
+        const activeWidgetCounts: Record<string, number> = {};
+        const allDashboardOwnerUids = new Set<string>();
+        let totalWidgetInstances = 0;
+        // Bounded at MAX_WIDGET_USER_TRACK UIDs per type: memory is
+        // O(widget_types × limit) instead of O(widget_types × all_users).
+        // count = Set.size is exact up to the cap; above the cap it means "≥ cap".
+        const MAX_WIDGET_USER_TRACK = 100;
+        const widgetToUserUids: Record<string, Set<string>> = {};
+        const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
+        // Track most recent dashboard edit per user for edit-based DAU/MAU
+        const lastEditByUser = new Map<string, number>();
+
+        const dashboardsStream = db
+          .collectionGroup('dashboards')
+          .select('widgets', 'updatedAt')
+          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+
+        for await (const dashDoc of dashboardsStream) {
+          if (!dashDoc.exists) continue;
+          totalDashboards++;
+          const dashData = dashDoc.data() as DashboardData;
+          const updatedAt =
+            typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
+          const isActive = updatedAt > activeThreshold;
+
+          // Extract owner UID from path: users/{uid}/dashboards/{dashId}
+          const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
+
+          // Skip dashboards owned by anonymous users (not in filtered auth map)
+          if (!ownerUid || !authUsersMap.has(ownerUid)) continue;
+
+          allDashboardOwnerUids.add(ownerUid);
+
+          // Track the most recent edit across all of this user's dashboards
+          const prevEdit = lastEditByUser.get(ownerUid) ?? 0;
+          if (updatedAt > prevEdit) {
+            lastEditByUser.set(ownerUid, updatedAt);
+          }
+
+          const widgetCount = Array.isArray(dashData.widgets)
+            ? dashData.widgets.length
+            : 0;
+          totalWidgetInstances += widgetCount;
+
+          if (dashData.widgets && Array.isArray(dashData.widgets)) {
+            dashData.widgets.forEach((w: { type: string }) => {
+              if (w && w.type) {
+                totalWidgetCounts[w.type] =
+                  (totalWidgetCounts[w.type] || 0) + 1;
+                if (isActive) {
+                  activeWidgetCounts[w.type] =
+                    (activeWidgetCounts[w.type] || 0) + 1;
+                }
+                if (ownerUid) {
+                  if (!widgetToUserUids[w.type]) {
+                    widgetToUserUids[w.type] = new Set<string>();
+                  }
+                  const uidSet = widgetToUserUids[w.type];
+                  // Only grow the Set while under the cap (or if already present)
+                  if (
+                    uidSet.size < MAX_WIDGET_USER_TRACK ||
+                    uidSet.has(ownerUid)
+                  ) {
+                    uidSet.add(ownerUid);
+                  }
+                }
+              }
+            });
+          }
+        }
+
+        console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
+
+        // 4b. Compute engagement using last-edit timestamps (not last-login)
+        //     A user is "active" if they edited a dashboard within the window.
+        const usersByDomain: Record<string, EngagementCounts> = {};
+        const usersByBuilding: Record<string, EngagementCounts> = {};
+        const usersByDomainAndBuilding: Record<
+          string,
+          Record<string, EngagementCounts>
+        > = {};
+        const totalEngagement: EngagementCounts = {
+          total: 0,
+          monthly: 0,
+          daily: 0,
+        };
+
+        for (const [uid, { email: userEmail }] of authUsersMap) {
           const domain = userEmail.includes('@')
             ? userEmail.split('@')[1]
             : 'unknown';
+          const lastEditMs = lastEditByUser.get(uid) ?? 0;
           const isMonthlyActive =
-            lastSignInMs > 0 && now - lastSignInMs <= thirtyDaysMs;
-          const isDailyActive =
-            lastSignInMs > 0 && now - lastSignInMs <= oneDayMs;
+            lastEditMs > 0 && now - lastEditMs <= thirtyDaysMs;
+          const isDailyActive = lastEditMs > 0 && now - lastEditMs <= oneDayMs;
 
           totalEngagement.total += 1;
           if (isMonthlyActive) totalEngagement.monthly += 1;
@@ -1953,88 +2109,21 @@ export const adminAnalytics = functionsV1
           `[getAdminAnalytics] Computed engagement for ${totalUsers} users`
         );
 
-        console.log(
-          '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
-        );
-        // 4. Fetch Dashboards for Widget Stats
-        let totalDashboards = 0;
-        const totalWidgetCounts: Record<string, number> = {};
-        const activeWidgetCounts: Record<string, number> = {};
-        const allDashboardOwnerUids = new Set<string>();
-        let totalWidgetInstances = 0;
-        // Bounded at MAX_WIDGET_USER_TRACK UIDs per type: memory is
-        // O(widget_types × limit) instead of O(widget_types × all_users).
-        // count = Set.size is exact up to the cap; above the cap it means "≥ cap".
-        const MAX_WIDGET_USER_TRACK = 100;
-        const widgetToUserUids: Record<string, Set<string>> = {};
-        const activeThreshold = now - 30 * 24 * 60 * 60 * 1000; // 30 days
-
-        const dashboardsStream = db
-          .collectionGroup('dashboards')
-          .select('widgets', 'updatedAt')
-          .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
-
-        for await (const dashDoc of dashboardsStream) {
-          if (!dashDoc.exists) continue;
-          totalDashboards++;
-          const dashData = dashDoc.data() as DashboardData;
-          const updatedAt =
-            typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
-          const isActive = updatedAt > activeThreshold;
-
-          // Extract owner UID from path: users/{uid}/dashboards/{dashId}
-          const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
-
-          // Skip dashboards owned by anonymous users (not in filtered auth map)
-          if (!ownerUid || !authUsersMap.has(ownerUid)) continue;
-
-          allDashboardOwnerUids.add(ownerUid);
-
-          const widgetCount = Array.isArray(dashData.widgets)
-            ? dashData.widgets.length
-            : 0;
-          totalWidgetInstances += widgetCount;
-
-          if (dashData.widgets && Array.isArray(dashData.widgets)) {
-            dashData.widgets.forEach((w: { type: string }) => {
-              if (w && w.type) {
-                totalWidgetCounts[w.type] =
-                  (totalWidgetCounts[w.type] || 0) + 1;
-                if (isActive) {
-                  activeWidgetCounts[w.type] =
-                    (activeWidgetCounts[w.type] || 0) + 1;
-                }
-                if (ownerUid) {
-                  if (!widgetToUserUids[w.type]) {
-                    widgetToUserUids[w.type] = new Set<string>();
-                  }
-                  const uidSet = widgetToUserUids[w.type];
-                  // Only grow the Set while under the cap (or if already present)
-                  if (
-                    uidSet.size < MAX_WIDGET_USER_TRACK ||
-                    uidSet.has(ownerUid)
-                  ) {
-                    uidSet.add(ownerUid);
-                  }
-                }
-              }
-            });
-          }
-        }
-
-        console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
-
-        // 4b. Build per-user detail list for KPI drilldowns
+        // 4c. Build per-user detail list for KPI drilldowns
         const userList = Array.from(authUsersMap.entries()).map(
-          ([uid, { email: userEmail, lastSignInMs }]) => ({
-            email: userEmail,
-            buildings: buildingsMap.get(uid) ?? [],
-            lastSignInMs,
-            hasDashboard: allDashboardOwnerUids.has(uid),
-            isMonthlyActive:
-              lastSignInMs > 0 && now - lastSignInMs <= thirtyDaysMs,
-            isDailyActive: lastSignInMs > 0 && now - lastSignInMs <= oneDayMs,
-          })
+          ([uid, { email: userEmail, lastSignInMs }]) => {
+            const lastEditMs = lastEditByUser.get(uid) ?? 0;
+            return {
+              email: userEmail,
+              buildings: buildingsMap.get(uid) ?? [],
+              lastSignInMs,
+              lastEditMs,
+              hasDashboard: allDashboardOwnerUids.has(uid),
+              isMonthlyActive:
+                lastEditMs > 0 && now - lastEditMs <= thirtyDaysMs,
+              isDailyActive: lastEditMs > 0 && now - lastEditMs <= oneDayMs,
+            };
+          }
         );
 
         // Auth data was already collected in step 3a – no separate scan needed
@@ -2135,6 +2224,9 @@ export const adminAnalytics = functionsV1
           'smart-poll',
           'embed-mini-app',
           'video-activity-audio-transcription',
+          'quiz',
+          'ocr',
+          'guided-learning',
         ];
 
         const aiUsageStream = db

@@ -62,7 +62,7 @@ export const SortableDashboardItem = React.memo(
       <div
         ref={setNodeRef}
         style={style}
-        className={`group relative flex flex-col p-0 rounded-2xl cursor-pointer transition-all border overflow-hidden ${
+        className={`group relative flex flex-col p-0 rounded-2xl cursor-pointer transition border overflow-hidden ${
           isActive
             ? 'bg-white border-brand-blue-primary shadow-md ring-1 ring-brand-blue-lighter'
             : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm'
@@ -86,7 +86,7 @@ export const SortableDashboardItem = React.memo(
           <div
             {...attributes}
             {...listeners}
-            className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur rounded-lg text-slate-500 hover:text-slate-700 cursor-grab active:cursor-grabbing shadow-sm transition-all"
+            className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur rounded-lg text-slate-500 hover:text-slate-700 cursor-grab active:cursor-grabbing shadow-sm transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="w-4 h-4" />
@@ -123,7 +123,7 @@ export const SortableDashboardItem = React.memo(
                   e.stopPropagation();
                   onSetDefault(db.id);
                 }}
-                className={`p-1.5 rounded-lg transition-all ${
+                className={`p-1.5 rounded-lg transition-colors ${
                   db.isDefault
                     ? 'text-amber-500 bg-amber-50'
                     : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
@@ -139,7 +139,7 @@ export const SortableDashboardItem = React.memo(
                   e.stopPropagation();
                   onRename(db.id, db.name);
                 }}
-                className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+                className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-colors"
                 title="Rename"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -149,7 +149,7 @@ export const SortableDashboardItem = React.memo(
                   e.stopPropagation();
                   onDuplicate(db.id);
                 }}
-                className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+                className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-colors"
                 title="Duplicate"
               >
                 <Copy className="w-3.5 h-3.5" />
@@ -160,7 +160,7 @@ export const SortableDashboardItem = React.memo(
                     e.stopPropagation();
                     onShare(db);
                   }}
-                  className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+                  className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-colors"
                   title="Share"
                 >
                   <Share2 className="w-3.5 h-3.5" />
@@ -172,7 +172,7 @@ export const SortableDashboardItem = React.memo(
                     e.stopPropagation();
                     onSaveAsTemplate();
                   }}
-                  className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+                  className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-colors"
                   title="Save as Template"
                 >
                   <LayoutTemplate className="w-3.5 h-3.5" />
@@ -187,7 +187,7 @@ export const SortableDashboardItem = React.memo(
                   e.stopPropagation();
                   setShowDeleteModal(true);
                 }}
-                className="p-1.5 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all cursor-pointer inline-flex items-center justify-center"
+                className="p-1.5 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
                 title="Delete"
               >
                 <Trash2 className="w-3.5 h-3.5" />

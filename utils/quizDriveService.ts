@@ -2,7 +2,7 @@
  * Quiz Drive Service
  *
  * Handles all Google Drive and Google Sheets API interactions for the quiz widget:
- * - Saving quiz JSON files to Google Drive ("SPART Board/Quizzes/" folder)
+ * - Saving quiz JSON files to Google Drive ("SpartBoard/Quizzes/" folder)
  * - Loading quiz data from Drive
  * - Deleting quiz files from Drive
  * - Importing questions from a Google Sheet (using the Sheets API)
@@ -16,6 +16,7 @@ import {
   QuizResponse,
 } from '../types';
 import { gradeAnswer } from '../hooks/useQuizSession';
+import { APP_NAME } from '../config/constants';
 
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
@@ -29,7 +30,6 @@ const COL_CORRECT_ANSWER = 3;
 const COL_INCORRECT_1 = 4;
 const COL_INCORRECT_4 = 7;
 
-const APP_FOLDER_NAME = 'SPART Board';
 const QUIZ_FOLDER_NAME = 'Quizzes';
 
 /** Escape single quotes in Drive API q-string values (single-quote is the delimiter). */
@@ -112,7 +112,7 @@ export class QuizDriveService {
   }
 
   private async getQuizFolderId(): Promise<string> {
-    const appFolderId = await this.getOrCreateFolder(APP_FOLDER_NAME);
+    const appFolderId = await this.getOrCreateFolder(APP_NAME);
     return this.getOrCreateFolder(QUIZ_FOLDER_NAME, appFolderId);
   }
 
@@ -224,10 +224,10 @@ export class QuizDriveService {
 
   /**
    * Extract the Google Sheet ID from a sheet URL.
-   * Supports both /spreadsheets/d/{id} and /spreadsheets/d/{id}/edit formats.
+   * Supports /spreadsheets/d/{id}, /spreadsheets/u/0/d/{id}, and /edit variants.
    */
   static extractSheetId(url: string): string | null {
-    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    const match = url.match(/\/spreadsheets(?:\/u\/\d+)?\/d\/([a-zA-Z0-9_-]+)/);
     return match ? match[1] : null;
   }
 
@@ -427,55 +427,104 @@ export class QuizDriveService {
   // ─── Results export ─────────────────────────────────────────────────────────
 
   /**
-   * Export quiz results to a new Google Sheet.
-   * Returns the URL of the newly created spreadsheet.
+   * Export quiz results to a Google Sheet.
+   * In solo mode (default), creates a new spreadsheet.
+   * In PLC mode, appends rows to the shared sheet at plcSheetUrl.
+   * Returns the URL of the spreadsheet.
    */
   async exportResultsToSheet(
     quizTitle: string,
     responses: QuizResponse[],
-    questions: QuizQuestion[]
+    questions: QuizQuestion[],
+    options?: {
+      pinToName?: Record<string, string>;
+      teacherName?: string;
+      periodName?: string;
+      plcMode?: boolean;
+      plcSheetUrl?: string;
+    }
   ): Promise<string> {
-    // Build header row
+    const pinToName = options?.pinToName ?? {};
+    const teacherName =
+      (options?.teacherName?.trim() ? options.teacherName.trim() : null) ??
+      'Unknown Teacher';
+    const periodName =
+      (options?.periodName?.trim() ? options.periodName.trim() : null) ??
+      'Unknown Period';
+    const timestamp = new Date().toISOString();
+
+    const resolveStudent = (pin: string): string =>
+      pinToName[pin] ?? `Student (PIN: ${pin})`;
+
+    const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
+
+    // Build header row — question columns show point value
     const headers = [
+      'Timestamp',
+      'Teacher',
+      'Period',
+      'Student',
       'PIN',
       'Status',
       'Score (%)',
+      'Points Earned',
+      'Max Points',
       'Warnings',
       'Submitted At',
-      ...questions.map((q, i) => `Q${i + 1}: ${q.text.substring(0, 40)}`),
+      ...questions.map(
+        (q, i) => `Q${i + 1} (${q.points ?? 1}pt): ${q.text.substring(0, 40)}`
+      ),
     ];
 
-    // Build data rows
+    // Build data rows — answer columns are numeric point values (0 or points)
     const dataRows = responses.map((r) => {
       const submitted = r.submittedAt
         ? new Date(r.submittedAt).toLocaleString()
         : '';
       const warnings = r.tabSwitchWarnings?.toString() ?? '0';
+      const answerMap = new Map(r.answers.map((a) => [a.questionId, a]));
       const answerCols = questions.map((q) => {
-        const ans = r.answers.find((a) => a.questionId === q.id);
+        const ans = answerMap.get(q.id);
         if (!ans) return '';
-        // Re-grade answers authoritatively so forged isCorrect values are ignored.
         const isCorrect = gradeAnswer(q, ans.answer);
-        return `${ans.answer}${isCorrect ? ' ✓' : ' ✗'}`;
+        return isCorrect ? String(q.points ?? 1) : '0';
       });
-      // Re-grade to compute score, ignoring any student-written isCorrect fields.
-      const correct = r.answers.filter((a) => {
-        const q = questions.find((qn) => qn.id === a.questionId);
-        return q ? gradeAnswer(q, a.answer) : false;
-      }).length;
+      const earnedPoints = questions.reduce((sum, q) => {
+        const ans = answerMap.get(q.id);
+        if (!ans) return sum;
+        return sum + (gradeAnswer(q, ans.answer) ? (q.points ?? 1) : 0);
+      }, 0);
       const scoreDisplay =
-        r.status === 'completed' && questions.length > 0
-          ? `${Math.round((correct / questions.length) * 100)}%`
+        r.status === 'completed' && maxPoints > 0
+          ? `${Math.round((earnedPoints / maxPoints) * 100)}%`
           : '';
       return [
+        timestamp,
+        teacherName,
+        periodName,
+        resolveStudent(r.pin),
         r.pin,
         r.status,
         scoreDisplay,
+        String(earnedPoints),
+        String(maxPoints),
         warnings,
         submitted,
         ...answerCols,
       ];
     });
+
+    // PLC mode: append to existing shared sheet
+    if (options?.plcMode) {
+      if (!options.plcSheetUrl) {
+        throw new Error(
+          'No shared sheet URL configured. Please add one in Quiz settings.'
+        );
+      }
+      return this.appendToExistingSheet(options.plcSheetUrl, headers, dataRows);
+    }
+
+    // Solo mode: create a new spreadsheet with full results + stats
 
     // Question-level stats
     const statsRows: string[][] = [];
@@ -484,6 +533,7 @@ export class QuizDriveService {
     statsRows.push([
       'Question',
       'Type',
+      'Points',
       'Correct Answer',
       '# Correct',
       '# Answered',
@@ -500,6 +550,7 @@ export class QuizDriveService {
       statsRows.push([
         q.text.substring(0, 60),
         q.type,
+        String(q.points ?? 1),
         q.correctAnswer.substring(0, 40),
         String(correct),
         String(answered),
@@ -510,32 +561,29 @@ export class QuizDriveService {
     const allRows = [headers, ...dataRows, ...statsRows];
 
     // Create the spreadsheet
-    const createRes = await fetch(
-      'https://sheets.googleapis.com/v4/spreadsheets',
-      {
-        method: 'POST',
-        headers: this.jsonHeaders,
-        body: JSON.stringify({
-          properties: { title: `${quizTitle} – Results` },
-          sheets: [
-            {
-              properties: { title: 'Results' },
-              data: [
-                {
-                  startRow: 0,
-                  startColumn: 0,
-                  rowData: allRows.map((row) => ({
-                    values: row.map((cell) => ({
-                      userEnteredValue: { stringValue: cell },
-                    })),
+    const createRes = await fetch(SHEETS_API_URL, {
+      method: 'POST',
+      headers: this.jsonHeaders,
+      body: JSON.stringify({
+        properties: { title: `${quizTitle} – Results` },
+        sheets: [
+          {
+            properties: { title: 'Results' },
+            data: [
+              {
+                startRow: 0,
+                startColumn: 0,
+                rowData: allRows.map((row) => ({
+                  values: row.map((cell) => ({
+                    userEnteredValue: { stringValue: cell },
                   })),
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+                })),
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
     if (!createRes.ok) {
       const err = await createRes.text();
@@ -545,6 +593,84 @@ export class QuizDriveService {
 
     const sheet = (await createRes.json()) as { spreadsheetUrl: string };
     return sheet.spreadsheetUrl;
+  }
+
+  /**
+   * Append rows to an existing Google Sheet (used for PLC mode).
+   * If the sheet is empty, writes headers first, then appends data rows.
+   * If the sheet already has data, appends only data rows (skips headers).
+   */
+  private async appendToExistingSheet(
+    sheetUrl: string,
+    headers: string[],
+    dataRows: string[][]
+  ): Promise<string> {
+    const spreadsheetId = QuizDriveService.extractSheetId(sheetUrl);
+    if (!spreadsheetId) throw new Error('Invalid Google Sheets URL');
+
+    // Discover the first sheet's actual title (handles renamed tabs)
+    let sheetTitle = 'Sheet1';
+    try {
+      const metaRes = await fetch(
+        `${SHEETS_API_URL}/${spreadsheetId}?fields=sheets.properties.title`,
+        { headers: this.authHeaders }
+      );
+      if (metaRes.ok) {
+        const meta = (await metaRes.json()) as {
+          sheets?: { properties?: { title?: string } }[];
+        };
+        const firstTitle = meta.sheets?.[0]?.properties?.title;
+        if (firstTitle) sheetTitle = firstTitle;
+      }
+    } catch {
+      // Fall back to 'Sheet1' if metadata lookup fails
+    }
+
+    const encodedTitle = encodeURIComponent(sheetTitle);
+
+    // Check if sheet already has content by reading A1
+    const checkRes = await fetch(
+      `${SHEETS_API_URL}/${spreadsheetId}/values/${encodedTitle}!A1`,
+      { headers: this.authHeaders }
+    );
+
+    if (!checkRes.ok) {
+      const err = await checkRes.text();
+      console.error('Sheets read error:', err);
+      throw new Error(
+        'Failed to access the shared sheet. Check that the URL is correct and the sheet is shared with you.'
+      );
+    }
+
+    const checkData = (await checkRes.json()) as {
+      values?: string[][];
+    };
+    const sheetIsEmpty = !checkData.values || checkData.values.length === 0;
+
+    // Build rows to append: include headers if sheet is empty
+    const rowsToAppend = sheetIsEmpty ? [headers, ...dataRows] : dataRows;
+
+    // Append via Sheets API
+    const appendRes = await fetch(
+      `${SHEETS_API_URL}/${spreadsheetId}/values/${encodedTitle}!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+      {
+        method: 'POST',
+        headers: this.jsonHeaders,
+        body: JSON.stringify({
+          values: rowsToAppend,
+        }),
+      }
+    );
+
+    if (!appendRes.ok) {
+      const err = await appendRes.text();
+      console.error('Sheets append error:', err);
+      throw new Error(
+        'Failed to append results to the shared sheet. Check your permissions.'
+      );
+    }
+
+    return `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
   }
 
   /**
@@ -597,6 +723,119 @@ export class QuizDriveService {
       const err = await createRes.text();
       console.error('Sheets create template error:', err);
       throw new Error('Failed to create template spreadsheet');
+    }
+
+    const sheet = (await createRes.json()) as { spreadsheetUrl: string };
+    return sheet.spreadsheetUrl;
+  }
+
+  // ─── Quiz template ──────────────────────────────────────────────────────────
+
+  private static readonly QUIZ_TEMPLATE_HEADERS = [
+    'Time Limit (seconds)',
+    'Question Text',
+    'Type',
+    'Correct Answer',
+    'Incorrect 1',
+    'Incorrect 2',
+    'Incorrect 3',
+    'Incorrect 4',
+  ];
+
+  private static readonly QUIZ_TEMPLATE_EXAMPLES = [
+    [
+      '30',
+      'What is the capital of France?',
+      'MC',
+      'Paris',
+      'London',
+      'Berlin',
+      'Madrid',
+      'Rome',
+    ],
+    [
+      '20',
+      'The powerhouse of the cell is the ___.',
+      'FIB',
+      'mitochondria',
+      '',
+      '',
+      '',
+      '',
+    ],
+    [
+      '45',
+      'Match the country to its capital.',
+      'Matching',
+      'France:Paris|Germany:Berlin|Japan:Tokyo',
+      '',
+      '',
+      '',
+      '',
+    ],
+    [
+      '40',
+      'Put these events in chronological order.',
+      'Ordering',
+      'Declaration of Independence|Civil War|World War I|Moon Landing',
+      '',
+      '',
+      '',
+      '',
+    ],
+  ];
+
+  /**
+   * Return a TSV string of the quiz import template (headers + example rows).
+   * Static — no auth or Drive access needed. Suitable for clipboard copy.
+   */
+  static getQuizTemplateTSV(): string {
+    return [
+      QuizDriveService.QUIZ_TEMPLATE_HEADERS,
+      ...QuizDriveService.QUIZ_TEMPLATE_EXAMPLES,
+    ]
+      .map((row) => row.join('\t'))
+      .join('\n');
+  }
+
+  /**
+   * Create a template Google Sheet for quiz imports in the user's Drive.
+   * Returns the URL of the newly created spreadsheet.
+   */
+  async createQuizTemplate(): Promise<string> {
+    const allRows = [
+      QuizDriveService.QUIZ_TEMPLATE_HEADERS,
+      ...QuizDriveService.QUIZ_TEMPLATE_EXAMPLES,
+    ];
+
+    const createRes = await fetch(SHEETS_API_URL, {
+      method: 'POST',
+      headers: this.jsonHeaders,
+      body: JSON.stringify({
+        properties: { title: 'Quiz Import Template' },
+        sheets: [
+          {
+            properties: { title: 'Quiz Template' },
+            data: [
+              {
+                startRow: 0,
+                startColumn: 0,
+                rowData: allRows.map((row) => ({
+                  values: row.map((cell) => ({
+                    userEnteredValue: { stringValue: cell },
+                  })),
+                })),
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!createRes.ok) {
+      const err = await createRes.text();
+      console.error('Sheets create quiz template error:', err);
+      throw new Error('Failed to create quiz template spreadsheet');
     }
 
     const sheet = (await createRes.json()) as { spreadsheetUrl: string };

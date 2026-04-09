@@ -136,7 +136,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
           style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           <div
-            className="bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] text-indigo-900 animate-bounce text-center max-w-[90%]"
+            className="bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] text-indigo-900 animate-pulse text-center max-w-[90%]"
             style={{
               fontSize:
                 typeof resultFontSize === 'number'

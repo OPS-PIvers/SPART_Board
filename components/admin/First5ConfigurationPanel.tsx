@@ -1,43 +1,10 @@
 import React from 'react';
 import { First5GlobalConfig } from '@/types';
+import { computeCurrentDayNumber } from '@/utils/first5';
 
 interface First5ConfigurationPanelProps {
   config: First5GlobalConfig;
   onChange: (newConfig: First5GlobalConfig) => void;
-}
-
-/**
- * Counts weekdays (Mon–Fri) between two dates, excluding start, including end.
- * Returns positive if end > start, negative if end < start.
- */
-function countWeekdaysBetween(start: Date, end: Date): number {
-  const startMs = start.getTime();
-  const endMs = end.getTime();
-  const sign = endMs >= startMs ? 1 : -1;
-  const [from, to] = sign === 1 ? [start, end] : [end, start];
-
-  let count = 0;
-  const cursor = new Date(from);
-  cursor.setDate(cursor.getDate() + 1);
-  while (cursor <= to) {
-    const day = cursor.getDay();
-    if (day !== 0 && day !== 6) count++;
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return count * sign;
-}
-
-function stripTime(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function computeTodaysDayNumber(
-  activeDayNumber: number,
-  referenceDate: string
-): number {
-  const ref = stripTime(new Date(referenceDate + 'T00:00:00'));
-  const today = stripTime(new Date());
-  return activeDayNumber + countWeekdaysBetween(ref, today);
 }
 
 export const First5ConfigurationPanel: React.FC<
@@ -48,18 +15,23 @@ export const First5ConfigurationPanel: React.FC<
 
   const todaysDayNumber =
     activeDayNumber && referenceDate
-      ? computeTodaysDayNumber(activeDayNumber, referenceDate)
+      ? computeCurrentDayNumber(activeDayNumber, referenceDate)
       : null;
 
-  const todayISO = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const localTodayISO = new Date(
+    now.getTime() - now.getTimezoneOffset() * 60000
+  )
+    .toISOString()
+    .split('T')[0];
 
   const handleDayNumberChange = (value: string) => {
     const num = parseInt(value, 10);
     if (!isNaN(num)) {
       onChange({
         ...config,
-        activeDayNumber: num,
-        referenceDate: todayISO,
+        activeDayNumber: Math.max(1, num),
+        referenceDate: localTodayISO,
       });
     }
   };
@@ -68,8 +40,8 @@ export const First5ConfigurationPanel: React.FC<
     if (todaysDayNumber !== null) {
       onChange({
         ...config,
-        activeDayNumber: todaysDayNumber,
-        referenceDate: todayISO,
+        activeDayNumber: Math.max(1, todaysDayNumber),
+        referenceDate: localTodayISO,
       });
     }
   };
@@ -87,12 +59,13 @@ export const First5ConfigurationPanel: React.FC<
           <input
             id="first5-day-number"
             type="number"
+            min="1"
             value={todaysDayNumber ?? (activeDayNumber || '')}
             onChange={(e) => handleDayNumberChange(e.target.value)}
             placeholder="e.g. 777"
-            className="w-32 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            className="w-32 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue-primary outline-none text-sm"
           />
-          {referenceDate && referenceDate !== todayISO && (
+          {referenceDate && referenceDate !== localTodayISO && (
             <button
               type="button"
               onClick={handleResetToToday}
@@ -119,7 +92,7 @@ export const First5ConfigurationPanel: React.FC<
         </div>
       )}
 
-      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mt-4">
         <p className="text-xs text-amber-700">
           URL pattern:{' '}
           <code className="bg-amber-100 px-1 rounded">

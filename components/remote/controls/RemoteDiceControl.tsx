@@ -143,7 +143,7 @@ export const RemoteDiceControl: React.FC<RemoteDiceControlProps> = ({
         {values.slice(0, count).map((v, i) => (
           <div
             key={i}
-            className={`transition-transform ${isRolling ? 'animate-bounce' : ''}`}
+            className={`transition-transform ${isRolling ? 'animate-pulse' : ''}`}
           >
             <DieFace value={v} size={count <= 2 ? 100 : count <= 4 ? 80 : 64} />
           </div>

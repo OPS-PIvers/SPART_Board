@@ -136,7 +136,7 @@ export const RotationHandle: React.FC<RotationHandleProps> = ({
         style={{ right: '22px', bottom: '2px', whiteSpace: 'nowrap' }}
       >
         <span
-          className="bg-indigo-600 text-white font-black rounded px-1 py-0.5 shadow"
+          className="bg-brand-blue-primary text-white font-black rounded px-1 py-0.5 shadow"
           style={{ fontSize: 'min(9px, 3cqmin)' }}
         >
           {displayRotation}°
@@ -146,7 +146,7 @@ export const RotationHandle: React.FC<RotationHandleProps> = ({
       {/* Circular grip — <button> for keyboard focus and accessibility */}
       <button
         type="button"
-        className="pointer-events-auto rounded-full bg-white border-2 border-indigo-500 shadow-md flex items-center justify-center select-none"
+        className="pointer-events-auto rounded-full bg-white border-2 border-brand-blue-primary shadow-md flex items-center justify-center select-none"
         style={{
           cursor: isActive ? 'grabbing' : 'grab',
           width: 'clamp(16px, 5cqmin, 20px)',
@@ -164,7 +164,7 @@ export const RotationHandle: React.FC<RotationHandleProps> = ({
         <svg
           viewBox="0 0 10 10"
           fill="none"
-          className="text-indigo-500"
+          className="text-brand-blue-primary"
           style={{
             width: 'min(10px, 2.5cqmin)',
             height: 'min(10px, 2.5cqmin)',

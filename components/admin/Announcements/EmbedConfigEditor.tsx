@@ -17,6 +17,7 @@ import { convertToEmbedUrl } from '@/utils/urlHelpers';
 import { EmbedTab } from './types';
 
 import { EmbedConfig } from '@/types';
+import { Toggle } from '@/components/common/Toggle';
 
 export const EmbedConfigEditor: React.FC<{
   config: Partial<EmbedConfig>;
@@ -30,7 +31,8 @@ export const EmbedConfigEditor: React.FC<{
   const { addToast } = useDashboard();
 
   // Keep raw URL in local state so the input remains editable while typing.
-  // The converted (embeddable) URL is only written to config on blur.
+  // The converted (embeddable) URL is flushed to config on blur (applyUrl)
+  // or when switching tabs (setTab), avoiding a useEffect sync loop.
   const [rawUrl, setRawUrl] = useState(config.url ?? '');
   const [copied, setCopied] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -53,20 +55,11 @@ export const EmbedConfigEditor: React.FC<{
   const embedUrl = convertToEmbedUrl(rawUrl);
   const wasConverted = rawUrl.trim() !== '' && embedUrl !== rawUrl.trim();
 
-  // Keep config.url in sync with the latest rawUrl so saves never see a stale URL.
-  useEffect(() => {
-    if (config.mode === 'code') return;
-    const finalUrl = embedUrl || rawUrl.trim();
-    const currentUrl = config.url ?? '';
-    if (finalUrl !== currentUrl) {
-      onChange({ ...config, url: finalUrl });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.mode, config.url, embedUrl, rawUrl, onChange]);
-
   const applyUrl = () => {
     const finalUrl = embedUrl || rawUrl.trim();
-    onChange({ ...config, url: finalUrl });
+    if (finalUrl !== config.url) {
+      onChange({ ...config, url: finalUrl });
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -137,11 +130,22 @@ export const EmbedConfigEditor: React.FC<{
 
   const setTab = (tab: EmbedTab) => {
     setActiveTab(tab);
-    if (tab === 'url' || tab === 'code') {
-      onChange({ ...config, mode: tab });
-    } else if (tab === 'live' && config.mode !== 'url') {
-      onChange({ ...config, mode: 'url' });
+
+    // Flush any pending URL edit when switching tabs
+    const finalUrl = embedUrl || rawUrl.trim();
+    const newConfig: Partial<EmbedConfig> = { ...config };
+
+    if (finalUrl !== config.url) {
+      newConfig.url = finalUrl;
     }
+
+    if (tab === 'url' || tab === 'code') {
+      newConfig.mode = tab;
+    } else if (tab === 'live' && config.mode !== 'url') {
+      newConfig.mode = 'url';
+    }
+
+    onChange(newConfig);
   };
 
   const TABS: { id: EmbedTab; label: string; icon: React.ReactNode }[] = [
@@ -414,6 +418,24 @@ export const EmbedConfigEditor: React.FC<{
           </p>
         </div>
       )}
+
+      {/* Auto-play toggle */}
+      <div className="flex items-center gap-3 pt-3 border-t border-slate-200">
+        <Toggle
+          checked={config.autoplay ?? false}
+          onChange={(v) => onChange({ ...config, autoplay: v })}
+        />
+        <div>
+          <div className="text-sm font-medium text-slate-700">
+            Auto-play video
+          </div>
+          <div className="text-xs text-slate-500">
+            Video will attempt to play automatically when this announcement
+            activates. Works reliably with YouTube; best-effort for Google
+            Drive.
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

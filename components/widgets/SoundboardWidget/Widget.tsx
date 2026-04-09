@@ -10,7 +10,12 @@ import { useDashboard } from '@/context/useDashboard';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Volume2, Music } from 'lucide-react';
-import { normalizeSoundboardAudioUrl } from '@/utils/soundboardAudioUrl';
+import {
+  normalizeSoundboardAudioUrl,
+  isDriveUrl,
+  extractDriveAudioFileId,
+  fetchDriveAudioBlobUrl,
+} from '@/utils/soundboardAudioUrl';
 import { getAvailableSoundboardSounds } from '@/utils/soundboardConfig';
 
 // ─── Web Audio API synthesis ─────────────────────────────────────────────────
@@ -203,7 +208,8 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as SoundboardConfig;
   const { selectedSoundIds = [], activeSoundIds } = config;
 
-  const { featurePermissions, selectedBuildings } = useAuth();
+  const { featurePermissions, selectedBuildings, googleAccessToken } =
+    useAuth();
   const { updateWidget, selectedWidgetId } = useDashboard();
   const isFocused = selectedWidgetId === widget.id;
   const buildingId = selectedBuildings.length > 0 ? selectedBuildings[0] : null;
@@ -277,8 +283,39 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
   const playSound = (sound: SoundboardSound) => {
     if (sound.synthesized) {
       playSynthesizedSound(sound.id);
+      return;
+    }
+
+    const url = sound.url;
+    const driveFileId = isDriveUrl(url) ? extractDriveAudioFileId(url) : null;
+
+    if (driveFileId && googleAccessToken) {
+      void fetchDriveAudioBlobUrl(driveFileId, googleAccessToken)
+        .then((blobUrl) => {
+          const audio = new Audio(blobUrl);
+          audio.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), {
+            once: true,
+          });
+          audio.addEventListener('error', () => URL.revokeObjectURL(blobUrl), {
+            once: true,
+          });
+          void audio.play().catch((err: unknown) => {
+            URL.revokeObjectURL(blobUrl);
+            console.error(
+              `[Soundboard] Failed to play sound ${sound.id}:`,
+              err
+            );
+          });
+        })
+        .catch((err: unknown) => {
+          console.error(
+            `[Soundboard] Failed to fetch Drive audio ${sound.id}:`,
+            err
+          );
+        });
     } else {
-      const audio = new Audio(normalizeSoundboardAudioUrl(sound.url));
+      // Non-Drive URL, or no token available — fall back to direct URL.
+      const audio = new Audio(normalizeSoundboardAudioUrl(url));
       void audio.play().catch((err: unknown) => {
         console.error(`[Soundboard] Failed to play sound ${sound.id}:`, err);
       });

@@ -60,7 +60,7 @@ export const MagicInput = <T,>({
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="relative flex items-center">
-        <div className="absolute left-3 text-indigo-500 pointer-events-none">
+        <div className="absolute left-3 text-brand-blue-primary pointer-events-none">
           <Sparkles size={16} />
         </div>
         <input
@@ -70,12 +70,12 @@ export const MagicInput = <T,>({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isLoading}
-          className="w-full pl-9 pr-24 py-2.5 text-sm bg-indigo-50/50 border border-indigo-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-indigo-300 text-slate-700"
+          className="w-full pl-9 pr-24 py-2.5 text-sm bg-brand-blue-lighter/50 border border-brand-blue-lighter rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue-primary/50 focus:border-brand-blue-primary transition-[border-color,box-shadow] placeholder:text-brand-blue-light text-slate-700"
         />
         <button
           onClick={handleGenerate}
           disabled={isLoading || !prompt.trim()}
-          className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"
+          className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-brand-blue-primary hover:bg-brand-blue-dark disabled:bg-brand-blue-light text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"
         >
           {isLoading ? (
             <Loader2 size={12} className="animate-spin" />

@@ -38,6 +38,14 @@ vi.mock('@/hooks/useLiveSession', () => ({
   useLiveSession: vi.fn(),
 }));
 
+vi.mock('@/hooks/useQuiz', () => ({
+  useQuiz: vi.fn().mockReturnValue({
+    importSharedQuiz: vi.fn().mockResolvedValue(undefined),
+    shareQuiz: vi.fn().mockResolvedValue(''),
+    createQuizTemplate: vi.fn().mockResolvedValue(''),
+  }),
+}));
+
 vi.mock('@use-gesture/react', () => ({
   useGesture: mockUseGesture,
 }));
@@ -259,7 +267,6 @@ describe('DashboardView Gestures & Navigation', () => {
     expect(mockAddWidget).toHaveBeenCalledWith(
       'sticker',
       expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           icon: undefined,
           url: 'https://example.com/custom-sticker.png',
@@ -298,7 +305,6 @@ describe('DashboardView Gestures & Navigation', () => {
     expect(mockAddWidget).toHaveBeenCalledWith(
       'sticker',
       expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           icon: 'Share2',
           url: undefined,
@@ -342,7 +348,6 @@ describe('DashboardView Gestures & Navigation', () => {
         y: 500 - 100 / 2, // 450
         w: 200,
         h: 100,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           url: 'https://example.com/sticker.png',
           rotation: 0,
@@ -383,7 +388,6 @@ describe('DashboardView Gestures & Navigation', () => {
         y: 500 - 200 / 2, // 400
         w: 200,
         h: 200,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           url: 'https://example.com/sticker2.png',
           rotation: 0,
@@ -424,7 +428,6 @@ describe('DashboardView Gestures & Navigation', () => {
         y: 500 - 200 / 2, // 400
         w: 200,
         h: 200,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           url: 'https://example.com/sticker3.png',
           rotation: 0,

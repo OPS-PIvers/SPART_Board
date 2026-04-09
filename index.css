@@ -131,3 +131,35 @@ body.is-dragging-widget video {
 .perspective-1000 {
   perspective: 1000px;
 }
+
+/* WCAG 2.5.8 — Minimum 44×44px touch target for small interactive elements.
+   Applied via ::after to expand the hit area without affecting visual layout.
+   The element must already be positioned (relative, absolute, etc.). */
+.touch-target-expand::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  min-width: 44px;
+  min-height: 44px;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+}
+
+/* Respect reduced motion preferences (WCAG 2.1 SC 2.3.3).
+   Only suppress decorative/looping animations — preserve functional
+   transitions (color, opacity, position) and entrance animations. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin,
+  .animate-spin-slow,
+  .animate-pulse,
+  .animate-jiggle,
+  .animate-shimmer,
+  .animate-marquee {
+    animation: none !important;
+  }
+
+  * {
+    scroll-behavior: auto !important;
+  }
+}

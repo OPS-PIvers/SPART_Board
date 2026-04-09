@@ -886,7 +886,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           ref={canvasRef}
           data-no-drag="true"
-          className="flex-1 relative bg-white overflow-hidden"
+          className="flex-1 relative bg-white/90 overflow-hidden"
           onPointerDown={handleCanvasPointerDown}
           onClick={handleCanvasClick}
           style={{

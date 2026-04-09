@@ -136,7 +136,7 @@ export const AlgebraTilesTool: React.FC = () => {
           Expression:
         </span>
         <span
-          className="font-mono font-bold text-indigo-700 tabular-nums"
+          className="font-mono font-bold text-brand-blue-dark tabular-nums"
           style={{ fontSize: 'min(14px, 4cqmin)' }}
         >
           {expr}
@@ -167,7 +167,7 @@ export const AlgebraTilesTool: React.FC = () => {
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 overflow-x-auto custom-scrollbar rounded-xl border border-slate-100 bg-white shadow-inner shadow-slate-50">
+      <div className="flex-1 overflow-x-auto custom-scrollbar rounded-xl border border-slate-100 bg-white/90 shadow-inner shadow-slate-50">
         <svg
           width={CANVAS_W}
           height={CANVAS_H}

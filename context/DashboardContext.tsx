@@ -116,14 +116,32 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const [pendingShareId, setPendingShareId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const path = window.location.pathname;
+    // Skip quiz share URLs — those are handled separately
+    if (path.startsWith('/share/quiz/')) return null;
     if (path.startsWith('/share/')) {
       return path.split('/share/')[1] || null;
     }
     return null;
   });
 
+  const [pendingQuizShareId, setPendingQuizShareId] = useState<string | null>(
+    () => {
+      if (typeof window === 'undefined') return null;
+      const path = window.location.pathname;
+      if (path.startsWith('/share/quiz/')) {
+        return path.split('/share/quiz/')[1] || null;
+      }
+      return null;
+    }
+  );
+
   const clearPendingShare = useCallback(() => {
     setPendingShareId(null);
+    window.history.replaceState(null, '', '/');
+  }, []);
+
+  const clearPendingQuizShare = useCallback(() => {
+    setPendingQuizShareId(null);
     window.history.replaceState(null, '', '/');
   }, []);
 
@@ -1094,11 +1112,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
-      saveDashboard({
-        ...active,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-      })
+      saveDashboard(active)
         .then(() => {
           lastSavedDataRef.current = savedData;
           lastSavedFieldsRef.current = savedFields;
@@ -1685,7 +1699,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const createNewDashboard = useCallback(
-    (name: string, data?: Dashboard) => {
+    async (name: string, data?: Dashboard) => {
       if (!user) {
         addToast('Must be signed in to create dashboard', 'error');
         return;
@@ -1707,20 +1721,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             order: maxOrder + 1,
           };
 
-      saveDashboard(newDb)
-        .then(() => {
-          updateActiveId(newDb.id);
-          addToast(`Dashboard "${name}" ready`);
-        })
-        .catch((err) => {
-          console.error('Failed to create dashboard:', err);
-          addToast('Failed to create dashboard', 'error');
-        });
+      try {
+        await saveDashboard(newDb);
+        updateActiveId(newDb.id);
+        addToast(`Dashboard "${name}" ready`);
+      } catch (err) {
+        console.error('Failed to create dashboard:', err);
+        addToast('Failed to create dashboard', 'error');
+      }
     },
     [user, dashboards, saveDashboard, addToast, updateActiveId]
   );
 
-  const saveCurrentDashboard = useCallback(() => {
+  const saveCurrentDashboard = useCallback(async () => {
     if (!user) {
       addToast('Must be signed in to save', 'error');
       return;
@@ -1728,36 +1741,34 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const active = dashboards.find((d) => d.id === activeId);
     if (active) {
-      saveDashboard(active)
-        .then(() => {
-          addToast('All changes saved to cloud', 'success');
-        })
-        .catch((err) => {
-          console.error('Save failed:', err);
-          addToast('Save failed', 'error');
-        });
+      try {
+        await saveDashboard(active);
+        addToast('All changes saved to cloud', 'success');
+      } catch (err) {
+        console.error('Save failed:', err);
+        addToast('Save failed', 'error');
+      }
     }
   }, [user, dashboards, activeId, saveDashboard, addToast]);
 
   const deleteDashboard = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (!user) {
         addToast('Must be signed in to delete', 'error');
         return;
       }
 
-      handleDeleteDashboard(id)
-        .then(() => {
-          if (activeId === id) {
-            const filtered = dashboards.filter((d) => d.id !== id);
-            updateActiveId(filtered.length > 0 ? filtered[0].id : null);
-          }
-          addToast('Dashboard removed');
-        })
-        .catch((err) => {
-          console.error('Delete failed:', err);
-          addToast('Delete failed', 'error');
-        });
+      try {
+        await handleDeleteDashboard(id);
+        if (activeId === id) {
+          const filtered = dashboards.filter((d) => d.id !== id);
+          updateActiveId(filtered.length > 0 ? filtered[0].id : null);
+        }
+        addToast('Dashboard removed');
+      } catch (err) {
+        console.error('Delete failed:', err);
+        addToast('Delete failed', 'error');
+      }
     },
     [
       user,
@@ -1770,7 +1781,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const duplicateDashboard = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (!user) {
         addToast('Must be signed in to duplicate', 'error');
         return;
@@ -1793,20 +1804,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         order: maxOrder + 1,
       };
 
-      saveDashboard(duplicated)
-        .then(() => {
-          addToast(`Board "${dashboard.name}" duplicated`);
-        })
-        .catch((err) => {
-          console.error('Duplicate failed:', err);
-          addToast('Duplicate failed', 'error');
-        });
+      try {
+        await saveDashboard(duplicated);
+        addToast(`Board "${dashboard.name}" duplicated`);
+      } catch (err) {
+        console.error('Duplicate failed:', err);
+        addToast('Duplicate failed', 'error');
+      }
     },
     [user, dashboards, saveDashboard, addToast]
   );
 
   const renameDashboard = useCallback(
-    (id: string, name: string) => {
+    async (id: string, name: string) => {
       if (!user) {
         addToast('Must be signed in to rename', 'error');
         return;
@@ -1825,24 +1835,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         lastUpdateWasSettingsOnly.current = false;
       }
 
-      saveDashboard(updated)
-        .then(() => {
-          addToast('Dashboard renamed');
-        })
-        .catch((err) => {
-          console.error('Rename failed:', err);
-          addToast('Rename failed', 'error');
-          // Revert
-          setDashboards((prev) =>
-            prev.map((d) => (d.id === id ? dashboard : d))
-          );
-        });
+      try {
+        await saveDashboard(updated);
+        addToast('Dashboard renamed');
+      } catch (err) {
+        console.error('Rename failed:', err);
+        addToast('Rename failed', 'error');
+        // Revert
+        setDashboards((prev) => prev.map((d) => (d.id === id ? dashboard : d)));
+      }
     },
     [user, dashboards, activeId, saveDashboard, addToast]
   );
 
   const reorderDashboards = useCallback(
-    (ids: string[]) => {
+    async (ids: string[]) => {
       if (!user) return;
 
       const updatedDashboards: Dashboard[] = [];
@@ -1871,9 +1878,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Save to Firestore
-      void saveDashboards(updatedDashboards).catch((err) => {
+      try {
+        await saveDashboards(updatedDashboards);
+      } catch (err) {
         console.error('Failed to save reordered dashboards:', err);
-      });
+      }
     },
     [user, dashboards, saveDashboards]
   );
@@ -2496,6 +2505,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!activeIdRef.current) return;
       lastLocalUpdateAt.current = Date.now();
       lastUpdateWasSettingsOnly.current = false;
+
+      // Track whether this update changes widget position/size so we can
+      // stamp the current viewport dimensions — ensuring the saved viewport
+      // always matches the viewport where widget layout was actually set.
+      const isLayoutChange =
+        'x' in updates || 'y' in updates || 'w' in updates || 'h' in updates;
+
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeIdRef.current) return d;
@@ -2537,6 +2553,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           return {
             ...d,
             widgets: newWidgets,
+            ...(isLayoutChange
+              ? {
+                  viewportWidth: window.innerWidth,
+                  viewportHeight: window.innerHeight,
+                }
+              : {}),
           };
         })
       );
@@ -2828,6 +2850,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       loadSharedDashboard: handleLoadSharedDashboard,
       pendingShareId,
       clearPendingShare,
+      pendingQuizShareId,
+      clearPendingQuizShare,
       zoom,
       setZoom,
     }),
@@ -2896,6 +2920,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       handleLoadSharedDashboard,
       pendingShareId,
       clearPendingShare,
+      pendingQuizShareId,
+      clearPendingQuizShare,
       zoom,
       setZoom,
     ]

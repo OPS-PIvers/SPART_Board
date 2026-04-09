@@ -4,9 +4,14 @@ import { useGesture } from '@use-gesture/react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '@/context/useDashboard';
 import { useDialog } from '@/context/useDialog';
-import { isExternalBackground } from '@/utils/backgrounds';
+import {
+  isExternalBackground,
+  isCustomBackground,
+  getCustomBackgroundStyle,
+} from '@/utils/backgrounds';
 import { useAuth } from '@/context/useAuth';
 import { useLiveSession } from '@/hooks/useLiveSession';
+import { useQuiz } from '@/hooks/useQuiz';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
@@ -41,6 +46,9 @@ const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
     <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
       className="fixed z-toast space-y-3 pointer-events-none"
       style={{
         top: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
@@ -83,6 +91,7 @@ const ToastContainer: React.FC = () => {
         return (
           <div
             key={toast.id}
+            role={toast.type === 'error' ? 'alert' : undefined}
             onClick={() => removeToast(toast.id)}
             className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border pointer-events-auto cursor-pointer animate-in slide-in-from-right duration-300 ${getStyles()}`}
           >
@@ -96,7 +105,7 @@ const ToastContainer: React.FC = () => {
                     toast.action?.onClick();
                     removeToast(toast.id);
                   }}
-                  className="w-fit px-2 py-1 bg-black/5 hover:bg-black/10 rounded-lg text-xxs font-black uppercase tracking-widest transition-all"
+                  className="w-fit px-2 py-1 bg-black/5 hover:bg-black/10 rounded-lg text-xxs font-black uppercase tracking-widest transition-colors"
                 >
                   {toast.action.label}
                 </button>
@@ -131,7 +140,39 @@ export const DashboardView: React.FC = () => {
     updateDashboard,
     zoom,
     setZoom,
+    pendingQuizShareId,
+    clearPendingQuizShare,
   } = useDashboard();
+
+  const { importSharedQuiz } = useQuiz(user?.uid);
+
+  // Handle pending quiz share import from URL
+  useEffect(() => {
+    if (!pendingQuizShareId || !user) return;
+    void importSharedQuiz(pendingQuizShareId)
+      .then(() => addToast('Shared quiz imported to your library!', 'success'))
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : '';
+        addToast(
+          msg
+            ? `Failed to import shared quiz: ${msg}`
+            : 'Failed to import shared quiz.',
+          'error'
+        );
+      })
+      .finally(() => clearPendingQuizShare());
+  }, [
+    pendingQuizShareId,
+    user,
+    importSharedQuiz,
+    addToast,
+    clearPendingQuizShare,
+  ]);
 
   const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 });
 
@@ -251,7 +292,10 @@ export const DashboardView: React.FC = () => {
     if (scaledDashboardIdsRef.current.has(id)) return;
     scaledDashboardIdsRef.current.add(id);
 
-    if (!savedW || !savedH || !widgets.length) return;
+    // Skip scaling if saved viewport is missing or unreasonably small
+    // (< 300px is almost certainly a corrupted value).
+    if (!savedW || !savedH || savedW < 300 || savedH < 300 || !widgets.length)
+      return;
 
     const currentW = window.innerWidth;
     const currentH = window.innerHeight;
@@ -260,16 +304,32 @@ export const DashboardView: React.FC = () => {
     const diffY = Math.abs(currentH - savedH) / savedH;
     if (diffX < 0.05 && diffY < 0.05) return; // Same screen (~5% tolerance)
 
-    const scaleX = currentW / savedW;
-    const scaleY = currentH / savedH;
+    const MAX_SCALE = 3;
+    const scaleX = Math.min(MAX_SCALE, currentW / savedW);
+    const scaleY = Math.min(MAX_SCALE, currentH / savedH);
+
+    const MIN_VISIBLE = 80;
+    const TITLE_BAR = 40;
 
     widgets.forEach(({ id: widgetId, x, y, w, h }) => {
-      updateWidget(widgetId, {
-        x: Math.round(x * scaleX),
-        y: Math.round(y * scaleY),
-        w: Math.max(100, Math.round(w * scaleX)),
-        h: Math.max(60, Math.round(h * scaleY)),
-      });
+      // Scale dimensions, capped at viewport size
+      const newW = Math.min(currentW, Math.max(100, Math.round(w * scaleX)));
+      const newH = Math.min(currentH, Math.max(60, Math.round(h * scaleY)));
+
+      // Scale positions with bounds clamping to keep widgets visible
+      let newX = Math.round(x * scaleX);
+      let newY = Math.round(y * scaleY);
+      if (newW <= MIN_VISIBLE) {
+        newX = Math.max(0, Math.min(newX, currentW - newW));
+      } else {
+        newX = Math.max(
+          -(newW - MIN_VISIBLE),
+          Math.min(newX, currentW - MIN_VISIBLE)
+        );
+      }
+      newY = Math.max(0, Math.min(newY, currentH - TITLE_BAR));
+
+      updateWidget(widgetId, { x: newX, y: newY, w: newW, h: newH });
     });
 
     updateDashboard({ viewportWidth: currentW, viewportHeight: currentH });
@@ -919,6 +979,12 @@ export const DashboardView: React.FC = () => {
       transformOrigin: 'center center',
     };
 
+    // Custom user-created colors/gradients (custom: prefix)
+    if (isCustomBackground(bg)) {
+      Object.assign(styles, getCustomBackgroundStyle(bg));
+      return styles;
+    }
+
     // Check if it's a URL or Base64 image
     if (isExternalBackground(bg)) {
       Object.assign(styles, {
@@ -934,8 +1000,8 @@ export const DashboardView: React.FC = () => {
   const backgroundClasses = useMemo(() => {
     if (!activeDashboard) return '';
     const bg = activeDashboard.background;
-    // If it's a URL (including YouTube), don't apply the Tailwind class
-    if (isExternalBackground(bg)) return '';
+    // URLs, YouTube, and custom backgrounds don't use Tailwind classes
+    if (isExternalBackground(bg) || isCustomBackground(bg)) return '';
     return bg;
   }, [activeDashboard]);
 
@@ -1055,7 +1121,7 @@ export const DashboardView: React.FC = () => {
         {/* Dynamic Widget Surface */}
         <div
           key={activeDashboard.id}
-          className={`relative w-full h-full ${animationClass} transition-all duration-500 ease-in-out`}
+          className={`relative w-full h-full ${animationClass} transition-opacity duration-500 ease-in-out`}
           style={{
             // Note: transform and opacity transitions here create CSS stacking contexts.
             // Spotlighted widgets escape this by portaling to document.body.
@@ -1110,7 +1176,7 @@ export const DashboardView: React.FC = () => {
       {activeDashboard.settings?.spotlightWidgetId &&
         createPortal(
           <div
-            className="fixed inset-0 z-backdrop bg-slate-900/80 transition-all duration-500 ease-in-out"
+            className="fixed inset-0 z-backdrop bg-slate-900/80 transition-opacity duration-500 ease-in-out"
             onClick={() => updateDashboardSettings({ spotlightWidgetId: null })}
             aria-hidden="true"
           />,
@@ -1129,7 +1195,7 @@ export const DashboardView: React.FC = () => {
               ? 'Enable background video sound'
               : 'Mute background video'
           }
-          className="fixed bottom-6 left-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-all backdrop-blur-sm"
+          className="fixed bottom-6 left-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm"
           aria-label="Toggle background video sound"
         >
           <div className="relative flex items-center justify-center w-full h-full">
@@ -1158,7 +1224,7 @@ export const DashboardView: React.FC = () => {
       <button
         onClick={() => setIsCheatSheetOpen(true)}
         title={`${t('widgets.cheatSheet.title')} (Ctrl+/)`}
-        className="fixed bottom-6 right-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-all backdrop-blur-sm"
+        className="fixed bottom-6 right-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm"
         aria-label={t('widgets.cheatSheet.title')}
       >
         <HelpCircle className="w-4 h-4" />

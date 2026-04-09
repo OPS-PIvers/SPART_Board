@@ -4,7 +4,13 @@
  * Allows exporting to Google Sheets.
  */
 
-import React, { useState } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   ArrowLeft,
   Download,
@@ -17,39 +23,39 @@ import {
   ExternalLink,
   Target,
   AlertTriangle,
+  Eye,
+  EyeOff,
+  User,
+  Hash,
 } from 'lucide-react';
-import { QuizResponse, QuizData, QuizQuestion } from '@/types';
+import { QuizResponse, QuizData, QuizQuestion, QuizConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { QuizDriveService } from '@/utils/quizDriveService';
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import { useDashboard } from '@/context/useDashboard';
-import { ScoreboardTeam } from '@/types';
-import { SCOREBOARD_COLORS } from '@/config/scoreboard';
-
-/**
- * Compute a student's percentage score by re-grading answers with gradeAnswer
- */
-function getResponseScore(r: QuizResponse, questions: QuizQuestion[]): number {
-  if (questions.length === 0) return 0;
-  const correct = r.answers.filter((a) => {
-    const q = questions.find((qn) => qn.id === a.questionId);
-    return q ? gradeAnswer(q, a.answer) : false;
-  }).length;
-  return Math.round((correct / questions.length) * 100);
-}
+import {
+  buildPinToNameMap,
+  buildScoreboardTeams,
+  getResponseScore,
+  getEarnedPoints,
+} from '../utils/quizScoreboard';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface QuizResultsProps {
   quiz: QuizData;
   responses: QuizResponse[];
+  config: QuizConfig;
   onBack: () => void;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
   quiz,
   responses,
+  config,
   onBack,
 }) => {
-  const { activeDashboard, updateWidget, addWidget, addToast } = useDashboard();
+  const { activeDashboard, updateWidget, addWidget, addToast, rosters } =
+    useDashboard();
   const { googleAccessToken } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
@@ -57,6 +63,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [activeTab, setActiveTab] = useState<
     'overview' | 'questions' | 'students'
   >('overview');
+  const [showScoreboardPrompt, setShowScoreboardPrompt] = useState(false);
+  const scoreboardPromptRef = useRef<HTMLDivElement>(null);
+
+  // Close popup on click-outside or Escape
+  const closeScoreboardPrompt = useCallback(() => {
+    setShowScoreboardPrompt(false);
+  }, []);
+  useClickOutside(scoreboardPromptRef, closeScoreboardPrompt);
+  useEffect(() => {
+    if (!showScoreboardPrompt) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowScoreboardPrompt(false);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [showScoreboardPrompt]);
 
   const completed = responses.filter((r) => r.status === 'completed');
   const avgScore =
@@ -69,52 +91,77 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         )
       : null;
 
-  const handleSendToScoreboard = () => {
+  const pinToName = useMemo(
+    () => buildPinToNameMap(rosters, config.periodName),
+    [rosters, config.periodName]
+  );
+  const hasNames = Object.keys(pinToName).length > 0;
+
+  const handleSendToScoreboard = useCallback(
+    (mode: 'pin' | 'name') => {
+      setShowScoreboardPrompt(false);
+
+      if (completed.length === 0) {
+        addToast('No completed students yet', 'error');
+        return;
+      }
+
+      const newTeams = buildScoreboardTeams(
+        completed,
+        quiz.questions,
+        mode,
+        pinToName
+      );
+
+      const existingScoreboard = activeDashboard?.widgets.find(
+        (w) => w.type === 'scoreboard'
+      );
+
+      if (existingScoreboard) {
+        updateWidget(existingScoreboard.id, {
+          config: {
+            ...existingScoreboard.config,
+            teams: newTeams,
+          },
+        });
+        addToast(
+          `Updated scoreboard with ${newTeams.length} students.`,
+          'success'
+        );
+      } else {
+        addWidget('scoreboard', {
+          config: {
+            teams: newTeams,
+          },
+        });
+        addToast(
+          `Created scoreboard with ${newTeams.length} students.`,
+          'success'
+        );
+      }
+    },
+    [
+      completed,
+      quiz.questions,
+      pinToName,
+      activeDashboard?.widgets,
+      updateWidget,
+      addWidget,
+      addToast,
+    ]
+  );
+
+  const handleScoreboardClick = useCallback(() => {
     if (completed.length === 0) {
       addToast('No completed students yet', 'error');
       return;
     }
-
-    const studentsWithScores = completed.map((r) => ({
-      response: r,
-      score: getResponseScore(r, quiz.questions),
-    }));
-
-    const newTeams: ScoreboardTeam[] = studentsWithScores
-      .sort((a, b) => b.score - a.score)
-      .map(({ response, score }, index) => ({
-        id: crypto.randomUUID(),
-        name: `PIN ${response.pin}`,
-        score,
-        color: SCOREBOARD_COLORS[index % SCOREBOARD_COLORS.length],
-      }));
-
-    const existingScoreboard = activeDashboard?.widgets.find(
-      (w) => w.type === 'scoreboard'
-    );
-
-    if (existingScoreboard) {
-      updateWidget(existingScoreboard.id, {
-        config: {
-          teams: newTeams,
-        },
-      });
-      addToast(
-        `Updated scoreboard with ${newTeams.length} students.`,
-        'success'
-      );
+    if (hasNames) {
+      setShowScoreboardPrompt(true);
     } else {
-      addWidget('scoreboard', {
-        config: {
-          teams: newTeams,
-        },
-      });
-      addToast(
-        `Created scoreboard with ${newTeams.length} students.`,
-        'success'
-      );
+      handleSendToScoreboard('pin');
     }
-  };
+  }, [completed.length, hasNames, addToast, handleSendToScoreboard]);
 
   const handleExport = async () => {
     if (!googleAccessToken) {
@@ -130,9 +177,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       const url = await svc.exportResultsToSheet(
         quiz.title,
         responses,
-        quiz.questions
+        quiz.questions,
+        {
+          pinToName,
+          teacherName: config.teacherName,
+          periodName: config.periodName,
+          plcMode: config.plcMode,
+          plcSheetUrl: config.plcSheetUrl,
+        }
       );
       setExportUrl(url);
+      if (config.plcMode) {
+        addToast('Results exported to shared PLC sheet', 'success');
+      }
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'Export failed');
     } finally {
@@ -144,7 +201,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     <div className="flex flex-col h-full font-sans">
       {/* Header */}
       <div
-        className="flex items-center border-b border-brand-blue-primary/10 bg-brand-blue-lighter/30"
+        className="flex items-center border-b border-brand-blue-primary/10"
         style={{
           gap: 'min(12px, 3cqmin)',
           padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)',
@@ -177,23 +234,84 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         </div>
 
         {completed.length > 0 && (
-          <button
-            onClick={handleSendToScoreboard}
-            className="flex items-center bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
-            style={{
-              gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(11px, 3.5cqmin)',
-            }}
-          >
-            <Trophy
+          <div className="relative shrink-0">
+            <button
+              onClick={handleScoreboardClick}
+              className="flex items-center bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-md active:scale-95"
               style={{
-                width: 'min(14px, 4cqmin)',
-                height: 'min(14px, 4cqmin)',
+                gap: 'min(6px, 1.5cqmin)',
+                padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+                fontSize: 'min(11px, 3.5cqmin)',
               }}
-            />
-            SEND TO SCOREBOARD
-          </button>
+            >
+              <Trophy
+                style={{
+                  width: 'min(14px, 4cqmin)',
+                  height: 'min(14px, 4cqmin)',
+                }}
+              />
+              SEND TO SCOREBOARD
+            </button>
+            {showScoreboardPrompt && (
+              <div
+                ref={scoreboardPromptRef}
+                className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-brand-blue-primary/10 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                style={{
+                  padding: 'min(16px, 4cqmin)',
+                  width: 'max(220px, 50cqw)',
+                }}
+              >
+                <p
+                  className="font-black text-brand-blue-dark text-center uppercase tracking-wider"
+                  style={{
+                    fontSize: 'min(11px, 3.5cqmin)',
+                    marginBottom: 'min(12px, 3cqmin)',
+                  }}
+                >
+                  How should students appear?
+                </p>
+                <div
+                  className="flex flex-col"
+                  style={{ gap: 'min(8px, 2cqmin)' }}
+                >
+                  <button
+                    onClick={() => handleSendToScoreboard('name')}
+                    className="flex items-center w-full bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-xl transition-all active:scale-95"
+                    style={{
+                      gap: 'min(8px, 2cqmin)',
+                      padding: 'min(10px, 2.5cqmin) min(14px, 3.5cqmin)',
+                      fontSize: 'min(12px, 3.5cqmin)',
+                    }}
+                  >
+                    <User
+                      style={{
+                        width: 'min(16px, 4cqmin)',
+                        height: 'min(16px, 4cqmin)',
+                      }}
+                    />
+                    Student Names
+                  </button>
+                  <button
+                    onClick={() => handleSendToScoreboard('pin')}
+                    className="flex items-center w-full bg-slate-100 hover:bg-slate-200 text-brand-blue-dark font-bold rounded-xl transition-all active:scale-95"
+                    style={{
+                      gap: 'min(8px, 2cqmin)',
+                      padding: 'min(10px, 2.5cqmin) min(14px, 3.5cqmin)',
+                      fontSize: 'min(12px, 3.5cqmin)',
+                    }}
+                  >
+                    <Hash
+                      style={{
+                        width: 'min(16px, 4cqmin)',
+                        height: 'min(16px, 4cqmin)',
+                      }}
+                    />
+                    PINs Only
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
         {exportUrl ? (
           <a
@@ -271,7 +389,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         <>
           {/* Tabs Navigation */}
           <div
-            className="flex bg-white/50 border-b border-brand-blue-primary/10"
+            className="flex border-b border-brand-blue-primary/10"
             style={{
               padding: 'min(8px, 2cqmin) min(16px, 4cqmin) 0',
               gap: 'min(4px, 1cqmin)',
@@ -572,83 +690,124 @@ const QuestionsTab: React.FC<{
 const StudentsTab: React.FC<{
   responses: QuizResponse[];
   questions: QuizQuestion[];
-}> = ({ responses, questions }) => (
-  <div className="space-y-2">
-    {responses
-      .slice()
-      .sort((a, b) => {
-        const scoreA =
-          a.status === 'completed' || a.status === 'in-progress'
-            ? getResponseScore(a, questions)
-            : -1;
-        const scoreB =
-          b.status === 'completed' || b.status === 'in-progress'
-            ? getResponseScore(b, questions)
-            : -1;
-        return scoreB - scoreA;
-      })
-      .map((r) => {
-        const score = getResponseScore(r, questions);
-        const correct = r.answers.filter((a) => {
-          const q = questions.find((qn) => qn.id === a.questionId);
-          return q ? gradeAnswer(q, a.answer) : false;
-        }).length;
-        const warnings = r.tabSwitchWarnings ?? 0;
+}> = ({ responses, questions }) => {
+  const [showResults, setShowResults] = useState(false);
+  const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
 
-        return (
-          <div
-            key={r.studentUid}
-            className="flex items-center bg-white border border-brand-blue-primary/10 rounded-xl p-3 shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p
-                  className="font-bold text-brand-blue-dark truncate font-mono"
-                  style={{ fontSize: 'min(13px, 4.5cqmin)' }}
-                >
-                  PIN {r.pin}
-                </p>
-                {warnings > 0 && (
-                  <span
-                    className="flex items-center gap-1 bg-red-100 text-red-700 px-1.5 py-0.5 rounded uppercase font-black shrink-0"
-                    style={{ fontSize: 'min(10px, 3cqmin)' }}
-                    title={`${warnings} Tab Switch Warning(s)`}
-                  >
-                    <AlertTriangle style={{ width: 10, height: 10 }} />
-                    {warnings}
-                  </span>
-                )}
-              </div>
-            </div>
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={() => setShowResults(!showResults)}
+        className="w-full flex items-center justify-between p-3 bg-white/60 border border-brand-blue-primary/10 rounded-xl hover:bg-white/80 transition-all"
+      >
+        <span
+          className="font-bold text-brand-blue-dark"
+          style={{ fontSize: 'min(12px, 4cqmin)' }}
+        >
+          {responses.length} student{responses.length !== 1 ? 's' : ''}
+        </span>
+        <span
+          className="flex items-center gap-1.5 text-brand-blue-primary font-bold"
+          style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+        >
+          {showResults ? (
+            <>
+              <EyeOff
+                style={{
+                  width: 'min(14px, 4cqmin)',
+                  height: 'min(14px, 4cqmin)',
+                }}
+              />
+              Hide Results
+            </>
+          ) : (
+            <>
+              <Eye
+                style={{
+                  width: 'min(14px, 4cqmin)',
+                  height: 'min(14px, 4cqmin)',
+                }}
+              />
+              Show Results
+            </>
+          )}
+        </span>
+      </button>
 
-            <div className="text-right shrink-0 ml-4 pl-4 border-l border-brand-blue-primary/5">
-              {r.status === 'completed' || r.status === 'in-progress' ? (
-                <>
-                  <p
-                    className={`font-black ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-amber-600' : 'text-brand-red-primary'}`}
-                    style={{ fontSize: 'min(15px, 5cqmin)' }}
-                  >
-                    {score}%
-                  </p>
-                  <p
-                    className="text-brand-blue-primary/60 font-bold"
-                    style={{ fontSize: 'min(10px, 3cqmin)' }}
-                  >
-                    {correct}/{questions.length} Correct
-                    {r.status === 'in-progress' && ' (In Progress)'}
-                  </p>
-                </>
-              ) : (
-                <div
-                  className="bg-brand-gray-lightest text-brand-gray-primary font-black uppercase rounded px-2 py-1 tracking-tighter"
-                  style={{ fontSize: 'min(9px, 2.5cqmin)' }}
-                >
-                  {r.status}
+      {showResults &&
+        responses
+          .slice()
+          .sort((a, b) => {
+            const scoreA =
+              a.status === 'completed' || a.status === 'in-progress'
+                ? getResponseScore(a, questions)
+                : -1;
+            const scoreB =
+              b.status === 'completed' || b.status === 'in-progress'
+                ? getResponseScore(b, questions)
+                : -1;
+            return scoreB - scoreA;
+          })
+          .map((r) => {
+            const score = getResponseScore(r, questions);
+            const earned = getEarnedPoints(r, questions);
+            const warnings = r.tabSwitchWarnings ?? 0;
+
+            return (
+              <div
+                key={r.studentUid}
+                className="flex items-center bg-white border border-brand-blue-primary/10 rounded-xl p-3 shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p
+                      className="font-bold text-brand-blue-dark truncate font-mono"
+                      style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+                    >
+                      PIN {r.pin}
+                    </p>
+                    {warnings > 0 && (
+                      <span
+                        className="flex items-center gap-1 bg-red-100 text-red-700 px-1.5 py-0.5 rounded uppercase font-black shrink-0"
+                        style={{ fontSize: 'min(10px, 3cqmin)' }}
+                        title={`${warnings} Tab Switch Warning(s)`}
+                      >
+                        <AlertTriangle style={{ width: 10, height: 10 }} />
+                        {warnings}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-  </div>
-);
+
+                <div className="text-right shrink-0 ml-4 pl-4 border-l border-brand-blue-primary/5">
+                  {r.status === 'completed' || r.status === 'in-progress' ? (
+                    <>
+                      <p
+                        className={`font-black ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-amber-600' : 'text-brand-red-primary'}`}
+                        style={{ fontSize: 'min(15px, 5cqmin)' }}
+                      >
+                        {score}%
+                      </p>
+                      <p
+                        className="text-brand-blue-primary/60 font-bold"
+                        style={{ fontSize: 'min(10px, 3cqmin)' }}
+                      >
+                        {earned}/{maxPoints} pts
+                        {r.status === 'in-progress' && ' (In Progress)'}
+                      </p>
+                    </>
+                  ) : (
+                    <div
+                      className="bg-brand-gray-lightest text-brand-gray-primary font-black uppercase rounded px-2 py-1 tracking-tighter"
+                      style={{ fontSize: 'min(9px, 2.5cqmin)' }}
+                    >
+                      {r.status}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+    </div>
+  );
+};

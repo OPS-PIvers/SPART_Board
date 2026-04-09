@@ -85,25 +85,25 @@ const mockDashboard: DashboardContextValue = {
   removeToast: () => {
     // No-op
   },
-  createNewDashboard: () => {
+  createNewDashboard: async () => {
     // No-op
   },
-  saveCurrentDashboard: () => {
+  saveCurrentDashboard: async () => {
     // No-op
   },
-  deleteDashboard: () => {
+  deleteDashboard: async () => {
     /* mock */
   },
-  duplicateDashboard: () => {
+  duplicateDashboard: async () => {
     /* mock */
   },
-  renameDashboard: () => {
+  renameDashboard: async () => {
     /* mock */
   },
   loadDashboard: () => {
     /* mock */
   },
-  reorderDashboards: () => {
+  reorderDashboards: async () => {
     // No-op
   },
   setDefaultDashboard: () => {
@@ -225,6 +225,10 @@ const mockDashboard: DashboardContextValue = {
   },
   pendingShareId: null,
   clearPendingShare: () => {
+    // No-op
+  },
+  pendingQuizShareId: null,
+  clearPendingQuizShare: () => {
     // No-op
   },
   // Roster mocks

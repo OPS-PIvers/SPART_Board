@@ -362,6 +362,7 @@ export interface EmbedConfig {
   isEmbeddable?: boolean;
   blockedReason?: string;
   zoom?: number;
+  autoplay?: boolean;
 }
 
 export interface BuildingPollDefaults {
@@ -466,6 +467,10 @@ export interface ScoreboardConfig {
   /** @deprecated use teams array instead */
   teamB?: string;
   teams?: ScoreboardTeam[];
+  /** Display layout: card grid or compact rows */
+  layout?: 'cards' | 'rows';
+  /** When set, indicates this scoreboard is being live-synced from a quiz widget */
+  liveQuizWidgetId?: string;
 }
 
 export interface ExpectationsConfig {
@@ -1269,6 +1274,8 @@ export interface QuizQuestion {
   correctAnswer: string;
   /** MC only: up to 4 incorrect answer choices */
   incorrectAnswers: string[];
+  /** Point value for this question. Defaults to 1 if not set. */
+  points?: number;
 }
 
 /** Full quiz data stored in Google Drive as JSON */
@@ -1398,6 +1405,24 @@ export interface QuizConfig {
   activeLiveSessionCode: string | null;
   /** Quiz session ID for viewing historical results */
   resultsSessionId: string | null;
+  /** PLC mode: export results to a shared Google Sheet */
+  plcMode?: boolean;
+  /** URL of the shared Google Sheet for PLC exports */
+  plcSheetUrl?: string;
+  /** Teacher's display name for the export sheet */
+  teacherName?: string;
+  /** Class period/roster name for the export sheet */
+  periodName?: string;
+  /** PLC member emails (informational only for v1) */
+  plcMemberEmails?: string[];
+  /** Whether the live scoreboard sync is enabled during a quiz session */
+  liveScoreboardEnabled?: boolean;
+  /** Widget ID of the synced scoreboard widget */
+  liveScoreboardWidgetId?: string;
+  /** Whether to display student names or PINs on the live scoreboard */
+  liveScoreboardMode?: 'pin' | 'name';
+  /** When to update scores: on quiz completion or after each question */
+  liveScoreboardScoring?: 'completion' | 'per-question';
 }
 
 // --- VIDEO ACTIVITY TYPES ---
@@ -1577,7 +1602,8 @@ export interface StarterPackGlobalConfig {
   dockDefaults?: Record<string, boolean>;
 }
 
-export type StarterPackConfig = Record<string, never>;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Required: Record<string, never> breaks WidgetConfig union spreads in DashboardContext
+export interface StarterPackConfig {}
 
 export interface CountdownConfig {
   title: string;
@@ -2475,7 +2501,8 @@ export type GlobalFeature =
   | 'screen-recording'
   | 'remote-control'
   | 'embed-mini-app'
-  | 'video-activity-audio-transcription';
+  | 'video-activity-audio-transcription'
+  | 'ai-file-context';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
@@ -2551,6 +2578,8 @@ export interface First5GlobalConfig {
   activeDayNumber?: number;
   /** ISO date string (YYYY-MM-DD) when activeDayNumber was last set */
   referenceDate?: string;
+  /** Per-building dock visibility overrides */
+  dockDefaults?: Record<string, boolean>;
 }
 
 export interface LunchCountGlobalConfig {
@@ -2681,9 +2710,17 @@ export interface Announcement {
   dismissalDurationSeconds?: number;
   /**
    * Building IDs this announcement targets.
-   * An empty array means ALL buildings (broadcast to everyone).
+   * An empty array means no building-level targeting.
+   * This is a broadcast to everyone only when targetUsers is also empty.
    */
   targetBuildings: string[];
+  /**
+   * Email addresses this announcement targets.
+   * An empty array means no user-level targeting (falls back to building targeting).
+   * When both targetBuildings and targetUsers are set, OR logic is used.
+   * Older Firestore documents may omit this field; treat an omitted value the same as [].
+   */
+  targetUsers?: string[];
   createdAt: number;
   updatedAt: number;
   /** Email of the admin who created/last modified this announcement */

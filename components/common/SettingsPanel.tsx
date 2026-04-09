@@ -186,7 +186,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('settings')}
-            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-all ${
+            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-[color,background-color,box-shadow] ${
               activeTab === 'settings'
                 ? 'bg-white shadow-sm text-slate-800'
                 : 'text-slate-500 hover:text-slate-700'
@@ -197,7 +197,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('style')}
-            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-all ${
+            className={`flex-1 py-1.5 text-xxs font-black uppercase tracking-widest rounded-lg transition-[color,background-color,box-shadow] ${
               activeTab === 'style'
                 ? 'bg-white shadow-sm text-slate-800'
                 : 'text-slate-500 hover:text-slate-700'
@@ -251,7 +251,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       onClick={() =>
                         updateWidget(widget.id, { transparency: undefined })
                       }
-                      className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                      className="text-xxs font-black text-brand-blue-primary hover:text-brand-blue-dark uppercase"
                       aria-label="Reset transparency to global default"
                     >
                       Reset

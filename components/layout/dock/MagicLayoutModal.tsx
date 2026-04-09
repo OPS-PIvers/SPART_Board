@@ -2,8 +2,13 @@ import React, { useState } from 'react';
 import { Wand2, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/common/GlassCard';
 import { Modal } from '@/components/common/Modal';
-import { generateDashboardLayout } from '@/utils/ai';
+import {
+  generateDashboardLayout,
+  buildPromptWithFileContext,
+} from '@/utils/ai';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { DriveFileAttachment } from '@/components/common/DriveFileAttachment';
 
 interface MagicLayoutModalProps {
   onClose: () => void;
@@ -13,8 +18,11 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
   onClose,
 }) => {
   const { addWidgets, addToast } = useDashboard();
+  const { canAccessFeature } = useAuth();
   const [description, setDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [fileContext, setFileContext] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const handleClose = () => {
     if (!isGenerating) onClose();
@@ -25,7 +33,12 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
 
     setIsGenerating(true);
     try {
-      const widgets = await generateDashboardLayout(description);
+      const fullDescription = buildPromptWithFileContext(
+        description,
+        fileContext,
+        fileName
+      );
+      const widgets = await generateDashboardLayout(fullDescription);
       addWidgets(widgets);
       addToast('Magic layout generated!', 'success');
       onClose();
@@ -67,7 +80,7 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
           onChange={(e) => setDescription(e.target.value)}
           autoFocus
           placeholder="e.g., Math rotations with 4 groups, a 15-minute timer, and a noise meter."
-          className="w-full h-32 px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium mb-4 resize-none"
+          className="w-full h-32 px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-brand-blue-primary text-sm font-medium mb-4 resize-none"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -75,6 +88,17 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
             }
           }}
         />
+
+        {canAccessFeature('ai-file-context') && (
+          <DriveFileAttachment
+            onFileContent={(content, name) => {
+              setFileContext(content);
+              setFileName(name);
+            }}
+            disabled={isGenerating}
+            className="mb-4"
+          />
+        )}
 
         <div className="mb-6">
           <p className="text-xxs font-black uppercase tracking-widest text-slate-400 mb-2">

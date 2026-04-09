@@ -344,6 +344,9 @@ export const Dock: React.FC = () => {
               config: { activeApp: previewItem, activeAppUnsaved: true },
             });
             addToast('HTML opened — click the save icon to keep it!', 'info');
+          } else if (result.action === 'import-quiz') {
+            // Navigate to the share/quiz URL to trigger import
+            window.location.href = `${window.location.origin}/share/quiz/${result.shareId}`;
           } else if (result.action === 'prompt-text-or-checklist') {
             // Ambiguous: show a picker modal for the user to decide
             setSmartPastePending(result.text);
@@ -558,6 +561,16 @@ export const Dock: React.FC = () => {
     [customWidgets]
   );
 
+  const canAccessTool = useCallback(
+    (type: WidgetType | InternalToolType) => {
+      if (type === 'record') return canAccessFeature('screen-recording');
+      if (type === 'magic') return canAccessFeature('magic-layout');
+      if (type === 'remote') return canAccessFeature('remote-control');
+      return canAccessWidget(type as WidgetType);
+    },
+    [canAccessFeature, canAccessWidget]
+  );
+
   return (
     <div
       ref={dockContainerRef}
@@ -745,14 +758,7 @@ export const Dock: React.FC = () => {
                   setShowMoreMenu(false);
                 }
               }}
-              canAccess={(type) => {
-                if (type === 'record')
-                  return canAccessFeature('screen-recording');
-                if (type === 'magic') return canAccessFeature('magic-layout');
-                if (type === 'remote')
-                  return canAccessFeature('remote-control');
-                return canAccessWidget(type as WidgetType);
-              }}
+              canAccess={canAccessTool}
               matchesUserBuilding={matchesUserBuilding}
               onClose={() => {
                 setShowMoreMenu(false);
@@ -1123,7 +1129,7 @@ export const Dock: React.FC = () => {
                         <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
                           {t('dock.liveSession')}
                         </h3>
-                        <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
+                        <div className="text-3xl font-black text-brand-blue-dark font-mono tracking-widest my-1 drop-shadow-sm">
                           {session.code}
                         </div>
                         <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
@@ -1160,8 +1166,8 @@ export const Dock: React.FC = () => {
                         title={`Restore: ${customWidgetTitleById.get((cw.config as { customWidgetId?: string }).customWidgetId ?? '') ?? 'Custom Widget'}`}
                       >
                         <DockIcon
-                          color="bg-purple-600 shadow-lg shadow-purple-600/20"
-                          className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-purple-500 transition-all"
+                          color="bg-brand-blue-primary shadow-lg shadow-brand-blue-primary/20"
+                          className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-brand-blue-light transition"
                         >
                           <Puzzle className="w-5 h-5 md:w-6 md:h-6" />
                         </DockIcon>
@@ -1182,7 +1188,7 @@ export const Dock: React.FC = () => {
                 >
                   <DockIcon
                     color="bg-brand-blue-primary shadow-lg shadow-brand-blue-primary/20"
-                    className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-brand-blue-dark transition-all"
+                    className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-brand-blue-dark transition"
                   >
                     <LayoutGrid className="w-5 h-5 md:w-6 md:h-6" />
                   </DockIcon>
@@ -1237,7 +1243,7 @@ export const Dock: React.FC = () => {
             )}
             <button
               onClick={() => setIsExpanded(true)}
-              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 ${
+              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition shadow-xl shadow-brand-blue-primary/40 ${
                 globalStyle.dockBorderRadius === 'none'
                   ? 'rounded-none'
                   : globalStyle.dockBorderRadius === 'full'
