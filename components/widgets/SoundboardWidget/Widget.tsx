@@ -212,7 +212,9 @@ export const SoundboardWidget: React.FC<{ widget: WidgetData }> = ({
     useAuth();
   const { updateWidget, selectedWidgetId } = useDashboard();
   const isFocused = selectedWidgetId === widget.id;
-  const buildingId = selectedBuildings.length > 0 ? selectedBuildings[0] : null;
+  const buildingId =
+    widget.buildingId ??
+    (selectedBuildings.length > 0 ? selectedBuildings[0] : null);
 
   const globalConfig = useMemo(() => {
     const perm = featurePermissions.find((p) => p.widgetType === 'soundboard');

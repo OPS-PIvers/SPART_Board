@@ -41,7 +41,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
     | undefined;
 
   // Get current building's config
-  const primaryBuildingId = selectedBuildings?.[0];
+  const primaryBuildingId = widget.buildingId ?? selectedBuildings?.[0];
   const buildingConfig = primaryBuildingId
     ? globalConfig?.buildings?.[primaryBuildingId]
     : undefined;

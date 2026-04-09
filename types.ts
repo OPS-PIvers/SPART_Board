@@ -2353,6 +2353,8 @@ export interface WidgetData {
   isLocked?: boolean; // When true: widget cannot be moved, resized, or deleted by end-users
   transparency?: number;
   annotation?: DrawingConfig;
+  /** Override which building's admin defaults this widget uses (falls back to user's primary building) */
+  buildingId?: string;
   config: WidgetConfig;
 
   // Universal style properties

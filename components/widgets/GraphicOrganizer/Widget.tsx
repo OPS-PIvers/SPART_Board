@@ -84,7 +84,7 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
   const { selectedBuildings, featurePermissions } = useAuth();
   const config = widget.config as GraphicOrganizerConfig;
 
-  const buildingId = selectedBuildings[0] ?? 'global';
+  const buildingId = widget.buildingId ?? selectedBuildings[0] ?? 'global';
   const featureObj = featurePermissions?.find(
     (p) => p.widgetType === 'graphic-organizer'
   );

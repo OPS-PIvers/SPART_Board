@@ -6,6 +6,7 @@ import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { Type, Palette, Edit3 } from 'lucide-react';
 import { WIDGET_PALETTE } from '@/config/colors';
 import { useAuth } from '@/context/useAuth';
+import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
 
 export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -24,10 +25,10 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
     (item) => item.widgetType === 'materials'
   );
   const materialsConfig = permission?.config as Partial<MaterialsGlobalConfig>;
-  const buildingAssignedIds =
-    selectedBuildings.length > 0
-      ? materialsConfig.buildingDefaults?.[selectedBuildings[0]]?.selectedItems
-      : undefined;
+  const effectiveBuildingId = widget.buildingId ?? selectedBuildings[0];
+  const buildingAssignedIds = effectiveBuildingId
+    ? materialsConfig.buildingDefaults?.[effectiveBuildingId]?.selectedItems
+    : undefined;
   const materialsCatalog = React.useMemo(() => {
     const fullCatalog = getMaterialsCatalog(materialsConfig);
     if (!buildingAssignedIds || buildingAssignedIds.length === 0) {
@@ -91,6 +92,7 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="flex flex-col gap-6 p-1">
+      <WidgetBuildingSelector widget={widget} />
       {/* Title Settings */}
       <div className="space-y-4">
         <div>

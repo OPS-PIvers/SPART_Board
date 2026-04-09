@@ -109,7 +109,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Combined events for display (Local + Building Synced + Personal)
   const displayEvents = useMemo(() => {
-    const buildingId = selectedBuildings?.[0];
+    const buildingId = widget.buildingId ?? selectedBuildings?.[0];
     const buildingDefaults = buildingId
       ? globalConfig?.buildingDefaults?.[buildingId]
       : null;
@@ -166,6 +166,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     localEvents,
     globalConfig,
     isBuildingSyncEnabled,
+    widget.buildingId,
     selectedBuildings,
     config.daysVisible,
     personalEvents,

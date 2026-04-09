@@ -16,6 +16,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/config/firebase';
 import { ensureProtocol } from '@/utils/urlHelpers';
 import { useEmbedConfig } from './hooks/useEmbedConfig';
+import { WidgetBuildingSelector } from '@/components/common/WidgetBuildingSelector';
 
 interface CompatibilityResult {
   isEmbeddable: boolean;
@@ -40,7 +41,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     'idle' | 'success' | 'blocked' | 'error'
   >('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const { config: globalConfig, isLoading } = useEmbedConfig();
+  const { config: globalConfig, isLoading } = useEmbedConfig(widget.buildingId);
 
   const isActuallyEmbeddable = React.useMemo(() => {
     if (isEmbeddable) return true;
@@ -141,6 +142,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="space-y-4">
+      <WidgetBuildingSelector widget={widget} />
       {/* Mode Toggle */}
       {!hideUrlField && (
         <div className="flex bg-slate-100 p-1 rounded-xl">

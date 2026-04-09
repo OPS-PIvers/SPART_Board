@@ -57,7 +57,8 @@ export const SpecialistScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     return perm?.config as SpecialistScheduleGlobalConfig | undefined;
   }, [featurePermissions]);
 
-  const buildingId = selectedBuildings[0] ?? 'schumann-elementary';
+  const buildingId =
+    widget.buildingId ?? selectedBuildings[0] ?? 'schumann-elementary';
   const buildingConfig = globalConfig?.buildingDefaults?.[buildingId] ?? {
     cycleLength: 6,
     startDate: toDateStr(new Date()),

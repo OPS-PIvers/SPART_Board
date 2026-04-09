@@ -99,8 +99,8 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
   // Calculate effective classLinkEnabled flag
   const effectiveClassLinkEnabled = (() => {
     // 1. Check building-specific admin defaults first
-    if (selectedBuildings.length > 0) {
-      const buildingId = selectedBuildings[0];
+    if (_widget.buildingId || selectedBuildings.length > 0) {
+      const buildingId = _widget.buildingId ?? selectedBuildings[0];
       const classesPerm = featurePermissions.find(
         (p) => p.widgetType === 'classes'
       );

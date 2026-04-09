@@ -115,10 +115,11 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
           isBuildingSyncEnabled &&
           schedules.length === 0 &&
           legacyItems.length === 0 &&
-          selectedBuildings?.[0] &&
-          config.lastSyncedBuildingId !== selectedBuildings[0]
+          (widget.buildingId ?? selectedBuildings?.[0]) &&
+          config.lastSyncedBuildingId !==
+            (widget.buildingId ?? selectedBuildings[0])
         ) {
-          const buildingId = selectedBuildings[0];
+          const buildingId = widget.buildingId ?? selectedBuildings[0];
           const defaults = gConfig.buildingDefaults?.[buildingId];
           if (defaults && defaults.items?.length > 0) {
             updateWidget(widget.id, {
@@ -137,6 +138,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     isBuildingSyncEnabled,
     schedules.length,
     legacyItems.length,
+    widget.buildingId,
     selectedBuildings,
     config,
     widget.id,

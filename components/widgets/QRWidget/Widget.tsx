@@ -42,7 +42,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const globalConfig = permission?.config as unknown as
     | QRGlobalConfig
     | undefined;
-  const buildingId = selectedBuildings?.[0];
+  const buildingId = widget.buildingId ?? selectedBuildings?.[0];
   const defaults =
     globalConfig && buildingId
       ? globalConfig.buildingDefaults?.[buildingId]

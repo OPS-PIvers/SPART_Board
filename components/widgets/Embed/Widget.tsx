@@ -31,7 +31,7 @@ const NEW_WIDGET_SPACING = 20;
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { addWidget, addToast, updateWidget } = useDashboard();
   const { canAccessFeature } = useAuth();
-  const { config: globalConfig } = useEmbedConfig();
+  const { config: globalConfig } = useEmbedConfig(widget.buildingId);
   const { getDriveFileTextContent } = useGoogleDrive();
   const [isGeneratingApp, setIsGeneratingApp] = useState(false);
   const config = widget.config as EmbedConfig;

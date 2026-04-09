@@ -3,14 +3,14 @@ import { useAuth } from '@/context/useAuth';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { EmbedGlobalConfig, BuildingEmbedDefaults } from '@/types';
 
-export const useEmbedConfig = () => {
+export const useEmbedConfig = (widgetBuildingId?: string) => {
   const { selectedBuildings } = useAuth();
   const { subscribeToPermission, loading: permsLoading } =
     useFeaturePermissions();
   const [config, setConfig] = useState<BuildingEmbedDefaults | null>(null);
 
   useEffect(() => {
-    const buildingId = selectedBuildings?.[0];
+    const buildingId = widgetBuildingId ?? selectedBuildings?.[0];
 
     const unsubscribe = subscribeToPermission('embed', (perm) => {
       // When no building is selected, use neutral defaults (no restrictions)
@@ -43,7 +43,7 @@ export const useEmbedConfig = () => {
     });
 
     return () => unsubscribe();
-  }, [selectedBuildings, subscribeToPermission]);
+  }, [widgetBuildingId, selectedBuildings, subscribeToPermission]);
 
   return { config, isLoading: permsLoading || !config };
 };
