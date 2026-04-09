@@ -1312,7 +1312,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       cornerRadius={isMaximized ? 'none' : undefined}
       className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
         isMaximized ? 'border-none !shadow-none' : ''
-      } ${isGroupActive || isGroupBuildSelected ? 'ring-2 ring-blue-400/60' : ''}`}
+      } ${isGroupActive || isGroupBuildSelected ? 'ring-2 ring-brand-blue-light/60' : ''}`}
       bgClass={widget.backgroundColor}
       style={{
         left: isMaximized
@@ -1355,7 +1355,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             width: 8,
             height: 8,
             borderRadius: '50%',
-            background: 'rgba(59, 130, 246, 0.7)',
+            background: 'rgba(67, 86, 160, 0.7)',
             border: '1.5px solid rgba(255,255,255,0.6)',
             zIndex: 10,
             pointerEvents: 'none',
@@ -1374,7 +1374,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             background: isGroupBuildSelected
-              ? 'rgba(59, 130, 246, 0.15)'
+              ? 'rgba(67, 86, 160, 0.15)'
               : 'rgba(0,0,0,0.05)',
             borderRadius: 'inherit',
             pointerEvents: 'none',
@@ -1386,7 +1386,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: 'rgba(59, 130, 246, 0.8)',
+                background: 'rgba(67, 86, 160, 0.8)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

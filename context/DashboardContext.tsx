@@ -2583,7 +2583,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // --- Widget grouping ---
 
   const updateWidgets = useCallback(
-    (updates: Array<{ id: string; changes: Partial<WidgetData> }>) => {
+    (
+      updates: Array<{
+        id: string;
+        changes: Partial<Pick<WidgetData, 'x' | 'y' | 'w' | 'h'>>;
+      }>
+    ) => {
       if (!activeIdRef.current) return;
       lastLocalUpdateAt.current = Date.now();
       lastUpdateWasSettingsOnly.current = false;

@@ -2,6 +2,7 @@ import React, { useRef, useCallback } from 'react';
 import { WidgetData } from '@/types';
 import { widgetRefRegistry } from './widgetRefRegistry';
 import { useDashboard } from '@/context/useDashboard';
+import { Z_INDEX } from '@/config/zIndex';
 
 interface GroupBoundingBoxProps {
   groupWidgets: WidgetData[];
@@ -136,7 +137,12 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
           }
 
           // Uniform: average of x and y scale, clamped
-          const scale = Math.max(0.2, (scaleX + scaleY) / 2);
+          // Compute minimum scale so no widget goes below min dimensions
+          let minScale = 0.2;
+          for (const w of rs.widgets) {
+            minScale = Math.max(minScale, 150 / w.startW, 100 / w.startH);
+          }
+          const scale = Math.max(minScale, (scaleX + scaleY) / 2);
 
           // Apply to each widget via direct DOM manipulation
           for (const w of rs.widgets) {
@@ -144,8 +150,8 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
             const relY = w.startY - rs.anchorY;
             const newX = rs.anchorX + relX * scale;
             const newY = rs.anchorY + relY * scale;
-            const newW = Math.max(150, w.startW * scale);
-            const newH = Math.max(100, w.startH * scale);
+            const newW = w.startW * scale;
+            const newH = w.startH * scale;
             if (w.el) {
               w.el.style.left = `${newX}px`;
               w.el.style.top = `${newY}px`;
@@ -192,7 +198,16 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
           fScaleX = (rs.bboxW - fdx) / rs.bboxW;
           fScaleY = (rs.bboxH - fdy) / rs.bboxH;
         }
-        const finalScale = Math.max(0.2, (fScaleX + fScaleY) / 2);
+        // Compute minimum scale so no widget goes below min dimensions
+        let minFinalScale = 0.2;
+        for (const w of rs.widgets) {
+          minFinalScale = Math.max(
+            minFinalScale,
+            150 / w.startW,
+            100 / w.startH
+          );
+        }
+        const finalScale = Math.max(minFinalScale, (fScaleX + fScaleY) / 2);
 
         // Commit all positions+dimensions in one batch
         updateWidgets(
@@ -204,8 +219,8 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
               changes: {
                 x: rs.anchorX + relX * finalScale,
                 y: rs.anchorY + relY * finalScale,
-                w: Math.max(150, w.startW * finalScale),
-                h: Math.max(100, w.startH * finalScale),
+                w: w.startW * finalScale,
+                h: w.startH * finalScale,
               },
             };
           })
@@ -225,8 +240,8 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
     width: HANDLE_SIZE,
     height: HANDLE_SIZE,
     borderRadius: '50%',
-    background: 'rgba(59, 130, 246, 0.3)',
-    border: '2px solid rgba(59, 130, 246, 0.7)',
+    background: 'rgba(67, 86, 160, 0.3)',
+    border: '2px solid rgba(67, 86, 160, 0.7)',
     cursor: 'nwse-resize',
     touchAction: 'none',
     zIndex: 1,
@@ -239,14 +254,13 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
     <div
       style={{
         position: 'absolute',
-        left: (bbox.left - PADDING) * zoom,
-        top: (bbox.top - PADDING) * zoom,
-        width: (bbox.width + PADDING * 2) * zoom,
-        height: (bbox.height + PADDING * 2) * zoom,
-        border: '2px dashed rgba(59, 130, 246, 0.5)',
+        left: bbox.left - PADDING,
+        top: bbox.top - PADDING,
+        width: bbox.width + PADDING * 2,
+        height: bbox.height + PADDING * 2,
+        border: '2px dashed rgba(67, 86, 160, 0.5)',
         borderRadius: 8,
-        pointerEvents: 'none',
-        zIndex: 9998,
+        zIndex: Z_INDEX.snapPreview,
       }}
     >
       {/* Corner resize handles — pointer events enabled */}
@@ -275,7 +289,7 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M2 10L10 2M5 10L10 5M8 10L10 8"
-                stroke="rgba(59,130,246,0.8)"
+                stroke="rgba(67,86,160,0.8)"
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />

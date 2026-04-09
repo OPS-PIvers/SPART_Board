@@ -1171,21 +1171,17 @@ export const DashboardView: React.FC = () => {
             );
           })}
           {/* Group Bounding Box — rendered when a grouped widget is selected */}
-          {selectedWidgetId &&
-            activeDashboard.widgets.find(
-              (w) => w.id === selectedWidgetId && w.groupId
-            ) && (
-              <GroupBoundingBox
-                groupWidgets={activeDashboard.widgets.filter(
-                  (w) =>
-                    w.groupId ===
-                    activeDashboard.widgets.find(
-                      (ww) => ww.id === selectedWidgetId
-                    )?.groupId
-                )}
-                zoom={zoom}
-              />
-            )}
+          {(() => {
+            const selectedGroupId = selectedWidgetId
+              ? activeDashboard.widgets.find((w) => w.id === selectedWidgetId)
+                  ?.groupId
+              : undefined;
+            if (!selectedGroupId) return null;
+            const members = activeDashboard.widgets.filter(
+              (w) => w.groupId === selectedGroupId
+            );
+            return <GroupBoundingBox groupWidgets={members} zoom={zoom} />;
+          })()}
         </div>
       </div>
 
