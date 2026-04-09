@@ -87,7 +87,9 @@ export interface DashboardContextValue {
     }>
   ) => void;
   selectedWidgetIds: string[];
-  setSelectedWidgetIds: (ids: string[]) => void;
+  setSelectedWidgetIds: (
+    ids: string[] | ((prev: string[]) => string[])
+  ) => void;
   groupBuildMode: boolean;
   setGroupBuildMode: (active: boolean) => void;
 

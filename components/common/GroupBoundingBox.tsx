@@ -56,7 +56,7 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
     }>;
   } | null>(null);
 
-  const bbox = computeBBox(groupWidgets);
+  const bbox = groupWidgets.length > 0 ? computeBBox(groupWidgets) : null;
 
   const handleResizeStart = useCallback(
     (e: React.PointerEvent, corner: 'se' | 'sw' | 'ne' | 'nw') => {
@@ -250,6 +250,8 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
     justifyContent: 'center',
   };
 
+  if (!bbox) return null;
+
   return (
     <div
       style={{
@@ -261,6 +263,7 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
         border: '2px dashed rgba(67, 86, 160, 0.5)',
         borderRadius: 8,
         zIndex: Z_INDEX.snapPreview,
+        pointerEvents: 'none',
       }}
     >
       {/* Corner resize handles — pointer events enabled */}

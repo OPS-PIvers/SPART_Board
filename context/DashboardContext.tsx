@@ -2700,17 +2700,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         const groupMembers = active.widgets
           .filter((w) => w.groupId === target.groupId)
           .sort((a, b) => a.z - b.z);
-        const groupMaxZ = Math.max(...groupMembers.map((w) => w.z));
-        if (groupMaxZ >= maxZ) return prev; // already on top
+        const groupIdSet = new Set(groupMembers.map((w) => w.id));
+        const groupMinZ = Math.min(...groupMembers.map((w) => w.z));
+        const nonGroupMaxZ = active.widgets.reduce((max, w) => {
+          if (groupIdSet.has(w.id)) return max;
+          return Math.max(max, w.z);
+        }, Number.NEGATIVE_INFINITY);
+        if (groupMinZ > nonGroupMaxZ) return prev; // entire group is already on top
         lastLocalUpdateAt.current = Date.now();
         lastUpdateWasSettingsOnly.current = false;
-        const groupIds = new Set(groupMembers.map((w) => w.id));
         return prev.map((d) => {
           if (d.id !== activeIdRef.current) return d;
           return {
             ...d,
             widgets: d.widgets.map((w) => {
-              if (!groupIds.has(w.id)) return w;
+              if (!groupIdSet.has(w.id)) return w;
               // Preserve internal z-order within the group
               const idx = groupMembers.findIndex((gw) => gw.id === w.id);
               return { ...w, z: maxZ + 1 + idx };

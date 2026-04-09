@@ -298,6 +298,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       el: HTMLDivElement;
     }>
   >([]);
+  // Track drag delta for group sibling commit (works for both DOM and state-driven widgets)
+  const groupDragDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const saveTitle = useCallback(() => {
     if (tempTitle.trim()) {
@@ -363,10 +365,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (groupBuildMode) {
       e.stopPropagation();
       e.preventDefault();
-      setSelectedWidgetIds(
-        selectedWidgetIds.includes(widget.id)
-          ? selectedWidgetIds.filter((id) => id !== widget.id)
-          : [...selectedWidgetIds, widget.id]
+      setSelectedWidgetIds((prev) =>
+        prev.includes(widget.id)
+          ? prev.filter((id) => id !== widget.id)
+          : [...prev, widget.id]
       );
       return;
     }
@@ -718,11 +720,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
 
         // Move group siblings via direct DOM manipulation
-        for (const sib of groupSiblingsRef.current) {
-          const sibX = sib.startX + deltaX;
-          const sibY = sib.startY + deltaY;
-          sib.el.style.left = `${sibX}px`;
-          sib.el.style.top = `${sibY}px`;
+        if (groupSiblingsRef.current.length > 0) {
+          groupDragDeltaRef.current = { x: deltaX, y: deltaY };
+          for (const sib of groupSiblingsRef.current) {
+            const sibX = sib.startX + deltaX;
+            const sibY = sib.startY + deltaY;
+            sib.el.style.left = `${sibX}px`;
+            sib.el.style.top = `${sibY}px`;
+          }
         }
       });
     };
@@ -775,9 +780,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       }
 
       // Commit group sibling positions via batch update
-      if (groupSiblingsRef.current.length > 0 && dragState.current) {
-        const deltaX = dragState.current.x - widget.x;
-        const deltaY = dragState.current.y - widget.y;
+      if (groupSiblingsRef.current.length > 0) {
+        const { x: deltaX, y: deltaY } = groupDragDeltaRef.current;
         updateWidgets(
           groupSiblingsRef.current.map((sib) => ({
             id: sib.id,
@@ -788,6 +792,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           }))
         );
         groupSiblingsRef.current = [];
+        groupDragDeltaRef.current = { x: 0, y: 0 };
       }
     };
 
@@ -951,6 +956,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // In group-building mode, selection is handled by handlePointerDown — skip click logic
+    if (groupBuildMode) return;
     // Avoid triggering when clicking interactive elements
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(INTERACTIVE_ELEMENTS_SELECTOR);
