@@ -611,7 +611,9 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         questionId,
         answer,
         answeredAt: Date.now(),
-        ...(speedBonus != null && speedBonus > 0 ? { speedBonus } : {}),
+        ...(speedBonus != null && speedBonus > 0
+          ? { speedBonus: Math.min(50, Math.max(0, speedBonus)) }
+          : {}),
       };
 
       const existingAnswers = myResponseRef.current?.answers ?? [];

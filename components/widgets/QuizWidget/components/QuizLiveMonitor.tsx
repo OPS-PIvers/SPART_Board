@@ -997,8 +997,11 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                         onRemove={
                           onRemoveStudent
                             ? () => {
-                                void onRemoveStudent(r.studentUid);
-                                setConfirmRemove(null);
+                                void Promise.resolve(
+                                  onRemoveStudent(r.studentUid)
+                                )
+                                  .then(() => setConfirmRemove(null))
+                                  .catch(() => undefined);
                               }
                             : undefined
                         }

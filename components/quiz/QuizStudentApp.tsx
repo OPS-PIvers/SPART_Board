@@ -554,7 +554,17 @@ const ActiveQuiz: React.FC<{
     if (session.showResultToStudent) {
       const revealed = session.revealedAnswers?.[currentQuestion.id];
       if (revealed) {
-        const isCorrect = normalizeAnswer(answer) === normalizeAnswer(revealed);
+        // Matching answers are order-insensitive pipe-delimited sets
+        let isCorrect: boolean;
+        if (currentQuestion.type === 'Matching') {
+          const correctSet = new Set(revealed.split('|').map(normalizeAnswer));
+          const givenParts = answer.split('|').map(normalizeAnswer);
+          isCorrect =
+            givenParts.length === correctSet.size &&
+            givenParts.every((p) => correctSet.has(p));
+        } else {
+          isCorrect = normalizeAnswer(answer) === normalizeAnswer(revealed);
+        }
         setAnswerFeedback(isCorrect ? 'correct' : 'incorrect');
 
         // Sound effects
@@ -585,12 +595,12 @@ const ActiveQuiz: React.FC<{
         if (session.showCorrectAnswerToStudent) {
           setRevealedAnswer(revealed);
         }
-      }
-    }
 
-    // Display the speed bonus that was persisted with the answer
-    if (computedSpeedBonus != null && computedSpeedBonus > 0) {
-      setSpeedBonusEarned(computedSpeedBonus);
+        // Display speed bonus only when the answer was correct
+        if (isCorrect && computedSpeedBonus != null && computedSpeedBonus > 0) {
+          setSpeedBonusEarned(computedSpeedBonus);
+        }
+      }
     }
 
     // Auto-complete if on last question

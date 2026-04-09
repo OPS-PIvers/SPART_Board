@@ -62,9 +62,10 @@ export function getEarnedPoints(
 
     let pts = basePts;
 
-    // Speed bonus: up to 50% extra for fast answers
+    // Speed bonus: up to 50% extra for fast answers (clamp untrusted client data)
     if (speedEnabled && q.timeLimit > 0 && ans.speedBonus) {
-      pts *= 1 + ans.speedBonus / 100;
+      const clamped = Math.min(50, Math.max(0, ans.speedBonus));
+      pts *= 1 + clamped / 100;
     }
 
     // Streak multiplier
