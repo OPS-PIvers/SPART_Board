@@ -156,11 +156,13 @@ export const useLiveSession = (
       return;
     }
 
+    let isCurrent = true;
     const sessionRef = doc(db, SESSIONS_COLLECTION, targetId);
 
     const unsubscribeSession = onSnapshot(
       sessionRef,
       (docSnap) => {
+        if (!isCurrent) return;
         if (docSnap.exists()) {
           setSession(docSnap.data() as LiveSession);
         } else {
@@ -169,12 +171,14 @@ export const useLiveSession = (
         setLoading(false);
       },
       (err) => {
+        if (!isCurrent) return;
         console.error('Session subscription error:', err);
         setLoading(false);
       }
     );
 
     return () => {
+      isCurrent = false;
       unsubscribeSession();
     };
   }, [userId, joinCode, role]);
@@ -185,6 +189,7 @@ export const useLiveSession = (
       return;
     }
 
+    let isCurrent = true;
     const studentsRef = collection(
       db,
       SESSIONS_COLLECTION,
@@ -192,6 +197,7 @@ export const useLiveSession = (
       STUDENTS_COLLECTION
     );
     const unsubscribeStudents = onSnapshot(studentsRef, (snapshot) => {
+      if (!isCurrent) return;
       const studentList = snapshot.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id,
@@ -223,6 +229,7 @@ export const useLiveSession = (
     });
 
     return () => {
+      isCurrent = false;
       unsubscribeStudents();
     };
   }, [userId, role, session?.isActive]);
@@ -233,6 +240,7 @@ export const useLiveSession = (
       return;
     }
 
+    let isCurrent = true;
     const myStudentRef = doc(
       db,
       SESSIONS_COLLECTION,
@@ -241,6 +249,7 @@ export const useLiveSession = (
       studentId
     );
     const unsubscribeStudent = onSnapshot(myStudentRef, (docSnap) => {
+      if (!isCurrent) return;
       if (docSnap.exists()) {
         const studentData = docSnap.data() as LiveStudent;
         setIndividualFrozen(studentData.status === 'frozen');
@@ -249,6 +258,7 @@ export const useLiveSession = (
     });
 
     return () => {
+      isCurrent = false;
       unsubscribeStudent();
     };
   }, [joinCode, role, studentId]);
