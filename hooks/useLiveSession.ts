@@ -112,7 +112,6 @@ export const useLiveSession = (
     role,
     userId,
     joinCode,
-    studentId,
     isActive: session?.isActive,
   });
 
@@ -120,7 +119,6 @@ export const useLiveSession = (
     role !== prevDeps.role ||
     userId !== prevDeps.userId ||
     joinCode !== prevDeps.joinCode ||
-    studentId !== prevDeps.studentId ||
     session?.isActive !== prevDeps.isActive
   ) {
     // 1. Update the tracking state
@@ -128,7 +126,6 @@ export const useLiveSession = (
       role,
       userId,
       joinCode,
-      studentId,
       isActive: session?.isActive,
     });
 
@@ -141,11 +138,6 @@ export const useLiveSession = (
 
     if (role !== 'teacher' || !userId || !session?.isActive) {
       setStudents([]);
-    }
-
-    if (role !== 'student' || !joinCode || !studentId) {
-      setIndividualFrozen(false);
-      setStudentPin(null);
     }
   }
 
@@ -333,6 +325,7 @@ export const useLiveSession = (
     await setDoc(doc(studentsRef, uid), newStudent);
     setStudentId(uid);
     setStudentPin(sanitizedPin);
+    setIndividualFrozen(false);
     return teacherId;
   };
 
@@ -349,6 +342,7 @@ export const useLiveSession = (
       await updateDoc(studentRef, { status: 'disconnected' });
       setStudentId(null);
       setStudentPin(null);
+      setIndividualFrozen(false);
       setSession(null);
     } catch (err) {
       console.error('Failed to leave session:', err);
