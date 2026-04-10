@@ -304,8 +304,8 @@ Every nexus connection follows one of four patterns:
 
 - **User story**: "After a quiz, I want student misconceptions organized into a graphic organizer so I can see patterns and plan reteaching."
 - **Data flow**: Quiz responses (wrong answers + question topics) → Gemini analyzes patterns → GraphicOrganizer widget receives categorized misconceptions.
-- **Approach**: Quiz results panel adds "Analyze Misconceptions" button. Uses `generateWithAI` with type `'quiz-analysis'` to cluster wrong answers by topic. Calls `addWidget('graphic-organizer', { config: { template: 'tree-map', nodes: [...] } })`.
-- **Infrastructure**: `generateQuiz()` and GraphicOrganizer widget both exist. Only needs a new prompt type in the Cloud Function.
+- **Approach**: Quiz results panel adds "Analyze Misconceptions" button. Uses `generateWithAI` with type `'quiz-analysis'` to cluster wrong answers by topic. Calls `addWidget('graphic-organizer', { config: { templateType: 'cause-effect', nodes: { ... } } })`. Valid layout types: `'frayer'`, `'t-chart'`, `'venn'`, `'kwl'`, `'cause-effect'`. Nodes are `Record<string, OrganizerNode>`.
+- **Infrastructure**: `generateQuiz()` and GraphicOrganizer widget both exist. Only needs a new prompt type in the Cloud Function. AI output must conform to `GraphicOrganizerConfig` in `types.ts`.
 - **Scores**: Value: 5/5 | Feasibility: 4/5 | Coupling risk: 2/5 | **Total: 7**
 - **Pattern**: Spawn (AI-generated)
 - **Status**: proposed
@@ -382,7 +382,7 @@ Every nexus connection follows one of four patterns:
 
 - **User story**: "When the schedule shows it's science time, I want the Catalyst widget to automatically suggest relevant discussion prompts."
 - **Data flow**: Schedule widget emits current block subject/label (string) → AI generates subject-relevant prompts → Catalyst widget receives prompt suggestions.
-- **Approach**: Catalyst widget adds a `syncWithSchedule` toggle; on schedule block change, calls Gemini with the subject label to generate 3-5 discussion prompts and updates its own config.
+- **Approach**: Catalyst widget adds a `syncWithSchedule` toggle; on schedule block change, calls Gemini with the subject label to generate 3-5 discussion prompts and updates its own config. **Note**: `CatalystConfig` currently only has `initialSetId` — this candidate requires expanding the interface with new fields (e.g., `syncWithSchedule`, `generatedPrompts`).
 - **Scores**: Value: 4/5 | Feasibility: 3/5 | Coupling risk: 3/5 | **Total: 4**
 - **Pattern**: Live Sync (AI-enhanced)
 - **Status**: proposed
@@ -400,7 +400,7 @@ Every nexus connection follows one of four patterns:
 
 - **User story**: "I want student activity wall submissions to appear as pins on a hotspot image so we can see responses spatially organized."
 - **Data flow**: Activity Wall widget emits student submissions (text[]) → AI assigns spatial coordinates based on content similarity → Hotspot Image widget receives annotated pins.
-- **Approach**: Activity Wall results view adds an "Organize on Image" button. Uses Gemini to cluster submissions and assign (x,y) positions, then calls `addWidget('hotspot-image', { config: { hotspots } })`.
+- **Approach**: Activity Wall results view adds an "Organize on Image" button. Uses Gemini to cluster submissions and assign (x,y) positions, then calls `addWidget('hotspot-image', { config: { baseImageUrl, hotspots } })`. **Note**: `HotspotImageConfig` requires `baseImageUrl` — the teacher would need to select a base image first, or AI would generate/select one.
 - **Scores**: Value: 3/5 | Feasibility: 2/5 | Coupling risk: 3/5 | **Total: 2**
 - **Pattern**: Spawn (AI-generated)
 - **Status**: proposed
