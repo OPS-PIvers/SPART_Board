@@ -8,6 +8,7 @@ import {
 } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { Plus, Trash2, Star, Edit2, RefreshCw } from 'lucide-react';
 import { classLinkService } from '@/utils/classlinkService';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
@@ -17,8 +18,9 @@ interface Props {
   widget: WidgetData;
 }
 
-const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
-  const { featurePermissions, selectedBuildings } = useAuth();
+const ClassesWidget: React.FC<Props> = ({ widget }) => {
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget);
   const {
     rosters,
     addRoster,
@@ -94,13 +96,12 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
   };
 
   const editingRoster = rosters.find((r) => r.id === editingId) ?? null;
-  const config = _widget.config as ClassesConfig;
+  const config = widget.config as ClassesConfig;
 
   // Calculate effective classLinkEnabled flag
   const effectiveClassLinkEnabled = (() => {
     // 1. Check building-specific admin defaults first
-    if (selectedBuildings.length > 0) {
-      const buildingId = selectedBuildings[0];
+    if (buildingId) {
       const classesPerm = featurePermissions.find(
         (p) => p.widgetType === 'classes'
       );

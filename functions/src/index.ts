@@ -45,7 +45,8 @@ interface AIData {
     | 'ocr'
     | 'quiz'
     | 'widget-builder'
-    | 'widget-explainer';
+    | 'widget-explainer'
+    | 'blooms-ai';
   prompt?: string;
   image?: string; // base64 data
 }
@@ -461,6 +462,7 @@ export const generateWithAI = functionsV1
       specificFeatureId = 'video-activity-audio-transcription';
     if (genType === 'ocr') specificFeatureId = 'ocr';
     if (genType === 'guided-learning') specificFeatureId = 'guided-learning';
+    if (genType === 'blooms-ai') specificFeatureId = 'blooms-ai';
 
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -605,6 +607,20 @@ export const generateWithAI = functionsV1
         .trim();
 
       const ai = new GoogleGenAI({ apiKey });
+
+      // Input size guards
+      if (data?.prompt && String(data.prompt).length > 10000) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'Prompt exceeds maximum length of 10,000 characters.'
+        );
+      }
+      if (data?.image && String(data.image).length > 5 * 1024 * 1024) {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'Image exceeds maximum size of 5MB.'
+        );
+      }
 
       const sanitizedUserInput = sanitizePrompt(data?.prompt);
 
@@ -777,6 +793,15 @@ export const generateWithAI = functionsV1
           `,
           userPrompt: sanitizedUserInput,
         }),
+        'blooms-ai': () => ({
+          systemPrompt: `
+          You are an expert instructional designer specializing in Bloom's Taxonomy.
+          Generate clear, practical, classroom-ready content for the requested cognitive level and topic.
+          Format your response as a readable bulleted list using plain text (not markdown).
+          Keep each item concise (one sentence). Output ONLY the list, no preamble or closing.
+          `,
+          userPrompt: sanitizedUserInput,
+        }),
       };
 
       const promptDataFn = promptMap[genType];
@@ -833,9 +858,11 @@ export const generateWithAI = functionsV1
         model,
         contents,
         config: {
-          // widget-builder and widget-explainer return plain text; all other types return JSON
+          // widget-builder, widget-explainer, and blooms-ai return plain text; all other types return JSON
           responseMimeType:
-            genType === 'widget-builder' || genType === 'widget-explainer'
+            genType === 'widget-builder' ||
+            genType === 'widget-explainer' ||
+            genType === 'blooms-ai'
               ? 'text/plain'
               : 'application/json',
         },
@@ -845,6 +872,11 @@ export const generateWithAI = functionsV1
 
       if (!text) {
         throw new Error('Empty response from AI');
+      }
+
+      // blooms-ai returns plain text — wrap in { text } for the generic callAI client
+      if (genType === 'blooms-ai') {
+        return { text };
       }
 
       // widget-builder and widget-explainer return plain text — wrap in { result } for the client
@@ -1061,6 +1093,44 @@ export const checkUrlCompatibility = functionsV1
       throw new functionsV1.https.HttpsError(
         'unauthenticated',
         'The function must be called while authenticated.'
+      );
+    }
+
+    // Validate URL to prevent SSRF
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(data.url);
+    } catch {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'Invalid URL provided.'
+      );
+    }
+
+    if (parsedUrl.protocol !== 'https:') {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'Only HTTPS URLs are allowed.'
+      );
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+    // Block private/reserved IP ranges and metadata endpoints
+    const blockedPatterns = [
+      /^localhost$/,
+      /^127\./,
+      /^10\./,
+      /^172\.(1[6-9]|2[0-9]|3[01])\./,
+      /^192\.168\./,
+      /^169\.254\./,
+      /^0\./,
+      /^metadata\./,
+      /metadata\.google\.internal/,
+    ];
+    if (blockedPatterns.some((pattern) => pattern.test(hostname))) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'URLs pointing to private or reserved IP ranges are not allowed.'
       );
     }
 

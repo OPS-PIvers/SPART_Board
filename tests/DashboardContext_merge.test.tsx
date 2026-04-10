@@ -11,7 +11,7 @@
  *   1. Local config change on one widget + remote config change on another.
  *   2. Remote deletion of a previously-synced widget while local edits exist.
  *   3. Local changes to non-config, non-layout widget fields (customTitle,
- *      maximized, transparency).
+ *      isPinned, annotation, transparency).
  */
 
 import React, { useEffect } from 'react';
@@ -259,18 +259,16 @@ describe('DashboardContext per-widget merge', () => {
     const serverWithoutC = makeDashboard([makeWidget('wA', 'original-A')]);
     await pushSnapshot([{ ...serverWithoutC, updatedAt: 2000 }]);
 
-    // Known behaviour: widget C is treated as a locally-added widget (present
-    // locally but absent from the server) and is therefore preserved in the
-    // merged result.  This is a documented limitation of the current merge
-    // strategy when a widget was previously synced but the server deletes it
-    // while the client has other unsaved changes.
+    // Widget C was previously synced from the server (not locally-added), so
+    // when the server deletes it, the merge correctly removes it — only widgets
+    // explicitly tracked as locally-added are preserved across server deletions.
     await waitFor(() => {
       const widgets = stateRef.current?.activeDashboard?.widgets;
-      expect(widgets?.some((w) => w.id === 'wC')).toBe(true);
+      expect(widgets?.some((w) => w.id === 'wC')).toBe(false);
     });
   });
 
-  it('preserves local changes to style fields but drops un-tracked fields like customTitle', async () => {
+  it('preserves local changes to style and instance fields including customTitle', async () => {
     const stateRef = setup();
 
     const widgetA = makeWidget('wA', 'original-A');
@@ -283,10 +281,16 @@ describe('DashboardContext per-widget merge', () => {
     );
     await pushSnapshot([initialDashboard]);
 
-    // Local changes to non-config, non-layout fields on widget A
+    // Local changes to instance, style, and annotation fields on widget A
+    const testAnnotation = {
+      mode: 'window' as const,
+      paths: [{ points: [{ x: 0, y: 0 }], color: '#000', width: 2 }],
+    };
     await act(async () => {
       stateRef.current?.updateWidget('wA', {
         customTitle: 'My Custom Title',
+        isPinned: true,
+        annotation: testAnnotation,
         transparency: 0.5,
       });
       await Promise.resolve();
@@ -297,26 +301,30 @@ describe('DashboardContext per-widget merge', () => {
         (w) => w.id === 'wA'
       );
       expect(wA?.customTitle).toBe('My Custom Title');
+      expect(wA?.isPinned).toBe(true);
     });
 
     // Server snapshot: widget B config changed; widget A unchanged on server
     const serverDashboard = makeDashboard([
-      makeWidget('wA', 'original-A'), // server unaware of local customTitle / transparency
+      makeWidget('wA', 'original-A'), // server unaware of local instance / style changes
       makeWidget('wB', 'server-B'),
     ]);
     await pushSnapshot([{ ...serverDashboard, updatedAt: 2000 }]);
 
-    // Known behaviour: non-config, non-layout fields (customTitle,
-    // maximized) are NOT covered by the per-field merge logic.  The merge uses
-    // `...sw` (the server widget) as the base, so server values overwrite any
-    // locally-changed fields outside of `config`, `STYLE_FIELDS` and `LAYOUT_FIELDS`.
-    // This test documents that limitation as a regression baseline.
+    // All locally-changed fields are preserved during merge:
+    // customTitle and isPinned via INSTANCE_FIELDS, annotation via
+    // dedicated annotation tracking, transparency via STYLE_FIELDS.
+    // Server config changes on other widgets are still accepted.
     await waitFor(() => {
       const wA = stateRef.current?.activeDashboard?.widgets.find(
         (w) => w.id === 'wA'
       );
-      // customTitle reverts to the server's (undefined) value
-      expect(wA?.customTitle).toBeUndefined();
+      // customTitle is preserved since it is in INSTANCE_FIELDS
+      expect(wA?.customTitle).toBe('My Custom Title');
+      // isPinned is preserved since it is in INSTANCE_FIELDS
+      expect(wA?.isPinned).toBe(true);
+      // annotation is preserved via dedicated annotation tracking
+      expect(wA?.annotation).toEqual(testAnnotation);
       // transparency is preserved since it is in STYLE_FIELDS
       expect(wA?.transparency).toBe(0.5);
       // But widget B's server config is still accepted

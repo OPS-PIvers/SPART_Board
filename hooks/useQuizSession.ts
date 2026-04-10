@@ -22,10 +22,12 @@ import {
   updateDoc,
   getDocs,
   getDoc,
+  deleteDoc,
   query,
   where,
   writeBatch,
   increment,
+  deleteField,
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { signInAnonymously } from 'firebase/auth';
@@ -86,21 +88,23 @@ function toPublicQuestion(q: QuizQuestion): QuizPublicQuestion {
 
 // ─── Grading ──────────────────────────────────────────────────────────────────
 
-const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+/** Normalize an answer string for comparison (collapse whitespace, lowercase). */
+export const normalizeAnswer = (s: string) =>
+  s.trim().toLowerCase().replace(/\s+/g, ' ');
 
 export function gradeAnswer(
   question: QuizQuestion,
   studentAnswer: string
 ): boolean {
-  const correct = norm(question.correctAnswer);
-  const given = norm(studentAnswer);
+  const correct = normalizeAnswer(question.correctAnswer);
+  const given = normalizeAnswer(studentAnswer);
 
   if (question.type === 'MC' || question.type === 'FIB') {
     return correct === given;
   }
   if (question.type === 'Matching') {
-    const correctSet = new Set(correct.split('|').map(norm));
-    const givenParts = given.split('|').map(norm);
+    const correctSet = new Set(correct.split('|').map(normalizeAnswer));
+    const givenParts = given.split('|').map(normalizeAnswer);
     return (
       givenParts.length === correctSet.size &&
       givenParts.every((p) => correctSet.has(p))
@@ -114,6 +118,18 @@ export function gradeAnswer(
 
 // ─── Teacher hook ─────────────────────────────────────────────────────────────
 
+/** Options passed from the assignment modal to configure session toggles. */
+export interface QuizSessionOptions {
+  tabWarningsEnabled?: boolean;
+  showResultToStudent?: boolean;
+  showCorrectAnswerToStudent?: boolean;
+  showCorrectOnBoard?: boolean;
+  speedBonusEnabled?: boolean;
+  streakBonusEnabled?: boolean;
+  showPodiumBetweenQuestions?: boolean;
+  soundEffectsEnabled?: boolean;
+}
+
 export interface UseQuizSessionTeacherResult {
   session: QuizSession | null;
   responses: QuizResponse[];
@@ -124,10 +140,17 @@ export interface UseQuizSessionTeacherResult {
       title: string;
       questions: QuizQuestion[];
     },
-    mode?: QuizSessionMode
+    mode?: QuizSessionMode,
+    options?: QuizSessionOptions
   ) => Promise<string>;
   advanceQuestion: () => Promise<void>;
   endQuizSession: () => Promise<void>;
+  /** Remove a student from the live session roster */
+  removeStudent: (studentUid: string) => Promise<void>;
+  /** Reveal the correct answer for a question (writes to session doc) */
+  revealAnswer: (questionId: string, correctAnswer: string) => Promise<void>;
+  /** Hide a previously revealed answer (removes from session doc) */
+  hideAnswer: (questionId: string) => Promise<void>;
 }
 
 export const useQuizSessionTeacher = (
@@ -136,6 +159,7 @@ export const useQuizSessionTeacher = (
   const [session, setSession] = useState<QuizSession | null>(null);
   const [responses, setResponses] = useState<QuizResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const advancingRef = useRef(false);
 
   useEffect(() => {
     if (!teacherUid) {
@@ -156,10 +180,11 @@ export const useQuizSessionTeacher = (
     );
   }, [teacherUid]);
 
+  const hasSession = !!session;
   useEffect(() => {
     // Keep the listener active even after the session ends so that any
     // late student submissions still appear in the live monitor / results.
-    if (!teacherUid || !session) return;
+    if (!teacherUid || !hasSession) return;
     const responsesRef = collection(
       db,
       QUIZ_SESSIONS_COLLECTION,
@@ -174,7 +199,7 @@ export const useQuizSessionTeacher = (
       },
       (err) => console.error('[useQuizSessionTeacher] responses:', err)
     );
-  }, [teacherUid, session]);
+  }, [teacherUid, hasSession]);
 
   const finalizeAllResponses = useCallback(async () => {
     if (!teacherUid) return;
@@ -202,9 +227,65 @@ export const useQuizSessionTeacher = (
     }
   }, [teacherUid]);
 
+  const removeStudent = useCallback(
+    async (studentUid: string) => {
+      if (!teacherUid) return;
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        teacherUid,
+        RESPONSES_COLLECTION,
+        studentUid
+      );
+      await deleteDoc(responseRef);
+    },
+    [teacherUid]
+  );
+
+  const revealAnswer = useCallback(
+    async (questionId: string, correctAnswer: string) => {
+      if (!teacherUid) return;
+      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+      await updateDoc(sessionRef, {
+        [`revealedAnswers.${questionId}`]: correctAnswer,
+      });
+    },
+    [teacherUid]
+  );
+
+  const hideAnswer = useCallback(
+    async (questionId: string) => {
+      if (!teacherUid) return;
+      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+      await updateDoc(sessionRef, {
+        [`revealedAnswers.${questionId}`]: deleteField(),
+      });
+    },
+    [teacherUid]
+  );
+
   const advanceQuestion = useCallback(async () => {
     if (!teacherUid || !session) return;
     const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+
+    const isReviewing = session.questionPhase === 'reviewing';
+
+    // If podium is enabled and we're not already reviewing, enter review phase first.
+    // Skip review phase for student-paced mode (students control their own flow).
+    if (
+      !isReviewing &&
+      session.showPodiumBetweenQuestions &&
+      session.sessionMode !== 'student' &&
+      session.status === 'active'
+    ) {
+      await updateDoc(sessionRef, {
+        questionPhase: 'reviewing',
+        autoProgressAt: null,
+      });
+      return;
+    }
+
+    // Actually advance to next question
     const nextIndex = session.currentQuestionIndex + 1;
 
     if (nextIndex >= session.totalQuestions) {
@@ -213,6 +294,7 @@ export const useQuizSessionTeacher = (
         currentQuestionIndex: session.totalQuestions,
         endedAt: Date.now(),
         autoProgressAt: null,
+        questionPhase: deleteField(),
       });
       await finalizeAllResponses();
       return;
@@ -221,6 +303,7 @@ export const useQuizSessionTeacher = (
       status: 'active' as QuizSessionStatus,
       currentQuestionIndex: nextIndex,
       autoProgressAt: null,
+      questionPhase: 'answering',
       ...(session.startedAt === null ? { startedAt: Date.now() } : {}),
     });
   }, [teacherUid, session, finalizeAllResponses]);
@@ -256,12 +339,23 @@ export const useQuizSessionTeacher = (
         r.answers.some((a) => a.questionId === currentQId)
       );
 
-    if (everyoneAnswered && !session.autoProgressAt) {
-      // All students answered: set a 5-second countdown to advance
+    if (
+      everyoneAnswered &&
+      !session.autoProgressAt &&
+      session.questionPhase !== 'reviewing'
+    ) {
+      // All students answered: if podium is enabled, enter review first, then auto-advance
+      const shouldReview = session.showPodiumBetweenQuestions;
       const advanceAt = Date.now() + 5000;
-      updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), {
+      const updates: Record<string, unknown> = {
         autoProgressAt: advanceAt,
-      }).catch((err) => console.error('[AutoProgress] update failed:', err));
+      };
+      if (shouldReview) {
+        updates.questionPhase = 'reviewing';
+      }
+      updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), updates).catch(
+        (err) => console.error('[AutoProgress] update failed:', err)
+      );
     }
   }, [responses, session, teacherUid]);
 
@@ -272,9 +366,13 @@ export const useQuizSessionTeacher = (
     const timer = setInterval(() => {
       if (Date.now() >= (session.autoProgressAt ?? 0)) {
         clearInterval(timer);
-        advanceQuestion().catch((err) =>
-          console.error('[AutoProgress] advance failed:', err)
-        );
+        if (advancingRef.current) return;
+        advancingRef.current = true;
+        advanceQuestion()
+          .catch((err) => console.error('[AutoProgress] advance failed:', err))
+          .finally(() => {
+            advancingRef.current = false;
+          });
       }
     }, 1000);
 
@@ -288,7 +386,8 @@ export const useQuizSessionTeacher = (
         title: string;
         questions: QuizQuestion[];
       },
-      mode: QuizSessionMode = 'teacher'
+      mode: QuizSessionMode = 'teacher',
+      options?: QuizSessionOptions
     ): Promise<string> => {
       if (!teacherUid) throw new Error('Not authenticated');
 
@@ -351,6 +450,19 @@ export const useQuizSessionTeacher = (
         code,
         totalQuestions: quiz.questions.length,
         publicQuestions: quiz.questions.map(toPublicQuestion),
+        // Phase 1 toggles
+        tabWarningsEnabled: options?.tabWarningsEnabled ?? true,
+        showResultToStudent: options?.showResultToStudent ?? false,
+        showCorrectAnswerToStudent:
+          options?.showCorrectAnswerToStudent ?? false,
+        showCorrectOnBoard: options?.showCorrectOnBoard ?? false,
+        revealedAnswers: {},
+        // Phase 2 gamification
+        speedBonusEnabled: options?.speedBonusEnabled ?? false,
+        streakBonusEnabled: options?.streakBonusEnabled ?? false,
+        showPodiumBetweenQuestions: options?.showPodiumBetweenQuestions ?? true,
+        soundEffectsEnabled: options?.soundEffectsEnabled ?? false,
+        questionPhase: 'answering',
       };
       await setDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), newSession);
       return code;
@@ -365,6 +477,9 @@ export const useQuizSessionTeacher = (
     startQuizSession,
     advanceQuestion,
     endQuizSession,
+    removeStudent,
+    revealAnswer,
+    hideAnswer,
   };
 };
 
@@ -377,7 +492,11 @@ export interface UseQuizSessionStudentResult {
   error: string | null;
   teacherUidRef: MutableRefObject<string | null>;
   joinQuizSession: (code: string, pin: string) => Promise<string>;
-  submitAnswer: (questionId: string, answer: string) => Promise<void>;
+  submitAnswer: (
+    questionId: string,
+    answer: string,
+    speedBonus?: number
+  ) => Promise<void>;
   completeQuiz: () => Promise<void>;
   /**
    * Increments the tab switch warning count for the student in Firestore.
@@ -533,7 +652,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   );
 
   const submitAnswer = useCallback(
-    async (questionId: string, answer: string) => {
+    async (questionId: string, answer: string, speedBonus?: number) => {
       const teacherUid = teacherUidRef.current;
       const studentUid = studentUidRef.current;
       if (!teacherUid || !studentUid) return;
@@ -545,6 +664,9 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         questionId,
         answer,
         answeredAt: Date.now(),
+        ...(speedBonus != null && speedBonus > 0
+          ? { speedBonus: Math.min(50, Math.max(0, speedBonus)) }
+          : {}),
       };
 
       const existingAnswers = myResponseRef.current?.answers ?? [];

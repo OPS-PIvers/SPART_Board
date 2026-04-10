@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { DraggableWindow } from '@/components/common/DraggableWindow';
 import { WidgetData, GlobalStyle } from '@/types';
 import {
@@ -203,5 +203,141 @@ describe('DraggableWindow (Tests folder)', () => {
     // The GlassCard root container should have the background class
     const widgetCard = content.closest('.widget') as HTMLElement;
     expect(widgetCard.className).toContain('bg-emerald-50');
+  });
+
+  describe('Pin feature', () => {
+    const renderWithToolbar = (
+      widgetOverrides: Partial<WidgetData> = {},
+      contextOverrides: Partial<typeof mockContext> = {}
+    ) => {
+      const widget = { ...mockWidget, ...widgetOverrides };
+      return render(
+        <DashboardContext.Provider
+          value={
+            {
+              ...mockContext,
+              selectedWidgetId: widget.id,
+              ...contextOverrides,
+            } as unknown as DashboardContextValue
+          }
+        >
+          <DraggableWindow
+            widget={widget}
+            settings={<div>Settings</div>}
+            title="Test Widget"
+            globalStyle={mockGlobalStyle}
+          >
+            <div data-testid="widget-content">Content</div>
+          </DraggableWindow>
+        </DashboardContext.Provider>
+      );
+    };
+
+    it('renders pin button in toolbar when widget is selected', () => {
+      renderWithToolbar();
+
+      const pinButton = screen.getByLabelText(/pin position/i);
+      expect(pinButton).toBeInTheDocument();
+    });
+
+    it('shows unpin label when widget is pinned', () => {
+      renderWithToolbar({ isPinned: true });
+
+      const unpinButton = screen.getByLabelText(/unpin position/i);
+      expect(unpinButton).toBeInTheDocument();
+    });
+
+    it('calls updateWidget with isPinned toggle when pin button is clicked', () => {
+      renderWithToolbar();
+
+      const pinButton = screen.getByLabelText(/pin position/i);
+      fireEvent.click(pinButton);
+
+      expect(mockContext.updateWidget).toHaveBeenCalledWith('test-widget', {
+        isPinned: true,
+      });
+    });
+
+    it('calls updateWidget to unpin when pinned widget pin button is clicked', () => {
+      renderWithToolbar({ isPinned: true });
+
+      const unpinButton = screen.getByLabelText(/unpin position/i);
+      fireEvent.click(unpinButton);
+
+      expect(mockContext.updateWidget).toHaveBeenCalledWith('test-widget', {
+        isPinned: false,
+      });
+    });
+
+    it('applies active styling when pinned', () => {
+      renderWithToolbar({ isPinned: true });
+
+      const unpinButton = screen.getByLabelText(/unpin position/i);
+      expect(unpinButton.className).toContain('bg-amber-500/20');
+      expect(unpinButton.className).toContain('text-amber-600');
+    });
+
+    it('disables pin button when widget is admin-locked', () => {
+      renderWithToolbar({ isLocked: true });
+
+      const pinButton = screen.getByLabelText(/pin position/i);
+      expect(pinButton).toBeDisabled();
+    });
+
+    it('hides resize handles when pinned', () => {
+      renderWithToolbar({ isPinned: true });
+
+      const resizeHandles = document.querySelectorAll('.resize-handle');
+      expect(resizeHandles).toHaveLength(0);
+    });
+
+    it('shows resize handles when not pinned', () => {
+      renderWithToolbar();
+
+      const resizeHandles = document.querySelectorAll('.resize-handle');
+      expect(resizeHandles.length).toBeGreaterThan(0);
+    });
+
+    it('disables snap layout button when pinned', () => {
+      renderWithToolbar({ isPinned: true });
+
+      const snapButton = screen.getByLabelText(/snap layout/i);
+      expect(snapButton).toBeDisabled();
+    });
+
+    it('does not disable close button when pinned', () => {
+      renderWithToolbar({ isPinned: true });
+
+      const closeButton = screen.getByLabelText(/close/i);
+      expect(closeButton).not.toBeDisabled();
+    });
+
+    it('toggles pin via Alt+P keyboard shortcut (widget-keyboard-action)', () => {
+      renderWithToolbar();
+
+      act(() => {
+        const event = new CustomEvent('widget-keyboard-action', {
+          detail: { widgetId: 'test-widget', key: 'Pin', shiftKey: false },
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(mockContext.updateWidget).toHaveBeenCalledWith('test-widget', {
+        isPinned: true,
+      });
+    });
+
+    it('does not toggle pin via Alt+P when widget is locked', () => {
+      renderWithToolbar({ isLocked: true });
+
+      act(() => {
+        const event = new CustomEvent('widget-keyboard-action', {
+          detail: { widgetId: 'test-widget', key: 'Pin', shiftKey: false },
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(mockContext.updateWidget).not.toHaveBeenCalled();
+    });
   });
 });

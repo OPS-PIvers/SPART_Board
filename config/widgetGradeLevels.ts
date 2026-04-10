@@ -102,6 +102,8 @@ export const WIDGET_GRADE_LEVELS: Record<
   'video-activity': ALL_GRADE_LEVELS,
   'guided-learning': ALL_GRADE_LEVELS,
   'custom-widget': ALL_GRADE_LEVELS,
+  'work-symbols': ALL_GRADE_LEVELS,
+  'blooms-taxonomy': ALL_GRADE_LEVELS,
 };
 
 /**

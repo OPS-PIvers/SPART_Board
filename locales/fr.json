@@ -103,6 +103,8 @@
     "undo": "Annuler",
     "clearAll": "Tout effacer",
     "done": "Terminé",
+    "pin": "Épingler la position",
+    "unpin": "Désépingler la position",
     "snapLayout": "Ajuster la mise en page",
     "chooseLayout": "Choisir la mise en page",
     "snapTo": "Ajuster à",
@@ -118,6 +120,13 @@
       "topUtilityBar": "Barre d'outils supérieure",
       "sidebarUtility": "Barre latérale",
       "doubleSidebarUtility": "Double barre latérale"
+    },
+    "group": {
+      "tapToAdd": "Appuyez sur les widgets pour les ajouter au groupe",
+      "groupCount": "Grouper ({{count}})",
+      "widgetsGrouped": "Widgets groupés",
+      "ungroup": "Dégrouper",
+      "groupWith": "Grouper avec..."
     },
     "clearEntireBoard": "Êtes-vous sûr de vouloir effacer l'intégralité du tableau ?",
     "clearBoardTitle": "Effacer le Tableau"

@@ -45,6 +45,8 @@ import { MusicLibraryModal } from '@/components/admin/MusicLibraryModal';
 import { CatalystConfigurationModal } from '@/components/admin/CatalystConfigurationModal';
 import { PdfLibraryModal } from '@/components/admin/PdfLibraryModal';
 import { VideoActivityConfigurationModal } from '@/components/admin/VideoActivityConfigurationModal';
+import { WorkSymbolsConfigurationModal } from '@/components/admin/WorkSymbolsConfigurationModal';
+import { BloomsTaxonomyConfigurationModal } from '@/components/admin/BloomsTaxonomyConfigurationModal';
 import { StickerGlobalConfig } from '@/types';
 import { useDialog } from '@/context/useDialog';
 
@@ -895,8 +897,27 @@ export const FeaturePermissionsManager: React.FC = () => {
         />
       )}
 
+      {activeModalTool?.type === 'work-symbols' && (
+        <WorkSymbolsConfigurationModal
+          isOpen={true}
+          onClose={() => setActiveModalTool(null)}
+          permission={getPermission('work-symbols')}
+          onSave={(updates) => updatePermission('work-symbols', updates)}
+        />
+      )}
+
+      {activeModalTool?.type === 'blooms-taxonomy' && (
+        <BloomsTaxonomyConfigurationModal
+          isOpen={true}
+          onClose={() => setActiveModalTool(null)}
+          permission={getPermission('blooms-taxonomy')}
+          onSave={(updates) => updatePermission('blooms-taxonomy', updates)}
+        />
+      )}
+
       {activeModalTool &&
         ![
+          'blooms-taxonomy',
           'calendar',
           'catalyst',
           'graphic-organizer',
@@ -908,6 +929,7 @@ export const FeaturePermissionsManager: React.FC = () => {
           'starter-pack',
           'stickers',
           'video-activity',
+          'work-symbols',
         ].includes(activeModalTool.type) && (
           <GenericConfigurationModal
             tool={activeModalTool}

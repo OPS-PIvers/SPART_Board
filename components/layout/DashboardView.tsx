@@ -16,6 +16,7 @@ import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
+import { GroupBoundingBox } from '@/components/common/GroupBoundingBox';
 import { AnnouncementOverlay } from '@/components/announcements/AnnouncementOverlay';
 import { CheatSheetModal } from '@/components/common/CheatSheetModal';
 import { BoardZoomControl } from './BoardZoomControl';
@@ -127,6 +128,7 @@ export const DashboardView: React.FC = () => {
     dashboards,
     addWidget,
     updateWidget,
+    updateWidgets,
     removeWidget,
     duplicateWidget,
     bringToFront,
@@ -137,11 +139,17 @@ export const DashboardView: React.FC = () => {
     deleteAllWidgets,
     setSelectedWidgetId,
     updateDashboardSettings,
-    updateDashboard,
     zoom,
     setZoom,
     pendingQuizShareId,
     clearPendingQuizShare,
+    // Widget grouping
+    groupWidgets,
+    groupBuildMode,
+    setGroupBuildMode,
+    selectedWidgetIds,
+    setSelectedWidgetIds,
+    selectedWidgetId,
   } = useDashboard();
 
   const { importSharedQuiz } = useQuiz(user?.uid);
@@ -302,38 +310,43 @@ export const DashboardView: React.FC = () => {
 
     const diffX = Math.abs(currentW - savedW) / savedW;
     const diffY = Math.abs(currentH - savedH) / savedH;
-    if (diffX < 0.05 && diffY < 0.05) return; // Same screen (~5% tolerance)
+    if (diffX < 0.1 && diffY < 0.1) return; // Same screen (~10% tolerance)
 
     const MAX_SCALE = 3;
     const scaleX = Math.min(MAX_SCALE, currentW / savedW);
     const scaleY = Math.min(MAX_SCALE, currentH / savedH);
 
-    const MIN_VISIBLE = 80;
-    const TITLE_BAR = 40;
-
+    const batch: Array<{
+      id: string;
+      changes: { x: number; y: number; w: number; h: number };
+    }> = [];
     widgets.forEach(({ id: widgetId, x, y, w, h }) => {
       // Scale dimensions, capped at viewport size
       const newW = Math.min(currentW, Math.max(100, Math.round(w * scaleX)));
       const newH = Math.min(currentH, Math.max(60, Math.round(h * scaleY)));
 
-      // Scale positions with bounds clamping to keep widgets visible
-      let newX = Math.round(x * scaleX);
-      let newY = Math.round(y * scaleY);
-      if (newW <= MIN_VISIBLE) {
-        newX = Math.max(0, Math.min(newX, currentW - newW));
-      } else {
-        newX = Math.max(
-          -(newW - MIN_VISIBLE),
-          Math.min(newX, currentW - MIN_VISIBLE)
-        );
-      }
-      newY = Math.max(0, Math.min(newY, currentH - TITLE_BAR));
+      // Scale positions and clamp so the resized widget stays fully on-screen.
+      const newX = Math.max(
+        0,
+        Math.min(Math.round(x * scaleX), Math.max(0, currentW - newW))
+      );
+      const newY = Math.max(
+        0,
+        Math.min(Math.round(y * scaleY), Math.max(0, currentH - newH))
+      );
 
-      updateWidget(widgetId, { x: newX, y: newY, w: newW, h: newH });
+      if (newX !== x || newY !== y || newW !== w || newH !== h) {
+        batch.push({
+          id: widgetId,
+          changes: { x: newX, y: newY, w: newW, h: newH },
+        });
+      }
     });
 
-    updateDashboard({ viewportWidth: currentW, viewportHeight: currentH });
-    addToast('Layout scaled to fit this screen', 'info');
+    updateWidgets(batch);
+    if (batch.length) {
+      addToast('Layout scaled to fit this screen', 'info');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only on id change
   }, [activeDashboard?.id]);
 
@@ -679,6 +692,14 @@ export const DashboardView: React.FC = () => {
   // Keyboard Navigation
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape: Exit group-build mode first (highest priority modal state)
+      if (e.key === 'Escape' && groupBuildMode) {
+        e.preventDefault();
+        setGroupBuildMode(false);
+        setSelectedWidgetIds([]);
+        return;
+      }
+
       // Escape: Close top-most widget or blur input
       if (e.key === 'Escape') {
         const activeElement = document.activeElement as HTMLElement;
@@ -764,6 +785,29 @@ export const DashboardView: React.FC = () => {
         return;
       }
 
+      // Alt + P: Pin/Unpin top or focused widget
+      if (e.altKey && e.key === 'p') {
+        e.preventDefault();
+        if (activeDashboard && activeDashboard.widgets.length > 0) {
+          const sorted = [...activeDashboard.widgets].sort((a, b) => b.z - a.z);
+          const topWidget = sorted[0];
+
+          const targetId = document.activeElement?.closest('.widget')
+            ? (document.activeElement as HTMLElement).getAttribute(
+                'data-widget-id'
+              )
+            : topWidget.id;
+
+          if (targetId) {
+            const event = new CustomEvent('widget-keyboard-action', {
+              detail: { widgetId: targetId, key: 'Pin', shiftKey: false },
+            });
+            window.dispatchEvent(event);
+          }
+        }
+        return;
+      }
+
       // Alt + Left/Right: Navigate boards (with wrap-around)
       if (e.altKey && e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -792,6 +836,9 @@ export const DashboardView: React.FC = () => {
     deleteAllWidgets,
     showConfirm,
     t,
+    groupBuildMode,
+    setGroupBuildMode,
+    setSelectedWidgetIds,
   ]);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -1162,8 +1209,66 @@ export const DashboardView: React.FC = () => {
               />
             );
           })}
+          {/* Group Bounding Box — rendered when a grouped widget is selected */}
+          {(() => {
+            const selectedGroupId = selectedWidgetId
+              ? activeDashboard.widgets.find((w) => w.id === selectedWidgetId)
+                  ?.groupId
+              : undefined;
+            if (!selectedGroupId) return null;
+            const members = activeDashboard.widgets.filter(
+              (w) =>
+                w.groupId === selectedGroupId &&
+                !w.minimized &&
+                !w.isLocked &&
+                !w.isPinned
+            );
+            return <GroupBoundingBox groupWidgets={members} zoom={zoom} />;
+          })()}
         </div>
       </div>
+
+      {/* Group-building mode floating action bar */}
+      {groupBuildMode &&
+        createPortal(
+          <>
+            {/* Instruction banner */}
+            <div className="fixed top-6 left-1/2 -translate-x-1/2 z-toast px-6 py-3 bg-blue-600/90 backdrop-blur-xl text-white rounded-full shadow-2xl font-sans text-sm font-medium pointer-events-none">
+              {t('widgetWindow.group.tapToAdd')}
+            </div>
+            {/* Action bar */}
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-toast flex items-center gap-3 px-6 py-3 bg-white/90 backdrop-blur-xl rounded-full shadow-2xl border border-white/50">
+              <button
+                onClick={() => {
+                  setGroupBuildMode(false);
+                  setSelectedWidgetIds([]);
+                }}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                disabled={selectedWidgetIds.length < 2}
+                onClick={() => {
+                  groupWidgets(selectedWidgetIds);
+                  setGroupBuildMode(false);
+                  setSelectedWidgetIds([]);
+                  addToast(t('widgetWindow.group.widgetsGrouped'));
+                }}
+                className={`px-5 py-2 text-sm font-semibold rounded-full transition-colors ${
+                  selectedWidgetIds.length >= 2
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                {t('widgetWindow.group.groupCount', {
+                  count: selectedWidgetIds.length,
+                })}
+              </button>
+            </div>
+          </>,
+          document.body
+        )}
 
       {/* FIXED UI: Outside the zoom container */}
       <Sidebar />

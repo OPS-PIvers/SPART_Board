@@ -112,6 +112,8 @@
     "undo": "Deshacer",
     "clearAll": "Borrar Todo",
     "done": "Listo",
+    "pin": "Fijar posición",
+    "unpin": "Soltar posición",
     "snapLayout": "Ajustar Diseño",
     "chooseLayout": "Elegir Diseño",
     "snapTo": "Ajustar a",
@@ -127,6 +129,13 @@
       "topUtilityBar": "Barra de Utilidades Superior",
       "sidebarUtility": "Barra Lateral",
       "doubleSidebarUtility": "Doble Barra Lateral"
+    },
+    "group": {
+      "tapToAdd": "Toca widgets para agregar al grupo",
+      "groupCount": "Agrupar ({{count}})",
+      "widgetsGrouped": "Widgets agrupados",
+      "ungroup": "Desagrupar",
+      "groupWith": "Agrupar con..."
     },
     "clearEntireBoard": "¿Estás seguro de que deseas borrar todo el tablero?",
     "clearBoardTitle": "Borrar Tablero"

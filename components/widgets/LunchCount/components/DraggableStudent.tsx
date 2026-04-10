@@ -35,6 +35,7 @@ export const DraggableStudent: React.FC<DraggableStudentProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      data-no-drag="true"
       {...listeners}
       {...attributes}
       onClick={(e) => {

@@ -55,7 +55,9 @@ export type WidgetType =
   | 'soundboard'
   | 'url'
   | 'activity-wall'
-  | 'first-5';
+  | 'first-5'
+  | 'work-symbols'
+  | 'blooms-taxonomy';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -508,6 +510,67 @@ export interface ExpectationsGlobalConfig {
   buildings: Record<string, ExpectationsBuildingConfig>;
 }
 
+// --- WORK SYMBOLS ---
+
+export interface WorkSymbolsConfig {
+  selectedSymbolId: string | null;
+  fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
+  titlePosition?: 'bottom' | 'top';
+}
+
+export interface WorkSymbol {
+  id: string;
+  title: string;
+  imageUrl: string;
+  /** Building IDs this symbol is available in. Empty = all buildings. */
+  buildings: string[];
+}
+
+export interface WorkSymbolsGlobalConfig {
+  symbols: WorkSymbol[];
+}
+
+// --- BLOOM'S TAXONOMY ---
+
+export type BloomsLevelKey =
+  | 'remember'
+  | 'understand'
+  | 'apply'
+  | 'analyze'
+  | 'evaluate'
+  | 'create';
+
+export type BloomsCategoryKey =
+  | 'questionStems'
+  | 'actionVerbs'
+  | 'activityTypes'
+  | 'assessmentIdeas'
+  | 'iCanStatements'
+  | 'dokAlignment';
+
+export type BloomsContent = Partial<
+  Record<BloomsLevelKey, Partial<Record<BloomsCategoryKey, string[]>>>
+>;
+
+export interface BloomsTaxonomyConfig {
+  enabledCategories?: BloomsCategoryKey[];
+  aiTopic?: string;
+  themeColor?: string;
+}
+
+export interface BloomsTaxonomyGlobalConfig {
+  buildingDefaults?: Record<string, BloomsTaxonomyBuildingConfig>;
+}
+
+export interface BloomsTaxonomyBuildingConfig {
+  contentOverrides?: BloomsContent;
+  availableCategories?: BloomsCategoryKey[];
+  aiEnabled?: boolean;
+  defaultEnabledCategories?: BloomsCategoryKey[];
+}
+
 export interface TalkingToolStem {
   id: string;
   text: string;
@@ -838,6 +901,8 @@ export interface ScheduleConfig {
   cardColor?: string;
   /** Card background opacity, 0 (fully transparent) to 1 (fully opaque). Default: 1. */
   cardOpacity?: number;
+  /** Persisted schedule tab selection in the settings panel. Not used by the front-face display. */
+  settingsSelectedScheduleId?: string | null;
 }
 
 export interface CalendarConfig {
@@ -1343,6 +1408,34 @@ export interface QuizSession {
    * full QuizData loaded from Drive, not from this field.
    */
   publicQuestions: QuizPublicQuestion[];
+
+  // ─── Toggles (Phase 1) ─────────────────────────────────────────────────────
+  /** Whether tab-switch detection is active on student devices (default true) */
+  tabWarningsEnabled?: boolean;
+  /** Show right/wrong indicator to students after they submit (default false) */
+  showResultToStudent?: boolean;
+  /** Reveal the correct answer text to students after submit (default false) */
+  showCorrectAnswerToStudent?: boolean;
+  /** Show the correct answer on the teacher's projected board (default false) */
+  showCorrectOnBoard?: boolean;
+  /**
+   * Teacher-written map of questionId → correct answer text.
+   * Students read from this after submitting; only populated when the
+   * teacher reveals an answer.
+   */
+  revealedAnswers?: Record<string, string>;
+
+  // ─── Gamification (Phase 2) ─────────────────────────────────────────────────
+  /** Award bonus points for fast answers (default false) */
+  speedBonusEnabled?: boolean;
+  /** Award streak multipliers for consecutive correct answers (default false) */
+  streakBonusEnabled?: boolean;
+  /** Show a podium/leaderboard between questions (default false) */
+  showPodiumBetweenQuestions?: boolean;
+  /** Play sound effects during the quiz (default false) */
+  soundEffectsEnabled?: boolean;
+  /** Current phase within a question: 'answering' (default) or 'reviewing' (between-question review) */
+  questionPhase?: 'answering' | 'reviewing';
 }
 
 export interface QuizResponseAnswer {
@@ -1357,6 +1450,8 @@ export interface QuizResponseAnswer {
    * stored value are still valid.
    */
   isCorrect?: boolean;
+  /** Percentage speed bonus earned from answering quickly (0–50 means +0% to +50%). */
+  speedBonus?: number;
 }
 
 export type QuizResponseStatus = 'joined' | 'in-progress' | 'completed';
@@ -2186,7 +2281,9 @@ export type WidgetConfig =
   | GuidedLearningConfig
   | CustomWidgetConfig
   | SoundboardConfig
-  | ActivityWallConfig;
+  | ActivityWallConfig
+  | WorkSymbolsConfig
+  | BloomsTaxonomyConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'url'
@@ -2301,7 +2398,11 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'url'
                                                                                                               ? CustomWidgetConfig
                                                                                                               : T extends 'activity-wall'
                                                                                                                 ? ActivityWallConfig
-                                                                                                                : never;
+                                                                                                                : T extends 'work-symbols'
+                                                                                                                  ? WorkSymbolsConfig
+                                                                                                                  : T extends 'blooms-taxonomy'
+                                                                                                                    ? BloomsTaxonomyConfig
+                                                                                                                    : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
@@ -2351,8 +2452,13 @@ export interface WidgetData {
   customTitle?: string | null;
   isLive?: boolean;
   isLocked?: boolean; // When true: widget cannot be moved, resized, or deleted by end-users
+  isPinned?: boolean; // User-pinned: drag, resize, maximize, snap disabled
   transparency?: number;
   annotation?: DrawingConfig;
+  /** Override which building's admin defaults this widget uses (falls back to user's primary building) */
+  buildingId?: string;
+  /** Widgets sharing the same groupId form a group — they move and resize together */
+  groupId?: string;
   config: WidgetConfig;
 
   // Universal style properties
@@ -2604,6 +2710,8 @@ export interface BackgroundPreset {
   category?: string;
   /** Building IDs this background is assigned to; empty/undefined = all buildings */
   buildingIds?: string[];
+  /** Whether this background is featured in the sidebar overview (max ~6 per category) */
+  featured?: boolean;
 }
 
 // --- GLOBAL STYLING TYPES ---

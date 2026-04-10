@@ -24,7 +24,12 @@ import {
   LayoutTemplate,
   LayoutGrid,
   Lock,
+  Pin,
+  Link,
+  Unlink,
 } from 'lucide-react';
+
+import { widgetRefRegistry } from './widgetRefRegistry';
 import {
   WidgetData,
   WidgetType,
@@ -69,9 +74,14 @@ const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle
 
 const TOUCH_GESTURE_BLOCKING_SELECTOR = `${DRAG_BLOCKING_SELECTOR}, ${SCROLLABLE_ELEMENTS_SELECTOR}`;
 
+// RGB components of brand-blue-light (#4356a0) for group indicator styling
+const GROUP_BRAND_RGB = '67, 86, 160';
+
 // const MIN_GESTURE_SWIPE_DISTANCE = 100;
 const DRAG_CLICK_THRESHOLD_PX = 25;
 const INVISIBLE_EDGE_PAD = 20; // px of invisible grab zone extending outside widget bounds
+const INNER_EDGE_PAD = 16; // px of invisible drag zone inside widget bounds
+const INNER_EDGE_CORNER_INSET = 24; // px inset at corners to avoid resize handle overlap
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -139,6 +149,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     deleteAllWidgets,
     selectedWidgetId,
     setSelectedWidgetId,
+    activeDashboard,
+    updateWidgets,
+    ungroupWidgets,
+    groupBuildMode,
+    setGroupBuildMode,
+    selectedWidgetIds,
+    setSelectedWidgetIds,
     zoom,
   } = useDashboard();
   const { showConfirm: showConfirmDialog } = useDialog();
@@ -147,6 +164,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const showTools = selectedWidgetId === widget.id;
+
+  // Group visual state
+  const isInGroup = !!widget.groupId;
+  const isGroupActive =
+    isInGroup &&
+    activeDashboard?.widgets.some(
+      (w) => w.groupId === widget.groupId && w.id === selectedWidgetId
+    );
+  const isGroupBuildSelected =
+    groupBuildMode && selectedWidgetIds.includes(widget.id);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
@@ -250,10 +277,34 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   );
 
   const windowRef = useRef<HTMLDivElement>(null);
+
+  // Register this widget's DOM element in the shared registry for group operations
+  useEffect(() => {
+    const el = windowRef.current;
+    if (el) widgetRefRegistry.set(widget.id, el);
+    return () => {
+      widgetRefRegistry.delete(widget.id);
+    };
+  }, [widget.id]);
+
   const menuRef = useRef<HTMLDivElement>(null);
   const snapMenuRef = useRef<HTMLDivElement>(null);
   const snapButtonRef = useRef<HTMLButtonElement>(null);
   const dragDistanceRef = useRef(0);
+
+  // Group drag/resize: store sibling initial positions and DOM refs
+  const groupSiblingsRef = useRef<
+    Array<{
+      id: string;
+      startX: number;
+      startY: number;
+      startW: number;
+      startH: number;
+      el: HTMLDivElement;
+    }>
+  >([]);
+  // Track drag delta for group sibling commit (works for both DOM and state-driven widgets)
+  const groupDragDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const saveTitle = useCallback(() => {
     if (tempTitle.trim()) {
@@ -311,9 +362,21 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const isMaximized = widget.maximized ?? false;
   const isLocked = widget.isLocked ?? false;
+  const isPinned = widget.isPinned ?? false;
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    // In group-building mode, toggle selection instead of normal behavior
+    if (groupBuildMode) {
+      e.stopPropagation();
+      e.preventDefault();
+      setSelectedWidgetIds((prev) =>
+        prev.includes(widget.id)
+          ? prev.filter((id) => id !== widget.id)
+          : [...prev, widget.id]
+      );
+      return;
+    }
     // DO NOT stop propagation here, otherwise DashboardView misses 2-finger swipes
     bringToFront(widget.id);
     // Explicitly focus the widget so it can receive keyboard events
@@ -323,15 +386,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const handleMaximizeToggle = useCallback(() => {
     if (isLocked) return;
     const newMaximized = !isMaximized;
+    if (isPinned && newMaximized) return;
     updateWidget(widget.id, { maximized: newMaximized, flipped: false });
     if (newMaximized) {
       bringToFront(widget.id);
     }
-  }, [isLocked, isMaximized, widget.id, updateWidget, bringToFront]);
+  }, [isLocked, isPinned, isMaximized, widget.id, updateWidget, bringToFront]);
 
   const handleSnapToZone = useCallback(
     (zone: SnapZone) => {
-      if (isLocked) return;
+      if (isLocked || isPinned) return;
       const { x, y, w, h } = calculateSnapBounds(zone);
 
       updateWidget(widget.id, {
@@ -346,7 +410,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       setShowSnapMenu(false);
       handleCloseTools();
     },
-    [isLocked, widget.id, updateWidget, handleCloseTools]
+    [isLocked, isPinned, widget.id, updateWidget, handleCloseTools]
   );
 
   const getCellFromPointer = (
@@ -473,8 +537,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           handleMaximizeToggle();
           break;
         case 'r': // Reset size
+          if (isLocked || isPinned) break;
           e.preventDefault();
           resetWidgetSize(widget.id);
+          break;
+        case 'p': // Pin/Unpin position
+          if (isLocked) break;
+          e.preventDefault();
+          if (!isPinned) setShowSnapMenu(false);
+          updateWidget(widget.id, { isPinned: !isPinned });
+          handleCloseTools();
           break;
       }
     }
@@ -489,7 +561,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleDragStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
-    if (isLocked) return;
+    if (isLocked || isPinned) return;
 
     // Don't drag if clicking interactive elements or resize handle
     const target = e.target as HTMLElement;
@@ -523,6 +595,36 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Initialize transient state
     dragState.current = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
     dragDistanceRef.current = 0;
+
+    // Collect group siblings for coordinated drag
+    const hasGroup = !!widget.groupId;
+    if (hasGroup && activeDashboard) {
+      groupSiblingsRef.current = activeDashboard.widgets
+        .filter(
+          (w) =>
+            w.groupId === widget.groupId &&
+            w.id !== widget.id &&
+            !w.minimized &&
+            !w.isLocked &&
+            !w.isPinned
+        )
+        .map((w) => {
+          const el = widgetRefRegistry.get(w.id);
+          return el
+            ? {
+                id: w.id,
+                startX: w.x,
+                startY: w.y,
+                startW: w.w,
+                startH: w.h,
+                el,
+              }
+            : null;
+        })
+        .filter(Boolean) as typeof groupSiblingsRef.current;
+    } else {
+      groupSiblingsRef.current = [];
+    }
 
     document.body.classList.add('is-dragging-widget');
     const initialMouseX = e.clientX;
@@ -560,39 +662,42 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             Math.pow(moveEvent.clientY - initialMouseY, 2)
         );
 
-        // Edge Detection Threshold for Large Touch Panels
-        const screenW = window.innerWidth;
-        const screenH = window.innerHeight;
-        const threshold = SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
+        // Skip snap-to-edge detection for grouped widgets
+        if (!hasGroup) {
+          // Edge Detection Threshold for Large Touch Panels
+          const screenW = window.innerWidth;
+          const screenH = window.innerHeight;
+          const threshold = SNAP_LAYOUT_CONSTANTS.EDGE_THRESHOLD;
 
-        const isLeftEdge = moveEvent.clientX <= threshold;
-        const isRightEdge = moveEvent.clientX >= screenW - threshold;
-        const isTopEdge = moveEvent.clientY <= threshold;
-        const isBottomEdge = moveEvent.clientY >= screenH - threshold;
+          const isLeftEdge = moveEvent.clientX <= threshold;
+          const isRightEdge = moveEvent.clientX >= screenW - threshold;
+          const isTopEdge = moveEvent.clientY <= threshold;
+          const isBottomEdge = moveEvent.clientY >= screenH - threshold;
 
-        let newZone: SnapZone | 'maximize' | 'minimize' | null = null;
+          let newZone: SnapZone | 'maximize' | 'minimize' | null = null;
 
-        if (isLeftEdge && isTopEdge) {
-          newZone = topLeftZone;
-        } else if (isRightEdge && isTopEdge) {
-          newZone = topRightZone;
-        } else if (isLeftEdge && isBottomEdge) {
-          newZone = bottomLeftZone;
-        } else if (isRightEdge && isBottomEdge) {
-          newZone = bottomRightZone;
-        } else if (isLeftEdge) {
-          newZone = leftHalfZone;
-        } else if (isRightEdge) {
-          newZone = rightHalfZone;
-        } else if (isTopEdge) {
-          newZone = topHalfZone;
-        } else if (isBottomEdge) {
-          newZone = 'minimize';
-        }
+          if (isLeftEdge && isTopEdge) {
+            newZone = topLeftZone;
+          } else if (isRightEdge && isTopEdge) {
+            newZone = topRightZone;
+          } else if (isLeftEdge && isBottomEdge) {
+            newZone = bottomLeftZone;
+          } else if (isRightEdge && isBottomEdge) {
+            newZone = bottomRightZone;
+          } else if (isLeftEdge) {
+            newZone = leftHalfZone;
+          } else if (isRightEdge) {
+            newZone = rightHalfZone;
+          } else if (isTopEdge) {
+            newZone = topHalfZone;
+          } else if (isBottomEdge) {
+            newZone = 'minimize';
+          }
 
-        if (snapPreviewZoneRef.current !== newZone) {
-          snapPreviewZoneRef.current = newZone;
-          setSnapPreviewZone(newZone);
+          if (snapPreviewZoneRef.current !== newZone) {
+            snapPreviewZoneRef.current = newZone;
+            setSnapPreviewZone(newZone);
+          }
         }
 
         // Calculate movements relative to initial position, scaled by current zoom
@@ -618,6 +723,17 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             x: newX,
             y: newY,
           });
+        }
+
+        // Move group siblings via direct DOM manipulation
+        if (groupSiblingsRef.current.length > 0) {
+          groupDragDeltaRef.current = { x: deltaX, y: deltaY };
+          for (const sib of groupSiblingsRef.current) {
+            const sibX = sib.startX + deltaX;
+            const sibY = sib.startY + deltaY;
+            sib.el.style.left = `${sibX}px`;
+            sib.el.style.top = `${sibY}px`;
+          }
         }
       });
     };
@@ -668,6 +784,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           });
         }
       }
+
+      // Commit group sibling positions via batch update
+      if (groupSiblingsRef.current.length > 0) {
+        const { x: deltaX, y: deltaY } = groupDragDeltaRef.current;
+        updateWidgets(
+          groupSiblingsRef.current.map((sib) => ({
+            id: sib.id,
+            changes: {
+              x: sib.startX + deltaX,
+              y: sib.startY + deltaY,
+            },
+          }))
+        );
+        groupSiblingsRef.current = [];
+        groupDragDeltaRef.current = { x: 0, y: 0 };
+      }
     };
 
     window.addEventListener('pointermove', onPointerMove);
@@ -675,9 +807,62 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('pointercancel', onPointerUp);
   };
 
+  /** Inner edge drag zones sit on top of widget content. Before starting a drag,
+   *  check whether an interactive element (button, input, contenteditable, etc.)
+   *  exists beneath the overlay. If so, pass the event through instead of dragging. */
+  const handleInnerDragStart = (e: React.PointerEvent) => {
+    const overlayEl = e.currentTarget as HTMLElement;
+    const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+    for (const el of elementsAtPoint) {
+      if (el === overlayEl) continue;
+      // Iframes and canvases (e.g. embed or drawing widgets) often fill the
+      // entire container — the drag handle must take priority over them.
+      if (el instanceof HTMLIFrameElement || el instanceof HTMLCanvasElement)
+        continue;
+      if (
+        el.matches?.(INTERACTIVE_ELEMENTS_SELECTOR) ||
+        el.closest?.(INTERACTIVE_ELEMENTS_SELECTOR)
+      ) {
+        // Let the click fall through to the interactive element beneath
+        overlayEl.style.pointerEvents = 'none';
+        requestAnimationFrame(() => {
+          overlayEl.style.pointerEvents = '';
+        });
+        return;
+      }
+    }
+    handleDragStart(e);
+  };
+
   const handleResizeStart = (e: React.PointerEvent, direction: string) => {
     if (isMaximized) return;
-    if (isLocked) return;
+    if (isLocked || isPinned) return;
+    if (widget.groupId) return; // Grouped widgets use GroupBoundingBox for coordinated resize
+
+    // Check if an interactive element exists beneath this resize overlay.
+    // If so, let the event pass through to the interactive element instead of resizing.
+    const resizeEl = e.currentTarget as HTMLElement;
+    const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+    for (const el of elementsAtPoint) {
+      if (el === resizeEl) continue;
+      // Iframes and canvases (e.g. embed or drawing widgets) often fill the
+      // entire container — the resize handle must take priority over them.
+      if (el instanceof HTMLIFrameElement || el instanceof HTMLCanvasElement)
+        continue;
+      if (
+        el.matches?.(INTERACTIVE_ELEMENTS_SELECTOR) ||
+        el.closest?.(INTERACTIVE_ELEMENTS_SELECTOR)
+      ) {
+        // Temporarily remove pointer-events so the browser dispatches
+        // the subsequent click to the interactive element beneath.
+        resizeEl.style.pointerEvents = 'none';
+        requestAnimationFrame(() => {
+          resizeEl.style.pointerEvents = '';
+        });
+        return;
+      }
+    }
+
     e.stopPropagation();
     e.preventDefault();
 
@@ -830,6 +1015,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // In group-building mode, selection is handled by handlePointerDown — skip click logic
+    if (groupBuildMode) return;
     // Avoid triggering when clicking interactive elements
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(INTERACTIVE_ELEMENTS_SELECTOR);
@@ -1049,6 +1236,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         } else {
           updateWidget(widget.id, { minimized: true, flipped: false });
         }
+      } else if (key === 'Pin') {
+        if (!isLocked) {
+          const nextPinned = !isPinned;
+          if (nextPinned) setShowSnapMenu(false);
+          updateWidget(widget.id, { isPinned: nextPinned });
+          handleCloseTools();
+        }
       } else if (key === 'Delete') {
         if (!isLocked) {
           if (skipCloseConfirmation) {
@@ -1073,6 +1267,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     showConfirm,
     isAnnotating,
     isLocked,
+    isPinned,
     skipCloseConfirmation,
     removeWidget,
     updateWidget,
@@ -1191,7 +1386,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       cornerRadius={isMaximized ? 'none' : undefined}
       className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
         isMaximized ? 'border-none !shadow-none' : ''
-      }`}
+      } ${isGroupActive || isGroupBuildSelected ? 'ring-2 ring-brand-blue-light/60' : ''}`}
       bgClass={widget.backgroundColor}
       style={{
         left: isMaximized
@@ -1224,6 +1419,62 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         ...style, // Merge custom styles
       }}
     >
+      {/* Group indicator dot */}
+      {isInGroup && !isMaximized && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 6,
+            left: 6,
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: `rgba(${GROUP_BRAND_RGB}, 0.7)`,
+            border: '1.5px solid rgba(255,255,255,0.6)',
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
+      {/* Group-build mode selection overlay */}
+      {groupBuildMode && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: isGroupBuildSelected
+              ? `rgba(${GROUP_BRAND_RGB}, 0.15)`
+              : 'rgba(0,0,0,0.05)',
+            borderRadius: 'inherit',
+            pointerEvents: 'none',
+          }}
+        >
+          {isGroupBuildSelected && (
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: `rgba(${GROUP_BRAND_RGB}, 0.8)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: 18,
+                fontWeight: 'bold',
+              }}
+            >
+              ✓
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Widget Content (always visible) */}
       <div
         data-testid="drag-surface"
@@ -1277,6 +1528,80 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             />
           )}
           {children}
+
+          {/* Inner edge drag zones — invisible grab strips along the inside perimeter
+              so users can drag full-interactive widgets (embed, text, etc.) from within
+              the visible widget boundary instead of only from outside it.
+              Uses handleInnerDragStart which checks elementsFromPoint before dragging
+              so that interactive elements beneath (buttons, inputs) remain clickable. */}
+          {!isMaximized && !isAnnotating && !isPinned && !isLocked && (
+            <>
+              {/* Top */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: INNER_EDGE_CORNER_INSET,
+                  right: INNER_EDGE_CORNER_INSET,
+                  height: INNER_EDGE_PAD,
+                  zIndex: Z_INDEX.widgetResize,
+                  touchAction: 'none',
+                  cursor: 'grab',
+                  pointerEvents: 'auto',
+                }}
+                onPointerDown={handleInnerDragStart}
+              />
+              {/* Bottom */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: INNER_EDGE_CORNER_INSET,
+                  right: INNER_EDGE_CORNER_INSET,
+                  height: INNER_EDGE_PAD,
+                  zIndex: Z_INDEX.widgetResize,
+                  touchAction: 'none',
+                  cursor: 'grab',
+                  pointerEvents: 'auto',
+                }}
+                onPointerDown={handleInnerDragStart}
+              />
+              {/* Left */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: INNER_EDGE_CORNER_INSET,
+                  bottom: INNER_EDGE_CORNER_INSET,
+                  width: INNER_EDGE_PAD,
+                  zIndex: Z_INDEX.widgetResize,
+                  touchAction: 'none',
+                  cursor: 'grab',
+                  pointerEvents: 'auto',
+                }}
+                onPointerDown={handleInnerDragStart}
+              />
+              {/* Right */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: INNER_EDGE_CORNER_INSET,
+                  bottom: INNER_EDGE_CORNER_INSET,
+                  width: INNER_EDGE_PAD,
+                  zIndex: Z_INDEX.widgetResize,
+                  touchAction: 'none',
+                  cursor: 'grab',
+                  pointerEvents: 'auto',
+                }}
+                onPointerDown={handleInnerDragStart}
+              />
+            </>
+          )}
 
           {isAnnotating && (
             <>
@@ -1378,7 +1703,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         </div>
 
         {/* Resize Handles (Corners Only) */}
-        {!isLocked && (
+        {!isLocked && !isPinned && (
           <>
             <div
               onPointerDown={(e) => handleResizeStart(e, 'nw')}
@@ -1408,7 +1733,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       {/* Invisible edge grab zones — extend INVISIBLE_EDGE_PAD px outside the widget's visual
           bounds so users can reliably grab and drag widgets whose content fills edge-to-edge.
           No visual appearance; only the pointer hit area is expanded. */}
-      {!isMaximized && !isAnnotating && (
+      {!isMaximized && !isAnnotating && !isPinned && !isLocked && (
         <>
           {/* Top */}
           <div
@@ -1601,6 +1926,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               <div className="h-4 w-px bg-slate-300/50 mx-1" />
 
               <div className="flex items-center gap-1">
+                <IconButton
+                  onClick={() => {
+                    if (isLocked) return;
+                    const nextPinned = !isPinned;
+                    if (nextPinned) setShowSnapMenu(false);
+                    updateWidget(widget.id, { isPinned: nextPinned });
+                    handleCloseTools();
+                  }}
+                  icon={<Pin className="w-3.5 h-3.5" />}
+                  label={
+                    isPinned
+                      ? `${t('widgetWindow.unpin')} (Alt+P)`
+                      : `${t('widgetWindow.pin')} (Alt+P)`
+                  }
+                  size="sm"
+                  variant="glass"
+                  active={isPinned}
+                  disabled={isLocked}
+                  className={isPinned ? '!bg-amber-500/20 !text-amber-600' : ''}
+                />
                 {headerActions && (
                   <div className="flex items-center text-slate-700">
                     {headerActions}
@@ -1668,6 +2013,35 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   variant="glass"
                 />
 
+                {/* Group / Ungroup button */}
+                {!isLocked &&
+                  !isPinned &&
+                  (widget.groupId ? (
+                    <IconButton
+                      onClick={() => {
+                        if (widget.groupId) ungroupWidgets(widget.groupId);
+                        handleCloseTools();
+                      }}
+                      icon={<Unlink className="w-3.5 h-3.5" />}
+                      label={t('widgetWindow.group.ungroup')}
+                      size="sm"
+                      variant="glass"
+                      className="!text-blue-600"
+                    />
+                  ) : (
+                    <IconButton
+                      onClick={() => {
+                        setSelectedWidgetIds([widget.id]);
+                        setGroupBuildMode(true);
+                        handleCloseTools();
+                      }}
+                      icon={<Link className="w-3.5 h-3.5" />}
+                      label={t('widgetWindow.group.groupWith')}
+                      size="sm"
+                      variant="glass"
+                    />
+                  ))}
+
                 {/* NEW: Snap Layouts Button & Popover */}
                 <div className="relative flex items-center">
                   <IconButton
@@ -1681,8 +2055,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     size="sm"
                     variant="glass"
                     active={showSnapMenu}
+                    disabled={isPinned || isLocked}
                   />
-
                   {showSnapMenu &&
                     typeof document !== 'undefined' &&
                     createPortal(
@@ -1847,6 +2221,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   }
                   size="sm"
                   variant="glass"
+                  disabled={isLocked || (isPinned && !isMaximized)}
                 />
                 <IconButton
                   onClick={() =>

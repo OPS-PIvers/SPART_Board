@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useDashboard } from '@/context/useDashboard';
-import { useAuth } from '@/context/useAuth';
 import { useDialog } from '@/context/useDialog';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import {
   WidgetData,
   ScheduleConfig,
@@ -78,9 +78,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, activeDashboard } = useDashboard();
-  const { selectedBuildings } = useAuth();
   const { showConfirm } = useDialog();
   const { subscribeToPermission } = useFeaturePermissions();
+  const buildingId = useWidgetBuildingId(widget);
   const config = widget.config as ScheduleConfig;
 
   const [adminPermission, setAdminPermission] =
@@ -91,14 +91,13 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   }, [subscribeToPermission]);
 
   const buildingSchedules = useMemo((): DailySchedule[] => {
-    if (!selectedBuildings?.length) return [];
-    const buildingId = selectedBuildings[0];
+    if (!buildingId) return [];
     const adminConfig = adminPermission?.config as
       | ScheduleGlobalConfig
       | undefined;
     const raw = adminConfig?.buildingDefaults?.[buildingId];
     return raw?.schedules ?? [];
-  }, [selectedBuildings, adminPermission]);
+  }, [buildingId, adminPermission]);
 
   const schedules = useMemo(() => {
     const list = [...(config.schedules ?? [])];
@@ -115,7 +114,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   // selectedScheduleId: null means "auto-select today's active schedule"
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(
-    null
+    config.settingsSelectedScheduleId ?? null
   );
   const [showBuildingSchedules, setShowBuildingSchedules] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -146,6 +145,19 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     })
   );
 
+  // ── Schedule tab selection ──────────────────────────────────────────────────
+
+  const handleScheduleSelect = (id: string) => {
+    if (id === selectedScheduleId) return;
+    setSelectedScheduleId(id);
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        settingsSelectedScheduleId: id,
+      } as ScheduleConfig,
+    });
+  };
+
   // ── Schedule CRUD ──────────────────────────────────────────────────────────
 
   const handleAddSchedule = () => {
@@ -171,6 +183,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
           ...config,
           items: [],
           schedules: [migratedSchedule, newSchedule],
+          settingsSelectedScheduleId: newSchedule.id,
         } as ScheduleConfig,
       });
     } else {
@@ -178,6 +191,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         config: {
           ...config,
           schedules: [...(config.schedules ?? []), newSchedule],
+          settingsSelectedScheduleId: newSchedule.id,
         } as ScheduleConfig,
       });
     }
@@ -200,6 +214,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
           ...config,
           items: [],
           schedules: [newSchedule],
+          settingsSelectedScheduleId: newSchedule.id,
         } as ScheduleConfig,
       });
       setSelectedScheduleId(newSchedule.id);
@@ -231,16 +246,25 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         id === 'default' && (config.schedules?.length ?? 0) === 0;
       if (isLegacy) {
         updateWidget(widget.id, {
-          config: { ...config, items: [] } as ScheduleConfig,
+          config: {
+            ...config,
+            items: [],
+            settingsSelectedScheduleId: null,
+          } as ScheduleConfig,
         });
       } else {
         const newSchedules = schedules
           .filter((s) => s.id !== 'default')
           .filter((s) => s.id !== id);
         updateWidget(widget.id, {
-          config: { ...config, schedules: newSchedules } as ScheduleConfig,
+          config: {
+            ...config,
+            schedules: newSchedules,
+            settingsSelectedScheduleId: null,
+          } as ScheduleConfig,
         });
       }
+      setSelectedScheduleId(null);
     }
   };
 
@@ -415,7 +439,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setSelectedScheduleId(s.id)}
+                  onClick={() => handleScheduleSelect(s.id)}
                   className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                     effectiveSelectedId === s.id
                       ? 'bg-brand-blue-primary text-white'
@@ -634,6 +658,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                       config: {
                         ...config,
                         schedules: [...(config.schedules ?? []), newSchedule],
+                        settingsSelectedScheduleId: newSchedule.id,
                       } as ScheduleConfig,
                     });
                     addToast(`Added "${s.name}" to My Schedules`, 'success');

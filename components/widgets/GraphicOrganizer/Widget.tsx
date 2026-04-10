@@ -7,6 +7,7 @@ import {
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { getFontClass, hexToRgba } from '@/utils/styles';
 
 const EditableNode: React.FC<{
@@ -81,10 +82,9 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, activeDashboard } = useDashboard();
-  const { selectedBuildings, featurePermissions } = useAuth();
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget) ?? 'global';
   const config = widget.config as GraphicOrganizerConfig;
-
-  const buildingId = selectedBuildings[0] ?? 'global';
   const featureObj = featurePermissions?.find(
     (p) => p.widgetType === 'graphic-organizer'
   );

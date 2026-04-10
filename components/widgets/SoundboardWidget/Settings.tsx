@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { WidgetData, SoundboardConfig, SoundboardGlobalConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { Toggle } from '@/components/common/Toggle';
 import { getAvailableSoundboardSounds } from '@/utils/soundboardConfig';
 
@@ -12,8 +13,8 @@ export const SoundboardSettings: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as SoundboardConfig;
   const { selectedSoundIds = [] } = config;
 
-  const { featurePermissions, selectedBuildings } = useAuth();
-  const buildingId = selectedBuildings.length > 0 ? selectedBuildings[0] : null;
+  const { featurePermissions } = useAuth();
+  const buildingId = useWidgetBuildingId(widget) ?? null;
 
   const globalConfig = useMemo(() => {
     const perm = featurePermissions.find((p) => p.widgetType === 'soundboard');

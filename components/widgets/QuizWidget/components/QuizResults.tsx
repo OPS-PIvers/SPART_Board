@@ -37,7 +37,10 @@ import {
   buildPinToNameMap,
   buildScoreboardTeams,
   getResponseScore,
+  getDisplayScore,
+  getScoreSuffix,
   getEarnedPoints,
+  isGamificationActive,
 } from '../utils/quizScoreboard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
@@ -46,6 +49,8 @@ interface QuizResultsProps {
   responses: QuizResponse[];
   config: QuizConfig;
   onBack: () => void;
+  tabWarningsEnabled?: boolean;
+  session?: import('@/types').QuizSession | null;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
@@ -53,6 +58,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   responses,
   config,
   onBack,
+  tabWarningsEnabled,
+  session,
 }) => {
   const { activeDashboard, updateWidget, addWidget, addToast, rosters } =
     useDashboard();
@@ -85,7 +92,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     completed.length > 0
       ? Math.round(
           completed.reduce(
-            (sum, r) => sum + getResponseScore(r, quiz.questions),
+            (sum, r) => sum + getDisplayScore(r, quiz.questions, session),
             0
           ) / completed.length
         )
@@ -110,7 +117,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         completed,
         quiz.questions,
         mode,
-        pinToName
+        pinToName,
+        session
       );
 
       const existingScoreboard = activeDashboard?.widgets.find(
@@ -144,6 +152,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       completed,
       quiz.questions,
       pinToName,
+      session,
       activeDashboard?.widgets,
       updateWidget,
       addWidget,
@@ -424,13 +433,20 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 completed={completed}
                 avgScore={avgScore}
                 questions={quiz.questions}
+                session={session}
               />
             )}
             {activeTab === 'questions' && (
               <QuestionsTab questions={quiz.questions} responses={responses} />
             )}
             {activeTab === 'students' && (
-              <StudentsTab responses={responses} questions={quiz.questions} />
+              <StudentsTab
+                responses={responses}
+                questions={quiz.questions}
+                pinToName={pinToName}
+                tabWarningsEnabled={tabWarningsEnabled ?? true}
+                session={session}
+              />
             )}
           </div>
         </>
@@ -446,7 +462,9 @@ const OverviewTab: React.FC<{
   completed: QuizResponse[];
   avgScore: number | null;
   questions: QuizQuestion[];
-}> = ({ responses: _responses, completed, avgScore, questions }) => {
+  session?: import('@/types').QuizSession | null;
+}> = ({ responses: _responses, completed, avgScore, questions, session }) => {
+  const suffix = getScoreSuffix(session);
   const buckets = [
     {
       label: '90-100%',
@@ -477,9 +495,11 @@ const OverviewTab: React.FC<{
   // ⚡ Bolt: Pre-calculate scores for all completed responses once
   // This avoids calculating `getResponseScore` inside the `buckets.map` filter
   // which was O(B*R*Q), changing it to O(R*Q + B*R).
+  // Distribution chart always uses percentage scores for meaningful bucketing,
+  // even when gamification is active (points would not fit 0-100% buckets).
   const completedScores = React.useMemo(() => {
-    return completed.map((r) => getResponseScore(r, questions));
-  }, [completed, questions]);
+    return completed.map((r) => getResponseScore(r, questions, session));
+  }, [completed, questions, session]);
 
   return (
     <div className="flex flex-col" style={{ gap: 'min(20px, 5cqmin)' }}>
@@ -495,7 +515,7 @@ const OverviewTab: React.FC<{
             className="font-black text-brand-blue-dark leading-none"
             style={{ fontSize: 'min(28px, 9cqmin)' }}
           >
-            {avgScore !== null ? `${avgScore}%` : '—'}
+            {avgScore !== null ? `${avgScore}${suffix}` : '—'}
           </p>
           <p
             className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1"
@@ -690,9 +710,14 @@ const QuestionsTab: React.FC<{
 const StudentsTab: React.FC<{
   responses: QuizResponse[];
   questions: QuizQuestion[];
-}> = ({ responses, questions }) => {
+  pinToName: Record<string, string>;
+  tabWarningsEnabled: boolean;
+  session?: import('@/types').QuizSession | null;
+}> = ({ responses, questions, pinToName, tabWarningsEnabled, session }) => {
   const [showResults, setShowResults] = useState(false);
   const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
+  const gamified = isGamificationActive(session);
+  const suffix = getScoreSuffix(session);
 
   return (
     <div className="space-y-2">
@@ -740,17 +765,17 @@ const StudentsTab: React.FC<{
           .sort((a, b) => {
             const scoreA =
               a.status === 'completed' || a.status === 'in-progress'
-                ? getResponseScore(a, questions)
+                ? getDisplayScore(a, questions, session)
                 : -1;
             const scoreB =
               b.status === 'completed' || b.status === 'in-progress'
-                ? getResponseScore(b, questions)
+                ? getDisplayScore(b, questions, session)
                 : -1;
             return scoreB - scoreA;
           })
           .map((r) => {
-            const score = getResponseScore(r, questions);
-            const earned = getEarnedPoints(r, questions);
+            const score = getDisplayScore(r, questions, session);
+            const earned = getEarnedPoints(r, questions, session);
             const warnings = r.tabSwitchWarnings ?? 0;
 
             return (
@@ -761,12 +786,12 @@ const StudentsTab: React.FC<{
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p
-                      className="font-bold text-brand-blue-dark truncate font-mono"
+                      className={`font-bold text-brand-blue-dark truncate ${pinToName[r.pin] ? '' : 'font-mono'}`}
                       style={{ fontSize: 'min(13px, 4.5cqmin)' }}
                     >
-                      PIN {r.pin}
+                      {pinToName[r.pin] ?? `PIN ${r.pin}`}
                     </p>
-                    {warnings > 0 && (
+                    {tabWarningsEnabled && warnings > 0 && (
                       <span
                         className="flex items-center gap-1 bg-red-100 text-red-700 px-1.5 py-0.5 rounded uppercase font-black shrink-0"
                         style={{ fontSize: 'min(10px, 3cqmin)' }}
@@ -783,10 +808,11 @@ const StudentsTab: React.FC<{
                   {r.status === 'completed' || r.status === 'in-progress' ? (
                     <>
                       <p
-                        className={`font-black ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-amber-600' : 'text-brand-red-primary'}`}
+                        className={`font-black ${gamified ? 'text-brand-blue-dark' : score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-amber-600' : 'text-brand-red-primary'}`}
                         style={{ fontSize: 'min(15px, 5cqmin)' }}
                       >
-                        {score}%
+                        {score}
+                        {suffix}
                       </p>
                       <p
                         className="text-brand-blue-primary/60 font-bold"

@@ -24,6 +24,7 @@ import {
   MaterialsGlobalConfig,
 } from '../types';
 import { useAuth } from './useAuth';
+import { stripTransientKeys } from '../utils/widgetConfigPersistence';
 import { useFirestore } from '../hooks/useFirestore';
 import { TOOLS } from '../config/tools';
 import { WIDGET_DEFAULTS } from '../config/widgetDefaults';
@@ -78,16 +79,6 @@ const getDashboardSaveState = (d: Dashboard) => ({
     settings: JSON.stringify(d.settings ?? {}),
   },
 });
-
-const PERSISTED_WIDGET_TYPES: WidgetType[] = [
-  'schedule',
-  'calendar',
-  'lunchCount',
-  'weather',
-  'instructionalRoutines',
-  'nextUp',
-  'specialist-schedule',
-];
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -152,6 +143,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const accountRemoteControlEnabledRef = useRef(accountRemoteControlEnabled);
   accountRemoteControlEnabledRef.current = accountRemoteControlEnabled;
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
+  const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
+  const [groupBuildMode, setGroupBuildMode] = useState(false);
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [zoom, setZoom] = useState<number>(1);
@@ -444,6 +437,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const pendingSaveCountRef = useRef<number>(0);
   // Tracks Drive file IDs for PII supplements per dashboard to enable in-place updates
   const piiDriveFileIdRef = useRef<Map<string, string>>(new Map());
+  // Tracks widget IDs added locally but not yet confirmed by a server snapshot
+  const locallyAddedWidgetIds = useRef<Set<string>>(new Set());
 
   // Sync refs during render (safe — refs are mutable containers, not state)
   activeIdRef.current = activeId;
@@ -739,6 +734,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 'minimized',
                 'flipped',
                 'maximized',
+                'groupId',
               ] as const;
 
               const STYLE_FIELDS = [
@@ -746,7 +742,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 'fontFamily',
                 'baseTextSize',
                 'transparency',
+                'buildingId',
+                'customTitle',
+                'isPinned',
+                'isLocked',
+                'annotation',
               ] as const;
+
+              const INSTANCE_FIELDS = ['customTitle', 'isPinned'] as const;
 
               const remoteControlEnabled =
                 accountRemoteControlEnabledRef.current;
@@ -768,6 +771,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     saved,
                     keepLocalConfig: false,
                     keepLocalLayout: false,
+                    keepLocalStyle: false,
+                    keepLocalInstance: false,
+                    keepLocalAnnotation: false,
                     isDeletedLocally,
                   };
                 }
@@ -783,6 +789,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 const styleChangedLocally = STYLE_FIELDS.some(
                   (f) => lw[f] !== saved[f]
                 );
+                const instanceChangedLocally = INSTANCE_FIELDS.some(
+                  (f) => lw[f] !== saved[f]
+                );
+                // Fast-path: skip JSON.stringify when both values are the
+                // same reference (including both undefined). When references
+                // differ, short-circuit on paths array length before falling
+                // back to deep comparison to avoid serializing large paths.
+                const annotationChangedLocally = (() => {
+                  const la = lw.annotation;
+                  const sa = saved.annotation;
+                  if (la === sa) return false;
+                  if (!la || !sa) return true;
+                  if (la.mode !== sa.mode) return true;
+                  if (la.paths.length !== sa.paths.length) return true;
+                  return JSON.stringify(la) !== JSON.stringify(sa);
+                })();
 
                 return {
                   sw,
@@ -795,6 +817,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   keepLocalLayout:
                     layoutChangedLocally || !remoteControlEnabled,
                   keepLocalStyle: styleChangedLocally || !remoteControlEnabled,
+                  keepLocalInstance:
+                    instanceChangedLocally || !remoteControlEnabled,
+                  keepLocalAnnotation:
+                    annotationChangedLocally || !remoteControlEnabled,
                 };
               });
 
@@ -807,6 +833,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     keepLocalConfig,
                     keepLocalLayout,
                     keepLocalStyle,
+                    keepLocalInstance,
+                    keepLocalAnnotation,
                   }) => {
                     if (!lw) return sw; // new widget from server -> accept
 
@@ -830,14 +858,35 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                             return acc as Partial<WidgetData>;
                           })()
                         : {}),
+                      ...(keepLocalInstance
+                        ? (() => {
+                            const acc: Record<string, unknown> = {};
+                            for (const f of INSTANCE_FIELDS)
+                              acc[f] = lw[f as keyof WidgetData];
+                            return acc as Partial<WidgetData>;
+                          })()
+                        : {}),
+                      ...(keepLocalAnnotation
+                        ? { annotation: lw.annotation }
+                        : {}),
                     };
                   }
                 );
 
-              // Append widgets added locally that aren't on the server yet
+              // Clean up locally-added tracking for widgets now confirmed by the server
               const serverIds = new Set(db.widgets.map((w) => w.id));
+              for (const sid of serverIds) {
+                locallyAddedWidgetIds.current.delete(sid);
+              }
+
+              // Append widgets added locally that aren't on the server yet.
+              // Only keep widgets explicitly tracked as locally-added; widgets
+              // present locally but absent from the server that are NOT in the
+              // tracking set were remotely deleted and should be removed.
               const localOnlyWidgets = currentActive.widgets.filter(
-                (w) => !serverIds.has(w.id)
+                (w) =>
+                  !serverIds.has(w.id) &&
+                  locallyAddedWidgetIds.current.has(w.id)
               );
 
               // SURGICAL MERGE STATE UPDATE
@@ -873,6 +922,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   keepLocalConfig,
                   keepLocalLayout,
                   keepLocalStyle,
+                  keepLocalInstance,
+                  keepLocalAnnotation,
                 }) => {
                   if (!lw || !saved) return sw;
 
@@ -895,6 +946,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                             acc[f] = saved[f as keyof WidgetData];
                           return acc as Partial<WidgetData>;
                         })()
+                      : {}),
+                    ...(keepLocalInstance
+                      ? (() => {
+                          const acc: Record<string, unknown> = {};
+                          for (const f of INSTANCE_FIELDS)
+                            acc[f] = saved[f as keyof WidgetData];
+                          return acc as Partial<WidgetData>;
+                        })()
+                      : {}),
+                    ...(keepLocalAnnotation
+                      ? { annotation: saved.annotation }
                       : {}),
                   };
                 }
@@ -2268,8 +2330,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
           const defaults = WIDGET_DEFAULTS[type] ?? {};
 
+          const newWidgetId = crypto.randomUUID();
+          locallyAddedWidgetIds.current.add(newWidgetId);
           const newWidget: WidgetData = {
-            id: crypto.randomUUID(),
+            id: newWidgetId,
             type,
             x: 50,
             y: 80,
@@ -2285,9 +2349,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               {},
               defaults.config ?? {},
               adminConfig,
-              PERSISTED_WIDGET_TYPES.includes(type)
-                ? (savedWidgetConfigs?.[type] ?? {})
-                : {},
+              stripTransientKeys(savedWidgetConfigs?.[type] ?? {}),
               overrides?.config ?? {}
             ) as WidgetConfig,
           };
@@ -2366,17 +2428,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               {},
               defaults.config ?? {},
               adminConfig,
-              PERSISTED_WIDGET_TYPES.includes(item.type)
-                ? (savedWidgetConfigs?.[item.type] ?? {})
-                : {},
+              stripTransientKeys(savedWidgetConfigs?.[item.type] ?? {}),
               sanitizedInputConfig
             ) as WidgetConfig;
+
+            const newWidgetId = crypto.randomUUID();
+            locallyAddedWidgetIds.current.add(newWidgetId);
 
             // 1. SMART LAYOUT: If AI provided spatial data
             if (validatedGrid) {
               const { col, row, colSpan, rowSpan } = validatedGrid;
               return {
-                id: crypto.randomUUID(),
+                id: newWidgetId,
                 type: item.type,
                 flipped: false,
                 z: maxZ,
@@ -2399,7 +2462,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             const ROW_HEIGHT = 280;
 
             return {
-              id: crypto.randomUUID(),
+              id: newWidgetId,
               type: item.type,
               x: START_X + col * COL_WIDTH,
               y: START_Y + row * ROW_HEIGHT,
@@ -2426,11 +2489,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       lastLocalUpdateAt.current = Date.now();
       lastUpdateWasSettingsOnly.current = false;
       setDashboards((prev) =>
-        prev.map((d) =>
-          d.id === activeId
-            ? { ...d, widgets: d.widgets.filter((w) => w.id !== id) }
-            : d
-        )
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          const target = d.widgets.find((w) => w.id === id);
+          const gid = target?.groupId;
+          let widgets = d.widgets.filter((w) => w.id !== id);
+          // Auto-dissolve group if only 1 member left
+          if (gid) {
+            const remaining = widgets.filter((w) => w.groupId === gid);
+            if (remaining.length <= 1) {
+              widgets = widgets.map((w) =>
+                w.groupId === gid ? { ...w, groupId: undefined } : w
+              );
+            }
+          }
+          return { ...d, widgets };
+        })
       );
     },
     [activeId]
@@ -2455,6 +2529,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             y: target.y + 20,
             z: maxZ + 1,
             version: 1,
+            groupId: undefined, // Duplicated widgets are independent
             config: structuredClone(target.config),
           };
           return { ...d, widgets: [...d.widgets, duplicated] };
@@ -2469,12 +2544,27 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
       lastUpdateWasSettingsOnly.current = false;
+      const idSet = new Set(ids);
       setDashboards((prev) =>
-        prev.map((d) =>
-          d.id === activeId
-            ? { ...d, widgets: d.widgets.filter((w) => !ids.includes(w.id)) }
-            : d
-        )
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          // Collect groupIds of removed widgets for auto-dissolve check
+          const affectedGroupIds = new Set<string>();
+          d.widgets.forEach((w) => {
+            if (idSet.has(w.id) && w.groupId) affectedGroupIds.add(w.groupId);
+          });
+          let widgets = d.widgets.filter((w) => !idSet.has(w.id));
+          // Auto-dissolve groups with <=1 remaining member
+          for (const gid of affectedGroupIds) {
+            const remaining = widgets.filter((w) => w.groupId === gid);
+            if (remaining.length <= 1) {
+              widgets = widgets.map((w) =>
+                w.groupId === gid ? { ...w, groupId: undefined } : w
+              );
+            }
+          }
+          return { ...d, widgets };
+        })
       );
     },
     [activeId]
@@ -2541,12 +2631,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             return w;
           });
 
-          // If the widget type is in our persistence list, and config was updated, save it globally
-          if (
-            widgetType &&
-            updates.config &&
-            PERSISTED_WIDGET_TYPES.includes(widgetType)
-          ) {
+          // Save config globally so new instances inherit settings.
+          // saveWidgetConfig handles transient-key stripping (including PII fields).
+          if (widgetType && updates.config) {
             saveWidgetConfig(widgetType, updates.config);
           }
 
@@ -2566,6 +2653,106 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [saveWidgetConfig]
   );
 
+  // --- Widget grouping ---
+
+  const updateWidgets = useCallback(
+    (
+      updates: Array<{
+        id: string;
+        changes: Partial<Pick<WidgetData, 'x' | 'y' | 'w' | 'h'>>;
+      }>
+    ) => {
+      if (!activeIdRef.current) return;
+      lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
+      const updateMap = new Map(updates.map((u) => [u.id, u.changes]));
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeIdRef.current) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) => {
+              const changes = updateMap.get(w.id);
+              if (!changes) return w;
+              return { ...w, ...changes };
+            }),
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+          };
+        })
+      );
+    },
+    []
+  );
+
+  const groupWidgets = useCallback(
+    (widgetIds: string[]) => {
+      if (!activeIdRef.current || widgetIds.length < 2) return;
+
+      // Find the active dashboard to check widget states
+      const active = dashboardsRef.current.find(
+        (d) => d.id === activeIdRef.current
+      );
+      if (!active) return;
+
+      const widgetMap = new Map(active.widgets.map((w) => [w.id, w]));
+      const eligible: string[] = [];
+      let excluded = 0;
+      for (const id of widgetIds) {
+        const w = widgetMap.get(id);
+        if (!w) continue;
+        if (w.isPinned || w.isLocked || w.minimized) {
+          excluded++;
+        } else {
+          eligible.push(id);
+        }
+      }
+
+      if (excluded > 0) {
+        addToast(
+          `${excluded} widget${excluded > 1 ? 's' : ''} skipped (pinned, locked, or minimized)`,
+          'info'
+        );
+      }
+
+      if (eligible.length < 2) return;
+
+      const gid = crypto.randomUUID();
+      lastLocalUpdateAt.current = Date.now();
+      lastUpdateWasSettingsOnly.current = false;
+      const idSet = new Set(eligible);
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeIdRef.current) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) =>
+              idSet.has(w.id) ? { ...w, groupId: gid } : w
+            ),
+          };
+        })
+      );
+    },
+    [addToast]
+  );
+
+  const ungroupWidgets = useCallback((groupId: string) => {
+    if (!activeIdRef.current) return;
+    lastLocalUpdateAt.current = Date.now();
+    lastUpdateWasSettingsOnly.current = false;
+    setDashboards((prev) =>
+      prev.map((d) => {
+        if (d.id !== activeIdRef.current) return d;
+        return {
+          ...d,
+          widgets: d.widgets.map((w) =>
+            w.groupId === groupId ? { ...w, groupId: undefined } : w
+          ),
+        };
+      })
+    );
+  }, []);
+
   const bringToFront = useCallback((id: string) => {
     if (!activeIdRef.current) return;
 
@@ -2575,8 +2762,37 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const maxZ = active.widgets.reduce((max, w) => Math.max(max, w.z), 0);
       const target = active.widgets.find((w) => w.id === id);
+      if (!target) return prev;
 
-      if (target && target.z < maxZ) {
+      // If widget is in a group, bring the entire group to front
+      if (target.groupId) {
+        const groupMembers = active.widgets
+          .filter((w) => w.groupId === target.groupId)
+          .sort((a, b) => a.z - b.z);
+        const groupIdSet = new Set(groupMembers.map((w) => w.id));
+        const groupMinZ = Math.min(...groupMembers.map((w) => w.z));
+        const nonGroupMaxZ = active.widgets.reduce((max, w) => {
+          if (groupIdSet.has(w.id)) return max;
+          return Math.max(max, w.z);
+        }, Number.NEGATIVE_INFINITY);
+        if (groupMinZ > nonGroupMaxZ) return prev; // entire group is already on top
+        lastLocalUpdateAt.current = Date.now();
+        lastUpdateWasSettingsOnly.current = false;
+        return prev.map((d) => {
+          if (d.id !== activeIdRef.current) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) => {
+              if (!groupIdSet.has(w.id)) return w;
+              // Preserve internal z-order within the group
+              const idx = groupMembers.findIndex((gw) => gw.id === w.id);
+              return { ...w, z: maxZ + 1 + idx };
+            }),
+          };
+        });
+      }
+
+      if (target.z < maxZ) {
         lastLocalUpdateAt.current = Date.now();
         lastUpdateWasSettingsOnly.current = false;
         return prev.map((d) => {
@@ -2826,6 +3042,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setAllToolsVisibility,
       selectedWidgetId,
       setSelectedWidgetId,
+      groupWidgets,
+      ungroupWidgets,
+      updateWidgets,
+      selectedWidgetIds,
+      setSelectedWidgetIds,
+      groupBuildMode,
+      setGroupBuildMode,
       reorderTools,
       reorderLibrary,
       reorderDockItems,
@@ -2896,6 +3119,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setAllToolsVisibility,
       selectedWidgetId,
       setSelectedWidgetId,
+      groupWidgets,
+      ungroupWidgets,
+      updateWidgets,
+      selectedWidgetIds,
+      setSelectedWidgetIds,
+      groupBuildMode,
+      setGroupBuildMode,
       reorderTools,
       reorderLibrary,
       reorderDockItems,
