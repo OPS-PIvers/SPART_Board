@@ -481,7 +481,8 @@ const ActiveQuiz: React.FC<{
     void onAnswerRef
       .current(
         autoSubmitTriggeredFor,
-        selectedAnswerRef.current ?? fibAnswerRef.current ?? ''
+        selectedAnswerRef.current ?? fibAnswerRef.current ?? '',
+        0 // Speed bonus is 0 when timer expires
       )
       .catch((err: unknown) => {
         console.error('[QuizStudentApp] auto-submit failed:', err);
@@ -508,8 +509,20 @@ const ActiveQuiz: React.FC<{
         myResponse?.answers.find((a) => a.questionId === currentQuestion?.id)
           ?.answer;
       if (studentAns) {
-        const isCorrect =
-          normalizeAnswer(studentAns) === normalizeAnswer(currentRevealed);
+        let isCorrect: boolean;
+        if (currentQuestion?.type === 'Matching') {
+          // Matching answers are order-insensitive pipe-delimited sets
+          const correctSet = new Set(
+            currentRevealed.split('|').map(normalizeAnswer)
+          );
+          const givenParts = studentAns.split('|').map(normalizeAnswer);
+          isCorrect =
+            givenParts.length === correctSet.size &&
+            givenParts.every((p) => correctSet.has(p));
+        } else {
+          isCorrect =
+            normalizeAnswer(studentAns) === normalizeAnswer(currentRevealed);
+        }
         setAnswerFeedback(isCorrect ? 'correct' : 'incorrect');
         if (isCorrect) {
           setStreakCount((s) => s + 1);

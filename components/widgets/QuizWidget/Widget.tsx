@@ -11,7 +11,6 @@ import { useAuth } from '@/context/useAuth';
 import { useQuiz } from '@/hooks/useQuiz';
 import {
   useQuizSessionTeacher,
-  gradeAnswer,
   type QuizSessionOptions,
 } from '@/hooks/useQuizSession';
 import { QuizManager, PlcOptions } from './components/QuizManager';
@@ -22,6 +21,7 @@ import { QuizResults } from './components/QuizResults';
 import {
   buildPinToNameMap,
   buildScoreboardTeams,
+  getEarnedPoints,
 } from './utils/quizScoreboard';
 import { QuizLiveMonitor } from './components/QuizLiveMonitor';
 import { Loader2, AlertTriangle, LogIn } from 'lucide-react';
@@ -197,18 +197,15 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const questions = loadedQuizData.questions;
           newTeams = allResponses
             .map((r) => {
-              let earnedPoints = 0;
               let maxAnsweredPoints = 0;
               for (const a of r.answers) {
                 const q = questions.find((qn) => qn.id === a.questionId);
-                if (!q) continue;
-                const pts = q.points ?? 1;
-                maxAnsweredPoints += pts;
-                if (gradeAnswer(q, a.answer)) earnedPoints += pts;
+                if (q) maxAnsweredPoints += q.points ?? 1;
               }
+              const earned = getEarnedPoints(r, questions, liveSession);
               const score =
                 maxAnsweredPoints > 0
-                  ? Math.round((earnedPoints / maxAnsweredPoints) * 100)
+                  ? Math.round((earned / maxAnsweredPoints) * 100)
                   : 0;
               return { response: r, score };
             })
