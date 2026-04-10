@@ -64,6 +64,7 @@ import { Toggle } from '../common/Toggle';
 // Shared prop shape for all "building-defaults" config panels
 type BuildingConfigPanel = React.ComponentType<{
   uploadWeatherImage?: (rangeId: string, file: File) => Promise<string>;
+  showMessage?: (type: 'success' | 'error', text: string) => void;
   config: Record<string, unknown>;
   onChange: (newConfig: Record<string, unknown>) => void;
 }>;
@@ -664,6 +665,7 @@ export const FeatureConfigurationPanel: React.FC<
           <div className="space-y-4">
             <BuildingPanel
               uploadWeatherImage={uploadWeatherImage}
+              showMessage={showMessage}
               config={
                 permission.config ?? {
                   buildingDefaults: {},

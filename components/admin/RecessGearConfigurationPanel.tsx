@@ -13,13 +13,14 @@ import { Toggle } from '@/components/common/Toggle';
 
 export interface RecessGearConfigurationPanelProps {
   uploadWeatherImage?: (rangeId: string, file: File) => Promise<string>;
+  showMessage?: (type: 'success' | 'error', text: string) => void;
   config: Record<string, unknown>;
   onChange: (newConfig: Record<string, unknown>) => void;
 }
 
 export const RecessGearConfigurationPanel: React.FC<
   RecessGearConfigurationPanelProps
-> = ({ config: rawConfig, onChange, uploadWeatherImage }) => {
+> = ({ config: rawConfig, onChange, uploadWeatherImage, showMessage }) => {
   const config = (rawConfig ?? {
     fetchingStrategy: 'client',
     updateFrequencyMinutes: 15,
@@ -70,10 +71,10 @@ export const RecessGearConfigurationPanel: React.FC<
       if (!uploadWeatherImage) throw new Error('Upload function not provided');
       const url = await uploadWeatherImage(rangeId, file);
       updateRange(rangeId, { imageUrl: url });
-      // showMessage('success', 'Image uploaded');
+      showMessage?.('success', 'Image uploaded');
     } catch (e) {
       console.error(e);
-      // showMessage('error', 'Upload failed');
+      showMessage?.('error', 'Upload failed');
     } finally {
       setUploadingRangeId(null);
     }
@@ -142,7 +143,7 @@ export const RecessGearConfigurationPanel: React.FC<
                 }
                 className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
                   config.source === 'openweather' || !config.source
-                    ? 'bg-emerald-500 text-white shadow-sm'
+                    ? 'bg-brand-blue-primary text-white shadow-sm'
                     : 'text-slate-500 hover:bg-slate-50'
                 }`}
               >
@@ -157,7 +158,7 @@ export const RecessGearConfigurationPanel: React.FC<
                 }
                 className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
                   config.source === 'earth_networks'
-                    ? 'bg-emerald-500 text-white shadow-sm'
+                    ? 'bg-brand-blue-primary text-white shadow-sm'
                     : 'text-slate-500 hover:bg-slate-50'
                 }`}
               >
@@ -177,21 +178,20 @@ export const RecessGearConfigurationPanel: React.FC<
             )}
           </div>
 
-          <div>
-            <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-              Default City
-            </label>
-            <input
-              type="text"
-              value={config.city ?? ''}
-              onChange={(e) => onChange({ ...config, city: e.target.value })}
-              placeholder="e.g. Orono"
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-brand-blue-primary"
-            />
-            <p className="text-xxs text-slate-400 mt-1">
-              Used if the widget has no specific location configured.
-            </p>
-          </div>
+          {(config.source === 'openweather' || !config.source) && (
+            <div>
+              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+                City (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="Default: Local Station"
+                value={config.city ?? ''}
+                onChange={(e) => onChange({ ...config, city: e.target.value })}
+                className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+              />
+            </div>
+          )}
 
           <div>
             <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
@@ -228,8 +228,10 @@ export const RecessGearConfigurationPanel: React.FC<
           </span>
         </div>
         <Toggle
-          checked={config.useFeelsLike ?? true}
+          checked={config.useFeelsLike ?? false}
           onChange={(checked) => onChange({ ...config, useFeelsLike: checked })}
+          size="xs"
+          showLabels={false}
         />
       </div>
 
