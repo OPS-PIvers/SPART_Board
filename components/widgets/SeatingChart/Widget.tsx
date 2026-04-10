@@ -890,7 +890,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
           onPointerDown={handleCanvasPointerDown}
           onClick={handleCanvasClick}
           onDragOver={(e) => {
-            if (e.dataTransfer.types.includes('studentid')) {
+            if (mode === 'assign') {
               e.preventDefault();
               e.dataTransfer.dropEffect = 'move';
             }
