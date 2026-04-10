@@ -374,13 +374,13 @@ describe('TextSettings', () => {
     });
   });
 
-  it('changes font size', () => {
+  it('changes font size via increment button', () => {
     render(<TextAppearanceSettings widget={mockWidget} />);
-    const slider = screen.getByRole('slider');
-    fireEvent.change(slider, { target: { value: '24' } });
+    const increaseButton = screen.getByLabelText('Increase font size');
+    fireEvent.click(increaseButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
-      config: { ...mockConfig, fontSize: 24 },
+      config: { ...mockConfig, fontSize: 19 },
     });
   });
 

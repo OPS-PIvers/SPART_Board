@@ -204,7 +204,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
     };
   }, [editorRef, detectFontSize]);
 
-  const restoreSelection = () => {
+  const restoreSelection = useCallback(() => {
     const selection = window.getSelection();
     const editor = editorRef.current;
     if (!selection || !editor) {
@@ -217,14 +217,17 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
       selection.removeAllRanges();
       selection.addRange(savedRangeRef.current);
     }
-  };
+  }, [editorRef]);
 
-  const exec = (command: string, value: string = '') => {
-    restoreSelection();
-    document.execCommand('styleWithCSS', false, 'true');
-    document.execCommand(command, false, value);
-    editorRef.current?.focus();
-  };
+  const exec = useCallback(
+    (command: string, value: string = '') => {
+      restoreSelection();
+      document.execCommand('styleWithCSS', false, 'true');
+      document.execCommand(command, false, value);
+      editorRef.current?.focus();
+    },
+    [restoreSelection, editorRef]
+  );
 
   /** Apply an arbitrary pixel font size using the marker-replacement technique */
   const applyFontSize = useCallback(
@@ -233,25 +236,41 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
       setCurrentFontSize(clamped);
       setFontSizeInput(String(clamped));
 
+      // Capture the selection scope before execCommand mutates the DOM
+      const sel = window.getSelection();
+      const range =
+        sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+      const ancestor = range?.commonAncestorContainer ?? null;
+      const scopeEl =
+        ancestor?.nodeType === Node.ELEMENT_NODE
+          ? ancestor
+          : (ancestor?.parentElement ?? null);
+
       restoreSelection();
       document.execCommand('styleWithCSS', false, 'true');
       document.execCommand('fontSize', false, '7');
 
-      // Replace <font size="7"> markers with styled spans
+      // Replace <font size="7"> markers scoped to the selection area
       const editor = editorRef.current;
       if (editor) {
-        const fontElements = editor.querySelectorAll('font[size="7"]');
+        const searchRoot: Element =
+          scopeEl instanceof Element && editor.contains(scopeEl)
+            ? scopeEl
+            : editor;
+        const fontElements =
+          searchRoot.querySelectorAll<HTMLElement>('font[size="7"]');
         fontElements.forEach((el) => {
           const span = document.createElement('span');
           span.style.fontSize = `${clamped}px`;
-          span.innerHTML = el.innerHTML;
+          while (el.firstChild) {
+            span.appendChild(el.firstChild);
+          }
           el.replaceWith(span);
         });
       }
       editor?.focus();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editorRef]
+    [editorRef, restoreSelection]
   );
 
   const handleLink = async () => {
@@ -277,7 +296,11 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   return (
     <div
       className="flex flex-col gap-0.5 p-1 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm rounded-t-lg"
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={(e) => {
+        if ((e.target as HTMLElement).tagName !== 'INPUT') {
+          e.preventDefault();
+        }
+      }}
     >
       {/* Row 1: Text formatting */}
       <div className="flex items-center gap-0.5">
@@ -324,7 +347,6 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           <input
             type="text"
             value={fontSizeInput}
-            onMouseDown={(e) => e.preventDefault()}
             onFocus={(e) => e.target.select()}
             onChange={(e) => setFontSizeInput(e.target.value)}
             onKeyDown={(e) => {

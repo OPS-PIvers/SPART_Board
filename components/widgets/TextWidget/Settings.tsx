@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TextConfig } from '@/types';
 import { sanitizeHtml } from '@/utils/security';
@@ -50,6 +50,26 @@ export const TextAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
+  const fontSize = config.fontSize ?? 18;
+
+  const [fontSizeInput, setFontSizeInput] = useState(String(fontSize));
+
+  // Sync local input when the config changes externally (e.g. +/- buttons)
+  useEffect(() => {
+    setFontSizeInput(String(fontSize));
+  }, [fontSize]);
+
+  const commitFontSize = (value: number) => {
+    const clamped = Math.max(8, Math.min(96, value));
+    setFontSizeInput(String(clamped));
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        fontSize: clamped,
+        textSizePreset: undefined,
+      } as TextConfig,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -76,12 +96,7 @@ export const TextAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
         <SettingsLabel>Font Size</SettingsLabel>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              const next = Math.max(8, (config.fontSize ?? 18) - 1);
-              updateWidget(widget.id, {
-                config: { ...config, fontSize: next } as TextConfig,
-              });
-            }}
+            onClick={() => commitFontSize(fontSize - 1)}
             className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
             aria-label="Decrease font size"
           >
@@ -89,26 +104,31 @@ export const TextAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
           </button>
           <input
             type="text"
-            value={config.fontSize ?? 18}
-            onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
+            value={fontSizeInput}
+            onChange={(e) => setFontSizeInput(e.target.value)}
+            onBlur={() => {
+              const val = parseInt(fontSizeInput, 10);
               if (!Number.isNaN(val)) {
-                const clamped = Math.max(8, Math.min(96, val));
-                updateWidget(widget.id, {
-                  config: { ...config, fontSize: clamped } as TextConfig,
-                });
+                commitFontSize(val);
+              } else {
+                setFontSizeInput(String(fontSize));
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const val = parseInt(fontSizeInput, 10);
+                if (!Number.isNaN(val)) {
+                  commitFontSize(val);
+                } else {
+                  setFontSizeInput(String(fontSize));
+                }
               }
             }}
             className="w-12 h-8 text-center font-mono text-sm text-slate-700 border border-slate-200 rounded-lg bg-white outline-none focus:border-blue-400"
             aria-label="Font size"
           />
           <button
-            onClick={() => {
-              const next = Math.min(96, (config.fontSize ?? 18) + 1);
-              updateWidget(widget.id, {
-                config: { ...config, fontSize: next } as TextConfig,
-              });
-            }}
+            onClick={() => commitFontSize(fontSize + 1)}
             className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
             aria-label="Increase font size"
           >

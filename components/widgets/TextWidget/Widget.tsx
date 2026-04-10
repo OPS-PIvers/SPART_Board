@@ -173,7 +173,9 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   ref={editorRef}
                   className="w-full outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 empty:before:pointer-events-none"
                   style={{
-                    padding: 'min(16px, 3.5cqmin)',
+                    padding: isSelected
+                      ? 'min(80px, 15cqmin) min(16px, 3.5cqmin) min(16px, 3.5cqmin)'
+                      : 'min(16px, 3.5cqmin)',
                     color: fontColor,
                     fontSize: `min(${resolvedFontSize}px, ${resolvedFontSize * 0.5}cqmin)`,
                     lineHeight: 1.5,

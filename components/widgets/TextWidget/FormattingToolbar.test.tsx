@@ -78,8 +78,8 @@ describe('FormattingToolbar', () => {
     );
     const fontButton = screen.getByTitle('Font Family');
     fireEvent.click(fontButton);
-    const modernFont = screen.getByText('Modern');
-    fireEvent.click(modernFont);
+    const lexendFont = screen.getByText('Lexend');
+    fireEvent.click(lexendFont);
 
     expect(execCommandMock).toHaveBeenCalledWith(
       'fontName',
@@ -88,7 +88,7 @@ describe('FormattingToolbar', () => {
     );
   });
 
-  it('opens font size menu and selects a size', () => {
+  it('increments font size via stepper button', () => {
     render(
       <FormattingToolbar
         editorRef={mockEditorRef}
@@ -96,12 +96,11 @@ describe('FormattingToolbar', () => {
         onVerticalAlignChange={mockVerticalAlignChange}
       />
     );
-    const sizeButton = screen.getByTitle('Font Size');
-    fireEvent.click(sizeButton);
-    const largeSize = screen.getByText('Large');
-    fireEvent.click(largeSize);
+    const increaseButton = screen.getByTitle('Increase font size');
+    fireEvent.click(increaseButton);
 
-    expect(execCommandMock).toHaveBeenCalledWith('fontSize', false, '5');
+    // The marker-replacement technique calls fontSize with '7' as a marker
+    expect(execCommandMock).toHaveBeenCalledWith('fontSize', false, '7');
   });
 
   it('calls showPrompt when link button is clicked', async () => {
