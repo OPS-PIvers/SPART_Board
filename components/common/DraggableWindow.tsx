@@ -811,6 +811,27 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (isMaximized) return;
     if (isLocked || isPinned) return;
     if (widget.groupId) return; // Grouped widgets use GroupBoundingBox for coordinated resize
+
+    // Check if an interactive element exists beneath this resize overlay.
+    // If so, let the event pass through to the interactive element instead of resizing.
+    const resizeEl = e.currentTarget as HTMLElement;
+    const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+    for (const el of elementsAtPoint) {
+      if (el === resizeEl) continue;
+      if (
+        (el as HTMLElement).matches?.(INTERACTIVE_ELEMENTS_SELECTOR) ||
+        (el as HTMLElement).closest?.(INTERACTIVE_ELEMENTS_SELECTOR)
+      ) {
+        // Temporarily remove pointer-events so the browser dispatches
+        // the subsequent click to the interactive element beneath.
+        resizeEl.style.pointerEvents = 'none';
+        requestAnimationFrame(() => {
+          resizeEl.style.pointerEvents = '';
+        });
+        return;
+      }
+    }
+
     e.stopPropagation();
     e.preventDefault();
 

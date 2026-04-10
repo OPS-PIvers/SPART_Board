@@ -46,6 +46,7 @@ interface QuizResultsProps {
   responses: QuizResponse[];
   config: QuizConfig;
   onBack: () => void;
+  tabWarningsEnabled?: boolean;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
@@ -53,6 +54,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   responses,
   config,
   onBack,
+  tabWarningsEnabled,
 }) => {
   const { activeDashboard, updateWidget, addWidget, addToast, rosters } =
     useDashboard();
@@ -430,7 +432,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               <QuestionsTab questions={quiz.questions} responses={responses} />
             )}
             {activeTab === 'students' && (
-              <StudentsTab responses={responses} questions={quiz.questions} />
+              <StudentsTab
+                responses={responses}
+                questions={quiz.questions}
+                pinToName={pinToName}
+                tabWarningsEnabled={tabWarningsEnabled ?? true}
+              />
             )}
           </div>
         </>
@@ -690,7 +697,9 @@ const QuestionsTab: React.FC<{
 const StudentsTab: React.FC<{
   responses: QuizResponse[];
   questions: QuizQuestion[];
-}> = ({ responses, questions }) => {
+  pinToName: Record<string, string>;
+  tabWarningsEnabled: boolean;
+}> = ({ responses, questions, pinToName, tabWarningsEnabled }) => {
   const [showResults, setShowResults] = useState(false);
   const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
 
@@ -761,12 +770,12 @@ const StudentsTab: React.FC<{
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p
-                      className="font-bold text-brand-blue-dark truncate font-mono"
+                      className={`font-bold text-brand-blue-dark truncate ${pinToName[r.pin] ? '' : 'font-mono'}`}
                       style={{ fontSize: 'min(13px, 4.5cqmin)' }}
                     >
-                      PIN {r.pin}
+                      {pinToName[r.pin] ?? `PIN ${r.pin}`}
                     </p>
-                    {warnings > 0 && (
+                    {tabWarningsEnabled && warnings > 0 && (
                       <span
                         className="flex items-center gap-1 bg-red-100 text-red-700 px-1.5 py-0.5 rounded uppercase font-black shrink-0"
                         style={{ fontSize: 'min(10px, 3cqmin)' }}

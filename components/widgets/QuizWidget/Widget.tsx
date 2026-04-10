@@ -55,6 +55,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     endQuizSession,
     removeStudent,
     revealAnswer,
+    hideAnswer,
   } = useQuizSessionTeacher(user?.uid);
 
   // Local state for views that need loaded data
@@ -329,6 +330,46 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     updateWidget,
   ]);
 
+  // ─── Auto-reveal answers for student feedback ─────────────────────────────
+  // When showResultToStudent is enabled, auto-reveal answers for questions
+  // that have already been advanced past. This ensures students see feedback
+  // regardless of the showCorrectOnBoard setting.
+  // Also auto-reveals the CURRENT question when entering review phase.
+  useEffect(() => {
+    if (!liveSession || !loadedQuizData) return;
+    if (liveSession.status !== 'active' && liveSession.status !== 'ended')
+      return;
+
+    const shouldReveal =
+      (liveSession.showResultToStudent ?? false) ||
+      liveSession.questionPhase === 'reviewing';
+    if (!shouldReveal) return;
+
+    const questions = loadedQuizData.questions;
+    // Reveal past questions + current question during review phase or when quiz ended
+    const upTo =
+      liveSession.status === 'ended'
+        ? questions.length
+        : liveSession.questionPhase === 'reviewing'
+          ? liveSession.currentQuestionIndex + 1
+          : liveSession.currentQuestionIndex;
+    for (let i = 0; i < upTo && i < questions.length; i++) {
+      const q = questions[i];
+      if (!liveSession.revealedAnswers?.[q.id]) {
+        void revealAnswer(q.id, q.correctAnswer);
+      }
+    }
+  }, [
+    liveSession?.currentQuestionIndex,
+    liveSession?.status,
+    liveSession?.showResultToStudent,
+    liveSession?.questionPhase,
+    liveSession?.revealedAnswers,
+    loadedQuizData,
+    revealAnswer,
+    liveSession,
+  ]);
+
   // ─── Guard: not signed in ──────────────────────────────────────────────────
   if (!user) {
     return (
@@ -471,6 +512,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           setLoadedQuizData(null);
           setView('manager');
         }}
+        tabWarningsEnabled={liveSession?.tabWarningsEnabled ?? true}
       />
     );
   }
@@ -509,6 +551,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onUpdateConfig={handleUpdateQuizConfig}
         onRemoveStudent={removeStudent}
         onRevealAnswer={revealAnswer}
+        onHideAnswer={hideAnswer}
       />
     );
   }

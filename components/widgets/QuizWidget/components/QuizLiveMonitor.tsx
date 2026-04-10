@@ -61,6 +61,7 @@ interface QuizLiveMonitorProps {
   onUpdateConfig: (updates: Partial<QuizConfig>) => void;
   onRemoveStudent?: (studentUid: string) => Promise<void>;
   onRevealAnswer?: (questionId: string, correctAnswer: string) => Promise<void>;
+  onHideAnswer?: (questionId: string) => Promise<void>;
 }
 
 export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
@@ -74,6 +75,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   onUpdateConfig,
   onRemoveStudent,
   onRevealAnswer,
+  onHideAnswer,
 }) => {
   const pinToName = useMemo(
     () => buildPinToNameMap(rosters, config.periodName),
@@ -101,9 +103,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   const [showAnswerColors, setShowAnswerColors] = useState(false);
   const [showTabWarnings, setShowTabWarnings] = useState(true);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
-  const [showPodium, setShowPodium] = useState(false);
   const [soundMuted, setSoundMuted] = useState(false);
-  const prevQuestionIndexRef = useRef(session.currentQuestionIndex);
+  const isReviewing = session.questionPhase === 'reviewing';
 
   // Close live scoreboard setup popup on click-outside or Escape
   const closeLiveScoreboardSetup = useCallback(() => {
@@ -159,31 +160,16 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     return () => clearInterval(id);
   }, [session.autoProgressAt]);
 
-  // Show podium between questions when enabled
+  // Play podium fanfare when entering review phase
+  const prevReviewingRef = useRef(isReviewing);
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    if (
-      session.showPodiumBetweenQuestions &&
-      session.currentQuestionIndex > prevQuestionIndexRef.current &&
-      session.status === 'active'
-    ) {
-      setShowPodium(true);
+    if (isReviewing && !prevReviewingRef.current) {
       if (session.soundEffectsEnabled && !soundMuted) {
         playPodiumFanfare();
       }
-      timer = setTimeout(() => setShowPodium(false), 5000);
     }
-    prevQuestionIndexRef.current = session.currentQuestionIndex;
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [
-    session.currentQuestionIndex,
-    session.showPodiumBetweenQuestions,
-    session.status,
-    session.soundEffectsEnabled,
-    soundMuted,
-  ]);
+    prevReviewingRef.current = isReviewing;
+  }, [isReviewing, session.soundEffectsEnabled, soundMuted]);
 
   // Play celebration sound once when quiz transitions to ended
   const prevSessionStatusRef = useRef(session.status);
@@ -196,6 +182,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     prevSessionStatusRef.current = session.status;
   }, [session.status, session.soundEffectsEnabled, soundMuted]);
 
+  const isActive = session.status === 'active';
   const joinUrl = `${window.location.origin}/quiz?code=${session.code}`;
 
   const handleCopy = () => {
@@ -340,19 +327,24 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
         className="flex-1 overflow-y-auto custom-scrollbar"
         style={{ padding: 'min(16px, 4cqmin)' }}
       >
-        <div className="flex flex-col" style={{ gap: 'min(16px, 4cqmin)' }}>
+        <div
+          className="flex flex-col"
+          style={{ gap: isActive ? 'min(8px, 2cqmin)' : 'min(16px, 4cqmin)' }}
+        >
           {/* Compact join code bar */}
           <div
             className="flex items-center bg-white border border-brand-blue-primary/10 rounded-xl shadow-sm"
             style={{
-              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+              padding: isActive
+                ? 'min(4px, 1cqmin) min(8px, 2cqmin)'
+                : 'min(8px, 2cqmin) min(12px, 3cqmin)',
               gap: 'min(8px, 2cqmin)',
             }}
           >
             <span
               className="font-black tracking-[0.15em] text-brand-blue-dark font-mono bg-brand-blue-lighter/40 rounded-lg border border-brand-blue-primary/5"
               style={{
-                fontSize: 'min(18px, 5cqmin)',
+                fontSize: isActive ? 'min(14px, 4cqmin)' : 'min(18px, 5cqmin)',
                 padding: 'min(4px, 1cqmin) min(10px, 2.5cqmin)',
               }}
             >
@@ -446,7 +438,9 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               }`}
               style={{
                 gap: 'min(8px, 2cqmin)',
-                padding: 'min(10px, 2.5cqmin) min(16px, 4cqmin)',
+                padding: isActive
+                  ? 'min(6px, 1.5cqmin) min(12px, 3cqmin)'
+                  : 'min(10px, 2.5cqmin) min(16px, 4cqmin)',
                 fontSize: 'min(11px, 3.5cqmin)',
               }}
             >
@@ -601,7 +595,10 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
           </div>
 
           {/* Student summary counters */}
-          <div className="grid grid-cols-3" style={{ gap: 'min(8px, 2cqmin)' }}>
+          <div
+            className="grid grid-cols-3"
+            style={{ gap: isActive ? 'min(4px, 1cqmin)' : 'min(8px, 2cqmin)' }}
+          >
             <StatBox
               label="Joined"
               value={joined + inProgress + completed}
@@ -665,14 +662,16 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
             </div>
           )}
 
-          {/* Podium overlay between questions */}
-          {showPodium && session.showPodiumBetweenQuestions && (
+          {/* Podium overlay between questions (review phase) */}
+          {isReviewing && session.showPodiumBetweenQuestions && (
             <PodiumView
               responses={responses}
               questions={quizData.questions}
               session={session}
               pinToName={pinToName}
-              onDismiss={() => setShowPodium(false)}
+              onDismiss={() => {
+                /* persists until teacher clicks advance */
+              }}
             />
           )}
 
@@ -771,10 +770,14 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                 </button>
               </div>
 
-              {/* Question text — made much larger */}
+              {/* Question text — hero content */}
               <p
-                className="text-brand-blue-dark font-black leading-tight"
-                style={{ fontSize: 'min(20px, 8cqmin)' }}
+                className="text-brand-blue-dark font-black"
+                style={{
+                  fontSize: 'min(32px, 15cqmin)',
+                  lineHeight: 1.1,
+                  marginTop: 'min(4px, 1cqmin)',
+                }}
               >
                 {currentQ.text}
               </p>
@@ -783,13 +786,29 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               {session.showCorrectOnBoard &&
                 session.revealedAnswers?.[currentQ.id] && (
                   <div
-                    className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl"
+                    className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between"
                     style={{ fontSize: 'min(14px, 5cqmin)' }}
                   >
-                    <span className="text-emerald-600 font-black">✓ </span>
-                    <span className="text-emerald-800 font-bold">
-                      {session.revealedAnswers[currentQ.id]}
-                    </span>
+                    <div>
+                      <span className="text-emerald-600 font-black">✓ </span>
+                      <span className="text-emerald-800 font-bold">
+                        {session.revealedAnswers[currentQ.id]}
+                      </span>
+                    </div>
+                    {onHideAnswer && (
+                      <button
+                        onClick={() => void onHideAnswer(currentQ.id)}
+                        className="text-emerald-500 hover:text-emerald-700 transition-colors ml-2 shrink-0"
+                        title="Hide answer"
+                      >
+                        <EyeOff
+                          style={{
+                            width: 'min(14px, 3.5cqmin)',
+                            height: 'min(14px, 3.5cqmin)',
+                          }}
+                        />
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -1044,9 +1063,15 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               <>
                 {session.status === 'waiting'
                   ? 'START QUIZ SESSION'
-                  : session.currentQuestionIndex + 1 >= session.totalQuestions
-                    ? 'COMPLETE & VIEW RESULTS'
-                    : 'NEXT QUESTION'}
+                  : isReviewing
+                    ? session.currentQuestionIndex + 1 >= session.totalQuestions
+                      ? 'COMPLETE & VIEW RESULTS'
+                      : 'NEXT QUESTION'
+                    : session.currentQuestionIndex + 1 >= session.totalQuestions
+                      ? 'COMPLETE & VIEW RESULTS'
+                      : session.showPodiumBetweenQuestions
+                        ? 'SHOW RESULTS'
+                        : 'NEXT QUESTION'}
                 <ChevronRight
                   className="group-hover/adv:translate-x-1 transition-transform"
                   style={{

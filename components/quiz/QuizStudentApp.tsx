@@ -208,6 +208,17 @@ const QuizJoinFlow: React.FC = () => {
         ? publicQuestions[session.currentQuestionIndex]
         : undefined;
 
+    // Show review phase (leaderboard / answer review between questions)
+    if (session.questionPhase === 'reviewing' && currentQ) {
+      return (
+        <ReviewPhase
+          session={session}
+          currentQuestion={currentQ}
+          myResponse={myResponse}
+        />
+      );
+    }
+
     const alreadyAnswered = currentQ
       ? (myResponse?.answers ?? []).some((a) => a.questionId === currentQ.id)
       : false;
@@ -1099,6 +1110,80 @@ const AnswerFeedbackBanner: React.FC<{
 };
 
 // ─── Results screen ───────────────────────────────────────────────────────────
+
+// ─── Review phase (between-question leaderboard / answer review) ────────────
+
+const ReviewPhase: React.FC<{
+  session: QuizSession;
+  currentQuestion: QuizPublicQuestion;
+  myResponse: ReturnType<typeof useQuizSessionStudent>['myResponse'];
+}> = ({ session, currentQuestion, myResponse }) => {
+  const revealed = session.revealedAnswers?.[currentQuestion.id];
+  const myAnswer = myResponse?.answers.find(
+    (a) => a.questionId === currentQuestion.id
+  );
+
+  let isCorrect: boolean | null = null;
+  if (myAnswer && revealed) {
+    if (currentQuestion.type === 'Matching') {
+      const correctSet = new Set(revealed.split('|').map(normalizeAnswer));
+      const givenParts = myAnswer.answer.split('|').map(normalizeAnswer);
+      isCorrect =
+        givenParts.length === correctSet.size &&
+        givenParts.every((p) => correctSet.has(p));
+    } else {
+      isCorrect =
+        normalizeAnswer(myAnswer.answer) === normalizeAnswer(revealed);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+      {/* Question recap */}
+      <p className="text-slate-400 text-xs uppercase tracking-widest mb-3">
+        Question {session.currentQuestionIndex + 1} of {session.totalQuestions}
+      </p>
+      <h2 className="text-lg font-bold text-white mb-6 leading-snug max-w-md">
+        {currentQuestion.text}
+      </h2>
+
+      {/* Correct answer */}
+      {revealed && (
+        <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl mb-4 max-w-sm w-full">
+          <p className="text-emerald-400 font-bold text-sm">
+            <Check className="w-4 h-4 inline-block mr-1 -mt-0.5" />
+            {revealed}
+          </p>
+        </div>
+      )}
+
+      {/* Student's result */}
+      {isCorrect !== null && (
+        <div
+          className={`text-lg font-black mb-6 ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}
+        >
+          {isCorrect ? (
+            <>
+              <CheckCircle2 className="w-5 h-5 inline-block mr-1 -mt-0.5" /> You
+              got it right!
+            </>
+          ) : (
+            <>
+              <XIcon className="w-5 h-5 inline-block mr-1 -mt-0.5" /> Better
+              luck next time!
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Waiting indicator */}
+      <div className="flex items-center gap-2 text-slate-500 text-sm">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Waiting for teacher to continue...
+      </div>
+    </div>
+  );
+};
 
 const ResultsScreen: React.FC<{
   answeredCount: number;

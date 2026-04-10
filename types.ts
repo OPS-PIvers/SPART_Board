@@ -1394,6 +1394,8 @@ export interface QuizSession {
   showPodiumBetweenQuestions?: boolean;
   /** Play sound effects during the quiz (default false) */
   soundEffectsEnabled?: boolean;
+  /** Current phase within a question: 'answering' (default) or 'reviewing' (between-question review) */
+  questionPhase?: 'answering' | 'reviewing';
 }
 
 export interface QuizResponseAnswer {

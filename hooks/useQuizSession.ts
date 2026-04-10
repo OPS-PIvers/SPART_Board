@@ -27,6 +27,7 @@ import {
   where,
   writeBatch,
   increment,
+  deleteField,
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { signInAnonymously } from 'firebase/auth';
@@ -148,6 +149,8 @@ export interface UseQuizSessionTeacherResult {
   removeStudent: (studentUid: string) => Promise<void>;
   /** Reveal the correct answer for a question (writes to session doc) */
   revealAnswer: (questionId: string, correctAnswer: string) => Promise<void>;
+  /** Hide a previously revealed answer (removes from session doc) */
+  hideAnswer: (questionId: string) => Promise<void>;
 }
 
 export const useQuizSessionTeacher = (
@@ -248,9 +251,39 @@ export const useQuizSessionTeacher = (
     [teacherUid]
   );
 
+  const hideAnswer = useCallback(
+    async (questionId: string) => {
+      if (!teacherUid) return;
+      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+      await updateDoc(sessionRef, {
+        [`revealedAnswers.${questionId}`]: deleteField(),
+      });
+    },
+    [teacherUid]
+  );
+
   const advanceQuestion = useCallback(async () => {
     if (!teacherUid || !session) return;
     const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+
+    const isReviewing = session.questionPhase === 'reviewing';
+
+    // If podium is enabled and we're not already reviewing, enter review phase first.
+    // Skip review phase for student-paced mode (students control their own flow).
+    if (
+      !isReviewing &&
+      session.showPodiumBetweenQuestions &&
+      session.sessionMode !== 'student' &&
+      session.status === 'active'
+    ) {
+      await updateDoc(sessionRef, {
+        questionPhase: 'reviewing',
+        autoProgressAt: null,
+      });
+      return;
+    }
+
+    // Actually advance to next question
     const nextIndex = session.currentQuestionIndex + 1;
 
     if (nextIndex >= session.totalQuestions) {
@@ -259,6 +292,7 @@ export const useQuizSessionTeacher = (
         currentQuestionIndex: session.totalQuestions,
         endedAt: Date.now(),
         autoProgressAt: null,
+        questionPhase: deleteField(),
       });
       await finalizeAllResponses();
       return;
@@ -267,6 +301,7 @@ export const useQuizSessionTeacher = (
       status: 'active' as QuizSessionStatus,
       currentQuestionIndex: nextIndex,
       autoProgressAt: null,
+      questionPhase: 'answering',
       ...(session.startedAt === null ? { startedAt: Date.now() } : {}),
     });
   }, [teacherUid, session, finalizeAllResponses]);
@@ -302,12 +337,23 @@ export const useQuizSessionTeacher = (
         r.answers.some((a) => a.questionId === currentQId)
       );
 
-    if (everyoneAnswered && !session.autoProgressAt) {
-      // All students answered: set a 5-second countdown to advance
+    if (
+      everyoneAnswered &&
+      !session.autoProgressAt &&
+      session.questionPhase !== 'reviewing'
+    ) {
+      // All students answered: if podium is enabled, enter review first, then auto-advance
+      const shouldReview = session.showPodiumBetweenQuestions;
       const advanceAt = Date.now() + 5000;
-      updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), {
+      const updates: Record<string, unknown> = {
         autoProgressAt: advanceAt,
-      }).catch((err) => console.error('[AutoProgress] update failed:', err));
+      };
+      if (shouldReview) {
+        updates.questionPhase = 'reviewing';
+      }
+      updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), updates).catch(
+        (err) => console.error('[AutoProgress] update failed:', err)
+      );
     }
   }, [responses, session, teacherUid]);
 
@@ -411,6 +457,7 @@ export const useQuizSessionTeacher = (
         showPodiumBetweenQuestions:
           options?.showPodiumBetweenQuestions ?? false,
         soundEffectsEnabled: options?.soundEffectsEnabled ?? false,
+        questionPhase: 'answering',
       };
       await setDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), newSession);
       return code;
@@ -427,6 +474,7 @@ export const useQuizSessionTeacher = (
     endQuizSession,
     removeStudent,
     revealAnswer,
+    hideAnswer,
   };
 };
 
