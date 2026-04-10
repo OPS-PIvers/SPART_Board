@@ -454,8 +454,7 @@ export const useQuizSessionTeacher = (
         // Phase 2 gamification
         speedBonusEnabled: options?.speedBonusEnabled ?? false,
         streakBonusEnabled: options?.streakBonusEnabled ?? false,
-        showPodiumBetweenQuestions:
-          options?.showPodiumBetweenQuestions ?? false,
+        showPodiumBetweenQuestions: options?.showPodiumBetweenQuestions ?? true,
         soundEffectsEnabled: options?.soundEffectsEnabled ?? false,
         questionPhase: 'answering',
       };

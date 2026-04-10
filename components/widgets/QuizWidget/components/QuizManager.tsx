@@ -120,7 +120,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   const [speedBonusEnabled, setSpeedBonusEnabled] = useState(false);
   const [streakBonusEnabled, setStreakBonusEnabled] = useState(false);
   const [showPodiumBetweenQuestions, setShowPodiumBetweenQuestions] =
-    useState(false);
+    useState(true);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
 
   // Reset session options when modal re-opens
@@ -131,7 +131,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     setShowCorrectOnBoard(false);
     setSpeedBonusEnabled(false);
     setStreakBonusEnabled(false);
-    setShowPodiumBetweenQuestions(false);
+    setShowPodiumBetweenQuestions(true);
     setSoundEffectsEnabled(false);
   }
 

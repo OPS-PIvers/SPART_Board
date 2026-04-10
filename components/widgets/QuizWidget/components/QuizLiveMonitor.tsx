@@ -456,8 +456,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                   {currentQ.text}
                 </p>
 
-                {/* Correct answer on board */}
-                {session.showCorrectOnBoard &&
+                {/* Correct answer on board — always visible during review phase */}
+                {(session.showCorrectOnBoard || isReviewing) &&
                   session.revealedAnswers?.[currentQ.id] && (
                     <div
                       className="bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between"
