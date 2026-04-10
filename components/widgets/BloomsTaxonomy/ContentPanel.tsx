@@ -35,12 +35,13 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-2 duration-200">
       {/* Header with back button */}
       <div
-        className="flex items-center gap-1 shrink-0"
+        className="flex items-center shrink-0"
         style={{
           backgroundColor: color,
           padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
           borderRadius: 'min(6px, 1.5cqmin)',
           marginBottom: 'min(6px, 1.2cqmin)',
+          gap: 'min(4px, 1cqmin)',
         }}
       >
         <button
@@ -84,6 +85,7 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({
             <button
               key={cat}
               onClick={() => onCategoryChange(cat)}
+              aria-pressed={isSelected}
               className="rounded-full font-medium transition-all duration-150 active:scale-95"
               style={{
                 fontSize: 'min(10px, 3cqmin)',
@@ -107,9 +109,9 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({
         style={{ padding: '0 min(4px, 1cqmin)' }}
       >
         <ul className="flex flex-col" style={{ gap: 'min(4px, 0.8cqmin)' }}>
-          {items.map((item, i) => (
+          {items.map((item) => (
             <li
-              key={i}
+              key={`${level}-${category}-${item}`}
               className="flex items-start text-white/90"
               style={{
                 fontSize: 'min(12px, 3.5cqmin)',

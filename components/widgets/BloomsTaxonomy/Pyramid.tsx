@@ -63,6 +63,8 @@ export const Pyramid: React.FC<PyramidProps> = ({
               key={level}
               role="button"
               tabIndex={0}
+              aria-pressed={isActive}
+              aria-label={`${label}${isActive ? ' (selected)' : ''}`}
               draggable
               className="relative flex items-center justify-center cursor-pointer transition-all duration-150"
               style={{

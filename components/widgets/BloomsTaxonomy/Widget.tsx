@@ -109,42 +109,23 @@ export const BloomsTaxonomyWidget: React.FC<{ widget: WidgetData }> = ({
     [aiEnabled, aiTopic, addToast]
   );
 
-  // Handle tier click — transition to categories view
+  // Handle tier click/keyboard activation — transition to categories view
   const handleTierClick = useCallback(
     async (level: BloomsLevel) => {
       if (await tryAiGeneration(level)) return;
 
-      if (activeCategories.length === 0) {
-        addToast('No categories enabled. Flip to configure.', 'info');
-        return;
-      }
+      // Allow deselecting the active tier even if categories are disabled
+      setViewState((prev) => {
+        if (prev.view !== 'pyramid' && 'level' in prev && prev.level === level)
+          return { view: 'pyramid' };
 
-      // If clicking the already-active level, deselect
-      if (
-        viewState.view !== 'pyramid' &&
-        'level' in viewState &&
-        viewState.level === level
-      ) {
-        setViewState({ view: 'pyramid' });
-        return;
-      }
+        if (activeCategories.length === 0) {
+          addToast('No categories enabled. Flip to configure.', 'info');
+          return prev;
+        }
 
-      setViewState({ view: 'categories', level });
-    },
-    [tryAiGeneration, activeCategories.length, addToast, viewState]
-  );
-
-  // Handle keyboard activation — same as click
-  const handleTierKeyboardActivate = useCallback(
-    async (level: BloomsLevel) => {
-      if (await tryAiGeneration(level)) return;
-
-      if (activeCategories.length === 0) {
-        addToast('No categories enabled. Flip to configure.', 'info');
-        return;
-      }
-
-      setViewState({ view: 'categories', level });
+        return { view: 'categories', level };
+      });
     },
     [tryAiGeneration, activeCategories.length, addToast]
   );
@@ -251,7 +232,7 @@ export const BloomsTaxonomyWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <Pyramid
               onTierClick={handleTierClick}
-              onTierKeyboardActivate={handleTierKeyboardActivate}
+              onTierKeyboardActivate={handleTierClick}
               onTierDragStart={handleTierDragStart}
               activeLevel={activeLevel}
             />
