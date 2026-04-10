@@ -236,12 +236,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
       if (over?.id === 'hot' || over?.id === 'bento' || over?.id === 'home') {
         updateAssignment(student, over.id);
-      } else {
-        // Dropped in 'unassigned' zone or outside all zones
+      } else if (assignments[student]) {
+        // Dropped in 'unassigned' zone or outside all zones — only write if currently assigned
         updateAssignment(student, null);
       }
     },
-    [updateAssignment]
+    [assignments, updateAssignment]
   );
 
   const handleSubmitReport = async (notes: string, extraPizza?: number) => {

@@ -896,10 +896,11 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             }
           }}
           onDrop={(e) => {
+            if (mode !== 'assign') return;
+            e.preventDefault();
+            e.stopPropagation();
             const studentId = e.dataTransfer.getData('studentId');
-            if (studentId && mode === 'assign') {
-              e.preventDefault();
-              e.stopPropagation();
+            if (studentId) {
               handleRemoveAssignment(studentId);
             }
           }}
