@@ -120,7 +120,7 @@ Every nexus connection follows one of four patterns:
 - **Date**: pre-2026
 - **Value**: Creates a text widget from captured webcam image content (non-OCR path).
 - **Pattern**: Spawn
-- **Code**: `components/widgets/Webcam/Widget.tsx:203-210, 125-135` — `handleSendToNotes()` creates a text widget with image data.
+- **Code**: `components/widgets/Webcam/Widget.tsx:125-135, 203-210` — `handleSendToNotes()` creates a text widget with image data.
 
 #### Drawing → Text (OCR)
 
@@ -314,8 +314,8 @@ Every nexus connection follows one of four patterns:
 
 - **User story**: "I paste my lesson notes into a text widget and want to auto-generate a concept web showing key ideas and their relationships."
 - **Data flow**: Text widget content (HTML/text) → Gemini extracts concepts and relationships → ConceptWeb widget receives nodes and edges.
-- **Approach**: ConceptWeb settings adds "Import from Notes" button (matches existing MiniApp → Text pattern). Uses `generateWithAI` with type `'concept-extraction'` to produce `{ nodes: [{id, label, x, y}], edges: [{from, to, label}] }`. Calls `addWidget('concept-web', { config: { nodes, edges } })`.
-- **Infrastructure**: Both widgets exist. Pattern matches Text Widget → MiniApp (`components/widgets/MiniApp/components/MiniAppEditor.tsx:importFromNotes`).
+- **Approach**: ConceptWeb settings adds "Import from Notes" button (matches the existing Text Widget → MiniApp import pattern). Uses `generateWithAI` with type `'concept-extraction'` to produce `{ nodes: [{id, label, x, y}], edges: [{from, to, label}] }`. Calls `addWidget('concept-web', { config: { nodes, edges } })`.
+- **Infrastructure**: Both widgets exist. Pattern matches the existing Text Widget → MiniApp import flow (`components/widgets/MiniApp/components/MiniAppEditor.tsx:importFromNotes`).
 - **Scores**: Value: 5/5 | Feasibility: 4/5 | Coupling risk: 2/5 | **Total: 7**
 - **Pattern**: Import (AI-enhanced)
 - **Status**: proposed
