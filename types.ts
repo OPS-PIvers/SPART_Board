@@ -56,7 +56,8 @@ export type WidgetType =
   | 'url'
   | 'activity-wall'
   | 'first-5'
-  | 'work-symbols';
+  | 'work-symbols'
+  | 'blooms-taxonomy';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -529,6 +530,29 @@ export interface WorkSymbol {
 
 export interface WorkSymbolsGlobalConfig {
   symbols: WorkSymbol[];
+}
+
+// --- BLOOM'S TAXONOMY ---
+
+export interface BloomsContent {
+  [level: string]: { [category: string]: string[] };
+}
+
+export interface BloomsTaxonomyConfig {
+  enabledCategories?: string[];
+  aiTopic?: string;
+  themeColor?: string;
+}
+
+export interface BloomsTaxonomyGlobalConfig {
+  buildingDefaults?: Record<string, BloomsTaxonomyBuildingConfig>;
+}
+
+export interface BloomsTaxonomyBuildingConfig {
+  contentOverrides?: BloomsContent;
+  availableCategories?: string[];
+  aiEnabled?: boolean;
+  defaultEnabledCategories?: string[];
 }
 
 export interface TalkingToolStem {
@@ -2240,7 +2264,8 @@ export type WidgetConfig =
   | CustomWidgetConfig
   | SoundboardConfig
   | ActivityWallConfig
-  | WorkSymbolsConfig;
+  | WorkSymbolsConfig
+  | BloomsTaxonomyConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'url'
@@ -2357,7 +2382,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'url'
                                                                                                                 ? ActivityWallConfig
                                                                                                                 : T extends 'work-symbols'
                                                                                                                   ? WorkSymbolsConfig
-                                                                                                                  : never;
+                                                                                                                  : T extends 'blooms-taxonomy'
+                                                                                                                    ? BloomsTaxonomyConfig
+                                                                                                                    : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
