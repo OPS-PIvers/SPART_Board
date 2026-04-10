@@ -140,9 +140,10 @@ function tryParseImageWidget(url: string): PasteResult | null {
 }
 
 function tryParseEmbedWidget(url: string): PasteResult | null {
-  const isEmbed = /(youtube\.com|youtu\.be|vimeo\.com|docs\.google\.com)/.test(
-    url
-  );
+  const isEmbed =
+    /(youtube\.com|youtu\.be|vimeo\.com|docs\.google\.com|drive\.google\.com|vids\.google\.com)/.test(
+      url
+    );
 
   if (isEmbed) {
     return {
