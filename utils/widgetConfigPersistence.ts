@@ -1,4 +1,5 @@
 import type { WidgetConfig } from '../types';
+import { PII_WIDGET_FIELDS } from './dashboardPII';
 
 /**
  * Config keys that should NOT be persisted globally when saving widget settings.
@@ -6,6 +7,9 @@ import type { WidgetConfig } from '../types';
  * or large instance-specific data (would bloat the user profile document).
  */
 const TRANSIENT_CONFIG_KEYS = new Set<string>([
+  // Student PII — must never reach Firestore via savedWidgetConfigs
+  ...PII_WIDGET_FIELDS,
+
   // Timer/stopwatch runtime state
   'isRunning',
   'elapsedTime',
@@ -48,13 +52,11 @@ const TRANSIENT_CONFIG_KEYS = new Set<string>([
   'activeAppUnsaved',
   'activeNotebookId',
   'lastResult',
-  'remainingStudents',
 
   // Large instance data / per-session game state
   'paths',
   'furniture',
   'assignments',
-  'completedNames',
   'cards',
   'memoryCards',
   'hotspots',

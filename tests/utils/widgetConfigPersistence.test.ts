@@ -82,4 +82,27 @@ describe('stripTransientKeys', () => {
 
     expect(config).toEqual(original);
   });
+
+  it('strips PII fields so student data never reaches Firestore', () => {
+    const config = {
+      firstNames: 'Alice\nBob',
+      lastNames: 'Smith\nJones',
+      names: ['Alice', 'Bob'],
+      roster: [{ name: 'Alice' }],
+      completedNames: ['Alice'],
+      remainingStudents: ['Bob'],
+      fontFamily: 'sans',
+      cardColor: '#fff',
+    } as Partial<WidgetConfig>;
+
+    const result = stripTransientKeys(config);
+
+    expect(result).toEqual({ fontFamily: 'sans', cardColor: '#fff' });
+    expect(result).not.toHaveProperty('firstNames');
+    expect(result).not.toHaveProperty('lastNames');
+    expect(result).not.toHaveProperty('names');
+    expect(result).not.toHaveProperty('roster');
+    expect(result).not.toHaveProperty('completedNames');
+    expect(result).not.toHaveProperty('remainingStudents');
+  });
 });

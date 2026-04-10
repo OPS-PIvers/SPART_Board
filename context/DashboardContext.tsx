@@ -2632,7 +2632,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           });
 
           // Save config globally so new instances inherit settings.
-          // saveWidgetConfig handles transient-key stripping and no-op detection.
+          // saveWidgetConfig handles transient-key stripping (including PII fields).
           if (widgetType && updates.config) {
             saveWidgetConfig(widgetType, updates.config);
           }
