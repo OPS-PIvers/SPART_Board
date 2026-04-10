@@ -90,72 +90,76 @@ export const BloomsTaxonomyWidget: React.FC<{ widget: WidgetData }> = ({
   const [aiResult, setAiResult] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Handle tier click
-  const handleTierClick = useCallback(
-    async (level: BloomsLevel, event: React.MouseEvent) => {
-      // If AI topic is set and AI is enabled, generate AI content
-      if (aiEnabled && aiTopic.trim()) {
-        setAiLoading(true);
-        setAiResult(null);
-        try {
-          const text = await generateBloomsContent(
-            `Generate Bloom's Taxonomy "${BLOOMS_LABELS[level]}" level content for the topic: "${aiTopic.trim()}". Include question stems, action verbs, and activity ideas. Format as a readable list.`
-          );
-          setAiResult(text || 'No content generated. Please try again.');
-        } catch {
-          addToast('AI generation failed. Please try again.', 'error');
-        } finally {
-          setAiLoading(false);
-        }
-        return;
+  // Shared AI generation logic for both click and keyboard activation
+  const tryAiGeneration = useCallback(
+    async (level: BloomsLevel): Promise<boolean> => {
+      if (!aiEnabled || !aiTopic.trim()) return false;
+      setAiLoading(true);
+      setAiResult(null);
+      try {
+        const text = await generateBloomsContent(
+          `Generate Bloom's Taxonomy "${BLOOMS_LABELS[level]}" level content for the topic: "${aiTopic.trim()}". Include question stems, action verbs, and activity ideas. Format as a readable list.`
+        );
+        setAiResult(text || 'No content generated. Please try again.');
+      } catch {
+        addToast('AI generation failed. Please try again.', 'error');
+      } finally {
+        setAiLoading(false);
       }
+      return true;
+    },
+    [aiEnabled, aiTopic, addToast]
+  );
 
-      // Otherwise, show radial menu
+  // Open radial menu at a given position (relative to container)
+  const openRadialMenu = useCallback(
+    (level: BloomsLevel, x: number, y: number) => {
       if (activeCategories.length === 0) {
         addToast('No categories enabled. Flip to configure.', 'info');
         return;
       }
-
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
       setActiveMenu({
         level,
         position: { x, y },
         containerSize: { width: rect.width, height: rect.height },
       });
     },
-    [aiEnabled, aiTopic, activeCategories.length, addToast]
+    [activeCategories.length, addToast]
+  );
+
+  // Handle tier click
+  const handleTierClick = useCallback(
+    async (level: BloomsLevel, event: React.MouseEvent) => {
+      if (await tryAiGeneration(level)) return;
+
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      openRadialMenu(
+        level,
+        event.clientX - rect.left,
+        event.clientY - rect.top
+      );
+    },
+    [tryAiGeneration, openRadialMenu]
   );
 
   // Handle keyboard activation — center menu on the tier element
   const handleTierKeyboardActivate = useCallback(
-    (level: BloomsLevel, element: HTMLElement) => {
-      if (activeCategories.length === 0) {
-        addToast('No categories enabled. Flip to configure.', 'info');
-        return;
-      }
+    async (level: BloomsLevel, element: HTMLElement) => {
+      if (await tryAiGeneration(level)) return;
 
       const containerRect = containerRef.current?.getBoundingClientRect();
       const tierRect = element.getBoundingClientRect();
       if (!containerRect) return;
-
-      const x = tierRect.left - containerRect.left + tierRect.width / 2;
-      const y = tierRect.top - containerRect.top + tierRect.height / 2;
-
-      setActiveMenu({
+      openRadialMenu(
         level,
-        position: { x, y },
-        containerSize: {
-          width: containerRect.width,
-          height: containerRect.height,
-        },
-      });
+        tierRect.left - containerRect.left + tierRect.width / 2,
+        tierRect.top - containerRect.top + tierRect.height / 2
+      );
     },
-    [activeCategories.length, addToast]
+    [tryAiGeneration, openRadialMenu]
   );
 
   // Handle category selection from radial menu

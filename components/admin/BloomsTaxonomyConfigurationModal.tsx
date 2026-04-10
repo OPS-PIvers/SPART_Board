@@ -84,10 +84,19 @@ export const BloomsTaxonomyConfigurationModal: React.FC<
     setSaving(true);
     try {
       const docRef = doc(db, 'feature_permissions', 'blooms-taxonomy');
+      const existingSnap = await getDoc(docRef);
+      const existingPermission = existingSnap.exists()
+        ? (existingSnap.data() as Partial<FeaturePermission>)
+        : null;
+
       await setDoc(
         docRef,
         {
-          type: 'blooms-taxonomy',
+          ...(existingPermission ?? {}),
+          widgetType: 'blooms-taxonomy',
+          accessLevel: existingPermission?.accessLevel ?? 'admin',
+          enabled: existingPermission?.enabled ?? true,
+          betaUsers: existingPermission?.betaUsers ?? [],
           config: config as unknown as Record<string, unknown>,
           updatedAt: Date.now(),
         },

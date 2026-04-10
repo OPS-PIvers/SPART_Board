@@ -485,15 +485,6 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
   'blooms-taxonomy': {
     w: 450,
     h: 550,
-    config: {
-      enabledCategories: [
-        'questionStems',
-        'actionVerbs',
-        'activityTypes',
-        'assessmentIdeas',
-        'iCanStatements',
-        'dokAlignment',
-      ],
-    } satisfies BloomsTaxonomyConfig,
+    config: {} satisfies BloomsTaxonomyConfig,
   },
 };
