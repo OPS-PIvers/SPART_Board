@@ -28,6 +28,11 @@ import {
   EyeOff,
   Trophy,
   Hash,
+  X,
+  Volume2,
+  VolumeX,
+  Palette,
+  Medal,
 } from 'lucide-react';
 import {
   QuizSession,
@@ -38,8 +43,12 @@ import {
   ClassRoster,
 } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
-import { buildPinToNameMap } from '../utils/quizScoreboard';
+import { buildPinToNameMap, getResponseScore } from '../utils/quizScoreboard';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import {
+  playPodiumFanfare,
+  playQuizCompleteCelebration,
+} from '@/utils/quizAudio';
 
 interface QuizLiveMonitorProps {
   session: QuizSession;
@@ -50,6 +59,8 @@ interface QuizLiveMonitorProps {
   config: QuizConfig;
   rosters: ClassRoster[];
   onUpdateConfig: (updates: Partial<QuizConfig>) => void;
+  onRemoveStudent?: (studentUid: string) => Promise<void>;
+  onRevealAnswer?: (questionId: string, correctAnswer: string) => Promise<void>;
 }
 
 export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
@@ -61,6 +72,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   config,
   rosters,
   onUpdateConfig,
+  onRemoveStudent,
+  onRevealAnswer,
 }) => {
   const pinToName = useMemo(
     () => buildPinToNameMap(rosters, config.periodName),
@@ -80,9 +93,17 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   );
   const [liveScoreboardScoring, setLiveScoreboardScoring] = useState<
     'completion' | 'per-question'
-  >('completion');
+  >('per-question');
   const liveScoreboardSetupRef = useRef<HTMLDivElement>(null);
   const isLiveScoreboardActive = config.liveScoreboardEnabled ?? false;
+
+  // New state for Phase 1 & 2 features
+  const [showAnswerColors, setShowAnswerColors] = useState(false);
+  const [showTabWarnings, setShowTabWarnings] = useState(true);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [showPodium, setShowPodium] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(false);
+  const prevQuestionIndexRef = useRef(session.currentQuestionIndex);
 
   // Close live scoreboard setup popup on click-outside or Escape
   const closeLiveScoreboardSetup = useCallback(() => {
@@ -137,6 +158,43 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [session.autoProgressAt]);
+
+  // Show podium between questions when enabled
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (
+      session.showPodiumBetweenQuestions &&
+      session.currentQuestionIndex > prevQuestionIndexRef.current &&
+      session.status === 'active'
+    ) {
+      setShowPodium(true);
+      if (session.soundEffectsEnabled && !soundMuted) {
+        playPodiumFanfare();
+      }
+      timer = setTimeout(() => setShowPodium(false), 5000);
+    }
+    prevQuestionIndexRef.current = session.currentQuestionIndex;
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [
+    session.currentQuestionIndex,
+    session.showPodiumBetweenQuestions,
+    session.status,
+    session.soundEffectsEnabled,
+    soundMuted,
+  ]);
+
+  // Play celebration sound once when quiz transitions to ended
+  const prevSessionStatusRef = useRef(session.status);
+  useEffect(() => {
+    const didJustEnd =
+      prevSessionStatusRef.current === 'active' && session.status === 'ended';
+    if (didJustEnd && session.soundEffectsEnabled && !soundMuted) {
+      playQuizCompleteCelebration();
+    }
+    prevSessionStatusRef.current = session.status;
+  }, [session.status, session.soundEffectsEnabled, soundMuted]);
 
   const joinUrl = `${window.location.origin}/quiz?code=${session.code}`;
 
@@ -283,84 +341,98 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
         style={{ padding: 'min(16px, 4cqmin)' }}
       >
         <div className="flex flex-col" style={{ gap: 'min(16px, 4cqmin)' }}>
-          {/* Join code section */}
+          {/* Compact join code bar */}
           <div
-            className="bg-white border-2 border-brand-blue-primary/10 rounded-2xl shadow-sm"
-            style={{ padding: 'min(16px, 4cqmin)' }}
+            className="flex items-center bg-white border border-brand-blue-primary/10 rounded-xl shadow-sm"
+            style={{
+              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+              gap: 'min(8px, 2cqmin)',
+            }}
           >
-            <p
-              className="text-brand-blue-primary/60 font-bold uppercase tracking-wider text-center"
+            <span
+              className="font-black tracking-[0.15em] text-brand-blue-dark font-mono bg-brand-blue-lighter/40 rounded-lg border border-brand-blue-primary/5"
               style={{
-                fontSize: 'min(11px, 3cqmin)',
-                marginBottom: 'min(8px, 2cqmin)',
+                fontSize: 'min(18px, 5cqmin)',
+                padding: 'min(4px, 1cqmin) min(10px, 2.5cqmin)',
               }}
             >
-              Join Code
-            </p>
-            <div
-              className="flex items-center justify-center"
+              {session.code}
+            </span>
+            <button
+              onClick={handleCopy}
+              className="flex items-center bg-brand-blue-lighter hover:bg-brand-blue-primary/20 text-brand-blue-primary font-bold rounded-lg transition-all active:scale-95"
               style={{
-                marginBottom: 'min(16px, 4cqmin)',
+                gap: 'min(4px, 1cqmin)',
+                padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+                fontSize: 'min(10px, 3cqmin)',
               }}
             >
-              <span
-                className="font-black tracking-[0.2em] text-brand-blue-dark font-mono bg-brand-blue-lighter/40 px-6 py-2 rounded-2xl border border-brand-blue-primary/5"
-                style={{ fontSize: 'min(32px, 10cqmin)' }}
-              >
-                {session.code}
-              </span>
-            </div>
-            <div
-              className="grid grid-cols-2"
-              style={{ gap: 'min(10px, 2.5cqmin)' }}
+              {copied ? (
+                <CheckCircle2
+                  className="text-emerald-600"
+                  style={{
+                    width: 'min(14px, 3.5cqmin)',
+                    height: 'min(14px, 3.5cqmin)',
+                  }}
+                />
+              ) : (
+                <Copy
+                  style={{
+                    width: 'min(14px, 3.5cqmin)',
+                    height: 'min(14px, 3.5cqmin)',
+                  }}
+                />
+              )}
+              {copied ? 'COPIED' : 'COPY'}
+            </button>
+            <a
+              href={joinUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-lg transition-all shadow-sm active:scale-95"
+              style={{
+                gap: 'min(4px, 1cqmin)',
+                padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+                fontSize: 'min(10px, 3cqmin)',
+              }}
             >
-              <button
-                onClick={handleCopy}
-                className="flex items-center justify-center bg-brand-blue-lighter hover:bg-brand-blue-primary/20 text-brand-blue-primary font-bold rounded-xl transition-all active:scale-95"
+              <ExternalLink
                 style={{
-                  gap: 'min(6px, 1.5cqmin)',
-                  padding: 'min(8px, 2cqmin)',
-                  fontSize: 'min(11px, 3.5cqmin)',
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
                 }}
+              />
+              OPEN
+            </a>
+            {/* Sound mute toggle */}
+            {session.soundEffectsEnabled && (
+              <button
+                onClick={() => setSoundMuted((m) => !m)}
+                className={`ml-auto flex items-center rounded-lg transition-all active:scale-95 ${
+                  soundMuted
+                    ? 'text-slate-400 hover:bg-slate-100'
+                    : 'text-brand-blue-primary hover:bg-brand-blue-lighter/50'
+                }`}
+                style={{ padding: 'min(6px, 1.5cqmin)' }}
+                title={soundMuted ? 'Unmute sounds' : 'Mute sounds'}
               >
-                {copied ? (
-                  <CheckCircle2
-                    className="text-emerald-600"
+                {soundMuted ? (
+                  <VolumeX
                     style={{
                       width: 'min(16px, 4cqmin)',
                       height: 'min(16px, 4cqmin)',
                     }}
                   />
                 ) : (
-                  <Copy
+                  <Volume2
                     style={{
                       width: 'min(16px, 4cqmin)',
                       height: 'min(16px, 4cqmin)',
                     }}
                   />
                 )}
-                {copied ? 'COPIED' : 'COPY LINK'}
               </button>
-              <a
-                href={joinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-xl transition-all shadow-sm active:scale-95 text-center"
-                style={{
-                  gap: 'min(6px, 1.5cqmin)',
-                  padding: 'min(8px, 2cqmin)',
-                  fontSize: 'min(11px, 3.5cqmin)',
-                }}
-              >
-                <ExternalLink
-                  style={{
-                    width: 'min(16px, 4cqmin)',
-                    height: 'min(16px, 4cqmin)',
-                  }}
-                />
-                OPEN PAGE
-              </a>
-            </div>
+            )}
           </div>
 
           {/* Live Scoreboard Toggle */}
@@ -593,13 +665,24 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
             </div>
           )}
 
+          {/* Podium overlay between questions */}
+          {showPodium && session.showPodiumBetweenQuestions && (
+            <PodiumView
+              responses={responses}
+              questions={quizData.questions}
+              session={session}
+              pinToName={pinToName}
+              onDismiss={() => setShowPodium(false)}
+            />
+          )}
+
           {session.status === 'active' && currentQ && (
             <div
-              className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm overflow-hidden relative"
+              className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm overflow-hidden relative flex-1"
               style={{ padding: 'min(16px, 4cqmin)' }}
             >
               {autoCountdown !== null && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-brand-blue-lighter">
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-brand-blue-lighter">
                   <div
                     className="h-full bg-brand-red-primary transition-all duration-1000 ease-linear"
                     style={{ width: `${(autoCountdown / 5) * 100}%` }}
@@ -609,27 +692,64 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
 
               <div
                 className="flex items-center justify-between"
-                style={{ marginBottom: 'min(10px, 2.5cqmin)' }}
+                style={{ marginBottom: 'min(8px, 2cqmin)' }}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className="bg-brand-blue-primary text-white font-bold rounded-lg"
                     style={{
-                      fontSize: 'min(10px, 3cqmin)',
-                      padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
+                      fontSize: 'min(11px, 3.5cqmin)',
+                      padding: 'min(3px, 0.7cqmin) min(10px, 2.5cqmin)',
                       textTransform: 'uppercase',
                     }}
                   >
                     Q {session.currentQuestionIndex + 1} /{' '}
                     {session.totalQuestions}
                   </span>
+                  <span
+                    className={`font-bold rounded-lg ${
+                      currentQ.type === 'MC'
+                        ? 'bg-blue-100 text-blue-700'
+                        : currentQ.type === 'FIB'
+                          ? 'bg-amber-100 text-amber-700'
+                          : currentQ.type === 'Matching'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-teal-100 text-teal-700'
+                    }`}
+                    style={{
+                      fontSize: 'min(10px, 3cqmin)',
+                      padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
+                    }}
+                  >
+                    {currentQ.type}
+                  </span>
+                  {currentQ.timeLimit > 0 && (
+                    <span
+                      className="flex items-center gap-1 text-slate-500 font-bold"
+                      style={{ fontSize: 'min(10px, 3cqmin)' }}
+                    >
+                      <Clock
+                        style={{
+                          width: 'min(12px, 3cqmin)',
+                          height: 'min(12px, 3cqmin)',
+                        }}
+                      />
+                      {currentQ.timeLimit}s
+                    </span>
+                  )}
                   {autoCountdown !== null && (
                     <div
                       className="flex items-center gap-1 text-brand-red-primary font-black animate-pulse"
                       style={{ fontSize: 'min(10px, 3cqmin)' }}
                     >
-                      <Zap className="w-3 h-3 fill-current" />
-                      ADVANCING IN {autoCountdown}s
+                      <Zap
+                        className="fill-current"
+                        style={{
+                          width: 'min(12px, 3cqmin)',
+                          height: 'min(12px, 3cqmin)',
+                        }}
+                      />
+                      {autoCountdown}s
                     </div>
                   )}
                 </div>
@@ -647,27 +767,68 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                       height: 'min(14px, 3.5cqmin)',
                     }}
                   />
-                  {showStats ? 'Hide Stats' : 'Show Stats'}
+                  {showStats ? 'Hide' : 'Stats'}
                 </button>
               </div>
+
+              {/* Question text — made much larger */}
               <p
                 className="text-brand-blue-dark font-black leading-tight"
-                style={{ fontSize: 'min(15px, 5cqmin)' }}
+                style={{ fontSize: 'min(20px, 8cqmin)' }}
               >
                 {currentQ.text}
               </p>
 
-              <div className="mt-4 space-y-2">
+              {/* Correct answer on board */}
+              {session.showCorrectOnBoard &&
+                session.revealedAnswers?.[currentQ.id] && (
+                  <div
+                    className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl"
+                    style={{ fontSize: 'min(14px, 5cqmin)' }}
+                  >
+                    <span className="text-emerald-600 font-black">✓ </span>
+                    <span className="text-emerald-800 font-bold">
+                      {session.revealedAnswers[currentQ.id]}
+                    </span>
+                  </div>
+                )}
+
+              {/* Reveal answer button for teacher-paced mode */}
+              {session.showCorrectOnBoard &&
+                !session.revealedAnswers?.[currentQ.id] &&
+                onRevealAnswer && (
+                  <button
+                    onClick={() =>
+                      void onRevealAnswer(currentQ.id, currentQ.correctAnswer)
+                    }
+                    className="mt-3 flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
+                    style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+                  >
+                    <Eye
+                      style={{
+                        width: 'min(14px, 3.5cqmin)',
+                        height: 'min(14px, 3.5cqmin)',
+                      }}
+                    />
+                    Reveal Answer
+                  </button>
+                )}
+
+              {/* Completion progress bar */}
+              <div className="mt-4 space-y-1.5">
                 <div
                   className="flex items-center justify-between text-brand-gray-primary font-bold uppercase tracking-wider"
                   style={{ fontSize: 'min(10px, 3cqmin)' }}
                 >
-                  <span>Completion Rate</span>
+                  <span>Answered</span>
                   <span>
-                    {answered} / {responses.length} Students
+                    {answered} / {responses.length}
                   </span>
                 </div>
-                <div className="h-3 bg-brand-blue-lighter rounded-full overflow-hidden shadow-inner border border-brand-blue-primary/5">
+                <div
+                  className="bg-brand-blue-lighter rounded-full overflow-hidden shadow-inner border border-brand-blue-primary/5"
+                  style={{ height: 'min(10px, 2.5cqmin)' }}
+                >
                   <div
                     className="h-full bg-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                     style={{
@@ -679,7 +840,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
 
               {/* Live answer distribution (MC only for now) */}
               {showStats && currentQ.type === 'MC' && (
-                <div className="mt-6 pt-6 border-t border-brand-blue-primary/5">
+                <div className="mt-4 pt-4 border-t border-brand-blue-primary/5">
                   <MCDistribution question={currentQ} responses={responses} />
                 </div>
               )}
@@ -724,26 +885,24 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
           {/* Detailed Student Progress List */}
           {responses.length > 0 && (
             <div className="space-y-2 mt-2">
-              <button
-                onClick={() => setShowRoster(!showRoster)}
-                className="w-full flex items-center justify-between border-b border-brand-blue-primary/10 pb-1"
-              >
-                <span
-                  className="text-brand-blue-primary/60 font-black uppercase tracking-widest"
-                  style={{ fontSize: 'min(10px, 3cqmin)' }}
+              <div className="flex items-center justify-between border-b border-brand-blue-primary/10 pb-1">
+                <button
+                  onClick={() => setShowRoster(!showRoster)}
+                  className="flex items-center gap-1"
                 >
-                  Roster Progress · {responses.length} Active
-                </span>
-                <span
-                  className="flex items-center gap-1 text-brand-blue-primary/40 font-bold"
-                  style={{ fontSize: 'min(10px, 3cqmin)' }}
-                >
+                  <span
+                    className="text-brand-blue-primary/60 font-black uppercase tracking-widest"
+                    style={{ fontSize: 'min(10px, 3cqmin)' }}
+                  >
+                    Roster · {responses.length}
+                  </span>
                   {showRoster ? (
                     <EyeOff
                       style={{
                         width: 'min(12px, 3.5cqmin)',
                         height: 'min(12px, 3.5cqmin)',
                       }}
+                      className="text-brand-blue-primary/40"
                     />
                   ) : (
                     <Eye
@@ -751,16 +910,65 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                         width: 'min(12px, 3.5cqmin)',
                         height: 'min(12px, 3.5cqmin)',
                       }}
+                      className="text-brand-blue-primary/40"
                     />
                   )}
-                  {showRoster ? 'HIDE' : 'SHOW'}
-                </span>
-              </button>
+                </button>
+                {showRoster && (
+                  <div className="flex items-center gap-2">
+                    {/* Answer color toggle */}
+                    <button
+                      onClick={() => setShowAnswerColors(!showAnswerColors)}
+                      className={`flex items-center gap-1 font-bold rounded-md transition-all ${
+                        showAnswerColors
+                          ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
+                          : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
+                      }`}
+                      style={{
+                        fontSize: 'min(9px, 2.5cqmin)',
+                        padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+                      }}
+                      title="Color-code answers for current question"
+                    >
+                      <Palette
+                        style={{
+                          width: 'min(12px, 3cqmin)',
+                          height: 'min(12px, 3cqmin)',
+                        }}
+                      />
+                      Colors
+                    </button>
+                    {/* Tab warnings visibility toggle */}
+                    {session.tabWarningsEnabled !== false && (
+                      <button
+                        onClick={() => setShowTabWarnings(!showTabWarnings)}
+                        className={`flex items-center gap-1 font-bold rounded-md transition-all ${
+                          showTabWarnings
+                            ? 'text-red-500 bg-red-50'
+                            : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
+                        }`}
+                        style={{
+                          fontSize: 'min(9px, 2.5cqmin)',
+                          padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+                        }}
+                        title="Show/hide tab switch warnings in roster"
+                      >
+                        <AlertTriangle
+                          style={{
+                            width: 'min(12px, 3cqmin)',
+                            height: 'min(12px, 3cqmin)',
+                          }}
+                        />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
               {showRoster && (
                 <div
                   className="max-h-60 overflow-y-auto pr-1 custom-scrollbar"
                   style={{
-                    gap: 'min(8px, 2cqmin)',
+                    gap: 'min(6px, 1.5cqmin)',
                     display: 'flex',
                     flexDirection: 'column',
                   }}
@@ -774,6 +982,30 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                         response={r}
                         totalQuestions={session.totalQuestions}
                         questions={quizData.questions}
+                        currentQuestion={currentQ}
+                        showAnswerColors={showAnswerColors}
+                        showTabWarnings={
+                          showTabWarnings &&
+                          session.tabWarningsEnabled !== false
+                        }
+                        confirmRemove={confirmRemove === r.studentUid}
+                        onConfirmRemoveToggle={() =>
+                          setConfirmRemove(
+                            confirmRemove === r.studentUid ? null : r.studentUid
+                          )
+                        }
+                        onRemove={
+                          onRemoveStudent
+                            ? () => {
+                                void Promise.resolve(
+                                  onRemoveStudent(r.studentUid)
+                                )
+                                  .then(() => setConfirmRemove(null))
+                                  .catch(() => undefined);
+                              }
+                            : undefined
+                        }
+                        pinToName={pinToName}
                       />
                     ))}
                 </div>
@@ -881,26 +1113,25 @@ const StudentRow: React.FC<{
   response: QuizResponse;
   totalQuestions: number;
   questions: QuizQuestion[];
-}> = ({ response, totalQuestions, questions }) => {
-  const themes = {
-    completed: {
-      bg: 'bg-emerald-50 border-emerald-100',
-      dot: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]',
-      text: 'text-emerald-700 font-black',
-    },
-    'in-progress': {
-      bg: 'bg-amber-50/50 border-amber-100',
-      dot: 'bg-amber-500',
-      text: 'text-amber-700 font-bold',
-    },
-    joined: {
-      bg: 'bg-white border-brand-blue-primary/5',
-      dot: 'bg-brand-gray-light',
-      text: 'text-brand-gray-primary font-medium',
-    },
-  };
-
-  const currentTheme = themes[response.status];
+  currentQuestion?: QuizQuestion;
+  showAnswerColors: boolean;
+  showTabWarnings: boolean;
+  confirmRemove: boolean;
+  onConfirmRemoveToggle: () => void;
+  onRemove?: () => void;
+  pinToName: Record<string, string>;
+}> = ({
+  response,
+  totalQuestions,
+  questions,
+  currentQuestion,
+  showAnswerColors,
+  showTabWarnings,
+  confirmRemove,
+  onConfirmRemoveToggle,
+  onRemove,
+  pinToName,
+}) => {
   const warnings = response.tabSwitchWarnings ?? 0;
 
   const correctCount = response.answers.filter((a) => {
@@ -908,43 +1139,252 @@ const StudentRow: React.FC<{
     return q ? gradeAnswer(q, a.answer) : false;
   }).length;
 
+  // Answer color for current question
+  let answerColorDot = 'bg-brand-gray-light'; // not answered yet
+  if (showAnswerColors && currentQuestion) {
+    const ans = response.answers.find(
+      (a) => a.questionId === currentQuestion.id
+    );
+    if (ans) {
+      answerColorDot = gradeAnswer(currentQuestion, ans.answer)
+        ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
+        : 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.4)]';
+    } else {
+      answerColorDot = 'bg-amber-400';
+    }
+  } else {
+    // Status-based coloring
+    const statusDots = {
+      completed: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]',
+      'in-progress': 'bg-amber-500',
+      joined: 'bg-brand-gray-light',
+    };
+    answerColorDot = statusDots[response.status];
+  }
+
+  const statusBg = {
+    completed: 'bg-emerald-50 border-emerald-100',
+    'in-progress': 'bg-amber-50/50 border-amber-100',
+    joined: 'bg-white border-brand-blue-primary/5',
+  };
+  const statusText = {
+    completed: 'text-emerald-700 font-black',
+    'in-progress': 'text-amber-700 font-bold',
+    joined: 'text-brand-gray-primary font-medium',
+  };
+
+  const displayName = pinToName[response.pin]
+    ? pinToName[response.pin]
+    : `PIN ${response.pin}`;
+
+  if (confirmRemove) {
+    return (
+      <div
+        className="flex items-center rounded-xl border bg-red-50 border-red-200"
+        style={{
+          gap: 'min(8px, 2cqmin)',
+          padding: 'min(8px, 2cqmin)',
+        }}
+      >
+        <span
+          className="flex-1 text-red-700 font-bold"
+          style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+        >
+          Remove {displayName}?
+        </span>
+        <button
+          onClick={onRemove}
+          className="bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors"
+          style={{
+            padding: 'min(4px, 1cqmin) min(10px, 2.5cqmin)',
+            fontSize: 'min(10px, 3cqmin)',
+          }}
+        >
+          Yes
+        </button>
+        <button
+          onClick={onConfirmRemoveToggle}
+          className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg transition-colors"
+          style={{
+            padding: 'min(4px, 1cqmin) min(10px, 2.5cqmin)',
+            fontSize: 'min(10px, 3cqmin)',
+          }}
+        >
+          No
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`flex items-center rounded-xl border transition-all ${currentTheme.bg}`}
+      className={`flex items-center rounded-xl border transition-all group/row ${statusBg[response.status]}`}
       style={{
-        gap: 'min(12px, 3cqmin)',
-        padding: 'min(10px, 2.5cqmin)',
+        gap: 'min(8px, 2cqmin)',
+        padding: 'min(8px, 2cqmin)',
       }}
     >
       <div
-        className={`rounded-full shrink-0 ${currentTheme.dot}`}
+        className={`rounded-full shrink-0 ${answerColorDot}`}
         style={{ width: 'min(8px, 2cqmin)', height: 'min(8px, 2cqmin)' }}
       />
       <span
-        className="flex-1 flex items-center gap-2 text-brand-blue-dark font-bold truncate"
-        style={{ fontSize: 'min(13px, 4cqmin)' }}
+        className="flex-1 flex items-center gap-1.5 text-brand-blue-dark font-bold truncate"
+        style={{ fontSize: 'min(12px, 3.5cqmin)' }}
       >
-        <span className="font-mono">PIN {response.pin}</span>
+        <span className={pinToName[response.pin] ? '' : 'font-mono'}>
+          {displayName}
+        </span>
 
-        {warnings > 0 && (
+        {showTabWarnings && warnings > 0 && (
           <span
-            className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded uppercase font-black shrink-0 animate-in zoom-in duration-300"
-            style={{ fontSize: 'min(10px, 3cqmin)' }}
+            className="flex items-center gap-0.5 bg-red-100 text-red-700 px-1.5 py-0.5 rounded uppercase font-black shrink-0"
+            style={{ fontSize: 'min(9px, 2.5cqmin)' }}
             title={`${warnings} Tab Switch Warning(s)`}
           >
-            <AlertTriangle className="w-3 h-3" />
+            <AlertTriangle
+              style={{
+                width: 'min(12px, 3cqmin)',
+                height: 'min(12px, 3cqmin)',
+              }}
+            />
             {warnings}
           </span>
         )}
       </span>
       <span
-        className={`px-2 py-0.5 rounded-md bg-white/60 border border-white/80 ${currentTheme.text}`}
-        style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+        className={`px-1.5 py-0.5 rounded-md bg-white/60 border border-white/80 ${statusText[response.status]}`}
+        style={{ fontSize: 'min(11px, 3cqmin)' }}
       >
         {response.status === 'completed'
           ? `${Math.round((correctCount / Math.max(totalQuestions, 1)) * 100)}%`
           : `${response.answers.length}/${totalQuestions}`}
       </span>
+      {/* Remove button */}
+      {onRemove && (
+        <button
+          onClick={onConfirmRemoveToggle}
+          className="opacity-0 group-hover/row:opacity-100 text-red-400 hover:text-red-600 transition-all shrink-0"
+          style={{
+            width: 'min(16px, 4cqmin)',
+            height: 'min(16px, 4cqmin)',
+          }}
+          title="Remove student"
+        >
+          <X
+            style={{
+              width: 'min(14px, 3.5cqmin)',
+              height: 'min(14px, 3.5cqmin)',
+            }}
+          />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const PodiumView: React.FC<{
+  responses: QuizResponse[];
+  questions: QuizQuestion[];
+  session: QuizSession;
+  pinToName: Record<string, string>;
+  onDismiss: () => void;
+}> = ({ responses, questions, session, pinToName, onDismiss }) => {
+  // Use shared scoring utility for consistency with scoreboard
+  const scored = responses
+    .map((r) => {
+      const score = getResponseScore(r, questions, session);
+      const name = pinToName[r.pin] ?? `PIN ${r.pin}`;
+      return { name, score, pin: r.pin };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const top3 = scored.slice(0, 3);
+  const podiumColors = ['text-amber-400', 'text-slate-400', 'text-orange-600'];
+  const podiumLabels = ['1st', '2nd', '3rd'];
+
+  return (
+    <div
+      className="bg-white border border-amber-200 rounded-2xl shadow-md text-center animate-in fade-in slide-in-from-bottom-2 duration-300"
+      style={{ padding: 'min(16px, 4cqmin)' }}
+    >
+      <div
+        className="flex items-center justify-between"
+        style={{ marginBottom: 'min(12px, 3cqmin)' }}
+      >
+        <div className="flex items-center gap-2">
+          <Trophy
+            className="text-amber-500"
+            style={{
+              width: 'min(18px, 5cqmin)',
+              height: 'min(18px, 5cqmin)',
+            }}
+          />
+          <span
+            className="font-black text-brand-blue-dark uppercase tracking-wider"
+            style={{ fontSize: 'min(12px, 4cqmin)' }}
+          >
+            Leaderboard
+          </span>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <X
+            style={{
+              width: 'min(16px, 4cqmin)',
+              height: 'min(16px, 4cqmin)',
+            }}
+          />
+        </button>
+      </div>
+      <div className="flex flex-col" style={{ gap: 'min(6px, 1.5cqmin)' }}>
+        {top3.map((entry, i) => (
+          <div
+            key={entry.pin}
+            className="flex items-center bg-slate-50 border border-slate-100 rounded-xl"
+            style={{
+              gap: 'min(10px, 2.5cqmin)',
+              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+            }}
+          >
+            <Medal
+              className={podiumColors[i]}
+              style={{
+                width: 'min(20px, 5cqmin)',
+                height: 'min(20px, 5cqmin)',
+              }}
+            />
+            <span
+              className="font-black text-brand-blue-dark"
+              style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+            >
+              {podiumLabels[i]}
+            </span>
+            <span
+              className="flex-1 text-left font-bold text-brand-blue-dark truncate"
+              style={{ fontSize: 'min(12px, 4cqmin)' }}
+            >
+              {entry.name}
+            </span>
+            <span
+              className="font-black text-emerald-600"
+              style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+            >
+              {entry.score}%
+            </span>
+          </div>
+        ))}
+        {scored.length === 0 && (
+          <p
+            className="text-slate-400 font-medium"
+            style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+          >
+            No scores yet
+          </p>
+        )}
+      </div>
     </div>
   );
 };
