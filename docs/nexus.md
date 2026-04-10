@@ -2,7 +2,7 @@
 
 ## Connection Patterns
 
-Every nexus connection follows one of four patterns:
+Every nexus connection follows one or more of four patterns:
 
 1. **Auto-Trigger** -- Widget A detects a state change and automatically updates Widget B's config via `updateWidget(targetId, ...)`. Example: Timer end triggers Traffic Light color change.
 
@@ -16,7 +16,7 @@ Every nexus connection follows one of four patterns:
 
 ## Implemented
 
-<!-- Audited 2026-04-10. Total: 36 connections. -->
+<!-- Audited 2026-04-10. Total: 36 connections (7 auto-trigger, 5 live sync, 15 spawn, 9 import). -->
 
 ### Auto-Trigger Connections
 
