@@ -109,9 +109,9 @@ export const ContentPanel: React.FC<ContentPanelProps> = ({
         style={{ padding: '0 min(4px, 1cqmin)' }}
       >
         <ul className="flex flex-col" style={{ gap: 'min(4px, 0.8cqmin)' }}>
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li
-              key={`${level}-${category}-${item}`}
+              key={`${level}-${category}-${index}`}
               className="flex items-start text-white/90"
               style={{
                 fontSize: 'min(12px, 3.5cqmin)',
