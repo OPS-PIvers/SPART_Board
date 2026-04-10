@@ -749,6 +749,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 'annotation',
               ] as const;
 
+              const INSTANCE_FIELDS = ['customTitle', 'isPinned'] as const;
+
               const remoteControlEnabled =
                 accountRemoteControlEnabledRef.current;
 
@@ -769,6 +771,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     saved,
                     keepLocalConfig: false,
                     keepLocalLayout: false,
+                    keepLocalStyle: false,
+                    keepLocalInstance: false,
+                    keepLocalAnnotation: false,
                     isDeletedLocally,
                   };
                 }
@@ -784,6 +789,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 const styleChangedLocally = STYLE_FIELDS.some(
                   (f) => lw[f] !== saved[f]
                 );
+                const instanceChangedLocally = INSTANCE_FIELDS.some(
+                  (f) => lw[f] !== saved[f]
+                );
+                // Fast-path: skip JSON.stringify when both values are the
+                // same reference (including both undefined). When references
+                // differ, short-circuit on paths array length before falling
+                // back to deep comparison to avoid serializing large paths.
+                const annotationChangedLocally = (() => {
+                  const la = lw.annotation;
+                  const sa = saved.annotation;
+                  if (la === sa) return false;
+                  if (!la || !sa) return true;
+                  if (la.mode !== sa.mode) return true;
+                  if (la.paths.length !== sa.paths.length) return true;
+                  return JSON.stringify(la) !== JSON.stringify(sa);
+                })();
 
                 return {
                   sw,
@@ -796,6 +817,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   keepLocalLayout:
                     layoutChangedLocally || !remoteControlEnabled,
                   keepLocalStyle: styleChangedLocally || !remoteControlEnabled,
+                  keepLocalInstance:
+                    instanceChangedLocally || !remoteControlEnabled,
+                  keepLocalAnnotation:
+                    annotationChangedLocally || !remoteControlEnabled,
                 };
               });
 
@@ -808,6 +833,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     keepLocalConfig,
                     keepLocalLayout,
                     keepLocalStyle,
+                    keepLocalInstance,
+                    keepLocalAnnotation,
                   }) => {
                     if (!lw) return sw; // new widget from server -> accept
 
@@ -830,6 +857,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                               acc[f] = lw[f as keyof WidgetData];
                             return acc as Partial<WidgetData>;
                           })()
+                        : {}),
+                      ...(keepLocalInstance
+                        ? (() => {
+                            const acc: Record<string, unknown> = {};
+                            for (const f of INSTANCE_FIELDS)
+                              acc[f] = lw[f as keyof WidgetData];
+                            return acc as Partial<WidgetData>;
+                          })()
+                        : {}),
+                      ...(keepLocalAnnotation
+                        ? { annotation: lw.annotation }
                         : {}),
                     };
                   }
@@ -884,6 +922,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   keepLocalConfig,
                   keepLocalLayout,
                   keepLocalStyle,
+                  keepLocalInstance,
+                  keepLocalAnnotation,
                 }) => {
                   if (!lw || !saved) return sw;
 
@@ -906,6 +946,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                             acc[f] = saved[f as keyof WidgetData];
                           return acc as Partial<WidgetData>;
                         })()
+                      : {}),
+                    ...(keepLocalInstance
+                      ? (() => {
+                          const acc: Record<string, unknown> = {};
+                          for (const f of INSTANCE_FIELDS)
+                            acc[f] = saved[f as keyof WidgetData];
+                          return acc as Partial<WidgetData>;
+                        })()
+                      : {}),
+                    ...(keepLocalAnnotation
+                      ? { annotation: saved.annotation }
                       : {}),
                   };
                 }

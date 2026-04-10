@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TextConfig } from '@/types';
 import { sanitizeHtml } from '@/utils/security';
@@ -6,11 +6,13 @@ import {
   AlignVerticalJustifyStart,
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
+  Minus,
+  Plus,
 } from 'lucide-react';
 
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { TypographySettings } from '@/components/common/TypographySettings';
-import { TextSizePresetSettings } from '@/components/common/TextSizePresetSettings';
+import { resolveTextPresetMultiplier } from '@/config/widgetAppearance';
 import { TEXT_WIDGET_COLORS, TEXT_WIDGET_TEMPLATES } from './constants';
 
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
@@ -49,6 +51,36 @@ export const TextAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
+  const baseFontSize = config.fontSize ?? 18;
+
+  // Resolve the effective font size (base * preset multiplier) so the
+  // displayed value matches what the user actually sees on screen.
+  const resolvedFontSize = Math.round(
+    baseFontSize * resolveTextPresetMultiplier(config.textSizePreset, 1)
+  );
+
+  const [localSize, setLocalSize] = useState(resolvedFontSize);
+  const [fontSizeInput, setFontSizeInput] = useState(String(resolvedFontSize));
+
+  // Sync local state when config changes externally
+  useEffect(() => {
+    setLocalSize(resolvedFontSize);
+    setFontSizeInput(String(resolvedFontSize));
+  }, [resolvedFontSize]);
+
+  const commitFontSize = (value: number) => {
+    const clamped = Math.max(8, Math.min(96, value));
+    setLocalSize(clamped);
+    setFontSizeInput(String(clamped));
+    const nextConfig: TextConfig = {
+      ...config,
+      fontSize: clamped,
+    };
+    delete nextConfig.textSizePreset;
+    updateWidget(widget.id, {
+      config: nextConfig,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -71,40 +103,49 @@ export const TextAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      <TextSizePresetSettings
-        config={config}
-        updateConfig={(updates) =>
-          updateWidget(widget.id, {
-            config: {
-              ...config,
-              ...updates,
-            } as TextConfig,
-          })
-        }
-      />
-
       <div>
-        <SettingsLabel>Font Size (Fine Tune)</SettingsLabel>
-        <div className="flex items-center gap-4">
+        <SettingsLabel>Font Size</SettingsLabel>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => commitFontSize(localSize - 1)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+            aria-label="Decrease font size"
+          >
+            <Minus className="w-3.5 h-3.5 text-slate-600" />
+          </button>
           <input
-            type="range"
-            min="12"
-            max="48"
-            value={config.fontSize}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  fontSize: parseInt(e.target.value),
-                } as TextConfig,
-              })
-            }
-            className="flex-1 accent-blue-600"
-            aria-label="Font size slider"
+            type="text"
+            value={fontSizeInput}
+            onChange={(e) => setFontSizeInput(e.target.value)}
+            onBlur={() => {
+              const val = parseInt(fontSizeInput, 10);
+              if (!Number.isNaN(val)) {
+                commitFontSize(val);
+              } else {
+                setFontSizeInput(String(localSize));
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const val = parseInt(fontSizeInput, 10);
+                if (!Number.isNaN(val)) {
+                  commitFontSize(val);
+                } else {
+                  setFontSizeInput(String(localSize));
+                }
+              }
+            }}
+            className="w-12 h-8 text-center font-mono text-sm text-slate-700 border border-slate-200 rounded-lg bg-white outline-none focus:border-blue-400"
+            aria-label="Font size"
           />
-          <span className="w-8 text-center font-mono text-slate-700 text-xs">
-            {config.fontSize}
-          </span>
+          <button
+            onClick={() => commitFontSize(localSize + 1)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+            aria-label="Increase font size"
+          >
+            <Plus className="w-3.5 h-3.5 text-slate-600" />
+          </button>
+          <span className="text-xs text-slate-500">px</span>
         </div>
       </div>
 
