@@ -889,6 +889,20 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
           className="flex-1 relative bg-white/90 overflow-hidden"
           onPointerDown={handleCanvasPointerDown}
           onClick={handleCanvasClick}
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes('studentid')) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }
+          }}
+          onDrop={(e) => {
+            const studentId = e.dataTransfer.getData('studentId');
+            if (studentId && mode === 'assign') {
+              e.preventDefault();
+              e.stopPropagation();
+              handleRemoveAssignment(studentId);
+            }
+          }}
           style={{
             backgroundImage:
               mode === 'setup'

@@ -232,8 +232,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       const { active, over } = event;
       setActiveId(null);
 
+      const student = active.id as string;
+
       if (over) {
-        const student = active.id as string;
         const zone = over.id as string;
 
         if (zone === 'hot' || zone === 'bento' || zone === 'home') {
@@ -241,6 +242,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         } else if (zone === 'unassigned') {
           updateAssignment(student, null);
         }
+      } else {
+        // Dropped outside all zones — return to unassigned
+        updateAssignment(student, null);
       }
     },
     [updateAssignment]
