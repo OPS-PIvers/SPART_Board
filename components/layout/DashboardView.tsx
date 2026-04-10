@@ -687,6 +687,14 @@ export const DashboardView: React.FC = () => {
   // Keyboard Navigation
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape: Exit group-build mode first (highest priority modal state)
+      if (e.key === 'Escape' && groupBuildMode) {
+        e.preventDefault();
+        setGroupBuildMode(false);
+        setSelectedWidgetIds([]);
+        return;
+      }
+
       // Escape: Close top-most widget or blur input
       if (e.key === 'Escape') {
         const activeElement = document.activeElement as HTMLElement;
@@ -800,6 +808,9 @@ export const DashboardView: React.FC = () => {
     deleteAllWidgets,
     showConfirm,
     t,
+    groupBuildMode,
+    setGroupBuildMode,
+    setSelectedWidgetIds,
   ]);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -1195,7 +1206,7 @@ export const DashboardView: React.FC = () => {
           <>
             {/* Instruction banner */}
             <div className="fixed top-6 left-1/2 -translate-x-1/2 z-toast px-6 py-3 bg-blue-600/90 backdrop-blur-xl text-white rounded-full shadow-2xl font-sans text-sm font-medium pointer-events-none">
-              Tap widgets to add to group
+              {t('widgetWindow.group.tapToAdd')}
             </div>
             {/* Action bar */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-toast flex items-center gap-3 px-6 py-3 bg-white/90 backdrop-blur-xl rounded-full shadow-2xl border border-white/50">
@@ -1206,7 +1217,7 @@ export const DashboardView: React.FC = () => {
                 }}
                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 disabled={selectedWidgetIds.length < 2}
@@ -1214,7 +1225,7 @@ export const DashboardView: React.FC = () => {
                   groupWidgets(selectedWidgetIds);
                   setGroupBuildMode(false);
                   setSelectedWidgetIds([]);
-                  addToast('Widgets grouped');
+                  addToast(t('widgetWindow.group.widgetsGrouped'));
                 }}
                 className={`px-5 py-2 text-sm font-semibold rounded-full transition-colors ${
                   selectedWidgetIds.length >= 2
@@ -1222,7 +1233,9 @@ export const DashboardView: React.FC = () => {
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
               >
-                Group ({selectedWidgetIds.length})
+                {t('widgetWindow.group.groupCount', {
+                  count: selectedWidgetIds.length,
+                })}
               </button>
             </div>
           </>,

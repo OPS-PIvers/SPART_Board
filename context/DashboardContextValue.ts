@@ -78,8 +78,6 @@ export interface DashboardContextValue {
   // Widget grouping
   groupWidgets: (widgetIds: string[]) => void;
   ungroupWidgets: (groupId: string) => void;
-  removeFromGroup: (widgetId: string) => void;
-  getGroupWidgets: (groupId: string) => WidgetData[];
   updateWidgets: (
     updates: Array<{
       id: string;

@@ -74,6 +74,9 @@ const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle
 
 const TOUCH_GESTURE_BLOCKING_SELECTOR = `${DRAG_BLOCKING_SELECTOR}, ${SCROLLABLE_ELEMENTS_SELECTOR}`;
 
+// RGB components of brand-blue-light (#4356a0) for group indicator styling
+const GROUP_BRAND_RGB = '67, 86, 160';
+
 // const MIN_GESTURE_SWIPE_DISTANCE = 100;
 const DRAG_CLICK_THRESHOLD_PX = 25;
 const INVISIBLE_EDGE_PAD = 20; // px of invisible grab zone extending outside widget bounds
@@ -805,6 +808,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const handleResizeStart = (e: React.PointerEvent, direction: string) => {
     if (isMaximized) return;
     if (isLocked || isPinned) return;
+    if (widget.groupId) return; // Grouped widgets use GroupBoundingBox for coordinated resize
     e.stopPropagation();
     e.preventDefault();
 
@@ -1363,7 +1367,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             width: 8,
             height: 8,
             borderRadius: '50%',
-            background: 'rgba(67, 86, 160, 0.7)',
+            background: `rgba(${GROUP_BRAND_RGB}, 0.7)`,
             border: '1.5px solid rgba(255,255,255,0.6)',
             zIndex: 10,
             pointerEvents: 'none',
@@ -1382,7 +1386,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             background: isGroupBuildSelected
-              ? 'rgba(67, 86, 160, 0.15)'
+              ? `rgba(${GROUP_BRAND_RGB}, 0.15)`
               : 'rgba(0,0,0,0.05)',
             borderRadius: 'inherit',
             pointerEvents: 'none',
@@ -1394,7 +1398,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: 'rgba(67, 86, 160, 0.8)',
+                background: `rgba(${GROUP_BRAND_RGB}, 0.8)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1882,7 +1886,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         handleCloseTools();
                       }}
                       icon={<Unlink className="w-3.5 h-3.5" />}
-                      label="Ungroup"
+                      label={t('widgetWindow.group.ungroup')}
                       size="sm"
                       variant="glass"
                       className="!text-blue-600"
@@ -1895,7 +1899,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         handleCloseTools();
                       }}
                       icon={<Link className="w-3.5 h-3.5" />}
-                      label="Group with..."
+                      label={t('widgetWindow.group.groupWith')}
                       size="sm"
                       variant="glass"
                     />

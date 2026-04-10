@@ -195,10 +195,6 @@ const mockDashboard: DashboardContextValue = {
   ungroupWidgets: () => {
     // No-op
   },
-  removeFromGroup: () => {
-    // No-op
-  },
-  getGroupWidgets: () => [],
   updateWidgets: () => {
     // No-op
   },

@@ -732,6 +732,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 'minimized',
                 'flipped',
                 'maximized',
+                'groupId',
               ] as const;
 
               const STYLE_FIELDS = [
@@ -2648,42 +2649,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }, []);
 
-  const removeFromGroup = useCallback((widgetId: string) => {
-    if (!activeIdRef.current) return;
-    lastLocalUpdateAt.current = Date.now();
-    lastUpdateWasSettingsOnly.current = false;
-    setDashboards((prev) =>
-      prev.map((d) => {
-        if (d.id !== activeIdRef.current) return d;
-        const target = d.widgets.find((w) => w.id === widgetId);
-        if (!target?.groupId) return d;
-        const gid = target.groupId;
-        const groupMembers = d.widgets.filter(
-          (w) => w.groupId === gid && w.id !== widgetId
-        );
-        // Auto-dissolve: if only 1 member left, clear its groupId too
-        const dissolve = groupMembers.length <= 1;
-        return {
-          ...d,
-          widgets: d.widgets.map((w) => {
-            if (w.id === widgetId) return { ...w, groupId: undefined };
-            if (dissolve && w.groupId === gid)
-              return { ...w, groupId: undefined };
-            return w;
-          }),
-        };
-      })
-    );
-  }, []);
-
-  const getGroupWidgets = useCallback((groupId: string): WidgetData[] => {
-    const active = dashboardsRef.current.find(
-      (d) => d.id === activeIdRef.current
-    );
-    if (!active) return [];
-    return active.widgets.filter((w) => w.groupId === groupId);
-  }, []);
-
   const bringToFront = useCallback((id: string) => {
     if (!activeIdRef.current) return;
 
@@ -2975,8 +2940,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setSelectedWidgetId,
       groupWidgets,
       ungroupWidgets,
-      removeFromGroup,
-      getGroupWidgets,
       updateWidgets,
       selectedWidgetIds,
       setSelectedWidgetIds,
@@ -3054,8 +3017,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setSelectedWidgetId,
       groupWidgets,
       ungroupWidgets,
-      removeFromGroup,
-      getGroupWidgets,
       updateWidgets,
       selectedWidgetIds,
       setSelectedWidgetIds,

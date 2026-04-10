@@ -11,6 +11,8 @@ interface GroupBoundingBoxProps {
 
 const PADDING = 12; // px padding around the bounding box
 const HANDLE_SIZE = 44; // minimum touch target size
+// RGB components of brand-blue-light (#4356a0) for group styling
+const GROUP_BRAND_RGB = '67, 86, 160';
 
 /** Computes the pixel bounding box of a set of widgets */
 function computeBBox(widgets: WidgetData[]) {
@@ -260,8 +262,8 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
     width: HANDLE_SIZE,
     height: HANDLE_SIZE,
     borderRadius: '50%',
-    background: 'rgba(67, 86, 160, 0.3)',
-    border: '2px solid rgba(67, 86, 160, 0.7)',
+    background: `rgba(${GROUP_BRAND_RGB}, 0.3)`,
+    border: `2px solid rgba(${GROUP_BRAND_RGB}, 0.7)`,
     cursor: 'nwse-resize',
     touchAction: 'none',
     zIndex: 1,
@@ -280,7 +282,7 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
         top: bbox.top - PADDING,
         width: bbox.width + PADDING * 2,
         height: bbox.height + PADDING * 2,
-        border: '2px dashed rgba(67, 86, 160, 0.5)',
+        border: `2px dashed rgba(${GROUP_BRAND_RGB}, 0.5)`,
         borderRadius: 8,
         zIndex: Z_INDEX.snapPreview,
         pointerEvents: 'none',
@@ -312,7 +314,7 @@ export const GroupBoundingBox: React.FC<GroupBoundingBoxProps> = ({
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M2 10L10 2M5 10L10 5M8 10L10 8"
-                stroke="rgba(67,86,160,0.8)"
+                stroke={`rgba(${GROUP_BRAND_RGB},0.8)`}
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />
