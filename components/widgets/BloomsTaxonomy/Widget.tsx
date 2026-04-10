@@ -119,13 +119,16 @@ export const BloomsTaxonomyWidget: React.FC<{ widget: WidgetData }> = ({
         if (prev.view !== 'pyramid' && 'level' in prev && prev.level === level)
           return { view: 'pyramid' };
 
-        if (activeCategories.length === 0) {
-          addToast('No categories enabled. Flip to configure.', 'info');
-          return prev;
-        }
+        if (activeCategories.length === 0) return prev;
 
         return { view: 'categories', level };
       });
+
+      // Toast outside the updater to avoid side effects in a pure function
+      // (React StrictMode can invoke updaters twice)
+      if (activeCategories.length === 0) {
+        addToast('No categories enabled. Flip to configure.', 'info');
+      }
     },
     [tryAiGeneration, activeCategories.length, addToast]
   );

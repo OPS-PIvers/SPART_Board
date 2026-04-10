@@ -815,9 +815,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
     for (const el of elementsAtPoint) {
       if (el === overlayEl) continue;
+      // Iframes and canvases (e.g. embed or drawing widgets) often fill the
+      // entire container — the drag handle must take priority over them.
+      if (el instanceof HTMLIFrameElement || el instanceof HTMLCanvasElement)
+        continue;
       if (
-        (el as HTMLElement).matches?.(INTERACTIVE_ELEMENTS_SELECTOR) ||
-        (el as HTMLElement).closest?.(INTERACTIVE_ELEMENTS_SELECTOR)
+        el.matches?.(INTERACTIVE_ELEMENTS_SELECTOR) ||
+        el.closest?.(INTERACTIVE_ELEMENTS_SELECTOR)
       ) {
         // Let the click fall through to the interactive element beneath
         overlayEl.style.pointerEvents = 'none';

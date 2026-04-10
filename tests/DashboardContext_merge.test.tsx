@@ -259,14 +259,12 @@ describe('DashboardContext per-widget merge', () => {
     const serverWithoutC = makeDashboard([makeWidget('wA', 'original-A')]);
     await pushSnapshot([{ ...serverWithoutC, updatedAt: 2000 }]);
 
-    // Known behaviour: widget C is treated as a locally-added widget (present
-    // locally but absent from the server) and is therefore preserved in the
-    // merged result.  This is a documented limitation of the current merge
-    // strategy when a widget was previously synced but the server deletes it
-    // while the client has other unsaved changes.
+    // Widget C was previously synced from the server (not locally-added), so
+    // when the server deletes it, the merge correctly removes it — only widgets
+    // explicitly tracked as locally-added are preserved across server deletions.
     await waitFor(() => {
       const widgets = stateRef.current?.activeDashboard?.widgets;
-      expect(widgets?.some((w) => w.id === 'wC')).toBe(true);
+      expect(widgets?.some((w) => w.id === 'wC')).toBe(false);
     });
   });
 
