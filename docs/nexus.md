@@ -34,7 +34,7 @@ Every nexus connection follows one or more of four patterns:
 - **Pattern**: Auto-Trigger
 - **Code**: `components/widgets/TimeTool/useTimeTool.ts:119-128` — config field `timerEndVoiceLevel` sets `voiceLevel` on the active Expectations widget.
 
-#### Timer → Randomizer (Auto-Pick)
+#### Timer → Random (Auto-Pick)
 
 - **Date**: pre-2026
 - **Value**: Automatically picks the next random student when the timer expires, creating a hands-free rotation loop.
@@ -48,7 +48,7 @@ Every nexus connection follows one or more of four patterns:
 - **Pattern**: Auto-Trigger
 - **Code**: `components/widgets/TimeTool/useTimeTool.ts` — config field `timerEndTriggerNextUp` sets `externalTrigger` timestamp on the active NextUp widget.
 
-#### Random Picker → Timer
+#### Random → Timer
 
 - **Date**: pre-2026
 - **Value**: Automatically starts a timer when a student is selected, enabling timed turn-taking.
@@ -99,7 +99,7 @@ Every nexus connection follows one or more of four patterns:
 - **Pattern**: Live Sync
 - **Code**: `components/widgets/SoundWidget/Widget.tsx:46-82`, `components/widgets/SoundWidget/Settings.tsx:28-64` — config field `syncExpectations` reads Expectations widget's `voiceLevel` (0–4) and maps to sensitivity (5.0–0.5).
 
-#### Weather → RecessGear
+#### Weather → Recess Gear
 
 - **Date**: pre-2026
 - **Value**: Automatically reads weather data to recommend appropriate recess gear for students.
@@ -143,7 +143,7 @@ Every nexus connection follows one or more of four patterns:
 - **Pattern**: Spawn
 - **Code**: `components/widgets/UrlWidget/Widget.tsx:76-97` — inline button calls `addWidget('qr', { config: { url } })`.
 
-#### Randomizer → Scoreboard (Team Builder)
+#### Random → Scoreboard (Team Builder)
 
 - **Date**: pre-2026
 - **Value**: Instantly converts generated random groups into a competitive scoreboard for team activities.
@@ -222,10 +222,10 @@ Every nexus connection follows one or more of four patterns:
 - **Pattern**: Import
 - **Code**: `components/widgets/NextUp/Settings.tsx` — `handleImportRoster()` reads from `rosters` and `activeRosterId` via DashboardContext.
 
-#### Classes (Roster) → Random Picker
+#### Classes (Roster) → Random
 
 - **Date**: pre-2026
-- **Value**: Populates the random picker student pool from the active class roster.
+- **Value**: Populates the Random widget's student pool from the active class roster.
 - **Pattern**: Import
 - **Code**: `components/widgets/random/RandomSettings.tsx:39-57` — config field `rosterMode: 'class'` via `RosterModeControl` component.
 
@@ -286,13 +286,13 @@ Every nexus connection follows one or more of four patterns:
 
 - **Reason**: Does not add meaningful value; poll results and scores serve different purposes.
 
-### Scoreboard ↔ Randomizer (further automations)
+### Scoreboard ↔ Random (further automations)
 
-- **Reason**: Beyond the existing Randomizer → Scoreboard team builder, additional bidirectional integrations would overcomplicate both widgets.
+- **Reason**: Beyond the existing Random → Scoreboard team builder, additional bidirectional integrations would overcomplicate both widgets.
 
 ### Weather → Recess Gear (push direction)
 
-- **Reason**: Already implemented as Weather → RecessGear (via `linkedWeatherWidgetId` — RecessGear reads Weather config). A separate push-based connection from Weather would duplicate the existing Live Sync data path.
+- **Reason**: Already implemented as Weather → Recess Gear (via `linkedWeatherWidgetId` — Recess Gear reads Weather config). A separate push-based connection from Weather would duplicate the existing Live Sync data path.
 
 ---
 
