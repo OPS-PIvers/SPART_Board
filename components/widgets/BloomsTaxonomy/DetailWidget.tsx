@@ -10,6 +10,7 @@ import {
 } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useWidgetBuildingId } from '@/hooks/useWidgetBuildingId';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { DEFAULT_BLOOMS_CONTENT } from './defaultContent';
 import {
@@ -32,7 +33,8 @@ export const BloomsDetailWidget: React.FC<{ widget: WidgetData }> = ({
   const { featurePermissions } = useAuth();
 
   const config = widget.config as BloomsDetailConfig;
-  const { parentWidgetId, level, buildingId = '' } = config;
+  const { parentWidgetId, level } = config;
+  const buildingId = useWidgetBuildingId(widget) ?? '';
 
   // Read admin building config from feature permissions
   const bloomsPerm = featurePermissions.find(
