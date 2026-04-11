@@ -137,10 +137,10 @@ export const BloomsTaxonomyWidget: React.FC<{ widget: WidgetData }> = ({
         x: widget.x,
         y: widget.y + widget.h + 10,
         w: widget.w,
+        buildingId,
         config: {
           parentWidgetId: widget.id,
           level,
-          buildingId,
         } satisfies BloomsDetailConfig,
       });
       updateWidget(widget.id, {
