@@ -77,6 +77,7 @@ export const FolderItem = React.memo(
     const buttonRef = useRef<HTMLButtonElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
 
     // DND Sensors for internal folder sorting
     const sensors = useSensors(
@@ -92,6 +93,7 @@ export const FolderItem = React.memo(
     const handlePointerDown = (e: React.PointerEvent) => {
       listeners?.onPointerDown?.(e);
       if (isEditMode) return;
+      longPressStartPos.current = { x: e.clientX, y: e.clientY };
       longPressTimer.current = setTimeout(() => {
         onLongPress();
       }, 600);
@@ -101,6 +103,19 @@ export const FolderItem = React.memo(
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
+      }
+      longPressStartPos.current = null;
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+      if (longPressTimer.current && longPressStartPos.current) {
+        const dx = e.clientX - longPressStartPos.current.x;
+        const dy = e.clientY - longPressStartPos.current.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 15) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+          longPressStartPos.current = null;
+        }
       }
     };
 
@@ -228,6 +243,7 @@ export const FolderItem = React.memo(
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
+            onPointerMove={handlePointerMove}
             onClick={() => setShowPopover(true)}
             className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 relative ${
               isEditMode

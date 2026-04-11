@@ -66,6 +66,7 @@ export const ToolDockItem = React.memo(
 
     const [showPopover, setShowPopover] = useState(false);
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
     const internalButtonRef = useRef<HTMLButtonElement>(null);
     const buttonRef = externalButtonRef ?? internalButtonRef;
@@ -80,6 +81,7 @@ export const ToolDockItem = React.memo(
     const handlePointerDown = (e: React.PointerEvent) => {
       listeners?.onPointerDown?.(e);
       if (isEditMode) return;
+      longPressStartPos.current = { x: e.clientX, y: e.clientY };
       longPressTimer.current = setTimeout(() => {
         onLongPress();
       }, 600); // 600ms long press threshold
@@ -89,6 +91,19 @@ export const ToolDockItem = React.memo(
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
+      }
+      longPressStartPos.current = null;
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+      if (longPressTimer.current && longPressStartPos.current) {
+        const dx = e.clientX - longPressStartPos.current.x;
+        const dy = e.clientY - longPressStartPos.current.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 15) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+          longPressStartPos.current = null;
+        }
       }
     };
 
@@ -244,6 +259,7 @@ export const ToolDockItem = React.memo(
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
+            onPointerMove={handlePointerMove}
             onClick={handleClick}
             data-tool-id={tool.type}
             className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 relative ${

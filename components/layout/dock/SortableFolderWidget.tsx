@@ -40,10 +40,12 @@ export const SortableFolderWidget = React.memo(
     });
 
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
 
     const handlePointerDown = (e: React.PointerEvent) => {
       listeners?.onPointerDown?.(e);
       if (isEditMode) return;
+      longPressStartPos.current = { x: e.clientX, y: e.clientY };
       longPressTimer.current = setTimeout(() => {
         onLongPress();
       }, 600);
@@ -53,6 +55,19 @@ export const SortableFolderWidget = React.memo(
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
+      }
+      longPressStartPos.current = null;
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+      if (longPressTimer.current && longPressStartPos.current) {
+        const dx = e.clientX - longPressStartPos.current.x;
+        const dy = e.clientY - longPressStartPos.current.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 15) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+          longPressStartPos.current = null;
+        }
       }
     };
 
@@ -81,6 +96,7 @@ export const SortableFolderWidget = React.memo(
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
+            onPointerMove={handlePointerMove}
             className={`relative ${
               isEditMode
                 ? 'cursor-grab active:cursor-grabbing'
