@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { FormattingToolbar } from './FormattingToolbar';
 
@@ -194,5 +194,96 @@ describe('FormattingToolbar', () => {
       false,
       ''
     );
+  });
+
+  it('syncs font size display when configFontSize changes', () => {
+    const { rerender } = render(<FormattingToolbar {...defaultProps} />);
+    const fontSizeInput = screen.getByLabelText('Font size');
+    expect(fontSizeInput).toHaveValue('18');
+
+    // Re-render with a different configFontSize
+    rerender(<FormattingToolbar {...defaultProps} configFontSize={24} />);
+    expect(fontSizeInput).toHaveValue('24');
+  });
+
+  it('detects inline font-size from ancestor span', () => {
+    // Set up an editor div with a span containing an inline font-size
+    const editor = document.createElement('div');
+    const span = document.createElement('span');
+    span.style.fontSize = '32px';
+    const text = document.createTextNode('hello');
+    span.appendChild(text);
+    editor.appendChild(span);
+    document.body.appendChild(editor);
+
+    const editorRef = {
+      current: editor,
+    } as React.RefObject<HTMLDivElement>;
+
+    // Create a real Range for getRangeAt
+    const range = document.createRange();
+    range.selectNodeContents(text);
+
+    const mockSelection = {
+      anchorNode: text,
+      rangeCount: 1,
+      getRangeAt: () => range,
+    } as unknown as Selection;
+    vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection);
+
+    render(<FormattingToolbar {...defaultProps} editorRef={editorRef} />);
+
+    // Trigger selectionchange to run detectFontSize (wrap in act to flush state)
+    act(() => {
+      document.dispatchEvent(new Event('selectionchange'));
+    });
+
+    const fontSizeInput = screen.getByLabelText('Font size');
+    expect(fontSizeInput).toHaveValue('32');
+
+    document.body.removeChild(editor);
+    vi.restoreAllMocks();
+  });
+
+  it('falls back to configFontSize when no inline style exists', () => {
+    // Set up an editor div with plain text (no inline font-size)
+    const editor = document.createElement('div');
+    const text = document.createTextNode('plain text');
+    editor.appendChild(text);
+    document.body.appendChild(editor);
+
+    const editorRef = {
+      current: editor,
+    } as React.RefObject<HTMLDivElement>;
+
+    // Create a real Range for getRangeAt
+    const range = document.createRange();
+    range.selectNodeContents(text);
+
+    const mockSelection = {
+      anchorNode: text,
+      rangeCount: 1,
+      getRangeAt: () => range,
+    } as unknown as Selection;
+    vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection);
+
+    render(
+      <FormattingToolbar
+        {...defaultProps}
+        editorRef={editorRef}
+        configFontSize={22}
+      />
+    );
+
+    // Trigger selectionchange to run detectFontSize (wrap in act to flush state)
+    act(() => {
+      document.dispatchEvent(new Event('selectionchange'));
+    });
+
+    const fontSizeInput = screen.getByLabelText('Font size');
+    expect(fontSizeInput).toHaveValue('22');
+
+    document.body.removeChild(editor);
+    vi.restoreAllMocks();
   });
 });

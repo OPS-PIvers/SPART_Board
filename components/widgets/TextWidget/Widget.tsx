@@ -51,6 +51,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     top: number;
     left: number;
     width: number;
+    height: number;
   } | null>(null);
 
   // Track container position so the portal toolbar can be placed above the widget.
@@ -61,17 +62,25 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     let prevTop = NaN;
     let prevLeft = NaN;
     let prevWidth = NaN;
+    let prevHeight = NaN;
     const tick = () => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect) {
         const top = Math.round(rect.top);
         const left = Math.round(rect.left);
         const width = Math.round(rect.width);
-        if (top !== prevTop || left !== prevLeft || width !== prevWidth) {
+        const height = Math.round(rect.height);
+        if (
+          top !== prevTop ||
+          left !== prevLeft ||
+          width !== prevWidth ||
+          height !== prevHeight
+        ) {
           prevTop = top;
           prevLeft = left;
           prevWidth = width;
-          setToolbarPos({ top, left, width });
+          prevHeight = height;
+          setToolbarPos({ top, left, width, height });
         }
       }
       rafId = requestAnimationFrame(tick);
@@ -191,10 +200,17 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 data-click-outside-ignore="true"
                 style={{
                   position: 'fixed',
-                  top: toolbarPos.top,
+                  // Position above the widget; if not enough space, show below
+                  top:
+                    toolbarPos.top > 50
+                      ? toolbarPos.top
+                      : toolbarPos.top + toolbarPos.height,
                   left: toolbarPos.left,
                   width: toolbarPos.width,
-                  transform: 'translateY(calc(-100% - 8px))',
+                  transform:
+                    toolbarPos.top > 50
+                      ? 'translateY(calc(-100% - 8px))'
+                      : 'translateY(8px)',
                   zIndex: 11000,
                   pointerEvents: 'auto',
                 }}
