@@ -7,10 +7,18 @@ import { resolveTextPresetMultiplier } from '@/config/widgetAppearance';
 import { sanitizeHtml } from '@/utils/security';
 import { getFontClass } from '@/utils/styles';
 import { useDialog } from '@/context/useDialog';
+import { Z_INDEX } from '@/config/zIndex';
 
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { FormattingToolbar } from './FormattingToolbar';
 import { PLACEHOLDER_TEXT } from './constants';
+
+/** Gap (px) between the toolbar and the widget edge. */
+const TOOLBAR_GAP = 8;
+/** Minimum space above the widget (px) needed to show the toolbar above it.
+ *  Roughly toolbar height (~36px) + gap. When less space is available the
+ *  toolbar flips below the widget instead. */
+const TOOLBAR_FLIP_THRESHOLD = 50;
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
@@ -28,7 +36,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     fontSize = 18,
     fontFamily = 'global',
     fontColor = '#334155',
-    verticalAlign = 'top',
+    verticalAlign = 'center',
     textSizePreset,
   } = config;
 
@@ -51,6 +59,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     top: number;
     left: number;
     width: number;
+    height: number;
   } | null>(null);
 
   // Track container position so the portal toolbar can be placed above the widget.
@@ -61,17 +70,25 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     let prevTop = NaN;
     let prevLeft = NaN;
     let prevWidth = NaN;
+    let prevHeight = NaN;
     const tick = () => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect) {
         const top = Math.round(rect.top);
         const left = Math.round(rect.left);
         const width = Math.round(rect.width);
-        if (top !== prevTop || left !== prevLeft || width !== prevWidth) {
+        const height = Math.round(rect.height);
+        if (
+          top !== prevTop ||
+          left !== prevLeft ||
+          width !== prevWidth ||
+          height !== prevHeight
+        ) {
           prevTop = top;
           prevLeft = left;
           prevWidth = width;
-          setToolbarPos({ top, left, width });
+          prevHeight = height;
+          setToolbarPos({ top, left, width, height });
         }
       }
       rafId = requestAnimationFrame(tick);
@@ -191,15 +208,25 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 data-click-outside-ignore="true"
                 style={{
                   position: 'fixed',
-                  top: toolbarPos.top,
+                  // Position above the widget; if not enough space, show below.
+                  // TOOLBAR_FLIP_THRESHOLD ≈ toolbar height (~36px) + gap (8px).
+                  top:
+                    toolbarPos.top > TOOLBAR_FLIP_THRESHOLD
+                      ? toolbarPos.top
+                      : toolbarPos.top + toolbarPos.height,
                   left: toolbarPos.left,
                   width: toolbarPos.width,
-                  zIndex: 11000,
+                  transform:
+                    toolbarPos.top > TOOLBAR_FLIP_THRESHOLD
+                      ? `translateY(calc(-100% - ${TOOLBAR_GAP}px))`
+                      : `translateY(${TOOLBAR_GAP}px)`,
+                  zIndex: Z_INDEX.popover,
                   pointerEvents: 'auto',
                 }}
               >
                 <FormattingToolbar
                   editorRef={editorRef}
+                  configFontSize={resolvedFontSize}
                   verticalAlign={verticalAlign}
                   onVerticalAlignChange={(value) =>
                     updateWidget(widget.id, {
