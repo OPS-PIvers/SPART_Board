@@ -295,6 +295,74 @@ describe('GoogleDriveService', () => {
     });
   });
 
+  describe('migrateAppFolderName', () => {
+    it('should return early if newName already exists', async () => {
+      // Mock findFolder for newName to return an ID
+      const fetchSpy = mockFetch({
+        json: () =>
+          Promise.resolve({
+            files: [{ id: 'new-folder-id' }],
+          }),
+      });
+
+      await service.migrateAppFolderName('Old Name', 'New Name');
+
+      // The second call (for oldName) should not be made
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call renameFile if newName does not exist but oldName exists', async () => {
+      // Mock findFolder for newName (empty) and oldName (found)
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockImplementationOnce(() => {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ files: [] }),
+          } as unknown as Response);
+        })
+        .mockImplementationOnce(() => {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                files: [{ id: 'old-folder-id', name: 'Old Name' }],
+              }),
+          } as unknown as Response);
+        })
+        .mockImplementationOnce(() => {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({}),
+          } as unknown as Response);
+        });
+
+      await service.migrateAppFolderName('Old Name', 'New Name');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      // The third call should be the PATCH request to rename the file
+      expect(fetchSpy).toHaveBeenLastCalledWith(
+        'https://www.googleapis.com/drive/v3/files/old-folder-id',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ name: 'New Name' }),
+        })
+      );
+    });
+
+    it('should not call renameFile if neither newName nor oldName exists', async () => {
+      // Mock findFolder for both to return empty
+      const fetchSpy = mockFetch({
+        json: () => Promise.resolve({ files: [] }),
+      });
+
+      await service.migrateAppFolderName('Old Name', 'New Name');
+
+      // Only the two findFolder calls should be made
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('uploadFile', () => {
     it('should upload file correctly', async () => {
       // Mock getFolderPath calls (2 levels: App -> Misc)
