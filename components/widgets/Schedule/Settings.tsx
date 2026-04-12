@@ -56,6 +56,8 @@ const DAYS = [
   { id: 6, label: 'Sa', fullName: 'Saturday' },
 ];
 
+const DAYS_BY_ID = new Map(DAYS.map((d) => [d.id, d]));
+
 /** Parses "HH:MM" → minutes since midnight, or Infinity for items without times (pushed to end). */
 const parseTimeForSort = (t: string | undefined): number => {
   if (!t || !t.includes(':')) return Infinity;
@@ -640,7 +642,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   <div className="text-xs text-slate-500">
                     {s.items.length} item{s.items.length !== 1 ? 's' : ''}
                     {s.days.length > 0 &&
-                      ` • ${s.days.map((d) => DAYS.find((day) => day.id === d)?.label).join(', ')}`}
+                      ` • ${s.days.map((d) => DAYS_BY_ID.get(d)?.label).join(', ')}`}
                   </div>
                 </div>
                 <button
