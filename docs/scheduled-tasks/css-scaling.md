@@ -4,7 +4,7 @@ _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
 _Last audited: 2026-04-12_
-_Last action: never_
+_Last action: 2026-04-12_
 
 ---
 
@@ -15,12 +15,6 @@ _Nothing currently in progress._
 ---
 
 ## Open
-
-### MEDIUM ClockWidget uses `cqh`/`cqw` separately instead of `cqmin`
-- **Detected:** 2026-04-12
-- **File:** components/widgets/ClockWidget/Widget.tsx:70, :125
-- **Detail:** Primary time display uses `min(82cqh, 20cqw)` and secondary text uses `min(12cqh, 80cqw)`. The CLAUDE.md guideline requires `cqmin` (= `min(cqw, cqh)`) for all text sizing. Using separate `cqh`/`cqw` values creates inconsistent scaling behavior across widget orientations and deviates from the project standard, making the widget harder to reason about and maintain.
-- **Fix:** Replace with `cqmin`-based sizing, e.g. `min(82cqh, 20cqw)` → `min(24px, 20cqmin)` for the time display. Clock has `skipScaling: true` so container queries are active. Adjust cqmin multipliers to preserve the current visual size at the reference 280×140 dimensions.
 
 ### MEDIUM CountdownWidget uses `cqh`/`cqw` separately instead of `cqmin`
 - **Detected:** 2026-04-12
@@ -74,4 +68,14 @@ _Nothing currently in progress._
 
 ## Completed
 
-_No completed items yet._
+### MEDIUM ClockWidget uses `cqh`/`cqw` separately instead of `cqmin`
+- **Detected:** 2026-04-12
+- **Completed:** 2026-04-12
+- **File:** components/widgets/ClockWidget/Widget.tsx:62, :70-72, :127
+- **Detail:** Primary time display used `min(82cqh, 20cqw)` / `min(82cqh, 25cqw)`, date label used `min(12cqh, 80cqw)`, and the column gap used `gap-[0.5cqh]`. All mixed `cqh`/`cqw` independently instead of using `cqmin`.
+- **Resolution:** Converted to `cqmin`-based sizing, preserving visual size at the reference 280×140 dimensions (cqmin = 1.4px at reference):
+  - Time with seconds: `min(82cqh, 20cqw)` (→ 56px at ref) → `clamp(24px, 40cqmin, 160px)` (→ 56px at ref)
+  - Time without seconds: `min(82cqh, 25cqw)` (→ 70px at ref) → `clamp(24px, 50cqmin, 200px)` (→ 70px at ref)
+  - Date: `min(12cqh, 80cqw)` (→ 16.8px at ref) → `clamp(10px, 12cqmin, 28px)` (→ 16.8px at ref)
+  - Gap: `gap-[0.5cqh]` → `gap-[0.5cqmin]`
+  Added clamp() pixel bounds for predictable min/max behavior per CLAUDE.md hero-text guidance.
