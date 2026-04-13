@@ -309,37 +309,49 @@ describe('GoogleDriveService', () => {
 
       // The second call (for oldName) should not be made
       expect(fetchSpy).toHaveBeenCalledTimes(1);
+      // Verify we queried for newName (not oldName) and scoped to root
+      const url = new URL(fetchSpy.mock.calls[0][0] as string);
+      expect(url.searchParams.get('q')).toContain("name = 'New Name'");
+      expect(url.searchParams.get('q')).toContain("'root' in parents");
     });
 
     it('should call renameFile if newName does not exist but oldName exists', async () => {
-      // Mock findFolder for newName (empty) and oldName (found)
+      // Mock findFolder for newName (empty), oldName (found), and the rename PATCH
       const fetchSpy = vi
         .spyOn(global, 'fetch')
-        .mockImplementationOnce(() => {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ files: [] }),
-          } as unknown as Response);
-        })
-        .mockImplementationOnce(() => {
-          return Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                files: [{ id: 'old-folder-id', name: 'Old Name' }],
-              }),
-          } as unknown as Response);
-        })
-        .mockImplementationOnce(() => {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({}),
-          } as unknown as Response);
-        });
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ files: [] }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              files: [{ id: 'old-folder-id', name: 'Old Name' }],
+            }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({}),
+        } as Response);
 
       await service.migrateAppFolderName('Old Name', 'New Name');
 
       expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+      // Verify lookups used correct names and were scoped to root
+      const firstCallUrl = new URL(fetchSpy.mock.calls[0][0] as string);
+      expect(firstCallUrl.searchParams.get('q')).toContain("name = 'New Name'");
+      expect(firstCallUrl.searchParams.get('q')).toContain("'root' in parents");
+
+      const secondCallUrl = new URL(fetchSpy.mock.calls[1][0] as string);
+      expect(secondCallUrl.searchParams.get('q')).toContain(
+        "name = 'Old Name'"
+      );
+      expect(secondCallUrl.searchParams.get('q')).toContain(
+        "'root' in parents"
+      );
+
       // The third call should be the PATCH request to rename the file
       expect(fetchSpy).toHaveBeenLastCalledWith(
         'https://www.googleapis.com/drive/v3/files/old-folder-id',
@@ -360,6 +372,15 @@ describe('GoogleDriveService', () => {
 
       // Only the two findFolder calls should be made
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+      // Verify lookup order: first newName, then oldName
+      const firstCallUrl = new URL(fetchSpy.mock.calls[0][0] as string);
+      expect(firstCallUrl.searchParams.get('q')).toContain("name = 'New Name'");
+
+      const secondCallUrl = new URL(fetchSpy.mock.calls[1][0] as string);
+      expect(secondCallUrl.searchParams.get('q')).toContain(
+        "name = 'Old Name'"
+      );
     });
   });
 
