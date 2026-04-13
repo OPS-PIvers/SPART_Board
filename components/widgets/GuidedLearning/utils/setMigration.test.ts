@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { GuidedLearningSet } from '@/types';
+import { GuidedLearningSet, GuidedLearningStep } from '@/types';
 import { normalizeGuidedLearningSet } from './setMigration';
 
-interface LegacyGuidedLearningSet extends GuidedLearningSet {
+/**
+ * Helper type to simulate legacy/malformed data from Firestore/Drive.
+ * Marks typically required fields as optional to test robust normalization.
+ */
+type LegacyGuidedLearningSetInput = Omit<
+  GuidedLearningSet,
+  'steps' | 'imageUrls'
+> & {
+  steps?: GuidedLearningStep[];
+  imageUrls?: string[];
   imageUrl?: string;
   imagePath?: string;
-}
+};
 
 describe('normalizeGuidedLearningSet', () => {
   const baseSet: GuidedLearningSet = {
@@ -34,24 +43,24 @@ describe('normalizeGuidedLearningSet', () => {
   });
 
   it('migration: migrates legacy imageUrl to imageUrls array', () => {
-    const legacySet: LegacyGuidedLearningSet = {
+    const legacySet: LegacyGuidedLearningSetInput = {
       ...baseSet,
       imageUrls: [],
       imageUrl: 'legacy-url',
     };
 
-    const result = normalizeGuidedLearningSet(legacySet);
+    const result = normalizeGuidedLearningSet(legacySet as GuidedLearningSet);
     expect(result.imageUrls).toEqual(['legacy-url']);
   });
 
   it('migration: migrates legacy imagePath to imagePaths array', () => {
-    const legacySet: LegacyGuidedLearningSet = {
+    const legacySet: LegacyGuidedLearningSetInput = {
       ...baseSet,
       imagePaths: [],
       imagePath: 'legacy-path',
     };
 
-    const result = normalizeGuidedLearningSet(legacySet);
+    const result = normalizeGuidedLearningSet(legacySet as GuidedLearningSet);
     expect(result.imagePaths).toEqual(['legacy-path']);
   });
 
@@ -105,7 +114,7 @@ describe('normalizeGuidedLearningSet', () => {
           yPct: 10,
           imageIndex: 0,
           interactionType: 'text-popover',
-        },
+        } as GuidedLearningStep,
       ],
     };
 
@@ -114,22 +123,26 @@ describe('normalizeGuidedLearningSet', () => {
   });
 
   it('handles missing steps by defaulting to empty array', () => {
-    const setWithoutSteps = {
+    const setWithoutSteps: LegacyGuidedLearningSetInput = {
       ...baseSet,
       steps: undefined,
-    } as unknown as GuidedLearningSet;
+    };
 
-    const result = normalizeGuidedLearningSet(setWithoutSteps);
+    const result = normalizeGuidedLearningSet(
+      setWithoutSteps as GuidedLearningSet
+    );
     expect(result.steps).toEqual([]);
   });
 
   it('handles missing imageUrls by defaulting to empty array', () => {
-    const setWithoutImageUrls = {
+    const setWithoutImageUrls: LegacyGuidedLearningSetInput = {
       ...baseSet,
       imageUrls: undefined,
-    } as unknown as GuidedLearningSet;
+    };
 
-    const result = normalizeGuidedLearningSet(setWithoutImageUrls);
+    const result = normalizeGuidedLearningSet(
+      setWithoutImageUrls as GuidedLearningSet
+    );
     expect(result.imageUrls).toEqual([]);
   });
 });
