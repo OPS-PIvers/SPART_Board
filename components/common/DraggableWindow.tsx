@@ -40,6 +40,7 @@ import {
 import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
 import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
 import { useScreenshot } from '@/hooks/useScreenshot';
+import { useWindowSize } from '@/hooks/useWindowSize';
 import { useDashboard } from '@/context/useDashboard';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
@@ -187,6 +188,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   );
 
   const [showSnapMenu, setShowSnapMenu] = useState(false);
+  const windowSize = useWindowSize(showSnapMenu);
   const [snapPreviewZone, setSnapPreviewZone] = useState<
     SnapZone | 'maximize' | 'minimize' | null
   >(null);
@@ -202,12 +204,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   customGridRef.current = customGrid;
   const occupiedCells = useMemo(() => {
     const set = new Set<string>();
-    if (!showSnapMenu || !activeDashboard || typeof window === 'undefined')
-      return set;
+    if (!showSnapMenu || !activeDashboard) return set;
 
     const { PADDING } = SNAP_LAYOUT_CONSTANTS;
-    const safeWidth = Math.max(1, window.innerWidth - PADDING * 2);
-    const safeHeight = Math.max(1, window.innerHeight - PADDING * 2);
+    const safeWidth = Math.max(1, windowSize.width - PADDING * 2);
+    const safeHeight = Math.max(1, windowSize.height - PADDING * 2);
 
     for (const w of activeDashboard.widgets) {
       if (w.id === widget.id) continue; // ignore self
@@ -240,7 +241,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       }
     }
     return set;
-  }, [showSnapMenu, activeDashboard, widget.id]);
+  }, [showSnapMenu, activeDashboard, widget.id, windowSize]);
 
   // Pre-cached zones for edge detection optimization
   const splitLayout = useMemo(
