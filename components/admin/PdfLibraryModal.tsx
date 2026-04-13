@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { db, isAuthBypass } from '@/config/firebase';
 import { GlobalPdfItem, PdfGlobalConfig, FeaturePermission } from '@/types';
-import { BUILDINGS } from '@/config/buildings';
+import { BUILDINGS, BUILDINGS_BY_ID } from '@/config/buildings';
 import { Toast } from '@/components/common/Toast';
 import { useDialog } from '@/context/useDialog';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
@@ -329,7 +329,7 @@ export const PdfLibraryModal: React.FC<PdfLibraryModalProps> = ({
     if (!buildings || buildings.length === 0) return 'All Buildings';
     if (buildings.length === BUILDINGS.length) return 'All Buildings';
     return buildings
-      .map((id) => BUILDINGS.find((b) => b.id === id)?.name ?? id)
+      .map((id) => BUILDINGS_BY_ID.get(id)?.name ?? id)
       .join(', ');
   };
 

@@ -33,7 +33,7 @@ import {
   MiniAppGlobalConfig,
   FeaturePermission,
 } from '@/types';
-import { BUILDINGS } from '@/config/buildings';
+import { BUILDINGS, BUILDINGS_BY_ID } from '@/config/buildings';
 import { Toast } from '@/components/common/Toast';
 import { useDialog } from '@/context/useDialog';
 
@@ -269,7 +269,7 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
     if (!buildings || buildings.length === 0) return 'All Buildings';
     if (buildings.length === BUILDINGS.length) return 'All Buildings';
     return buildings
-      .map((id) => BUILDINGS.find((b) => b.id === id)?.name ?? id)
+      .map((id) => BUILDINGS_BY_ID.get(id)?.name ?? id)
       .join(', ');
   };
 
