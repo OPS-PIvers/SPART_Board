@@ -16,11 +16,12 @@ _Nothing currently in progress._
 
 ## Open
 
-[HIGH] Missing Widget Types in Configs
-Detected: 2026-04-13
-File: N/A
-Detail: Multiple widgets defined in types.ts are missing from WidgetRegistry.ts, widgetDefaults.ts, tools.ts, and widgetGradeLevels.ts. Examples: clock, traffic, text.
-Fix: Add all valid WidgetType entries from types.ts to the missing mapping objects/arrays in the config files.
+### HIGH Missing Widget Types in Configs
+
+- **Detected:** 2026-04-13
+- **File:** N/A
+- **Detail:** Multiple widgets defined in types.ts are missing from WidgetRegistry.ts, widgetDefaults.ts, tools.ts, and widgetGradeLevels.ts. (Note: previously-listed examples `clock`, `traffic`, and `text` are actually present; the audit logic should be reviewed for false positives.)
+- **Fix:** Add all valid WidgetType entries from types.ts to the missing mapping objects/arrays in the config files.
 
 ### LOW `sticker` widget bypasses WIDGET_COMPONENTS via WidgetRenderer special-case
 

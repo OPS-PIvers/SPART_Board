@@ -16,11 +16,12 @@ _Nothing currently in progress._
 
 ## Open
 
-[HIGH] Missing Firestore Rule for admin_audit_log
-Detected: 2026-04-13
-File: firestore.rules
-Detail: The collection admin_audit_log is queried in code but has no explicit security rule in firestore.rules.
-Fix: Add match /admin_audit_log/{docId} block to firestore.rules with appropriate admin-only write permissions.
+### HIGH Missing Firestore Rule for admin_audit_log
+
+- **Detected:** 2026-04-13
+- **File:** firestore.rules
+- **Detail:** The collection admin_audit_log is queried in code but has no explicit security rule in firestore.rules.
+- **Fix:** Add match /admin_audit_log/{docId} block to firestore.rules with appropriate admin-only write permissions.
 
 ---
 
