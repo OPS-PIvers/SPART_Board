@@ -4,8 +4,6 @@ import { DrawingWidget } from './Widget';
 import { WidgetData, DrawingConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
-import { useLiveSession } from '@/hooks/useLiveSession';
-import { useScreenshot } from '@/hooks/useScreenshot';
 
 // Mock hooks
 vi.mock('../../../context/useDashboard', () => ({
@@ -13,12 +11,6 @@ vi.mock('../../../context/useDashboard', () => ({
 }));
 vi.mock('../../../context/useAuth', () => ({
   useAuth: vi.fn(),
-}));
-vi.mock('../../../hooks/useLiveSession', () => ({
-  useLiveSession: vi.fn(),
-}));
-vi.mock('../../../hooks/useScreenshot', () => ({
-  useScreenshot: vi.fn(),
 }));
 
 interface MockContext {
@@ -43,20 +35,13 @@ describe('DrawingWidget', () => {
     mockUpdateWidget = vi.fn();
     (useDashboard as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
-      activeDashboard: { background: 'bg-slate-900' },
+      activeDashboard: { background: 'bg-slate-900', widgets: [] },
+      addToast: vi.fn(),
+      addWidget: vi.fn(),
     });
     (useAuth as Mock).mockReturnValue({
       user: { uid: 'user1' },
       canAccessFeature: vi.fn(() => true),
-    });
-    (useLiveSession as Mock).mockReturnValue({
-      session: null,
-      startSession: vi.fn(),
-      endSession: vi.fn(),
-    });
-    (useScreenshot as Mock).mockReturnValue({
-      takeScreenshot: vi.fn(),
-      isCapturing: false,
     });
 
     // Mock Canvas
@@ -107,17 +92,30 @@ describe('DrawingWidget', () => {
     z: 1,
     flipped: false,
     config: {
-      mode: 'window',
       color: '#000000',
       width: 4,
       paths: [],
       customColors: ['#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'],
-    },
+    } as DrawingConfig,
   };
 
   it('renders without crashing', () => {
     render(<DrawingWidget widget={widget} />);
     expect(mockContext.clearRect).toHaveBeenCalled();
+  });
+
+  it('no longer renders the Assign (Cast) or Save-to-Cloud buttons', () => {
+    const { container } = render(<DrawingWidget widget={widget} />);
+    // Previously the overlay-mode toolbar included buttons titled "Assign..."
+    // and "Save to Cloud". Those were removed in the annotation overhaul.
+    expect(container.querySelector('[title*="Assign"]')).toBeNull();
+    expect(container.querySelector('[title*="Save to Cloud"]')).toBeNull();
+  });
+
+  it('no longer renders the ANNOTATE / EXIT mode toggle', () => {
+    const { container } = render(<DrawingWidget widget={widget} />);
+    // Mode toggle moved to dock-level popover
+    expect(container.textContent).not.toMatch(/ANNOTATE|EXIT/);
   });
 
   it('draws existing paths on mount', () => {

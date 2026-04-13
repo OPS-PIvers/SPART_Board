@@ -342,7 +342,12 @@ export interface SoundConfig {
 }
 
 export interface DrawingConfig {
-  mode: 'window' | 'overlay';
+  /**
+   * @deprecated Annotation mode is now an app-level overlay (not a widget).
+   * Legacy widgets may have this set; it is otherwise unused and kept only
+   * for backward compatibility.
+   */
+  mode?: 'window' | 'overlay';
   paths: Path[];
   color?: string;
   width?: number;
@@ -824,7 +829,6 @@ export interface ScoreboardGlobalConfig {
 // --- Drawing Global Config ---
 export interface BuildingDrawingDefaults {
   buildingId: string;
-  mode?: 'window' | 'overlay';
   width?: number;
   customColors?: string[];
 }
