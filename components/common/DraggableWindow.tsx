@@ -1107,8 +1107,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   // Widget-local floating toolbar reservation (e.g. TextWidget's rich-text
   // toolbar). When set, this tool menu flips to the opposite side of the
-  // widget so the two toolbars don't overlap.
-  const toolbarReservationRef = useRef<'above' | 'below' | null>(null);
+  // widget so the two toolbars don't overlap. The reserved footprint
+  // (height + gap) is subtracted from that side's available space, and — if
+  // this tool menu is forced onto the same side — it is offset past that
+  // footprint so the two stack instead of overlapping.
+  const toolbarReservationRef = useRef<{
+    side: 'above' | 'below';
+    height: number;
+    gap: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
     if (showTools && windowRef.current) {
@@ -1141,29 +1148,36 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         // Vertical: prefer above; flip below only when space above is tight AND
         // there is room below. If neither side fits, pick whichever has more space
         // and clamp to keep the toolbar on-screen.
-        const spaceAbove = effectiveTop;
-        const spaceBelow = window.innerHeight - effectiveBottom;
         // If the widget has reserved a side for its own floating toolbar
         // (e.g. TextWidget's formatting toolbar), prefer the opposite side
-        // so the two don't overlap. Fall back to the reserved side if the
-        // opposite is too tight; if neither fits, pick whichever has more
-        // room. With no reservation, prefer above and flip below only when
-        // above is tight and below has more room.
+        // so the two don't overlap. The reserved footprint is subtracted from
+        // that side's available space, and — if this tool menu is forced onto
+        // the same side — it is offset past that footprint so the two stack.
         const reservation = toolbarReservationRef.current;
+        const reservedAbove =
+          reservation?.side === 'above'
+            ? reservation.height + reservation.gap
+            : 0;
+        const reservedBelow =
+          reservation?.side === 'below'
+            ? reservation.height + reservation.gap
+            : 0;
+        const spaceAbove = effectiveTop - reservedAbove;
+        const spaceBelow = window.innerHeight - effectiveBottom - reservedBelow;
         const needed = menuHeight + MARGIN;
         const fitsAbove = spaceAbove >= needed;
         const fitsBelow = spaceBelow >= needed;
         let showBelow: boolean;
-        if (reservation === 'above') {
+        if (reservation?.side === 'above') {
           showBelow = fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove);
-        } else if (reservation === 'below') {
+        } else if (reservation?.side === 'below') {
           showBelow = !fitsAbove && (fitsBelow || spaceBelow >= spaceAbove);
         } else {
           showBelow = !fitsAbove && spaceBelow >= spaceAbove;
         }
         const rawTopPos = showBelow
-          ? effectiveBottom + MARGIN
-          : effectiveTop - menuHeight - MARGIN;
+          ? effectiveBottom + reservedBelow + MARGIN
+          : effectiveTop - reservedAbove - menuHeight - MARGIN;
         const clampedTop = Math.max(
           MARGIN,
           Math.min(rawTopPos, window.innerHeight - menuHeight - MARGIN)
@@ -1300,11 +1314,29 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         e as CustomEvent<{
           widgetId: string;
           side: 'above' | 'below' | null;
+          height?: number;
+          gap?: number;
         }>
       ).detail;
       if (!detail || detail.widgetId !== widgetId) return;
-      if (toolbarReservationRef.current === detail.side) return;
-      toolbarReservationRef.current = detail.side;
+      const next =
+        detail.side === null
+          ? null
+          : {
+              side: detail.side,
+              height: detail.height ?? 0,
+              gap: detail.gap ?? 0,
+            };
+      const current = toolbarReservationRef.current;
+      const unchanged =
+        (current === null && next === null) ||
+        (current !== null &&
+          next !== null &&
+          current.side === next.side &&
+          current.height === next.height &&
+          current.gap === next.gap);
+      if (unchanged) return;
+      toolbarReservationRef.current = next;
       updatePositionRef.current?.();
     };
     window.addEventListener('widget-toolbar-reservation', handleReservation);
