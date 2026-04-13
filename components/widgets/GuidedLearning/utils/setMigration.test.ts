@@ -95,10 +95,8 @@ describe('normalizeGuidedLearningSet', () => {
   });
 
   it('step normalization: defaults showOverlay to "none"', () => {
-    // To test missing showOverlay, we need to cast or use a partial that we then cast to GuidedLearningSet
-    // Since GuidedLearningStep requires showOverlay normally (based on my read of types.ts),
-    // we use Omit to simulate it being missing from a legacy source.
-    const setWithMissingOverlay = {
+    // Test missing showOverlay; it is optional in GuidedLearningStep but we ensure a default is applied.
+    const setWithMissingOverlay: GuidedLearningSet = {
       ...baseSet,
       steps: [
         {
@@ -109,7 +107,7 @@ describe('normalizeGuidedLearningSet', () => {
           interactionType: 'text-popover',
         },
       ],
-    } as unknown as GuidedLearningSet;
+    };
 
     const result = normalizeGuidedLearningSet(setWithMissingOverlay);
     expect(result.steps[0].showOverlay).toBe('none');
@@ -123,5 +121,15 @@ describe('normalizeGuidedLearningSet', () => {
 
     const result = normalizeGuidedLearningSet(setWithoutSteps);
     expect(result.steps).toEqual([]);
+  });
+
+  it('handles missing imageUrls by defaulting to empty array', () => {
+    const setWithoutImageUrls = {
+      ...baseSet,
+      imageUrls: undefined,
+    } as unknown as GuidedLearningSet;
+
+    const result = normalizeGuidedLearningSet(setWithoutImageUrls);
+    expect(result.imageUrls).toEqual([]);
   });
 });
