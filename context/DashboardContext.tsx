@@ -1033,7 +1033,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   type: 'info' as const,
                 },
               ]);
-            } catch (err) {
+            } catch (err: unknown) {
               console.error(err);
             }
           })();
@@ -1048,7 +1048,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     if (localData && !migrated) {
       void (async () => {
         try {
-          const count = await migrateLocalStorageToFirestore(user.uid, saveDashboard);
+          const count = await migrateLocalStorageToFirestore(
+            user.uid,
+            saveDashboard
+          );
           if (count > 0) {
             setToasts((prev) => [
               ...prev,
@@ -1060,7 +1063,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             ]);
           }
           setMigrated(true);
-        } catch (err) {
+        } catch (err: unknown) {
           console.error('Migration error:', err);
           setToasts((prev) => [
             ...prev,
@@ -1196,7 +1199,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }, 300);
           auxTimers.add(delayTimer);
-        } catch (err) {
+        } catch (err: unknown) {
           pendingSaveCountRef.current = Math.max(
             0,
             pendingSaveCountRef.current - 1
