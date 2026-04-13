@@ -13,7 +13,15 @@ import {
   Student,
   AddWidgetOverrides,
   GridPosition,
+  Path,
 } from '../types';
+
+export interface AnnotationState {
+  paths: Path[];
+  color: string;
+  width: number;
+  customColors: string[];
+}
 
 export interface DashboardContextValue {
   dashboards: Dashboard[];
@@ -66,6 +74,16 @@ export interface DashboardContextValue {
   libraryOrder: (WidgetType | InternalToolType)[];
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   updateDashboard: (updates: Partial<Dashboard>) => void;
+
+  // Annotation (ephemeral full-screen draw-over overlay; NOT a widget)
+  annotationActive: boolean;
+  annotationState: AnnotationState;
+  openAnnotation: () => void;
+  closeAnnotation: () => void;
+  updateAnnotationState: (updates: Partial<AnnotationState>) => void;
+  addAnnotationPath: (path: Path) => void;
+  undoAnnotation: () => void;
+  clearAnnotation: () => void;
 
   // Zoom system
   zoom: number;

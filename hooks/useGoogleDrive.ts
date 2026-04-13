@@ -4,6 +4,7 @@ import { GoogleDriveService } from '../utils/googleDriveService';
 import { APP_NAME } from '../config/constants';
 
 const BACKGROUNDS_FOLDER = 'Backgrounds';
+const DRAWINGS_FOLDER = 'Drawings';
 const LEGACY_FOLDER_NAME = 'SPART Board';
 const MIGRATION_COMPLETED_FLAG = 'true';
 const migrationKey = (uid: string) => `spart_drive_folder_migrated_v2_${uid}`;
@@ -97,6 +98,30 @@ export const useGoogleDrive = () => {
   }, [driveService]);
 
   /**
+   * Upload a drawing/annotation PNG to the user's Drive "Drawings" folder and
+   * return a shareable Drive URL. Uses the same public-sharing pattern as
+   * background uploads so the link works across contexts.
+   */
+  const saveDrawingToDrive = useCallback(
+    async (blob: Blob, fileName: string): Promise<string> => {
+      if (!driveService) {
+        throw new Error('Google Drive is not connected. Please sign in again.');
+      }
+
+      const driveFile = await driveService.uploadFile(
+        blob,
+        fileName,
+        DRAWINGS_FOLDER
+      );
+
+      await driveService.makePublic(driveFile.id, undefined);
+
+      return `https://drive.google.com/file/d/${driveFile.id}/view`;
+    },
+    [driveService]
+  );
+
+  /**
    * Attempts to extract text content from a Google Drive file if it is a supported type (Docs, Slides, Sheets, Text).
    */
   const getDriveFileTextContent = useCallback(
@@ -126,5 +151,6 @@ export const useGoogleDrive = () => {
     uploadBackgroundToDrive,
     getUserBackgroundsFromDrive,
     getDriveFileTextContent,
+    saveDrawingToDrive,
   };
 };
