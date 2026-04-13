@@ -305,6 +305,8 @@ export interface RandomConfig {
 
 export interface DiceConfig {
   count: number;
+  diceColor?: string;
+  dotColor?: string;
   /** Last roll result persisted so remote rolls are reflected on the board. */
   lastRoll?: number[];
 }
