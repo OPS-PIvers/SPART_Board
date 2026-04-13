@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.30.2",
   "type": "module",
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
   },
   "scripts": {
@@ -73,7 +73,7 @@
     "@types/gapi": "^0.0.47",
     "@types/google.accounts": "^0.0.18",
     "@types/google.picker": "^0.0.52",
-    "@types/node": "^22.19.7",
+    "@types/node": "^24.12.2",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "@types/tesseract.js": "^2.0.0",

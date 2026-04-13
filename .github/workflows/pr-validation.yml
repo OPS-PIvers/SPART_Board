@@ -12,7 +12,7 @@ jobs:
     name: Code Quality Checks
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup
@@ -31,7 +31,7 @@ jobs:
     name: Unit Tests
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup
@@ -57,7 +57,7 @@ jobs:
     name: E2E Tests
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup
@@ -82,7 +82,7 @@ jobs:
     name: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup

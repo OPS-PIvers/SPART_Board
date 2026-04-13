@@ -139,13 +139,13 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   // Cards have container-type: size and fill equal fractions of the widget height.
   // Height is always the smaller dimension, so we scale relative to cqh (card height).
   // Horizontal spacing uses cqw so it stays proportional to card width.
-  const fontCqh = (14 * sm).toFixed(1);
-  const iconCqh = (30 * sm).toFixed(1);
+  const fontCqh = (28 * sm).toFixed(1);
+  const iconCqh = (36 * sm).toFixed(1);
   const padVCqh = (10 * sm).toFixed(1);
   const padHCqw = (3 * sm).toFixed(1);
   const gapCqw = (4 * sm).toFixed(1);
-  const textSize = `clamp(11px, ${fontCqh}cqh, ${Math.round(24 * sm)}px)`;
-  const iconSize = `clamp(14px, ${iconCqh}cqh, ${Math.round(36 * sm)}px)`;
+  const textSize = `clamp(11px, ${fontCqh}cqh, ${Math.round(48 * sm)}px)`;
+  const iconSize = `clamp(14px, ${iconCqh}cqh, ${Math.round(56 * sm)}px)`;
   const cardPadding = `clamp(10px, ${padVCqh}cqh, ${Math.round(22 * sm)}px) clamp(8px, ${padHCqw}cqw, ${Math.round(20 * sm)}px)`;
   const cardGap = `clamp(6px, ${gapCqw}cqw, 16px)`;
   const listGap = 'min(6px, 2cqmin)';

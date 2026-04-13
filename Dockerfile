@@ -1,6 +1,6 @@
 # Stage 1: Build
-# node:20.20.2-alpine3.23
-FROM node@sha256:42d1d5b07c84257b55d409f4e6e3be3b55d42867afce975a5648a3f231bf7e81 AS builder
+# node:24.14.1-alpine3.23
+FROM node@sha256:01743339035a5c3c11a373cd7c83aeab6ed1457b55da6a69e014a95ac4e4700b AS builder
 
 WORKDIR /app
 

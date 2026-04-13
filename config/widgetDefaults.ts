@@ -7,6 +7,7 @@ import {
   RevealGridConfig,
   QRConfig,
   BloomsTaxonomyConfig,
+  BloomsDetailConfig,
 } from '@/types';
 import { STICKY_NOTE_COLORS } from './colors';
 
@@ -41,8 +42,8 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
   },
   traffic: { w: 120, h: 320, config: {} },
   text: {
-    w: 300,
-    h: 250,
+    w: 400,
+    h: 300,
     config: {
       content: '',
       bgColor: STICKY_NOTE_COLORS.yellow,
@@ -486,5 +487,13 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     w: 450,
     h: 550,
     config: {} satisfies BloomsTaxonomyConfig,
+  },
+  'blooms-detail': {
+    w: 450,
+    h: 300,
+    config: {
+      parentWidgetId: '',
+      level: 'remember',
+    } satisfies BloomsDetailConfig,
   },
 };

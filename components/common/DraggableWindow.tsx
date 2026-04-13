@@ -46,12 +46,18 @@ import { SettingsPanel } from './SettingsPanel';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { IconButton } from '@/components/common/IconButton';
-import { WIDGET_PALETTE } from '@/config/colors';
+import { STANDARD_COLORS, WIDGET_PALETTE } from '@/config/colors';
 import { Z_INDEX } from '@/config/zIndex';
 import { useDialog } from '@/context/useDialog';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
+
+// Hex → human-readable color name, for screen-reader aria-labels on the
+// annotation palette. Falls back to the raw hex when unknown.
+const COLOR_HEX_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(STANDARD_COLORS).map(([name, hex]) => [hex, name])
+);
 
 // Custom size picker grid dimensions
 const GRID_COLS = 8;
@@ -845,10 +851,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
     for (const el of elementsAtPoint) {
       if (el === resizeEl) continue;
-      // Iframes and canvases (e.g. embed or drawing widgets) often fill the
-      // entire container — the resize handle must take priority over them.
+      // Iframes, canvases, and contentEditable elements (e.g. embed, drawing,
+      // or text widgets) often fill the entire container — the resize handle
+      // must take priority over them.
       if (el instanceof HTMLIFrameElement || el instanceof HTMLCanvasElement)
         continue;
+      if (el instanceof HTMLElement && el.isContentEditable) continue;
       if (
         el.matches?.(INTERACTIVE_ELEMENTS_SELECTOR) ||
         el.closest?.(INTERACTIVE_ELEMENTS_SELECTOR)
@@ -1055,6 +1063,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // always call the current version without being in its dependency array.
   const updatePositionRef = useRef<(() => void) | null>(null);
 
+  // Widget-local floating toolbar reservation (e.g. TextWidget's rich-text
+  // toolbar). When set, this tool menu flips to the opposite side of the
+  // widget so the two toolbars don't overlap.
+  const toolbarReservationRef = useRef<'above' | 'below' | null>(null);
+
   useLayoutEffect(() => {
     if (showTools && windowRef.current) {
       const updatePosition = () => {
@@ -1088,8 +1101,24 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         // and clamp to keep the toolbar on-screen.
         const spaceAbove = effectiveTop;
         const spaceBelow = window.innerHeight - effectiveBottom;
-        const showBelow =
-          spaceAbove < menuHeight + MARGIN && spaceBelow >= spaceAbove;
+        // If the widget has reserved a side for its own floating toolbar
+        // (e.g. TextWidget's formatting toolbar), prefer the opposite side
+        // so the two don't overlap. Fall back to the reserved side if the
+        // opposite is too tight; if neither fits, pick whichever has more
+        // room. With no reservation, prefer above and flip below only when
+        // above is tight and below has more room.
+        const reservation = toolbarReservationRef.current;
+        const needed = menuHeight + MARGIN;
+        const fitsAbove = spaceAbove >= needed;
+        const fitsBelow = spaceBelow >= needed;
+        let showBelow: boolean;
+        if (reservation === 'above') {
+          showBelow = fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove);
+        } else if (reservation === 'below') {
+          showBelow = !fitsAbove && (fitsBelow || spaceBelow >= spaceAbove);
+        } else {
+          showBelow = !fitsAbove && spaceBelow >= spaceAbove;
+        }
         const rawTopPos = showBelow
           ? effectiveBottom + MARGIN
           : effectiveTop - menuHeight - MARGIN;
@@ -1218,6 +1247,32 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('board-pan', handlePan);
     return () => window.removeEventListener('board-pan', handlePan);
   }, [showTools]);
+
+  // Listen for widget-local toolbar reservations so this tool menu can flip
+  // to the opposite side of (not overlap) a widget's own floating toolbar
+  // (e.g. TextWidget). Only reservations for this widget's id are honored.
+  useEffect(() => {
+    const widgetId = widget.id;
+    const handleReservation = (e: Event) => {
+      const detail = (
+        e as CustomEvent<{
+          widgetId: string;
+          side: 'above' | 'below' | null;
+        }>
+      ).detail;
+      if (!detail || detail.widgetId !== widgetId) return;
+      if (toolbarReservationRef.current === detail.side) return;
+      toolbarReservationRef.current = detail.side;
+      updatePositionRef.current?.();
+    };
+    window.addEventListener('widget-toolbar-reservation', handleReservation);
+    return () => {
+      window.removeEventListener(
+        'widget-toolbar-reservation',
+        handleReservation
+      );
+    };
+  }, [widget.id]);
 
   useEffect(() => {
     const handleCustomKeyboard = (e: Event) => {
@@ -1632,9 +1687,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         e.stopPropagation();
                         setAnnotationColor(c);
                       }}
-                      aria-label={`Select annotation color ${c}`}
+                      aria-label={`Select annotation color ${COLOR_HEX_TO_NAME[c] ?? c}`}
                       aria-pressed={annotationColor === c}
-                      className={`w-5 h-5 rounded-full border border-slate-100 transition-transform touch-target-expand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
+                      className={`relative w-5 h-5 rounded-full border border-slate-100 transition-transform touch-target-expand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}

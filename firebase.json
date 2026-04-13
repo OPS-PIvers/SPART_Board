@@ -6,6 +6,7 @@
   "functions": {
     "source": "functions",
     "codebase": "default",
+    "runtime": "nodejs24",
     "ignore": [
       "node_modules",
       ".git",
@@ -22,6 +23,13 @@
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
+      {
+        "source": "/api/admin-analytics",
+        "function": {
+          "functionId": "adminAnalytics",
+          "region": "us-central1"
+        }
+      },
       {
         "source": "**",
         "destination": "/index.html"
