@@ -60,8 +60,8 @@ const COLOR_HEX_TO_NAME: Record<string, string> = Object.fromEntries(
 );
 
 // Custom size picker grid dimensions
-const GRID_COLS = 8;
-const GRID_ROWS = 6;
+const GRID_COLS = 10;
+const GRID_ROWS = 10;
 
 // Widgets that require real-time position updates for inter-widget functionality
 const POSITION_AWARE_WIDGETS: WidgetType[] = [
@@ -200,6 +200,47 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   }>({ start: null, end: null, selecting: false });
   const customGridRef = useRef(customGrid);
   customGridRef.current = customGrid;
+  const occupiedCells = useMemo(() => {
+    const set = new Set<string>();
+    if (!showSnapMenu || !activeDashboard || typeof window === 'undefined')
+      return set;
+
+    const { PADDING } = SNAP_LAYOUT_CONSTANTS;
+    const safeWidth = Math.max(1, window.innerWidth - PADDING * 2);
+    const safeHeight = Math.max(1, window.innerHeight - PADDING * 2);
+
+    for (const w of activeDashboard.widgets) {
+      if (w.id === widget.id) continue; // ignore self
+      if (w.minimized || w.maximized) continue; // not visible on canvas
+
+      const nx = (w.x - PADDING) / safeWidth;
+      const ny = (w.y - PADDING) / safeHeight;
+      const nr = (w.x + w.w - PADDING) / safeWidth;
+      const nb = (w.y + w.h - PADDING) / safeHeight;
+
+      const c0 = Math.max(
+        0,
+        Math.min(GRID_COLS - 1, Math.floor(nx * GRID_COLS))
+      );
+      const r0 = Math.max(
+        0,
+        Math.min(GRID_ROWS - 1, Math.floor(ny * GRID_ROWS))
+      );
+      const c1 = Math.max(
+        0,
+        Math.min(GRID_COLS - 1, Math.ceil(nr * GRID_COLS) - 1)
+      );
+      const r1 = Math.max(
+        0,
+        Math.min(GRID_ROWS - 1, Math.ceil(nb * GRID_ROWS) - 1)
+      );
+
+      for (let r = r0; r <= r1; r++) {
+        for (let c = c0; c <= c1; c++) set.add(`${c},${r}`);
+      }
+    }
+    return set;
+  }, [showSnapMenu, activeDashboard, widget.id]);
 
   // Pre-cached zones for edge detection optimization
   const splitLayout = useMemo(
@@ -2243,11 +2284,24 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                                     customGrid.start.row,
                                     customGrid.end.row
                                   );
+                              const isOccupied = occupiedCells.has(
+                                `${col},${row}`
+                              );
+                              const cellClassName = selected
+                                ? 'bg-brand-blue-light'
+                                : isOccupied
+                                  ? 'bg-brand-blue-primary'
+                                  : 'bg-slate-300';
                               return (
                                 <div
                                   key={i}
-                                  className={`rounded-[2px] transition-colors ${selected ? 'bg-brand-blue-light' : 'bg-slate-300'}`}
+                                  className={`rounded-[2px] transition-colors ${cellClassName}`}
                                   style={{ height: '14px' }}
+                                  aria-label={
+                                    isOccupied
+                                      ? 'Cell occupied by another widget'
+                                      : undefined
+                                  }
                                 />
                               );
                             }
