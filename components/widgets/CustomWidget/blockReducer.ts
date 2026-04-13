@@ -311,16 +311,26 @@ function processEventConnections(
   event: string,
   gridDefinition: CustomGridDefinition
 ): WidgetBlockState {
-  const connections = gridDefinition.connections.filter(
-    (c) => c.sourceBlockId === sourceId && c.event === event
-  );
+  // Pre-group connections by sourceBlockId and event to avoid O(N^2) work in loops
+  const connLookup = new Map<string, BlockConnection[]>();
+  for (const c of gridDefinition.connections) {
+    const key = `${c.sourceBlockId}:${c.event}`;
+    let list = connLookup.get(key);
+    if (!list) {
+      list = [];
+      connLookup.set(key, list);
+    }
+    list.push(c);
+  }
 
-  if (connections.length === 0) return state;
+  const initialConnections = connLookup.get(`${sourceId}:${event}`) ?? [];
+
+  if (initialConnections.length === 0) return state;
 
   let nextState = { ...state };
   const pendingEvents: Array<{ sourceId: string; event: string }> = [];
 
-  for (const conn of connections) {
+  for (const conn of initialConnections) {
     if (!conditionPasses(conn.condition, nextState)) continue;
 
     if (conn.action === 'reset-all') {
@@ -351,9 +361,7 @@ function processEventConnections(
 
   // Process threshold events (one level deep to avoid infinite loops)
   for (const evt of pendingEvents) {
-    const thresholdConns = gridDefinition.connections.filter(
-      (c) => c.sourceBlockId === evt.sourceId && c.event === evt.event
-    );
+    const thresholdConns = connLookup.get(`${evt.sourceId}:${evt.event}`) ?? [];
     for (const conn of thresholdConns) {
       if (!conditionPasses(conn.condition, nextState)) continue;
       if (conn.action === 'reset-all') {
