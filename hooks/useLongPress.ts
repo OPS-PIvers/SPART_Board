@@ -63,5 +63,6 @@ export function useLongPress(
     onPointerDown: handlePointerDown,
     onPointerUp: clear,
     onPointerMove: handlePointerMove,
+    onPointerCancel: clear,
   } as const;
 }

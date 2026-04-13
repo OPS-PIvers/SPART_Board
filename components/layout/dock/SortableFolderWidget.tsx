@@ -71,6 +71,7 @@ export const SortableFolderWidget = React.memo(
             onPointerUp={longPress.onPointerUp}
             onPointerLeave={longPress.onPointerUp}
             onPointerMove={longPress.onPointerMove}
+            onPointerCancel={longPress.onPointerCancel}
             className={`relative ${
               isEditMode
                 ? 'cursor-grab active:cursor-grabbing'

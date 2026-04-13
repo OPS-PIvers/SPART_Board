@@ -235,6 +235,7 @@ export const ToolDockItem = React.memo(
             onPointerUp={longPress.onPointerUp}
             onPointerLeave={longPress.onPointerUp}
             onPointerMove={longPress.onPointerMove}
+            onPointerCancel={longPress.onPointerCancel}
             onClick={handleClick}
             data-tool-id={tool.type}
             className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 relative ${
