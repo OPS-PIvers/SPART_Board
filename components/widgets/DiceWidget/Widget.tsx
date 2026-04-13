@@ -20,11 +20,11 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   );
   const [prevDiceCount, setPrevDiceCount] = useState(diceCount);
   const [isRolling, setIsRolling] = useState(false);
+  // Ref so the remote-sync effect can read the current isRolling without
+  // listing it as a dependency (avoids overwriting locally-rolled values
+  // when the local roll finishes and isRolling flips back to false).
   const isRollingRef = useRef(false);
-
-  useEffect(() => {
-    isRollingRef.current = isRolling;
-  }, [isRolling]);
+  isRollingRef.current = isRolling;
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -159,7 +159,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 : 'bg-purple-600 text-white shadow-lg hover:bg-purple-700 active:scale-90 hover:shadow-purple-500/30'
             }
           `}
-            style={{ fontSize: 'min(20px, 5.5cqmin)' }}
+            style={{ fontSize: '20px' }}
           >
             <RefreshCw
               style={{ width: '1.2em', height: '1.2em' }}
