@@ -20,6 +20,7 @@ import {
   blockReducer,
   buildInitialState,
   conditionPasses,
+  buildConnectionLookup,
 } from './blockReducer';
 import { BlockRenderer } from './BlockRenderer';
 import {
@@ -85,8 +86,16 @@ export const CustomWidgetWidget: React.FC<{ widget: WidgetData }> = ({
 
   const adminSettings = config.adminSettings;
 
+  // ⚡ Performance Optimization: Pre-calculate connection lookup map
+  const connLookup = React.useMemo(
+    () =>
+      activeGrid ? buildConnectionLookup(activeGrid.connections) : undefined,
+    [activeGrid]
+  );
+
   const [state, dispatch] = useReducer(
-    (s: WidgetBlockState, a: WidgetAction) => blockReducer(s, a, activeGrid),
+    (s: WidgetBlockState, a: WidgetAction) =>
+      blockReducer(s, a, activeGrid, connLookup),
     {},
     () => buildInitialState(activeGrid)
   );
