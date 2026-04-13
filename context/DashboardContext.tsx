@@ -3020,15 +3020,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // --- Annotation actions ---
   const openAnnotation = useCallback(() => {
-    // Seed from admin building defaults for width + color palette
+    // Seed from admin building defaults for width + color palette.
+    // `color` is not configurable at the admin level — keep the user's
+    // previously-chosen color across sessions.
     const adminConfig = getAdminBuildingConfig('drawing') as {
       width?: number;
-      color?: string;
       customColors?: string[];
     };
     setAnnotationState((prev) => ({
       paths: [],
-      color: adminConfig.color ?? prev.color,
+      color: prev.color,
       width: adminConfig.width ?? DRAWING_DEFAULTS.WIDTH,
       customColors: adminConfig.customColors ?? [
         ...DRAWING_DEFAULTS.CUSTOM_COLORS,
