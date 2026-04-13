@@ -1096,31 +1096,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         const spaceAbove = effectiveTop;
         const spaceBelow = window.innerHeight - effectiveBottom;
         // If the widget has reserved a side for its own floating toolbar
-        // (e.g. TextWidget's formatting toolbar), flip this tool menu to the
-        // opposite side so the two don't overlap. Fall back to the same side
-        // if the opposite side is too tight; if neither fits, pick whichever
-        // has more room.
+        // (e.g. TextWidget's formatting toolbar), prefer the opposite side
+        // so the two don't overlap. Fall back to the reserved side if the
+        // opposite is too tight; if neither fits, pick whichever has more
+        // room. With no reservation, prefer above and flip below only when
+        // above is tight and below has more room.
         const reservation = toolbarReservationRef.current;
         const needed = menuHeight + MARGIN;
+        const fitsAbove = spaceAbove >= needed;
+        const fitsBelow = spaceBelow >= needed;
         let showBelow: boolean;
         if (reservation === 'above') {
-          if (spaceBelow >= needed) {
-            showBelow = true;
-          } else if (spaceAbove >= needed) {
-            showBelow = false;
-          } else {
-            showBelow = spaceBelow >= spaceAbove;
-          }
+          showBelow = fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove);
         } else if (reservation === 'below') {
-          if (spaceAbove >= needed) {
-            showBelow = false;
-          } else if (spaceBelow >= needed) {
-            showBelow = true;
-          } else {
-            showBelow = spaceBelow >= spaceAbove;
-          }
+          showBelow = !fitsAbove && (fitsBelow || spaceBelow >= spaceAbove);
         } else {
-          showBelow = spaceAbove < needed && spaceBelow >= spaceAbove;
+          showBelow = !fitsAbove && spaceBelow >= spaceAbove;
         }
         const rawTopPos = showBelow
           ? effectiveBottom + MARGIN
