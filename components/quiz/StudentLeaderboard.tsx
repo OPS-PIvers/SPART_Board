@@ -32,7 +32,9 @@ export const StudentLeaderboard: React.FC<StudentLeaderboardProps> = ({
   const isMyPinInTopFive = topFive.some((entry) => entry.pin === myPin);
   const rows = isMyPinInTopFive
     ? topFive
-    : [...entries.slice(0, 4), ...(myEntry ? [myEntry] : [])];
+    : myEntry
+      ? [...entries.slice(0, 4), myEntry]
+      : topFive;
 
   return (
     <div className="w-full max-w-sm p-4 bg-slate-800/70 border border-slate-700 rounded-2xl text-left">

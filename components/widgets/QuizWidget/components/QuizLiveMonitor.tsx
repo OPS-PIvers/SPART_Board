@@ -34,7 +34,7 @@ import {
   Palette,
   Medal,
 } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import {
   QuizSession,
   QuizResponse,
@@ -123,12 +123,40 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     'joined' | 'active' | 'finished' | null
   >(null);
   const isReviewing = session.questionPhase === 'reviewing';
+  const lastLeaderboardFingerprintRef = useRef<string | null>(null);
+  const hasClearedLeaderboardRef = useRef(false);
+
+  useEffect(() => {
+    lastLeaderboardFingerprintRef.current = null;
+    hasClearedLeaderboardRef.current = false;
+  }, [session.id]);
 
   // Broadcast student-safe live leaderboard snapshot for gamified sessions.
   useEffect(() => {
     const sessionRef = doc(db, 'quiz_sessions', session.id);
-    if (session.status !== 'active' || !isGamificationActive(scoringConfig))
+    const shouldBroadcast =
+      session.status === 'active' && isGamificationActive(scoringConfig);
+
+    if (!shouldBroadcast) {
+      // Preserve final leaderboard for ended sessions so students can view
+      // results, but clear stale data in other non-broadcast states.
+      if (session.status === 'ended' || hasClearedLeaderboardRef.current)
+        return;
+
+      hasClearedLeaderboardRef.current = true;
+      lastLeaderboardFingerprintRef.current = null;
+      void updateDoc(sessionRef, { liveLeaderboard: deleteField() }).catch(
+        (err) => {
+          console.error(
+            '[QuizLiveMonitor] Failed clearing live leaderboard:',
+            err
+          );
+        }
+      );
       return;
+    }
+
+    hasClearedLeaderboardRef.current = false;
 
     const handle = window.setTimeout(() => {
       const entries = buildLiveLeaderboard(
@@ -137,6 +165,11 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
         scoringConfig,
         pinToName
       );
+
+      const fingerprint = JSON.stringify(entries);
+      if (fingerprint === lastLeaderboardFingerprintRef.current) return;
+      lastLeaderboardFingerprintRef.current = fingerprint;
+
       void updateDoc(sessionRef, { liveLeaderboard: entries }).catch((err) => {
         console.error(
           '[QuizLiveMonitor] Failed updating live leaderboard:',

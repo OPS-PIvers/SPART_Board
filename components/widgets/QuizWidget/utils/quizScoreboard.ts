@@ -90,7 +90,10 @@ export function getEarnedPoints(
  * meaning scores can exceed 100% and should be shown as raw points instead.
  */
 export function isGamificationActive(session?: QuizScoringSession): boolean {
-  return !!(session?.speedBonusEnabled ?? session?.streakBonusEnabled);
+  return (
+    (session?.speedBonusEnabled ?? false) ||
+    (session?.streakBonusEnabled ?? false)
+  );
 }
 
 /**
