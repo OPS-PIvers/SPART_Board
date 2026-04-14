@@ -26,14 +26,28 @@ export const TooltipInteraction: React.FC<Props> = ({
     const roomBelow = containerHeight - y;
     const roomAbove = y;
     const roomRight = containerWidth - x;
-    if (roomBelow >= tooltipHeight + offset + viewportPadding) {
+    const roomLeft = x;
+    const requiredVerticalSpace = tooltipHeight + offset + viewportPadding;
+    const requiredHorizontalSpace = tooltipWidth + offset + viewportPadding;
+
+    if (roomBelow >= requiredVerticalSpace) {
       position = 'below';
-    } else if (roomAbove >= tooltipHeight + offset + viewportPadding) {
+    } else if (roomAbove >= requiredVerticalSpace) {
       position = 'above';
-    } else if (roomRight >= tooltipWidth + offset + viewportPadding) {
+    } else if (roomRight >= requiredHorizontalSpace) {
       position = 'right';
-    } else {
+    } else if (roomLeft >= requiredHorizontalSpace) {
       position = 'left';
+    } else {
+      const availableSpaceByPosition = [
+        { position: 'below' as const, space: roomBelow },
+        { position: 'above' as const, space: roomAbove },
+        { position: 'right' as const, space: roomRight },
+        { position: 'left' as const, space: roomLeft },
+      ];
+      position = availableSpaceByPosition.reduce((best, current) =>
+        current.space > best.space ? current : best
+      ).position;
     }
   }
 

@@ -234,6 +234,7 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       const container = containerRef.current;
       const activeElement = document.activeElement;
       const hasKeyboardFocus = Boolean(
@@ -247,6 +248,9 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
         target &&
         (target.tagName === 'INPUT' ||
           target.tagName === 'TEXTAREA' ||
+          target.tagName === 'BUTTON' ||
+          target.tagName === 'SELECT' ||
+          target.tagName === 'A' ||
           target.isContentEditable)
       ) {
         return;
@@ -270,7 +274,11 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
         }
       }
 
-      if (mode === 'guided' && event.code === 'Space') {
+      if (
+        mode === 'guided' &&
+        event.code === 'Space' &&
+        target === containerRef.current
+      ) {
         event.preventDefault();
         setPlaying((prev) => !prev);
       }
@@ -681,24 +689,38 @@ export const GuidedLearningPlayer: React.FC<Props> = ({
                 onClick={goPrev}
                 disabled={currentIdx === 0}
                 aria-label="Previous step"
-                className="absolute top-1/2 left-3 -translate-y-1/2 z-30 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 disabled:opacity-40 transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
-                style={{ width: '56px', height: '56px' }}
+                className="absolute top-1/2 -translate-y-1/2 z-30 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 disabled:opacity-40 transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
+                style={{
+                  left: 'clamp(8px, 2cqmin, 12px)',
+                  width: 'clamp(36px, 7cqmin, 56px)',
+                  height: 'clamp(36px, 7cqmin, 56px)',
+                }}
               >
                 <ChevronLeft
                   className="mx-auto text-white"
-                  style={{ width: '60%', height: '60%' }}
+                  style={{
+                    width: 'clamp(18px, 4cqmin, 32px)',
+                    height: 'clamp(18px, 4cqmin, 32px)',
+                  }}
                 />
               </button>
               <button
                 onClick={goNext}
                 disabled={currentIdx === steps.length - 1}
                 aria-label="Next step"
-                className="absolute top-1/2 right-3 -translate-y-1/2 z-30 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 disabled:opacity-40 transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
-                style={{ width: '56px', height: '56px' }}
+                className="absolute top-1/2 -translate-y-1/2 z-30 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 disabled:opacity-40 transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
+                style={{
+                  right: 'clamp(8px, 2cqmin, 12px)',
+                  width: 'clamp(36px, 7cqmin, 56px)',
+                  height: 'clamp(36px, 7cqmin, 56px)',
+                }}
               >
                 <ChevronRight
                   className="mx-auto text-white"
-                  style={{ width: '60%', height: '60%' }}
+                  style={{
+                    width: 'clamp(18px, 4cqmin, 32px)',
+                    height: 'clamp(18px, 4cqmin, 32px)',
+                  }}
                 />
               </button>
             </>

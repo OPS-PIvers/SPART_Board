@@ -33,13 +33,16 @@ export const BannerInteraction: React.FC<{
           <button
             onClick={onClose}
             className="pointer-events-auto absolute text-white/80 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded"
-            style={{ top: '8px', right: '8px' }}
+            style={{
+              top: 'clamp(6px, 1.8cqmin, 12px)',
+              right: 'clamp(6px, 1.8cqmin, 12px)',
+            }}
             aria-label="Close overlay"
           >
             <X
               style={{
-                width: '20px',
-                height: '20px',
+                width: 'clamp(16px, 4.5cqmin, 24px)',
+                height: 'clamp(16px, 4.5cqmin, 24px)',
               }}
             />
           </button>
