@@ -45,7 +45,7 @@ export const StudentLeaderboard: React.FC<StudentLeaderboardProps> = ({
           const showDivider = !isMyPinInTopFive && index === 4;
 
           return (
-            <React.Fragment key={`${entry.pin}-${entry.rank}`}>
+            <React.Fragment key={entry.pin}>
               {showDivider && (
                 <div className="text-center text-slate-500 text-xs py-1">…</div>
               )}

@@ -14,6 +14,11 @@ import {
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import { SCOREBOARD_COLORS } from '@/config/scoreboard';
 
+type QuizScoringSession =
+  | Pick<QuizSession, 'speedBonusEnabled' | 'streakBonusEnabled'>
+  | null
+  | undefined;
+
 /**
  * Compute the streak multiplier for the i-th answer in a sequence.
  * Returns 1x for streak<2, 1.5x for streak==2, 2x for streak>=3.
@@ -31,7 +36,7 @@ function streakMultiplier(consecutiveCorrect: number): number {
 export function getEarnedPoints(
   r: QuizResponse,
   questions: QuizQuestion[],
-  session?: QuizSession | null
+  session?: QuizScoringSession
 ): number {
   const speedEnabled = session?.speedBonusEnabled ?? false;
   const streakEnabled = session?.streakBonusEnabled ?? false;
@@ -84,7 +89,7 @@ export function getEarnedPoints(
  * Returns true when the session has speed bonus or streak multiplier enabled,
  * meaning scores can exceed 100% and should be shown as raw points instead.
  */
-export function isGamificationActive(session?: QuizSession | null): boolean {
+export function isGamificationActive(session?: QuizScoringSession): boolean {
   return !!(session?.speedBonusEnabled ?? session?.streakBonusEnabled);
 }
 
@@ -94,7 +99,7 @@ export function isGamificationActive(session?: QuizSession | null): boolean {
 export function getResponseScore(
   r: QuizResponse,
   questions: QuizQuestion[],
-  session?: QuizSession | null
+  session?: QuizScoringSession
 ): number {
   const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
   if (maxPoints === 0) return 0;
@@ -109,7 +114,7 @@ export function getResponseScore(
 export function getDisplayScore(
   r: QuizResponse,
   questions: QuizQuestion[],
-  session?: QuizSession | null
+  session?: QuizScoringSession
 ): number {
   if (isGamificationActive(session)) {
     return getEarnedPoints(r, questions, session);
@@ -121,7 +126,7 @@ export function getDisplayScore(
  * Returns the suffix for displayed scores: "pts" when gamification is active,
  * "%" otherwise.
  */
-export function getScoreSuffix(session?: QuizSession | null): string {
+export function getScoreSuffix(session?: QuizScoringSession): string {
   return isGamificationActive(session) ? ' pts' : '%';
 }
 
@@ -189,7 +194,7 @@ export function buildScoreboardTeams(
 export function buildLiveLeaderboard(
   responses: QuizResponse[],
   questions: QuizQuestion[],
-  session: QuizSession,
+  session: QuizScoringSession,
   pinToName: Record<string, string>
 ): QuizLeaderboardEntry[] {
   return responses

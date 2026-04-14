@@ -34,7 +34,7 @@ import {
   Palette,
   Medal,
 } from 'lucide-react';
-import { deleteField, doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import {
   QuizSession,
   QuizResponse,
@@ -89,6 +89,13 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     () => buildPinToNameMap(rosters, config.periodName),
     [rosters, config.periodName]
   );
+  const scoringConfig = useMemo(
+    () => ({
+      speedBonusEnabled: session.speedBonusEnabled,
+      streakBonusEnabled: session.streakBonusEnabled,
+    }),
+    [session.speedBonusEnabled, session.streakBonusEnabled]
+  );
   const hasNames = Object.keys(pinToName).length > 0;
 
   const [copied, setCopied] = useState(false);
@@ -120,26 +127,14 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   // Broadcast student-safe live leaderboard snapshot for gamified sessions.
   useEffect(() => {
     const sessionRef = doc(db, 'quiz_sessions', session.id);
-
-    if (session.status === 'ended') {
-      void updateDoc(sessionRef, { liveLeaderboard: deleteField() }).catch(
-        (err) => {
-          console.error(
-            '[QuizLiveMonitor] Failed clearing live leaderboard:',
-            err
-          );
-        }
-      );
+    if (session.status !== 'active' || !isGamificationActive(scoringConfig))
       return;
-    }
-
-    if (!isGamificationActive(session)) return;
 
     const handle = window.setTimeout(() => {
       const entries = buildLiveLeaderboard(
         responses,
         quizData.questions,
-        session,
+        scoringConfig,
         pinToName
       );
       void updateDoc(sessionRef, { liveLeaderboard: entries }).catch((err) => {
@@ -148,10 +143,17 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
           err
         );
       });
-    }, 500);
+    }, 300);
 
     return () => window.clearTimeout(handle);
-  }, [responses, session, quizData.questions, pinToName]);
+  }, [
+    responses,
+    quizData.questions,
+    pinToName,
+    session.id,
+    session.status,
+    scoringConfig,
+  ]);
 
   // Close live scoreboard setup popup on click-outside or Escape
   const closeLiveScoreboardSetup = useCallback(() => {
