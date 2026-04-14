@@ -1,7 +1,23 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useDashboard } from '@/context/useDashboard';
-import { WidgetData, DrawableObject, DrawingConfig, TextConfig } from '@/types';
-import { Pencil, Eraser, Trash2, Undo2, Type } from 'lucide-react';
+import {
+  WidgetData,
+  DrawableObject,
+  DrawingConfig,
+  TextConfig,
+  ShapeTool,
+} from '@/types';
+import {
+  Pencil,
+  Eraser,
+  Trash2,
+  Undo2,
+  Type,
+  Minus,
+  ArrowRight,
+  Square,
+  Circle,
+} from 'lucide-react';
 import { extractTextWithGemini } from '@/utils/ai';
 import { useAuth } from '@/context/useAuth';
 import { Button } from '@/components/common/Button';
@@ -9,6 +25,19 @@ import { STANDARD_COLORS } from '@/config/colors';
 import { DRAWING_DEFAULTS } from './constants';
 import { useDrawingCanvas } from './useDrawingCanvas';
 import { migrateDrawingConfig, nextZ } from '@/utils/migrateDrawingConfig';
+
+const TOOL_BUTTONS: {
+  tool: ShapeTool;
+  icon: React.ReactNode;
+  label: string;
+}[] = [
+  { tool: 'pen', icon: <Pencil className="w-4 h-4" />, label: 'Pen' },
+  { tool: 'eraser', icon: <Eraser className="w-4 h-4" />, label: 'Eraser' },
+  { tool: 'line', icon: <Minus className="w-4 h-4" />, label: 'Line' },
+  { tool: 'arrow', icon: <ArrowRight className="w-4 h-4" />, label: 'Arrow' },
+  { tool: 'rect', icon: <Square className="w-4 h-4" />, label: 'Rectangle' },
+  { tool: 'ellipse', icon: <Circle className="w-4 h-4" />, label: 'Ellipse' },
+];
 
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
@@ -30,6 +59,8 @@ export const DrawingWidget: React.FC<{
     width = DRAWING_DEFAULTS.WIDTH,
     objects,
     customColors = DRAWING_DEFAULTS.CUSTOM_COLORS,
+    activeTool = DRAWING_DEFAULTS.ACTIVE_TOOL,
+    shapeFill = false,
   } = config;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,7 +70,6 @@ export const DrawingWidget: React.FC<{
   // or the parent container in student view.
   const canvasSize = useMemo(() => {
     if (isStudentView) {
-      // Student view sizes canvas to its container; fall back to widget dims.
       return { width: widget.w, height: widget.h };
     }
     return { width: widget.w, height: Math.max(widget.h - 40, 0) };
@@ -64,6 +94,8 @@ export const DrawingWidget: React.FC<{
     disabled: isStudentView,
     canvasSize,
     nextZ: nextZ(objects),
+    activeTool,
+    shapeFill,
   });
 
   const clear = () => {
@@ -139,37 +171,66 @@ export const DrawingWidget: React.FC<{
     }
   };
 
+  const setTool = (tool: ShapeTool) => {
+    updateWidget(widget.id, {
+      config: { ...config, activeTool: tool } as DrawingConfig,
+    });
+  };
+
+  const setColor = (c: string) => {
+    updateWidget(widget.id, {
+      config: { ...config, color: c } as DrawingConfig,
+    });
+  };
+
   const PaletteUI = (
     <div className="flex flex-wrap items-center gap-2 p-2">
+      {/* Cluster 1: Tool selector */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-        {customColors.map((c) => (
+        {TOOL_BUTTONS.map(({ tool, icon, label }) => (
           <button
-            key={c}
-            onClick={() =>
-              updateWidget(widget.id, {
-                config: { ...config, color: c } as DrawingConfig,
-              })
-            }
-            className={`w-6 h-6 rounded-md transition-all ${color === c ? 'scale-110 shadow-sm ring-2 ring-indigo-500' : 'hover:scale-105'}`}
-            style={{ backgroundColor: c }}
-            aria-label={`Color ${c}`}
-          />
+            key={tool}
+            onClick={() => setTool(tool)}
+            title={label}
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-all text-slate-600 hover:bg-white hover:shadow-sm ${
+              activeTool === tool
+                ? 'ring-2 ring-indigo-500 bg-white shadow-sm'
+                : ''
+            }`}
+            aria-label={label}
+            aria-pressed={activeTool === tool}
+          >
+            {icon}
+          </button>
         ))}
-        <button
-          onClick={() =>
-            updateWidget(widget.id, {
-              config: { ...config, color: 'eraser' } as DrawingConfig,
-            })
-          }
-          className={`w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center transition-all ${color === 'eraser' ? 'ring-2 ring-indigo-500' : ''}`}
-          aria-label="Eraser"
-        >
-          <Eraser className="w-3 h-3 text-slate-400" />
-        </button>
       </div>
 
       <div className="h-6 w-px bg-slate-200 mx-1" />
 
+      {/* Cluster 2: Color swatches (dimmed when eraser active) */}
+      <div
+        className={`flex gap-1 bg-slate-100 p-1 rounded-lg transition-opacity ${
+          activeTool === 'eraser' ? 'opacity-40 pointer-events-none' : ''
+        }`}
+      >
+        {customColors.map((c) => (
+          <button
+            key={c}
+            onClick={() => setColor(c)}
+            className={`w-6 h-6 rounded-md transition-all ${
+              color === c && activeTool !== 'eraser'
+                ? 'scale-110 shadow-sm ring-2 ring-indigo-500'
+                : 'hover:scale-105'
+            }`}
+            style={{ backgroundColor: c }}
+            aria-label={`Color ${c}`}
+          />
+        ))}
+      </div>
+
+      <div className="h-6 w-px bg-slate-200 mx-1" />
+
+      {/* Cluster 3: Actions */}
       <Button
         onClick={undo}
         title="Undo"
