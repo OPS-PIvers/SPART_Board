@@ -102,7 +102,14 @@
       "hide": "Ausblenden",
       "pasteFullNames": "Vollständige oder Gruppennamen hier einfügen...",
       "pasteFirstNames": "Vornamen einfügen...",
-      "pasteLastNames": "Nachnamen einfügen..."
+      "pasteLastNames": "Nachnamen einfügen...",
+      "quizPinPlaceholder": "01\n02\n03\n...",
+      "manageClasses": "Klassen verwalten",
+      "switchTo": "Wechseln zu",
+      "noClassSelected": "Keine Klasse ausgewählt",
+      "pickClass": "Wählen Sie unten eine Klasse",
+      "clearActive": "Aktive Klasse entfernen",
+      "noActive": "Keine aktive Klasse"
     },
     "widgets": {
       "gradeFilter": "Klassenstufen-Filter",

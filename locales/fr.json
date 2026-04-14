@@ -102,7 +102,14 @@
       "hide": "Masquer",
       "pasteFullNames": "Collez les noms complets ou les noms de groupe ici...",
       "pasteFirstNames": "Collez les prénoms...",
-      "pasteLastNames": "Collez les noms..."
+      "pasteLastNames": "Collez les noms...",
+      "quizPinPlaceholder": "01\n02\n03\n...",
+      "manageClasses": "Gérer les classes",
+      "switchTo": "Passer à",
+      "noClassSelected": "Aucune classe sélectionnée",
+      "pickClass": "Choisissez une classe ci-dessous",
+      "clearActive": "Effacer la classe active",
+      "noActive": "Aucune classe active"
     },
     "widgets": {
       "gradeFilter": "Filtre par niveau",

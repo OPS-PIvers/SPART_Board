@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, Users, ChevronRight, Settings } from 'lucide-react';
 import { WidgetData } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
@@ -22,6 +23,7 @@ interface Props {
  * Sidebar listens for.
  */
 const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
+  const { t } = useTranslation();
   const { rosters, activeRosterId, setActiveRoster } = useDashboard();
 
   const activeRoster = rosters.find((r) => r.id === activeRosterId) ?? null;
@@ -37,8 +39,13 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
     return (
       <ScaledEmptyState
         icon={Users}
-        title="No Classes"
-        subtitle="Create or import a class to get started."
+        title={t('sidebar.classes.emptyTitle', {
+          defaultValue: 'No classes yet',
+        })}
+        subtitle={t('sidebar.classes.emptySubtitle', {
+          defaultValue:
+            'Create a class or import from ClassLink to get started.',
+        })}
         action={
           <button
             onClick={openManageSidebar}
@@ -49,7 +56,9 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
               marginTop: 'min(8px, 2cqmin)',
             }}
           >
-            Manage Classes
+            {t('sidebar.classes.manageClasses', {
+              defaultValue: 'Manage Classes',
+            })}
           </button>
         }
       />
@@ -70,7 +79,9 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
               className="font-black text-slate-400 uppercase tracking-widest"
               style={{ fontSize: 'min(11px, 3cqmin)' }}
             >
-              Active Class
+              {t('sidebar.classes.activeClass', {
+                defaultValue: 'Active Class',
+              })}
             </span>
             <div
               className="bg-white border-2 border-brand-blue-primary rounded-2xl flex items-center shadow-sm"
@@ -81,10 +92,25 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
             >
               <button
                 onClick={() => setActiveRoster(null)}
-                className="shrink-0 text-amber-500 hover:text-amber-600 transition-colors"
-                title={activeRoster ? 'Clear active class' : 'No active class'}
+                disabled={!activeRoster}
+                className="shrink-0 text-amber-500 hover:text-amber-600 transition-colors disabled:text-slate-300 disabled:hover:text-slate-300 disabled:cursor-default"
+                title={
+                  activeRoster
+                    ? t('sidebar.classes.clearActive', {
+                        defaultValue: 'Clear active class',
+                      })
+                    : t('sidebar.classes.noActive', {
+                        defaultValue: 'No active class',
+                      })
+                }
                 aria-label={
-                  activeRoster ? 'Clear active class' : 'No active class'
+                  activeRoster
+                    ? t('sidebar.classes.clearActive', {
+                        defaultValue: 'Clear active class',
+                      })
+                    : t('sidebar.classes.noActive', {
+                        defaultValue: 'No active class',
+                      })
                 }
               >
                 <Star
@@ -101,19 +127,25 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                   className="text-slate-800 font-black truncate"
                   style={{ fontSize: 'min(22px, 7cqmin)' }}
                 >
-                  {activeRoster ? activeRoster.name : 'No Class Selected'}
+                  {activeRoster
+                    ? activeRoster.name
+                    : t('sidebar.classes.noClassSelected', {
+                        defaultValue: 'No Class Selected',
+                      })}
                 </div>
                 <div
                   className="text-slate-400 font-bold uppercase tracking-widest"
                   style={{ fontSize: 'min(12px, 3cqmin)' }}
                 >
                   {activeRoster
-                    ? `${activeRoster.students.length} ${
-                        activeRoster.students.length === 1
-                          ? 'Student'
-                          : 'Students'
-                      }`
-                    : 'Pick a class below'}
+                    ? t('sidebar.classes.studentCount', {
+                        count: activeRoster.students.length,
+                        defaultValue: '{{count}} Student',
+                        defaultValue_other: '{{count}} Students',
+                      })
+                    : t('sidebar.classes.pickClass', {
+                        defaultValue: 'Pick a class below',
+                      })}
                 </div>
               </div>
             </div>
@@ -129,7 +161,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 className="font-black text-slate-400 uppercase tracking-widest shrink-0"
                 style={{ fontSize: 'min(11px, 3cqmin)' }}
               >
-                Switch To
+                {t('sidebar.classes.switchTo', { defaultValue: 'Switch To' })}
               </span>
               <div
                 className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col"
@@ -186,7 +218,9 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 height: 'min(14px, 3.5cqmin)',
               }}
             />
-            Manage Classes
+            {t('sidebar.classes.manageClasses', {
+              defaultValue: 'Manage Classes',
+            })}
           </button>
         </div>
       }

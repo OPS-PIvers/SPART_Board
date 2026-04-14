@@ -113,7 +113,14 @@
       "hide": "Hide",
       "pasteFullNames": "Paste full names or group names here...",
       "pasteFirstNames": "Paste first names...",
-      "pasteLastNames": "Paste last names..."
+      "pasteLastNames": "Paste last names...",
+      "quizPinPlaceholder": "01\n02\n03\n...",
+      "manageClasses": "Manage Classes",
+      "switchTo": "Switch To",
+      "noClassSelected": "No Class Selected",
+      "pickClass": "Pick a class below",
+      "clearActive": "Clear active class",
+      "noActive": "No active class"
     },
     "widgets": {
       "gradeFilter": "Grade Filter",

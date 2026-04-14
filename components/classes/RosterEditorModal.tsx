@@ -195,7 +195,9 @@ export const RosterEditorModal: React.FC<RosterEditorModalProps> = ({
                 className="flex-1 border border-slate-200 focus:border-violet-400 p-3 rounded-xl resize-none text-xs font-mono focus:ring-2 focus:ring-violet-100 outline-none transition-all custom-scrollbar bg-slate-50/30 min-h-0"
                 value={pins}
                 onChange={(e) => setPins(e.target.value)}
-                placeholder={'01\n02\n03\n...'}
+                placeholder={t('sidebar.classes.quizPinPlaceholder', {
+                  defaultValue: '01\n02\n03\n...',
+                })}
               />
             </div>
           )}
