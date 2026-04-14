@@ -50,6 +50,7 @@
       "configuration": "Configuration",
       "boards": "Boards",
       "backgrounds": "Backgrounds",
+      "classes": "My Classes",
       "widgets": "Widgets",
       "globalStyle": "Global Style",
       "generalSettings": "General Settings"
@@ -71,6 +72,23 @@
       "presets": "Presets",
       "colors": "Colors",
       "gradients": "Gradients"
+    },
+    "classes": {
+      "title": "My Classes",
+      "description": "Manage your class rosters here. The active class is used by seating charts, random picker, polls, and more.",
+      "newClass": "New Class",
+      "importClassLink": "ClassLink",
+      "myClasses": "Your Classes",
+      "emptyTitle": "No classes yet",
+      "emptySubtitle": "Create a class or import from ClassLink to get started.",
+      "createNewClass": "Create New Class",
+      "activeClass": "Active Class",
+      "setActive": "Set as Active",
+      "edit": "Edit Class",
+      "syncClassLink": "Sync with ClassLink",
+      "delete": "Delete Class",
+      "confirmDelete": "Delete \"{{name}}\"? This cannot be undone.",
+      "confirmDeleteTitle": "Delete Class"
     },
     "widgets": {
       "gradeFilter": "Grade Filter",

@@ -1,14 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { Student, ClassRoster } from '@/types';
 import { Save, AlertTriangle } from 'lucide-react';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
-import {
-  splitNames,
-  mergeNames,
-  generateStudentsList,
-  findDuplicatePins,
-} from './rosterUtils';
+import { useRosterEditorState } from '@/components/classes/useRosterEditorState';
 
 interface EditorProps {
   roster: ClassRoster | null;
@@ -16,60 +11,34 @@ interface EditorProps {
   onBack: () => void;
 }
 
+/**
+ * Widget-chromed roster editor. Used inside the Classes widget.
+ *
+ * The account-level version lives at `components/classes/RosterEditorModal.tsx`.
+ * Both consume `useRosterEditorState` so their behavior can't drift.
+ */
 export const RosterEditor: React.FC<EditorProps> = ({
   roster,
   onSave,
   onBack,
 }) => {
-  const [name, setName] = useState(roster?.name ?? '');
-  const [firsts, setFirsts] = useState(
-    roster?.students.map((s) => s.firstName).join('\n') ?? ''
-  );
-  const [lasts, setLasts] = useState(
-    roster?.students.map((s) => s.lastName).join('\n') ?? ''
-  );
-  const [pins, setPins] = useState(
-    roster?.students.map((s) => s.pin).join('\n') ?? ''
-  );
-  const [showPins, setShowPins] = useState(
-    roster?.students.some((s) => s.pin.trim() !== '') ?? false
-  );
-  const [showLastNames, setShowLastNames] = useState(
-    roster?.students.some((s) => s.lastName.trim() !== '') ?? false
-  );
-
-  const handleToggleToLastNames = () => {
-    if (!showLastNames) {
-      const { firsts: newFirsts, lasts: newLasts } = splitNames(firsts);
-      setFirsts(newFirsts.join('\n'));
-      setLasts(newLasts.join('\n'));
-      setShowLastNames(true);
-    }
-  };
-
-  const handleToggleToSingleField = () => {
-    if (showLastNames) {
-      const merged = mergeNames(firsts, lasts);
-      setFirsts(merged.join('\n'));
-      setLasts('');
-      setShowLastNames(false);
-    }
-  };
-
-  const previewStudents = useMemo(
-    () =>
-      generateStudentsList(
-        firsts,
-        lasts,
-        roster?.students,
-        showPins ? pins : undefined
-      ),
-    [firsts, lasts, pins, showPins, roster?.students]
-  );
-  const duplicatePins = useMemo(
-    () => findDuplicatePins(previewStudents),
-    [previewStudents]
-  );
+  const {
+    name,
+    setName,
+    firsts,
+    setFirsts,
+    lasts,
+    setLasts,
+    pins,
+    setPins,
+    showPins,
+    setShowPins,
+    showLastNames,
+    handleToggleToLastNames,
+    handleToggleToSingleField,
+    previewStudents,
+    duplicatePins,
+  } = useRosterEditorState(roster);
 
   const handleSave = () => {
     if (!name.trim()) return;

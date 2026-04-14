@@ -42,6 +42,7 @@
       "configuration": "Configuración",
       "boards": "Tableros",
       "backgrounds": "Fondos",
+      "classes": "Mis Clases",
       "widgets": "Widgets",
       "globalStyle": "Estilo Global",
       "generalSettings": "Ajustes Generales"
@@ -63,6 +64,23 @@
       "presets": "Presets",
       "colors": "Colores",
       "gradients": "Degradados"
+    },
+    "classes": {
+      "title": "Mis Clases",
+      "description": "Administra tus listas de clase aquí. La clase activa se usa en los planos de asientos, selección aleatoria, encuestas y más.",
+      "newClass": "Nueva Clase",
+      "importClassLink": "ClassLink",
+      "myClasses": "Tus Clases",
+      "emptyTitle": "Aún no hay clases",
+      "emptySubtitle": "Crea una clase o impórtala desde ClassLink para comenzar.",
+      "createNewClass": "Crear Nueva Clase",
+      "activeClass": "Clase Activa",
+      "setActive": "Marcar como Activa",
+      "edit": "Editar Clase",
+      "syncClassLink": "Sincronizar con ClassLink",
+      "delete": "Eliminar Clase",
+      "confirmDelete": "¿Eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+      "confirmDeleteTitle": "Eliminar Clase"
     },
     "widgets": {
       "gradeFilter": "Filtro por Grado",

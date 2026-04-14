@@ -87,6 +87,12 @@ export interface Student {
   lastName: string;
   /** Teacher-distributed join code used for live sessions and quizzes (zero-padded, e.g. "01") */
   pin: string;
+  /**
+   * Stable ClassLink link, stamped when the student is imported or merged from
+   * ClassLink. Enables re-sync without duplicating rows even if the student's
+   * name changes upstream. Undefined for manually created students.
+   */
+  classLinkSourcedId?: string;
 }
 
 /**

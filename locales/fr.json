@@ -42,6 +42,7 @@
       "configuration": "Configuration",
       "boards": "Tableaux",
       "backgrounds": "Arrière-plans",
+      "classes": "Mes Classes",
       "widgets": "Widgets",
       "globalStyle": "Style global",
       "generalSettings": "Paramètres généraux"
@@ -60,6 +61,23 @@
       "presets": "Préréglages",
       "colors": "Couleurs",
       "gradients": "Dégradés"
+    },
+    "classes": {
+      "title": "Mes Classes",
+      "description": "Gérez vos listes de classe ici. La classe active est utilisée pour les plans de classe, le sélecteur aléatoire, les sondages, etc.",
+      "newClass": "Nouvelle classe",
+      "importClassLink": "ClassLink",
+      "myClasses": "Vos classes",
+      "emptyTitle": "Aucune classe pour l'instant",
+      "emptySubtitle": "Créez une classe ou importez depuis ClassLink pour commencer.",
+      "createNewClass": "Créer une nouvelle classe",
+      "activeClass": "Classe active",
+      "setActive": "Définir comme active",
+      "edit": "Modifier la classe",
+      "syncClassLink": "Synchroniser avec ClassLink",
+      "delete": "Supprimer la classe",
+      "confirmDelete": "Supprimer « {{name}} » ? Cette action est irréversible.",
+      "confirmDeleteTitle": "Supprimer la classe"
     },
     "widgets": {
       "gradeFilter": "Filtre par niveau",

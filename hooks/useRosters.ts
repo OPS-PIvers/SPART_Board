@@ -208,12 +208,16 @@ export const useRosters = (user: User | null) => {
               typeof student.firstName === 'string' &&
               typeof student.lastName === 'string'
             ) {
-              return {
+              const base: Student = {
                 id: student.id,
                 firstName: student.firstName,
                 lastName: student.lastName,
                 pin: typeof student.pin === 'string' ? student.pin : '',
               };
+              if (typeof student.classLinkSourcedId === 'string') {
+                base.classLinkSourcedId = student.classLinkSourcedId;
+              }
+              return base;
             }
             return null;
           })
@@ -278,12 +282,16 @@ export const useRosters = (user: User | null) => {
               typeof s.firstName === 'string' &&
               typeof s.lastName === 'string'
             ) {
-              return {
+              const base: Student = {
                 id: s.id,
                 firstName: s.firstName,
                 lastName: s.lastName,
                 pin: typeof s.pin === 'string' ? s.pin : '',
               };
+              if (typeof s.classLinkSourcedId === 'string') {
+                base.classLinkSourcedId = s.classLinkSourcedId;
+              }
+              return base;
             }
             return null;
           })
