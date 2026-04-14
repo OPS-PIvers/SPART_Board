@@ -1510,6 +1510,13 @@ export interface QuizPublicQuestion {
   orderingItems?: string[];
 }
 
+export interface QuizLeaderboardEntry {
+  pin: string;
+  name?: string;
+  score: number;
+  rank: number;
+}
+
 /** Live quiz session document in Firestore (/quiz_sessions/{teacherUid}) */
 export interface QuizSession {
   id: string; // teacher's UID
@@ -1561,6 +1568,8 @@ export interface QuizSession {
   soundEffectsEnabled?: boolean;
   /** Current phase within a question: 'answering' (default) or 'reviewing' (between-question review) */
   questionPhase?: 'answering' | 'reviewing';
+  /** Top-N leaderboard snapshot broadcast by the teacher for student view. */
+  liveLeaderboard?: QuizLeaderboardEntry[];
 }
 
 export interface QuizResponseAnswer {

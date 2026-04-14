@@ -34,6 +34,7 @@ import {
   Palette,
   Medal,
 } from 'lucide-react';
+import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import {
   QuizSession,
   QuizResponse,
@@ -44,10 +45,13 @@ import {
 } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import {
+  buildLiveLeaderboard,
   buildPinToNameMap,
   getDisplayScore,
   getScoreSuffix,
+  isGamificationActive,
 } from '../utils/quizScoreboard';
+import { db } from '@/config/firebase';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   playPodiumFanfare,
@@ -112,6 +116,42 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     'joined' | 'active' | 'finished' | null
   >(null);
   const isReviewing = session.questionPhase === 'reviewing';
+
+  // Broadcast student-safe live leaderboard snapshot for gamified sessions.
+  useEffect(() => {
+    const sessionRef = doc(db, 'quiz_sessions', session.id);
+
+    if (session.status === 'ended') {
+      void updateDoc(sessionRef, { liveLeaderboard: deleteField() }).catch(
+        (err) => {
+          console.error(
+            '[QuizLiveMonitor] Failed clearing live leaderboard:',
+            err
+          );
+        }
+      );
+      return;
+    }
+
+    if (!isGamificationActive(session)) return;
+
+    const handle = window.setTimeout(() => {
+      const entries = buildLiveLeaderboard(
+        responses,
+        quizData.questions,
+        session,
+        pinToName
+      );
+      void updateDoc(sessionRef, { liveLeaderboard: entries }).catch((err) => {
+        console.error(
+          '[QuizLiveMonitor] Failed updating live leaderboard:',
+          err
+        );
+      });
+    }, 500);
+
+    return () => window.clearTimeout(handle);
+  }, [responses, session, quizData.questions, pinToName]);
 
   // Close live scoreboard setup popup on click-outside or Escape
   const closeLiveScoreboardSetup = useCallback(() => {

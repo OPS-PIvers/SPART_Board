@@ -9,6 +9,7 @@ import {
   ClassRoster,
   ScoreboardTeam,
   QuizSession,
+  QuizLeaderboardEntry,
 } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import { SCOREBOARD_COLORS } from '@/config/scoreboard';
@@ -179,5 +180,29 @@ export function buildScoreboardTeams(
         SCOREBOARD_COLORS[
           parseInt(response.pin, 10) % SCOREBOARD_COLORS.length
         ],
+    }));
+}
+
+/**
+ * Build ranked leaderboard entries for student-facing live leaderboard views.
+ */
+export function buildLiveLeaderboard(
+  responses: QuizResponse[],
+  questions: QuizQuestion[],
+  session: QuizSession,
+  pinToName: Record<string, string>
+): QuizLeaderboardEntry[] {
+  return responses
+    .filter((response) => response.status !== 'joined')
+    .map((response) => ({
+      pin: response.pin,
+      name: pinToName[response.pin],
+      score: getDisplayScore(response, questions, session),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
     }));
 }
