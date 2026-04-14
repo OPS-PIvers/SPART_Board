@@ -19,11 +19,19 @@ interface MockContext {
   moveTo: Mock;
   lineTo: Mock;
   stroke: Mock;
+  fill: Mock;
+  fillRect: Mock;
+  strokeRect: Mock;
+  ellipse: Mock;
+  closePath: Mock;
+  save: Mock;
+  restore: Mock;
   canvas: { width: number; height: number };
   lineCap: string;
   lineJoin: string;
   globalCompositeOperation: string;
   strokeStyle: string;
+  fillStyle: string;
   lineWidth: number;
 }
 
@@ -51,11 +59,19 @@ describe('DrawingWidget', () => {
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
+      fill: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      ellipse: vi.fn(),
+      closePath: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
       canvas: { width: 800, height: 600 },
       lineCap: 'round',
       lineJoin: 'round',
       globalCompositeOperation: 'source-over',
       strokeStyle: '#000000',
+      fillStyle: '#000000',
       lineWidth: 1,
     };
 
@@ -167,6 +183,22 @@ describe('DrawingWidget', () => {
     expect(mockContext.moveTo).toHaveBeenCalledWith(5, 5);
     expect(mockContext.lineTo).toHaveBeenCalledWith(15, 15);
     expect(mockContext.stroke).toHaveBeenCalled();
+  });
+
+  it('clicking a tool button persists activeTool to config', () => {
+    const { container } = render(<DrawingWidget widget={widget} />);
+    // The "Rectangle" button has aria-label="Rectangle"
+    const rectBtn = container.querySelector('[aria-label="Rectangle"]');
+    if (!rectBtn) throw new Error('Rectangle tool button not found');
+
+    fireEvent.click(rectBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalled();
+    const args =
+      mockUpdateWidget.mock.calls[mockUpdateWidget.mock.calls.length - 1];
+    expect(args[0]).toBe(widget.id);
+    const newConfig = (args[1] as Partial<WidgetData>).config as DrawingConfig;
+    expect(newConfig.activeTool).toBe('rect');
   });
 
   it('handles drawing interaction', () => {

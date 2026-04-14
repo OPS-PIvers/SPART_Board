@@ -9,6 +9,11 @@ import { createPortal } from 'react-dom';
 import { toPng } from 'html-to-image';
 import {
   Eraser,
+  Pencil,
+  Minus,
+  ArrowRight,
+  Square,
+  Circle,
   Trash2,
   Undo2,
   MousePointer2,
@@ -23,22 +28,39 @@ import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { useDrawingCanvas } from '@/components/widgets/DrawingWidget/useDrawingCanvas';
 import { Button } from '@/components/common/Button';
 import { extractTextWithGemini } from '@/utils/ai';
-import { DrawableObject, TextConfig } from '@/types';
+import { DrawableObject, ShapeTool, TextConfig } from '@/types';
 import { DRAWING_DEFAULTS } from '@/components/widgets/DrawingWidget/constants';
 import { STANDARD_COLORS } from '@/config/colors';
 import { Z_INDEX } from '@/config/zIndex';
 import { nextZ } from '@/utils/migrateDrawingConfig';
+
+const TOOL_BUTTONS: {
+  tool: ShapeTool;
+  icon: React.ReactNode;
+  label: string;
+}[] = [
+  { tool: 'pen', icon: <Pencil className="w-4 h-4" />, label: 'Pen' },
+  { tool: 'eraser', icon: <Eraser className="w-3.5 h-3.5" />, label: 'Eraser' },
+  { tool: 'line', icon: <Minus className="w-4 h-4" />, label: 'Line' },
+  { tool: 'arrow', icon: <ArrowRight className="w-4 h-4" />, label: 'Arrow' },
+  { tool: 'rect', icon: <Square className="w-4 h-4" />, label: 'Rectangle' },
+  { tool: 'ellipse', icon: <Circle className="w-4 h-4" />, label: 'Ellipse' },
+];
 
 const FALLBACK_ANNOTATION_STATE: {
   objects: DrawableObject[];
   color: string;
   width: number;
   customColors: string[];
+  activeTool: ShapeTool;
+  shapeFill: boolean;
 } = {
   objects: [],
   color: STANDARD_COLORS.slate,
   width: DRAWING_DEFAULTS.WIDTH,
   customColors: [...DRAWING_DEFAULTS.CUSTOM_COLORS],
+  activeTool: DRAWING_DEFAULTS.ACTIVE_TOOL,
+  shapeFill: false,
 };
 
 /**
@@ -133,6 +155,8 @@ export const AnnotationOverlay: React.FC = () => {
     scale: 1,
     canvasSize,
     nextZ: nextZ(annotationState.objects),
+    activeTool: annotationState.activeTool,
+    shapeFill: annotationState.shapeFill,
   });
 
   const capturePng = useCallback(async (): Promise<string | null> => {
@@ -245,7 +269,14 @@ export const AnnotationOverlay: React.FC = () => {
 
   if (!annotationActive || !portalTarget) return null;
 
-  const { color, width, customColors, objects } = annotationState;
+  const {
+    color,
+    width,
+    customColors,
+    objects,
+    activeTool,
+    shapeFill: _shapeFill,
+  } = annotationState;
 
   return createPortal(
     <div
@@ -274,13 +305,40 @@ export const AnnotationOverlay: React.FC = () => {
           </span>
         </div>
 
+        {/* Tool selector */}
         <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+          {TOOL_BUTTONS.map(({ tool, icon, label }) => (
+            <button
+              key={tool}
+              onClick={() => updateAnnotationState({ activeTool: tool })}
+              title={label}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-all text-slate-600 hover:bg-white hover:shadow-sm ${
+                activeTool === tool
+                  ? 'ring-2 ring-indigo-500 bg-white shadow-sm'
+                  : ''
+              }`}
+              aria-label={label}
+              aria-pressed={activeTool === tool}
+            >
+              {icon}
+            </button>
+          ))}
+        </div>
+
+        <div className="h-6 w-px bg-slate-200 mx-1" />
+
+        {/* Color swatches (dimmed when eraser active) */}
+        <div
+          className={`flex gap-1 bg-slate-100 p-1 rounded-lg transition-opacity ${
+            activeTool === 'eraser' ? 'opacity-40 pointer-events-none' : ''
+          }`}
+        >
           {customColors.map((c) => (
             <button
               key={c}
               onClick={() => updateAnnotationState({ color: c })}
               className={`w-7 h-7 rounded-md transition-all ${
-                color === c
+                color === c && activeTool !== 'eraser'
                   ? 'scale-110 shadow-sm ring-2 ring-indigo-500'
                   : 'hover:scale-105'
               }`}
@@ -288,15 +346,6 @@ export const AnnotationOverlay: React.FC = () => {
               aria-label={`Color ${c}`}
             />
           ))}
-          <button
-            onClick={() => updateAnnotationState({ color: 'eraser' })}
-            className={`w-7 h-7 rounded-md bg-white border border-slate-200 flex items-center justify-center transition-all ${
-              color === 'eraser' ? 'ring-2 ring-indigo-500' : ''
-            }`}
-            aria-label="Eraser"
-          >
-            <Eraser className="w-3.5 h-3.5 text-slate-500" />
-          </button>
         </div>
 
         {/* Width slider */}
