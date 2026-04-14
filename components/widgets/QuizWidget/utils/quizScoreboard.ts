@@ -9,9 +9,15 @@ import {
   ClassRoster,
   ScoreboardTeam,
   QuizSession,
+  QuizLeaderboardEntry,
 } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import { SCOREBOARD_COLORS } from '@/config/scoreboard';
+
+type QuizScoringSession =
+  | Pick<QuizSession, 'speedBonusEnabled' | 'streakBonusEnabled'>
+  | null
+  | undefined;
 
 /**
  * Compute the streak multiplier for the i-th answer in a sequence.
@@ -30,7 +36,7 @@ function streakMultiplier(consecutiveCorrect: number): number {
 export function getEarnedPoints(
   r: QuizResponse,
   questions: QuizQuestion[],
-  session?: QuizSession | null
+  session?: QuizScoringSession
 ): number {
   const speedEnabled = session?.speedBonusEnabled ?? false;
   const streakEnabled = session?.streakBonusEnabled ?? false;
@@ -83,8 +89,11 @@ export function getEarnedPoints(
  * Returns true when the session has speed bonus or streak multiplier enabled,
  * meaning scores can exceed 100% and should be shown as raw points instead.
  */
-export function isGamificationActive(session?: QuizSession | null): boolean {
-  return !!(session?.speedBonusEnabled ?? session?.streakBonusEnabled);
+export function isGamificationActive(session?: QuizScoringSession): boolean {
+  return (
+    (session?.speedBonusEnabled ?? false) ||
+    (session?.streakBonusEnabled ?? false)
+  );
 }
 
 /**
@@ -93,7 +102,7 @@ export function isGamificationActive(session?: QuizSession | null): boolean {
 export function getResponseScore(
   r: QuizResponse,
   questions: QuizQuestion[],
-  session?: QuizSession | null
+  session?: QuizScoringSession
 ): number {
   const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
   if (maxPoints === 0) return 0;
@@ -108,7 +117,7 @@ export function getResponseScore(
 export function getDisplayScore(
   r: QuizResponse,
   questions: QuizQuestion[],
-  session?: QuizSession | null
+  session?: QuizScoringSession
 ): number {
   if (isGamificationActive(session)) {
     return getEarnedPoints(r, questions, session);
@@ -120,7 +129,7 @@ export function getDisplayScore(
  * Returns the suffix for displayed scores: "pts" when gamification is active,
  * "%" otherwise.
  */
-export function getScoreSuffix(session?: QuizSession | null): string {
+export function getScoreSuffix(session?: QuizScoringSession): string {
   return isGamificationActive(session) ? ' pts' : '%';
 }
 
@@ -179,5 +188,29 @@ export function buildScoreboardTeams(
         SCOREBOARD_COLORS[
           parseInt(response.pin, 10) % SCOREBOARD_COLORS.length
         ],
+    }));
+}
+
+/**
+ * Build ranked leaderboard entries for student-facing live leaderboard views.
+ */
+export function buildLiveLeaderboard(
+  responses: QuizResponse[],
+  questions: QuizQuestion[],
+  session: QuizScoringSession,
+  pinToName: Record<string, string>
+): QuizLeaderboardEntry[] {
+  return responses
+    .filter((response) => response.status !== 'joined')
+    .map((response) => ({
+      pin: response.pin,
+      name: pinToName[response.pin],
+      score: getDisplayScore(response, questions, session),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
     }));
 }
