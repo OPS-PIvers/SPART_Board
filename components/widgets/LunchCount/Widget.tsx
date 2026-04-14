@@ -30,7 +30,6 @@ import { DroppableZone } from './components/DroppableZone';
 import { beginWidgetDrag, endWidgetDrag } from '@/utils/widgetDragFlag';
 
 import { WidgetLayout } from '../WidgetLayout';
-import { hexToRgba } from '@/utils/styles';
 
 /**
  * Format a grade value into the spreadsheet label used in column B.
@@ -366,8 +365,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       globalStyle.fontFamily === 'sans'
         ? 'font-sans'
         : `font-${globalStyle.fontFamily}`;
-    const mhsCardColor = config.cardColor ?? '#f8fafc';
-    const mhsCardOpacity = config.cardOpacity ?? 0.3;
 
     return (
       <WidgetLayout
@@ -375,12 +372,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         content={
           <div className="flex flex-col items-center justify-center h-full w-full relative group transition-colors duration-500 overflow-hidden">
             {/* Subtle background — respects cardColor/cardOpacity settings */}
-            <div
-              className="absolute inset-0 -z-10"
-              style={{
-                backgroundColor: hexToRgba(mhsCardColor, mhsCardOpacity),
-              }}
-            />
+            <div className="absolute inset-0 -z-10" style={{}} />
 
             {/* Subtle Refresh Button - only visible on hover */}
             <Button
@@ -445,9 +437,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  const cardColor = config.cardColor ?? '#f8fafc';
-  const cardOpacity = config.cardOpacity ?? 0.5;
-
   return (
     <DndContext
       sensors={sensors}
@@ -462,7 +451,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           <div
             className="flex justify-between items-center border-b border-slate-100"
             style={{
-              backgroundColor: hexToRgba(cardColor, cardOpacity),
               padding: 'min(10px, 2cqmin)',
               gap: 'min(12px, 2.5cqmin)',
             }}
@@ -796,7 +784,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 id="unassigned"
                 className={`${stats.remaining > 0 ? 'flex-1' : 'flex-none'} border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner`}
                 style={{
-                  backgroundColor: hexToRgba(cardColor, cardOpacity),
                   padding: 'min(12px, 2.5cqmin)',
                   minHeight: 'min(56px, 10cqmin)',
                 }}
