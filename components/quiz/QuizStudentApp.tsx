@@ -29,6 +29,11 @@ import { auth } from '@/config/firebase';
 import { useQuizSessionStudent, normalizeAnswer } from '@/hooks/useQuizSession';
 import { QuizSession, QuizPublicQuestion } from '@/types';
 import { useDialog } from '@/context/useDialog';
+import { StudentLeaderboard } from './StudentLeaderboard';
+import {
+  getScoreSuffix,
+  isGamificationActive,
+} from '@/components/widgets/QuizWidget/utils/quizScoreboard';
 import {
   playCorrectChime,
   playIncorrectBuzz,
@@ -201,6 +206,16 @@ const QuizJoinFlow: React.FC = () => {
   }
 
   // Active quiz
+  if (session.status === 'active' && myResponse?.status === 'completed') {
+    return (
+      <QuizSubmittedWaitScreen
+        session={session}
+        myResponse={myResponse}
+        pin={pin}
+      />
+    );
+  }
+
   if (session.status === 'active') {
     const publicQuestions = session.publicQuestions ?? [];
     const currentQ =
@@ -240,6 +255,7 @@ const QuizJoinFlow: React.FC = () => {
   // Session ended
   return (
     <ResultsScreen
+      session={session}
       answeredCount={(myResponse?.answers ?? []).length}
       totalQuestions={session.totalQuestions}
       pin={pin}
@@ -299,6 +315,7 @@ const ActiveQuiz: React.FC<{
 
   const isWarningShowingRef = useRef<boolean>(false);
   const lastReportTimeRef = useRef<number>(0);
+  const didInitialCheckRef = useRef(false);
 
   const handleAutoSubmit = useCallback(async () => {
     await showAlert(
@@ -355,8 +372,13 @@ const ActiveQuiz: React.FC<{
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleVisibilityChange);
 
-    // Initial check just in case they started the quiz in a background tab
-    void handleVisibilityChange();
+    if (!didInitialCheckRef.current) {
+      didInitialCheckRef.current = true;
+      // Only count on a strong background signal to avoid false positives.
+      if (document.visibilityState === 'hidden') {
+        void handleVisibilityChange();
+      }
+    }
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -366,7 +388,6 @@ const ActiveQuiz: React.FC<{
     tabWarningsEnabled,
     session.status,
     reportTabSwitch,
-    onComplete,
     handleAutoSubmit,
     myResponse?.status,
   ]);
@@ -1118,6 +1139,7 @@ const ReviewPhase: React.FC<{
   currentQuestion: QuizPublicQuestion;
   myResponse: ReturnType<typeof useQuizSessionStudent>['myResponse'];
 }> = ({ session, currentQuestion, myResponse }) => {
+  const gamificationEnabled = isGamificationActive(session);
   const revealed = session.revealedAnswers?.[currentQuestion.id];
   const myAnswer = myResponse?.answers.find(
     (a) => a.questionId === currentQuestion.id
@@ -1176,20 +1198,34 @@ const ReviewPhase: React.FC<{
         </div>
       )}
 
-      {/* Waiting indicator */}
-      <div className="flex items-center gap-2 text-slate-500 text-sm">
-        <Loader2 className="w-4 h-4 animate-spin" />
-        Waiting for teacher to continue...
-      </div>
+      {gamificationEnabled && session.liveLeaderboard ? (
+        <div className="w-full flex flex-col items-center gap-4">
+          <StudentLeaderboard
+            entries={session.liveLeaderboard}
+            myPin={myResponse?.pin ?? ''}
+            scoreSuffix={getScoreSuffix(session)}
+          />
+          <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Waiting for teacher to continue...
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-slate-500 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Waiting for teacher to continue...
+        </div>
+      )}
     </div>
   );
 };
 
 const ResultsScreen: React.FC<{
+  session: QuizSession;
   answeredCount: number;
   totalQuestions: number;
   pin: string;
-}> = ({ answeredCount, totalQuestions, pin }) => (
+}> = ({ session, answeredCount, totalQuestions, pin }) => (
   <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
     <Trophy className="w-16 h-16 text-amber-400 mb-6" />
     <h1 className="text-3xl font-black text-white mb-2">Quiz Complete!</h1>
@@ -1208,8 +1244,70 @@ const ResultsScreen: React.FC<{
     <p className="text-slate-500 text-sm max-w-xs">
       Your answers have been submitted. Ask your teacher to see your results.
     </p>
+
+    {isGamificationActive(session) && session.liveLeaderboard && (
+      <div className="mt-8 w-full flex justify-center">
+        <StudentLeaderboard
+          entries={session.liveLeaderboard}
+          myPin={pin}
+          scoreSuffix={getScoreSuffix(session)}
+        />
+      </div>
+    )}
   </div>
 );
+
+const QuizSubmittedWaitScreen: React.FC<{
+  session: QuizSession;
+  myResponse: NonNullable<
+    ReturnType<typeof useQuizSessionStudent>['myResponse']
+  >;
+  pin: string;
+}> = ({ session, myResponse, pin }) => {
+  const autoSubmitted = (myResponse.tabSwitchWarnings ?? 0) >= 3;
+  const scoreSuffix = getScoreSuffix(session);
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+      <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-6" />
+      <h1 className="text-3xl font-black text-white mb-2">Quiz Submitted!</h1>
+      <p className="text-slate-400 text-sm mb-6">
+        Great work, PIN{' '}
+        <span className="font-mono font-bold text-white">{pin}</span>.
+      </p>
+
+      <div className="mb-6 p-5 bg-slate-800 rounded-2xl">
+        <p className="text-4xl font-black text-white mb-2">
+          {myResponse.answers.length}
+        </p>
+        <p className="text-slate-400 text-sm">
+          of {session.totalQuestions} questions answered
+        </p>
+      </div>
+
+      {autoSubmitted && (
+        <div className="max-w-sm mb-6 p-3 bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-200 text-sm">
+          Auto-submitted because you left the quiz tab 3 times.
+        </div>
+      )}
+
+      {isGamificationActive(session) && session.liveLeaderboard && (
+        <div className="mb-6 w-full flex justify-center">
+          <StudentLeaderboard
+            entries={session.liveLeaderboard}
+            myPin={pin}
+            scoreSuffix={scoreSuffix}
+          />
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 text-slate-500 text-sm">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Waiting for teacher to end the quiz and show final results…
+      </div>
+    </div>
+  );
+};
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 

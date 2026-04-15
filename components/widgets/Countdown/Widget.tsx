@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { WidgetData, CountdownConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { WidgetLayout } from '../WidgetLayout';
-import { hexToRgba, getFontClass } from '@/utils/styles';
+import { getFontClass, hexToRgba } from '@/utils/styles';
 import { useDashboard } from '@/context/useDashboard';
 
 interface CountdownDay {

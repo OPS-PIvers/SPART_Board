@@ -907,7 +907,7 @@ export const generateWithAI = onCall(
   }
 );
 
-export const fetchWeatherProxy = onCall(
+export const fetchExternalProxy = onCall(
   {
     memory: '128MiB',
     timeoutSeconds: 30,
@@ -926,14 +926,15 @@ export const fetchWeatherProxy = onCall(
       if (
         parsedUrl.protocol !== 'https:' ||
         (parsedUrl.hostname !== 'api.openweathermap.org' &&
-          parsedUrl.hostname !== 'owc.enterprise.earthnetworks.com')
+          parsedUrl.hostname !== 'owc.enterprise.earthnetworks.com' &&
+          parsedUrl.hostname !== 'orono.api.nutrislice.com')
       ) {
         throw new Error('Invalid host or protocol');
       }
     } catch {
       throw new HttpsError(
         'invalid-argument',
-        'Invalid proxy URL. Only https://api.openweathermap.org and https://owc.enterprise.earthnetworks.com are allowed.'
+        'Invalid proxy URL. Only https://api.openweathermap.org, https://owc.enterprise.earthnetworks.com, and https://orono.api.nutrislice.com are allowed.'
       );
     }
 
@@ -941,9 +942,9 @@ export const fetchWeatherProxy = onCall(
       const response = await axios.get<unknown>(data.url);
       return response.data;
     } catch (error: unknown) {
-      console.error('Weather Proxy Error:', error);
+      console.error('External Proxy Error:', error);
       const msg =
-        error instanceof Error ? error.message : 'Weather fetch failed';
+        error instanceof Error ? error.message : 'External fetch failed';
       throw new HttpsError('internal', msg);
     }
   }

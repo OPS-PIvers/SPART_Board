@@ -163,8 +163,8 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     },
   },
   classes: {
-    w: 600,
-    h: 500,
+    w: 280,
+    h: 360,
     config: {},
   },
   instructionalRoutines: {

@@ -29,6 +29,7 @@ import {
   isGamificationActive,
   buildPinToNameMap,
   buildScoreboardTeams,
+  buildLiveLeaderboard,
 } from './quizScoreboard';
 import type {
   QuizResponse,
@@ -329,6 +330,14 @@ describe('quizScoreboard', () => {
       const session = makeSession({ streakBonusEnabled: true });
       expect(isGamificationActive(session)).toBe(true);
     });
+
+    it('returns true when speed is false and streak is true', () => {
+      const session = makeSession({
+        speedBonusEnabled: false,
+        streakBonusEnabled: true,
+      });
+      expect(isGamificationActive(session)).toBe(true);
+    });
   });
 
   describe('getDisplayScore', () => {
@@ -549,6 +558,56 @@ describe('quizScoreboard', () => {
       );
       // Each: 5 * 1.5 = 7.5 → total 15 (raw points, not 150%)
       expect(teams[0].score).toBe(15);
+    });
+  });
+
+  describe('buildLiveLeaderboard', () => {
+    it('excludes joined responses and ranks by descending score', () => {
+      const questions = [makeQuestion('q1', 'A')];
+      const responses = [
+        makeResponse('01', [{ questionId: 'q1', answer: 'A' }], 'completed'),
+        makeResponse(
+          '02',
+          [{ questionId: 'q1', answer: 'wrong' }],
+          'in-progress'
+        ),
+        makeResponse('03', [], 'joined'),
+      ];
+
+      const entries = buildLiveLeaderboard(responses, questions, null, {
+        '01': 'Alice',
+      });
+
+      expect(entries).toEqual([
+        { pin: '01', name: 'Alice', score: 100, rank: 1 },
+        { pin: '02', name: undefined, score: 0, rank: 2 },
+      ]);
+    });
+
+    it('keeps stable tie order and assigns sequential ranks', () => {
+      const questions = [makeQuestion('q1', 'A')];
+      const responses = [
+        makeResponse('10', [{ questionId: 'q1', answer: 'A' }]),
+        makeResponse('11', [{ questionId: 'q1', answer: 'A' }]),
+      ];
+
+      const entries = buildLiveLeaderboard(responses, questions, null, {});
+      expect(entries.map((entry) => entry.pin)).toEqual(['10', '11']);
+      expect(entries.map((entry) => entry.rank)).toEqual([1, 2]);
+    });
+
+    it('limits leaderboard to top 10 entries', () => {
+      const questions = [makeQuestion('q1', 'A')];
+      const responses = Array.from({ length: 12 }, (_, i) =>
+        makeResponse(String(i + 1).padStart(2, '0'), [
+          { questionId: 'q1', answer: 'A' },
+        ])
+      );
+
+      const entries = buildLiveLeaderboard(responses, questions, null, {});
+      expect(entries).toHaveLength(10);
+      expect(entries[0]?.rank).toBe(1);
+      expect(entries[9]?.rank).toBe(10);
     });
   });
 });

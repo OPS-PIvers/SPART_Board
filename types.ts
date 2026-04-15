@@ -87,6 +87,12 @@ export interface Student {
   lastName: string;
   /** Teacher-distributed join code used for live sessions and quizzes (zero-padded, e.g. "01") */
   pin: string;
+  /**
+   * Stable ClassLink link, stamped when the student is imported or merged from
+   * ClassLink. Enables re-sync without duplicating rows even if the student's
+   * name changes upstream. Undefined for manually created students.
+   */
+  classLinkSourcedId?: string;
 }
 
 /**
@@ -1510,6 +1516,13 @@ export interface QuizPublicQuestion {
   orderingItems?: string[];
 }
 
+export interface QuizLeaderboardEntry {
+  pin: string;
+  name?: string;
+  score: number;
+  rank: number;
+}
+
 /** Live quiz session document in Firestore (/quiz_sessions/{teacherUid}) */
 export interface QuizSession {
   id: string; // teacher's UID
@@ -1561,6 +1574,8 @@ export interface QuizSession {
   soundEffectsEnabled?: boolean;
   /** Current phase within a question: 'answering' (default) or 'reviewing' (between-question review) */
   questionPhase?: 'answering' | 'reviewing';
+  /** Top-N leaderboard snapshot broadcast by the teacher for student view. */
+  liveLeaderboard?: QuizLeaderboardEntry[];
 }
 
 export interface QuizResponseAnswer {
@@ -2227,6 +2242,10 @@ export interface GuidedLearningStep {
   hideStepNumber?: boolean;
   /** Overlay style for pan-zoom/spotlight interactions */
   showOverlay?: GuidedLearningOverlayType;
+  /** Tooltip anchor relative to hotspot (default 'auto') */
+  tooltipPosition?: 'above' | 'below' | 'left' | 'right' | 'auto';
+  /** Distance in px from hotspot to tooltip edge (default 12) */
+  tooltipOffset?: number;
   /** Content for text-popover and tooltip */
   text?: string;
   /** Firebase Storage URL for audio */
@@ -2239,6 +2258,8 @@ export interface GuidedLearningStep {
   panZoomScale?: number;
   /** Spotlight radius as % of container cqmin (default 25) */
   spotlightRadius?: number;
+  /** Banner color tone for banner overlay (default 'blue') */
+  bannerTone?: 'blue' | 'red' | 'neutral';
   question?: GuidedLearningQuestion;
   /** Seconds before auto-advance in guided mode */
   autoAdvanceDuration?: number;
@@ -2288,11 +2309,14 @@ export interface GuidedLearningPublicStep {
   interactionType: GuidedLearningInteractionType;
   hideStepNumber?: boolean;
   showOverlay?: GuidedLearningOverlayType;
+  tooltipPosition?: 'above' | 'below' | 'left' | 'right' | 'auto';
+  tooltipOffset?: number;
   text?: string;
   audioUrl?: string;
   videoUrl?: string;
   panZoomScale?: number;
   spotlightRadius?: number;
+  bannerTone?: 'blue' | 'red' | 'neutral';
   question?: {
     type: GuidedLearningQuestionType;
     text: string;
