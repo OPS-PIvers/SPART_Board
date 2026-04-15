@@ -430,7 +430,11 @@ export const Dock: React.FC = () => {
   }, [libraryRef]);
 
   const openClassEditor = () => {
-    addWidget('classes');
+    // Roster management lives in the "My Classes" sidebar page now; dispatch
+    // the existing open-sidebar CustomEvent with a section hint.
+    window.dispatchEvent(
+      new CustomEvent('open-sidebar', { detail: { section: 'classes' } })
+    );
     setShowRosterMenu(false);
   };
 

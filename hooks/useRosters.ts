@@ -27,6 +27,33 @@ function assignPins(students: Student[]): Student[] {
 }
 
 /**
+ * Parse a raw record (from Drive JSON or Firestore doc) into a Student.
+ * Returns null if required fields are missing or malformed. Centralized here so
+ * all load paths pick up new optional fields (e.g., classLinkSourcedId) at once.
+ */
+function parseRawStudent(raw: unknown): Student | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const s = raw as Record<string, unknown>;
+  if (
+    typeof s.id !== 'string' ||
+    typeof s.firstName !== 'string' ||
+    typeof s.lastName !== 'string'
+  ) {
+    return null;
+  }
+  const base: Student = {
+    id: s.id,
+    firstName: s.firstName,
+    lastName: s.lastName,
+    pin: typeof s.pin === 'string' ? s.pin : '',
+  };
+  if (typeof s.classLinkSourcedId === 'string') {
+    base.classLinkSourcedId = s.classLinkSourcedId;
+  }
+  return base;
+}
+
+/**
  * Drive folder path for per-roster student files.
  * Structure: SpartBoard/Data/Rosters/{rosterId}.json → Student[]
  */
@@ -200,23 +227,7 @@ export const useRosters = (user: User | null) => {
         const parsed = JSON.parse(text) as unknown;
         if (!Array.isArray(parsed)) return [];
         const students = (parsed as unknown[])
-          .map((s) => {
-            if (!s || typeof s !== 'object') return null;
-            const student = s as Record<string, unknown>;
-            if (
-              typeof student.id === 'string' &&
-              typeof student.firstName === 'string' &&
-              typeof student.lastName === 'string'
-            ) {
-              return {
-                id: student.id,
-                firstName: student.firstName,
-                lastName: student.lastName,
-                pin: typeof student.pin === 'string' ? student.pin : '',
-              };
-            }
-            return null;
-          })
+          .map(parseRawStudent)
           .filter((s): s is Student => s !== null);
         return assignPins(students);
       } catch (err) {
@@ -270,23 +281,9 @@ export const useRosters = (user: User | null) => {
         // Only migrate docs that still have a students[] array in Firestore
         if (!Array.isArray(raw.students) || raw.students.length === 0) continue;
 
-        const rawStudents = raw.students as Record<string, unknown>[];
+        const rawStudents = raw.students as unknown[];
         const students: Student[] = rawStudents
-          .map((s) => {
-            if (
-              typeof s.id === 'string' &&
-              typeof s.firstName === 'string' &&
-              typeof s.lastName === 'string'
-            ) {
-              return {
-                id: s.id,
-                firstName: s.firstName,
-                lastName: s.lastName,
-                pin: typeof s.pin === 'string' ? s.pin : '',
-              };
-            }
-            return null;
-          })
+          .map(parseRawStudent)
           .filter((s): s is Student => s !== null);
 
         const withPins = assignPins(students);
