@@ -509,15 +509,27 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         );
         if (snap.empty) throw new Error('No active quiz found with that code.');
 
-        const sessionDoc = snap.docs[0];
-        const sessionData = sessionDoc.data() as QuizSession;
-        // Reject joins on sessions that are no longer accepting new students.
-        // An assignment that has been deactivated ends its session ('ended').
-        // Paused sessions keep the URL live — students see a paused placeholder
-        // rather than being rejected — so they are NOT rejected here.
-        if (sessionData.status === 'ended') {
+        // A code can transiently appear on more than one doc — e.g. an old
+        // ended session plus a new live one with a recycled code. Filter
+        // client-side to the docs that are still accepting joins (waiting /
+        // active / paused) before picking one, otherwise docs[0] may be the
+        // stale ended session and students get rejected despite a live
+        // session existing.
+        const joinable = snap.docs.filter((d) => {
+          const s = (d.data() as QuizSession).status;
+          return s === 'waiting' || s === 'active' || s === 'paused';
+        });
+        if (joinable.length === 0) {
           throw new Error('This quiz session has already ended.');
         }
+        // Prefer the most recently created joinable doc.
+        joinable.sort((a, b) => {
+          const at = (a.data() as QuizSession).startedAt ?? 0;
+          const bt = (b.data() as QuizSession).startedAt ?? 0;
+          return bt - at;
+        });
+        const sessionDoc = joinable[0];
+        const sessionData = sessionDoc.data() as QuizSession;
 
         sessionIdRef.current = sessionDoc.id;
         studentUidRef.current = studentUid;

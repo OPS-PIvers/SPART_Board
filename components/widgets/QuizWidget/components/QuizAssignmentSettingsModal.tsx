@@ -103,14 +103,18 @@ export const QuizAssignmentSettingsModal: React.FC<
         showPodiumBetweenQuestions,
         soundEffectsEnabled,
       };
+      // Intentionally pass empty strings (not undefined) so that clearing a
+      // field actually writes '' to Firestore. Using `|| undefined` would
+      // cause updateDoc to skip the field and leave the previous value in
+      // place, making these settings unclearable after they've been set.
       const patch: Partial<QuizAssignmentSettings> = {
-        className: className || undefined,
+        className: className.trim(),
         sessionMode: modeLocked ? assignment.sessionMode : sessionMode,
         sessionOptions,
         plcMode,
-        teacherName: teacherName || undefined,
-        periodName: periodName || undefined,
-        plcSheetUrl: plcSheetUrl || undefined,
+        teacherName: teacherName.trim(),
+        periodName: periodName.trim(),
+        plcSheetUrl: plcSheetUrl.trim(),
       };
       await onSave(patch);
       onClose();

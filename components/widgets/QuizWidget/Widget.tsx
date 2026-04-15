@@ -697,17 +697,6 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const data = await loadQuiz(meta);
           if (data) setView('results');
         }}
-        onDelete={async (meta) => {
-          try {
-            await deleteQuiz(meta.id, meta.driveFileId);
-            addToast('Quiz deleted.', 'success');
-          } catch (err) {
-            addToast(
-              err instanceof Error ? err.message : 'Delete failed',
-              'error'
-            );
-          }
-        }}
         onShare={async (meta) => {
           let url: string;
           try {
@@ -724,6 +713,38 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             addToast('Share link copied to clipboard!', 'success');
           } catch {
             addToast(`Share link: ${url}`, 'info');
+          }
+        }}
+        onDelete={async (meta) => {
+          // Block deletion when active/paused assignments reference the quiz,
+          // since the monitor + results views need the answer key from the
+          // library record. Archived (inactive) assignments trigger only a
+          // warning — the teacher has already chosen to end those sessions.
+          const related = assignments.filter((a) => a.quizId === meta.id);
+          const live = related.filter((a) => a.status !== 'inactive');
+          if (live.length > 0) {
+            addToast(
+              `Cannot delete: ${live.length} active or paused assignment(s) still reference this quiz. Deactivate them first.`,
+              'error'
+            );
+            return;
+          }
+          if (related.length > 0) {
+            const ok = window.confirm(
+              `This quiz has ${related.length} archived assignment(s). ` +
+                `Deleting the quiz will prevent viewing their monitor and results. ` +
+                `Continue anyway?`
+            );
+            if (!ok) return;
+          }
+          try {
+            await deleteQuiz(meta.id, meta.driveFileId);
+            addToast('Quiz deleted.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Delete failed',
+              'error'
+            );
           }
         }}
         // ─── Archive tab ─────────────────────────────────────────────────────
@@ -807,7 +828,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             return;
           }
           try {
-            const data = await loadQuizData(meta.driveFileId);
+            const data = await loadQuiz(meta);
+            if (!data) return;
             const url = await shareAssignment(a.id, data);
             try {
               await navigator.clipboard.writeText(url);

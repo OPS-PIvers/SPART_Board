@@ -234,7 +234,8 @@ export const QuizAssignmentArchive: React.FC<QuizAssignmentArchiveProps> = ({
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => setConfirmDelete(null)}
-                      className="px-2 py-0.5 rounded bg-white text-brand-blue-dark font-semibold text-[11px] border border-brand-blue-primary/20"
+                      className="px-2 py-0.5 rounded bg-white text-brand-blue-dark font-semibold border border-brand-blue-primary/20"
+                      style={{ fontSize: 'min(11px, 3.5cqmin)' }}
                     >
                       Cancel
                     </button>
@@ -243,7 +244,8 @@ export const QuizAssignmentArchive: React.FC<QuizAssignmentArchiveProps> = ({
                         setConfirmDelete(null);
                         onDelete(a);
                       }}
-                      className="px-2 py-0.5 rounded bg-brand-red-primary text-white font-bold text-[11px]"
+                      className="px-2 py-0.5 rounded bg-brand-red-primary text-white font-bold"
+                      style={{ fontSize: 'min(11px, 3.5cqmin)' }}
                     >
                       Delete
                     </button>
@@ -275,7 +277,8 @@ export const QuizAssignmentArchive: React.FC<QuizAssignmentArchiveProps> = ({
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => setConfirmDeactivate(null)}
-                      className="px-2 py-0.5 rounded bg-white text-brand-blue-dark font-semibold text-[11px] border border-brand-blue-primary/20"
+                      className="px-2 py-0.5 rounded bg-white text-brand-blue-dark font-semibold border border-brand-blue-primary/20"
+                      style={{ fontSize: 'min(11px, 3.5cqmin)' }}
                     >
                       Cancel
                     </button>
@@ -284,7 +287,8 @@ export const QuizAssignmentArchive: React.FC<QuizAssignmentArchiveProps> = ({
                         setConfirmDeactivate(null);
                         onDeactivate(a);
                       }}
-                      className="px-2 py-0.5 rounded bg-amber-600 text-white font-bold text-[11px]"
+                      className="px-2 py-0.5 rounded bg-amber-600 text-white font-bold"
+                      style={{ fontSize: 'min(11px, 3.5cqmin)' }}
                     >
                       Make Inactive
                     </button>

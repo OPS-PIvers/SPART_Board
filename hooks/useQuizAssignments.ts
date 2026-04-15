@@ -260,11 +260,17 @@ export const useQuizAssignments = (
         doc(db, 'users', userId, QUIZ_ASSIGNMENTS_COLLECTION, assignmentId),
         { status: assignmentStatus, updatedAt: now }
       );
-      const sessionPatch: Partial<QuizSession> = { status: sessionStatus };
+      // When pausing or ending, null out autoProgressAt so any in-flight
+      // auto-advance timer (from useQuizSession) no longer fires and the
+      // session can't silently advance past the intended stopping point.
+      const sessionPatch: Record<string, unknown> = { status: sessionStatus };
+      if (sessionStatus === 'paused' || sessionStatus === 'ended') {
+        sessionPatch.autoProgressAt = null;
+      }
       if (sessionStatus === 'ended') sessionPatch.endedAt = now;
       batch.update(
         doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId),
-        sessionPatch as Record<string, unknown>
+        sessionPatch
       );
       await batch.commit();
     },
@@ -284,11 +290,26 @@ export const useQuizAssignments = (
     UseQuizAssignmentsResult['resumeAssignment']
   >(
     async (assignmentId) => {
-      // Resume into 'active'; teacher-mode sessions that were never started
-      // still function because students look up by code, not by status.
-      await setStatus(assignmentId, 'active', 'active');
+      if (!userId) throw new Error('Not authenticated');
+      // Resume to the correct session status depending on whether gameplay
+      // has begun. For teacher-mode sessions that were imported as paused
+      // (or paused before the teacher advanced to question 1), startedAt is
+      // still null and currentQuestionIndex is -1 — in that case the
+      // students should see the waiting room again, not the active-quiz UI
+      // with no question loaded.
+      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId);
+      const snap = await getDoc(sessionRef);
+      const session = snap.data() as QuizSession | undefined;
+      const neverStarted =
+        !!session &&
+        (session.startedAt == null || session.currentQuestionIndex < 0);
+      await setStatus(
+        assignmentId,
+        'active',
+        neverStarted ? 'waiting' : 'active'
+      );
     },
-    [setStatus]
+    [userId, setStatus]
   );
 
   const deactivateAssignment = useCallback<
