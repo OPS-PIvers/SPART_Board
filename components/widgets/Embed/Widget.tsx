@@ -170,6 +170,15 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     };
   }, [widgetEl, showToolbar, scheduleHide]);
 
+  // Reset hover/focus state whenever the widget minimizes or restores so the
+  // toolbar doesn't pop back up after restore just because isHot was left
+  // true from a pre-minimize hover.
+  useEffect(() => {
+    cancelPendingHide();
+    setIsHot(false);
+    setFocusCount(0);
+  }, [widget.minimized, cancelPendingHide]);
+
   const sanitizedUrl = ensureProtocol(url);
   const embedUrl = convertToEmbedUrl(sanitizedUrl);
 
@@ -359,11 +368,19 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 onClick={(e) => e.stopPropagation()}
                 onPointerEnter={showToolbar}
                 onPointerLeave={scheduleHide}
-                onFocus={() => {
+                onFocusCapture={() => {
                   cancelPendingHide();
-                  setFocusCount((c) => c + 1);
+                  setFocusCount(1);
                 }}
-                onBlur={() => setFocusCount((c) => (c > 0 ? c - 1 : 0))}
+                onBlurCapture={(e) => {
+                  const nextFocused = e.relatedTarget;
+                  if (
+                    !(nextFocused instanceof Node) ||
+                    !e.currentTarget.contains(nextFocused)
+                  ) {
+                    setFocusCount(0);
+                  }
+                }}
                 style={{
                   position: 'fixed',
                   left: rect.left,
@@ -386,6 +403,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     disabled={!canZoomOut}
                     className="p-2 text-slate-500 hover:text-blue-500 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Zoom out"
+                    aria-label="Zoom out"
                   >
                     <ZoomOut className="w-4 h-4" />
                   </button>
@@ -405,6 +423,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     disabled={!canZoomIn}
                     className="p-2 text-slate-500 hover:text-blue-500 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Zoom in"
+                    aria-label="Zoom in"
                   >
                     <ZoomIn className="w-4 h-4" />
                   </button>
@@ -413,6 +432,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                       onClick={handleZoomReset}
                       className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 transition-colors border-l border-slate-200/50"
                       title="Reset zoom to 100%"
+                      aria-label="Reset zoom to 100%"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
@@ -440,6 +460,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     rel="noopener noreferrer"
                     className="p-2 bg-white/80 backdrop-blur-sm hover:bg-white text-slate-500 hover:text-blue-500 shadow-sm border border-slate-200/50 rounded-lg transition-colors flex items-center justify-center"
                     title="Open in new tab"
+                    aria-label="Open in new tab"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ExternalLink className="w-4 h-4" />
