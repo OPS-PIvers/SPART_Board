@@ -105,7 +105,7 @@ Location: `components/widgets/VideoActivityWidget/`
 
 ### Implementation notes
 
-1. Follow `QuizEditorModal.tsx` as the reference. Data: `VideoActivityQuestion extends QuizQuestion` with `{ timestamp: number }` (`types.ts:1669-1672`); `VideoActivityData` adds `youtubeUrl: string` and optional `videoDuration?: number`.
+1. Follow `QuizEditorModal.tsx` as the reference. Data: `VideoActivityQuestion extends QuizQuestion` with `{ timestamp: number }` (`types.ts:1675-1678`); `VideoActivityData` adds `youtubeUrl: string` and optional `videoDuration?: number`.
 2. Save signature already matches — `saveActivity(activity, existingDriveFileId?)`. Pass `undefined` for new; pass `selectedMeta?.driveFileId` for edits (see current `Widget.tsx:226` / `Creator.tsx:67` for the call pattern).
 3. Dirty-check must include `title`, `youtubeUrl`, **and** the questions array (use a `questionsEqual` helper that compares `text`, `correctAnswer`, `incorrectAnswers`, `timeLimit`, **and** `timestamp`).
 4. **Decision during implementation**: extract `components/common/QuestionEditor.tsx` shared between Quiz and VA if the duplication is clean. If the `timestamp` field makes the shared props shape awkward, defer the extraction and accept the duplication. Opportunistic — don't force it.
