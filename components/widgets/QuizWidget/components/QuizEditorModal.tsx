@@ -90,7 +90,8 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
   onSave,
 }) => {
   // Snapshot the quiz when the modal opens so `isDirty` compares against the
-  // original. Reset via `key` prop on the parent when switching quizzes.
+  // original. When the `quiz` prop identity changes, local state is reset via
+  // the "adjusting state while rendering" block below — no `key` prop needed.
   const originalQuestions = useMemo(
     () => (quiz ? quiz.questions.map((q) => ({ ...q })) : []),
     [quiz]

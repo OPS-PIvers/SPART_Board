@@ -897,12 +897,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Bypass mode: sign in anonymously so `request.auth.uid` is a real Firebase
   // uid that satisfies Firestore security rules. Wrap the resulting user in a
   // proxy that still presents mock email/displayName for UI continuity.
+  // Reuse an existing anonymous session if one is already active — avoids
+  // churning the anonymous uid on hot reloads and StrictMode double-mounts.
   useEffect(() => {
     if (!isAuthBypass) return;
     let cancelled = false;
     void (async () => {
       try {
-        const { user: anonUser } = await signInAnonymously(auth);
+        const existing = auth.currentUser;
+        const anonUser = existing?.isAnonymous
+          ? existing
+          : (await signInAnonymously(auth)).user;
         if (cancelled) return;
         setUser(makeHybridBypassUser(anonUser));
       } catch (err) {

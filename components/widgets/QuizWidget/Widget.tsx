@@ -675,9 +675,10 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           setEditingMeta(null);
         }}
         onSave={async (updated) => {
+          const isNew = !editingMeta;
           await saveQuiz(updated, editingMeta?.driveFileId);
           setLoadedQuizData(updated);
-          addToast('Quiz updated!', 'success');
+          addToast(isNew ? 'Quiz created!' : 'Quiz saved!', 'success');
         }}
       />
     </>
