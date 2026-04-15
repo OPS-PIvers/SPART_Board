@@ -68,6 +68,10 @@ import { SmartPastePickerModal } from './dock/SmartPastePickerModal';
 import { UrlPickerModal } from './dock/UrlPickerModal';
 import { ImagePastePickerModal } from './dock/ImagePastePickerModal';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import {
+  getImageDimensionsFromFile,
+  computeWidgetSizeForImage,
+} from '@/utils/imageProcessing';
 import { DockIcon } from './dock/DockIcon';
 import { DockLabel } from './dock/DockLabel';
 import { ToolDockItem } from './dock/ToolDockItem';
@@ -753,9 +757,26 @@ export const Dock: React.FC = () => {
 
             addToast('Processing image...', 'info');
             const skipProcessing = type === 'full-image';
-            const url = await processAndUploadImage(file, { skipProcessing });
+
+            // For full images, also measure the source's natural dimensions
+            // so the widget frame starts at the image's aspect ratio. This
+            // prevents the resize handles from moving an invisible boundary
+            // around a smaller, aspect-mismatched image.
+            const [url, sourceDims] = await Promise.all([
+              processAndUploadImage(file, { skipProcessing }),
+              skipProcessing
+                ? getImageDimensionsFromFile(file).catch(() => null)
+                : Promise.resolve(null),
+            ]);
+
             if (url) {
-              addWidget('sticker', { config: { url, rotation: 0 } });
+              const sizeOverrides = sourceDims
+                ? computeWidgetSizeForImage(sourceDims)
+                : {};
+              addWidget('sticker', {
+                ...sizeOverrides,
+                config: { url, rotation: 0 },
+              });
               addToast('Image added!', 'success');
             } else {
               addToast('Failed to process image', 'error');

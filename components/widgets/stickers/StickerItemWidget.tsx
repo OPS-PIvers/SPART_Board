@@ -178,7 +178,7 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
           <img
             src={config.url}
             alt="Sticker"
-            className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-lg transition-transform group-hover/img:scale-105"
+            className="w-full h-full object-contain pointer-events-none drop-shadow-lg transition-transform group-hover/img:scale-105"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
