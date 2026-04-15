@@ -322,6 +322,7 @@ The project uses `@/` as an alias for the **root directory** (not `src/`):
 /users/{userId}/notebooks/{notebookId}      # Notes
 /users/{userId}/pdfs/{pdfId}                # PDFs
 /users/{userId}/userProfile/{profileId}     # User profile / building selection
+/users/{userId}/quiz_assignments/{id}       # Teacher's quiz assignment archive
 
 # Admin collections (admin read/write, authenticated read)
 /admins/{email}                             # Admin users (existence = admin)
@@ -334,6 +335,7 @@ The project uses `@/` as an alias for the **root directory** (not `src/`):
 
 # Shared/global collections
 /shared_boards/{shareId}                    # Shared dashboards
+/shared_assignments/{shareId}               # Shared quiz assignments (PLC sharing)
 /global_weather/{document}                  # Cached weather data
 /global_music_stations/{document}           # Shared music stations
 /global_pdfs/{pdfId}                        # Shared PDF library
@@ -344,7 +346,7 @@ The project uses `@/` as an alias for the **root directory** (not `src/`):
 
 # Live session collections
 /sessions/{userId}/students/{studentId}     # Live session students
-/quiz_sessions/{teacherUid}/responses/...   # Quiz responses
+/quiz_sessions/{sessionId}/responses/...    # Quiz responses (one session doc per assignment)
 /video_activity_sessions/{sessionId}/...    # Video activity responses
 /guided_learning_sessions/{sessionId}/...   # GL session responses
 /mini_app_sessions/{sessionId}              # Mini-app assignment sessions

@@ -116,6 +116,10 @@ export interface DashboardContextValue {
   clearPendingShare: () => void;
   pendingQuizShareId: string | null;
   clearPendingQuizShare: () => void;
+  pendingAssignmentShareId: string | null;
+  setPendingAssignmentShareId: (shareId: string | null) => void;
+  clearPendingAssignmentShare: () => void;
+  setPendingQuizShareId: (shareId: string | null) => void;
 
   // Roster system
   rosters: ClassRoster[];

@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/context/useAuth';
 import { useLiveSession } from '@/hooks/useLiveSession';
 import { useQuiz } from '@/hooks/useQuiz';
+import { useQuizAssignments } from '@/hooks/useQuizAssignments';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
@@ -144,6 +145,8 @@ export const DashboardView: React.FC = () => {
     setZoom,
     pendingQuizShareId,
     clearPendingQuizShare,
+    pendingAssignmentShareId,
+    clearPendingAssignmentShare,
     // Widget grouping
     groupWidgets,
     groupBuildMode,
@@ -154,13 +157,48 @@ export const DashboardView: React.FC = () => {
     annotationActive,
   } = useDashboard();
 
-  const { importSharedQuiz } = useQuiz(user?.uid);
+  const { importSharedQuiz, saveQuiz } = useQuiz(user?.uid);
+  const { importSharedAssignment } = useQuizAssignments(user?.uid);
 
-  // Handle pending quiz share import from URL
+  // Helper: open (or create) a Quiz widget and set its managerTab.
+  // Used by pending-share effects to surface the imported content to the user.
+  const openQuizWidgetToTab = React.useCallback(
+    (tab: 'library' | 'archive') => {
+      const quizWidget = activeDashboard?.widgets.find(
+        (w) => w.type === 'quiz'
+      );
+      if (quizWidget) {
+        if (quizWidget.minimized) {
+          updateWidget(quizWidget.id, { minimized: false });
+        }
+        updateWidget(quizWidget.id, {
+          config: {
+            ...quizWidget.config,
+            view: 'manager',
+            managerTab: tab,
+          },
+        });
+        bringToFront(quizWidget.id);
+      } else {
+        addWidget('quiz', {
+          config: { view: 'manager', managerTab: tab },
+        });
+      }
+    },
+    [activeDashboard, updateWidget, addWidget, bringToFront]
+  );
+
+  // Handle pending quiz share import from URL/paste.
+  // After a successful import, surface the Quiz widget to the Library tab so
+  // the user actually sees where the new quiz landed (fixes the "nothing
+  // happened" paste UX).
   useEffect(() => {
     if (!pendingQuizShareId || !user) return;
     void importSharedQuiz(pendingQuizShareId)
-      .then(() => addToast('Shared quiz imported to your library!', 'success'))
+      .then(() => {
+        addToast('Shared quiz imported to your library!', 'success');
+        openQuizWidgetToTab('library');
+      })
       .catch((err: unknown) => {
         const msg =
           err instanceof Error
@@ -182,6 +220,45 @@ export const DashboardView: React.FC = () => {
     importSharedQuiz,
     addToast,
     clearPendingQuizShare,
+    openQuizWidgetToTab,
+  ]);
+
+  // Handle pending shared assignment import from URL/paste.
+  // Imports copy the quiz into the user's library and create a paused
+  // assignment, then surface the Quiz widget to the Archive tab.
+  useEffect(() => {
+    if (!pendingAssignmentShareId || !user) return;
+    void importSharedAssignment(pendingAssignmentShareId, async (quiz) => {
+      const meta = await saveQuiz(quiz);
+      return { id: meta.id, driveFileId: meta.driveFileId };
+    })
+      .then(() => {
+        addToast('Shared assignment imported (paused).', 'success');
+        openQuizWidgetToTab('archive');
+      })
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : '';
+        addToast(
+          msg
+            ? `Failed to import shared assignment: ${msg}`
+            : 'Failed to import shared assignment.',
+          'error'
+        );
+      })
+      .finally(() => clearPendingAssignmentShare());
+  }, [
+    pendingAssignmentShareId,
+    user,
+    importSharedAssignment,
+    saveQuiz,
+    addToast,
+    clearPendingAssignmentShare,
+    openQuizWidgetToTab,
   ]);
 
   const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 });

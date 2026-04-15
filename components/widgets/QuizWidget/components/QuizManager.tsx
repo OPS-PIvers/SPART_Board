@@ -24,15 +24,18 @@ import {
   ArrowLeft,
   ChevronRight,
   Link2,
+  Archive as ArchiveIcon,
 } from 'lucide-react';
 import {
   QuizMetadata,
   QuizSessionMode,
   QuizConfig,
   ClassRoster,
+  QuizAssignment,
 } from '@/types';
 import { type QuizSessionOptions } from '@/hooks/useQuizSession';
 import { Toggle } from '@/components/common/Toggle';
+import { QuizAssignmentArchive } from './QuizAssignmentArchive';
 
 export interface PlcOptions {
   plcMode: boolean;
@@ -55,15 +58,26 @@ interface QuizManagerProps {
     plcOptions: PlcOptions,
     sessionOptions: QuizSessionOptions
   ) => void;
-  onResume: () => void;
-  onEndSession: () => Promise<void>;
   onResults: (quiz: QuizMetadata) => void;
   onDelete: (quiz: QuizMetadata) => void;
   onShare: (quiz: QuizMetadata) => void;
-  hasActiveSession: boolean;
-  activeQuizId: string | null;
   rosters: ClassRoster[];
   config: QuizConfig;
+
+  // ─── Archive tab ───────────────────────────────────────────────────────────
+  /** Which manager tab is currently active. Defaults to `'library'`. */
+  managerTab?: 'library' | 'archive';
+  onTabChange?: (tab: 'library' | 'archive') => void;
+  assignments?: QuizAssignment[];
+  assignmentsLoading?: boolean;
+  onArchiveCopyUrl?: (assignment: QuizAssignment) => void;
+  onArchiveMonitor?: (assignment: QuizAssignment) => void;
+  onArchiveResults?: (assignment: QuizAssignment) => void;
+  onArchiveEditSettings?: (assignment: QuizAssignment) => void;
+  onArchiveShare?: (assignment: QuizAssignment) => void;
+  onArchivePauseResume?: (assignment: QuizAssignment) => void;
+  onArchiveDeactivate?: (assignment: QuizAssignment) => void;
+  onArchiveDelete?: (assignment: QuizAssignment) => void;
 }
 
 export const QuizManager: React.FC<QuizManagerProps> = ({
@@ -75,16 +89,27 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onEdit,
   onPreview,
   onAssign,
-  onResume,
-  onEndSession,
   onResults,
   onDelete,
   onShare,
-  hasActiveSession,
-  activeQuizId,
   rosters,
   config,
+  managerTab = 'library',
+  onTabChange,
+  assignments = [],
+  assignmentsLoading = false,
+  onArchiveCopyUrl,
+  onArchiveMonitor,
+  onArchiveResults,
+  onArchiveEditSettings,
+  onArchiveShare,
+  onArchivePauseResume,
+  onArchiveDeactivate,
+  onArchiveDelete,
 }) => {
+  const noop = () => {
+    /* archive action not yet wired */
+  };
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [selectedForLive, setSelectedForLive] = useState<QuizMetadata | null>(
     null
@@ -466,100 +491,144 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
             className="bg-brand-blue-primary text-white flex items-center justify-center rounded-lg"
             style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
           >
-            <BookOpen
-              style={{
-                width: 'min(14px, 3.5cqmin)',
-                height: 'min(14px, 3.5cqmin)',
-              }}
-            />
+            {managerTab === 'archive' ? (
+              <ArchiveIcon
+                style={{
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
+                }}
+              />
+            ) : (
+              <BookOpen
+                style={{
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
+                }}
+              />
+            )}
           </div>
           <div className="flex flex-col">
             <span
               className="font-bold text-brand-blue-dark leading-none"
               style={{ fontSize: 'min(14px, 4.5cqmin)' }}
             >
-              Quiz Library
+              {managerTab === 'archive' ? 'Assignment Archive' : 'Quiz Library'}
             </span>
             <span
               className="text-brand-blue-primary/70 font-medium"
               style={{ fontSize: 'min(11px, 3cqmin)' }}
             >
-              {quizzes.length} saved {quizzes.length === 1 ? 'quiz' : 'quizzes'}
+              {managerTab === 'archive'
+                ? `${assignments.length} ${assignments.length === 1 ? 'assignment' : 'assignments'}`
+                : `${quizzes.length} saved ${quizzes.length === 1 ? 'quiz' : 'quizzes'}`}
             </span>
           </div>
         </div>
-        <div
-          className="flex items-center"
-          style={{ gap: 'min(6px, 1.5cqmin)' }}
-        >
-          <button
-            onClick={onImport}
-            className="flex items-center bg-white hover:bg-brand-blue-lighter/40 text-brand-blue-primary font-bold rounded-xl transition-all shadow-sm active:scale-95 border border-brand-blue-primary/20"
-            style={{
-              gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(12px, 3.5cqmin)',
-            }}
-            title="Import from CSV or Google Sheet"
+        {managerTab === 'library' && (
+          <div
+            className="flex items-center"
+            style={{ gap: 'min(6px, 1.5cqmin)' }}
           >
-            <FileUp
+            <button
+              onClick={onImport}
+              className="flex items-center bg-white hover:bg-brand-blue-lighter/40 text-brand-blue-primary font-bold rounded-xl transition-all shadow-sm active:scale-95 border border-brand-blue-primary/20"
               style={{
-                width: 'min(14px, 4cqmin)',
-                height: 'min(14px, 4cqmin)',
+                gap: 'min(6px, 1.5cqmin)',
+                padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                fontSize: 'min(12px, 3.5cqmin)',
               }}
-            />
-            Import
-          </button>
-          <button
-            onClick={onNew}
-            className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-xl transition-all shadow-sm active:scale-95"
-            style={{
-              gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(12px, 3.5cqmin)',
-            }}
-          >
-            <Plus
+              title="Import from CSV or Google Sheet"
+            >
+              <FileUp
+                style={{
+                  width: 'min(14px, 4cqmin)',
+                  height: 'min(14px, 4cqmin)',
+                }}
+              />
+              Import
+            </button>
+            <button
+              onClick={onNew}
+              className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-xl transition-all shadow-sm active:scale-95"
               style={{
-                width: 'min(14px, 4cqmin)',
-                height: 'min(14px, 4cqmin)',
+                gap: 'min(6px, 1.5cqmin)',
+                padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                fontSize: 'min(12px, 3.5cqmin)',
               }}
-            />
-            New Quiz
-          </button>
-        </div>
+            >
+              <Plus
+                style={{
+                  width: 'min(14px, 4cqmin)',
+                  height: 'min(14px, 4cqmin)',
+                }}
+              />
+              New Quiz
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Active Session Banner */}
-      {hasActiveSession && (
-        <div
-          className="bg-emerald-50 border-y border-emerald-200 flex items-center justify-between"
-          style={{
-            padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
-            gap: 'min(12px, 3cqmin)',
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <Zap className="text-emerald-600 w-4 h-4 animate-pulse" />
-            <span className="text-emerald-800 font-bold text-xs uppercase tracking-tight">
-              Session in Progress
-            </span>
-          </div>
+      {/* Tab switcher — Library / Archive */}
+      <div
+        className="flex border-b border-brand-blue-primary/10 bg-brand-blue-lighter/10"
+        style={{
+          padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin) 0',
+          gap: 'min(4px, 1cqmin)',
+        }}
+      >
+        {(['library', 'archive'] as const).map((tab) => (
           <button
-            onClick={onResume}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-lg transition-all active:scale-95 shadow-sm"
+            key={tab}
+            onClick={() => onTabChange?.(tab)}
+            className={`font-black uppercase tracking-widest rounded-t-xl transition-all flex items-center ${
+              managerTab === tab
+                ? 'bg-white text-brand-blue-primary border-x border-t border-brand-blue-primary/10'
+                : 'text-brand-blue-primary/40 hover:text-brand-blue-primary hover:bg-brand-blue-lighter/30'
+            }`}
             style={{
-              padding: 'min(4px, 1cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(11px, 3cqmin)',
+              gap: 'min(6px, 1.5cqmin)',
+              padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
+              fontSize: 'min(10px, 3cqmin)',
             }}
           >
-            RESUME MONITOR
+            {tab === 'library' ? (
+              <BookOpen
+                style={{
+                  width: 'min(12px, 3cqmin)',
+                  height: 'min(12px, 3cqmin)',
+                }}
+              />
+            ) : (
+              <ArchiveIcon
+                style={{
+                  width: 'min(12px, 3cqmin)',
+                  height: 'min(12px, 3cqmin)',
+                }}
+              />
+            )}
+            {tab}
           </button>
-        </div>
+        ))}
+      </div>
+
+      {/* Archive tab content */}
+      {managerTab === 'archive' && (
+        <QuizAssignmentArchive
+          assignments={assignments}
+          loading={assignmentsLoading}
+          onCopyUrl={onArchiveCopyUrl ?? noop}
+          onMonitor={onArchiveMonitor ?? noop}
+          onResults={onArchiveResults ?? noop}
+          onEditSettings={onArchiveEditSettings ?? noop}
+          onShare={onArchiveShare ?? noop}
+          onPauseResume={onArchivePauseResume ?? noop}
+          onDeactivate={onArchiveDeactivate ?? noop}
+          onDelete={onArchiveDelete ?? noop}
+        />
       )}
 
-      {/* Error */}
-      {error && (
+      {/* Error (library tab only) */}
+      {managerTab === 'library' && error && (
         <div
           className="flex items-center bg-brand-red-lighter/40 border border-brand-red-primary/30 rounded-xl text-brand-red-dark"
           style={{
@@ -581,263 +650,224 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         </div>
       )}
 
-      {/* Quiz list */}
-      <div
-        className="flex-1 overflow-y-auto custom-scrollbar"
-        style={{ padding: 'min(16px, 4cqmin)' }}
-      >
-        {quizzes.length === 0 ? (
-          <div
-            className="flex flex-col items-center justify-center h-full text-brand-blue-primary/40 py-12"
-            style={{ gap: 'min(16px, 4cqmin)' }}
-          >
+      {/* Quiz list (library tab only) */}
+      {managerTab === 'library' && (
+        <div
+          className="flex-1 overflow-y-auto custom-scrollbar"
+          style={{ padding: 'min(16px, 4cqmin)' }}
+        >
+          {quizzes.length === 0 ? (
             <div
-              className="bg-brand-blue-lighter/50 p-6 rounded-full border-2 border-dashed border-brand-blue-primary/20"
-              style={{ padding: 'min(24px, 6cqmin)' }}
+              className="flex flex-col items-center justify-center h-full text-brand-blue-primary/40 py-12"
+              style={{ gap: 'min(16px, 4cqmin)' }}
             >
-              <FileUp
-                style={{
-                  width: 'min(48px, 12cqmin)',
-                  height: 'min(48px, 12cqmin)',
-                }}
-              />
-            </div>
-            <div className="text-center">
-              <p
-                className="font-bold text-brand-blue-primary"
-                style={{ fontSize: 'min(15px, 5cqmin)' }}
-              >
-                No quizzes yet
-              </p>
-              <p
-                className="text-brand-blue-primary/60 font-medium"
-                style={{
-                  fontSize: 'min(12px, 3.5cqmin)',
-                  marginTop: 'min(4px, 1cqmin)',
-                  maxWidth: '180px',
-                }}
-              >
-                Import a CSV or Google Sheet to build your library
-              </p>
-            </div>
-            <button
-              onClick={onImport}
-              className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-2xl transition-all shadow-md active:scale-95"
-              style={{
-                gap: 'min(8px, 2cqmin)',
-                padding: 'min(10px, 2.5cqmin) min(20px, 5cqmin)',
-                fontSize: 'min(14px, 4.5cqmin)',
-              }}
-            >
-              <Plus
-                style={{
-                  width: 'min(18px, 4.5cqmin)',
-                  height: 'min(18px, 4.5cqmin)',
-                }}
-              />
-              Start Importing
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {quizzes.map((quiz) => (
               <div
-                key={quiz.id}
-                className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-blue-primary/20 transition-all group overflow-hidden"
-                style={{ padding: 'min(12px, 3cqmin)' }}
+                className="bg-brand-blue-lighter/50 p-6 rounded-full border-2 border-dashed border-brand-blue-primary/20"
+                style={{ padding: 'min(24px, 6cqmin)' }}
               >
-                {/* Quiz info */}
-                <div
-                  className="flex items-start justify-between"
+                <FileUp
                   style={{
-                    gap: 'min(12px, 3cqmin)',
-                    marginBottom: 'min(12px, 3cqmin)',
+                    width: 'min(48px, 12cqmin)',
+                    height: 'min(48px, 12cqmin)',
+                  }}
+                />
+              </div>
+              <div className="text-center">
+                <p
+                  className="font-bold text-brand-blue-primary"
+                  style={{ fontSize: 'min(15px, 5cqmin)' }}
+                >
+                  No quizzes yet
+                </p>
+                <p
+                  className="text-brand-blue-primary/60 font-medium"
+                  style={{
+                    fontSize: 'min(12px, 3.5cqmin)',
+                    marginTop: 'min(4px, 1cqmin)',
+                    maxWidth: '180px',
                   }}
                 >
-                  <div className="min-w-0">
-                    <h3
-                      className="font-bold text-brand-blue-dark truncate"
-                      style={{ fontSize: 'min(15px, 5cqmin)' }}
-                    >
-                      {quiz.title}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span
-                        className="bg-brand-blue-lighter text-brand-blue-primary font-bold rounded-md"
-                        style={{
-                          fontSize: 'min(10px, 3cqmin)',
-                          padding: 'min(1px, 0.2cqmin) min(6px, 1.5cqmin)',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {quiz.questionCount} Qs
-                      </span>
-                      <span
-                        className="text-brand-gray-primary font-medium"
-                        style={{ fontSize: 'min(11px, 3.5cqmin)' }}
-                      >
-                        Updated{' '}
-                        {new Date(
-                          quiz.updatedAt || quiz.createdAt
-                        ).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                {confirmDelete === quiz.id ? (
+                  Import a CSV or Google Sheet to build your library
+                </p>
+              </div>
+              <button
+                onClick={onImport}
+                className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-2xl transition-all shadow-md active:scale-95"
+                style={{
+                  gap: 'min(8px, 2cqmin)',
+                  padding: 'min(10px, 2.5cqmin) min(20px, 5cqmin)',
+                  fontSize: 'min(14px, 4.5cqmin)',
+                }}
+              >
+                <Plus
+                  style={{
+                    width: 'min(18px, 4.5cqmin)',
+                    height: 'min(18px, 4.5cqmin)',
+                  }}
+                />
+                Start Importing
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {quizzes.map((quiz) => (
+                <div
+                  key={quiz.id}
+                  className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-blue-primary/20 transition-all group overflow-hidden"
+                  style={{ padding: 'min(12px, 3cqmin)' }}
+                >
+                  {/* Quiz info */}
                   <div
-                    className="flex items-center justify-end bg-brand-red-lighter/30 rounded-xl"
+                    className="flex items-start justify-between"
                     style={{
-                      gap: 'min(8px, 2cqmin)',
-                      padding: 'min(8px, 2cqmin)',
+                      gap: 'min(12px, 3cqmin)',
+                      marginBottom: 'min(12px, 3cqmin)',
                     }}
                   >
-                    <span
-                      className="text-brand-red-dark font-bold"
-                      style={{ fontSize: 'min(12px, 3.5cqmin)' }}
-                    >
-                      Delete?
-                    </span>
-                    <button
-                      onClick={() => {
-                        setConfirmDelete(null);
-                        onDelete(quiz);
-                      }}
-                      className="bg-brand-red-primary hover:bg-brand-red-dark text-white font-bold rounded-lg transition-colors shadow-sm"
-                      style={{
-                        padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-                        fontSize: 'min(12px, 3.5cqmin)',
-                      }}
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      onClick={() => setConfirmDelete(null)}
-                      className="bg-brand-gray-light hover:bg-brand-gray-primary text-white font-bold rounded-lg transition-colors"
-                      style={{
-                        padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-                        fontSize: 'min(12px, 3.5cqmin)',
-                      }}
-                    >
-                      Back
-                    </button>
+                    <div className="min-w-0">
+                      <h3
+                        className="font-bold text-brand-blue-dark truncate"
+                        style={{ fontSize: 'min(15px, 5cqmin)' }}
+                      >
+                        {quiz.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span
+                          className="bg-brand-blue-lighter text-brand-blue-primary font-bold rounded-md"
+                          style={{
+                            fontSize: 'min(10px, 3cqmin)',
+                            padding: 'min(1px, 0.2cqmin) min(6px, 1.5cqmin)',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {quiz.questionCount} Qs
+                        </span>
+                        <span
+                          className="text-brand-gray-primary font-medium"
+                          style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+                        >
+                          Updated{' '}
+                          {new Date(
+                            quiz.updatedAt || quiz.createdAt
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div
-                    className="flex items-center flex-wrap"
-                    style={{ gap: 'min(8px, 2cqmin)' }}
-                  >
-                    <ActionButton
-                      icon={
-                        <Eye
-                          style={{
-                            width: 'min(14px, 4cqmin)',
-                            height: 'min(14px, 4cqmin)',
-                          }}
-                        />
-                      }
-                      label="Preview"
-                      onClick={() => onPreview(quiz)}
-                      variant="ghost"
-                    />
-                    <ActionButton
-                      icon={
-                        <Edit2
-                          style={{
-                            width: 'min(14px, 4cqmin)',
-                            height: 'min(14px, 4cqmin)',
-                          }}
-                        />
-                      }
-                      label="Edit"
-                      onClick={() => onEdit(quiz)}
-                      variant="ghost"
-                    />
-                    <ActionButton
-                      icon={
-                        <BarChart3
-                          style={{
-                            width: 'min(14px, 4cqmin)',
-                            height: 'min(14px, 4cqmin)',
-                          }}
-                        />
-                      }
-                      label="Stats"
-                      onClick={() => onResults(quiz)}
-                      variant="ghost"
-                    />
-                    <ActionButton
-                      icon={
-                        <Link2
-                          style={{
-                            width: 'min(14px, 4cqmin)',
-                            height: 'min(14px, 4cqmin)',
-                          }}
-                        />
-                      }
-                      label="Share"
-                      onClick={() => void onShare(quiz)}
-                      variant="ghost"
-                    />
-                    <ActionButton
-                      icon={
-                        <Trash2
-                          style={{
-                            width: 'min(14px, 4cqmin)',
-                            height: 'min(14px, 4cqmin)',
-                          }}
-                        />
-                      }
-                      label=""
-                      onClick={() => setConfirmDelete(quiz.id)}
-                      variant="danger"
-                    />
-                    <div className="ml-auto flex items-center gap-2">
-                      {hasActiveSession && quiz.id === activeQuizId ? (
-                        <>
-                          <button
-                            onClick={onEndSession}
-                            className="flex items-center bg-brand-red-primary hover:bg-brand-red-dark text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
+
+                  {/* Action buttons */}
+                  {confirmDelete === quiz.id ? (
+                    <div
+                      className="flex items-center justify-end bg-brand-red-lighter/30 rounded-xl"
+                      style={{
+                        gap: 'min(8px, 2cqmin)',
+                        padding: 'min(8px, 2cqmin)',
+                      }}
+                    >
+                      <span
+                        className="text-brand-red-dark font-bold"
+                        style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+                      >
+                        Delete?
+                      </span>
+                      <button
+                        onClick={() => {
+                          setConfirmDelete(null);
+                          onDelete(quiz);
+                        }}
+                        className="bg-brand-red-primary hover:bg-brand-red-dark text-white font-bold rounded-lg transition-colors shadow-sm"
+                        style={{
+                          padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                          fontSize: 'min(12px, 3.5cqmin)',
+                        }}
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(null)}
+                        className="bg-brand-gray-light hover:bg-brand-gray-primary text-white font-bold rounded-lg transition-colors"
+                        style={{
+                          padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                          fontSize: 'min(12px, 3.5cqmin)',
+                        }}
+                      >
+                        Back
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      className="flex items-center flex-wrap"
+                      style={{ gap: 'min(8px, 2cqmin)' }}
+                    >
+                      <ActionButton
+                        icon={
+                          <Eye
                             style={{
-                              gap: 'min(6px, 1.5cqmin)',
-                              padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
-                              fontSize: 'min(11px, 3.5cqmin)',
+                              width: 'min(14px, 4cqmin)',
+                              height: 'min(14px, 4cqmin)',
                             }}
-                          >
-                            <X
-                              style={{
-                                width: 'min(14px, 4cqmin)',
-                                height: 'min(14px, 4cqmin)',
-                              }}
-                            />
-                            END
-                          </button>
-                          <button
-                            onClick={onResume}
-                            className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
+                          />
+                        }
+                        label="Preview"
+                        onClick={() => onPreview(quiz)}
+                        variant="ghost"
+                      />
+                      <ActionButton
+                        icon={
+                          <Edit2
                             style={{
-                              gap: 'min(6px, 1.5cqmin)',
-                              padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
-                              fontSize: 'min(11px, 3.5cqmin)',
+                              width: 'min(14px, 4cqmin)',
+                              height: 'min(14px, 4cqmin)',
                             }}
-                          >
-                            <Zap
-                              className="animate-pulse"
-                              style={{
-                                width: 'min(14px, 4cqmin)',
-                                height: 'min(14px, 4cqmin)',
-                              }}
-                            />
-                            RESUME
-                          </button>
-                        </>
-                      ) : (
+                          />
+                        }
+                        label="Edit"
+                        onClick={() => onEdit(quiz)}
+                        variant="ghost"
+                      />
+                      <ActionButton
+                        icon={
+                          <BarChart3
+                            style={{
+                              width: 'min(14px, 4cqmin)',
+                              height: 'min(14px, 4cqmin)',
+                            }}
+                          />
+                        }
+                        label="Stats"
+                        onClick={() => onResults(quiz)}
+                        variant="ghost"
+                      />
+                      <ActionButton
+                        icon={
+                          <Link2
+                            style={{
+                              width: 'min(14px, 4cqmin)',
+                              height: 'min(14px, 4cqmin)',
+                            }}
+                          />
+                        }
+                        label="Share"
+                        onClick={() => void onShare(quiz)}
+                        variant="ghost"
+                      />
+                      <ActionButton
+                        icon={
+                          <Trash2
+                            style={{
+                              width: 'min(14px, 4cqmin)',
+                              height: 'min(14px, 4cqmin)',
+                            }}
+                          />
+                        }
+                        label=""
+                        onClick={() => setConfirmDelete(quiz.id)}
+                        variant="danger"
+                      />
+                      <div className="ml-auto flex items-center gap-2">
                         <button
                           onClick={() => setSelectedForLive(quiz)}
-                          disabled={hasActiveSession}
-                          className="flex items-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-brand-gray-lighter disabled:text-brand-gray-primary text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
+                          className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
                           style={{
                             gap: 'min(6px, 1.5cqmin)',
                             padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
@@ -853,15 +883,15 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                           />
                           ASSIGN
                         </button>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

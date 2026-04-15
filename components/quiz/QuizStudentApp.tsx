@@ -30,6 +30,7 @@ import { useQuizSessionStudent, normalizeAnswer } from '@/hooks/useQuizSession';
 import { QuizSession, QuizPublicQuestion } from '@/types';
 import { useDialog } from '@/context/useDialog';
 import { StudentLeaderboard } from './StudentLeaderboard';
+import { QuizPausedPlaceholder } from './QuizPausedPlaceholder';
 import {
   getScoreSuffix,
   isGamificationActive,
@@ -198,6 +199,12 @@ const QuizJoinFlow: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  // Paused — teacher has temporarily paused the session. URL is still live,
+  // submissions are blocked until the session is resumed.
+  if (session.status === 'paused') {
+    return <QuizPausedPlaceholder session={session} pin={pin} />;
   }
 
   // Waiting room
