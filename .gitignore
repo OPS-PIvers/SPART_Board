@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.pnpm-store
 dist
 dist-ssr
 *.local
@@ -52,6 +53,7 @@ coverage/
 .gemini/
 gha-creds-*.json
 eslint-output.txt
+.claude/scheduled_tasks.lock
 
 # Verification / QA test artifacts
 verification/

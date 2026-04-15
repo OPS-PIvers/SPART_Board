@@ -24,7 +24,7 @@ const TIER_CLIP_PATHS = [
   'polygon(24% 0%, 76% 0%, 84% 100%, 16% 100%)',
   'polygon(32% 0%, 68% 0%, 76% 100%, 24% 100%)',
   'polygon(40% 0%, 60% 0%, 68% 100%, 32% 100%)',
-  'polygon(48% 0%, 52% 0%, 60% 100%, 40% 100%)',
+  'polygon(50% 0%, 60% 100%, 40% 100%)',
 ];
 
 export const Pyramid: React.FC<PyramidProps> = ({

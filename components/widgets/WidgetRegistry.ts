@@ -188,6 +188,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./BloomsTaxonomy/Widget'),
     'BloomsTaxonomyWidget'
   ),
+  'blooms-detail': lazyNamed(
+    () => import('./BloomsTaxonomy/DetailWidget'),
+    'BloomsDetailWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -348,7 +352,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
     () => import('./TimeTool/Settings'),
     'TimeToolAppearanceSettings'
   ),
-  text: lazyNamed(() => import('./TextWidget'), 'TextAppearanceSettings'),
   checklist: lazyNamed(
     () => import('./Checklist'),
     'ChecklistAppearanceSettings'
@@ -504,8 +507,8 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     padding: 0,
   },
   text: {
-    baseWidth: 300,
-    baseHeight: 250,
+    baseWidth: 400,
+    baseHeight: 300,
     canSpread: true,
     skipScaling: true,
     padding: 0,
@@ -620,8 +623,8 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     skipScaling: true,
   },
   classes: {
-    baseWidth: 600,
-    baseHeight: 500,
+    baseWidth: 280,
+    baseHeight: 360,
     canSpread: true,
     skipScaling: true,
   },
@@ -859,6 +862,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   'blooms-taxonomy': {
     baseWidth: 450,
     baseHeight: 550,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'blooms-detail': {
+    baseWidth: 450,
+    baseHeight: 300,
     canSpread: true,
     skipScaling: true,
     padding: 0,

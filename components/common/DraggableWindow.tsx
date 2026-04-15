@@ -40,22 +40,29 @@ import {
 import { SNAP_LAYOUTS, SnapZone } from '@/config/snapLayouts';
 import { calculateSnapBounds, SNAP_LAYOUT_CONSTANTS } from '@/utils/layoutMath';
 import { useScreenshot } from '@/hooks/useScreenshot';
+import { useWindowSize } from '@/hooks/useWindowSize';
 import { useDashboard } from '@/context/useDashboard';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { IconButton } from '@/components/common/IconButton';
-import { WIDGET_PALETTE } from '@/config/colors';
+import { STANDARD_COLORS, WIDGET_PALETTE } from '@/config/colors';
 import { Z_INDEX } from '@/config/zIndex';
 import { useDialog } from '@/context/useDialog';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
 
+// Hex → human-readable color name, for screen-reader aria-labels on the
+// annotation palette. Falls back to the raw hex when unknown.
+const COLOR_HEX_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(STANDARD_COLORS).map(([name, hex]) => [hex, name])
+);
+
 // Custom size picker grid dimensions
-const GRID_COLS = 8;
-const GRID_ROWS = 6;
+const GRID_COLS = 10;
+const GRID_ROWS = 10;
 
 // Widgets that require real-time position updates for inter-widget functionality
 const POSITION_AWARE_WIDGETS: WidgetType[] = [
@@ -181,6 +188,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   );
 
   const [showSnapMenu, setShowSnapMenu] = useState(false);
+  const windowSize = useWindowSize(showSnapMenu);
   const [snapPreviewZone, setSnapPreviewZone] = useState<
     SnapZone | 'maximize' | 'minimize' | null
   >(null);
@@ -194,6 +202,46 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   }>({ start: null, end: null, selecting: false });
   const customGridRef = useRef(customGrid);
   customGridRef.current = customGrid;
+  const occupiedCells = useMemo(() => {
+    const set = new Set<string>();
+    if (!showSnapMenu || !activeDashboard) return set;
+
+    const { PADDING } = SNAP_LAYOUT_CONSTANTS;
+    const safeWidth = Math.max(1, windowSize.width - PADDING * 2);
+    const safeHeight = Math.max(1, windowSize.height - PADDING * 2);
+
+    for (const w of activeDashboard.widgets) {
+      if (w.id === widget.id) continue; // ignore self
+      if (w.minimized || w.maximized) continue; // not visible on canvas
+
+      const nx = (w.x - PADDING) / safeWidth;
+      const ny = (w.y - PADDING) / safeHeight;
+      const nr = (w.x + w.w - PADDING) / safeWidth;
+      const nb = (w.y + w.h - PADDING) / safeHeight;
+
+      const c0 = Math.max(
+        0,
+        Math.min(GRID_COLS - 1, Math.floor(nx * GRID_COLS))
+      );
+      const r0 = Math.max(
+        0,
+        Math.min(GRID_ROWS - 1, Math.floor(ny * GRID_ROWS))
+      );
+      const c1 = Math.max(
+        0,
+        Math.min(GRID_COLS - 1, Math.ceil(nr * GRID_COLS) - 1)
+      );
+      const r1 = Math.max(
+        0,
+        Math.min(GRID_ROWS - 1, Math.ceil(nb * GRID_ROWS) - 1)
+      );
+
+      for (let r = r0; r <= r1; r++) {
+        for (let c = c0; c <= c1; c++) set.add(`${c},${r}`);
+      }
+    }
+    return set;
+  }, [showSnapMenu, activeDashboard, widget.id, windowSize]);
 
   // Pre-cached zones for edge detection optimization
   const splitLayout = useMemo(
@@ -845,10 +893,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
     for (const el of elementsAtPoint) {
       if (el === resizeEl) continue;
-      // Iframes and canvases (e.g. embed or drawing widgets) often fill the
-      // entire container — the resize handle must take priority over them.
+      // Iframes, canvases, and contentEditable elements (e.g. embed, drawing,
+      // or text widgets) often fill the entire container — the resize handle
+      // must take priority over them.
       if (el instanceof HTMLIFrameElement || el instanceof HTMLCanvasElement)
         continue;
+      if (el instanceof HTMLElement && el.isContentEditable) continue;
       if (
         el.matches?.(INTERACTIVE_ELEMENTS_SELECTOR) ||
         el.closest?.(INTERACTIVE_ELEMENTS_SELECTOR)
@@ -1055,6 +1105,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // always call the current version without being in its dependency array.
   const updatePositionRef = useRef<(() => void) | null>(null);
 
+  // Widget-local floating toolbar reservation (e.g. TextWidget's rich-text
+  // toolbar). When set, this tool menu flips to the opposite side of the
+  // widget so the two toolbars don't overlap. The reserved footprint
+  // (height + gap) is subtracted from that side's available space, and — if
+  // this tool menu is forced onto the same side — it is offset past that
+  // footprint so the two stack instead of overlapping.
+  const toolbarReservationRef = useRef<{
+    side: 'above' | 'below';
+    height: number;
+    gap: number;
+  } | null>(null);
+
   useLayoutEffect(() => {
     if (showTools && windowRef.current) {
       const updatePosition = () => {
@@ -1086,13 +1148,36 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         // Vertical: prefer above; flip below only when space above is tight AND
         // there is room below. If neither side fits, pick whichever has more space
         // and clamp to keep the toolbar on-screen.
-        const spaceAbove = effectiveTop;
-        const spaceBelow = window.innerHeight - effectiveBottom;
-        const showBelow =
-          spaceAbove < menuHeight + MARGIN && spaceBelow >= spaceAbove;
+        // If the widget has reserved a side for its own floating toolbar
+        // (e.g. TextWidget's formatting toolbar), prefer the opposite side
+        // so the two don't overlap. The reserved footprint is subtracted from
+        // that side's available space, and — if this tool menu is forced onto
+        // the same side — it is offset past that footprint so the two stack.
+        const reservation = toolbarReservationRef.current;
+        const reservedAbove =
+          reservation?.side === 'above'
+            ? reservation.height + reservation.gap
+            : 0;
+        const reservedBelow =
+          reservation?.side === 'below'
+            ? reservation.height + reservation.gap
+            : 0;
+        const spaceAbove = effectiveTop - reservedAbove;
+        const spaceBelow = window.innerHeight - effectiveBottom - reservedBelow;
+        const needed = menuHeight + MARGIN;
+        const fitsAbove = spaceAbove >= needed;
+        const fitsBelow = spaceBelow >= needed;
+        let showBelow: boolean;
+        if (reservation?.side === 'above') {
+          showBelow = fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove);
+        } else if (reservation?.side === 'below') {
+          showBelow = !fitsAbove && (fitsBelow || spaceBelow >= spaceAbove);
+        } else {
+          showBelow = !fitsAbove && spaceBelow >= spaceAbove;
+        }
         const rawTopPos = showBelow
-          ? effectiveBottom + MARGIN
-          : effectiveTop - menuHeight - MARGIN;
+          ? effectiveBottom + reservedBelow + MARGIN
+          : effectiveTop - reservedAbove - menuHeight - MARGIN;
         const clampedTop = Math.max(
           MARGIN,
           Math.min(rawTopPos, window.innerHeight - menuHeight - MARGIN)
@@ -1218,6 +1303,50 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('board-pan', handlePan);
     return () => window.removeEventListener('board-pan', handlePan);
   }, [showTools]);
+
+  // Listen for widget-local toolbar reservations so this tool menu can flip
+  // to the opposite side of (not overlap) a widget's own floating toolbar
+  // (e.g. TextWidget). Only reservations for this widget's id are honored.
+  useEffect(() => {
+    const widgetId = widget.id;
+    const handleReservation = (e: Event) => {
+      const detail = (
+        e as CustomEvent<{
+          widgetId: string;
+          side: 'above' | 'below' | null;
+          height?: number;
+          gap?: number;
+        }>
+      ).detail;
+      if (!detail || detail.widgetId !== widgetId) return;
+      const next =
+        detail.side === null
+          ? null
+          : {
+              side: detail.side,
+              height: detail.height ?? 0,
+              gap: detail.gap ?? 0,
+            };
+      const current = toolbarReservationRef.current;
+      const unchanged =
+        (current === null && next === null) ||
+        (current !== null &&
+          next !== null &&
+          current.side === next.side &&
+          current.height === next.height &&
+          current.gap === next.gap);
+      if (unchanged) return;
+      toolbarReservationRef.current = next;
+      updatePositionRef.current?.();
+    };
+    window.addEventListener('widget-toolbar-reservation', handleReservation);
+    return () => {
+      window.removeEventListener(
+        'widget-toolbar-reservation',
+        handleReservation
+      );
+    };
+  }, [widget.id]);
 
   useEffect(() => {
     const handleCustomKeyboard = (e: Event) => {
@@ -1388,6 +1517,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         isMaximized ? 'border-none !shadow-none' : ''
       } ${isGroupActive || isGroupBuildSelected ? 'ring-2 ring-brand-blue-light/60' : ''}`}
       bgClass={widget.backgroundColor}
+      bgHex={
+        (widget.config as Record<string, unknown>)?.cardColor as
+          | string
+          | undefined
+      }
       style={{
         left: isMaximized
           ? 0
@@ -1632,9 +1766,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         e.stopPropagation();
                         setAnnotationColor(c);
                       }}
-                      aria-label={`Select annotation color ${c}`}
+                      aria-label={`Select annotation color ${COLOR_HEX_TO_NAME[c] ?? c}`}
                       aria-pressed={annotationColor === c}
-                      className={`w-5 h-5 rounded-full border border-slate-100 transition-transform touch-target-expand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
+                      className={`relative w-5 h-5 rounded-full border border-slate-100 transition-transform touch-target-expand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
@@ -2188,11 +2322,24 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                                     customGrid.start.row,
                                     customGrid.end.row
                                   );
+                              const isOccupied = occupiedCells.has(
+                                `${col},${row}`
+                              );
+                              const cellClassName = selected
+                                ? 'bg-brand-blue-light'
+                                : isOccupied
+                                  ? 'bg-brand-blue-primary'
+                                  : 'bg-slate-300';
                               return (
                                 <div
                                   key={i}
-                                  className={`rounded-[2px] transition-colors ${selected ? 'bg-brand-blue-light' : 'bg-slate-300'}`}
+                                  className={`rounded-[2px] transition-colors ${cellClassName}`}
                                   style={{ height: '14px' }}
+                                  aria-label={
+                                    isOccupied
+                                      ? 'Cell occupied by another widget'
+                                      : undefined
+                                  }
                                 />
                               );
                             }

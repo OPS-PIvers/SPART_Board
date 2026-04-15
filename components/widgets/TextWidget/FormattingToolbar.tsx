@@ -35,6 +35,7 @@ import { useDialog } from '@/context/useDialog';
 
 interface FormattingToolbarProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
+  configFontSize: number;
   verticalAlign: 'top' | 'center' | 'bottom';
   onVerticalAlignChange: (value: 'top' | 'center' | 'bottom') => void;
   suppressInputRef: React.MutableRefObject<boolean>;
@@ -153,6 +154,7 @@ const MenuButton: React.FC<{
 
 export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   editorRef,
+  configFontSize,
   verticalAlign,
   onVerticalAlignChange,
   suppressInputRef,
@@ -165,12 +167,22 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   const [showColorMenu, setShowColorMenu] = useState(false);
   const [showAlignMenu, setShowAlignMenu] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
-  const [currentFontSize, setCurrentFontSize] = useState(16);
-  const [fontSizeInput, setFontSizeInput] = useState('16');
+  const [currentFontSize, setCurrentFontSize] = useState(configFontSize);
+  const [fontSizeInput, setFontSizeInput] = useState(String(configFontSize));
   const [visibleCount, setVisibleCount] = useState(6);
   const savedRangeRef = useRef<Range | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const groupRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Sync font size state when configFontSize changes externally
+  // (e.g. preset changes, remote widget updates).
+  // Uses the "adjusting state while rendering" pattern with state (not ref).
+  const [prevConfigFontSize, setPrevConfigFontSize] = useState(configFontSize);
+  if (prevConfigFontSize !== configFontSize) {
+    setPrevConfigFontSize(configFontSize);
+    setCurrentFontSize(configFontSize);
+    setFontSizeInput(String(configFontSize));
+  }
 
   const closeAllMenus = useCallback(() => {
     setShowFontMenu(false);
@@ -179,22 +191,38 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
     setShowOverflowMenu(false);
   }, []);
 
-  /** Read the computed font-size of the current selection anchor */
+  /** Read the font-size at the current selection anchor.
+   *  Checks for an inline font-size style first (applied by the toolbar),
+   *  then falls back to the widget's config font size. */
   const detectFontSize = useCallback(() => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || !editorRef.current) return;
-    const node =
+    const node: HTMLElement | null =
       sel.anchorNode?.nodeType === Node.TEXT_NODE
         ? sel.anchorNode.parentElement
         : (sel.anchorNode as HTMLElement | null);
     if (!node || !editorRef.current.contains(node)) return;
-    const computed = window.getComputedStyle(node).fontSize;
-    const px = Math.round(parseFloat(computed));
-    if (!Number.isNaN(px) && px > 0) {
-      setCurrentFontSize(px);
-      setFontSizeInput(String(px));
+
+    // Walk up from the selection anchor looking for an inline font-size style
+    // (set by the toolbar's applyFontSize via <span style="font-size:Xpx">).
+    let cursor: HTMLElement | null = node;
+    while (cursor && cursor !== editorRef.current) {
+      const inlineSize = cursor.style?.fontSize;
+      if (inlineSize) {
+        const px = Math.round(parseFloat(inlineSize));
+        if (!Number.isNaN(px) && px > 0) {
+          setCurrentFontSize(px);
+          setFontSizeInput(String(px));
+          return;
+        }
+      }
+      cursor = cursor.parentElement;
     }
-  }, [editorRef]);
+
+    // No inline style found — use the widget's config font size
+    setCurrentFontSize(configFontSize);
+    setFontSizeInput(String(configFontSize));
+  }, [editorRef, configFontSize]);
 
   useEffect(() => {
     const captureSelection = () => {
@@ -249,57 +277,49 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
     [restoreSelection, editorRef]
   );
 
-  /** Apply an arbitrary pixel font size using the marker-replacement technique.
-   *  Suppresses the parent's handleInput during the multi-step DOM mutation
-   *  (execCommand creates <font size="7"> markers, then we replace them with
-   *  <span style="font-size:…">), and explicitly saves content afterward. */
+  /** Apply an arbitrary pixel font size to the current selection by wrapping it
+   *  in <span style="font-size:Xpx">. Uses Range.extractContents/insertNode to
+   *  handle selections that cross inline-element boundaries. Suppresses the
+   *  parent's handleInput during the mutation, then explicitly persists. */
   const applyFontSize = useCallback(
     (size: number) => {
       const clamped = Math.max(8, Math.min(96, Math.round(size)));
       setCurrentFontSize(clamped);
       setFontSizeInput(String(clamped));
 
-      // Capture the selection scope before execCommand mutates the DOM
-      const sel = window.getSelection();
-      const range =
-        sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
-      const ancestor = range?.commonAncestorContainer ?? null;
-      const scopeEl =
-        ancestor?.nodeType === Node.ELEMENT_NODE
-          ? ancestor
-          : (ancestor?.parentElement ?? null);
-
-      // Suppress handleInput while we mutate the DOM in two steps
-      suppressInputRef.current = true;
+      const editor = editorRef.current;
+      if (!editor) return;
 
       restoreSelection();
-      document.execCommand('styleWithCSS', false, 'true');
-      document.execCommand('fontSize', false, '7');
 
-      // Replace <font size="7"> markers scoped to the selection area
-      const editor = editorRef.current;
-      if (editor) {
-        const searchRoot: Element =
-          scopeEl instanceof Element && editor.contains(scopeEl)
-            ? scopeEl
-            : editor;
-        const fontElements =
-          searchRoot.querySelectorAll<HTMLElement>('font[size="7"]');
-        fontElements.forEach((el) => {
-          const span = document.createElement('span');
-          span.style.fontSize = `${clamped}px`;
-          while (el.firstChild) {
-            span.appendChild(el.firstChild);
-          }
-          el.replaceWith(span);
-        });
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+
+      // Act only on ranges inside this editor, and only for non-collapsed
+      // selections (cursor-only is a no-op — better than the xx-large lock).
+      if (!editor.contains(range.commonAncestorContainer) || range.collapsed) {
+        editor.focus();
+        return;
       }
 
-      // Re-enable input handling and persist the final DOM state
+      suppressInputRef.current = true;
+
+      const span = document.createElement('span');
+      span.style.fontSize = `${clamped}px`;
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+
+      // Re-select the wrapped span so repeated +/- clicks keep targeting it.
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      savedRangeRef.current = newRange.cloneRange();
+
       suppressInputRef.current = false;
       onContentChange();
-
-      editor?.focus();
+      editor.focus();
     },
     [editorRef, restoreSelection, suppressInputRef, onContentChange]
   );

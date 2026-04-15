@@ -45,6 +45,7 @@ import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
 import { TextSizePresetSettings } from '@/components/common/TextSizePresetSettings';
 import { getTodayStr } from './utils';
 import { SortableScheduleItem } from './components/SortableScheduleItem';
+import { beginWidgetDrag, endWidgetDrag } from '@/utils/widgetDragFlag';
 
 const DAYS = [
   { id: 0, label: 'Su', fullName: 'Sunday' },
@@ -55,6 +56,8 @@ const DAYS = [
   { id: 5, label: 'F', fullName: 'Friday' },
   { id: 6, label: 'Sa', fullName: 'Saturday' },
 ];
+
+const DAYS_BY_ID = new Map(DAYS.map((d) => [d.id, d]));
 
 /** Parses "HH:MM" → minutes since midnight, or Infinity for items without times (pushed to end). */
 const parseTimeForSort = (t: string | undefined): number => {
@@ -356,6 +359,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   const handleDragEnd = useCallback(
     (scheduleId: string, event: DragEndEvent) => {
+      endWidgetDrag();
       const { active, over } = event;
       if (!over || active.id === over.id) return;
       const items = getScheduleItems(scheduleId);
@@ -562,7 +566,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
+                  onDragStart={beginWidgetDrag}
                   onDragEnd={(e) => handleDragEnd(selectedSchedule.id, e)}
+                  onDragCancel={endWidgetDrag}
                 >
                   <SortableContext
                     items={validItems.map((i) => i.id)}
@@ -640,7 +646,10 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   <div className="text-xs text-slate-500">
                     {s.items.length} item{s.items.length !== 1 ? 's' : ''}
                     {s.days.length > 0 &&
-                      ` • ${s.days.map((d) => DAYS.find((day) => day.id === d)?.label).join(', ')}`}
+                      ` • ${s.days
+                        .map((d) => DAYS_BY_ID.get(d)?.label)
+                        .filter(Boolean)
+                        .join(', ')}`}
                   </div>
                 </div>
                 <button

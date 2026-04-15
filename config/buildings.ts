@@ -50,6 +50,11 @@ export const BUILDINGS: Building[] = [
 ];
 
 /**
+ * O(1) lookup map for building details to avoid O(N) array scans during renders.
+ */
+export const BUILDINGS_BY_ID = new Map(BUILDINGS.map((b) => [b.id, b]));
+
+/**
  * IDs of buildings that support the LunchCount widget.
  * Derived from BUILDINGS to keep a single source of truth.
  */
@@ -77,7 +82,7 @@ export function getBuildingGradeLevels(buildingIds: string[]): GradeLevel[] {
   if (buildingIds.length === 0) return [];
   const levels = new Set<GradeLevel>();
   for (const id of buildingIds) {
-    const building = BUILDINGS.find((b) => b.id === id);
+    const building = BUILDINGS_BY_ID.get(id);
     if (building) {
       building.gradeLevels.forEach((l) => levels.add(l));
     }

@@ -34,6 +34,7 @@ import {
   Palette,
   Medal,
 } from 'lucide-react';
+import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import {
   QuizSession,
   QuizResponse,
@@ -44,10 +45,13 @@ import {
 } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
 import {
+  buildLiveLeaderboard,
   buildPinToNameMap,
   getDisplayScore,
   getScoreSuffix,
+  isGamificationActive,
 } from '../utils/quizScoreboard';
+import { db } from '@/config/firebase';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   playPodiumFanfare,
@@ -85,6 +89,13 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     () => buildPinToNameMap(rosters, config.periodName),
     [rosters, config.periodName]
   );
+  const scoringConfig = useMemo(
+    () => ({
+      speedBonusEnabled: session.speedBonusEnabled,
+      streakBonusEnabled: session.streakBonusEnabled,
+    }),
+    [session.speedBonusEnabled, session.streakBonusEnabled]
+  );
   const hasNames = Object.keys(pinToName).length > 0;
 
   const [copied, setCopied] = useState(false);
@@ -112,6 +123,70 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
     'joined' | 'active' | 'finished' | null
   >(null);
   const isReviewing = session.questionPhase === 'reviewing';
+  const lastLeaderboardFingerprintRef = useRef<string | null>(null);
+  const hasClearedLeaderboardRef = useRef(false);
+
+  useEffect(() => {
+    lastLeaderboardFingerprintRef.current = null;
+    hasClearedLeaderboardRef.current = false;
+  }, [session.id]);
+
+  // Broadcast student-safe live leaderboard snapshot for gamified sessions.
+  useEffect(() => {
+    const sessionRef = doc(db, 'quiz_sessions', session.id);
+    const shouldBroadcast =
+      session.status === 'active' && isGamificationActive(scoringConfig);
+
+    if (!shouldBroadcast) {
+      // Preserve final leaderboard for ended sessions so students can view
+      // results, but clear stale data in other non-broadcast states.
+      if (session.status === 'ended' || hasClearedLeaderboardRef.current)
+        return;
+
+      hasClearedLeaderboardRef.current = true;
+      lastLeaderboardFingerprintRef.current = null;
+      void updateDoc(sessionRef, { liveLeaderboard: deleteField() }).catch(
+        (err) => {
+          console.error(
+            '[QuizLiveMonitor] Failed clearing live leaderboard:',
+            err
+          );
+        }
+      );
+      return;
+    }
+
+    hasClearedLeaderboardRef.current = false;
+
+    const handle = window.setTimeout(() => {
+      const entries = buildLiveLeaderboard(
+        responses,
+        quizData.questions,
+        scoringConfig,
+        pinToName
+      );
+
+      const fingerprint = JSON.stringify(entries);
+      if (fingerprint === lastLeaderboardFingerprintRef.current) return;
+      lastLeaderboardFingerprintRef.current = fingerprint;
+
+      void updateDoc(sessionRef, { liveLeaderboard: entries }).catch((err) => {
+        console.error(
+          '[QuizLiveMonitor] Failed updating live leaderboard:',
+          err
+        );
+      });
+    }, 300);
+
+    return () => window.clearTimeout(handle);
+  }, [
+    responses,
+    quizData.questions,
+    pinToName,
+    session.id,
+    session.status,
+    scoringConfig,
+  ]);
 
   // Close live scoreboard setup popup on click-outside or Escape
   const closeLiveScoreboardSetup = useCallback(() => {

@@ -148,39 +148,46 @@ vi.mock('firebase-admin', () => {
   };
 });
 
-// Mock firebase-functions/v2
-vi.mock('firebase-functions/v2', () => ({
-  https: {
-    onCall: <T>(
-      _options: unknown,
-      handler: (request: {
-        data: T;
-        auth?: { token: { email: string }; uid: string };
-      }) => Promise<unknown>
-    ) => handler,
-    HttpsError: class extends Error {
-      constructor(code: string, message: string) {
-        super(message);
-        this.name = code;
-      }
-    },
+// Mock firebase-functions/v2/https
+// onCall returns a wrapper that accepts the legacy v1 (data, context)
+// invocation pattern used by the existing tests and translates it into the
+// v2 { data, auth } request shape that the real handlers now expect.
+vi.mock('firebase-functions/v2/https', () => ({
+  onCall: <T>(
+    _options: unknown,
+    handler: (request: {
+      data: T;
+      auth?: { token: { email: string }; uid: string };
+    }) => Promise<unknown>
+  ) => {
+    return (
+      data: T,
+      context?: { auth?: { token: { email: string }; uid: string } }
+    ) => handler({ data, auth: context?.auth });
+  },
+  onRequest: <Req, Res>(
+    _options: unknown,
+    handler: (req: Req, res: Res) => unknown
+  ) => handler,
+  HttpsError: class extends Error {
+    constructor(code: string, message: string) {
+      super(message);
+      this.name = code;
+    }
   },
 }));
 
-// Mock firebase-functions/v1
-vi.mock('firebase-functions/v1', () => ({
-  runWith: vi.fn().mockReturnThis(),
-  region: vi.fn().mockReturnThis(),
-  https: {
-    onCall: vi.fn().mockImplementation((handler: unknown) => handler),
-    onRequest: vi.fn().mockImplementation((handler: unknown) => handler),
-    HttpsError: class extends Error {
-      constructor(code: string, message: string) {
-        super(message);
-        this.name = code;
-      }
-    },
-  },
+// Mock firebase-functions/v2 (setGlobalOptions)
+vi.mock('firebase-functions/v2', () => ({
+  setGlobalOptions: vi.fn(),
+}));
+
+// Mock firebase-functions/params (defineSecret)
+vi.mock('firebase-functions/params', () => ({
+  defineSecret: (name: string) => ({
+    value: () => process.env[name] ?? `mock-${name}`,
+    name,
+  }),
 }));
 
 // Mock axios
@@ -188,12 +195,12 @@ vi.mock('axios');
 
 // Import the function under test
 import {
-  fetchWeatherProxy,
+  fetchExternalProxy,
   checkUrlCompatibility,
   adminAnalytics,
 } from './index';
 
-describe('fetchWeatherProxy', () => {
+describe('fetchExternalProxy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFirestoreState.admins = new Set<string>();
@@ -203,7 +210,7 @@ describe('fetchWeatherProxy', () => {
   });
 
   it('should throw unauthenticated error if no auth context', async () => {
-    const handler = fetchWeatherProxy as unknown as (
+    const handler = fetchExternalProxy as unknown as (
       req: unknown,
       context: unknown
     ) => Promise<unknown>;
@@ -213,7 +220,7 @@ describe('fetchWeatherProxy', () => {
   });
 
   it('should throw invalid-argument for invalid host', async () => {
-    const handler = fetchWeatherProxy as unknown as (
+    const handler = fetchExternalProxy as unknown as (
       req: unknown,
       context: unknown
     ) => Promise<unknown>;
@@ -225,7 +232,7 @@ describe('fetchWeatherProxy', () => {
   });
 
   it('should throw invalid-argument for invalid protocol', async () => {
-    const handler = fetchWeatherProxy as unknown as (
+    const handler = fetchExternalProxy as unknown as (
       req: unknown,
       context: unknown
     ) => Promise<unknown>;
@@ -243,7 +250,7 @@ describe('fetchWeatherProxy', () => {
     const mockGet = vi.mocked(axios.get);
     mockGet.mockResolvedValue({ data: { temp: 72 } });
 
-    const handler = fetchWeatherProxy as unknown as (
+    const handler = fetchExternalProxy as unknown as (
       req: unknown,
       context: unknown
     ) => Promise<{ temp: number }>;
@@ -262,7 +269,7 @@ describe('fetchWeatherProxy', () => {
     const mockGet = vi.mocked(axios.get);
     mockGet.mockResolvedValue({ data: { o: { t: 72, ic: 0 } } });
 
-    const handler = fetchWeatherProxy as unknown as (
+    const handler = fetchExternalProxy as unknown as (
       req: unknown,
       context: unknown
     ) => Promise<{ o: { t: number; ic: number } }>;
@@ -283,7 +290,7 @@ describe('fetchWeatherProxy', () => {
     const mockGet = vi.mocked(axios.get);
     mockGet.mockRejectedValue(new Error('Network error'));
 
-    const handler = fetchWeatherProxy as unknown as (
+    const handler = fetchExternalProxy as unknown as (
       req: unknown,
       context: unknown
     ) => Promise<unknown>;

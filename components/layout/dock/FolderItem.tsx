@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FolderPlus, X } from 'lucide-react';
+import { useLongPress } from '@/hooks/useLongPress';
 import {
   useSortable,
   SortableContext,
@@ -30,6 +31,7 @@ import {
   WidgetData,
   InternalToolType,
 } from '@/types';
+import { beginWidgetDrag, endWidgetDrag } from '@/utils/widgetDragFlag';
 
 interface FolderItemProps {
   folder: DockFolder;
@@ -76,7 +78,6 @@ export const FolderItem = React.memo(
     const [showPopover, setShowPopover] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
-    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
     // DND Sensors for internal folder sorting
     const sensors = useSensors(
@@ -87,25 +88,16 @@ export const FolderItem = React.memo(
       })
     );
 
+    const longPress = useLongPress(onLongPress, {
+      disabled: isEditMode,
+      onPointerDown: listeners?.onPointerDown,
+    });
+
     useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
-
-    const handlePointerDown = (e: React.PointerEvent) => {
-      listeners?.onPointerDown?.(e);
-      if (isEditMode) return;
-      longPressTimer.current = setTimeout(() => {
-        onLongPress();
-      }, 600);
-    };
-
-    const handlePointerUp = () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-    };
 
     const handleDragEnd = useCallback(
       (event: DragEndEvent) => {
+        endWidgetDrag();
         const { active, over } = event;
         if (active.id !== over?.id) {
           const oldIndex = folder.items.indexOf(
@@ -159,7 +151,9 @@ export const FolderItem = React.memo(
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={beginWidgetDrag}
                 onDragEnd={handleDragEnd}
+                onDragCancel={endWidgetDrag}
               >
                 <SortableContext
                   items={folder.items}
@@ -225,9 +219,11 @@ export const FolderItem = React.memo(
             ref={buttonRef}
             {...attributes}
             {...listeners}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
+            onPointerDown={longPress.onPointerDown}
+            onPointerUp={longPress.onPointerUp}
+            onPointerLeave={longPress.onPointerUp}
+            onPointerMove={longPress.onPointerMove}
+            onPointerCancel={longPress.onPointerCancel}
             onClick={() => setShowPopover(true)}
             className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 relative ${
               isEditMode

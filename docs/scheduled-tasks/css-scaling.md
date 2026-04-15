@@ -8,6 +8,12 @@ _Last action: 2026-04-15_
 
 ---
 
+## Audit guidance — `cqmin` is not always the right answer
+
+The CLAUDE.md scaling rules recommend `cqmin` for consistency. **However**, `cqmin` (and `clamp(…, Xpx)` caps) can leave large amounts of empty space on widgets that get resized aggressively — especially short/wide layouts where the height-driven `cqh` axis would have filled the widget. User preference: widget content should **logically fill the widget window**. If a widget already uses a `cqh`/`cqw` mix (or `min(Acqh, Bcqw)`) that fills better than the equivalent `cqmin` form, **leave it**. Do not propose `cqmin` conversions for widgets where the existing formula visibly fills the widget at a wider range of aspect ratios. When in doubt, audit visually before flagging.
+
+---
+
 ## In Progress
 
 _Nothing currently in progress._
@@ -99,18 +105,22 @@ _Nothing currently in progress._
   - `text-3xl` → `style={{ fontSize: 'min(30px, 12cqmin)' }}` (3 KWL letter displays)
   - Added `style?: React.CSSProperties` prop to the internal `EditableNode` component so contentEditable nodes can receive inline font-size without wrapping. All 1094 unit tests pass; `pnpm type-check`, `pnpm lint --max-warnings 0`, and `pnpm format:check` all clean.
 
-### MEDIUM ClockWidget uses `cqh`/`cqw` separately instead of `cqmin`
+### MEDIUM ClockWidget uses `cqh`/`cqw` separately instead of `cqmin` — REVERTED (won't fix)
 
 - **Detected:** 2026-04-12
 - **Completed:** 2026-04-12
+- **Reverted:** 2026-04-13
 - **File:** components/widgets/ClockWidget/Widget.tsx:62, :70-72, :127
-- **Detail:** Primary time display used `min(82cqh, 20cqw)` / `min(82cqh, 25cqw)`, date label used `min(12cqh, 80cqw)`, and the column gap used `gap-[0.5cqh]`. All mixed `cqh`/`cqw` independently instead of using `cqmin`.
-- **Resolution:** Converted to `cqmin`-based sizing, preserving visual size at the reference 280×140 dimensions (cqmin = 1.4px at reference):
-  - Time with seconds: `min(82cqh, 20cqw)` (→ 56px at ref) → `clamp(24px, 40cqmin, 160px)` (→ 56px at ref)
-  - Time without seconds: `min(82cqh, 25cqw)` (→ 70px at ref) → `clamp(24px, 50cqmin, 200px)` (→ 70px at ref)
-  - Date: `min(12cqh, 80cqw)` (→ 16.8px at ref) → `clamp(10px, 12cqmin, 28px)` (→ 16.8px at ref)
-  - Gap: `gap-[0.5cqh]` → `gap-[0.5cqmin]`
-    Added clamp() pixel bounds for predictable min/max behavior per CLAUDE.md hero-text guidance.
+- **Detail:** Primary time display uses `min(82cqh, 20cqw)` / `min(82cqh, 25cqw)`, date label uses `min(12cqh, 80cqw)`, and the column gap uses `gap-[0.5cqh]` — separate `cqh`/`cqw` axes by design.
+- **Resolution:** The cqmin conversion (with `clamp()` pixel caps) was reverted at user request. The `cqh`/`cqw` formulation fills the widget far more aggressively across non-reference aspect ratios (especially short/wide clocks), and the pixel cap from `clamp()` left large amounts of empty space on bigger widgets. This entry should not be re-flagged by future audits — the mixed `cqh`/`cqw` is the desired behavior for this widget.
+
+### MEDIUM ChecklistWidget uses `cqh`/`cqw` separately in scaling formula — WON'T FIX
+
+- **Detected:** 2026-04-12
+- **Closed:** 2026-04-13
+- **File:** components/widgets/Checklist/Widget.tsx:147-150
+- **Detail:** `buildCardStyle` uses `cqh` for text/icon size, mixed `cqh`/`cqw` for padding, and `cqw` for gap. The intent (per the inline comment) is that height is the smaller dimension on a typical checklist, so scaling against `cqh` fills aggressively.
+- **Resolution:** Closed without changes per user direction. Same reasoning as the ClockWidget revert — switching to `cqmin` (plus `clamp()` pixel caps) would shrink content on large widgets and leave wasted space. The "fill the widget logically" preference outweighs the cross-aspect-ratio consistency that `cqmin` provides. Do not re-flag.
 
 ### MEDIUM CountdownWidget uses `cqh`/`cqw` separately instead of `cqmin`
 
@@ -124,13 +134,6 @@ _Nothing currently in progress._
 - **Detected:** 2026-04-12
 - **Completed:** 2026-04-14
 - **File:** components/widgets/LunchCount/Widget.tsx:405, :415-416, :425
-- **Resolution:** Resolved outside journal workflow. 2026-04-14 audit confirmed widget is clean.
-
-### MEDIUM ChecklistWidget uses `cqh`/`cqw` separately in scaling formula
-
-- **Detected:** 2026-04-12
-- **Completed:** 2026-04-14
-- **File:** components/widgets/Checklist/Widget.tsx:147-150
 - **Resolution:** Resolved outside journal workflow. 2026-04-14 audit confirmed widget is clean.
 
 ### MEDIUM MiniAppWidget uses hardcoded Tailwind text sizes with `skipScaling: true`

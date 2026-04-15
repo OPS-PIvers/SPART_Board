@@ -57,7 +57,8 @@ export type WidgetType =
   | 'activity-wall'
   | 'first-5'
   | 'work-symbols'
-  | 'blooms-taxonomy';
+  | 'blooms-taxonomy'
+  | 'blooms-detail';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -86,6 +87,12 @@ export interface Student {
   lastName: string;
   /** Teacher-distributed join code used for live sessions and quizzes (zero-padded, e.g. "01") */
   pin: string;
+  /**
+   * Stable ClassLink link, stamped when the student is imported or merged from
+   * ClassLink. Enables re-sync without duplicating rows even if the student's
+   * name changes upstream. Undefined for manually created students.
+   */
+  classLinkSourcedId?: string;
 }
 
 /**
@@ -158,6 +165,108 @@ export interface Path {
   color: string;
   width: number;
 }
+
+// --- Whiteboard object model (Phase 2a) ---
+// DrawableObject is a polymorphic union that replaces the pen-only `Path[]`
+// model used in Phase 1. All objects share an id + z + optional rotation;
+// each kind adds its own geometry/style fields. Rendering dispatches on
+// `kind` (see components/widgets/DrawingWidget/useDrawingCanvas.ts).
+
+export type DrawableObjectKind =
+  | 'path'
+  | 'rect'
+  | 'ellipse'
+  | 'line'
+  | 'arrow'
+  | 'text'
+  | 'image';
+
+export interface BaseDrawableObject {
+  id: string;
+  kind: DrawableObjectKind;
+  z: number;
+  rotation?: number;
+}
+
+export interface PathObject extends BaseDrawableObject {
+  kind: 'path';
+  points: Point[];
+  color: string;
+  width: number;
+}
+
+export interface RectObject extends BaseDrawableObject {
+  kind: 'rect';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  stroke: string;
+  strokeWidth: number;
+  fill?: string;
+}
+
+export interface EllipseObject extends BaseDrawableObject {
+  kind: 'ellipse';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  stroke: string;
+  strokeWidth: number;
+  fill?: string;
+}
+
+export interface LineObject extends BaseDrawableObject {
+  kind: 'line';
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  stroke: string;
+  strokeWidth: number;
+}
+
+export interface ArrowObject extends BaseDrawableObject {
+  kind: 'arrow';
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  stroke: string;
+  strokeWidth: number;
+}
+
+export interface TextObject extends BaseDrawableObject {
+  kind: 'text';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  content: string;
+  fontFamily: string;
+  fontSize: number;
+  color: string;
+}
+
+export interface ImageObject extends BaseDrawableObject {
+  kind: 'image';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  src: string;
+  assetId?: string;
+}
+
+export type DrawableObject =
+  | PathObject
+  | RectObject
+  | EllipseObject
+  | LineObject
+  | ArrowObject
+  | TextObject
+  | ImageObject;
 
 export interface ChecklistItem {
   id: string;
@@ -341,8 +450,24 @@ export interface SoundConfig {
 }
 
 export interface DrawingConfig {
-  mode: 'window' | 'overlay';
-  paths: Path[];
+  /**
+   * @deprecated Annotation mode is now an app-level overlay (not a widget).
+   * Legacy widgets may have this set; it is otherwise unused and kept only
+   * for backward compatibility.
+   */
+  mode?: 'window' | 'overlay';
+  /**
+   * Legacy pen-only stroke list. Still used by the per-widget annotation
+   * feature on DraggableWindow (`widget.annotation.paths`). The DrawingWidget
+   * migrates this to `objects[]` on read via `migrateDrawingConfig`.
+   */
+  paths?: Path[];
+  /**
+   * Canonical whiteboard content for the DrawingWidget: a polymorphic list
+   * of drawable objects. Optional so the per-widget annotation feature can
+   * continue storing only `paths`.
+   */
+  objects?: DrawableObject[];
   color?: string;
   width?: number;
   customColors?: string[];
@@ -558,6 +683,13 @@ export interface BloomsTaxonomyConfig {
   enabledCategories?: BloomsCategoryKey[];
   aiTopic?: string;
   themeColor?: string;
+}
+
+export interface BloomsDetailConfig {
+  parentWidgetId: string;
+  level: BloomsLevelKey;
+  category?: BloomsCategoryKey;
+  buildingId?: string;
 }
 
 export interface BloomsTaxonomyGlobalConfig {
@@ -816,7 +948,6 @@ export interface ScoreboardGlobalConfig {
 // --- Drawing Global Config ---
 export interface BuildingDrawingDefaults {
   buildingId: string;
-  mode?: 'window' | 'overlay';
   width?: number;
   customColors?: string[];
 }
@@ -1385,6 +1516,13 @@ export interface QuizPublicQuestion {
   orderingItems?: string[];
 }
 
+export interface QuizLeaderboardEntry {
+  pin: string;
+  name?: string;
+  score: number;
+  rank: number;
+}
+
 /** Live quiz session document in Firestore (/quiz_sessions/{teacherUid}) */
 export interface QuizSession {
   id: string; // teacher's UID
@@ -1436,6 +1574,8 @@ export interface QuizSession {
   soundEffectsEnabled?: boolean;
   /** Current phase within a question: 'answering' (default) or 'reviewing' (between-question review) */
   questionPhase?: 'answering' | 'reviewing';
+  /** Top-N leaderboard snapshot broadcast by the teacher for student view. */
+  liveLeaderboard?: QuizLeaderboardEntry[];
 }
 
 export interface QuizResponseAnswer {
@@ -2102,6 +2242,10 @@ export interface GuidedLearningStep {
   hideStepNumber?: boolean;
   /** Overlay style for pan-zoom/spotlight interactions */
   showOverlay?: GuidedLearningOverlayType;
+  /** Tooltip anchor relative to hotspot (default 'auto') */
+  tooltipPosition?: 'above' | 'below' | 'left' | 'right' | 'auto';
+  /** Distance in px from hotspot to tooltip edge (default 12) */
+  tooltipOffset?: number;
   /** Content for text-popover and tooltip */
   text?: string;
   /** Firebase Storage URL for audio */
@@ -2114,6 +2258,8 @@ export interface GuidedLearningStep {
   panZoomScale?: number;
   /** Spotlight radius as % of container cqmin (default 25) */
   spotlightRadius?: number;
+  /** Banner color tone for banner overlay (default 'blue') */
+  bannerTone?: 'blue' | 'red' | 'neutral';
   question?: GuidedLearningQuestion;
   /** Seconds before auto-advance in guided mode */
   autoAdvanceDuration?: number;
@@ -2163,11 +2309,14 @@ export interface GuidedLearningPublicStep {
   interactionType: GuidedLearningInteractionType;
   hideStepNumber?: boolean;
   showOverlay?: GuidedLearningOverlayType;
+  tooltipPosition?: 'above' | 'below' | 'left' | 'right' | 'auto';
+  tooltipOffset?: number;
   text?: string;
   audioUrl?: string;
   videoUrl?: string;
   panZoomScale?: number;
   spotlightRadius?: number;
+  bannerTone?: 'blue' | 'red' | 'neutral';
   question?: {
     type: GuidedLearningQuestionType;
     text: string;
@@ -2283,7 +2432,8 @@ export type WidgetConfig =
   | SoundboardConfig
   | ActivityWallConfig
   | WorkSymbolsConfig
-  | BloomsTaxonomyConfig;
+  | BloomsTaxonomyConfig
+  | BloomsDetailConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'url'
@@ -2402,7 +2552,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'url'
                                                                                                                   ? WorkSymbolsConfig
                                                                                                                   : T extends 'blooms-taxonomy'
                                                                                                                     ? BloomsTaxonomyConfig
-                                                                                                                    : never;
+                                                                                                                    : T extends 'blooms-detail'
+                                                                                                                      ? BloomsDetailConfig
+                                                                                                                      : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

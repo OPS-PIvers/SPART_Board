@@ -23,6 +23,7 @@ import {
   Globe,
   Building2,
   SlidersHorizontal,
+  Users,
 } from 'lucide-react';
 import { GoogleDriveIcon } from '@/components/common/GoogleDriveIcon';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
@@ -39,11 +40,13 @@ import { SidebarGoogleDrive } from './SidebarGoogleDrive';
 import { SidebarLanguageRegion } from './SidebarLanguageRegion';
 import { SidebarBuildings } from './SidebarBuildings';
 import { SidebarPreferences } from './SidebarPreferences';
+import { SidebarClasses } from './SidebarClasses';
 
 type MenuSection =
   | 'main'
   | 'boards'
   | 'backgrounds'
+  | 'classes'
   | 'style'
   | 'quick-access'
   | 'google-drive'
@@ -67,6 +70,7 @@ export const Sidebar: React.FC = () => {
     clearAllWidgets,
     setGlobalStyle,
     addToast,
+    rosters,
   } = useDashboard();
 
   const { isConnected: isDriveConnected } = useGoogleDrive();
@@ -99,7 +103,11 @@ export const Sidebar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleOpenSidebar = () => setIsOpen(true);
+    const handleOpenSidebar = (e: Event) => {
+      setIsOpen(true);
+      const detail = (e as CustomEvent<{ section?: MenuSection }>).detail;
+      if (detail?.section) setActiveSection(detail.section);
+    };
     window.addEventListener('open-sidebar', handleOpenSidebar);
 
     return () => {
@@ -394,6 +402,37 @@ export const Sidebar: React.FC = () => {
                     </span>
                     <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                   </button>
+                  <button
+                    onClick={() => setActiveSection('classes')}
+                    className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-brand-blue-lighter/40 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-brand-blue-lighter group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
+                      <Users className="w-4 h-4 text-brand-blue-light group-hover:text-brand-blue-primary transition-colors" />
+                    </div>
+                    <span className="flex-grow text-[13px]">
+                      {t('sidebar.nav.classes', {
+                        defaultValue: 'My Classes',
+                      })}
+                    </span>
+                    <span className="text-xxs bg-brand-blue-lighter text-brand-blue-primary px-2 py-0.5 rounded-full font-bold">
+                      {rosters.length}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
+                  </button>
+                  <button
+                    onClick={() => setActiveSection('buildings')}
+                    className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-brand-blue-lighter/40 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-teal-50 group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
+                      <Building2 className="w-4 h-4 text-teal-400 group-hover:text-brand-blue-primary transition-colors" />
+                    </div>
+                    <span className="flex-grow text-[13px]">
+                      {t('sidebar.nav.buildings', {
+                        defaultValue: 'My Building(s)',
+                      })}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
+                  </button>
                 </div>
 
                 <div className="mx-5 my-2.5 border-t border-slate-100" />
@@ -435,20 +474,6 @@ export const Sidebar: React.FC = () => {
                       {activeDashboard?.settings?.quickAccessWidgets?.length ??
                         0}
                       /2
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
-                  </button>
-                  <button
-                    onClick={() => setActiveSection('buildings')}
-                    className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-brand-blue-lighter/40 transition-colors text-left"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-teal-50 group-hover:bg-brand-blue-lighter flex items-center justify-center transition-colors flex-shrink-0">
-                      <Building2 className="w-4 h-4 text-teal-400 group-hover:text-brand-blue-primary transition-colors" />
-                    </div>
-                    <span className="flex-grow text-[13px]">
-                      {t('sidebar.nav.buildings', {
-                        defaultValue: 'My Building(s)',
-                      })}
                     </span>
                     <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                   </button>
@@ -516,6 +541,9 @@ export const Sidebar: React.FC = () => {
 
               {/* BACKGROUNDS SECTION */}
               <SidebarBackgrounds isVisible={activeSection === 'backgrounds'} />
+
+              {/* CLASSES SECTION */}
+              <SidebarClasses isVisible={activeSection === 'classes'} />
 
               {/* STYLE SECTION */}
               <StylePanel
