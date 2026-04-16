@@ -332,6 +332,58 @@ export const QuizAssignmentSettingsModal: React.FC<
               Export results to a shared Google Sheet for your PLC team.
             </p>
 
+            {/* Class Periods (multi-select) — always visible */}
+            <div className="mt-3">
+              <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                Class Periods
+              </label>
+              {rosters.length > 0 ? (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                  {rosters.map((r) => {
+                    const checked = selectedPeriodNames.includes(r.name);
+                    return (
+                      <label
+                        key={r.id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1.5 py-1"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setSelectedPeriodNames((prev) =>
+                              checked
+                                ? prev.filter((n) => n !== r.name)
+                                : [...prev, r.name]
+                            );
+                          }}
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-slate-800">{r.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={selectedPeriodNames.join(', ')}
+                  onChange={(e) => {
+                    const names = e.target.value
+                      .split(',')
+                      .map((n) => n.trim())
+                      .filter(Boolean);
+                    setSelectedPeriodNames([...new Set(names)]);
+                  }}
+                  placeholder="e.g. Period 1, Period 2"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              )}
+              <p className="text-xxs text-slate-400 mt-0.5">
+                Select class periods for this assignment. Students will choose
+                their class when joining.
+              </p>
+            </div>
+
             {plcMode && (
               <div className="mt-3 space-y-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
                 <div>
@@ -348,50 +400,6 @@ export const QuizAssignmentSettingsModal: React.FC<
                   <p className="text-xxs text-slate-400 mt-0.5">
                     Appears in the &quot;Teacher&quot; column of the shared
                     sheet
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
-                    Class Periods
-                  </label>
-                  {rosters.length > 0 ? (
-                    <div className="space-y-1.5 max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
-                      {rosters.map((r) => {
-                        const checked = selectedPeriodNames.includes(r.name);
-                        return (
-                          <label
-                            key={r.id}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1.5 py-1"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                setSelectedPeriodNames((prev) =>
-                                  checked
-                                    ? prev.filter((n) => n !== r.name)
-                                    : [...prev, r.name]
-                                );
-                              }}
-                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                            <span className="text-sm text-slate-800">
-                              {r.name}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xxs text-slate-500 italic">
-                      No rosters available. Add rosters in the Class widget to
-                      enable student name lookup.
-                    </p>
-                  )}
-                  <p className="text-xxs text-slate-400 mt-0.5">
-                    Select class periods for this assignment. Students will
-                    choose their class when joining.
                   </p>
                 </div>
 

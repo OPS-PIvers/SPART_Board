@@ -39,6 +39,7 @@ import {
   QuizQuestion,
   QuizPublicQuestion,
 } from '../types';
+import { resolvePeriodNames } from '../utils/periodCompat';
 
 // Re-export for backward compatibility with callers that imported
 // QuizSessionOptions from this module before it was moved into types.ts.
@@ -505,8 +506,17 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         return s === 'waiting' || s === 'active' || s === 'paused';
       });
       if (joinable.length === 0) return null;
+      // Match joinQuizSession's selection: prefer the most recently created.
+      joinable.sort((a, b) => {
+        const at = (a.data() as QuizSession).startedAt ?? 0;
+        const bt = (b.data() as QuizSession).startedAt ?? 0;
+        return bt - at;
+      });
       const sessionData = joinable[0].data() as QuizSession;
-      return { periodNames: sessionData.periodNames ?? [] };
+      // resolvePeriodNames normalises legacy periodName + new periodNames
+      // into a typed string[], avoiding the `any[]` from Firestore's
+      // DocumentData bleed-through.
+      return { periodNames: resolvePeriodNames(sessionData) };
     },
     []
   );
@@ -605,6 +615,13 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
             ...(classPeriod ? { classPeriod } : {}),
           };
           await setDoc(responseRef, newResponse);
+        } else if (classPeriod) {
+          // Backfill classPeriod on existing response (e.g. student joined
+          // before periods were configured, or reloaded after a change).
+          const existing = existingSnap.data() as QuizResponse;
+          if (existing.classPeriod !== classPeriod) {
+            await updateDoc(responseRef, { classPeriod });
+          }
         }
 
         setSession(sessionData);

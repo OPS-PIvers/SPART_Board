@@ -436,13 +436,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 gap: 'min(8px, 2cqmin)',
               }}
             >
-              <span
+              <label
+                htmlFor="quiz-results-period-filter"
                 className="text-brand-blue-primary/60 font-bold uppercase tracking-widest shrink-0"
                 style={{ fontSize: 'min(10px, 3cqmin)' }}
               >
                 Period:
-              </span>
+              </label>
               <select
+                id="quiz-results-period-filter"
                 value={periodFilter}
                 onChange={(e) => setPeriodFilter(e.target.value)}
                 className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
