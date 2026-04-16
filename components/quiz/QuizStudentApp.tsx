@@ -94,11 +94,17 @@ const QuizJoinFlow: React.FC = () => {
   const [pin, setPin] = useState('');
   const [joined, setJoined] = useState(false);
 
+  // Multi-period selection step: after entering code+PIN, if the session has
+  // multiple periodNames the student picks their class before joining.
+  const [periodStep, setPeriodStep] = useState<string[] | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+
   const {
     session,
     myResponse,
     loading,
     error,
+    lookupSession,
     joinQuizSession,
     submitAnswer,
     completeQuiz,
@@ -108,11 +114,26 @@ const QuizJoinFlow: React.FC = () => {
 
   const handleJoin = useCallback(
     async (joinCode: string, joinPin: string) => {
-      await joinQuizSession(joinCode, joinPin);
+      // Look up the session to check for multi-period selection
+      const sessionInfo = await lookupSession(joinCode);
+      if (sessionInfo && sessionInfo.periodNames.length > 1) {
+        // Show period selector step
+        setPeriodStep(sessionInfo.periodNames);
+        return;
+      }
+      // Single or no period — join directly (auto-select if exactly 1)
+      const autoClassPeriod = sessionInfo?.periodNames[0];
+      await joinQuizSession(joinCode, joinPin, autoClassPeriod);
       setJoined(true);
     },
-    [joinQuizSession]
+    [lookupSession, joinQuizSession]
   );
+
+  const handlePeriodConfirm = useCallback(async () => {
+    if (!selectedPeriod) return;
+    await joinQuizSession(code, pin, selectedPeriod);
+    setJoined(true);
+  }, [joinQuizSession, code, pin, selectedPeriod]);
 
   const handleAnswer = useCallback(
     async (questionId: string, answer: string, speedBonus?: number) => {
@@ -130,6 +151,76 @@ const QuizJoinFlow: React.FC = () => {
   // must always enter their PIN manually.
   // (If you want URL-based pin support: ?code=XXXXXX&pin=01 is an option for
   // future work, but not implemented here to avoid leaking PINs in URL logs.)
+
+  // Period selection step — shown when session has multiple class periods
+  if (periodStep && !joined) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center justify-center mb-8">
+            <ClipboardList className="w-5 h-5 text-violet-400 mr-2" />
+            <span className="text-sm text-slate-300 font-semibold">
+              Student Quiz
+            </span>
+          </div>
+
+          <h1 className="text-2xl font-black text-white mb-2 text-center">
+            Select Your Class
+          </h1>
+          <p className="text-slate-400 text-sm text-center mb-6">
+            Which class period are you in?
+          </p>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-2 mb-6">
+            {periodStep.map((period) => (
+              <button
+                key={period}
+                onClick={() => setSelectedPeriod(period)}
+                className={`w-full px-4 py-4 rounded-xl text-lg font-bold transition-all ${
+                  selectedPeriod === period
+                    ? 'bg-violet-600 text-white ring-2 ring-violet-400'
+                    : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => void handlePeriodConfirm()}
+            disabled={loading || !selectedPeriod}
+            className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-lg rounded-xl flex items-center justify-center gap-2 transition-colors"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                Continue <ArrowRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              setPeriodStep(null);
+              setSelectedPeriod(null);
+            }}
+            className="w-full mt-3 py-2 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Not yet joined
   if (!joined || !session) {

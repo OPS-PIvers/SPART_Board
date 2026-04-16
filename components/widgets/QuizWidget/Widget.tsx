@@ -205,7 +205,11 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         const scoringMode =
           currentConfig.liveScoreboardScoring ?? 'per-question';
         const displayMode = currentConfig.liveScoreboardMode ?? 'pin';
-        const pinToName = buildPinToNameMap(rosters, currentConfig.periodName);
+        const pinToName = buildPinToNameMap(
+          rosters,
+          currentConfig.periodNames ??
+            (currentConfig.periodName ? [currentConfig.periodName] : [])
+        );
 
         // Include ALL responses — joined students appear at 0 score, in-progress
         // get a running score, completed get their final score.
@@ -318,6 +322,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     config.liveScoreboardScoring,
     config.liveScoreboardMode,
     config.liveScoreboardWidgetId,
+    config.periodNames,
     config.periodName,
     responses,
     loadedQuizData,
@@ -665,7 +670,9 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 sessionOptions,
                 plcMode: plcOptions.plcMode,
                 teacherName: plcOptions.teacherName,
-                periodName: plcOptions.periodName,
+                periodName:
+                  plcOptions.periodNames?.[0] ?? plcOptions.periodName,
+                periodNames: plcOptions.periodNames,
                 plcSheetUrl: plcOptions.plcSheetUrl,
               },
               'active'
@@ -681,7 +688,9 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 activeLiveSessionCode: code,
                 plcMode: plcOptions.plcMode,
                 teacherName: plcOptions.teacherName ?? '',
-                periodName: plcOptions.periodName ?? '',
+                periodName:
+                  plcOptions.periodNames?.[0] ?? plcOptions.periodName ?? '',
+                periodNames: plcOptions.periodNames ?? [],
                 plcSheetUrl: plcOptions.plcSheetUrl ?? '',
               } as QuizConfig,
             });
@@ -804,6 +813,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               activeAssignmentId: a.id,
               activeLiveSessionCode: a.code,
               periodName: a.periodName ?? '',
+              periodNames: a.periodNames ?? [],
               teacherName: a.teacherName ?? '',
               plcMode: a.plcMode,
               plcSheetUrl: a.plcSheetUrl ?? '',
@@ -811,6 +821,16 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           });
         }}
         onArchiveStart={async (a) => {
+          // Block start if no class periods are selected.
+          const periods = a.periodNames ?? (a.periodName ? [a.periodName] : []);
+          if (periods.length === 0) {
+            addToast(
+              'Select at least one class period before starting. Open Settings to add periods.',
+              'error'
+            );
+            setEditingAssignment(a);
+            return;
+          }
           // Resume the paused assignment, then open the monitor view.
           const meta = quizzes.find((q) => q.id === a.quizId);
           if (!meta) {
@@ -840,6 +860,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               activeAssignmentId: a.id,
               activeLiveSessionCode: a.code,
               periodName: a.periodName ?? '',
+              periodNames: a.periodNames ?? [],
               teacherName: a.teacherName ?? '',
               plcMode: a.plcMode,
               plcSheetUrl: a.plcSheetUrl ?? '',
@@ -865,6 +886,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               selectedQuizTitle: a.quizTitle,
               activeAssignmentId: a.id,
               periodName: a.periodName ?? '',
+              periodNames: a.periodNames ?? [],
               teacherName: a.teacherName ?? '',
             } as QuizConfig,
           });

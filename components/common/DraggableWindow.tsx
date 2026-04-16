@@ -622,6 +622,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const isInteractive = target.closest(DRAG_BLOCKING_SELECTOR);
     if (isInteractive) return;
 
+    // On touch/pen, also bail out if the target is inside a scrollable
+    // element so that native touch-scroll works within modals and panels.
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      if (target.closest(SCROLLABLE_ELEMENTS_SELECTOR)) return;
+    }
+
     // Don't drag if annotating
     if (isAnnotating) return;
 

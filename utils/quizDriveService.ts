@@ -463,6 +463,7 @@ export class QuizDriveService {
       'Timestamp',
       'Teacher',
       'Period',
+      'Class Period',
       'Student',
       'PIN',
       'Status',
@@ -502,6 +503,7 @@ export class QuizDriveService {
         timestamp,
         teacherName,
         periodName,
+        r.classPeriod ?? '',
         resolveStudent(r.pin),
         r.pin,
         r.status,
@@ -513,6 +515,9 @@ export class QuizDriveService {
         ...answerCols,
       ];
     });
+
+    // Sort rows by student name (column index 4) for consistent export order
+    dataRows.sort((a, b) => a[4].localeCompare(b[4]));
 
     // PLC mode: append to existing shared sheet
     if (options?.plcMode) {

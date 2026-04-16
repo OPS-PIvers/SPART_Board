@@ -103,8 +103,12 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   onBack,
 }) => {
   const pinToName = useMemo(
-    () => buildPinToNameMap(rosters, config.periodName),
-    [rosters, config.periodName]
+    () =>
+      buildPinToNameMap(
+        rosters,
+        config.periodNames ?? (config.periodName ? [config.periodName] : [])
+      ),
+    [rosters, config.periodNames, config.periodName]
   );
   const scoringConfig = useMemo(
     () => ({

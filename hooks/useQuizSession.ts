@@ -39,6 +39,7 @@ import {
   QuizQuestion,
   QuizPublicQuestion,
 } from '../types';
+import { resolvePeriodNames } from '../utils/periodCompat';
 
 // Re-export for backward compatibility with callers that imported
 // QuizSessionOptions from this module before it was moved into types.ts.
@@ -404,7 +405,17 @@ export interface UseQuizSessionStudentResult {
    * when sessions were keyed by the teacher's uid.
    */
   sessionIdRef: MutableRefObject<string | null>;
-  joinQuizSession: (code: string, pin: string) => Promise<string>;
+  /**
+   * Look up a session by join code without actually joining.
+   * Returns the session's periodNames so the UI can show a period picker
+   * before the student commits to joining.
+   */
+  lookupSession: (code: string) => Promise<{ periodNames: string[] } | null>;
+  joinQuizSession: (
+    code: string,
+    pin: string,
+    classPeriod?: string
+  ) => Promise<string>;
   submitAnswer: (
     questionId: string,
     answer: string,
@@ -476,8 +487,46 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     );
   }, [sessionIdState, studentUidState]);
 
+  const lookupSession = useCallback(
+    async (code: string): Promise<{ periodNames: string[] } | null> => {
+      const normCode = code
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase();
+      if (!normCode) return null;
+      const snap = await getDocs(
+        query(
+          collection(db, QUIZ_SESSIONS_COLLECTION),
+          where('code', '==', normCode)
+        )
+      );
+      if (snap.empty) return null;
+      const joinable = snap.docs.filter((d) => {
+        const s = (d.data() as QuizSession).status;
+        return s === 'waiting' || s === 'active' || s === 'paused';
+      });
+      if (joinable.length === 0) return null;
+      // Match joinQuizSession's selection: prefer the most recently created.
+      joinable.sort((a, b) => {
+        const at = (a.data() as QuizSession).startedAt ?? 0;
+        const bt = (b.data() as QuizSession).startedAt ?? 0;
+        return bt - at;
+      });
+      const sessionData = joinable[0].data() as QuizSession;
+      // resolvePeriodNames normalises legacy periodName + new periodNames
+      // into a typed string[], avoiding the `any[]` from Firestore's
+      // DocumentData bleed-through.
+      return { periodNames: resolvePeriodNames(sessionData) };
+    },
+    []
+  );
+
   const joinQuizSession = useCallback(
-    async (code: string, pin: string): Promise<string> => {
+    async (
+      code: string,
+      pin: string,
+      classPeriod?: string
+    ): Promise<string> => {
       setLoading(true);
       setError(null);
       try {
@@ -563,8 +612,16 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
             answers: [],
             score: null,
             submittedAt: null,
+            ...(classPeriod ? { classPeriod } : {}),
           };
           await setDoc(responseRef, newResponse);
+        } else if (classPeriod) {
+          // Backfill classPeriod on existing response (e.g. student joined
+          // before periods were configured, or reloaded after a change).
+          const existing = existingSnap.data() as QuizResponse;
+          if (existing.classPeriod !== classPeriod) {
+            await updateDoc(responseRef, { classPeriod });
+          }
         }
 
         setSession(sessionData);
@@ -650,19 +707,17 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       studentUid
     );
 
-    await updateDoc(responseRef, {
-      tabSwitchWarnings: increment(1),
-    });
-
-    // Base the new count on whichever is higher: our local ref or the latest
-    // server value (via myResponseRef). This guards against the case where the
-    // sync effect hasn't fired yet (e.g., rapid blur before first snapshot),
-    // which would cause warningCountRef to under-count and return too low a
-    // value, preventing the auto-submit threshold from triggering.
+    // Capture pre-increment count BEFORE Firestore write so the snapshot
+    // listener can't race and double-count the same increment.
     const baseCount = Math.max(
       warningCountRef.current,
       myResponseRef.current?.tabSwitchWarnings ?? 0
     );
+
+    await updateDoc(responseRef, {
+      tabSwitchWarnings: increment(1),
+    });
+
     const newCount = baseCount + 1;
     warningCountRef.current = newCount;
     setWarningCount(newCount);
@@ -675,6 +730,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     loading,
     error,
     sessionIdRef,
+    lookupSession,
     joinQuizSession,
     submitAnswer,
     completeQuiz,
