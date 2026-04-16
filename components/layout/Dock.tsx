@@ -106,6 +106,8 @@ export const Dock: React.FC = () => {
     annotationActive,
     openAnnotation,
     closeAnnotation,
+    setPendingQuizShareId,
+    setPendingAssignmentShareId,
   } = useDashboard();
   const {
     canAccessWidget,
@@ -361,8 +363,15 @@ export const Dock: React.FC = () => {
             });
             addToast('HTML opened — click the save icon to keep it!', 'info');
           } else if (result.action === 'import-quiz') {
-            // Navigate to the share/quiz URL to trigger import
-            window.location.href = `${window.location.origin}/share/quiz/${result.shareId}`;
+            // Soft import — set pending state; DashboardView will import the
+            // quiz and open the Quiz widget to the Library tab. No reload.
+            setPendingQuizShareId(result.shareId);
+            addToast('Importing shared quiz…', 'info');
+          } else if (result.action === 'import-assignment') {
+            // Soft import — set pending state; DashboardView will import the
+            // assignment (paused) and open the Quiz widget to the Archive tab.
+            setPendingAssignmentShareId(result.shareId);
+            addToast('Importing shared assignment…', 'info');
           } else if (result.action === 'prompt-text-or-checklist') {
             // Ambiguous: show a picker modal for the user to decide
             setSmartPastePending(result.text);
@@ -384,6 +393,8 @@ export const Dock: React.FC = () => {
     imagePastePending,
     smartPastePending,
     urlPastePending,
+    setPendingQuizShareId,
+    setPendingAssignmentShareId,
   ]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);

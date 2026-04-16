@@ -20,7 +20,6 @@ import {
 import { db, isAuthBypass } from '../config/firebase';
 import { useAuth } from '../context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
-import { useQuizSessionTeacher } from './useQuizSession';
 import { QuizData, QuizMetadata } from '../types';
 import { QuizDriveService } from '../utils/quizDriveService';
 import {
@@ -60,7 +59,6 @@ export interface UseQuizResult {
 export const useQuiz = (userId: string | undefined): UseQuizResult => {
   const { googleAccessToken } = useAuth();
   const { isConnected } = useGoogleDrive();
-  const { session, endQuizSession } = useQuizSessionTeacher(userId);
   const [quizzes, setQuizzes] = useState<QuizMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,10 +156,10 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
       if (!userId) throw new Error('Not authenticated');
       const drive = getDriveService();
 
-      // If this quiz is currently active, end the session first
-      if (session && session.quizId === quizId) {
-        await endQuizSession();
-      }
+      // Note: the old session-cascade lived here. With multi-assignment support,
+      // ending a session is no longer tied to deleting a quiz from the library —
+      // the caller (Widget.tsx) is responsible for warning the teacher if any
+      // active assignments reference this quiz.
 
       // Delete from Drive (ignore 404 — file may already be gone)
       await drive.deleteQuizFile(driveFileId).catch((err: unknown) => {
@@ -172,7 +170,7 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
       // Delete metadata from Firestore
       await deleteDoc(doc(db, 'users', userId, QUIZZES_COLLECTION, quizId));
     },
-    [userId, getDriveService, session, endQuizSession]
+    [userId, getDriveService]
   );
 
   const importFromSheet = useCallback(

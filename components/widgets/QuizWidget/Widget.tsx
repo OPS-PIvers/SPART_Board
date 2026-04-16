@@ -13,11 +13,14 @@ import {
   useQuizSessionTeacher,
   type QuizSessionOptions,
 } from '@/hooks/useQuizSession';
+import { useQuizAssignments } from '@/hooks/useQuizAssignments';
 import { QuizManager, PlcOptions } from './components/QuizManager';
 import { QuizImporter } from './components/QuizImporter';
 import { QuizEditorModal } from './components/QuizEditorModal';
 import { QuizPreview } from './components/QuizPreview';
 import { QuizResults } from './components/QuizResults';
+import { QuizAssignmentSettingsModal } from './components/QuizAssignmentSettingsModal';
+import type { QuizAssignment } from '@/types';
 import {
   buildPinToNameMap,
   buildScoreboardTeams,
@@ -51,13 +54,29 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     session: liveSession,
     responses,
-    startQuizSession,
     advanceQuestion,
     endQuizSession,
     removeStudent,
     revealAnswer,
     hideAnswer,
-  } = useQuizSessionTeacher(user?.uid);
+  } = useQuizSessionTeacher(config.activeAssignmentId);
+
+  // Assignment archive — per-teacher list of past/current assignments.
+  const {
+    assignments,
+    loading: assignmentsLoading,
+    createAssignment,
+    pauseAssignment,
+    resumeAssignment,
+    deactivateAssignment,
+    deleteAssignment,
+    updateAssignmentSettings,
+    shareAssignment,
+  } = useQuizAssignments(user?.uid);
+
+  // Ephemeral modal state for per-assignment settings editing.
+  const [editingAssignment, setEditingAssignment] =
+    useState<QuizAssignment | null>(null);
 
   // Local state for views that need loaded data
   const [loadedQuizData, setLoadedQuizData] = useState<QuizData | null>(null);
@@ -309,24 +328,27 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     widget.id,
   ]);
 
-  // Auto-disable live scoreboard when session ends
+  // Auto-disable live scoreboard when session ends, and clear the LIVE badge
+  // when paused. A paused session can be resumed, so we keep the teacher's
+  // liveScoreboardEnabled preference — we just drop the "LIVE" badge on the
+  // scoreboard widget while the quiz isn't accepting answers.
   useEffect(() => {
-    if (
-      config.liveScoreboardEnabled &&
-      liveSession &&
-      liveSession.status === 'ended'
-    ) {
-      // Clear the liveQuizWidgetId on the scoreboard to remove the LIVE badge
-      const scoreboardId = configRef.current.liveScoreboardWidgetId;
-      if (scoreboardId) {
-        const widgets = widgetsRef.current;
-        const scoreboard = widgets?.find((w) => w.id === scoreboardId);
-        if (scoreboard) {
-          updateWidget(scoreboardId, {
-            config: { ...scoreboard.config, liveQuizWidgetId: undefined },
-          });
-        }
+    if (!config.liveScoreboardEnabled || !liveSession) return;
+    const isEnded = liveSession.status === 'ended';
+    const isPaused = liveSession.status === 'paused';
+    if (!isEnded && !isPaused) return;
+
+    const scoreboardId = configRef.current.liveScoreboardWidgetId;
+    if (scoreboardId) {
+      const widgets = widgetsRef.current;
+      const scoreboard = widgets?.find((w) => w.id === scoreboardId);
+      if (scoreboard) {
+        updateWidget(scoreboardId, {
+          config: { ...scoreboard.config, liveQuizWidgetId: undefined },
+        });
       }
+    }
+    if (isEnded) {
       handleUpdateQuizConfig({ liveScoreboardEnabled: false });
     }
   }, [
@@ -532,9 +554,37 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           await advanceQuestion();
         }}
         onEnd={async () => {
-          await endQuizSession();
+          // "End" now means Make Inactive at the assignment level so the URL
+          // dies but responses are preserved. Confirmation happens inside
+          // QuizLiveMonitor.
+          const assignmentId = config.activeAssignmentId;
+          if (assignmentId) {
+            await deactivateAssignment(assignmentId);
+          } else {
+            await endQuizSession();
+          }
           setView('manager');
         }}
+        onPause={
+          config.activeAssignmentId
+            ? async () => {
+                const id = config.activeAssignmentId;
+                if (!id) return;
+                await pauseAssignment(id);
+                addToast('Assignment paused.', 'success');
+              }
+            : undefined
+        }
+        onResume={
+          config.activeAssignmentId
+            ? async () => {
+                const id = config.activeAssignmentId;
+                if (!id) return;
+                await resumeAssignment(id);
+                addToast('Assignment resumed.', 'success');
+              }
+            : undefined
+        }
         config={config}
         rosters={rosters}
         onUpdateConfig={handleUpdateQuizConfig}
@@ -552,8 +602,6 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         quizzes={quizzes}
         loading={quizzesLoading}
         error={quizzesError ?? dataError}
-        hasActiveSession={!!(liveSession && liveSession.status !== 'ended')}
-        activeQuizId={liveSession?.quizId ?? null}
         onNew={() => {
           const now = Date.now();
           setEditingQuiz({
@@ -566,11 +614,6 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           setEditingMeta(null);
         }}
         onImport={() => setView('import')}
-        onResume={() => setView('monitor')}
-        onEndSession={async () => {
-          await endQuizSession();
-          addToast('Session ended.', 'success');
-        }}
         onEdit={async (meta) => {
           const data = await loadQuiz(meta);
           if (data) {
@@ -593,13 +636,30 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const data = await loadQuiz(meta);
           if (!data) return;
           try {
-            const code = await startQuizSession(data, mode, sessionOptions);
+            const { id: assignmentId, code } = await createAssignment(
+              {
+                id: meta.id,
+                title: meta.title,
+                driveFileId: meta.driveFileId,
+                questions: data.questions,
+              },
+              {
+                sessionMode: mode,
+                sessionOptions,
+                plcMode: plcOptions.plcMode,
+                teacherName: plcOptions.teacherName,
+                periodName: plcOptions.periodName,
+                plcSheetUrl: plcOptions.plcSheetUrl,
+              },
+              'active'
+            );
             updateWidget(widget.id, {
               config: {
                 ...config,
                 view: 'monitor',
                 selectedQuizId: meta.id,
                 selectedQuizTitle: meta.title,
+                activeAssignmentId: assignmentId,
                 activeLiveSessionCode: code,
                 plcMode: plcOptions.plcMode,
                 teacherName: plcOptions.teacherName ?? '',
@@ -637,17 +697,6 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const data = await loadQuiz(meta);
           if (data) setView('results');
         }}
-        onDelete={async (meta) => {
-          try {
-            await deleteQuiz(meta.id, meta.driveFileId);
-            addToast('Quiz deleted.', 'success');
-          } catch (err) {
-            addToast(
-              err instanceof Error ? err.message : 'Delete failed',
-              'error'
-            );
-          }
-        }}
         onShare={async (meta) => {
           let url: string;
           try {
@@ -666,6 +715,173 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             addToast(`Share link: ${url}`, 'info');
           }
         }}
+        onDelete={async (meta) => {
+          // Block deletion when active/paused assignments reference the quiz,
+          // since the monitor + results views need the answer key from the
+          // library record. Archived (inactive) assignments trigger only a
+          // warning — the teacher has already chosen to end those sessions.
+          const related = assignments.filter((a) => a.quizId === meta.id);
+          const live = related.filter((a) => a.status !== 'inactive');
+          if (live.length > 0) {
+            addToast(
+              `Cannot delete: ${live.length} active or paused assignment(s) still reference this quiz. Deactivate them first.`,
+              'error'
+            );
+            return;
+          }
+          if (related.length > 0) {
+            const ok = window.confirm(
+              `This quiz has ${related.length} archived assignment(s). ` +
+                `Deleting the quiz will prevent viewing their monitor and results. ` +
+                `Continue anyway?`
+            );
+            if (!ok) return;
+          }
+          try {
+            await deleteQuiz(meta.id, meta.driveFileId);
+            addToast('Quiz deleted.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Delete failed',
+              'error'
+            );
+          }
+        }}
+        // ─── Archive tab ─────────────────────────────────────────────────────
+        managerTab={config.managerTab ?? 'library'}
+        onTabChange={(tab) => handleUpdateQuizConfig({ managerTab: tab })}
+        assignments={assignments}
+        assignmentsLoading={assignmentsLoading}
+        onArchiveCopyUrl={(a) => {
+          const url = `${window.location.origin}/quiz?code=${a.code}`;
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            void navigator.clipboard
+              .writeText(url)
+              .then(() => addToast('Join link copied!', 'success'))
+              .catch(() => addToast(`Join link: ${url}`, 'info'));
+          } else {
+            addToast(`Join link: ${url}`, 'info');
+          }
+        }}
+        onArchiveMonitor={async (a) => {
+          // Look up the library quiz metadata so the monitor can load the full
+          // answer key from Drive. If the quiz was deleted from the library,
+          // we still have the session doc but no way to show the answer key.
+          const meta = quizzes.find((q) => q.id === a.quizId);
+          if (!meta) {
+            addToast(
+              'Quiz is no longer in your library — cannot open monitor.',
+              'error'
+            );
+            return;
+          }
+          const data = await loadQuiz(meta);
+          if (!data) return;
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              view: 'monitor',
+              selectedQuizId: a.quizId,
+              selectedQuizTitle: a.quizTitle,
+              activeAssignmentId: a.id,
+              activeLiveSessionCode: a.code,
+              periodName: a.periodName ?? '',
+              teacherName: a.teacherName ?? '',
+              plcMode: a.plcMode,
+              plcSheetUrl: a.plcSheetUrl ?? '',
+            } as QuizConfig,
+          });
+        }}
+        onArchiveResults={async (a) => {
+          const meta = quizzes.find((q) => q.id === a.quizId);
+          if (!meta) {
+            addToast(
+              'Quiz is no longer in your library — cannot open results.',
+              'error'
+            );
+            return;
+          }
+          const data = await loadQuiz(meta);
+          if (!data) return;
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              view: 'results',
+              selectedQuizId: a.quizId,
+              selectedQuizTitle: a.quizTitle,
+              activeAssignmentId: a.id,
+              periodName: a.periodName ?? '',
+              teacherName: a.teacherName ?? '',
+            } as QuizConfig,
+          });
+        }}
+        onArchiveEditSettings={(a) => {
+          setEditingAssignment(a);
+        }}
+        onArchiveShare={async (a) => {
+          const meta = quizzes.find((q) => q.id === a.quizId);
+          if (!meta) {
+            addToast(
+              'Quiz no longer in library — cannot share assignment.',
+              'error'
+            );
+            return;
+          }
+          try {
+            const data = await loadQuiz(meta);
+            if (!data) return;
+            const url = await shareAssignment(a.id, data);
+            try {
+              await navigator.clipboard.writeText(url);
+              addToast('Assignment share link copied!', 'success');
+            } catch {
+              addToast(`Assignment share link: ${url}`, 'info');
+            }
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Share failed',
+              'error'
+            );
+          }
+        }}
+        onArchivePauseResume={async (a) => {
+          try {
+            if (a.status === 'paused') {
+              await resumeAssignment(a.id);
+              addToast('Assignment resumed.', 'success');
+            } else if (a.status === 'active') {
+              await pauseAssignment(a.id);
+              addToast('Assignment paused.', 'success');
+            }
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to update status',
+              'error'
+            );
+          }
+        }}
+        onArchiveDeactivate={async (a) => {
+          try {
+            await deactivateAssignment(a.id);
+            addToast('Assignment deactivated. Responses preserved.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to deactivate',
+              'error'
+            );
+          }
+        }}
+        onArchiveDelete={async (a) => {
+          try {
+            await deleteAssignment(a.id);
+            addToast('Assignment deleted.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to delete',
+              'error'
+            );
+          }
+        }}
       />
       <QuizEditorModal
         isOpen={!!editingQuiz}
@@ -681,6 +897,25 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           addToast(isNew ? 'Quiz created!' : 'Quiz saved!', 'success');
         }}
       />
+      {editingAssignment && (
+        <QuizAssignmentSettingsModal
+          assignment={editingAssignment}
+          rosters={rosters}
+          onClose={() => setEditingAssignment(null)}
+          onSave={async (patch) => {
+            try {
+              await updateAssignmentSettings(editingAssignment.id, patch);
+              addToast('Assignment settings saved.', 'success');
+              setEditingAssignment(null);
+            } catch (err) {
+              addToast(
+                err instanceof Error ? err.message : 'Failed to save settings',
+                'error'
+              );
+            }
+          }}
+        />
+      )}
     </>
   );
 };

@@ -74,6 +74,15 @@ vi.mock('../hooks/useQuiz', () => ({
     importSharedQuiz: vi.fn().mockResolvedValue(undefined),
     shareQuiz: vi.fn().mockResolvedValue(''),
     createQuizTemplate: vi.fn().mockResolvedValue(''),
+    saveQuiz: vi.fn().mockResolvedValue({ id: 'q1', driveFileId: 'drive-1' }),
+  }),
+}));
+vi.mock('../hooks/useQuizAssignments', () => ({
+  useQuizAssignments: () => ({
+    assignments: [],
+    loading: false,
+    error: null,
+    importSharedAssignment: vi.fn().mockResolvedValue('a1'),
   }),
 }));
 
