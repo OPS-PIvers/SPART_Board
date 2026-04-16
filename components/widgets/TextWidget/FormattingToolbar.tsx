@@ -775,6 +775,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
                   <input
                     type="color"
                     className="sr-only"
+                    aria-label="Custom font color"
                     onChange={(e) => {
                       runCommand('foreColor', e.target.value);
                       setShowColorMenu(false);
@@ -827,6 +828,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
                   <input
                     type="color"
                     className="sr-only"
+                    aria-label="Custom highlight color"
                     onChange={(e) => {
                       runCommand('hiliteColor', e.target.value);
                       setShowColorMenu(false);
@@ -868,6 +870,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
                   <input
                     type="color"
                     className="sr-only"
+                    aria-label="Custom background color"
                     onChange={(e) => {
                       onBgColorChange(e.target.value);
                       setShowColorMenu(false);
@@ -1115,6 +1118,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
                       <input
                         type="color"
                         className="sr-only"
+                        aria-label="Custom font color"
                         onChange={(e) => {
                           runCommand('foreColor', e.target.value);
                           setShowOverflowMenu(false);
@@ -1163,6 +1167,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
                       <input
                         type="color"
                         className="sr-only"
+                        aria-label="Custom highlight color"
                         onChange={(e) => {
                           runCommand('hiliteColor', e.target.value);
                           setShowOverflowMenu(false);
@@ -1200,6 +1205,7 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
                       <input
                         type="color"
                         className="sr-only"
+                        aria-label="Custom background color"
                         onChange={(e) => {
                           onBgColorChange(e.target.value);
                           setShowOverflowMenu(false);
