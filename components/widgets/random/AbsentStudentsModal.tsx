@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UserX, Check } from 'lucide-react';
+import { UserX, Check, X } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
 import { useDashboard } from '@/context/useDashboard';
 import type { ClassRoster } from '@/types';
@@ -98,21 +98,31 @@ export const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[12500]"
       maxWidth="max-w-3xl"
       className="h-[80vh]"
       contentClassName="px-6 pb-4 flex flex-col"
       customHeader={
         <div className="px-6 pt-5 pb-3 flex items-center justify-between gap-4 border-b border-slate-100">
           {title}
-          <button
-            onClick={clearAll}
-            disabled={absentIds.size === 0}
-            className="text-xs font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {t('widgets.random.absent.clearAll', {
-              defaultValue: 'Clear all (everyone present)',
-            })}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={clearAll}
+              disabled={absentIds.size === 0}
+              className="text-xs font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {t('widgets.random.absent.clearAll', {
+                defaultValue: 'Clear all (everyone present)',
+              })}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+              aria-label={t('common.close', { defaultValue: 'Close' })}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
       }
     >
