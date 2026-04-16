@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Search, UserX } from 'lucide-react';
-import { FloatingPanel } from '@/components/common/FloatingPanel';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 export interface RestrictionsPickerCandidate {
@@ -76,12 +75,11 @@ export const RestrictionsPicker: React.FC<RestrictionsPickerProps> = ({
       </button>
 
       {open && (
-        <FloatingPanel
-          padding="none"
-          className="absolute top-full right-0 mt-1 w-72 max-h-80 flex flex-col"
+        <div
           role="dialog"
+          className="absolute top-full right-0 mt-1 w-72 max-h-80 flex flex-col z-popover rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         >
-          <div className="p-2 border-b border-slate-100 flex items-center gap-2">
+          <div className="p-2 border-b border-slate-200 flex items-center gap-2">
             <Search size={14} className="text-slate-400 shrink-0" />
             <input
               value={filter}
@@ -89,7 +87,7 @@ export const RestrictionsPicker: React.FC<RestrictionsPickerProps> = ({
               placeholder={t('sidebar.classes.restrictionsFilter', {
                 defaultValue: 'Search classmates…',
               })}
-              className="flex-1 min-w-0 text-sm bg-transparent outline-none"
+              className="flex-1 min-w-0 text-sm text-slate-800 placeholder:text-slate-400 bg-transparent outline-none"
               autoFocus
             />
           </div>
@@ -110,7 +108,7 @@ export const RestrictionsPicker: React.FC<RestrictionsPickerProps> = ({
                   const checked = selectedSet.has(c.id);
                   return (
                     <li key={c.id}>
-                      <label className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-slate-50">
+                      <label className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-800 cursor-pointer hover:bg-slate-100">
                         <input
                           type="checkbox"
                           checked={checked}
@@ -126,14 +124,14 @@ export const RestrictionsPicker: React.FC<RestrictionsPickerProps> = ({
             )}
           </div>
           {count > 0 && (
-            <div className="p-2 border-t border-slate-100 text-xxs text-slate-500 italic">
+            <div className="p-2 border-t border-slate-200 text-xxs text-slate-500 italic">
               {t('sidebar.classes.restrictionsFooter', {
                 defaultValue:
                   'Restrictions apply to both students automatically.',
               })}
             </div>
           )}
-        </FloatingPanel>
+        </div>
       )}
     </div>
   );
