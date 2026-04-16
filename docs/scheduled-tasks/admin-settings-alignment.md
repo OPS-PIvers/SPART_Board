@@ -4,7 +4,7 @@ _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: weekly — Thursday_
 _Last audited: 2026-04-16_
-_Last action: never_
+_Last action: 2026-04-16_
 
 ---
 
@@ -15,19 +15,6 @@ _Nothing currently in progress._
 ---
 
 ## Open
-
-### HIGH 6 widgets have Building\*Defaults + ConfigurationPanel but no getAdminBuildingConfig handler
-
-- **Detected:** 2026-04-16
-- **File:** context/DashboardContext.tsx (getAdminBuildingConfig, lines 2035–2340), components/admin/FeatureConfigurationPanel.tsx
-- **Detail:** The following 6 widgets have all three required pieces — a `Building*Defaults` interface in `types.ts`, a `buildingDefaults` field on their config interface, and a `*ConfigurationPanel.tsx` registered in `BUILDING_CONFIG_PANELS` — but have **no `case` in `getAdminBuildingConfig()`**. This means admins can set building-level defaults through the UI, the data is persisted to Firestore, but the defaults are **never applied** when a teacher adds one of these widgets. The admin config is effectively dead UI.
-  - `url` — `BuildingUrlDefaults` in types.ts; `UrlConfigurationPanel` registered; no `case 'url'`
-  - `soundboard` — `SoundboardBuildingConfig` in types.ts; `SoundboardConfigurationPanel` registered; no `case 'soundboard'`
-  - `schedule` — `BuildingScheduleDefaults` in types.ts; `ScheduleConfigurationPanel` registered; no `case 'schedule'`
-  - `embed` — `BuildingEmbedDefaults` in types.ts; `EmbedConfigurationPanel` registered; no `case 'embed'`
-  - `qr` — `BuildingQRDefaults` in types.ts; `QRConfigurationPanel` registered; no `case 'qr'`
-  - `countdown` — `BuildingCountdownDefaults` in types.ts; `CountdownConfigurationPanel` registered; no `case 'countdown'`
-- **Fix:** For each widget, add a `case '<type>': { ... }` block in `getAdminBuildingConfig()` (context/DashboardContext.tsx ~line 2330) that reads from `adminBuildingConfig.widgetDefaults['<type>']` and spreads the appropriate `Building*Defaults` fields into the returned config object. Follow the pattern of existing cases like `case 'clock'` (line ~2153) or `case 'time-tool'` (line ~2175).
 
 ### MEDIUM 5 widgets have ConfigurationPanels but no Building\*Defaults type infrastructure
 
@@ -70,4 +57,17 @@ _Nothing currently in progress._
 
 ## Completed
 
-_No completed items yet._
+### HIGH 6 widgets have Building\*Defaults + ConfigurationPanel but no getAdminBuildingConfig handler
+
+- **Detected:** 2026-04-16
+- **Completed:** 2026-04-16
+- **File:** context/DashboardContext.tsx (getAdminBuildingConfig)
+- **Detail:** url, soundboard, schedule, embed, qr, countdown had Building\*Defaults interfaces and registered ConfigurationPanels but no `case` in `getAdminBuildingConfig()`, making admin config dead UI.
+- **Resolution:** Added `case` blocks for all 6 widgets in `getAdminBuildingConfig()`:
+  - `url`: Copies `urls[]` array with fresh UUIDs to widget config
+  - `soundboard`: Combines `availableSounds[].id` + `enabledLibrarySoundIds` + `enabledCustomSoundIds` into `selectedSoundIds`
+  - `schedule`: Copies `items` and `schedules` arrays with fresh UUIDs for each schedule and item
+  - `embed`: No-op case with comment — building defaults (`hideUrlField`, `whitelistUrls`) are admin constraints consumed via permission config lookup, not widget config fields
+  - `qr`: Maps `defaultUrl` → `url`, copies `qrColor` and `qrBgColor`
+  - `countdown`: Copies `title`, `startDate`, `eventDate`, `includeWeekends`, `countToday`, `viewMode` (validated against 'number'|'grid')
+    All 1129 unit tests pass; `pnpm type-check`, `pnpm lint --max-warnings 0`, and prettier check all clean.
