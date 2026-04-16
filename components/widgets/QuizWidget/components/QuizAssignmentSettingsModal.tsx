@@ -80,7 +80,10 @@ export const QuizAssignmentSettingsModal: React.FC<
   // PLC
   const [plcMode, setPlcMode] = useState(assignment.plcMode ?? false);
   const [teacherName, setTeacherName] = useState(assignment.teacherName ?? '');
-  const [periodName, setPeriodName] = useState(assignment.periodName ?? '');
+  const [selectedPeriodNames, setSelectedPeriodNames] = useState<string[]>(
+    assignment.periodNames ??
+      (assignment.periodName ? [assignment.periodName] : [])
+  );
   const [plcSheetUrl, setPlcSheetUrl] = useState(assignment.plcSheetUrl ?? '');
 
   const [saving, setSaving] = useState(false);
@@ -113,7 +116,8 @@ export const QuizAssignmentSettingsModal: React.FC<
         sessionOptions,
         plcMode,
         teacherName: teacherName.trim(),
-        periodName: periodName.trim(),
+        periodName: selectedPeriodNames[0] ?? '',
+        periodNames: selectedPeriodNames,
         plcSheetUrl: plcSheetUrl.trim(),
       };
       await onSave(patch);
@@ -126,7 +130,11 @@ export const QuizAssignmentSettingsModal: React.FC<
   };
 
   return (
-    <div className="absolute inset-0 z-overlay bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      className="absolute inset-0 z-overlay bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4"
+      data-no-drag="true"
+      style={{ touchAction: 'auto' }}
+    >
       <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-full">
         {/* Header */}
         <div className="bg-brand-blue-primary p-4 flex items-center justify-between shrink-0">
@@ -345,33 +353,45 @@ export const QuizAssignmentSettingsModal: React.FC<
 
                 <div>
                   <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
-                    Class Period
+                    Class Periods
                   </label>
                   {rosters.length > 0 ? (
-                    <select
-                      value={periodName}
-                      onChange={(e) => setPeriodName(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="">Select a class...</option>
-                      {rosters.map((r) => (
-                        <option key={r.id} value={r.name}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                      {rosters.map((r) => {
+                        const checked = selectedPeriodNames.includes(r.name);
+                        return (
+                          <label
+                            key={r.id}
+                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1.5 py-1"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setSelectedPeriodNames((prev) =>
+                                  checked
+                                    ? prev.filter((n) => n !== r.name)
+                                    : [...prev, r.name]
+                                );
+                              }}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-slate-800">
+                              {r.name}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   ) : (
-                    <input
-                      type="text"
-                      value={periodName}
-                      onChange={(e) => setPeriodName(e.target.value)}
-                      placeholder="e.g. Period 3"
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
+                    <p className="text-xxs text-slate-500 italic">
+                      No rosters available. Add rosters in the Class widget to
+                      enable student name lookup.
+                    </p>
                   )}
                   <p className="text-xxs text-slate-400 mt-0.5">
-                    Must match your Class widget roster name for student name
-                    lookup
+                    Select class periods for this assignment. Students will
+                    choose their class when joining.
                   </p>
                 </div>
 

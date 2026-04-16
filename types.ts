@@ -1604,6 +1604,10 @@ export interface QuizSession {
   questionPhase?: 'answering' | 'reviewing';
   /** Top-N leaderboard snapshot broadcast by the teacher for student view. */
   liveLeaderboard?: QuizLeaderboardEntry[];
+
+  // ─── Multi-class period support ─────────────────────────────────────────────
+  /** Selected class period roster names available for students to join. */
+  periodNames?: string[];
 }
 
 export interface QuizResponseAnswer {
@@ -1652,6 +1656,8 @@ export interface QuizResponse {
    * Used for maintaining quiz integrity.
    */
   tabSwitchWarnings?: number;
+  /** Which class period the student selected when joining (multi-class support). */
+  classPeriod?: string;
 }
 
 /** Global admin configuration for the Quiz widget */
@@ -1678,8 +1684,10 @@ export interface QuizConfig {
   plcSheetUrl?: string;
   /** Teacher's display name for the export sheet */
   teacherName?: string;
-  /** Class period/roster name for the export sheet */
+  /** @deprecated Use periodNames instead. */
   periodName?: string;
+  /** Selected class period roster names. */
+  periodNames?: string[];
   /** PLC member emails (informational only for v1) */
   plcMemberEmails?: string[];
   /** Whether the live scoreboard sync is enabled during a quiz session */
@@ -1715,7 +1723,10 @@ export interface QuizAssignmentSettings {
   plcMode?: boolean;
   plcSheetUrl?: string;
   teacherName?: string;
+  /** @deprecated Use periodNames instead. Kept for backwards compat. */
   periodName?: string;
+  /** Selected class period roster names. Replaces singular periodName. */
+  periodNames?: string[];
   plcMemberEmails?: string[];
 }
 

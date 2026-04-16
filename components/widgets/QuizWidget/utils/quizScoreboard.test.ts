@@ -28,6 +28,7 @@ import {
   getScoreSuffix,
   isGamificationActive,
   buildPinToNameMap,
+  buildPinToExportNameMap,
   buildScoreboardTeams,
   buildLiveLeaderboard,
 } from './quizScoreboard';
@@ -412,7 +413,7 @@ describe('quizScoreboard', () => {
           { firstName: 'Bob', lastName: 'Jones', pin: '02' },
         ]),
       ];
-      const map = buildPinToNameMap(rosters, 'Period 1');
+      const map = buildPinToNameMap(rosters, ['Period 1']);
       // Includes both zero-padded and stripped forms for flexible matching
       expect(map).toEqual({
         '01': 'Alice Smith',
@@ -428,11 +429,11 @@ describe('quizScoreboard', () => {
           { firstName: 'Alice', lastName: 'Smith', pin: '01' },
         ]),
       ];
-      const map = buildPinToNameMap(rosters, 'Period 2');
+      const map = buildPinToNameMap(rosters, ['Period 2']);
       expect(map).toEqual({});
     });
 
-    it('returns empty map when periodName is undefined', () => {
+    it('returns empty map when periodNames is undefined', () => {
       const rosters = [
         makeRoster('Period 1', [
           { firstName: 'Alice', lastName: 'Smith', pin: '01' },
@@ -449,7 +450,7 @@ describe('quizScoreboard', () => {
           { firstName: 'Bob', lastName: 'Jones', pin: '02' },
         ]),
       ];
-      const map = buildPinToNameMap(rosters, 'Period 1');
+      const map = buildPinToNameMap(rosters, ['Period 1']);
       expect(map).toEqual({
         '02': 'Bob Jones',
         '2': 'Bob Jones',
@@ -462,8 +463,94 @@ describe('quizScoreboard', () => {
           { firstName: 'Cher', lastName: '', pin: '01' },
         ]),
       ];
-      const map = buildPinToNameMap(rosters, 'Period 1');
+      const map = buildPinToNameMap(rosters, ['Period 1']);
       expect(map).toEqual({ '01': 'Cher', '1': 'Cher' });
+    });
+
+    it('merges students from multiple periods (first roster wins for PIN collision)', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+        makeRoster('Period 2', [
+          { firstName: 'Alice2', lastName: 'Smith2', pin: '01' },
+          { firstName: 'Charlie', lastName: 'Brown', pin: '03' },
+        ]),
+      ];
+      const map = buildPinToNameMap(rosters, ['Period 1', 'Period 2']);
+      // Period 1 wins for PIN '01'
+      expect(map['01']).toBe('Alice Smith');
+      expect(map['1']).toBe('Alice Smith');
+      // Period 2 adds PIN '03'
+      expect(map['03']).toBe('Charlie Brown');
+      expect(map['3']).toBe('Charlie Brown');
+    });
+  });
+
+  describe('buildPinToExportNameMap', () => {
+    it('formats as "Last, First" when both names exist', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+          { firstName: 'Bob', lastName: 'Jones', pin: '02' },
+        ]),
+      ];
+      const map = buildPinToExportNameMap(rosters, ['Period 1']);
+      expect(map['01']).toBe('Smith, Alice');
+      expect(map['02']).toBe('Jones, Bob');
+    });
+
+    it('returns just first name when last name is empty', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Cher', lastName: '', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToExportNameMap(rosters, ['Period 1']);
+      expect(map['01']).toBe('Cher');
+      expect(map['1']).toBe('Cher');
+    });
+
+    it('returns just last name when first name is empty', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: '', lastName: 'Madonna', pin: '03' },
+        ]),
+      ];
+      const map = buildPinToExportNameMap(rosters, ['Period 1']);
+      expect(map['03']).toBe('Madonna');
+      expect(map['3']).toBe('Madonna');
+    });
+
+    it('stores both zero-padded and stripped PIN forms', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToExportNameMap(rosters, ['Period 1']);
+      expect(map['01']).toBe('Smith, Alice');
+      expect(map['1']).toBe('Smith, Alice');
+    });
+
+    it('returns empty map when no matching roster is found', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToExportNameMap(rosters, ['Period 2']);
+      expect(map).toEqual({});
+    });
+
+    it('returns empty map when periodNames is undefined', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToExportNameMap(rosters, undefined);
+      expect(map).toEqual({});
     });
   });
 

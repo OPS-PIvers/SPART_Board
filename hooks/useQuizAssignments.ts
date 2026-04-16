@@ -18,7 +18,6 @@ import {
   onSnapshot,
   getDoc,
   getDocs,
-  updateDoc,
   addDoc,
   query,
   where,
@@ -99,20 +98,23 @@ export interface UseQuizAssignmentsResult {
 
 /** Unique 6-char join code generator with collision check against live sessions. */
 async function allocateJoinCode(): Promise<string> {
+  const joinableStatuses = new Set(['waiting', 'active', 'paused']);
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = Math.random()
       .toString(36)
       .substring(2, 8)
       .toUpperCase()
       .padEnd(6, '0');
-    const collision = await getDocs(
+    const snap = await getDocs(
       query(
         collection(db, QUIZ_SESSIONS_COLLECTION),
-        where('code', '==', candidate),
-        where('status', '!=', 'ended')
+        where('code', '==', candidate)
       )
     );
-    if (collision.empty) return candidate;
+    const collision = snap.docs.some((d) =>
+      joinableStatuses.has((d.data() as QuizSession).status)
+    );
+    if (!collision) return candidate;
   }
   // Last-resort fallback: we accept a theoretical collision rather than
   // blocking the teacher from starting a quiz.
@@ -194,6 +196,7 @@ export const useQuizAssignments = (
         plcSheetUrl: settings.plcSheetUrl,
         teacherName: settings.teacherName,
         periodName: settings.periodName,
+        periodNames: settings.periodNames,
         plcMemberEmails: settings.plcMemberEmails,
       };
 
@@ -204,7 +207,9 @@ export const useQuizAssignments = (
           ? 'paused'
           : initialStatus === 'inactive'
             ? 'ended'
-            : 'waiting';
+            : mode === 'student'
+              ? 'active'
+              : 'waiting';
 
       const session: QuizSession = {
         id: assignmentId,
@@ -232,6 +237,7 @@ export const useQuizAssignments = (
         showPodiumBetweenQuestions: opts.showPodiumBetweenQuestions ?? true,
         soundEffectsEnabled: opts.soundEffectsEnabled ?? false,
         questionPhase: 'answering',
+        periodNames: settings.periodNames,
       };
 
       const batch = writeBatch(db);
@@ -361,10 +367,45 @@ export const useQuizAssignments = (
   >(
     async (assignmentId, patch) => {
       if (!userId) throw new Error('Not authenticated');
-      await updateDoc(
+      const now = Date.now();
+      const batch = writeBatch(db);
+      batch.update(
         doc(db, 'users', userId, QUIZ_ASSIGNMENTS_COLLECTION, assignmentId),
-        { ...patch, updatedAt: Date.now() } as Record<string, unknown>
+        { ...patch, updatedAt: now } as Record<string, unknown>
       );
+      // Mirror period and session-option changes to the session doc so
+      // students can read available periods and updated toggles.
+      const sessionPatch: Record<string, unknown> = {};
+      if ('periodNames' in patch) sessionPatch.periodNames = patch.periodNames;
+      if ('periodName' in patch) sessionPatch.periodName = patch.periodName;
+      if (patch.sessionOptions) {
+        const o = patch.sessionOptions;
+        if (o.tabWarningsEnabled !== undefined)
+          sessionPatch.tabWarningsEnabled = o.tabWarningsEnabled;
+        if (o.showResultToStudent !== undefined)
+          sessionPatch.showResultToStudent = o.showResultToStudent;
+        if (o.showCorrectAnswerToStudent !== undefined)
+          sessionPatch.showCorrectAnswerToStudent =
+            o.showCorrectAnswerToStudent;
+        if (o.showCorrectOnBoard !== undefined)
+          sessionPatch.showCorrectOnBoard = o.showCorrectOnBoard;
+        if (o.speedBonusEnabled !== undefined)
+          sessionPatch.speedBonusEnabled = o.speedBonusEnabled;
+        if (o.streakBonusEnabled !== undefined)
+          sessionPatch.streakBonusEnabled = o.streakBonusEnabled;
+        if (o.showPodiumBetweenQuestions !== undefined)
+          sessionPatch.showPodiumBetweenQuestions =
+            o.showPodiumBetweenQuestions;
+        if (o.soundEffectsEnabled !== undefined)
+          sessionPatch.soundEffectsEnabled = o.soundEffectsEnabled;
+      }
+      if (Object.keys(sessionPatch).length > 0) {
+        batch.update(
+          doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId),
+          sessionPatch
+        );
+      }
+      await batch.commit();
     },
     [userId]
   );
@@ -393,6 +434,7 @@ export const useQuizAssignments = (
           plcSheetUrl: assignment.plcSheetUrl,
           teacherName: assignment.teacherName,
           periodName: assignment.periodName,
+          periodNames: assignment.periodNames,
           plcMemberEmails: assignment.plcMemberEmails,
         },
         originalAuthor: userId,
@@ -431,6 +473,14 @@ export const useQuizAssignments = (
       const savedMeta = await saveQuiz(newQuiz);
 
       // 2. Create a Paused assignment with the shared settings.
+      // Clear teacher-specific fields so the importer starts fresh with
+      // their own periods and name.
+      const importedSettings = {
+        ...shared.assignmentSettings,
+        teacherName: undefined,
+        periodName: undefined,
+        periodNames: undefined,
+      };
       const created = await createAssignment(
         {
           id: savedMeta.id,
@@ -438,7 +488,7 @@ export const useQuizAssignments = (
           driveFileId: savedMeta.driveFileId,
           questions: newQuiz.questions,
         },
-        shared.assignmentSettings,
+        importedSettings,
         'paused'
       );
       return created.id;

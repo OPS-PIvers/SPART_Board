@@ -433,6 +433,28 @@ export const QuizAssignmentArchive: React.FC<QuizAssignmentArchiveProps> = ({
                     {urlLive && (
                       <span className="font-mono tracking-wider">{a.code}</span>
                     )}
+                    {/* Period indicator */}
+                    {(() => {
+                      const periods =
+                        a.periodNames ?? (a.periodName ? [a.periodName] : []);
+                      if (periods.length === 0 && isActiveMode) {
+                        return (
+                          <span className="font-semibold text-amber-600 truncate max-w-[100px]">
+                            No classes
+                          </span>
+                        );
+                      }
+                      if (periods.length > 0) {
+                        return (
+                          <span className="font-semibold truncate max-w-[100px]">
+                            {periods.length === 1
+                              ? periods[0]
+                              : `${periods.length} classes`}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
 

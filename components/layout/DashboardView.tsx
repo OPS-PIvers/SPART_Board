@@ -237,7 +237,7 @@ export const DashboardView: React.FC = () => {
           'Shared assignment imported! Click Start to begin.',
           'success'
         );
-        openQuizWidgetToTab('active');
+        openQuizWidgetToTab('archive');
       })
       .catch((err: unknown) => {
         const msg =

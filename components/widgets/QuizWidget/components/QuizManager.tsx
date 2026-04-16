@@ -41,7 +41,9 @@ import { QuizAssignmentArchive } from './QuizAssignmentArchive';
 export interface PlcOptions {
   plcMode: boolean;
   teacherName?: string;
+  /** @deprecated Use periodNames instead. */
   periodName?: string;
+  periodNames?: string[];
   plcSheetUrl?: string;
 }
 
@@ -125,7 +127,9 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   // PLC form state — initialized from config defaults, reset when modal opens
   const [plcMode, setPlcMode] = useState(config.plcMode ?? false);
   const [teacherName, setTeacherName] = useState(config.teacherName ?? '');
-  const [periodName, setPeriodName] = useState(config.periodName ?? '');
+  const [selectedPeriodNames, setSelectedPeriodNames] = useState<string[]>(
+    config.periodNames ?? (config.periodName ? [config.periodName] : [])
+  );
   const [plcSheetUrl, setPlcSheetUrl] = useState(config.plcSheetUrl ?? '');
   const [prevSelectedForLive, setPrevSelectedForLive] =
     useState(selectedForLive);
@@ -135,7 +139,9 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     setPrevSelectedForLive(selectedForLive);
     setPlcMode(config.plcMode ?? false);
     setTeacherName(config.teacherName ?? '');
-    setPeriodName(config.periodName ?? '');
+    setSelectedPeriodNames(
+      config.periodNames ?? (config.periodName ? [config.periodName] : [])
+    );
     setPlcSheetUrl(config.plcSheetUrl ?? '');
   }
   if (!selectedForLive && prevSelectedForLive) {
@@ -184,7 +190,9 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   const buildPlcOptions = (): PlcOptions => ({
     plcMode,
     teacherName: teacherName || undefined,
-    periodName: periodName || undefined,
+    periodName: selectedPeriodNames[0] || undefined,
+    periodNames:
+      selectedPeriodNames.length > 0 ? selectedPeriodNames : undefined,
     plcSheetUrl: plcSheetUrl || undefined,
   });
 
@@ -209,7 +217,11 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     <div className="flex flex-col h-full font-sans relative">
       {/* Mode Selection Modal */}
       {selectedForLive && (
-        <div className="absolute inset-0 z-overlay bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 z-overlay bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4"
+          data-no-drag="true"
+          style={{ touchAction: 'auto' }}
+        >
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-full">
             <div className="bg-brand-blue-primary p-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 text-white">
@@ -383,36 +395,50 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                       </p>
                     </div>
 
-                    {/* Class Period */}
+                    {/* Class Periods (multi-select) */}
                     <div>
                       <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
-                        Class Period
+                        Class Periods
                       </label>
                       {rosters.length > 0 ? (
-                        <select
-                          value={periodName}
-                          onChange={(e) => setPeriodName(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                          <option value="">Select a class...</option>
-                          {rosters.map((r) => (
-                            <option key={r.id} value={r.name}>
-                              {r.name}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                          {rosters.map((r) => {
+                            const checked = selectedPeriodNames.includes(
+                              r.name
+                            );
+                            return (
+                              <label
+                                key={r.id}
+                                className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1.5 py-1"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    setSelectedPeriodNames((prev) =>
+                                      checked
+                                        ? prev.filter((n) => n !== r.name)
+                                        : [...prev, r.name]
+                                    );
+                                  }}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-slate-800">
+                                  {r.name}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       ) : (
-                        <input
-                          type="text"
-                          value={periodName}
-                          onChange={(e) => setPeriodName(e.target.value)}
-                          placeholder="e.g. Period 3"
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
+                        <p className="text-xxs text-slate-500 italic">
+                          No rosters available. Add rosters in the Class widget
+                          to enable student name lookup.
+                        </p>
                       )}
                       <p className="text-xxs text-slate-400 mt-0.5">
-                        Must match your Class widget roster name for student
-                        name lookup
+                        Select class periods for this assignment. Students will
+                        choose their class when joining.
                       </p>
                     </div>
 
