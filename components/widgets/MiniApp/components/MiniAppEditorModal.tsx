@@ -296,7 +296,7 @@ export const MiniAppEditorModal: React.FC<MiniAppEditorModalProps> = ({
       onClose={onClose}
       saveLabel="Save App"
       saveDisabled={!title.trim()}
-      saveErrorMessage={error ?? false}
+      saveErrorMessage={false}
       bodyClassName="px-6 py-5 bg-slate-50/50"
     >
       <div className="flex flex-col gap-4 h-full relative">

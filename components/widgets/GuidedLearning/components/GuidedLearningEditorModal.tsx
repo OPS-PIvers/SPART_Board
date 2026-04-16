@@ -174,8 +174,6 @@ export const GuidedLearningEditorModal: React.FC<
       };
       await onSave(builtSet, meta?.driveFileId);
       onClose();
-    } catch {
-      // EditorModalShell catches and toasts save errors
     } finally {
       setSaving(false);
     }
