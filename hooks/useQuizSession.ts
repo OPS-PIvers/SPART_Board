@@ -34,15 +34,19 @@ import { signInAnonymously } from 'firebase/auth';
 import {
   QuizSession,
   QuizSessionStatus,
-  QuizSessionMode,
   QuizResponse,
   QuizResponseAnswer,
   QuizQuestion,
   QuizPublicQuestion,
 } from '../types';
+import { resolvePeriodNames } from '../utils/periodCompat';
 
-const QUIZ_SESSIONS_COLLECTION = 'quiz_sessions';
-const RESPONSES_COLLECTION = 'responses';
+// Re-export for backward compatibility with callers that imported
+// QuizSessionOptions from this module before it was moved into types.ts.
+export type { QuizSessionOptions } from '../types';
+
+export const QUIZ_SESSIONS_COLLECTION = 'quiz_sessions';
+export const RESPONSES_COLLECTION = 'responses';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,7 +65,7 @@ function fisherYatesShuffle<T>(arr: T[]): T[] {
  * QuizPublicQuestion (without correctAnswer). Answer choices are pre-shuffled
  * so students can render the UI without ever seeing the answer key.
  */
-function toPublicQuestion(q: QuizQuestion): QuizPublicQuestion {
+export function toPublicQuestion(q: QuizQuestion): QuizPublicQuestion {
   const base: QuizPublicQuestion = {
     id: q.id,
     type: q.type,
@@ -118,32 +122,17 @@ export function gradeAnswer(
 
 // ─── Teacher hook ─────────────────────────────────────────────────────────────
 
-/** Options passed from the assignment modal to configure session toggles. */
-export interface QuizSessionOptions {
-  tabWarningsEnabled?: boolean;
-  showResultToStudent?: boolean;
-  showCorrectAnswerToStudent?: boolean;
-  showCorrectOnBoard?: boolean;
-  speedBonusEnabled?: boolean;
-  streakBonusEnabled?: boolean;
-  showPodiumBetweenQuestions?: boolean;
-  soundEffectsEnabled?: boolean;
-}
-
 export interface UseQuizSessionTeacherResult {
   session: QuizSession | null;
   responses: QuizResponse[];
   loading: boolean;
-  startQuizSession: (
-    quiz: {
-      id: string;
-      title: string;
-      questions: QuizQuestion[];
-    },
-    mode?: QuizSessionMode,
-    options?: QuizSessionOptions
-  ) => Promise<string>;
   advanceQuestion: () => Promise<void>;
+  /**
+   * Transitions the session to `ended` state and finalizes any in-flight
+   * student responses. The underlying assignment document is NOT touched — use
+   * `useQuizAssignments.deactivateAssignment(sessionId)` if you also want the
+   * assignment's lifecycle state flipped to `inactive`.
+   */
   endQuizSession: () => Promise<void>;
   /** Remove a student from the live session roster */
   removeStudent: (studentUid: string) => Promise<void>;
@@ -153,20 +142,32 @@ export interface UseQuizSessionTeacherResult {
   hideAnswer: (questionId: string) => Promise<void>;
 }
 
+/**
+ * Subscribe to a specific quiz session document (keyed by assignment UUID).
+ * Pass `undefined` or `null` when no assignment is currently selected — the
+ * hook will return an empty state until a session id is supplied.
+ */
 export const useQuizSessionTeacher = (
-  teacherUid: string | undefined
+  sessionId: string | undefined | null
 ): UseQuizSessionTeacherResult => {
   const [session, setSession] = useState<QuizSession | null>(null);
   const [responses, setResponses] = useState<QuizResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(!!sessionId);
   const advancingRef = useRef(false);
 
+  // Adjust state during render when sessionId changes — avoids state-in-effect
+  // anti-pattern while still clearing stale data when the selection changes.
+  const [prevSessionId, setPrevSessionId] = useState(sessionId);
+  if (sessionId !== prevSessionId) {
+    setPrevSessionId(sessionId);
+    setSession(null);
+    setResponses([]);
+    setLoading(!!sessionId);
+  }
+
   useEffect(() => {
-    if (!teacherUid) {
-      setTimeout(() => setLoading(false), 0);
-      return;
-    }
-    const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+    if (!sessionId) return;
+    const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, sessionId);
     return onSnapshot(
       sessionRef,
       (snap) => {
@@ -178,17 +179,17 @@ export const useQuizSessionTeacher = (
         setLoading(false);
       }
     );
-  }, [teacherUid]);
+  }, [sessionId]);
 
   const hasSession = !!session;
   useEffect(() => {
     // Keep the listener active even after the session ends so that any
     // late student submissions still appear in the live monitor / results.
-    if (!teacherUid || !hasSession) return;
+    if (!sessionId || !hasSession) return;
     const responsesRef = collection(
       db,
       QUIZ_SESSIONS_COLLECTION,
-      teacherUid,
+      sessionId,
       RESPONSES_COLLECTION
     );
     return onSnapshot(
@@ -199,14 +200,14 @@ export const useQuizSessionTeacher = (
       },
       (err) => console.error('[useQuizSessionTeacher] responses:', err)
     );
-  }, [teacherUid, hasSession]);
+  }, [sessionId, hasSession]);
 
   const finalizeAllResponses = useCallback(async () => {
-    if (!teacherUid) return;
+    if (!sessionId) return;
     const responsesRef = collection(
       db,
       QUIZ_SESSIONS_COLLECTION,
-      teacherUid,
+      sessionId,
       RESPONSES_COLLECTION
     );
     const snap = await getDocs(responsesRef);
@@ -225,48 +226,48 @@ export const useQuizSessionTeacher = (
     if (count > 0) {
       await batch.commit();
     }
-  }, [teacherUid]);
+  }, [sessionId]);
 
   const removeStudent = useCallback(
     async (studentUid: string) => {
-      if (!teacherUid) return;
+      if (!sessionId) return;
       const responseRef = doc(
         db,
         QUIZ_SESSIONS_COLLECTION,
-        teacherUid,
+        sessionId,
         RESPONSES_COLLECTION,
         studentUid
       );
       await deleteDoc(responseRef);
     },
-    [teacherUid]
+    [sessionId]
   );
 
   const revealAnswer = useCallback(
     async (questionId: string, correctAnswer: string) => {
-      if (!teacherUid) return;
-      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+      if (!sessionId) return;
+      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, sessionId);
       await updateDoc(sessionRef, {
         [`revealedAnswers.${questionId}`]: correctAnswer,
       });
     },
-    [teacherUid]
+    [sessionId]
   );
 
   const hideAnswer = useCallback(
     async (questionId: string) => {
-      if (!teacherUid) return;
-      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+      if (!sessionId) return;
+      const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, sessionId);
       await updateDoc(sessionRef, {
         [`revealedAnswers.${questionId}`]: deleteField(),
       });
     },
-    [teacherUid]
+    [sessionId]
   );
 
   const advanceQuestion = useCallback(async () => {
-    if (!teacherUid || !session) return;
-    const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+    if (!sessionId || !session) return;
+    const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, sessionId);
 
     const isReviewing = session.questionPhase === 'reviewing';
 
@@ -306,13 +307,13 @@ export const useQuizSessionTeacher = (
       questionPhase: 'answering',
       ...(session.startedAt === null ? { startedAt: Date.now() } : {}),
     });
-  }, [teacherUid, session, finalizeAllResponses]);
+  }, [sessionId, session, finalizeAllResponses]);
 
   const endQuizSession = useCallback(async () => {
-    if (!teacherUid) return;
+    if (!sessionId) return;
 
     // 1. End the session
-    await updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), {
+    await updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, sessionId), {
       status: 'ended' as QuizSessionStatus,
       endedAt: Date.now(),
       autoProgressAt: null,
@@ -320,11 +321,11 @@ export const useQuizSessionTeacher = (
 
     // 2. Mark all active students as completed so their data is preserved in results
     await finalizeAllResponses();
-  }, [teacherUid, finalizeAllResponses]);
+  }, [sessionId, finalizeAllResponses]);
 
   // ─── Auto-progress logic ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!teacherUid || !session || session.sessionMode !== 'auto') return;
+    if (!sessionId || !session || session.sessionMode !== 'auto') return;
     if (session.status !== 'active') return;
 
     const currentQId =
@@ -353,15 +354,15 @@ export const useQuizSessionTeacher = (
       if (shouldReview) {
         updates.questionPhase = 'reviewing';
       }
-      updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), updates).catch(
+      updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, sessionId), updates).catch(
         (err) => console.error('[AutoProgress] update failed:', err)
       );
     }
-  }, [responses, session, teacherUid]);
+  }, [responses, session, sessionId]);
 
   // Handle the actual auto-advance when the timestamp is reached
   useEffect(() => {
-    if (!teacherUid || !session?.autoProgressAt) return;
+    if (!sessionId || !session?.autoProgressAt) return;
 
     const timer = setInterval(() => {
       if (Date.now() >= (session.autoProgressAt ?? 0)) {
@@ -377,104 +378,12 @@ export const useQuizSessionTeacher = (
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [session?.autoProgressAt, teacherUid, advanceQuestion]);
-
-  const startQuizSession = useCallback(
-    async (
-      quiz: {
-        id: string;
-        title: string;
-        questions: QuizQuestion[];
-      },
-      mode: QuizSessionMode = 'teacher',
-      options?: QuizSessionOptions
-    ): Promise<string> => {
-      if (!teacherUid) throw new Error('Not authenticated');
-
-      // Delete any existing response documents from a previous session
-      const oldResponses = await getDocs(
-        collection(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          teacherUid,
-          RESPONSES_COLLECTION
-        )
-      );
-      const BATCH_LIMIT = 500;
-      for (let i = 0; i < oldResponses.docs.length; i += BATCH_LIMIT) {
-        const batch = writeBatch(db);
-        oldResponses.docs.slice(i, i + BATCH_LIMIT).forEach((d) => {
-          batch.delete(d.ref);
-        });
-        await batch.commit();
-      }
-
-      // Generate a unique 6-character join code
-      let code = '';
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const candidate = Math.random()
-          .toString(36)
-          .substring(2, 8)
-          .toUpperCase()
-          .padEnd(6, '0');
-        const collision = await getDocs(
-          query(
-            collection(db, QUIZ_SESSIONS_COLLECTION),
-            where('code', '==', candidate),
-            where('status', '!=', 'ended')
-          )
-        );
-        if (collision.empty) {
-          code = candidate;
-          break;
-        }
-      }
-      if (!code) {
-        code = Math.random()
-          .toString(36)
-          .substring(2, 8)
-          .toUpperCase()
-          .padEnd(6, '0');
-      }
-
-      const newSession: QuizSession = {
-        id: teacherUid,
-        quizId: quiz.id,
-        quizTitle: quiz.title,
-        teacherUid,
-        status: 'waiting' as QuizSessionStatus,
-        sessionMode: mode,
-        currentQuestionIndex: mode === 'student' ? 0 : -1,
-        startedAt: mode === 'student' ? Date.now() : null,
-        endedAt: null,
-        code,
-        totalQuestions: quiz.questions.length,
-        publicQuestions: quiz.questions.map(toPublicQuestion),
-        // Phase 1 toggles
-        tabWarningsEnabled: options?.tabWarningsEnabled ?? true,
-        showResultToStudent: options?.showResultToStudent ?? false,
-        showCorrectAnswerToStudent:
-          options?.showCorrectAnswerToStudent ?? false,
-        showCorrectOnBoard: options?.showCorrectOnBoard ?? false,
-        revealedAnswers: {},
-        // Phase 2 gamification
-        speedBonusEnabled: options?.speedBonusEnabled ?? false,
-        streakBonusEnabled: options?.streakBonusEnabled ?? false,
-        showPodiumBetweenQuestions: options?.showPodiumBetweenQuestions ?? true,
-        soundEffectsEnabled: options?.soundEffectsEnabled ?? false,
-        questionPhase: 'answering',
-      };
-      await setDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), newSession);
-      return code;
-    },
-    [teacherUid]
-  );
+  }, [session?.autoProgressAt, sessionId, advanceQuestion]);
 
   return {
     session,
     responses,
     loading,
-    startQuizSession,
     advanceQuestion,
     endQuizSession,
     removeStudent,
@@ -490,8 +399,23 @@ export interface UseQuizSessionStudentResult {
   myResponse: QuizResponse | null;
   loading: boolean;
   error: string | null;
-  teacherUidRef: MutableRefObject<string | null>;
-  joinQuizSession: (code: string, pin: string) => Promise<string>;
+  /**
+   * Ref holding the active session id (the Firestore doc ID under
+   * `/quiz_sessions/{sessionId}`). Historically named `teacherUidRef` back
+   * when sessions were keyed by the teacher's uid.
+   */
+  sessionIdRef: MutableRefObject<string | null>;
+  /**
+   * Look up a session by join code without actually joining.
+   * Returns the session's periodNames so the UI can show a period picker
+   * before the student commits to joining.
+   */
+  lookupSession: (code: string) => Promise<{ periodNames: string[] } | null>;
+  joinQuizSession: (
+    code: string,
+    pin: string,
+    classPeriod?: string
+  ) => Promise<string>;
   submitAnswer: (
     questionId: string,
     answer: string,
@@ -511,7 +435,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   const [myResponse, setMyResponse] = useState<QuizResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const teacherUidRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const studentUidRef = useRef<string | null>(null);
   // Keep a ref to current answers to avoid stale closure issues
   const myResponseRef = useRef<QuizResponse | null>(null);
@@ -534,37 +458,75 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     }
   }, [myResponse?.tabSwitchWarnings]);
 
-  // Session listener — only subscribes once teacherUid is known
-  const [teacherUidState, setTeacherUidState] = useState<string | null>(null);
+  // Session listener — only subscribes once sessionId is known
+  const [sessionIdState, setSessionIdState] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!teacherUidState) return;
+    if (!sessionIdState) return;
     return onSnapshot(
-      doc(db, QUIZ_SESSIONS_COLLECTION, teacherUidState),
+      doc(db, QUIZ_SESSIONS_COLLECTION, sessionIdState),
       (snap) => setSession(snap.exists() ? (snap.data() as QuizSession) : null)
     );
-  }, [teacherUidState]);
+  }, [sessionIdState]);
 
   // My response listener
   const [studentUidState, setStudentUidState] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!teacherUidState || !studentUidState) return;
+    if (!sessionIdState || !studentUidState) return;
     return onSnapshot(
       doc(
         db,
         QUIZ_SESSIONS_COLLECTION,
-        teacherUidState,
+        sessionIdState,
         RESPONSES_COLLECTION,
         studentUidState
       ),
       (snap) =>
         setMyResponse(snap.exists() ? (snap.data() as QuizResponse) : null)
     );
-  }, [teacherUidState, studentUidState]);
+  }, [sessionIdState, studentUidState]);
+
+  const lookupSession = useCallback(
+    async (code: string): Promise<{ periodNames: string[] } | null> => {
+      const normCode = code
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase();
+      if (!normCode) return null;
+      const snap = await getDocs(
+        query(
+          collection(db, QUIZ_SESSIONS_COLLECTION),
+          where('code', '==', normCode)
+        )
+      );
+      if (snap.empty) return null;
+      const joinable = snap.docs.filter((d) => {
+        const s = (d.data() as QuizSession).status;
+        return s === 'waiting' || s === 'active' || s === 'paused';
+      });
+      if (joinable.length === 0) return null;
+      // Match joinQuizSession's selection: prefer the most recently created.
+      joinable.sort((a, b) => {
+        const at = (a.data() as QuizSession).startedAt ?? 0;
+        const bt = (b.data() as QuizSession).startedAt ?? 0;
+        return bt - at;
+      });
+      const sessionData = joinable[0].data() as QuizSession;
+      // resolvePeriodNames normalises legacy periodName + new periodNames
+      // into a typed string[], avoiding the `any[]` from Firestore's
+      // DocumentData bleed-through.
+      return { periodNames: resolvePeriodNames(sessionData) };
+    },
+    []
+  );
 
   const joinQuizSession = useCallback(
-    async (code: string, pin: string): Promise<string> => {
+    async (
+      code: string,
+      pin: string,
+      classPeriod?: string
+    ): Promise<string> => {
       setLoading(true);
       setError(null);
       try {
@@ -596,20 +558,36 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         );
         if (snap.empty) throw new Error('No active quiz found with that code.');
 
-        const sessionDoc = snap.docs[0];
-        const sessionData = sessionDoc.data() as QuizSession;
-        if (sessionData.status === 'ended') {
+        // A code can transiently appear on more than one doc — e.g. an old
+        // ended session plus a new live one with a recycled code. Filter
+        // client-side to the docs that are still accepting joins (waiting /
+        // active / paused) before picking one, otherwise docs[0] may be the
+        // stale ended session and students get rejected despite a live
+        // session existing.
+        const joinable = snap.docs.filter((d) => {
+          const s = (d.data() as QuizSession).status;
+          return s === 'waiting' || s === 'active' || s === 'paused';
+        });
+        if (joinable.length === 0) {
           throw new Error('This quiz session has already ended.');
         }
+        // Prefer the most recently created joinable doc.
+        joinable.sort((a, b) => {
+          const at = (a.data() as QuizSession).startedAt ?? 0;
+          const bt = (b.data() as QuizSession).startedAt ?? 0;
+          return bt - at;
+        });
+        const sessionDoc = joinable[0];
+        const sessionData = sessionDoc.data() as QuizSession;
 
-        teacherUidRef.current = sessionDoc.id;
+        sessionIdRef.current = sessionDoc.id;
         studentUidRef.current = studentUid;
         // Reset warning count before activating snapshot listeners so a
         // late-arriving snapshot from a previous session can't race with
         // the finally-block reset and leave the counter stuck at 0.
         warningCountRef.current = 0;
         setWarningCount(0);
-        setTeacherUidState(sessionDoc.id);
+        setSessionIdState(sessionDoc.id);
         setStudentUidState(studentUid);
 
         const responseRef = doc(
@@ -634,8 +612,16 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
             answers: [],
             score: null,
             submittedAt: null,
+            ...(classPeriod ? { classPeriod } : {}),
           };
           await setDoc(responseRef, newResponse);
+        } else if (classPeriod) {
+          // Backfill classPeriod on existing response (e.g. student joined
+          // before periods were configured, or reloaded after a change).
+          const existing = existingSnap.data() as QuizResponse;
+          if (existing.classPeriod !== classPeriod) {
+            await updateDoc(responseRef, { classPeriod });
+          }
         }
 
         setSession(sessionData);
@@ -653,9 +639,9 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
 
   const submitAnswer = useCallback(
     async (questionId: string, answer: string, speedBonus?: number) => {
-      const teacherUid = teacherUidRef.current;
+      const sessionId = sessionIdRef.current;
       const studentUid = studentUidRef.current;
-      if (!teacherUid || !studentUid) return;
+      if (!sessionId || !studentUid) return;
 
       // isCorrect is intentionally not written by the student to prevent
       // client-side forgery. It is computed by the teacher's results view
@@ -679,7 +665,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         doc(
           db,
           QUIZ_SESSIONS_COLLECTION,
-          teacherUid,
+          sessionId,
           RESPONSES_COLLECTION,
           studentUid
         ),
@@ -690,9 +676,9 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   );
 
   const completeQuiz = useCallback(async () => {
-    const teacherUid = teacherUidRef.current;
+    const sessionId = sessionIdRef.current;
     const studentUid = studentUidRef.current;
-    if (!teacherUid || !studentUid) return;
+    if (!sessionId || !studentUid) return;
 
     // Score is computed from gradeAnswer() by the teacher/results view,
     // not written by the student, to prevent client-side forgery of the score field.
@@ -700,7 +686,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       doc(
         db,
         QUIZ_SESSIONS_COLLECTION,
-        teacherUid,
+        sessionId,
         RESPONSES_COLLECTION,
         studentUid
       ),
@@ -709,31 +695,29 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   }, []);
 
   const reportTabSwitch = useCallback(async (): Promise<number> => {
-    const teacherUid = teacherUidRef.current;
+    const sessionId = sessionIdRef.current;
     const studentUid = studentUidRef.current;
-    if (!teacherUid || !studentUid) return 0;
+    if (!sessionId || !studentUid) return 0;
 
     const responseRef = doc(
       db,
       QUIZ_SESSIONS_COLLECTION,
-      teacherUid,
+      sessionId,
       RESPONSES_COLLECTION,
       studentUid
+    );
+
+    // Capture pre-increment count BEFORE Firestore write so the snapshot
+    // listener can't race and double-count the same increment.
+    const baseCount = Math.max(
+      warningCountRef.current,
+      myResponseRef.current?.tabSwitchWarnings ?? 0
     );
 
     await updateDoc(responseRef, {
       tabSwitchWarnings: increment(1),
     });
 
-    // Base the new count on whichever is higher: our local ref or the latest
-    // server value (via myResponseRef). This guards against the case where the
-    // sync effect hasn't fired yet (e.g., rapid blur before first snapshot),
-    // which would cause warningCountRef to under-count and return too low a
-    // value, preventing the auto-submit threshold from triggering.
-    const baseCount = Math.max(
-      warningCountRef.current,
-      myResponseRef.current?.tabSwitchWarnings ?? 0
-    );
     const newCount = baseCount + 1;
     warningCountRef.current = newCount;
     setWarningCount(newCount);
@@ -745,7 +729,8 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     myResponse,
     loading,
     error,
-    teacherUidRef,
+    sessionIdRef,
+    lookupSession,
     joinQuizSession,
     submitAnswer,
     completeQuiz,

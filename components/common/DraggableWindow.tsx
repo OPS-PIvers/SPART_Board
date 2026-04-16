@@ -427,8 +427,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
     // DO NOT stop propagation here, otherwise DashboardView misses 2-finger swipes
     bringToFront(widget.id);
-    // Explicitly focus the widget so it can receive keyboard events
-    (e.currentTarget as HTMLElement).focus();
+    // Explicitly focus the widget so it can receive keyboard events — but
+    // skip when the target is inside a contentEditable to avoid stealing
+    // focus mid-selection (which breaks cross-paragraph text highlighting).
+    const targetEl =
+      e.target instanceof Element ? e.target : (e.target as Node).parentElement;
+    if (!targetEl?.closest('[contenteditable="true"]')) {
+      (e.currentTarget as HTMLElement).focus();
+    }
   };
 
   const handleMaximizeToggle = useCallback(() => {
@@ -615,6 +621,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(DRAG_BLOCKING_SELECTOR);
     if (isInteractive) return;
+
+    // On touch/pen, also bail out if the target is inside a scrollable
+    // element so that native touch-scroll works within modals and panels.
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      if (target.closest(SCROLLABLE_ELEMENTS_SELECTOR)) return;
+    }
 
     // Don't drag if annotating
     if (isAnnotating) return;

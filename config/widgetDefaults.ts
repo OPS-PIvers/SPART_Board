@@ -249,8 +249,10 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     h: 560,
     config: {
       view: 'manager',
+      managerTab: 'library',
       selectedQuizId: null,
       selectedQuizTitle: null,
+      activeAssignmentId: null,
       activeLiveSessionCode: null,
       resultsSessionId: null,
       plcMode: false,

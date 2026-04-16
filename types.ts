@@ -115,6 +115,12 @@ export interface ClassRosterMeta {
  */
 export interface ClassRoster extends ClassRosterMeta {
   students: Student[];
+  /**
+   * Present when the Drive student-list load failed for this roster.
+   * Distinguishes "genuinely empty roster" from "load failed, students
+   * unknown" so the UI can show a retry banner instead of "0 students".
+   */
+  loadError?: string;
 }
 
 // --- LIVE SESSION TYPES ---
@@ -288,6 +294,12 @@ export interface ScheduleItem {
   done?: boolean;
   startTime?: string;
   endTime?: string;
+  /**
+   * Duration in seconds for timer-mode items. When set (and mode === 'timer'),
+   * the item chains off the previous item's effective end time rather than
+   * running off a fixed wall-clock window.
+   */
+  durationSeconds?: number;
   mode?: 'clock' | 'timer';
   linkedWidgets?: WidgetType[];
   spawnedWidgetIds?: string[];
@@ -413,6 +425,8 @@ export interface RandomConfig {
 
 export interface DiceConfig {
   count: number;
+  diceColor?: string;
+  dotColor?: string;
   /** Last roll result persisted so remote rolls are reflected on the board. */
   lastRoll?: number[];
 }
@@ -1493,8 +1507,20 @@ export interface QuizMetadata {
   updatedAt: number;
 }
 
-export type QuizSessionStatus = 'waiting' | 'active' | 'ended';
+export type QuizSessionStatus = 'waiting' | 'active' | 'paused' | 'ended';
 export type QuizSessionMode = 'teacher' | 'auto' | 'student';
+
+/** Options passed from the assignment modal to configure session toggles. */
+export interface QuizSessionOptions {
+  tabWarningsEnabled?: boolean;
+  showResultToStudent?: boolean;
+  showCorrectAnswerToStudent?: boolean;
+  showCorrectOnBoard?: boolean;
+  speedBonusEnabled?: boolean;
+  streakBonusEnabled?: boolean;
+  showPodiumBetweenQuestions?: boolean;
+  soundEffectsEnabled?: boolean;
+}
 
 /**
  * Student-safe question stored in the session document.
@@ -1523,9 +1549,11 @@ export interface QuizLeaderboardEntry {
   rank: number;
 }
 
-/** Live quiz session document in Firestore (/quiz_sessions/{teacherUid}) */
+/** Live quiz session document in Firestore (/quiz_sessions/{sessionId}) */
 export interface QuizSession {
-  id: string; // teacher's UID
+  id: string; // session UUID (same as QuizAssignment.id)
+  /** FK back to /users/{teacherUid}/quiz_assignments/{assignmentId}. 1:1 with session. */
+  assignmentId: string;
   quizId: string;
   quizTitle: string;
   teacherUid: string;
@@ -1576,6 +1604,10 @@ export interface QuizSession {
   questionPhase?: 'answering' | 'reviewing';
   /** Top-N leaderboard snapshot broadcast by the teacher for student view. */
   liveLeaderboard?: QuizLeaderboardEntry[];
+
+  // ─── Multi-class period support ─────────────────────────────────────────────
+  /** Selected class period roster names available for students to join. */
+  periodNames?: string[];
 }
 
 export interface QuizResponseAnswer {
@@ -1624,6 +1656,8 @@ export interface QuizResponse {
    * Used for maintaining quiz integrity.
    */
   tabSwitchWarnings?: number;
+  /** Which class period the student selected when joining (multi-class support). */
+  classPeriod?: string;
 }
 
 /** Global admin configuration for the Quiz widget */
@@ -1634,9 +1668,13 @@ export interface QuizGlobalConfig {
 /** Widget configuration for the quiz widget (teacher side) */
 export interface QuizConfig {
   view: 'manager' | 'import' | 'editor' | 'preview' | 'results' | 'monitor';
+  /** Tab within the manager view: library of saved quizzes, in-progress assignments, or archived (inactive) assignments. */
+  managerTab?: 'library' | 'active' | 'archive';
   selectedQuizId: string | null;
   selectedQuizTitle: string | null;
-  /** Session code when a live quiz is running */
+  /** Assignment currently opened in monitor/results views. */
+  activeAssignmentId: string | null;
+  /** Session code when a live quiz is running (denormalized from the active assignment for display). */
   activeLiveSessionCode: string | null;
   /** Quiz session ID for viewing historical results */
   resultsSessionId: string | null;
@@ -1646,8 +1684,10 @@ export interface QuizConfig {
   plcSheetUrl?: string;
   /** Teacher's display name for the export sheet */
   teacherName?: string;
-  /** Class period/roster name for the export sheet */
+  /** @deprecated Use periodNames instead. */
   periodName?: string;
+  /** Selected class period roster names. */
+  periodNames?: string[];
   /** PLC member emails (informational only for v1) */
   plcMemberEmails?: string[];
   /** Whether the live scoreboard sync is enabled during a quiz session */
@@ -1658,6 +1698,76 @@ export interface QuizConfig {
   liveScoreboardMode?: 'pin' | 'name';
   /** When to update scores: on quiz completion or after each question */
   liveScoreboardScoring?: 'completion' | 'per-question';
+}
+
+// --- QUIZ ASSIGNMENT TYPES ---
+
+/**
+ * Lifecycle state of a quiz assignment.
+ * - `active`: the student URL is live and accepting submissions.
+ * - `paused`: the student URL is live but submissions are blocked; students see a paused placeholder.
+ * - `inactive`: the student URL is dead; existing responses are preserved for review.
+ */
+export type QuizAssignmentStatus = 'active' | 'paused' | 'inactive';
+
+/**
+ * Settings that can be carried between assignments and are shareable in PLCs.
+ * These do NOT include the quiz content itself — content is always sourced from the library.
+ */
+export interface QuizAssignmentSettings {
+  /** Free-text label shown in the archive (e.g. "Period 2"). */
+  className?: string;
+  sessionMode: QuizSessionMode;
+  sessionOptions: QuizSessionOptions;
+  /** PLC mode: export results to a shared Google Sheet */
+  plcMode?: boolean;
+  plcSheetUrl?: string;
+  teacherName?: string;
+  /** @deprecated Use periodNames instead. Kept for backwards compat. */
+  periodName?: string;
+  /** Selected class period roster names. Replaces singular periodName. */
+  periodNames?: string[];
+  plcMemberEmails?: string[];
+}
+
+/**
+ * A single instance of a quiz being assigned out. Stored per-teacher at
+ * `/users/{teacherUid}/quiz_assignments/{assignmentId}`. The assignment id is
+ * also the id of the matching `/quiz_sessions/{sessionId}` document (1:1).
+ */
+export interface QuizAssignment extends QuizAssignmentSettings {
+  /** Assignment UUID — also the sessionId. */
+  id: string;
+  quizId: string;
+  quizTitle: string;
+  /** Drive file id of the source quiz so the monitor can hydrate after reload. */
+  quizDriveFileId: string;
+  teacherUid: string;
+  /** Join code for the student URL. Denormalized from the session doc for archive display. */
+  code: string;
+  status: QuizAssignmentStatus;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * Shared-assignment document stored at `/shared_assignments/{shareId}`.
+ * Unlike a shared quiz, this carries assignment settings (including the PLC
+ * sheet URL) so another teacher can paste the link and get both the library
+ * quiz and a preconfigured, paused assignment in one step.
+ */
+export interface SharedQuizAssignment {
+  /** Shared-doc id (Firestore auto-id). */
+  id: string;
+  /** Inlined quiz data so the importer can copy it into their own library. */
+  title: string;
+  questions: QuizQuestion[];
+  createdAt: number;
+  updatedAt: number;
+  assignmentSettings: QuizAssignmentSettings;
+  /** Original author's UID. */
+  originalAuthor: string;
+  sharedAt: number;
 }
 
 // --- VIDEO ACTIVITY TYPES ---
@@ -1694,7 +1804,7 @@ export interface VideoActivityMetadata {
   updatedAt: number;
 }
 
-export type VideoActivityView = 'manager' | 'create' | 'editor' | 'results';
+export type VideoActivityView = 'manager' | 'create' | 'results';
 
 /** Widget configuration for the video activity widget (teacher side). */
 export interface VideoActivityConfig {

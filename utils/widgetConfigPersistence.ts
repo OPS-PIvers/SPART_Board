@@ -17,6 +17,7 @@ const TRANSIENT_CONFIG_KEYS = new Set<string>([
 
   // Live session identifiers (ephemeral, would reference dead sessions)
   'activeLiveSessionCode',
+  'activeAssignmentId',
   'resultsSessionId',
   'liveScoreboardWidgetId',
   'liveScoreboardEnabled',
@@ -25,6 +26,7 @@ const TRANSIENT_CONFIG_KEYS = new Set<string>([
 
   // Navigation view state (should reset to landing page)
   'view',
+  'managerTab',
   'selectedQuizId',
   'selectedQuizTitle',
   'selectedActivityId',

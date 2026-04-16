@@ -12,7 +12,8 @@ export type PasteResult =
   | { action: 'create-mini-app'; html: string; title?: string }
   | { action: 'prompt-text-or-checklist'; text: string }
   | { action: 'prompt-url-or-qr'; url: string }
-  | { action: 'import-quiz'; shareId: string };
+  | { action: 'import-quiz'; shareId: string }
+  | { action: 'import-assignment'; shareId: string };
 
 /**
  * Detects the most appropriate paste action based on the provided text.
@@ -27,6 +28,7 @@ export function detectWidgetType(text: string): PasteResult | null {
   if (!trimmed) return null;
 
   return (
+    tryParseAssignmentImport(trimmed) ??
     tryParseQuizImport(trimmed) ??
     tryParseBoardImport(trimmed) ??
     tryParseMiniApp(trimmed) ??
@@ -34,6 +36,27 @@ export function detectWidgetType(text: string): PasteResult | null {
     tryParseChecklist(trimmed) ??
     createDefaultTextWidget(trimmed)
   );
+}
+
+function tryParseAssignmentImport(text: string): PasteResult | null {
+  let candidate = text;
+  if (!/^(http|https):\/\//i.test(candidate)) {
+    const domainPattern = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:[/:?].*)?$/;
+    if (domainPattern.test(candidate)) {
+      candidate = `https://${candidate}`;
+    }
+  }
+
+  try {
+    const url = new URL(candidate, window.location.origin);
+    const match = url.pathname.match(/^\/share\/assignment\/([a-zA-Z0-9_-]+)$/);
+    if (match) {
+      return { action: 'import-assignment', shareId: match[1] };
+    }
+  } catch {
+    // Fall through
+  }
+  return null;
 }
 
 function tryParseQuizImport(text: string): PasteResult | null {

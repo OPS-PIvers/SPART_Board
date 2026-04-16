@@ -94,6 +94,12 @@ const GOOGLE_TOKEN_CHECK_INTERVAL_MS = 60 * 1000; // How often to poll for expir
 const GOOGLE_TOKEN_REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // Refresh this far before expiry
 const GOOGLE_TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000; // Don't use tokens within 5 min of expiry
 
+// Inactivity-based session timeout: force re-login after 7 days of no app usage
+// so stale Google OAuth tokens (Drive, Calendar, Sheets) get fully refreshed.
+const LAST_ACTIVITY_KEY = 'spart_last_activity';
+const INACTIVITY_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const ACTIVITY_UPDATE_INTERVAL_MS = 5 * 60 * 1000; // Update activity timestamp every 5 minutes
+
 /**
  * Mock user object for bypass mode.
  * Defined at module level to ensure referential equality.
@@ -883,9 +889,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (isAuthBypass) return;
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      if (!user) {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Check for inactivity timeout — if the user hasn't used the app in
+        // over 7 days, force a full re-login so Google OAuth tokens (Drive,
+        // Calendar, Sheets) are freshly issued. This prevents the common issue
+        // of stale tokens silently failing to load rosters and Drive data.
+        const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+        if (lastActivity) {
+          const lastActivityTime = parseInt(lastActivity, 10);
+          // Treat corrupted/unparseable values as stale — safer to force
+          // re-login than to silently skip the inactivity check.
+          const elapsed = Number.isFinite(lastActivityTime)
+            ? Date.now() - lastActivityTime
+            : INACTIVITY_TIMEOUT_MS + 1;
+          if (elapsed > INACTIVITY_TIMEOUT_MS) {
+            localStorage.removeItem(LAST_ACTIVITY_KEY);
+            localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+            localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
+            // Transition UI to signed-out immediately so the login screen
+            // shows without waiting for the async firebaseSignOut round-trip.
+            setUser(null);
+            setGoogleAccessToken(null);
+            rootDocSyncedRef.current = false;
+            setLoading(false);
+            void firebaseSignOut(auth).catch((err: unknown) => {
+              console.error(
+                '[AuthContext] Error signing out stale session:',
+                err
+              );
+            });
+            return;
+          }
+        }
+        // Session is fresh (or first visit) — record activity
+        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+      }
+
+      setUser(firebaseUser);
+      if (!firebaseUser) {
         setGoogleAccessToken(null);
         rootDocSyncedRef.current = false;
       }
@@ -893,6 +935,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
     return unsubscribe;
   }, []);
+
+  // Track user activity so we can detect stale sessions on next load.
+  // Updates a localStorage timestamp every 5 minutes while the app is in use,
+  // and whenever the tab regains visibility.
+  useEffect(() => {
+    if (isAuthBypass || !user) return;
+
+    const updateActivity = () => {
+      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    };
+
+    // User is active right now
+    updateActivity();
+
+    // Update periodically while the tab is visible
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        updateActivity();
+      }
+    }, ACTIVITY_UPDATE_INTERVAL_MS);
+
+    // Also update when the tab regains focus
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        updateActivity();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   // Bypass mode: sign in anonymously so `request.auth.uid` is a real Firebase
   // uid that satisfies Firestore security rules. Wrap the resulting user in a
@@ -1070,6 +1146,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     try {
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+      localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
       await firebaseSignOut(auth);
       setGoogleAccessToken(null);
     } catch (error) {

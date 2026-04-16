@@ -178,3 +178,74 @@ export const removeBackgroundFloodFill = (
     img.src = dataUrl;
   });
 };
+
+/**
+ * Reads the natural width/height of an image file without uploading it.
+ * Uses an object URL so the browser only decodes the bitmap locally.
+ */
+export const getImageDimensionsFromFile = (
+  file: File
+): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Image failed to load'));
+    };
+    img.src = url;
+  });
+};
+
+/**
+ * Given an image's natural dimensions, returns sensible widget w/h that
+ * preserves the image's aspect ratio and fits within [minDim, maxDim].
+ * Used when placing an image on the board so the initial widget frame
+ * matches the image's natural aspect ratio (and resize feels natural).
+ */
+export const computeWidgetSizeForImage = (
+  dimensions: { width: number; height: number },
+  options: { maxDim?: number; minDim?: number } = {}
+): { w: number; h: number } => {
+  const maxDim = options.maxDim ?? 500;
+  const minDim = options.minDim ?? 100;
+
+  const { width, height } = dimensions;
+  if (!width || !height) return { w: maxDim, h: maxDim };
+
+  const aspectRatio = width / height;
+
+  // Fit the larger dimension to maxDim.
+  let w: number;
+  let h: number;
+  if (aspectRatio >= 1) {
+    w = Math.min(maxDim, width);
+    h = w / aspectRatio;
+  } else {
+    h = Math.min(maxDim, height);
+    w = h * aspectRatio;
+  }
+
+  // Guard the smaller dimension against falling below minDim.
+  if (w < minDim) {
+    w = minDim;
+    h = w / aspectRatio;
+  }
+  if (h < minDim) {
+    h = minDim;
+    w = h * aspectRatio;
+  }
+
+  // Extreme aspect ratios (e.g. 20:1 panoramic banners) can push the
+  // opposite axis past maxDim once we bump the smaller side up to minDim.
+  // Cap both axes so the widget never overflows the dashboard — the
+  // sticker's `object-contain` will letterbox inside the frame.
+  w = Math.min(w, maxDim);
+  h = Math.min(h, maxDim);
+
+  return { w: Math.round(w), h: Math.round(h) };
+};

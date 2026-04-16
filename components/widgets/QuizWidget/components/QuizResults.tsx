@@ -35,6 +35,7 @@ import { gradeAnswer } from '@/hooks/useQuizSession';
 import { useDashboard } from '@/context/useDashboard';
 import {
   buildPinToNameMap,
+  buildPinToExportNameMap,
   buildScoreboardTeams,
   getResponseScore,
   getDisplayScore,
@@ -88,21 +89,51 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   }, [showScoreboardPrompt]);
 
   const completed = responses.filter((r) => r.status === 'completed');
-  const avgScore =
-    completed.length > 0
-      ? Math.round(
-          completed.reduce(
-            (sum, r) => sum + getDisplayScore(r, quiz.questions, session),
-            0
-          ) / completed.length
-        )
-      : null;
 
+  const resolvedPeriods = useMemo(
+    () => config.periodNames ?? (config.periodName ? [config.periodName] : []),
+    [config.periodNames, config.periodName]
+  );
   const pinToName = useMemo(
-    () => buildPinToNameMap(rosters, config.periodName),
-    [rosters, config.periodName]
+    () => buildPinToNameMap(rosters, resolvedPeriods),
+    [rosters, resolvedPeriods]
+  );
+  const exportPinToName = useMemo(
+    () => buildPinToExportNameMap(rosters, resolvedPeriods),
+    [rosters, resolvedPeriods]
   );
   const hasNames = Object.keys(pinToName).length > 0;
+
+  // Per-period filtering — uses classPeriod set on each response at join time.
+  const [periodFilter, setPeriodFilter] = useState<string>('all');
+  const availablePeriods = useMemo(() => {
+    const periods = new Set<string>();
+    for (const r of responses) {
+      if (r.classPeriod) periods.add(r.classPeriod);
+    }
+    return Array.from(periods).sort();
+  }, [responses]);
+
+  const filteredResponses = useMemo(
+    () =>
+      periodFilter === 'all'
+        ? responses
+        : responses.filter((r) => r.classPeriod === periodFilter),
+    [responses, periodFilter]
+  );
+  const filteredCompleted = useMemo(
+    () => filteredResponses.filter((r) => r.status === 'completed'),
+    [filteredResponses]
+  );
+  const filteredAvgScore =
+    filteredCompleted.length > 0
+      ? Math.round(
+          filteredCompleted.reduce(
+            (sum, r) => sum + getDisplayScore(r, quiz.questions, session),
+            0
+          ) / filteredCompleted.length
+        )
+      : null;
 
   const handleSendToScoreboard = useCallback(
     (mode: 'pin' | 'name') => {
@@ -188,7 +219,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         responses,
         quiz.questions,
         {
-          pinToName,
+          pinToName: exportPinToName,
           teacherName: config.teacherName,
           periodName: config.periodName,
           plcMode: config.plcMode,
@@ -396,6 +427,38 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         </div>
       ) : (
         <>
+          {/* Period Filter (only when responses have classPeriod data) */}
+          {availablePeriods.length > 1 && (
+            <div
+              className="flex items-center border-b border-brand-blue-primary/10"
+              style={{
+                padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
+                gap: 'min(8px, 2cqmin)',
+              }}
+            >
+              <label
+                htmlFor="quiz-results-period-filter"
+                className="text-brand-blue-primary/60 font-bold uppercase tracking-widest shrink-0"
+                style={{ fontSize: 'min(10px, 3cqmin)' }}
+              >
+                Period:
+              </label>
+              <select
+                id="quiz-results-period-filter"
+                value={periodFilter}
+                onChange={(e) => setPeriodFilter(e.target.value)}
+                className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="all">All Periods ({responses.length})</option>
+                {availablePeriods.map((p) => (
+                  <option key={p} value={p}>
+                    {p} ({responses.filter((r) => r.classPeriod === p).length})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Tabs Navigation */}
           <div
             className="flex border-b border-brand-blue-primary/10"
@@ -429,19 +492,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           >
             {activeTab === 'overview' && (
               <OverviewTab
-                responses={responses}
-                completed={completed}
-                avgScore={avgScore}
+                responses={filteredResponses}
+                completed={filteredCompleted}
+                avgScore={filteredAvgScore}
                 questions={quiz.questions}
                 session={session}
               />
             )}
             {activeTab === 'questions' && (
-              <QuestionsTab questions={quiz.questions} responses={responses} />
+              <QuestionsTab
+                questions={quiz.questions}
+                responses={filteredResponses}
+              />
             )}
             {activeTab === 'students' && (
               <StudentsTab
-                responses={responses}
+                responses={filteredResponses}
                 questions={quiz.questions}
                 pinToName={pinToName}
                 tabWarningsEnabled={tabWarningsEnabled ?? true}

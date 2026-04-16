@@ -220,20 +220,29 @@ export const useRosters = (user: User | null) => {
 
   const loadStudentsFromDrive = useCallback(
     async (driveFileId: string): Promise<Student[]> => {
-      if (!driveService) return [];
-      try {
-        const blob = await driveService.downloadFile(driveFileId);
-        const text = await blob.text();
-        const parsed = JSON.parse(text) as unknown;
-        if (!Array.isArray(parsed)) return [];
-        const students = (parsed as unknown[])
-          .map(parseRawStudent)
-          .filter((s): s is Student => s !== null);
-        return assignPins(students);
-      } catch (err) {
-        console.error('Failed to load students from Drive:', err);
-        return [];
+      if (!driveService) {
+        throw new Error('Drive service not available');
       }
+      // Throw on failure so the caller can distinguish "genuinely empty
+      // roster" from "load failed — retry later". Silently returning [] here
+      // poisons the per-roster cache (see buildRosters) and blocks retries
+      // after a token refresh.
+      const blob = await driveService.downloadFile(driveFileId);
+      const text = await blob.text();
+      const parsed = JSON.parse(text) as unknown;
+      // A non-array payload means the Drive file is corrupt or has been
+      // replaced with something unexpected. Treat it as a failure rather
+      // than a zero-student roster so buildRosters' catch path skips the
+      // cache write and retries on the next snapshot.
+      if (!Array.isArray(parsed)) {
+        throw new Error(
+          `Drive roster file ${driveFileId} is not an array of students`
+        );
+      }
+      const students = (parsed as unknown[])
+        .map(parseRawStudent)
+        .filter((s): s is Student => s !== null);
+      return assignPins(students);
     },
     [driveService]
   );
@@ -245,20 +254,48 @@ export const useRosters = (user: User | null) => {
       return Promise.all(
         metaList.map(async (meta) => {
           let students: Student[] = [];
+          let loadError: string | undefined;
           if (meta.driveFileId) {
             const cached = studentsCacheRef.current.get(meta.id);
             if (cached) {
               students = cached;
+            } else if (driveService) {
+              try {
+                students = await loadStudentsFromDrive(meta.driveFileId);
+                // Only cache on successful load. Legitimate empty rosters
+                // still get cached via this success path; transient failures
+                // (stale token, network blip) fall through to the catch below
+                // so the next snapshot / token refresh can retry.
+                studentsCacheRef.current.set(meta.id, students);
+              } catch (err) {
+                console.error(
+                  `Failed to load students for roster ${meta.id}:`,
+                  err
+                );
+                // Do NOT cache the failure. Next snapshot / token refresh /
+                // re-subscription will retry automatically. Surface the
+                // failure on the roster so the UI can distinguish "0
+                // students" from "students unavailable — check Drive".
+                students = [];
+                loadError =
+                  err instanceof Error
+                    ? err.message
+                    : 'Failed to load roster from Drive';
+              }
             } else {
-              students = await loadStudentsFromDrive(meta.driveFileId);
-              studentsCacheRef.current.set(meta.id, students);
+              // Drive service unavailable (not yet signed in / token loading).
+              // Flag the failure so the UI doesn't show a misleading empty
+              // roster; next snapshot once driveService is ready will retry.
+              loadError = 'Google Drive not available — sign in to load roster';
             }
           }
-          return { ...meta, students };
+          const roster: ClassRoster = { ...meta, students };
+          if (loadError) roster.loadError = loadError;
+          return roster;
         })
       );
     },
-    [loadStudentsFromDrive]
+    [loadStudentsFromDrive, driveService]
   );
 
   // ─── One-time migration: move students[] from Firestore docs to Drive ──────

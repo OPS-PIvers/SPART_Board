@@ -33,6 +33,9 @@ import {
   VolumeX,
   Palette,
   Medal,
+  Pause,
+  Play,
+  ArrowLeft,
 } from 'lucide-react';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import {
@@ -63,13 +66,24 @@ interface QuizLiveMonitorProps {
   responses: QuizResponse[];
   quizData: QuizData;
   onAdvance: () => Promise<void>;
+  /**
+   * "Make Inactive" for this assignment — kills the student URL but preserves
+   * all responses. Replaces the old "End" action which only touched the
+   * session doc.
+   */
   onEnd: () => Promise<void>;
+  /** Pause this assignment — URL stays live, students see a paused placeholder. */
+  onPause?: () => Promise<void>;
+  /** Resume a paused assignment. */
+  onResume?: () => Promise<void>;
   config: QuizConfig;
   rosters: ClassRoster[];
   onUpdateConfig: (updates: Partial<QuizConfig>) => void;
   onRemoveStudent?: (studentUid: string) => Promise<void>;
   onRevealAnswer?: (questionId: string, correctAnswer: string) => Promise<void>;
   onHideAnswer?: (questionId: string) => Promise<void>;
+  /** Navigate back to the manager view without ending the quiz. */
+  onBack?: () => void;
 }
 
 export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
@@ -78,16 +92,23 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   quizData,
   onAdvance,
   onEnd,
+  onPause,
+  onResume,
   config,
   rosters,
   onUpdateConfig,
   onRemoveStudent,
   onRevealAnswer,
   onHideAnswer,
+  onBack,
 }) => {
   const pinToName = useMemo(
-    () => buildPinToNameMap(rosters, config.periodName),
-    [rosters, config.periodName]
+    () =>
+      buildPinToNameMap(
+        rosters,
+        config.periodNames ?? (config.periodName ? [config.periodName] : [])
+      ),
+    [rosters, config.periodNames, config.periodName]
   );
   const scoringConfig = useMemo(
     () => ({
@@ -284,11 +305,30 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   };
 
   const handleEnd = async () => {
+    const ok = window.confirm(
+      'Make this assignment inactive?\n\nThe student URL will stop working. Responses are preserved and will still be viewable from the Archive.'
+    );
+    if (!ok) return;
     setEnding(true);
     try {
       await onEnd();
     } finally {
       setEnding(false);
+    }
+  };
+
+  const [toggling, setToggling] = useState(false);
+  const handleTogglePause = async () => {
+    if (toggling) return;
+    setToggling(true);
+    try {
+      if (session.status === 'paused') {
+        if (onResume) await onResume();
+      } else if (onPause) {
+        await onPause();
+      }
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -365,6 +405,25 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
             className="flex items-center"
             style={{ gap: 'min(8px, 2cqmin)' }}
           >
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center justify-center rounded-lg text-brand-blue-dark/70 hover:text-brand-blue-dark hover:bg-brand-blue-lighter/30 transition-colors"
+                style={{
+                  width: 'min(28px, 7cqmin)',
+                  height: 'min(28px, 7cqmin)',
+                }}
+                title="Back to assignments"
+                aria-label="Back to assignments"
+              >
+                <ArrowLeft
+                  style={{
+                    width: 'min(16px, 4cqmin)',
+                    height: 'min(16px, 4cqmin)',
+                  }}
+                />
+              </button>
+            )}
             <div
               className="rounded-full bg-brand-red-primary animate-pulse shadow-[0_0_8px_rgba(173,33,34,0.5)]"
               style={{
@@ -388,34 +447,82 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               </span>
             </div>
           </div>
-          <button
-            onClick={() => void handleEnd()}
-            disabled={ending}
-            className="flex items-center bg-brand-red-primary hover:bg-brand-red-dark disabled:opacity-50 text-white font-black rounded-xl transition-all shadow-md active:scale-95"
-            style={{
-              gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(11px, 3.5cqmin)',
-            }}
+          <div
+            className="flex items-center"
+            style={{ gap: 'min(6px, 1.5cqmin)' }}
           >
-            {ending ? (
-              <Loader2
-                className="animate-spin"
+            {(onPause ?? onResume) && session.status !== 'ended' && (
+              <button
+                onClick={() => void handleTogglePause()}
+                disabled={toggling}
+                className="flex items-center bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-black rounded-xl transition-all shadow-md active:scale-95"
                 style={{
-                  width: 'min(14px, 3.5cqmin)',
-                  height: 'min(14px, 3.5cqmin)',
+                  gap: 'min(6px, 1.5cqmin)',
+                  padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                  fontSize: 'min(11px, 3.5cqmin)',
                 }}
-              />
-            ) : (
-              <Square
-                style={{
-                  width: 'min(14px, 3.5cqmin)',
-                  height: 'min(14px, 3.5cqmin)',
-                }}
-              />
+                title={
+                  session.status === 'paused'
+                    ? 'Resume — students can answer again'
+                    : 'Pause — students see a paused screen'
+                }
+              >
+                {toggling ? (
+                  <Loader2
+                    className="animate-spin"
+                    style={{
+                      width: 'min(14px, 3.5cqmin)',
+                      height: 'min(14px, 3.5cqmin)',
+                    }}
+                  />
+                ) : session.status === 'paused' ? (
+                  <Play
+                    style={{
+                      width: 'min(14px, 3.5cqmin)',
+                      height: 'min(14px, 3.5cqmin)',
+                    }}
+                  />
+                ) : (
+                  <Pause
+                    style={{
+                      width: 'min(14px, 3.5cqmin)',
+                      height: 'min(14px, 3.5cqmin)',
+                    }}
+                  />
+                )}
+                {session.status === 'paused' ? 'RESUME' : 'PAUSE'}
+              </button>
             )}
-            END
-          </button>
+            <button
+              onClick={() => void handleEnd()}
+              disabled={ending}
+              className="flex items-center bg-brand-red-primary hover:bg-brand-red-dark disabled:opacity-50 text-white font-black rounded-xl transition-all shadow-md active:scale-95"
+              style={{
+                gap: 'min(6px, 1.5cqmin)',
+                padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                fontSize: 'min(11px, 3.5cqmin)',
+              }}
+              title="Make this assignment inactive. Responses are preserved."
+            >
+              {ending ? (
+                <Loader2
+                  className="animate-spin"
+                  style={{
+                    width: 'min(14px, 3.5cqmin)',
+                    height: 'min(14px, 3.5cqmin)',
+                  }}
+                />
+              ) : (
+                <Square
+                  style={{
+                    width: 'min(14px, 3.5cqmin)',
+                    height: 'min(14px, 3.5cqmin)',
+                  }}
+                />
+              )}
+              END
+            </button>
+          </div>
         </div>
       </div>
 

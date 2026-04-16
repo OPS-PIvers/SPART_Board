@@ -134,27 +134,59 @@ export function getScoreSuffix(session?: QuizScoringSession): string {
 }
 
 /**
- * Build a PIN → student full-name lookup from the matching roster.
- * Stores both the canonical (zero-padded) and numeric-only (stripped leading
- * zeros) forms so lookups succeed regardless of how the student typed their PIN.
+ * Build a PIN → student full-name lookup from matching rosters.
+ * Accepts an array of period names to support multi-class assignments.
+ * Stores both canonical (zero-padded) and stripped PIN forms. First roster
+ * wins for a given PIN when multiple rosters overlap.
  */
 export function buildPinToNameMap(
   rosters: ClassRoster[],
-  periodName?: string
+  periodNames?: string[]
 ): Record<string, string> {
   const map: Record<string, string> = {};
-  if (!periodName) return map;
-  const roster = rosters.find((r) => r.name === periodName);
-  if (!roster?.students) return map;
-  for (const s of roster.students) {
-    if (s.pin && (s.firstName || s.lastName)) {
-      const name = [s.firstName, s.lastName].filter(Boolean).join(' ');
-      // Canonical form (e.g. "01")
-      map[s.pin] = name;
-      // Stripped form (e.g. "1") for students who omit the leading zero
-      const stripped = s.pin.replace(/^0+/, '');
-      if (stripped && stripped !== s.pin) {
-        map[stripped] = name;
+  if (!periodNames || periodNames.length === 0) return map;
+  for (const pName of periodNames) {
+    const roster = rosters.find((r) => r.name === pName);
+    if (!roster?.students) continue;
+    for (const s of roster.students) {
+      if (s.pin && (s.firstName || s.lastName)) {
+        const name = [s.firstName, s.lastName].filter(Boolean).join(' ');
+        if (!(s.pin in map)) map[s.pin] = name;
+        const stripped = s.pin.replace(/^0+/, '');
+        if (stripped && stripped !== s.pin && !(stripped in map)) {
+          map[stripped] = name;
+        }
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * Build a PIN → student name lookup formatted for spreadsheet export:
+ * "Last, First" when both names exist, just first or last name alone otherwise.
+ * Accepts an array of period names to support multi-class assignments.
+ */
+export function buildPinToExportNameMap(
+  rosters: ClassRoster[],
+  periodNames?: string[]
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  if (!periodNames || periodNames.length === 0) return map;
+  for (const pName of periodNames) {
+    const roster = rosters.find((r) => r.name === pName);
+    if (!roster?.students) continue;
+    for (const s of roster.students) {
+      if (s.pin && (s.firstName || s.lastName)) {
+        const name =
+          s.lastName && s.firstName
+            ? `${s.lastName}, ${s.firstName}`
+            : s.lastName || s.firstName;
+        if (!(s.pin in map)) map[s.pin] = name;
+        const stripped = s.pin.replace(/^0+/, '');
+        if (stripped && stripped !== s.pin && !(stripped in map)) {
+          map[stripped] = name;
+        }
       }
     }
   }

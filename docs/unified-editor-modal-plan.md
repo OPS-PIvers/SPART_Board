@@ -6,7 +6,7 @@ Shared full-screen modal editor for library-style widgets (Quiz, Video Activity,
 
 - [x] **Phase 0** — Shared primitives (EditorModalShell, auth-bypass plumbing)
 - [x] **Phase 1** — Quiz
-- [ ] **Phase 2** — Video Activity
+- [x] **Phase 2** — Video Activity
 - [ ] **Phase 3** — MiniApp
 - [ ] **Phase 4** — Guided Learning
 
@@ -84,26 +84,32 @@ Structural stand-in for `QuizDriveService` used in bypass mode (no Google access
 
 ---
 
-## Phase 2 — Video Activity (Pending)
+## Phase 2 — Video Activity (Complete)
 
 Location: `components/widgets/VideoActivityWidget/`
+
+**Important:** the current editor is **not** a back-face — it's an in-place sub-view rendered inside `Widget.tsx` when `view === 'editor'` (l.217-233). The migration still stands: lift that sub-view into a modal. Back-face (`Settings.tsx`) only holds playback settings (`autoPlay`, `requireCorrectAnswer`, `allowSkipping`) — keep it as-is.
 
 ### Files to create
 
 - `components/widgets/VideoActivityWidget/components/VideoActivityEditorModal.tsx`
-- `utils/mockVideoActivityDriveService.ts` (only if VA stores blobs in Drive — verify by reading the existing VA drive service / hook)
+
+**No new mock drive service is needed.** VA reuses `QuizDriveService` via `useVideoActivity.getDriveService()` (l.89-96 returns `new QuizDriveService(googleAccessToken)`), so the existing `utils/mockQuizDriveService.ts` satisfies the contract — just branch on `isAuthBypass` in the VA hook.
 
 ### Files to modify
 
-- `components/widgets/VideoActivityWidget/Widget.tsx` — remove back-face editor path; add `editingActivity` local state; render the modal as a sibling to the library component; `onNew` builds a blank `VideoActivityData` draft.
-- The VA library/manager component (find it — probably `Manager.tsx` or similar) — add `onNew` prop; split header into `Import` + `New` buttons same as Quiz.
-- `hooks/useVideoActivity.ts` (or wherever the VA hook lives) — add real/mock drive service selection by `isAuthBypass`.
+- `components/widgets/VideoActivityWidget/Widget.tsx` — drop the `view === 'editor'` branch (l.217-233); add `editingActivity` / `editingMeta` local state; render `VideoActivityEditorModal` as a sibling to `Manager`. `onNew` builds a blank `VideoActivityData` draft (`{ id, title: '', youtubeUrl: '', questions: [], createdAt, updatedAt }`).
+- `components/widgets/VideoActivityWidget/components/Manager.tsx` — split header into `+ New` (primary) and `Import` (secondary) buttons, mirroring Phase 1's Quiz split. Today the header has only `New`; the `Manual / AI / Import` choice currently lives inside `Creator.tsx`. Route the new `Import` header button straight to the existing import flow (consider extracting `Importer.tsx` as a first-class step or running `Creator` in import-only mode — decide during implementation).
+- `components/widgets/VideoActivityWidget/components/Editor.tsx` — **delete**. Its body moves into the modal. Question rendering already has the MM:SS `timestamp` input (Editor.tsx l.63-71, helpers l.28-42) — port it over unchanged.
+- `hooks/useVideoActivity.ts` — branch `getDriveService()` on `isAuthBypass` and return a `mockQuizDriveService` instance, exactly the same way `useQuiz` does.
 
 ### Implementation notes
 
-1. Follow `QuizEditorModal.tsx` as the reference. VA questions have an extra `timestamp` field (the video time the question fires at) — add it as a field inside each question block; include it in the `questionsEqual` dirty-check.
-2. **Decision during implementation**: extract `components/common/QuestionEditor.tsx` shared between Quiz and VA if the duplication is clean. If the timestamp field makes the shared props shape awkward, defer the extraction and accept the duplication for now. Per the original plan, this is opportunistic — don't force it.
-3. Verify the 5 flows from the Phase 1 verification list.
+1. Follow `QuizEditorModal.tsx` as the reference. Data: `VideoActivityQuestion extends QuizQuestion` with `{ timestamp: number }` (`types.ts:1675-1678`); `VideoActivityData` adds `youtubeUrl: string` and optional `videoDuration?: number`.
+2. Save signature already matches — `saveActivity(activity, existingDriveFileId?)`. Pass `undefined` for new; pass `selectedMeta?.driveFileId` for edits (see current `Widget.tsx:226` / `Creator.tsx:67` for the call pattern).
+3. Dirty-check must include `title`, `youtubeUrl`, **and** the questions array (use a `questionsEqual` helper that compares `text`, `correctAnswer`, `incorrectAnswers`, `timeLimit`, **and** `timestamp`).
+4. **Decision during implementation**: extract `components/common/QuestionEditor.tsx` shared between Quiz and VA if the duplication is clean. If the `timestamp` field makes the shared props shape awkward, defer the extraction and accept the duplication. Opportunistic — don't force it.
+5. Verify the 6 flows from the Phase 1 verification list.
 
 ---
 
@@ -111,22 +117,27 @@ Location: `components/widgets/VideoActivityWidget/`
 
 Location: `components/widgets/MiniApp/`
 
+**Important:** MiniApp stores app content (HTML + title) in **Firestore only** — not Drive. The "Collect Live Results" Google Sheet feature uses Drive, but that's incidental and unrelated to authoring persistence. MiniApp also has **no back-face** today; there is no `Settings.tsx` — all config lives in the editor body. There is no Manager file: the library header and New button are inline in `Widget.tsx` (l.886-951) with tabs for "My Apps" / "Global Apps".
+
 ### Files to create
 
 - `components/widgets/MiniApp/components/MiniAppEditorModal.tsx`
-- `utils/mockMiniAppDriveService.ts` (only if MiniApp stores code/config blobs in Drive — verify)
+
+**No mock drive service is required.** Anonymous Firebase Auth (already wired in Phase 0) is sufficient because writes go to Firestore (`users/{uid}/miniapps`), not Drive.
 
 ### Files to modify
 
-- `components/widgets/MiniApp/Widget.tsx` — same pattern as Quiz.
-- MiniApp library view component — split `Import` / `New` header buttons.
-- `components/widgets/MiniApp/components/MiniAppEditor.tsx` — body migrated into the new modal (or deleted if replaced entirely).
+- `components/widgets/MiniApp/Widget.tsx` — keep the "My Apps" / "Global Apps" tabs and the single `+ New App` button in the header. Replace the `view === 'editor'` branch (l.857-879) with `editingApp` / `editingId` local state and render `MiniAppEditorModal` as a sibling. Refactor the state-based `handleSave()` (l.521-554) into a parameterized `saveMiniApp(data: MiniAppItem, id?: string)` so the modal calls it with the draft; `id === undefined` → `crypto.randomUUID()` → new document.
+- `components/widgets/MiniApp/components/MiniAppEditor.tsx` — body migrated into the modal. The title input (l.292-317), code textarea (l.318-329), Magic Generator prompt overlay (l.225-290), and "Collect Live Results" section (l.332-419) all remain. Decouple the body from the widget-instance `updateWidget()` calls at l.145 / l.182 / l.184 — in the modal, treat those sheet-linking side effects as part of the save callback rather than reading widget config directly.
+- `components/widgets/MiniApp/hooks/useMiniAppSync.ts` — **no change required** (Firestore listener only; no Drive integration for authoring).
 
 ### Implementation notes
 
-1. MiniApp editor body is code/config-centric — structurally unlike Quiz questions. Just wrap the existing body in `EditorModalShell`; don't try to reuse `QuestionEditor`.
-2. Dirty-check: a deep-equal (`JSON.stringify` compare or a small helper) on the draft vs original may be simpler than field-by-field given the config shape. The shell just needs a boolean.
-3. Verify the 5 flows.
+1. MiniApp editor body is HTML/config-centric — structurally unlike Quiz questions. Wrap the body in `EditorModalShell`; don't try to reuse `QuestionEditor`.
+2. Dirty-check: deep-compare `{ title, html }` against the originals. The `collectResults` / `googleSheetId` toggles live on the **widget's** `config` (not the `MiniAppItem` in Firestore); treat those as separate from the modal's dirty state — they are widget-instance settings, not library-item content.
+3. **Import/export: existing JSON format.** MiniApp already supports personal-library `Export` and `Import` actions in the header (`Widget.tsx:610-659` + header buttons at `Widget.tsx:1001-1042`); import loads a `.json` file into Firestore. Preserve those header actions during the modal migration (alongside `+ New App`). The AI "Magic Generator" remains embedded inside the editor body.
+4. Data shape: `MiniAppItem = { id: string; title: string; html: string; createdAt: number; order?: number }`.
+5. Verify the 6 flows. No back-face to regress.
 
 ---
 
@@ -134,23 +145,28 @@ Location: `components/widgets/MiniApp/`
 
 Location: `components/widgets/GuidedLearning/`
 
+**Important:** GL has its own drive service (`utils/guidedLearningDriveService.ts`) — it does **not** share with Quiz. So a new mock is required. Personal sets persist via `useGuidedLearning.saveSet` (Drive + Firestore metadata, l.129). "Building" sets (admin-authored, community-shared) persist to Firestore only via a **separate** `useGuidedLearning.saveBuildingSet` function (l.186). The modal must route saves to the correct function based on tab — `saveSet` does not branch internally. Back-face (`Settings.tsx`, 35 lines) only holds a "Go to Library" button — nothing to preserve.
+
 ### Files to create
 
 - `components/widgets/GuidedLearning/components/GuidedLearningEditorModal.tsx`
-- `utils/mockGuidedLearningDriveService.ts` (only if GL stores blobs in Drive — verify)
+- `utils/mockGuidedLearningDriveService.ts` — model on `mockQuizDriveService.ts`. Expose a `GuidedLearningDriveLike` structural interface (both real and mock satisfy it). Store blobs in `localStorage` under `mock_gl_drive:{userId}:{fileId}`.
 
 ### Files to modify
 
-- `components/widgets/GuidedLearning/Widget.tsx`
-- `GuidedLearningLibrary.tsx`
-- `GuidedLearningEditor.tsx` — body migrated into the modal.
+- `components/widgets/GuidedLearning/Widget.tsx` — drop the `config.view === 'editor'` branch (l.265-277); add `editingSet` / `editingMeta` local state; render the modal as a sibling to `GuidedLearningLibrary`.
+- `components/widgets/GuidedLearning/components/GuidedLearningLibrary.tsx` — keep the existing tab structure ("My Sets" / "Building") and the admin-only AI button on the Building tab (l.388-426). Add the modal's `onEdit` / `onNew` / `onCreateNewBuilding` wiring. **No Import button** — GL has no native import format.
+- `components/widgets/GuidedLearning/components/GuidedLearningEditor.tsx` — body wrapped by the modal. **Do not refactor internals.** Props are already clean (`existingSet`, `existingMeta`, `onSave`, `onCancel`, `saving`), and the 913-line `GuidedLearningStepEditor.tsx` sub-component is kept intact.
+- `hooks/useGuidedLearning.ts` — branch `getDriveService()` (l.120) on `isAuthBypass` and return `mockGuidedLearningDriveService`, same pattern as `useQuiz`.
 
 ### Implementation notes
 
-1. GL has nested steps, nested questions, and image uploads. **Do not refactor the body** during this migration — move it into the modal as-is. Refactoring can happen later in its own PR.
-2. Dirty-check: write a structural compare for the steps array (recursive helper). Don't rely on deep-equal on image data URIs — compare by URL/key.
-3. Do this phase last so the shell is battle-tested by the simpler editors.
-4. Verify: step reordering, image upload, nested question types all work inside the modal. Plus the standard 5 flows.
+1. GL has nested steps (2 levels: set → step → optional question) and image uploads. **Do not refactor the body** during this migration — move it into the modal as-is. Refactoring can happen later in its own PR.
+2. Dirty-check: structural compare on `{ title, description, mode, imageUrls, steps }`. Steps need a small recursive helper (each step may carry `question: { type, text, choices?, correctAnswer?, matchingPairs?, sortingItems? }`).
+3. **Images are Firebase Storage URLs** (`imageUrls: string[]`), not data URIs — uploaded via `useStorage().uploadHotspotImage()`. A plain string-array compare suffices; the earlier draft's warning about data-URI equality doesn't apply.
+4. Save path must branch by tab: personal sets call `saveSet(set, existingDriveFileId?)`; Building-tab sets call `saveBuildingSet(set)`. Do **not** route Building saves through `saveSet` (that would push a Drive write). The branching already exists in `GuidedLearningWidget.handleSave` today — keep it there when it moves to the modal's save callback.
+5. Do this phase last so the shell is battle-tested by the simpler editors.
+6. Verify: step reordering, image upload, nested question types (`multiple-choice` / `matching` / `sorting`), and the Building-vs-personal save paths all work inside the modal. Plus the standard 6 flows.
 
 ---
 
@@ -194,6 +210,12 @@ After all phases, cross-widget verification:
 4. **Save path for new vs existing**: the existing save functions (`saveQuiz`, etc.) take `(data, existingFileId?)`. Pass `undefined` for new; pass the meta's `driveFileId` for edits. Don't add new-vs-edit branching in the modal — it's already handled downstream.
 
 5. **Widget.tsx modal sibling rendering**: the modal is rendered as a sibling to the library component, not inside it. This keeps modal state in the widget's root and avoids prop-drilling through the library.
+
+6. **Not every widget needs a mock drive service.** Before adding one, check what `getDriveService()` returns in the real hook:
+   - **Quiz** → `QuizDriveService` → `mockQuizDriveService.ts` (exists).
+   - **Video Activity** → also `QuizDriveService` → reuse `mockQuizDriveService.ts`, no new file.
+   - **MiniApp** → Firestore-only, no `getDriveService()` → anonymous Firebase Auth is sufficient, no mock needed.
+   - **Guided Learning** → `GuidedLearningDriveService` (distinct from Quiz) → needs its own `mockGuidedLearningDriveService.ts`.
 
 ---
 
