@@ -115,10 +115,7 @@ export const GuidedLearningEditorModal: React.FC<
     [set]
   );
   const originalSteps = useMemo(
-    () =>
-      set
-        ? (JSON.parse(JSON.stringify(set.steps)) as GuidedLearningStep[])
-        : [],
+    () => (set ? structuredClone(set.steps) : []),
     [set]
   );
 
