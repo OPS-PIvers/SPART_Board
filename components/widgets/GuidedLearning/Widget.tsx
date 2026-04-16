@@ -195,16 +195,6 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const handleCreateNew = () => {
-    setEditingSet(emptySet());
-    setEditingMeta(null);
-  };
-
-  const handleCreateNewBuilding = () => {
-    setEditingSet({ ...emptySet(), isBuilding: true });
-    setEditingMeta(null);
-  };
-
   const emptySet = (): GuidedLearningSet => ({
     id: crypto.randomUUID(),
     title: '',
@@ -215,6 +205,16 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
     updatedAt: Date.now(),
     authorUid: user?.uid,
   });
+
+  const handleCreateNew = () => {
+    setEditingSet(emptySet());
+    setEditingMeta(null);
+  };
+
+  const handleCreateNewBuilding = () => {
+    setEditingSet({ ...emptySet(), isBuilding: true });
+    setEditingMeta(null);
+  };
 
   if (loadingSet) {
     return (
