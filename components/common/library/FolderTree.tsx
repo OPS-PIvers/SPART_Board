@@ -1,15 +1,25 @@
 /**
  * FolderTree — recursive folder tree renderer used inside `FolderSidebar`.
  *
- * **STUB ONLY (Wave 3-A).** This component defines the tree-level props
- * that the Wave 3-B implementation will consume. It renders nothing for
- * now so the module can be imported without visual side effects.
+ * Wave 3-B UI: renders a keyboard-navigable tree with expand/collapse per
+ * branch, per-folder item counts, inline rename, and a context-menu-style
+ * overflow button for Rename / Delete / Move-to-Root. The tree is pure —
+ * all state (selection, expansion, rename modes) is owned by the parent
+ * `FolderSidebar`, which wires up the CRUD callbacks coming from
+ * `useFolders`.
  *
  * Kept separate from `FolderSidebar` so Wave 3-B can unit-test the
  * recursive rendering + expand/collapse behavior in isolation.
  */
 
-import React from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
+import {
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ChevronDown,
+  MoreHorizontal,
+} from 'lucide-react';
 import type { LibraryFolder } from '@/types';
 
 export interface FolderTreeProps {
@@ -25,28 +35,310 @@ export interface FolderTreeProps {
   onSelectFolder: (folderId: string | null) => void;
 
   /** Expand/collapse state, keyed by folder id. */
-  expanded?: Record<string, boolean>;
-  onToggleExpanded?: (folderId: string) => void;
+  expanded: Record<string, boolean>;
+  onToggleExpanded: (folderId: string) => void;
 
   /** Optional item count per folder id, rendered as a trailing badge. */
   itemCounts?: Record<string, number>;
 
-  /** Rename + delete handlers — omit to render a read-only tree. */
-  onRenameFolder?: (folderId: string, nextName: string) => Promise<void>;
-  onDeleteFolder?: (folderId: string) => Promise<void>;
-  onMoveFolder?: (
-    folderId: string,
-    nextParentId: string | null
-  ) => Promise<void>;
+  /** Which folder id currently has its overflow menu open. */
+  openMenuId: string | null;
+  onOpenMenu: (folderId: string | null) => void;
+
+  /** Which folder id is in inline-rename mode. */
+  renamingId: string | null;
+  onStartRename: (folderId: string) => void;
+  onCommitRename: (folderId: string, nextName: string) => void;
+  onCancelRename: () => void;
+
+  /** Triggers the delete flow in the parent sidebar. */
+  onRequestDelete: (folder: LibraryFolder) => void;
+  /** Create a child folder under this folder. */
+  onCreateChild: (parentId: string) => void;
+  /** Move a folder up to the root (null parent). */
+  onMoveToRoot: (folderId: string) => void;
 }
 
+const INDENT_PX = 14;
+
 /**
- * Placeholder render. Wave 3-B will build the recursive tree + drag
- * handles here.
+ * Inline rename input — one ref per render, auto-focused + selected on mount.
  */
-export const FolderTree: React.FC<FolderTreeProps> = () => {
-  /* TODO: Wave 3-B — render recursive folder rows with expand/collapse. */
-  return null;
+const RenameInput: React.FC<{
+  initial: string;
+  onCommit: (next: string) => void;
+  onCancel: () => void;
+}> = ({ initial, onCommit, onCancel }) => {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+  }, []);
+
+  const handleBlur = () => {
+    const v = ref.current?.value ?? '';
+    const trimmed = v.trim();
+    if (trimmed && trimmed !== initial) onCommit(trimmed);
+    else onCancel();
+  };
+
+  return (
+    <input
+      ref={ref}
+      type="text"
+      defaultValue={initial}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          const v = (e.target as HTMLInputElement).value.trim();
+          if (v) onCommit(v);
+          else onCancel();
+        } else if (e.key === 'Escape') {
+          onCancel();
+        }
+        e.stopPropagation();
+      }}
+      onClick={(e) => e.stopPropagation()}
+      className="flex-1 min-w-0 bg-white border border-brand-blue-primary/40 rounded px-1.5 py-0.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue-primary/40"
+    />
+  );
+};
+
+export const FolderTree: React.FC<FolderTreeProps> = ({
+  folders,
+  parentId = null,
+  depth = 0,
+  selectedFolderId,
+  onSelectFolder,
+  expanded,
+  onToggleExpanded,
+  itemCounts,
+  openMenuId,
+  onOpenMenu,
+  renamingId,
+  onStartRename,
+  onCommitRename,
+  onCancelRename,
+  onRequestDelete,
+  onCreateChild,
+  onMoveToRoot,
+}) => {
+  // Group children by parentId once per render. Sorted input is expected
+  // (the hook orders by `order` asc); still, sort defensively.
+  const children = useMemo(
+    () =>
+      folders
+        .filter((f) => (f.parentId ?? null) === parentId)
+        .sort((a, b) => a.order - b.order),
+    [folders, parentId]
+  );
+
+  if (children.length === 0) return null;
+
+  return (
+    <ul role="group" className="flex flex-col">
+      {children.map((folder) => {
+        const hasChildren = folders.some((f) => f.parentId === folder.id);
+        const isExpanded = expanded[folder.id] ?? true;
+        const isSelected = selectedFolderId === folder.id;
+        const isMenuOpen = openMenuId === folder.id;
+        const isRenaming = renamingId === folder.id;
+        const count = itemCounts?.[folder.id] ?? 0;
+
+        return (
+          <li key={folder.id} role="treeitem" aria-expanded={isExpanded}>
+            <div
+              className={`group relative flex items-center gap-1 rounded-lg text-sm font-medium cursor-pointer select-none transition-colors ${
+                isSelected
+                  ? 'bg-brand-blue-primary/10 text-brand-blue-dark'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+              style={{ paddingLeft: depth * INDENT_PX + 4 }}
+              onClick={() => onSelectFolder(folder.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectFolder(folder.id);
+                } else if (
+                  e.key === 'ArrowRight' &&
+                  hasChildren &&
+                  !isExpanded
+                ) {
+                  e.preventDefault();
+                  onToggleExpanded(folder.id);
+                } else if (e.key === 'ArrowLeft' && hasChildren && isExpanded) {
+                  e.preventDefault();
+                  onToggleExpanded(folder.id);
+                } else if (e.key === 'F2') {
+                  e.preventDefault();
+                  onStartRename(folder.id);
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`${folder.name}, ${count} items`}
+            >
+              {/* Expand/collapse chevron (placeholder width when no children keeps alignment). */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (hasChildren) onToggleExpanded(folder.id);
+                }}
+                className="shrink-0 w-4 h-5 flex items-center justify-center text-slate-400"
+                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                tabIndex={-1}
+              >
+                {hasChildren ? (
+                  isExpanded ? (
+                    <ChevronDown size={12} />
+                  ) : (
+                    <ChevronRight size={12} />
+                  )
+                ) : null}
+              </button>
+
+              {/* Folder icon. */}
+              <span className="shrink-0 text-brand-blue-primary/80">
+                {isExpanded && hasChildren ? (
+                  <FolderOpen size={14} />
+                ) : (
+                  <Folder size={14} />
+                )}
+              </span>
+
+              {/* Folder name (or inline rename input). */}
+              {isRenaming ? (
+                <RenameInput
+                  initial={folder.name}
+                  onCommit={(next) => onCommitRename(folder.id, next)}
+                  onCancel={onCancelRename}
+                />
+              ) : (
+                <span className="flex-1 min-w-0 truncate py-1">
+                  {folder.name}
+                </span>
+              )}
+
+              {/* Item count badge. */}
+              {!isRenaming && count > 0 && (
+                <span
+                  className={`shrink-0 inline-flex items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none ${
+                    isSelected
+                      ? 'bg-brand-blue-primary/20 text-brand-blue-dark'
+                      : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+
+              {/* Overflow menu trigger. */}
+              {!isRenaming && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenMenu(isMenuOpen ? null : folder.id);
+                  }}
+                  aria-label={`Actions for ${folder.name}`}
+                  aria-haspopup="menu"
+                  aria-expanded={isMenuOpen}
+                  className={`shrink-0 p-1 rounded-md text-slate-400 hover:text-brand-blue-dark hover:bg-white/60 ${
+                    isMenuOpen
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                  }`}
+                  tabIndex={-1}
+                >
+                  <MoreHorizontal size={14} />
+                </button>
+              )}
+
+              {/* Overflow menu popover. */}
+              {isMenuOpen && (
+                <div
+                  role="menu"
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-1 top-full mt-1 z-20 min-w-[160px] rounded-xl bg-white shadow-xl border border-slate-200 p-1 text-sm"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-slate-100 text-slate-700"
+                    onClick={() => {
+                      onOpenMenu(null);
+                      onStartRename(folder.id);
+                    }}
+                  >
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-slate-100 text-slate-700"
+                    onClick={() => {
+                      onOpenMenu(null);
+                      onCreateChild(folder.id);
+                    }}
+                  >
+                    New subfolder
+                  </button>
+                  {folder.parentId != null && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-slate-100 text-slate-700"
+                      onClick={() => {
+                        onOpenMenu(null);
+                        onMoveToRoot(folder.id);
+                      }}
+                    >
+                      Move to root
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-brand-red-lighter/40 text-brand-red-dark"
+                    onClick={() => {
+                      onOpenMenu(null);
+                      onRequestDelete(folder);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Recurse into children when expanded. */}
+            {isExpanded && hasChildren && (
+              <FolderTree
+                folders={folders}
+                parentId={folder.id}
+                depth={depth + 1}
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={onSelectFolder}
+                expanded={expanded}
+                onToggleExpanded={onToggleExpanded}
+                itemCounts={itemCounts}
+                openMenuId={openMenuId}
+                onOpenMenu={onOpenMenu}
+                renamingId={renamingId}
+                onStartRename={onStartRename}
+                onCommitRename={onCommitRename}
+                onCancelRename={onCancelRename}
+                onRequestDelete={onRequestDelete}
+                onCreateChild={onCreateChild}
+                onMoveToRoot={onMoveToRoot}
+              />
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
 };
 
 export default FolderTree;

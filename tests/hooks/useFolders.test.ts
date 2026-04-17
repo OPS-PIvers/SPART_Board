@@ -1,10 +1,10 @@
 /**
- * Shape test for the Wave 3-A `useFolders` shell.
+ * Shape tests for `useFolders`.
  *
- * Wave 3-A ships the hook as a no-op shell with the full return-type
- * contract Wave 3-B will implement. These tests pin the public shape so
- * that later commits can't silently drop a field or change a signature
- * without the tests catching it.
+ * Wave 3-B implements the hook against Firestore. These tests pin the
+ * public shape so future changes can't silently drop a field or change a
+ * signature. Real Firestore behavior (create → rename → move → delete) is
+ * covered by integration tests in a follow-up PR.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -12,7 +12,7 @@ import { renderHook } from '@testing-library/react';
 import { useFolders, folderCollectionName } from '../../hooks/useFolders';
 import type { LibraryFolderWidget } from '../../types';
 
-describe('useFolders (Wave 3-A shell)', () => {
+describe('useFolders', () => {
   const widgets: LibraryFolderWidget[] = [
     'quiz',
     'video_activity',
@@ -20,43 +20,44 @@ describe('useFolders (Wave 3-A shell)', () => {
     'miniapp',
   ];
 
-  it.each(widgets)('returns the expected empty shape for %s', (widget) => {
-    const { result } = renderHook(() => useFolders('user-1', widget));
+  it.each(widgets)(
+    'returns the expected shape when userId is undefined for %s',
+    (widget) => {
+      const { result } = renderHook(() => useFolders(undefined, widget));
 
-    expect(result.current.folders).toEqual([]);
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeNull();
+      expect(result.current.folders).toEqual([]);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toBeNull();
 
-    expect(typeof result.current.createFolder).toBe('function');
-    expect(typeof result.current.renameFolder).toBe('function');
-    expect(typeof result.current.moveFolder).toBe('function');
-    expect(typeof result.current.deleteFolder).toBe('function');
-    expect(typeof result.current.reorderSiblings).toBe('function');
-  });
+      expect(typeof result.current.createFolder).toBe('function');
+      expect(typeof result.current.renameFolder).toBe('function');
+      expect(typeof result.current.moveFolder).toBe('function');
+      expect(typeof result.current.deleteFolder).toBe('function');
+      expect(typeof result.current.reorderSiblings).toBe('function');
+      expect(typeof result.current.moveItem).toBe('function');
+    }
+  );
 
-  it('returns the same shape when userId is undefined', () => {
+  it('write operations reject when not authenticated', async () => {
     const { result } = renderHook(() => useFolders(undefined, 'quiz'));
 
-    expect(result.current.folders).toEqual([]);
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeNull();
-  });
-
-  it('write operations reject until Wave 3-B implements them', async () => {
-    const { result } = renderHook(() => useFolders('user-1', 'quiz'));
-
     await expect(result.current.createFolder('New', null)).rejects.toThrow(
-      /Wave 3-B/
+      /Not authenticated/
     );
     await expect(result.current.renameFolder('f1', 'X')).rejects.toThrow(
-      /Wave 3-B/
+      /Not authenticated/
     );
     await expect(result.current.moveFolder('f1', null)).rejects.toThrow(
-      /Wave 3-B/
+      /Not authenticated/
     );
-    await expect(result.current.deleteFolder('f1')).rejects.toThrow(/Wave 3-B/);
-    await expect(result.current.reorderSiblings(null, [])).rejects.toThrow(
-      /Wave 3-B/
+    await expect(
+      result.current.deleteFolder('f1', 'move-to-parent')
+    ).rejects.toThrow(/Not authenticated/);
+    await expect(result.current.reorderSiblings(null, ['f1'])).rejects.toThrow(
+      /Not authenticated/
+    );
+    await expect(result.current.moveItem('item-1', null)).rejects.toThrow(
+      /Not authenticated/
     );
   });
 });
