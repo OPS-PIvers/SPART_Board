@@ -504,15 +504,17 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
       if (!user) return;
 
       const byId = new Map(library.map((a) => [a.id, a]));
+      const orderedIdSet = new Set(nextOrderedIds);
       const reordered: MiniAppItem[] = [];
       for (const id of nextOrderedIds) {
         const app = byId.get(id);
         if (app) reordered.push(app);
       }
       // Append any library items whose ids weren't in the requested ordering
-      // (defensive — should not happen, but keeps data consistent).
+      // (defensive — should not happen, but keeps data consistent). Using a
+      // Set keeps this O(n) even if the teacher's library grows large.
       for (const app of library) {
-        if (!nextOrderedIds.includes(app.id)) reordered.push(app);
+        if (!orderedIdSet.has(app.id)) reordered.push(app);
       }
 
       const batch = writeBatch(db);

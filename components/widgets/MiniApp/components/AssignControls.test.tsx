@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { MiniAppManager } from './MiniAppManager';
 import { GlobalMiniAppItem, MiniAppItem } from '@/types';
@@ -54,10 +55,10 @@ describe('MiniAppManager assign controls', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('still exposes Assign on global library items (read-only view)', () => {
-    // Render in global-source mode by seeding a personal entry so the user
-    // can see both filter options (test-level default is personal).
-    const { rerender } = render(
+  it('exposes Assign on global library items but hides Edit/Delete (read-only view)', async () => {
+    const user = userEvent.setup();
+
+    render(
       <MiniAppManager
         {...baseProps}
         personalLibrary={[miniApp]}
@@ -65,17 +66,36 @@ describe('MiniAppManager assign controls', () => {
       />
     );
 
-    // Assign is always the primary action, regardless of source.
+    // Switch the toolbar Source filter to Global so only the global card is
+    // visible — this is the view we actually want to exercise.
+    const sourceSelect = screen.getByRole('combobox', { name: 'Source' });
+    await user.selectOptions(sourceSelect, 'global');
+
+    // Global-only view: the personal mini-app should no longer be in the DOM.
+    expect(screen.queryByText('Class Poll')).toBeInTheDocument(); // global + personal share the same title
+    const cards = screen.getAllByText('Class Poll');
+    // Exactly one card renders (the global one) now that personal is filtered.
+    expect(cards).toHaveLength(1);
+
+    // Assign is still the primary action on the global card.
     const assignButtons = screen.getAllByRole('button', { name: /assign/i });
     expect(assignButtons.length).toBeGreaterThan(0);
 
-    // Sanity: component still renders with only global items.
-    rerender(
-      <MiniAppManager
-        {...baseProps}
-        personalLibrary={[]}
-        globalLibrary={[globalMiniApp]}
-      />
-    );
+    // Edit / Delete must NOT appear anywhere for global cards — including
+    // inside the overflow menu once it's opened.
+    const moreButton = screen.getByRole('button', { name: 'More actions' });
+    await user.click(moreButton);
+
+    const menu = screen.getByRole('menu');
+    expect(
+      within(menu).queryByRole('menuitem', { name: /edit/i })
+    ).not.toBeInTheDocument();
+    expect(
+      within(menu).queryByRole('menuitem', { name: /delete/i })
+    ).not.toBeInTheDocument();
+    // Save-to-library is the global-specific affordance.
+    expect(
+      within(menu).getByRole('menuitem', { name: /save to my library/i })
+    ).toBeInTheDocument();
   });
 });
