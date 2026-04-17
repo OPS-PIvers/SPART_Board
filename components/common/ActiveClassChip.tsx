@@ -64,6 +64,13 @@ export const ActiveClassChip: React.FC<ActiveClassChipProps> = ({
     };
   }, [open, closeMenu]);
 
+  // Auto-close if the chip stops being interactive (e.g. roster deleted,
+  // active roster cleared) while the menu is open — otherwise the global
+  // listeners would stay registered against a portal that no longer renders.
+  if (open && (!interactive || !activeRoster)) {
+    setOpen(false);
+  }
+
   if (!activeRoster) return null;
 
   const chipContent = (
@@ -76,7 +83,7 @@ export const ActiveClassChip: React.FC<ActiveClassChipProps> = ({
         }}
       />
       <span
-        className="font-black uppercase text-brand-blue-primary tracking-wider truncate"
+        className="font-black uppercase text-brand-blue-primary tracking-wider truncate min-w-0"
         style={{ fontSize: 'clamp(12px, 3cqmin, 20px)' }}
       >
         {activeRoster.name}
@@ -115,13 +122,18 @@ export const ActiveClassChip: React.FC<ActiveClassChipProps> = ({
     );
   }
 
+  const POPOVER_MAX_WIDTH = 260;
+  const POPOVER_VIEWPORT_MARGIN = 8;
   const popoverStyle: React.CSSProperties | null = anchorRect
     ? {
         position: 'fixed',
         top: anchorRect.bottom + 6,
-        left: Math.min(
-          anchorRect.left,
-          window.innerWidth - 260 // keep within viewport (max-width ~240 + margin)
+        left: Math.max(
+          POPOVER_VIEWPORT_MARGIN,
+          Math.min(
+            anchorRect.left,
+            window.innerWidth - POPOVER_MAX_WIDTH - POPOVER_VIEWPORT_MARGIN
+          )
         ),
         zIndex: Z_INDEX.popover,
       }
