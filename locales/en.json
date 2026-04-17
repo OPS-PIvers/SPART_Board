@@ -282,6 +282,9 @@
       }
     },
     "seatingChart": {
+      "emptyStateAssignTitle": "Empty Classroom",
+      "emptyStateAssignSubtitle": "Switch to \"Setup\" to arrange furniture.",
+      "emptyStateSetupTitle": "No Furniture",
       "emptyStateFreeform": "Add furniture from the sidebar.",
       "emptyStateTemplate": "Pick a template and click Apply Layout."
     },
