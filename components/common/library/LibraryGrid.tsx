@@ -103,7 +103,9 @@ export function LibraryGrid<TItem>(props: LibraryGridProps<TItem>) {
     if (moved === undefined) return;
     next.splice(newIndex, 0, moved);
 
-    void Promise.resolve(onReorder(next));
+    void Promise.resolve(onReorder(next)).catch((err: unknown) => {
+      console.error('[LibraryGrid] reorder failed', err);
+    });
   };
 
   const handleDragCancel = () => {
