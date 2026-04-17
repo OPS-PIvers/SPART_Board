@@ -20,7 +20,7 @@
  * the internal-DndContext behavior of `LibraryGrid`.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -70,43 +70,44 @@ export const LibraryDndContext: React.FC<LibraryDndContextProps> = ({
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const handleDragStart = (event: DragStartEvent): void => {
+  const handleDragStart = useCallback((event: DragStartEvent): void => {
     setActiveId(String(event.active.id));
-  };
+  }, []);
 
-  const handleDragEnd = (event: DragEndEvent): void => {
-    setActiveId(null);
-    const { active, over } = event;
-    if (!over) return;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent): void => {
+      setActiveId(null);
+      const { active, over } = event;
+      if (!over) return;
 
-    const overData = over.data.current as FolderDropData | undefined;
-    if (overData && overData.type === 'folder') {
-      if (onDropOnFolder) {
-        void Promise.resolve(
-          onDropOnFolder(String(active.id), overData.folderId)
-        );
+      const overData = over.data.current as FolderDropData | undefined;
+      if (overData && overData.type === 'folder') {
+        if (onDropOnFolder) {
+          void onDropOnFolder(String(active.id), overData.folderId);
+        }
+        return;
       }
-      return;
-    }
 
-    if (active.id === over.id) return;
-    if (!onReorder) return;
+      if (active.id === over.id) return;
+      if (!onReorder) return;
 
-    const oldIndex = itemIds.indexOf(String(active.id));
-    const newIndex = itemIds.indexOf(String(over.id));
-    if (oldIndex === -1 || newIndex === -1) return;
+      const oldIndex = itemIds.indexOf(String(active.id));
+      const newIndex = itemIds.indexOf(String(over.id));
+      if (oldIndex === -1 || newIndex === -1) return;
 
-    const next = [...itemIds];
-    const [moved] = next.splice(oldIndex, 1);
-    if (moved === undefined) return;
-    next.splice(newIndex, 0, moved);
+      const next = [...itemIds];
+      const [moved] = next.splice(oldIndex, 1);
+      if (moved === undefined) return;
+      next.splice(newIndex, 0, moved);
 
-    void Promise.resolve(onReorder(next));
-  };
+      void onReorder(next);
+    },
+    [itemIds, onDropOnFolder, onReorder]
+  );
 
-  const handleDragCancel = (): void => {
+  const handleDragCancel = useCallback((): void => {
     setActiveId(null);
-  };
+  }, []);
 
   const overlayLockState = useMemo(
     () => ({ locked: false, reason: undefined, dragDisabled: true }),
