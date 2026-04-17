@@ -8,7 +8,7 @@
  * required YouTube URL field. V1 supports MC question type only.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   ChevronDown,
@@ -142,6 +142,17 @@ export const VideoActivityEditorModal: React.FC<
 
   const canUseAi =
     canAccessFeature('gemini-functions') && (aiEnabled || isAdmin);
+
+  // Global Escape listener so the overlay dismisses even when focus is
+  // outside its children (e.g., user clicked the backdrop).
+  useEffect(() => {
+    if (!showAiPrompt) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') setShowAiPrompt(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showAiPrompt]);
 
   // Reset local state when the `activity` prop identity changes.
   const [prevActivity, setPrevActivity] = useState<VideoActivityData | null>(
@@ -592,11 +603,10 @@ export const VideoActivityEditorModal: React.FC<
 
       {showAiPrompt && canUseAi && (
         <div
-          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200 outline-none"
-          onKeyDown={(e) => {
-            if (e.code === 'Escape') setShowAiPrompt(false);
-          }}
-          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Magic Question Generator"
+          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
         >
           <div className="w-full max-w-sm space-y-4">
             <div className="flex items-center justify-between">
