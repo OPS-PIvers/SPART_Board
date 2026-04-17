@@ -80,9 +80,9 @@ export interface VideoActivityManagerProps {
     assignmentName: string
   ) => Promise<string>;
   /**
-   * Optional persistence hook for manual drag-reorder of the library. If
-   * omitted, drag is still wired but commits are a no-op — the order state
-   * remains local to this session.
+   * Optional persistence hook for manual drag-reorder of the library. Drag
+   * reordering is only enabled when this callback is provided; otherwise the
+   * library order remains fixed for the current session.
    */
   onReorderActivities?: (orderedIds: string[]) => Promise<void> | void;
   defaultSessionSettings: VideoActivitySessionSettings;
@@ -405,68 +405,19 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
       <div className="flex flex-col gap-2">
         {list.map((assignment) => {
           const status = statusToBadge(assignment.status);
-          const isPaused = assignment.status === 'paused';
-          const secondaryActions: LibraryMenuAction[] = [];
+          const secondaryActions = buildAssignmentSecondaryActions(
+            assignment,
+            mode
+          );
 
-          if (mode === 'active') {
-            if (onArchiveCopyUrl) {
-              secondaryActions.push({
-                id: 'copy-url',
-                label: 'Copy link',
-                icon: Copy,
-                onClick: () => onArchiveCopyUrl(assignment),
-              });
-            }
-            if (onArchivePauseResume) {
-              secondaryActions.push({
-                id: 'pause-resume',
-                label: isPaused ? 'Resume' : 'Pause',
-                icon: isPaused ? PlayCircle : Ban,
-                onClick: () => {
-                  void onArchivePauseResume(assignment);
-                },
-              });
-            }
-            if (onArchiveDeactivate) {
-              secondaryActions.push({
-                id: 'deactivate',
-                label: 'End assignment',
-                icon: Ban,
-                onClick: () => {
-                  void onArchiveDeactivate(assignment);
-                },
-              });
-            }
-          }
-
-          if (onArchiveResults) {
-            secondaryActions.push({
-              id: 'results',
-              label: 'Results',
-              icon: BarChart3,
-              onClick: () => onArchiveResults(assignment),
-            });
-          }
-
-          if (onArchiveDelete) {
-            secondaryActions.push({
-              id: 'delete',
-              label:
-                confirmDeleteAssignmentId === assignment.id
-                  ? 'Confirm delete'
-                  : 'Delete',
-              icon: Trash2,
-              destructive: true,
-              onClick: () => {
-                if (confirmDeleteAssignmentId === assignment.id) {
-                  setConfirmDeleteAssignmentId(null);
-                  void onArchiveDelete(assignment);
-                } else {
-                  setConfirmDeleteAssignmentId(assignment.id);
-                }
-              },
-            });
-          }
+          // Primary action: for active assignments, the headline CTA copies
+          // the join link (the label matches the handler — previously "Open"
+          // which was misleading since no new view was opened). For archived
+          // assignments, the primary action opens Results.
+          const primaryAction =
+            mode === 'active'
+              ? { label: 'Copy link', icon: Copy }
+              : { label: 'Results', icon: BarChart3 };
 
           return (
             <AssignmentArchiveCard<VideoActivityAssignment>
@@ -484,8 +435,8 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
                 </span>
               }
               primaryAction={{
-                label: mode === 'active' ? 'Open' : 'Results',
-                icon: mode === 'active' ? Link2 : BarChart3,
+                label: primaryAction.label,
+                icon: primaryAction.icon,
                 onClick: () => {
                   if (mode === 'active' && onArchiveCopyUrl) {
                     onArchiveCopyUrl(assignment);
@@ -501,6 +452,81 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
       </div>
     );
   };
+
+  /**
+   * Build the per-assignment overflow-menu action list. Extracted from the
+   * render loop so the pause/resume/deactivate/results/delete wiring lives
+   * in one place and the list-render stays declarative.
+   */
+  function buildAssignmentSecondaryActions(
+    assignment: VideoActivityAssignment,
+    mode: 'active' | 'archive'
+  ): LibraryMenuAction[] {
+    const actions: LibraryMenuAction[] = [];
+    const isPaused = assignment.status === 'paused';
+
+    if (mode === 'active') {
+      if (onArchiveCopyUrl) {
+        actions.push({
+          id: 'copy-url',
+          label: 'Copy link',
+          icon: Copy,
+          onClick: () => onArchiveCopyUrl(assignment),
+        });
+      }
+      if (onArchivePauseResume) {
+        actions.push({
+          id: 'pause-resume',
+          label: isPaused ? 'Resume' : 'Pause',
+          icon: isPaused ? PlayCircle : Ban,
+          onClick: () => {
+            void onArchivePauseResume(assignment);
+          },
+        });
+      }
+      if (onArchiveDeactivate) {
+        actions.push({
+          id: 'deactivate',
+          label: 'End assignment',
+          icon: Ban,
+          onClick: () => {
+            void onArchiveDeactivate(assignment);
+          },
+        });
+      }
+    }
+
+    if (onArchiveResults) {
+      actions.push({
+        id: 'results',
+        label: 'Results',
+        icon: BarChart3,
+        onClick: () => onArchiveResults(assignment),
+      });
+    }
+
+    if (onArchiveDelete) {
+      actions.push({
+        id: 'delete',
+        label:
+          confirmDeleteAssignmentId === assignment.id
+            ? 'Confirm delete'
+            : 'Delete',
+        icon: Trash2,
+        destructive: true,
+        onClick: () => {
+          if (confirmDeleteAssignmentId === assignment.id) {
+            setConfirmDeleteAssignmentId(null);
+            void onArchiveDelete(assignment);
+          } else {
+            setConfirmDeleteAssignmentId(assignment.id);
+          }
+        },
+      });
+    }
+
+    return actions;
+  }
 
   /* ─── Toolbar (library tab only) ─────────────────────────────────────── */
 

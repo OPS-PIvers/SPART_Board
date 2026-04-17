@@ -19,7 +19,7 @@
  *     direct "Import" CTA if we decide to surface it outside the Creator flow.
  */
 
-import type React from 'react';
+import React from 'react';
 import type {
   ImportAdapter,
   ImportParseResult,
@@ -133,6 +133,69 @@ export function validateVideoActivityData(
   return { ok: errors.length === 0, errors };
 }
 
+/* ─── Preview renderer ────────────────────────────────────────────────────── */
+
+/**
+ * Render a compact list of parsed questions in the wizard's Preview step so
+ * users can verify timestamps and question text before committing. Mirrors
+ * what the legacy Importer showed (parsed rows ordered by timestamp).
+ */
+export function renderVideoActivityPreview(
+  data: VideoActivityData
+): React.ReactNode {
+  if (!data.questions || data.questions.length === 0) {
+    return React.createElement(
+      'p',
+      {
+        className: 'text-sm text-slate-500 italic',
+      },
+      'No questions parsed yet.'
+    );
+  }
+
+  return React.createElement(
+    'div',
+    { className: 'space-y-2' },
+    React.createElement(
+      'p',
+      {
+        className:
+          'text-xs font-semibold uppercase tracking-wide text-slate-500',
+      },
+      `${data.questions.length} question${data.questions.length === 1 ? '' : 's'}`
+    ),
+    React.createElement(
+      'ul',
+      {
+        className:
+          'max-h-72 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white',
+      },
+      data.questions.map((q, i) =>
+        React.createElement(
+          'li',
+          {
+            key: q.id ?? i,
+            className: 'flex items-start gap-3 px-3 py-2',
+          },
+          React.createElement(
+            'span',
+            {
+              className:
+                'shrink-0 font-mono text-xs font-semibold text-brand-blue-primary tabular-nums',
+            },
+            secondsToMmSs(q.timestamp)
+          ),
+          React.createElement(
+            'span',
+            { className: 'text-sm text-slate-700 truncate' },
+            q.text
+          )
+        )
+      )
+    )
+  );
+}
+
 /* ─── Adapter factory ─────────────────────────────────────────────────────── */
 
 export interface VideoActivityImportAdapterOptions {
@@ -243,7 +306,7 @@ export function createVideoActivityImportAdapter(
       : {}),
     parse,
     validate: validateVideoActivityData,
-    renderPreview: () => null,
+    renderPreview: renderVideoActivityPreview,
     save: async (data, savedTitle) => {
       // Re-stamp identity fields at save time so any late edits to the
       // wizard's title field flow through.

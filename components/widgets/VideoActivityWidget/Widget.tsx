@@ -6,6 +6,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/config/firebase';
 import {
   WidgetData,
   VideoActivityConfig,
@@ -26,6 +28,35 @@ import { Creator } from './components/Creator';
 import { Results } from './components/Results';
 import { VideoActivityEditorModal } from './components/VideoActivityEditorModal';
 import { Loader2, AlertTriangle, LogIn } from 'lucide-react';
+
+/**
+ * Shared clipboard helper — centralizes the feature-detection + toast flow
+ * that was previously duplicated across the Assign and Archive copy-URL
+ * handlers. Keeps the widget self-contained; if other widgets need the same
+ * pattern later we can promote this to `utils/` without an API change.
+ */
+async function copyUrlToClipboard(
+  url: string,
+  addToast: (msg: string, tone: 'success' | 'error' | 'info') => void,
+  {
+    successMessage,
+    errorMessage,
+  }: {
+    successMessage: string;
+    errorMessage: string;
+  }
+): Promise<void> {
+  if (typeof navigator === 'undefined' || !navigator.clipboard) {
+    addToast(errorMessage, 'info');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    addToast(successMessage, 'success');
+  } catch {
+    addToast(errorMessage, 'info');
+  }
+}
 
 export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -294,24 +325,10 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
           });
 
           const url = `${window.location.origin}/activity/${encodeURIComponent(sessionId)}`;
-          if (typeof navigator !== 'undefined' && navigator.clipboard) {
-            void navigator.clipboard
-              .writeText(url)
-              .then(() =>
-                addToast('Assignment link copied to clipboard!', 'success')
-              )
-              .catch(() =>
-                addToast(
-                  'Assignment created, but link could not be copied.',
-                  'info'
-                )
-              );
-          } else {
-            addToast(
-              'Assignment created, but link could not be copied.',
-              'info'
-            );
-          }
+          await copyUrlToClipboard(url, addToast, {
+            successMessage: 'Assignment link copied to clipboard!',
+            errorMessage: 'Assignment created, but link could not be copied.',
+          });
           return sessionId;
         }}
         onDelete={async (meta) => {
@@ -329,14 +346,10 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
         assignmentsLoading={assignmentsLoading}
         onArchiveCopyUrl={(assignment) => {
           const url = `${window.location.origin}/activity/${encodeURIComponent(assignment.id)}`;
-          if (typeof navigator !== 'undefined' && navigator.clipboard) {
-            void navigator.clipboard
-              .writeText(url)
-              .then(() => addToast('Link copied to clipboard!', 'success'))
-              .catch(() => addToast('Could not copy link.', 'error'));
-          } else {
-            addToast('Clipboard unavailable in this browser.', 'error');
-          }
+          void copyUrlToClipboard(url, addToast, {
+            successMessage: 'Link copied to clipboard!',
+            errorMessage: 'Could not copy link.',
+          });
         }}
         onArchivePauseResume={async (assignment) => {
           try {
@@ -376,21 +389,53 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
             );
           }
         }}
-        onArchiveResults={(assignment) => {
+        onArchiveResults={async (assignment) => {
+          // Subscribe to the responses subcollection up-front so the listener
+          // is live by the time Results mounts.
           subscribeToSession(assignment.id);
-          setSelectedSession({
-            id: assignment.id,
-            activityId: assignment.activityId,
-            activityTitle: assignment.activityTitle,
-            assignmentName: assignment.className ?? assignment.activityTitle,
-            teacherUid: assignment.teacherUid,
-            youtubeUrl: '',
-            questions: [],
-            settings: assignment.sessionSettings,
-            status: assignment.status === 'active' ? 'active' : 'ended',
-            allowedPins: [],
-            createdAt: assignment.createdAt,
-          });
+          // Hydrate the full session document — Results.tsx relies on
+          // `session.questions` to compute scores/accuracy and to export.
+          // Using a synthetic session with `questions: []` would render
+          // empty or incorrect results even though the real session doc has
+          // the full question set.
+          try {
+            const snap = await getDoc(
+              doc(db, 'video_activity_sessions', assignment.id)
+            );
+            if (snap.exists()) {
+              setSelectedSession(snap.data() as VideoActivitySession);
+            } else {
+              // Session doc missing (e.g. deleted) — fall back to a
+              // minimal object so the empty-state rendering at least
+              // shows the assignment context rather than crashing.
+              setSelectedSession({
+                id: assignment.id,
+                activityId: assignment.activityId,
+                activityTitle: assignment.activityTitle,
+                assignmentName:
+                  assignment.className ?? assignment.activityTitle,
+                teacherUid: assignment.teacherUid,
+                youtubeUrl: '',
+                questions: [],
+                settings: assignment.sessionSettings,
+                status: assignment.status === 'active' ? 'active' : 'ended',
+                allowedPins: [],
+                createdAt: assignment.createdAt,
+              });
+              addToast(
+                'Session data no longer available — showing limited results.',
+                'info'
+              );
+            }
+          } catch (err) {
+            addToast(
+              err instanceof Error
+                ? err.message
+                : 'Failed to load assignment results',
+              'error'
+            );
+            return;
+          }
           updateWidget(widget.id, {
             config: {
               ...config,
