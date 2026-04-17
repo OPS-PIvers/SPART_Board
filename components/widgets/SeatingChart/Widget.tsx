@@ -963,8 +963,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             >
               <ScaledEmptyState
                 icon={LayoutGrid}
-                title="Empty Classroom"
-                subtitle='Switch to "Setup" to arrange furniture.'
+                title={t('widgets.seatingChart.emptyStateAssignTitle')}
+                subtitle={t('widgets.seatingChart.emptyStateAssignSubtitle')}
               />
             </div>
           )}
@@ -976,7 +976,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             >
               <ScaledEmptyState
                 icon={LayoutTemplate}
-                title="No Furniture"
+                title={t('widgets.seatingChart.emptyStateSetupTitle')}
                 subtitle={
                   template === 'freeform'
                     ? t('widgets.seatingChart.emptyStateFreeform')
