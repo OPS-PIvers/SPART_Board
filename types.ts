@@ -3512,3 +3512,36 @@ export interface VideoActivityAssignment extends VideoActivityAssignmentSettings
   createdAt: number;
   updatedAt: number;
 }
+
+// === MiniApp assignments ===
+// Appended by Wave 2-MA. Keep in this delimited section so other Wave 2
+// migrations appending to types.ts don't collide.
+
+/**
+ * A persistent archive row for a MiniApp that the teacher has assigned to
+ * students. Lives in `/users/{teacherUid}/miniapp_assignments/{assignmentId}`.
+ *
+ * Unlike QuizAssignment, a MiniApp assignment is a thin archive record — the
+ * actual live student link is the underlying MiniAppSession (see
+ * `/mini_app_sessions/{sessionId}`). `sessionId` here is that session's doc id.
+ *
+ * `status` mirrors the session lifecycle:
+ *   - `active`: session is live.
+ *   - `inactive`: session has been ended.
+ */
+export interface MiniAppAssignment {
+  id: string;
+  sessionId: string;
+  appId: string;
+  appTitle: string;
+  assignmentName: string;
+  teacherUid: string;
+  status: 'active' | 'inactive';
+  createdAt: number;
+  updatedAt: number;
+  /** Optional mirrored fields so the archive list can show result-collection intent at a glance. */
+  submissionUrl?: string;
+  googleSheetId?: string;
+}
+
+// === /MiniApp assignments ===
