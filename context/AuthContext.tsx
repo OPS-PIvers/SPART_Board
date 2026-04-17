@@ -600,6 +600,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSavedWidgetConfigs({});
       setDisableCloseConfirmationState(false);
       setRemoteControlEnabledState(true);
+      setDockPositionState('bottom');
 
       if (!user) {
         setSelectedBuildingsState([]);

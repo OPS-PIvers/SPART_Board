@@ -284,7 +284,9 @@ export const FolderItem = React.memo(
             className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 relative ${
               isEditMode
                 ? 'cursor-grab active:cursor-grabbing touch-none'
-                : 'touch-pan-x'
+                : dockPosition === 'left' || dockPosition === 'right'
+                  ? 'touch-pan-y'
+                  : 'touch-pan-x'
             }`}
           >
             <DockIcon

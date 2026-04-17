@@ -2808,6 +2808,8 @@ export interface UserProfile {
   disableCloseConfirmation?: boolean;
   /** Whether remote control is enabled for all boards (account-level) */
   remoteControlEnabled?: boolean;
+  /** Where the dock is anchored on screen (account-level) */
+  dockPosition?: DockPosition;
 }
 
 export interface SharedGroup {

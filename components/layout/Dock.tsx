@@ -1094,6 +1094,7 @@ export const Dock: React.FC = () => {
                                       .padStart(2, '0')}`
                                   : getToolLabel(item.toolType)
                               }
+                              dockPosition={dockPosition}
                             />
                           );
                         }
@@ -1129,6 +1130,7 @@ export const Dock: React.FC = () => {
                                   : undefined
                               }
                               buttonRef={classesButtonRef}
+                              dockPosition={dockPosition}
                             />
                           );
                         }
@@ -1165,6 +1167,7 @@ export const Dock: React.FC = () => {
                                   : undefined
                               }
                               buttonRef={catalystButtonRef}
+                              dockPosition={dockPosition}
                             />
                           );
                         }
@@ -1200,6 +1203,7 @@ export const Dock: React.FC = () => {
                                   : undefined
                               }
                               buttonRef={drawingButtonRef}
+                              dockPosition={dockPosition}
                             />
                           );
                         }
@@ -1225,6 +1229,7 @@ export const Dock: React.FC = () => {
                               customLabel={getToolLabel(tool.type)}
                               onClickOverride={handleToggleRemoteMenu}
                               buttonRef={remoteButtonRef}
+                              dockPosition={dockPosition}
                             />
                           );
                         }
@@ -1258,6 +1263,7 @@ export const Dock: React.FC = () => {
                             onLongPress={handleLongPress}
                             globalStyle={globalStyle}
                             customLabel={getToolLabel(tool.type)}
+                            dockPosition={dockPosition}
                           />
                         );
                       } else {
