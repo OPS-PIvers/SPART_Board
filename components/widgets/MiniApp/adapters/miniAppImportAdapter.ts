@@ -6,9 +6,11 @@
  * mini-app row. The title is derived from the file's `<title>` tag (falling
  * back to the first `<h1>`, then to the filename stem).
  *
- * Writes to `/users/{uid}/miniapps/` with negative `order` values
- * (`index - total`) so imports land at the top of the library while
- * preserving their relative order (matches the pre-migration behavior).
+ * Writes to `/users/{uid}/miniapps/` with strongly-negative `order` values
+ * derived from `-Date.now()` so imports always land above the existing top
+ * item (which MiniAppWidget creates at `minOrder - 1`, typically small
+ * negative integers). For multi-row imports the row index offsets the
+ * timestamp so relative order within the batch is preserved.
  *
  * Magic Generator (Gemini) deliberately stays inside the editor body; it is
  * NOT surfaced here as `aiAssist`, per the original MiniApp brief.
@@ -39,7 +41,7 @@ export interface MiniAppImportData {
 const MAX_TITLE_LENGTH = 100;
 
 /** Strip a filename down to a reasonable fallback title. */
-function titleFromFileName(name: string | undefined): string {
+export function titleFromFileName(name: string | undefined): string {
   if (!name) return 'Untitled App';
   const stem = name.replace(/\.[^.]+$/, '').trim();
   return stem ? stem.slice(0, MAX_TITLE_LENGTH) : 'Untitled App';
@@ -53,7 +55,7 @@ function titleFromFileName(name: string | undefined): string {
  * browser's HTML parser (safer than regex-based tag stripping, which can be
  * bypassed by patterns like `<scr<b>ipt>`).
  */
-function titleFromHtml(html: string): string {
+export function titleFromHtml(html: string): string {
   if (typeof DOMParser === 'undefined') return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
@@ -83,7 +85,7 @@ async function readSourceAsHtml(
   );
 }
 
-async function parseMiniAppImport(
+export async function parseMiniAppImport(
   source: ImportSourcePayload
 ): Promise<ImportParseResult<MiniAppImportData>> {
   const { text, fileName } = await readSourceAsHtml(source);
@@ -109,7 +111,7 @@ async function parseMiniAppImport(
   return { data: { rows: [row] }, warnings };
 }
 
-function validateMiniAppImport(
+export function validateMiniAppImport(
   data: MiniAppImportData
 ): ImportValidationResult {
   if (data.rows.length === 0) {
@@ -178,6 +180,13 @@ export function createMiniAppImportAdapter(
     parse: parseMiniAppImport,
     validate: validateMiniAppImport,
     renderPreview: renderMiniAppPreview,
+    suggestTitle(data) {
+      // The wizard prefills its title input from this value when empty.
+      // Only meaningful for single-row imports — per-row titles stand on
+      // their own in a batch.
+      if (data.rows.length !== 1) return undefined;
+      return data.rows[0]?.title;
+    },
     async save(data, title) {
       if (!userId) throw new Error('Not authenticated');
       if (data.rows.length === 0) return;
@@ -185,6 +194,12 @@ export function createMiniAppImportAdapter(
       const appsRef = collection(db, 'users', userId, 'miniapps');
       const batch = writeBatch(db);
       const total = data.rows.length;
+      // Anchor the batch to a single moment so all rows share a baseline and
+      // relative order within the batch is preserved. Using `-Date.now()`
+      // makes these orders strictly smaller than anything MiniAppWidget
+      // creates through its `minOrder - 1` scheme, so imports reliably land
+      // at the very top of the list.
+      const baseOrder = -Date.now();
 
       data.rows.forEach((row, index) => {
         const id = crypto.randomUUID();
@@ -199,9 +214,9 @@ export function createMiniAppImportAdapter(
           title: resolvedTitle,
           html: row.html,
           createdAt: Date.now(),
-          // New imports land at the top by taking strictly smaller `order`
-          // values than anything existing (matches pre-migration behavior).
-          order: index - total,
+          // First row (index 0) gets the smallest order so it sits at the
+          // top; subsequent rows follow with strictly larger orders.
+          order: baseOrder - (total - 1 - index),
         };
         batch.set(doc(appsRef, id), appData);
       });

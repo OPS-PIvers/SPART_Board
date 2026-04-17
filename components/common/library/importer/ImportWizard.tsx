@@ -148,6 +148,16 @@ export function ImportWizard<TData>({
       const result = await adapter.parse(payload);
       setParsed(result.data);
       setWarnings(result.warnings);
+      // If the adapter can extract a title from the parsed data (e.g. an
+      // HTML `<title>` tag) and the user hasn't typed one, prefill it so
+      // the derived title isn't wasted. We only overwrite empty input —
+      // any title the user has already supplied wins.
+      if (adapter.suggestTitle && !title.trim()) {
+        const suggestion = adapter.suggestTitle(result.data);
+        if (suggestion && suggestion.trim()) {
+          setTitle(suggestion.trim());
+        }
+      }
       setStep('preview');
     } catch (err) {
       setParseError(

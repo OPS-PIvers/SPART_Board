@@ -406,6 +406,13 @@ export interface ImportAdapter<TData> {
   parse: (source: ImportSourcePayload) => Promise<ImportParseResult<TData>>;
   validate: (data: TData) => ImportValidationResult;
   renderPreview: (data: TData) => React.ReactNode;
+  /**
+   * Optional — given the parsed data, return a suggested title. The wizard
+   * auto-populates its title input with this value when the input is empty,
+   * so callers shouldn't have to retype an already-extracted title (e.g. a
+   * `<title>` tag from an uploaded HTML file).
+   */
+  suggestTitle?: (data: TData) => string | undefined;
   /** Persist to the widget's library. Consumer owns Firestore/Drive writes. */
   save: (data: TData, title: string) => Promise<void>;
   /** Optional AI-assist path (e.g. Quiz's Gemini generator). */
