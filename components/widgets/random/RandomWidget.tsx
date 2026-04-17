@@ -613,9 +613,20 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           {everyoneAbsent && (
             <button
               onClick={() => setAbsentModalOpen(true)}
-              className="mt-2 flex items-center gap-2 px-4 py-2 bg-brand-blue-primary text-white rounded-full text-sm font-bold hover:bg-brand-blue-dark transition-colors"
+              className="flex items-center bg-brand-blue-primary text-white rounded-full font-bold hover:bg-brand-blue-dark transition-colors"
+              style={{
+                marginTop: 'min(8px, 2cqmin)',
+                gap: 'min(8px, 2cqmin)',
+                padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
+                fontSize: 'min(14px, 3.5cqmin)',
+              }}
             >
-              <UserX size={14} />
+              <UserX
+                style={{
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
+                }}
+              />
               {t('widgets.random.updateAttendance', {
                 defaultValue: 'Update attendance',
               })}
