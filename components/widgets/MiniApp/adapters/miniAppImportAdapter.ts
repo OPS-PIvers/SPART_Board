@@ -47,18 +47,22 @@ function titleFromFileName(name: string | undefined): string {
 /**
  * Extract a human-readable title from an HTML document. Tries `<title>`, then
  * the first `<h1>`. Returns an empty string if neither is present.
+ *
+ * Uses `DOMParser` so nested/malformed tags in an `<h1>` are handled by the
+ * browser's HTML parser (safer than regex-based tag stripping, which can be
+ * bypassed by patterns like `<scr<b>ipt>`).
  */
 function titleFromHtml(html: string): string {
-  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  const titleText = titleMatch?.[1]?.replace(/\s+/g, ' ').trim();
-  if (titleText) return titleText.slice(0, MAX_TITLE_LENGTH);
+  if (typeof DOMParser === 'undefined') return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
 
-  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-  const h1Text = h1Match?.[1]
-    ?.replace(/<[^>]+>/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (h1Text) return h1Text.slice(0, MAX_TITLE_LENGTH);
+  const titleText = doc.querySelector('title')?.textContent;
+  const normalizedTitle = titleText?.replace(/\s+/g, ' ').trim();
+  if (normalizedTitle) return normalizedTitle.slice(0, MAX_TITLE_LENGTH);
+
+  const h1Text = doc.querySelector('h1')?.textContent;
+  const normalizedH1 = h1Text?.replace(/\s+/g, ' ').trim();
+  if (normalizedH1) return normalizedH1.slice(0, MAX_TITLE_LENGTH);
 
   return '';
 }
