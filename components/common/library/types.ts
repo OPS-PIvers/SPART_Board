@@ -47,7 +47,7 @@ export type LibraryBadgeTone =
 export type LibraryAssignmentStatus = 'active' | 'paused' | 'inactive';
 
 /** Import source kinds. Adapters declare which they support. */
-export type ImportSourceKind = 'sheet' | 'csv' | 'json' | 'file';
+export type ImportSourceKind = 'sheet' | 'csv' | 'json' | 'html' | 'file';
 
 /* ─── Generic value objects ───────────────────────────────────────────────── */
 
@@ -55,7 +55,11 @@ export type ImportSourceKind = 'sheet' | 'csv' | 'json' | 'file';
 export interface LibraryMenuAction {
   id: string;
   label: string;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: React.ComponentType<{
+    size?: number;
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
   onClick: () => void;
   /** Renders with danger styling and (optionally) moves to the bottom. */
   destructive?: boolean;
@@ -67,7 +71,11 @@ export interface LibraryMenuAction {
 /** Primary action on a card — always visible, never nested under overflow. */
 export interface LibraryPrimaryAction {
   label: string;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: React.ComponentType<{
+    size?: number;
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
   onClick: () => void;
   disabled?: boolean;
   disabledReason?: string;
@@ -305,7 +313,11 @@ export interface AssignModeOption {
   id: string;
   label: string;
   description: string;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: React.ComponentType<{
+    size?: number;
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
   /** Lock the mode selector (e.g. assignment is already live). */
   disabled?: boolean;
 }
@@ -363,6 +375,7 @@ export type ImportSourcePayload =
   | { kind: 'sheet'; url: string }
   | { kind: 'csv'; text: string; fileName?: string }
   | { kind: 'json'; text: string; fileName?: string }
+  | { kind: 'html'; text: string; fileName?: string }
   | { kind: 'file'; file: File };
 
 /** Parser result — `warnings` surface non-fatal issues in the preview. */

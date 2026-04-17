@@ -1,20 +1,16 @@
 /**
- * MiniApp Import Adapter (Wave 2-MA).
+ * MiniApp Import Adapter.
  *
  * Implements `ImportAdapter<MiniAppImportData>` for the shared `ImportWizard`.
- * Preserves the exact JSON-file import format that existed on
- * `MiniAppWidget` before migration (see Widget.tsx pre-migration, handleImport):
+ * Teachers upload a single `.html` / `.htm` file; that file becomes one
+ * mini-app row. The title is derived from the file's `<title>` tag (falling
+ * back to the first `<h1>`, then to the filename stem).
  *
- *   - Top level must be a JSON array of objects.
- *   - Each object must have a string `html` field; non-strings are skipped.
- *   - `title` is optional; falsy or non-string titles default to "Untitled App".
- *   - Titles are truncated to 100 characters.
- *   - Items are written in batch to `/users/{uid}/miniapps/` with a freshly
- *     generated id per row and `order: index - total` so the import lands at
- *     the top of the library.
+ * Writes to `/users/{uid}/miniapps/` with `order: -1` so the import lands at
+ * the top of the library (matches the pre-migration ordering behavior).
  *
  * Magic Generator (Gemini) deliberately stays inside the editor body; it is
- * NOT surfaced here as `aiAssist`, per the Wave 2-MA brief.
+ * NOT surfaced here as `aiAssist`, per the original MiniApp brief.
  */
 
 import React from 'react';
@@ -37,69 +33,75 @@ export interface MiniAppImportRow {
 /** What the adapter hands the wizard across parse → validate → save. */
 export interface MiniAppImportData {
   rows: MiniAppImportRow[];
-  /** Rows that were skipped during parse (no string `html`). */
-  skipped: number;
 }
 
 const MAX_TITLE_LENGTH = 100;
 
-function normalizeRow(raw: unknown): MiniAppImportRow | null {
-  if (typeof raw !== 'object' || raw === null) return null;
-  const record = raw as Record<string, unknown>;
-  if (typeof record.html !== 'string') return null;
-  const rawTitle =
-    typeof record.title === 'string' && record.title ? record.title : '';
-  const title = rawTitle ? rawTitle.slice(0, MAX_TITLE_LENGTH) : 'Untitled App';
-  return { title, html: record.html };
+/** Strip a filename down to a reasonable fallback title. */
+function titleFromFileName(name: string | undefined): string {
+  if (!name) return 'Untitled App';
+  const stem = name.replace(/\.[^.]+$/, '').trim();
+  return stem ? stem.slice(0, MAX_TITLE_LENGTH) : 'Untitled App';
 }
 
-async function readPayloadText(source: ImportSourcePayload): Promise<string> {
-  if (source.kind === 'json') return source.text;
-  if (source.kind === 'csv') return source.text;
+/**
+ * Extract a human-readable title from an HTML document. Tries `<title>`, then
+ * the first `<h1>`. Returns an empty string if neither is present.
+ */
+function titleFromHtml(html: string): string {
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const titleText = titleMatch?.[1]?.replace(/\s+/g, ' ').trim();
+  if (titleText) return titleText.slice(0, MAX_TITLE_LENGTH);
+
+  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const h1Text = h1Match?.[1]
+    ?.replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (h1Text) return h1Text.slice(0, MAX_TITLE_LENGTH);
+
+  return '';
+}
+
+async function readSourceAsHtml(
+  source: ImportSourcePayload
+): Promise<{ text: string; fileName?: string }> {
+  if (source.kind === 'html') {
+    return { text: source.text, fileName: source.fileName };
+  }
   if (source.kind === 'file') {
-    return await source.file.text();
+    const text = await source.file.text();
+    return { text, fileName: source.file.name };
   }
   throw new Error(
-    `MiniApp import does not support source kind: ${source.kind}`
+    `MiniApp import only accepts HTML files. Got source kind: ${source.kind}.`
   );
 }
 
 async function parseMiniAppImport(
   source: ImportSourcePayload
 ): Promise<ImportParseResult<MiniAppImportData>> {
-  const text = await readPayloadText(source);
+  const { text, fileName } = await readSourceAsHtml(source);
 
-  let parsedJson: unknown;
-  try {
-    parsedJson = JSON.parse(text);
-  } catch {
-    throw new Error(
-      'The selected file is not valid JSON. Export from SpartBoard to get a compatible file.'
-    );
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    throw new Error('The selected file is empty.');
   }
 
-  if (!Array.isArray(parsedJson)) {
-    throw new Error(
-      'Expected a JSON array of mini-app objects. Export from SpartBoard to get a compatible file.'
-    );
-  }
-
-  let skipped = 0;
-  const rows: MiniAppImportRow[] = [];
-  for (const raw of parsedJson) {
-    const row = normalizeRow(raw);
-    if (row) rows.push(row);
-    else skipped++;
-  }
-
+  // Light sanity check — warn (not block) if it doesn't look like HTML. An
+  // iframe srcdoc can still render a bare fragment, so we don't reject.
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(trimmed);
   const warnings: string[] = [];
-  if (skipped > 0) {
+  if (!looksLikeHtml) {
     warnings.push(
-      `Skipped ${skipped} ${skipped === 1 ? 'entry' : 'entries'} with missing or invalid HTML.`
+      "That file doesn't look like HTML, but we'll try to run it anyway."
     );
   }
 
-  return { data: { rows, skipped }, warnings };
+  const derivedTitle = titleFromHtml(trimmed) || titleFromFileName(fileName);
+
+  const row: MiniAppImportRow = { title: derivedTitle, html: text };
+  return { data: { rows: [row] }, warnings };
 }
 
 function validateMiniAppImport(
@@ -108,17 +110,13 @@ function validateMiniAppImport(
   if (data.rows.length === 0) {
     return {
       ok: false,
-      errors: [
-        'No importable apps were found. Each entry needs an `html` string.',
-      ],
+      errors: ['No importable app was found in the selected file.'],
     };
   }
   return { ok: true, errors: [] };
 }
 
 function renderMiniAppPreview(data: MiniAppImportData): React.ReactElement {
-  const preview = data.rows.slice(0, 8);
-  const remaining = data.rows.length - preview.length;
   return React.createElement(
     'div',
     { className: 'flex flex-col gap-2' },
@@ -130,7 +128,7 @@ function renderMiniAppPreview(data: MiniAppImportData): React.ReactElement {
     React.createElement(
       'ul',
       { className: 'flex flex-col gap-1.5' },
-      ...preview.map((row, idx) =>
+      ...data.rows.map((row, idx) =>
         React.createElement(
           'li',
           {
@@ -158,14 +156,7 @@ function renderMiniAppPreview(data: MiniAppImportData): React.ReactElement {
           )
         )
       )
-    ),
-    remaining > 0
-      ? React.createElement(
-          'p',
-          { className: 'text-xs text-slate-500' },
-          `…and ${remaining} more.`
-        )
-      : null
+    )
   );
 }
 
@@ -178,11 +169,11 @@ export function createMiniAppImportAdapter(
 ): ImportAdapter<MiniAppImportData> {
   return {
     widgetLabel: 'Mini App',
-    supportedSources: ['json', 'file'],
+    supportedSources: ['html'],
     parse: parseMiniAppImport,
     validate: validateMiniAppImport,
     renderPreview: renderMiniAppPreview,
-    async save(data) {
+    async save(data, title) {
       if (!userId) throw new Error('Not authenticated');
       if (data.rows.length === 0) return;
 
@@ -192,13 +183,19 @@ export function createMiniAppImportAdapter(
 
       data.rows.forEach((row, index) => {
         const id = crypto.randomUUID();
+        // When the user typed a title in the confirm step, apply it to the
+        // single-row import. For multi-row (future) we leave per-row titles.
+        const resolvedTitle =
+          total === 1 && title && title.trim()
+            ? title.trim().slice(0, MAX_TITLE_LENGTH)
+            : row.title;
         const appData: MiniAppItem = {
           id,
-          title: row.title,
+          title: resolvedTitle,
           html: row.html,
           createdAt: Date.now(),
-          // Matches the pre-migration behavior: new imports land at the top
-          // by taking strictly smaller `order` values than anything existing.
+          // New imports land at the top by taking strictly smaller `order`
+          // values than anything existing (matches pre-migration behavior).
           order: index - total,
         };
         batch.set(doc(appsRef, id), appData);

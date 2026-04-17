@@ -49,6 +49,10 @@ function acceptExtensionsForSources(sources: ImportSourceKind[]): string {
   const exts = new Set<string>();
   if (sources.includes('csv')) exts.add('.csv');
   if (sources.includes('json')) exts.add('.json');
+  if (sources.includes('html')) {
+    exts.add('.html');
+    exts.add('.htm');
+  }
   if (sources.includes('file')) {
     exts.add('.csv');
     exts.add('.json');
@@ -62,9 +66,15 @@ function inferKindFromFileName(
   supported: ImportSourceKind[]
 ): Exclude<ImportSourceKind, 'sheet'> {
   const lower = fileName.toLowerCase();
+  if (
+    (lower.endsWith('.html') || lower.endsWith('.htm')) &&
+    supported.includes('html')
+  )
+    return 'html';
   if (lower.endsWith('.json') && supported.includes('json')) return 'json';
   if (lower.endsWith('.csv') && supported.includes('csv')) return 'csv';
   if (supported.includes('file')) return 'file';
+  if (supported.includes('html')) return 'html';
   if (supported.includes('csv')) return 'csv';
   if (supported.includes('json')) return 'json';
   return 'file';
@@ -126,8 +136,10 @@ export function ImportWizard<TData>({
   const supportsSheet = adapter.supportedSources.includes('sheet');
   const supportsCsv = adapter.supportedSources.includes('csv');
   const supportsJson = adapter.supportedSources.includes('json');
+  const supportsHtml = adapter.supportedSources.includes('html');
   const supportsFile = adapter.supportedSources.includes('file');
-  const supportsAnyUpload = supportsCsv || supportsJson || supportsFile;
+  const supportsAnyUpload =
+    supportsCsv || supportsJson || supportsHtml || supportsFile;
 
   const runParse = async (payload: ImportSourcePayload): Promise<void> => {
     setLoading(true);
@@ -441,16 +453,20 @@ export function ImportWizard<TData>({
           >
             <FileUp className="w-6 h-6 text-brand-blue-primary group-hover:scale-110 transition-transform" />
             <span className="font-bold text-brand-blue-primary text-sm">
-              Upload file
+              {supportsHtml && !supportsCsv && !supportsJson && !supportsFile
+                ? 'Upload HTML file'
+                : 'Upload file'}
             </span>
             <p className="text-[11px] text-brand-blue-primary/60 font-bold">
-              {supportsCsv && supportsJson
-                ? 'CSV or JSON'
-                : supportsCsv
-                  ? 'CSV'
-                  : supportsJson
-                    ? 'JSON'
-                    : 'File'}
+              {supportsHtml && !supportsCsv && !supportsJson && !supportsFile
+                ? '.html or .htm'
+                : supportsCsv && supportsJson
+                  ? 'CSV or JSON'
+                  : supportsCsv
+                    ? 'CSV'
+                    : supportsJson
+                      ? 'JSON'
+                      : 'File'}
             </p>
           </button>
           <input
