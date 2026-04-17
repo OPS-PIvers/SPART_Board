@@ -79,6 +79,26 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   });
   const [rotation, setRotation] = useState(0);
 
+  // Reset displayResult synchronously on mode change so the wrong-shape value
+  // (e.g. RandomGroup[] from groups mode) is never passed to a single/shuffle
+  // renderer — which would crash with "Objects are not valid as a React child".
+  const [prevMode, setPrevMode] = useState(mode);
+  if (mode !== prevMode) {
+    setPrevMode(mode);
+    const raw = config.lastResult;
+    if (
+      Array.isArray(raw) &&
+      raw.length > 0 &&
+      typeof raw[0] === 'object' &&
+      raw[0] !== null &&
+      'names' in raw[0]
+    ) {
+      setDisplayResult(raw as RandomGroup[]);
+    } else {
+      setDisplayResult((raw as string | string[] | string[][]) ?? '');
+    }
+  }
+
   // Track active roster to only clear when it actually changes
   const lastRosterRef = useRef<{ id: string | null; mode: string }>({
     id: activeRosterId,

@@ -67,6 +67,10 @@ const TRANSIENT_CONFIG_KEYS = new Set<string>([
   // User-typed instance content: styling should carry over to new widgets,
   // but the text/notes themselves belong to a single instance only.
   'content',
+
+  // Roster selection is a per-instance choice (Auto vs Custom), not a global
+  // styling preference — new widgets should always default to the Auto roster.
+  'rosterMode',
 ]);
 
 /** Strips transient/runtime keys from a config object before persisting. */
