@@ -233,11 +233,18 @@ export const VideoActivityEditorModal: React.FC<
     }
     setAiGenerating(true);
     setAiError(null);
+    let result: Awaited<ReturnType<typeof generateVideoActivity>>;
     try {
-      const result = await generateVideoActivity(
-        youtubeUrl.trim(),
-        aiQuestionCount
-      );
+      result = await generateVideoActivity(youtubeUrl.trim(), aiQuestionCount);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Generation failed');
+      setAiGenerating(false);
+      return;
+    }
+    try {
+      if (!result || !Array.isArray(result.questions)) {
+        throw new Error('AI returned an unexpected response shape.');
+      }
       if (!title.trim() && result.title) setTitle(result.title);
       const generated: VideoActivityQuestion[] = result.questions.map((q) => ({
         id: crypto.randomUUID(),
@@ -264,7 +271,11 @@ export const VideoActivityEditorModal: React.FC<
       if (generated[0]) setExpandedId(generated[0].id);
       setShowAiPrompt(false);
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'Generation failed');
+      setAiError(
+        err instanceof Error
+          ? `Could not parse AI response: ${err.message}`
+          : 'Could not parse AI response.'
+      );
     } finally {
       setAiGenerating(false);
     }
@@ -349,19 +360,27 @@ export const VideoActivityEditorModal: React.FC<
             />
           </div>
           {canUseAi && (
-            <button
-              onClick={() => setShowAiPrompt(true)}
-              disabled={!youtubeUrl.trim()}
-              className="h-[38px] px-4 bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 active:scale-95"
-              title={
-                youtubeUrl.trim()
+            <>
+              <button
+                onClick={() => setShowAiPrompt(true)}
+                disabled={!youtubeUrl.trim()}
+                className="h-[38px] px-4 bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 active:scale-95"
+                title={
+                  youtubeUrl.trim()
+                    ? 'Generate questions with AI'
+                    : 'Enter a YouTube URL to enable AI generation'
+                }
+                aria-describedby="va-ai-button-hint"
+              >
+                <Wand2 className="w-4 h-4" />
+                Magic
+              </button>
+              <span id="va-ai-button-hint" className="sr-only">
+                {youtubeUrl.trim()
                   ? 'Generate questions with AI'
-                  : 'Enter a YouTube URL to enable AI generation'
-              }
-            >
-              <Wand2 className="w-4 h-4" />
-              Magic
-            </button>
+                  : 'Enter a YouTube URL to enable AI generation'}
+              </span>
+            </>
           )}
         </div>
 

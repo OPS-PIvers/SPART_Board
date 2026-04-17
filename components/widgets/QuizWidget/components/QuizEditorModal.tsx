@@ -5,7 +5,7 @@
  * editors (Video Activity, Guided Learning, MiniApp).
  */
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   ChevronDown,
@@ -122,7 +122,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiFileContext, setAiFileContext] = useState<string | null>(null);
   const [aiFileName, setAiFileName] = useState<string | null>(null);
-  const aiOverlayRef = useRef<HTMLDivElement>(null);
+  const [aiFileExtracting, setAiFileExtracting] = useState(false);
 
   // Reset local state when the `quiz` prop identity changes (new quiz loaded).
   const [prevQuiz, setPrevQuiz] = useState<QuizData | null>(quiz);
@@ -139,6 +139,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
     setAiError(null);
     setAiFileContext(null);
     setAiFileName(null);
+    setAiFileExtracting(false);
   }
 
   const aiEnabled = canAccessFeature('gemini-functions');
@@ -147,13 +148,27 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
     if (!aiPrompt.trim()) return;
     setAiGenerating(true);
     setAiError(null);
+    const fullPrompt = buildPromptWithFileContext(
+      aiPrompt,
+      aiFileContext,
+      aiFileName
+    );
+    let result: Awaited<ReturnType<typeof generateQuiz>>;
     try {
-      const fullPrompt = buildPromptWithFileContext(
-        aiPrompt,
-        aiFileContext,
-        aiFileName
+      result = await generateQuiz(fullPrompt);
+    } catch (err) {
+      setAiError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate quiz. Please try again.'
       );
-      const result = await generateQuiz(fullPrompt);
+      setAiGenerating(false);
+      return;
+    }
+    try {
+      if (!result || !Array.isArray(result.questions)) {
+        throw new Error('AI returned an unexpected response shape.');
+      }
       const validTypes: QuizQuestionType[] = [
         'MC',
         'FIB',
@@ -185,13 +200,24 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
     } catch (err) {
       setAiError(
         err instanceof Error
-          ? err.message
-          : 'Failed to generate quiz. Please try again.'
+          ? `Could not parse AI response: ${err.message}`
+          : 'Could not parse AI response.'
       );
     } finally {
       setAiGenerating(false);
     }
   };
+
+  // Global Escape listener so the overlay dismisses even when focus is
+  // outside its children (e.g., user clicked the backdrop).
+  useEffect(() => {
+    if (!showAiPrompt) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') setShowAiPrompt(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showAiPrompt]);
 
   const isDirty = useMemo(
     () =>
@@ -587,12 +613,10 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
 
       {showAiPrompt && aiEnabled && (
         <div
-          ref={aiOverlayRef}
-          tabIndex={-1}
-          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200 outline-none"
-          onKeyDown={(e) => {
-            if (e.code === 'Escape') setShowAiPrompt(false);
-          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Magic Quiz Generator"
+          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
         >
           <div className="w-full max-w-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -625,6 +649,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
                   setAiFileContext(content);
                   setAiFileName(name);
                 }}
+                onExtractingChange={setAiFileExtracting}
                 disabled={aiGenerating}
               />
             )}
@@ -636,7 +661,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
             )}
             <button
               onClick={() => void handleAiGenerate()}
-              disabled={aiGenerating || !aiPrompt.trim()}
+              disabled={aiGenerating || aiFileExtracting || !aiPrompt.trim()}
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
             >
               {aiGenerating ? (

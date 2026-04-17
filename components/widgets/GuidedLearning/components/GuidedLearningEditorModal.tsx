@@ -239,6 +239,7 @@ export const GuidedLearningEditorModal: React.FC<
     >
       {set && (
         <GuidedLearningEditor
+          key={set.id}
           existingSet={set}
           existingMeta={meta}
           onSave={onSave}
