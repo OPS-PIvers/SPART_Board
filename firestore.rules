@@ -55,7 +55,9 @@ service cloud.firestore {
              memberRole(orgId, request.auth.token.email.lower()) == 'building_admin';
     }
 
-    // True when the caller is an active member of the org (any role).
+    // True when the caller has a member doc under the given org (any role,
+    // any status). Phase 1 intentionally does not filter on status:'active';
+    // Phase 3 will add a status check once invited/inactive states are wired.
     function isOrgMember(orgId) {
       return request.auth != null && request.auth.token.email != null &&
              exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.token.email.lower()));

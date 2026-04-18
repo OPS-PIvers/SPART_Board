@@ -12,7 +12,7 @@
 //   - Legacy /admins/{email} reads still work for the owning user (no regression)
 
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import {
   initializeTestEnvironment,
@@ -28,13 +28,19 @@ const MEMBER_EMAIL = 'paul.ivers@orono.k12.mn.us';
 const OUTSIDER_EMAIL = 'outsider@example.com';
 const SUPER_EMAIL = 'super@spartboard.io';
 
+// ESM-safe path resolution — the repo is `"type": "module"`, so __dirname is
+// not defined and we locate firestore.rules via import.meta.url instead.
+const RULES_PATH = fileURLToPath(
+  new URL('../../firestore.rules', import.meta.url)
+);
+
 let testEnv: RulesTestEnvironment;
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: {
-      rules: readFileSync(resolve(__dirname, '../../firestore.rules'), 'utf8'),
+      rules: readFileSync(RULES_PATH, 'utf8'),
       host: process.env.FIRESTORE_EMULATOR_HOST?.split(':')[0] ?? '127.0.0.1',
       port: Number(
         process.env.FIRESTORE_EMULATOR_HOST?.split(':')[1] ?? '8080'

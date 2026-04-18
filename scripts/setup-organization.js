@@ -237,7 +237,9 @@ async function run() {
     primaryAdminEmail: seed.org.primaryAdminEmail?.toLowerCase() ?? '',
     status: seed.org.status ?? 'active',
     seedColor: seed.org.seedColor ?? 'bg-indigo-600',
-    supportUrl: seed.org.supportUrl ?? null,
+    // Only include supportUrl when provided — OrgRecord types it as optional
+    // string (not string|null) and Firestore omits undefined fields.
+    ...(seed.org.supportUrl ? { supportUrl: seed.org.supportUrl } : {}),
     createdAt: nowIso,
     // Counters required by OrgRecord. A Phase-4 Cloud Function will keep
     // `users` in sync; seed `buildings` from the migration input.
