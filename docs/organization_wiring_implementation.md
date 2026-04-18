@@ -4,7 +4,7 @@ Wire the newly-merged `components/admin/Organization/` scaffold (PR #1348) to re
 
 **Base branch:** `dev-paul`
 **Last updated:** 2026-04-18
-**Status:** Not started
+**Status:** Phase 1 A–D merged into `dev-paul`; E–G deferred pending preview env
 
 ---
 
@@ -23,13 +23,13 @@ If implementation is interrupted, do this before writing any code:
 
 ## Current State
 
-| Field               | Value                                                                   |
-| ------------------- | ----------------------------------------------------------------------- |
-| Active phase        | Phase 1 — Schema, rules, migration                                      |
-| Active branch       | `claude/implement-phase-1-AB4DD` (local; opened against `dev-paul`)     |
-| Last completed task | Phase 1 / D — Rules unit tests                                          |
-| Last updated (UTC)  | 2026-04-18                                                              |
-| Next action         | Phase 1 / E–G (firebase deploy + migration run, needs live preview env) |
+| Field               | Value                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| Active phase        | Phase 1 — Schema, rules, migration (code landed; live-env deferred)                            |
+| Active branch       | _merged_ — `claude/implement-phase-1-AB4DD` squashed into `dev-paul` as `9d9043d` (#1350)      |
+| Last completed task | Phase 1 / D — Rules unit tests                                                                 |
+| Last updated (UTC)  | 2026-04-18                                                                                     |
+| Next action         | Phase 1 / E–G (firebase deploy + migration run, needs live preview env), then kick off Phase 2 |
 
 ---
 
@@ -315,3 +315,4 @@ Record non-obvious choices so future sessions don't re-litigate them. Append; do
 Append one line per commit that advances this plan. Include short SHA + task letter.
 
 - 2026-04-18 — Phase 1 A–D landed on `claude/implement-phase-1-AB4DD` (types, rules, migration script, rules-unit-testing suite).
+- 2026-04-18 — `9d9043d` — Phase 1 A–D squash-merged into `dev-paul` via #1350.
