@@ -59,8 +59,9 @@ export const useOrgMembers = (orgId: string | null) => {
     const unsub = onSnapshot(
       collection(db, 'organizations', orgId, 'members'),
       (snapshot) => {
-        const items: MemberRecord[] = [];
-        snapshot.forEach((d) => items.push(d.data() as MemberRecord));
+        const items: MemberRecord[] = snapshot.docs.map(
+          (d) => ({ email: d.id, ...d.data() }) as MemberRecord
+        );
         setMembers(items);
         setError(null);
         setLoading(false);

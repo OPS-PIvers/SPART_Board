@@ -68,12 +68,12 @@ describe('useOrganizations', () => {
       (
         _ref: unknown,
         onNext: (snap: {
-          forEach: (cb: (doc: { data: () => OrgRecord }) => void) => void;
+          docs: { id: string; data: () => OrgRecord }[];
         }) => void
       ) => {
         queueMicrotask(() =>
           onNext({
-            forEach: (cb) => cb({ data: () => mockOrg }),
+            docs: [{ id: 'orono', data: () => mockOrg }],
           })
         );
         return () => undefined;

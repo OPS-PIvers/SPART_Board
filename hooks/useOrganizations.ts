@@ -50,8 +50,9 @@ export const useOrganizations = () => {
     const unsub = onSnapshot(
       collection(db, 'organizations'),
       (snapshot) => {
-        const orgs: OrgRecord[] = [];
-        snapshot.forEach((d) => orgs.push(d.data() as OrgRecord));
+        const orgs: OrgRecord[] = snapshot.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as OrgRecord
+        );
         setOrganizations(orgs);
         setError(null);
         setLoading(false);

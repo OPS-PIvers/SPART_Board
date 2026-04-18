@@ -36,8 +36,9 @@ export const useOrgRoles = (orgId: string | null) => {
     const unsub = onSnapshot(
       collection(db, 'organizations', orgId, 'roles'),
       (snapshot) => {
-        const items: RoleRecord[] = [];
-        snapshot.forEach((d) => items.push(d.data() as RoleRecord));
+        const items: RoleRecord[] = snapshot.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as RoleRecord
+        );
         setRoles(items);
         setError(null);
         setLoading(false);

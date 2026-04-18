@@ -35,8 +35,9 @@ export const useOrgBuildings = (orgId: string | null) => {
     const unsub = onSnapshot(
       collection(db, 'organizations', orgId, 'buildings'),
       (snapshot) => {
-        const items: BuildingRecord[] = [];
-        snapshot.forEach((d) => items.push(d.data() as BuildingRecord));
+        const items: BuildingRecord[] = snapshot.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as BuildingRecord
+        );
         setBuildings(items);
         setError(null);
         setLoading(false);

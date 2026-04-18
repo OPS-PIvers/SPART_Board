@@ -134,17 +134,6 @@ export const OrganizationPanel: React.FC = () => {
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const activeOrgId = selectedOrgId ?? authOrgId;
 
-  // ---- Firestore-backed data ----
-  const { organizations, loading: orgsLoading } = useOrganizations();
-  const { organization: activeOrg, loading: orgLoading } =
-    useOrganization(activeOrgId);
-  const { buildings, loading: buildingsLoading } = useOrgBuildings(activeOrgId);
-  const { domains, loading: domainsLoading } = useOrgDomains(activeOrgId);
-  const { roles, loading: rolesLoading } = useOrgRoles(activeOrgId);
-  const { users, loading: usersLoading } = useOrgMembers(activeOrgId);
-  const { studentPage, loading: studentPageLoading } =
-    useOrgStudentPage(activeOrgId);
-
   // Default: super admin starts on orgs; others on overview.
   const defaultSection: SectionId = isSuperAdmin ? 'orgs' : 'overview';
   const [section, setSection] = useState<SectionId>(() => {
@@ -159,31 +148,6 @@ export const OrganizationPanel: React.FC = () => {
       window.localStorage.setItem(STORAGE_KEY, section);
     }
   }, [section]);
-
-  const [toast, setToast] = useState<{
-    message: string;
-    type: OrgToastType;
-  } | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showToast = (message: string, type: OrgToastType = 'info') => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ message, type });
-    toastTimer.current = setTimeout(() => setToast(null), 3500);
-  };
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    []
-  );
-
-  // Phase 2 is read-only: every write handler surfaces a single "Coming soon"
-  // toast. Phase 3 replaces these with real mutations behind the
-  // `orgAdminWrites` feature flag.
-  const comingSoon = (label: string) =>
-    showToast(`${label} — coming in Phase 3`, 'info');
-  const inviteComingSoon = () =>
-    showToast('Invitations — coming in Phase 4', 'info');
 
   const visibleSections = useMemo(
     () =>
@@ -209,6 +173,48 @@ export const OrganizationPanel: React.FC = () => {
   if (section !== effectiveSection) {
     setSection(effectiveSection);
   }
+
+  // ---- Firestore-backed data ----
+  // Super admins viewing the org list don't need any org-scoped subscriptions;
+  // skip them until a specific org is opened to avoid holding listeners open
+  // unnecessarily.
+  const orgScopedOrgId =
+    effectiveSection === 'orgs' && !selectedOrgId ? null : activeOrgId;
+  const { organizations, loading: orgsLoading } = useOrganizations();
+  const { organization: activeOrg, loading: orgLoading } =
+    useOrganization(orgScopedOrgId);
+  const { buildings, loading: buildingsLoading } =
+    useOrgBuildings(orgScopedOrgId);
+  const { domains, loading: domainsLoading } = useOrgDomains(orgScopedOrgId);
+  const { roles, loading: rolesLoading } = useOrgRoles(orgScopedOrgId);
+  const { users, loading: usersLoading } = useOrgMembers(orgScopedOrgId);
+  const { studentPage, loading: studentPageLoading } =
+    useOrgStudentPage(orgScopedOrgId);
+
+  const [toast, setToast] = useState<{
+    message: string;
+    type: OrgToastType;
+  } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = (message: string, type: OrgToastType = 'info') => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ message, type });
+    toastTimer.current = setTimeout(() => setToast(null), 3500);
+  };
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    []
+  );
+
+  // Phase 2 is read-only: every write handler surfaces a single "Coming soon"
+  // toast. Phase 3 replaces these with real mutations behind the
+  // `orgAdminWrites` feature flag.
+  const comingSoon = (label: string) =>
+    showToast(`${label} — coming in Phase 3`, 'info');
+  const inviteComingSoon = () =>
+    showToast('Invitations — coming in Phase 4', 'info');
 
   // Building-admin scope: restrict to the member doc's buildingIds when
   // present; otherwise allow all buildings in the active org. Super admins

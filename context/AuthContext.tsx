@@ -568,7 +568,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       (snap) => {
         if (snap.exists()) {
           const member = snap.data() as MemberRecord;
-          setOrgId(DEFAULT_ORG_ID);
+          setOrgId(member.orgId ?? DEFAULT_ORG_ID);
           setRoleId(member.roleId ?? null);
           setBuildingIds(member.buildingIds ?? []);
         } else {

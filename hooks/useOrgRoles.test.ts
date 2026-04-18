@@ -51,11 +51,11 @@ describe('useOrgRoles', () => {
       (
         _ref: unknown,
         onNext: (snap: {
-          forEach: (cb: (d: { data: () => RoleRecord }) => void) => void;
+          docs: { id: string; data: () => RoleRecord }[];
         }) => void
       ) => {
         queueMicrotask(() =>
-          onNext({ forEach: (cb) => cb({ data: () => mockRole }) })
+          onNext({ docs: [{ id: 'teacher', data: () => mockRole }] })
         );
         return () => undefined;
       }

@@ -35,7 +35,9 @@ export const useOrganization = (orgId: string | null) => {
     const unsub = onSnapshot(
       doc(db, 'organizations', orgId),
       (snap) => {
-        setOrganization(snap.exists() ? (snap.data() as OrgRecord) : null);
+        setOrganization(
+          snap.exists() ? ({ id: snap.id, ...snap.data() } as OrgRecord) : null
+        );
         setError(null);
         setLoading(false);
       },

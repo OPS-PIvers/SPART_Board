@@ -35,8 +35,9 @@ export const useOrgDomains = (orgId: string | null) => {
     const unsub = onSnapshot(
       collection(db, 'organizations', orgId, 'domains'),
       (snapshot) => {
-        const items: DomainRecord[] = [];
-        snapshot.forEach((d) => items.push(d.data() as DomainRecord));
+        const items: DomainRecord[] = snapshot.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as DomainRecord
+        );
         setDomains(items);
         setError(null);
         setLoading(false);

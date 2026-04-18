@@ -54,11 +54,11 @@ describe('useOrgBuildings', () => {
       (
         _ref: unknown,
         onNext: (snap: {
-          forEach: (cb: (d: { data: () => BuildingRecord }) => void) => void;
+          docs: { id: string; data: () => BuildingRecord }[];
         }) => void
       ) => {
         queueMicrotask(() =>
-          onNext({ forEach: (cb) => cb({ data: () => mockBuilding }) })
+          onNext({ docs: [{ id: 'schumann', data: () => mockBuilding }] })
         );
         return () => undefined;
       }

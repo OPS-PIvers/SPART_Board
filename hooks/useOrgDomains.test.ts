@@ -53,11 +53,13 @@ describe('useOrgDomains', () => {
       (
         _ref: unknown,
         onNext: (snap: {
-          forEach: (cb: (d: { data: () => DomainRecord }) => void) => void;
+          docs: { id: string; data: () => DomainRecord }[];
         }) => void
       ) => {
         queueMicrotask(() =>
-          onNext({ forEach: (cb) => cb({ data: () => mockDomain }) })
+          onNext({
+            docs: [{ id: 'orono.k12.mn.us', data: () => mockDomain }],
+          })
         );
         return () => undefined;
       }

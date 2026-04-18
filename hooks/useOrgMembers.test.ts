@@ -53,11 +53,13 @@ describe('useOrgMembers', () => {
       (
         _ref: unknown,
         onNext: (snap: {
-          forEach: (cb: (d: { data: () => MemberRecord }) => void) => void;
+          docs: { id: string; data: () => MemberRecord }[];
         }) => void
       ) => {
         queueMicrotask(() =>
-          onNext({ forEach: (cb) => cb({ data: () => mockMember }) })
+          onNext({
+            docs: [{ id: mockMember.email, data: () => mockMember }],
+          })
         );
         return () => undefined;
       }
