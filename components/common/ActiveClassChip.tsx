@@ -64,6 +64,56 @@ export const ActiveClassChip: React.FC<ActiveClassChipProps> = ({
     };
   }, [open, closeMenu]);
 
+  // Move focus into the menu when it opens, and back to the trigger when it
+  // closes — required for keyboard users since the popover is portaled to
+  // <body> and is not reachable via natural tab order.
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true;
+      const items = popoverRef.current?.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitemradio"]'
+      );
+      if (items && items.length > 0) {
+        const activeIdx = Array.from(items).findIndex(
+          (item) => item.getAttribute('aria-checked') === 'true'
+        );
+        items[activeIdx >= 0 ? activeIdx : 0].focus();
+      }
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      anchorRef.current?.focus();
+    }
+  }, [open]);
+
+  const handleMenuKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const items = popoverRef.current?.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitemradio"]'
+      );
+      if (!items || items.length === 0) return;
+      const list = Array.from(items);
+      const currentIdx = list.indexOf(
+        document.activeElement as HTMLButtonElement
+      );
+      let nextIdx = -1;
+      if (event.key === 'ArrowDown') {
+        nextIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % list.length;
+      } else if (event.key === 'ArrowUp') {
+        nextIdx = currentIdx <= 0 ? list.length - 1 : currentIdx - 1;
+      } else if (event.key === 'Home') {
+        nextIdx = 0;
+      } else if (event.key === 'End') {
+        nextIdx = list.length - 1;
+      }
+      if (nextIdx >= 0) {
+        event.preventDefault();
+        list[nextIdx].focus();
+      }
+    },
+    []
+  );
+
   // Auto-close if the chip stops being interactive (e.g. roster deleted,
   // active roster cleared) while the menu is open — otherwise the global
   // listeners would stay registered against a portal that no longer renders.
@@ -161,6 +211,7 @@ export const ActiveClassChip: React.FC<ActiveClassChipProps> = ({
             ref={popoverRef}
             role="menu"
             aria-label="Switch active class"
+            onKeyDown={handleMenuKeyDown}
             style={popoverStyle}
             className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-150 min-w-[200px] max-w-[260px] bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden"
           >
