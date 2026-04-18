@@ -14,7 +14,7 @@ import type {
   RoleId,
   RoleRecord,
 } from '../types';
-import { CAPABILITY_GROUPS } from '../mockData';
+import { CAPABILITY_GROUPS } from '@/config/organizationCapabilities';
 import {
   Badge,
   Btn,

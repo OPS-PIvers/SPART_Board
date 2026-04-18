@@ -8,25 +8,17 @@ import {
   Users as UsersIcon,
   GraduationCap,
   ChevronLeft,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
-import {
-  SEED_BUILDINGS,
-  SEED_DOMAINS,
-  SEED_ORGS,
-  SEED_ROLES,
-  SEED_STUDENT_PAGE,
-  SEED_USERS,
-} from './mockData';
-import type {
-  ActorRole,
-  BuildingRecord,
-  DomainRecord,
-  OrgRecord,
-  RoleRecord,
-  StudentPageConfig,
-  UserRecord,
-} from './types';
+import { useOrganizations } from '@/hooks/useOrganizations';
+import { useOrganization } from '@/hooks/useOrganization';
+import { useOrgBuildings } from '@/hooks/useOrgBuildings';
+import { useOrgDomains } from '@/hooks/useOrgDomains';
+import { useOrgRoles } from '@/hooks/useOrgRoles';
+import { useOrgMembers } from '@/hooks/useOrgMembers';
+import { useOrgStudentPage } from '@/hooks/useOrgStudentPage';
+import type { ActorRole } from '@/types/organization';
 import { AllOrganizationsView } from './views/AllOrganizationsView';
 import { OverviewView } from './views/OverviewView';
 import { DomainsView } from './views/DomainsView';
@@ -122,7 +114,13 @@ const resolveActorRole = (
 };
 
 export const OrganizationPanel: React.FC = () => {
-  const { isAdmin, userRoles, user } = useAuth();
+  const {
+    isAdmin,
+    userRoles,
+    user,
+    orgId: authOrgId,
+    buildingIds: memberBuildingIds,
+  } = useAuth();
   const isSuperAdmin = Boolean(
     user?.email &&
     userRoles?.superAdmins?.some(
@@ -131,17 +129,10 @@ export const OrganizationPanel: React.FC = () => {
   );
   const actorRole = resolveActorRole(isAdmin, isSuperAdmin);
 
-  // Mock in-memory state. TODO: wire to Firestore / org APIs.
-  const [orgs, setOrgs] = useState<OrgRecord[]>(SEED_ORGS);
-  const [activeOrgId, setActiveOrgId] = useState<string>(
-    SEED_ORGS[0]?.id ?? ''
-  );
-  const [buildings, setBuildings] = useState<BuildingRecord[]>(SEED_BUILDINGS);
-  const [domains, setDomains] = useState<DomainRecord[]>(SEED_DOMAINS);
-  const [roles, setRoles] = useState<RoleRecord[]>(SEED_ROLES);
-  const [users, setUsers] = useState<UserRecord[]>(SEED_USERS);
-  const [studentPage, setStudentPage] =
-    useState<StudentPageConfig>(SEED_STUDENT_PAGE);
+  // Super admins pick from the orgs list; everyone else is pinned to their
+  // own org (from /organizations/{orgId}/members/{email}).
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const activeOrgId = selectedOrgId ?? authOrgId;
 
   // Default: super admin starts on orgs; others on overview.
   const defaultSection: SectionId = isSuperAdmin ? 'orgs' : 'overview';
@@ -157,6 +148,58 @@ export const OrganizationPanel: React.FC = () => {
       window.localStorage.setItem(STORAGE_KEY, section);
     }
   }, [section]);
+
+  const visibleSections = useMemo(
+    () =>
+      SECTIONS.filter((s) => {
+        if (s.superOnly && actorRole !== 'super_admin') return false;
+        if (s.domainAdminOnly && actorRole === 'building_admin') return false;
+        return true;
+      }),
+    [actorRole]
+  );
+
+  // Active section may need to fall back if hidden by scoping.
+  const effectiveSection: SectionId = visibleSections.some(
+    (s) => s.id === section
+  )
+    ? section
+    : (visibleSections[0]?.id ?? 'overview');
+
+  // If the persisted section is no longer visible to this actor (e.g. a super
+  // admin downgraded to domain admin), correct state during render. React
+  // discards this render and re-renders with the fallback; the localStorage
+  // effect above then persists the new value.
+  if (section !== effectiveSection) {
+    setSection(effectiveSection);
+  }
+
+  // ---- Firestore-backed data ----
+  // The global "All organizations" list doesn't need any org-scoped data; skip
+  // those subscriptions to avoid holding listeners open unnecessarily when a
+  // super admin navigates back to the list.
+  const orgScopedOrgId = effectiveSection === 'orgs' ? null : activeOrgId;
+  // Non-super admins may render before their membership doc hydrates from
+  // Firestore — treat that as loading so org-scoped sections don't flash the
+  // "no data" empty state.
+  const isMembershipHydrating =
+    !isSuperAdmin && Boolean(user) && authOrgId === null;
+  const { organizations, loading: orgsLoading } = useOrganizations();
+  const { organization: activeOrg, loading: orgLoadingRaw } =
+    useOrganization(orgScopedOrgId);
+  const { buildings, loading: buildingsLoadingRaw } =
+    useOrgBuildings(orgScopedOrgId);
+  const { domains, loading: domainsLoadingRaw } = useOrgDomains(orgScopedOrgId);
+  const { roles, loading: rolesLoadingRaw } = useOrgRoles(orgScopedOrgId);
+  const { users, loading: usersLoadingRaw } = useOrgMembers(orgScopedOrgId);
+  const { studentPage, loading: studentPageLoadingRaw } =
+    useOrgStudentPage(orgScopedOrgId);
+  const orgLoading = orgLoadingRaw || isMembershipHydrating;
+  const buildingsLoading = buildingsLoadingRaw || isMembershipHydrating;
+  const domainsLoading = domainsLoadingRaw || isMembershipHydrating;
+  const rolesLoading = rolesLoadingRaw || isMembershipHydrating;
+  const usersLoading = usersLoadingRaw || isMembershipHydrating;
+  const studentPageLoading = studentPageLoadingRaw || isMembershipHydrating;
 
   const [toast, setToast] = useState<{
     message: string;
@@ -175,220 +218,37 @@ export const OrganizationPanel: React.FC = () => {
     []
   );
 
-  // Coalesce toasts from fast-fire handlers (e.g. org name edited on every
-  // keystroke) so the user only sees one "saved" toast once they stop typing.
-  const debouncedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
-  const showToastDebounced = (message: string, type: OrgToastType = 'info') => {
-    if (debouncedToastTimer.current) clearTimeout(debouncedToastTimer.current);
-    debouncedToastTimer.current = setTimeout(() => {
-      showToast(message, type);
-      debouncedToastTimer.current = null;
-    }, 800);
-  };
-  useEffect(
-    () => () => {
-      if (debouncedToastTimer.current)
-        clearTimeout(debouncedToastTimer.current);
-    },
-    []
-  );
+  // Phase 2 is read-only: every write handler surfaces a single "Coming soon"
+  // toast. Phase 3 replaces these with real mutations behind the
+  // `orgAdminWrites` feature flag.
+  const comingSoon = (label: string) =>
+    showToast(`${label} — coming in Phase 3`, 'info');
+  const inviteComingSoon = () =>
+    showToast('Invitations — coming in Phase 4', 'info');
 
-  // Generate prototype IDs. Prefer crypto.randomUUID so rapid successive
-  // creates don't collide; fall back to a random-hex id on legacy runtimes.
-  const makeId = (prefix: string) => {
-    const c = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined;
-    if (c && typeof c.randomUUID === 'function') {
-      return `${prefix}-${c.randomUUID()}`;
-    }
-    const bytes = new Uint8Array(16);
-    c?.getRandomValues?.(bytes);
-    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(
-      ''
-    );
-    return `${prefix}-${hex}`;
-  };
-
-  const visibleSections = useMemo(
-    () =>
-      SECTIONS.filter((s) => {
-        if (s.superOnly && actorRole !== 'super_admin') return false;
-        if (s.domainAdminOnly && actorRole === 'building_admin') return false;
-        return true;
-      }),
-    [actorRole]
-  );
-
-  const activeOrg = orgs.find((o) => o.id === activeOrgId) ?? orgs[0];
-
-  // Active section may need to fall back if hidden by scoping.
-  const effectiveSection: SectionId = visibleSections.some(
-    (s) => s.id === section
-  )
-    ? section
-    : (visibleSections[0]?.id ?? 'overview');
-
-  // If the persisted section is no longer visible to this actor (e.g. a super
-  // admin downgraded to domain admin), correct state during render. React
-  // discards this render and re-renders with the fallback; the localStorage
-  // effect above then persists the new value.
-  if (section !== effectiveSection) {
-    setSection(effectiveSection);
-  }
-
-  // ---- Handlers ----
-
-  const updateOrg = (patch: Partial<OrgRecord>) => {
-    setOrgs((prev) =>
-      prev.map((o) => (o.id === activeOrg.id ? { ...o, ...patch } : o))
-    );
-    showToastDebounced('Organization updated');
-  };
-
-  const archiveOrg = (id: string) => {
-    setOrgs((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: 'archived' } : o))
-    );
-    showToast('Organization archived', 'warn');
-  };
-
-  const createOrg = (partial: Partial<OrgRecord>) => {
-    const id = makeId('org');
-    const record: OrgRecord = {
-      id,
-      name: partial.name ?? 'New organization',
-      shortName: partial.name?.split(' ')[0] ?? 'New',
-      shortCode: partial.shortCode ?? 'NEW',
-      state: partial.state ?? '',
-      plan: partial.plan ?? 'basic',
-      aiEnabled: false,
-      primaryAdminEmail: partial.primaryAdminEmail ?? '',
-      createdAt: new Date().toISOString().slice(0, 10),
-      users: 0,
-      buildings: 0,
-      status: 'trial',
-      seedColor: 'bg-teal-600',
-    };
-    setOrgs((prev) => [...prev, record]);
-    setActiveOrgId(id);
-    setSection('overview');
-    showToast('Organization created');
-  };
-
-  const addBuilding = (b: Partial<BuildingRecord>) => {
-    const record: BuildingRecord = {
-      id: makeId('b'),
-      orgId: activeOrg.id,
-      name: b.name ?? 'New building',
-      type: b.type ?? 'elementary',
-      address: b.address ?? '',
-      grades: b.grades ?? 'K-5',
-      users: 0,
-      adminEmails: b.adminEmails ?? [],
-    };
-    setBuildings((prev) => [...prev, record]);
-    showToast('Building added');
-  };
-
-  const updateBuilding = (id: string, patch: Partial<BuildingRecord>) => {
-    setBuildings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, ...patch } : b))
-    );
-    showToast('Building updated');
-  };
-
-  const removeBuilding = (id: string) => {
-    setBuildings((prev) => prev.filter((b) => b.id !== id));
-    showToast('Building archived', 'warn');
-  };
-
-  const addDomain = (d: Partial<DomainRecord>) => {
-    const record: DomainRecord = {
-      id: makeId('d'),
-      orgId: activeOrg.id,
-      domain: d.domain ?? '@example.com',
-      authMethod: d.authMethod ?? 'google',
-      status: d.status ?? 'pending',
-      role: d.role ?? 'staff',
-      users: d.users ?? 0,
-      addedAt: d.addedAt ?? new Date().toISOString().slice(0, 10),
-    };
-    setDomains((prev) => [...prev, record]);
-    showToast('Domain added. Check DNS for verification.');
-  };
-
-  const removeDomain = (id: string) => {
-    setDomains((prev) => prev.filter((d) => d.id !== id));
-    showToast('Domain removed', 'warn');
-  };
-
-  const saveRoles = (next: RoleRecord[]) => {
-    setRoles(next);
-    showToast('Roles & permissions saved');
-  };
-
-  const resetRoles = () => {
-    setRoles(SEED_ROLES);
-    showToast('Roles reset to defaults', 'warn');
-  };
-
-  const updateUser = (id: string, patch: Partial<UserRecord>) => {
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
-    const label =
-      patch.role !== undefined
-        ? 'Role updated'
-        : patch.status !== undefined
-          ? `Status set to ${patch.status}`
-          : patch.buildingIds !== undefined
-            ? 'Buildings updated'
-            : 'User updated';
-    showToast(label);
-  };
-
-  const bulkUpdateUsers = (ids: string[], patch: Partial<UserRecord>) => {
-    if (ids.length === 0) return;
-    const idSet = new Set(ids);
-    setUsers((prev) =>
-      prev.map((u) => (idSet.has(u.id) ? { ...u, ...patch } : u))
-    );
-    showToast(`Updated ${ids.length} user${ids.length === 1 ? '' : 's'}`);
-  };
-
-  const removeUsers = (ids: string[]) => {
-    setUsers((prev) => prev.filter((u) => !ids.includes(u.id)));
-    showToast(
-      `Deleted ${ids.length} user${ids.length === 1 ? '' : 's'}`,
-      'warn'
-    );
-  };
-
-  const inviteUsers = (
-    emails: string[],
-    roleId: string,
-    buildingIds: string[]
-  ) => {
-    const newbies = emails.map<UserRecord>((email) => ({
-      id: makeId('u-new'),
-      orgId: activeOrg.id,
-      name: email.split('@')[0]?.replace(/[._-]/g, ' ') ?? email,
-      email,
-      role: roleId,
-      buildingIds,
-      status: 'invited',
-      lastActive: null,
-      invitedAt: new Date().toISOString(),
-    }));
-    setUsers((prev) => [...prev, ...newbies]);
-    showToast(`Invited ${emails.length} user${emails.length === 1 ? '' : 's'}`);
-  };
-
+  // Building-admin scope: restrict strictly to the member doc's buildingIds.
+  // A building admin with no assigned buildings sees an empty list — this
+  // matches the permissions defined in Firestore. Super admins and domain
+  // admins see every building.
   const actorBuildingIds = useMemo(() => {
-    // Placeholder: building admins would have assigned building IDs.
-    // For the prototype, scope them to the first building in the list.
-    if (actorRole !== 'building_admin') return buildings.map((b) => b.id);
-    return buildings.slice(0, 1).map((b) => b.id);
-  }, [actorRole, buildings]);
+    if (actorRole === 'building_admin') {
+      return memberBuildingIds;
+    }
+    return buildings.map((b) => b.id);
+  }, [actorRole, memberBuildingIds, buildings]);
+
+  // Still-loading: for the current section, the relevant hook is flight.
+  // We render a lightweight loading state in the main area rather than
+  // blanking the whole panel.
+  const sectionLoading: Record<SectionId, boolean> = {
+    orgs: orgsLoading,
+    overview: orgLoading,
+    domains: domainsLoading,
+    buildings: buildingsLoading,
+    roles: rolesLoading,
+    users: usersLoading || rolesLoading,
+    student: studentPageLoading,
+  };
 
   return (
     <div className="max-w-[1440px] mx-auto h-full">
@@ -396,22 +256,24 @@ export const OrganizationPanel: React.FC = () => {
         {/* Left rail */}
         <aside className="w-[230px] shrink-0 hidden md:flex flex-col">
           {actorRole !== 'super_admin' ? (
-            <div className="mb-4 p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-3">
-              <OrgLogoTile
-                shortCode={activeOrg.shortCode}
-                seedColor={activeOrg.seedColor}
-                size="md"
-              />
-              <div className="min-w-0">
-                <div className="text-sm font-bold text-slate-900 truncate">
-                  {activeOrg.name}
-                </div>
-                <div className="text-xs text-slate-500 font-mono">
-                  {activeOrg.users.toLocaleString()} users ·{' '}
-                  {activeOrg.buildings} buildings
+            activeOrg && (
+              <div className="mb-4 p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-3">
+                <OrgLogoTile
+                  shortCode={activeOrg.shortCode}
+                  seedColor={activeOrg.seedColor}
+                  size="md"
+                />
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-slate-900 truncate">
+                    {activeOrg.name}
+                  </div>
+                  <div className="text-xs text-slate-500 font-mono">
+                    {activeOrg.users.toLocaleString()} users ·{' '}
+                    {activeOrg.buildings} buildings
+                  </div>
                 </div>
               </div>
-            </div>
+            )
           ) : (
             <div className="mb-4">
               <button
@@ -422,7 +284,7 @@ export const OrganizationPanel: React.FC = () => {
                 <ChevronLeft size={14} />
                 All organizations
               </button>
-              {effectiveSection !== 'orgs' && (
+              {effectiveSection !== 'orgs' && activeOrg && (
                 <div className="mt-3 p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-3">
                   <OrgLogoTile
                     shortCode={activeOrg.shortCode}
@@ -538,66 +400,80 @@ export const OrganizationPanel: React.FC = () => {
 
         {/* Main content */}
         <main className="flex-1 min-w-0 overflow-y-auto pb-8">
-          {effectiveSection === 'orgs' && (
-            <AllOrganizationsView
-              orgs={orgs}
-              onOpen={(id) => {
-                setActiveOrgId(id);
-                setSection('overview');
-              }}
-              onCreate={createOrg}
-            />
-          )}
-          {effectiveSection === 'overview' && (
-            <OverviewView
-              org={activeOrg}
-              isSuperAdmin={isSuperAdmin}
-              actorRole={actorRole}
-              onUpdate={updateOrg}
-              onArchive={archiveOrg}
-            />
-          )}
-          {effectiveSection === 'domains' && (
-            <DomainsView
-              domains={domains.filter((d) => d.orgId === activeOrg.id)}
-              onAdd={addDomain}
-              onRemove={removeDomain}
-            />
-          )}
-          {effectiveSection === 'buildings' && (
-            <BuildingsView
-              buildings={buildings.filter((b) => b.orgId === activeOrg.id)}
-              actorRole={actorRole}
-              actorBuildingIds={actorBuildingIds}
-              onAdd={addBuilding}
-              onUpdate={updateBuilding}
-              onRemove={removeBuilding}
-            />
-          )}
-          {effectiveSection === 'roles' && (
-            <RolesView roles={roles} onSave={saveRoles} onReset={resetRoles} />
-          )}
-          {effectiveSection === 'users' && (
-            <UsersView
-              users={users.filter((u) => u.orgId === activeOrg.id)}
-              roles={roles}
-              buildings={buildings.filter((b) => b.orgId === activeOrg.id)}
-              actorRole={actorRole}
-              actorBuildingIds={actorBuildingIds}
-              onUpdate={updateUser}
-              onBulkUpdate={bulkUpdateUsers}
-              onRemove={removeUsers}
-              onInvite={inviteUsers}
-            />
-          )}
-          {effectiveSection === 'student' && (
-            <StudentPageView
-              config={studentPage}
-              orgName={activeOrg.name}
-              onUpdate={(patch) =>
-                setStudentPage((prev) => ({ ...prev, ...patch }))
-              }
-            />
+          {sectionLoading[effectiveSection] ? (
+            <PanelLoading />
+          ) : (
+            <>
+              {effectiveSection === 'orgs' && (
+                <AllOrganizationsView
+                  orgs={organizations}
+                  onOpen={(id) => {
+                    setSelectedOrgId(id);
+                    setSection('overview');
+                  }}
+                  onCreate={() => comingSoon('Create organization')}
+                />
+              )}
+              {effectiveSection === 'overview' &&
+                (activeOrg ? (
+                  <OverviewView
+                    org={activeOrg}
+                    isSuperAdmin={isSuperAdmin}
+                    actorRole={actorRole}
+                    onUpdate={() => comingSoon('Organization edits')}
+                    onArchive={() => comingSoon('Archive organization')}
+                  />
+                ) : (
+                  <PanelEmpty message="No organization found for this account." />
+                ))}
+              {effectiveSection === 'domains' && (
+                <DomainsView
+                  domains={domains}
+                  onAdd={() => comingSoon('Add domain')}
+                  onRemove={() => comingSoon('Remove domain')}
+                />
+              )}
+              {effectiveSection === 'buildings' && (
+                <BuildingsView
+                  buildings={buildings}
+                  actorRole={actorRole}
+                  actorBuildingIds={actorBuildingIds}
+                  onAdd={() => comingSoon('Add building')}
+                  onUpdate={() => comingSoon('Edit building')}
+                  onRemove={() => comingSoon('Archive building')}
+                />
+              )}
+              {effectiveSection === 'roles' && (
+                <RolesView
+                  roles={roles}
+                  onSave={() => comingSoon('Save roles')}
+                  onReset={() => comingSoon('Reset roles')}
+                />
+              )}
+              {effectiveSection === 'users' && (
+                <UsersView
+                  users={users}
+                  roles={roles}
+                  buildings={buildings}
+                  actorRole={actorRole}
+                  actorBuildingIds={actorBuildingIds}
+                  onUpdate={() => comingSoon('Update user')}
+                  onBulkUpdate={() => comingSoon('Bulk update users')}
+                  onRemove={() => comingSoon('Remove users')}
+                  onInvite={inviteComingSoon}
+                />
+              )}
+              {effectiveSection === 'student' &&
+                (studentPage && activeOrg ? (
+                  <StudentPageView
+                    config={studentPage}
+                    orgName={activeOrg.name}
+                    onUpdate={() => comingSoon('Student page edits')}
+                  />
+                ) : (
+                  <PanelEmpty message="Student page config has not been seeded yet." />
+                ))}
+            </>
           )}
         </main>
       </div>
@@ -606,3 +482,16 @@ export const OrganizationPanel: React.FC = () => {
     </div>
   );
 };
+
+const PanelLoading: React.FC = () => (
+  <div className="flex items-center justify-center h-64 text-slate-500 gap-2">
+    <Loader2 size={18} className="animate-spin" />
+    <span className="text-sm">Loading…</span>
+  </div>
+);
+
+const PanelEmpty: React.FC<{ message: string }> = ({ message }) => (
+  <div className="flex items-center justify-center h-64 text-slate-500">
+    <span className="text-sm">{message}</span>
+  </div>
+);
