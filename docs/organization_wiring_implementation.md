@@ -4,7 +4,7 @@ Wire the newly-merged `components/admin/Organization/` scaffold (PR #1348) to re
 
 **Base branch:** `dev-paul`
 **Last updated:** 2026-04-18
-**Status:** Phase 1 complete (A–G landed + live migration verified); Phase 2 next
+**Status:** Phase 2 complete (hooks + view wiring + `useAuth` org fields + `mockData.ts` removed); Phase 3 next
 
 ---
 
@@ -23,13 +23,13 @@ If implementation is interrupted, do this before writing any code:
 
 ## Current State
 
-| Field               | Value                                                                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Active phase        | Phase 1 complete — moving to Phase 2                                                      |
-| Active branch       | _merged_ — `claude/implement-phase-1-AB4DD` squashed into `dev-paul` as `9d9043d` (#1350) |
-| Last completed task | Phase 1 / G — live migration run against `spartboard` (18 docs, verified, idempotent)     |
-| Last updated (UTC)  | 2026-04-18                                                                                |
-| Next action         | Phase 2 / A–G — per-view hook implementations + tests (parallel batch)                    |
+| Field               | Value                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Active phase        | Phase 2 complete — moving to Phase 3                                                                        |
+| Active branch       | `claude/implement-org-wiring-phase-2-NRzzg` (open PR; awaiting manual QA in preview)                        |
+| Last completed task | Phase 2 / P + R — `mockData.ts` deleted, hooks + views wired, `useAuth` extended, `pnpm run validate` green |
+| Last updated (UTC)  | 2026-04-18                                                                                                  |
+| Next action         | Phase 2 / Q (manual QA in preview) then kick off Phase 3 on `claude/org-wiring-p3-writes`                   |
 
 ---
 
@@ -126,50 +126,54 @@ Lays the data model, gets rules in place for read-only access, and migrates exis
 
 Wire `AllOrganizationsView`, `OverviewView`, `BuildingsView`, `DomainsView`, `RolesView`, `UsersView`, `StudentPageView` to read real Firestore data via hooks. All writes remain no-ops (existing in-memory handlers stay, but are now "Coming soon" toasts).
 
-**Branch:** `claude/org-wiring-p2-reads`
+**Branch:** `claude/implement-org-wiring-phase-2-NRzzg`
 **Depends on:** Phase 1 ✅
-**Status:** Ready to start — Phase 1 live data is available at `/organizations/orono/**` in prod Firestore
+**Status:** Implementation complete; awaiting Q (manual QA in preview) before marking shipped.
 
 ### Deliverables
 
-- [ ] Seven per-view hooks in `hooks/` using `onSnapshot`
-- [ ] Each view reads from its hook; `mockData.ts` deleted
-- [ ] `OrganizationPanel.tsx` replaces the seven `useState(SEED_*)` blocks with hook calls
-- [ ] `useAuth` extended to expose `orgId`, `buildingIds`, `roleId` derived from `/organizations/{orgId}/members/{email}`
-- [ ] Loading + error states rendered for each view (no blank panels)
-- [ ] Unit tests for each hook under `tests/hooks/`
+- [x] Seven per-view hooks in `hooks/` using `onSnapshot` (co-located tests under `hooks/*.test.ts`)
+- [x] Each view reads from its hook; `mockData.ts` deleted. `CAPABILITY_GROUPS` moved to `config/organizationCapabilities.ts` so the migration script + future Cloud Functions can share the source of truth.
+- [x] `OrganizationPanel.tsx` replaces the seven `useState(SEED_*)` blocks with hook calls and routes every write handler through a single "Coming soon in Phase 3/4" toast.
+- [x] `useAuth` extended to expose `orgId`, `buildingIds`, `roleId`. Subscription to `/organizations/{DEFAULT_ORG_ID}/members/{emailLower}` hard-codes `DEFAULT_ORG_ID = 'orono'` for Phase 2 (single-org); Phase 3+ resolves dynamically. Two test-side mock `AuthContextType` fixtures (`components/student/StudentContexts.tsx`, `components/widgets/Embed/Widget.test.tsx`, `components/widgets/TalkingTool/Widget.test.tsx`) were updated to include the new fields.
+- [x] Loading state rendered for each section via the panel-level `sectionLoading` map; empty states when the org doc or student-page config hasn't been seeded.
+- [x] Unit tests for each hook (21 tests total — 3 per hook × 7 hooks). Covers: null-orgId skip, super-admin gate (for `useOrganizations`), snapshot hydration, and write-stub phase-labelled errors.
 
 ### Task ledger
 
 **Parallelizable — batch 1 (all independent hooks):**
 
-- [ ] **A — `useOrganizations.ts`** + test. Super-admin-only query on `collection('organizations')`.
-- [ ] **B — `useOrganization.ts`** + test. Doc subscription + `updateOrg`, `archiveOrg` stubs (no-op, logs).
-- [ ] **C — `useOrgBuildings.ts`** + test.
-- [ ] **D — `useOrgDomains.ts`** + test.
-- [ ] **E — `useOrgRoles.ts`** + test.
-- [ ] **F — `useOrgMembers.ts`** + test.
-- [ ] **G — `useOrgStudentPage.ts`** + test.
+- [x] **A — `useOrganizations.ts`** + test. Super-admin-only query on `collection('organizations')`.
+- [x] **B — `useOrganization.ts`** + test. Doc subscription + `updateOrg`, `archiveOrg` stubs that `Promise.reject` with a Phase 3 error.
+- [x] **C — `useOrgBuildings.ts`** + test.
+- [x] **D — `useOrgDomains.ts`** + test.
+- [x] **E — `useOrgRoles.ts`** + test.
+- [x] **F — `useOrgMembers.ts`** + test. Emits both the raw `MemberRecord[]` and a derived `UserRecord[]` so views keep their existing props contract.
+- [x] **G — `useOrgStudentPage.ts`** + test. Doc subscription at `/organizations/{orgId}/studentPageConfig/default`.
+
+All seven hooks use the same "adjust state during render" pattern as `useGuidedLearningAssignments.ts` to reset stale state on `orgId` changes without triggering the `react-hooks/set-state-in-effect` lint rule.
 
 **Serial:**
 
-- [ ] **H — Extend `useAuth`.** Add `orgId`, `buildingIds`, `roleId` to `AuthContextValue`. Subscribe to `/organizations/{orgId}/members/{emailLower}` when user signs in. This unblocks P3 and removes the `OrganizationPanel.tsx:386` placeholder.
+- [x] **H — Extend `useAuth`.** Added `orgId`, `roleId`, `buildingIds` to `AuthContextValue`. Subscribes to `/organizations/{DEFAULT_ORG_ID}/members/{emailLower}` on sign-in. `DEFAULT_ORG_ID` is hard-coded to `'orono'` for Phase 2; once multi-org lands (see Open Questions) this resolves dynamically. Under `isAuthBypass` the state defaults to `{ orgId: 'orono', roleId: 'super_admin', buildingIds: [] }` so dev-mode continues to exercise the admin paths.
 
 **Parallelizable — batch 2 (each view consumes one hook; no shared files):**
 
-- [ ] **I — Wire `AllOrganizationsView`** to `useOrganizations`.
-- [ ] **J — Wire `OverviewView`** to `useOrganization`.
-- [ ] **K — Wire `BuildingsView`** to `useOrgBuildings`.
-- [ ] **L — Wire `DomainsView`** to `useOrgDomains`.
-- [ ] **M — Wire `RolesView`** to `useOrgRoles`.
-- [ ] **N — Wire `UsersView`** to `useOrgMembers` + `useOrgRoles` (needs both).
-- [ ] **O — Wire `StudentPageView`** to `useOrgStudentPage`.
+View prop signatures were not changed — instead, the panel wires hook data in and wraps every callback in a "Coming soon" toast. This keeps `views/*.tsx` diff-free for Phase 2 and leaves them ready to receive the real mutation callbacks in Phase 3 batch 2.
+
+- [x] **I — Wire `AllOrganizationsView`** to `useOrganizations`.
+- [x] **J — Wire `OverviewView`** to `useOrganization`.
+- [x] **K — Wire `BuildingsView`** to `useOrgBuildings`.
+- [x] **L — Wire `DomainsView`** to `useOrgDomains`.
+- [x] **M — Wire `RolesView`** to `useOrgRoles`. (Also re-pointed the `CAPABILITY_GROUPS` import from the deleted `mockData.ts` to `@/config/organizationCapabilities`.)
+- [x] **N — Wire `UsersView`** to `useOrgMembers` + `useOrgRoles` (needs both).
+- [x] **O — Wire `StudentPageView`** to `useOrgStudentPage`.
 
 **Serial:**
 
-- [ ] **P — Remove `mockData.ts`** (confirm no imports remain).
-- [ ] **Q — Manual QA in preview.** Sign in as paul.ivers@orono.k12.mn.us; verify every section loads real data.
-- [ ] **R — Update this doc.** Mark Phase 2 complete; set Current State → Phase 3.
+- [x] **P — Remove `mockData.ts`.** Deleted. `CAPABILITY_GROUPS` was extracted to `config/organizationCapabilities.ts` first so it remained the source of truth for the Roles matrix + the migration script's `SYSTEM_ROLES.perms` block.
+- [ ] **Q — Manual QA in preview.** Sign in as paul.ivers@orono.k12.mn.us; verify every section loads real data. _(Pending — requires preview deploy from this branch.)_
+- [x] **R — Update this doc.** Phase 2 task ledger closed; Current State moved to Phase 3.
 
 ### Acceptance checklist
 
