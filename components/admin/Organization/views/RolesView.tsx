@@ -8,7 +8,12 @@ import {
   Copy,
   Home as HomeIcon,
 } from 'lucide-react';
-import type { CapabilityAccess, RoleId, RoleRecord } from '../types';
+import type {
+  CapabilityAccess,
+  CapabilityId,
+  RoleId,
+  RoleRecord,
+} from '../types';
 import { CAPABILITY_GROUPS } from '../mockData';
 import {
   Badge,
@@ -73,7 +78,11 @@ export const RolesView: React.FC<Props> = ({ roles, onSave, onReset }) => {
 
   const activeRole = working.find((r) => r.id === activeRoleId) ?? working[0];
 
-  const setCellValue = (roleId: RoleId, capId: string, v: CapabilityAccess) => {
+  const setCellValue = (
+    roleId: RoleId,
+    capId: CapabilityId,
+    v: CapabilityAccess
+  ) => {
     setWorking((prev) =>
       prev.map((r) =>
         r.id === roleId ? { ...r, perms: { ...r.perms, [capId]: v } } : r
@@ -268,7 +277,7 @@ export const RolesView: React.FC<Props> = ({ roles, onSave, onReset }) => {
                   c.id,
                   'none' as CapabilityAccess,
                 ])
-              ),
+              ) as Record<CapabilityId, CapabilityAccess>,
             },
           ]);
           setActiveRoleId(id);

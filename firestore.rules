@@ -10,6 +10,104 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()));
     }
 
+    // ---- Organization helpers (see docs/organization_wiring_implementation.md) ----
+
+    // Super admins are listed on the legacy admin_settings/user_roles doc.
+    // Phase 1 also upserts them as /organizations/{orgId}/members with roleId
+    // 'super_admin', but because super-admin checks run globally (not scoped
+    // to a single org) the rules keep reading the legacy list here.
+    function isSuperAdmin() {
+      return request.auth != null &&
+             request.auth.token.email != null &&
+             exists(/databases/$(database)/documents/admin_settings/user_roles) &&
+             request.auth.token.email.lower() in
+               get(/databases/$(database)/documents/admin_settings/user_roles).data.get('superAdmins', []);
+    }
+
+    // Returns the caller's /organizations/{orgId}/members/{email} doc data.
+    // Callers must guard with isOrgMember(orgId) first; otherwise get() fails.
+    function orgMember(orgId) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.token.email.lower())).data;
+    }
+
+    // The caller's roleId within an org, or empty string when not a member.
+    function memberRole(orgId, emailLower) {
+      return exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(emailLower))
+             ? get(/databases/$(database)/documents/organizations/$(orgId)/members/$(emailLower)).data.get('roleId', '')
+             : '';
+    }
+
+    // Check whether a role has a given capability at the given access level.
+    // access: 'full' | 'building' | 'none'. A missing perm defaults to 'none'.
+    function roleHasCap(orgId, roleId, capId, access) {
+      return exists(/databases/$(database)/documents/organizations/$(orgId)/roles/$(roleId)) &&
+             get(/databases/$(database)/documents/organizations/$(orgId)/roles/$(roleId)).data
+               .get('perms', {}).get(capId, 'none') == access;
+    }
+
+    function isDomainAdmin(orgId) {
+      return request.auth != null && request.auth.token.email != null &&
+             memberRole(orgId, request.auth.token.email.lower()) == 'domain_admin';
+    }
+
+    function isBuildingAdmin(orgId) {
+      return request.auth != null && request.auth.token.email != null &&
+             memberRole(orgId, request.auth.token.email.lower()) == 'building_admin';
+    }
+
+    // True when the caller is an active member of the org (any role).
+    function isOrgMember(orgId) {
+      return request.auth != null && request.auth.token.email != null &&
+             exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.token.email.lower()));
+    }
+
+    // ---- Organizations collection (Phase 1: read-only foundation) ----
+    // All writes are blocked until Phase 3 wires the scoping + feature flag.
+    // TODO(phase-3): replace `allow write: if false` with scoped rules using
+    // isSuperAdmin(), isDomainAdmin(orgId), isBuildingAdmin(orgId).
+
+    match /organizations/{orgId} {
+      allow read: if isSuperAdmin() || isOrgMember(orgId);
+      allow write: if false; // TODO(phase-3)
+
+      match /buildings/{buildingId} {
+        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow write: if false; // TODO(phase-3)
+      }
+
+      match /domains/{domainId} {
+        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow write: if false; // TODO(phase-3)
+      }
+
+      match /roles/{roleId} {
+        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow write: if false; // TODO(phase-3)
+      }
+
+      match /members/{emailLower} {
+        // Members can always see their own membership (to bootstrap useAuth);
+        // other org members can see the member directory.
+        allow read: if isSuperAdmin() ||
+                    isOrgMember(orgId) ||
+                    (request.auth != null &&
+                     request.auth.token.email != null &&
+                     request.auth.token.email.lower() == emailLower);
+        allow write: if false; // TODO(phase-3)
+      }
+
+      match /studentPageConfig/{configId} {
+        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow write: if false; // TODO(phase-3)
+      }
+
+      match /invitations/{token} {
+        // Phase 4 wires invite acceptance; until then nothing reads or writes
+        // from the client — Cloud Functions own this collection.
+        allow read, write: if false; // TODO(phase-4)
+      }
+    }
+
     // Admins collection
     match /admins/{email} {
       // Users can read their own admin record to check status

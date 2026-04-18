@@ -11,6 +11,11 @@ export default mergeConfig(
       exclude: [
         ...configDefaults.exclude,
         'tests/e2e/**',
+        // Firestore rules tests need the Firestore emulator; they run via
+        // the `test:rules` script under `firebase emulators:exec`. Excluded
+        // from the default vitest run so `pnpm test` / CI stays green
+        // without an emulator.
+        'tests/rules/**',
         'functions/**',
         '.claude/worktrees/**',
       ],

@@ -1,6 +1,8 @@
 import type {
   BuildingRecord,
+  CapabilityAccess,
   CapabilityGroup,
+  CapabilityId,
   DomainRecord,
   OrgRecord,
   RoleRecord,
@@ -200,12 +202,17 @@ export const SEED_DOMAINS: DomainRecord[] = [
   },
 ];
 
-const full = (caps: string[]): Record<string, 'full'> =>
-  Object.fromEntries(caps.map((c) => [c, 'full'])) as Record<string, 'full'>;
-
-const allCaps: string[] = CAPABILITY_GROUPS.flatMap((g) =>
+const ALL_CAP_IDS: CapabilityId[] = CAPABILITY_GROUPS.flatMap((g) =>
   g.capabilities.map((c) => c.id)
 );
+
+const allWith = (
+  value: CapabilityAccess
+): Record<CapabilityId, CapabilityAccess> =>
+  Object.fromEntries(ALL_CAP_IDS.map((c) => [c, value])) as Record<
+    CapabilityId,
+    CapabilityAccess
+  >;
 
 export const SEED_ROLES: RoleRecord[] = [
   {
@@ -214,7 +221,7 @@ export const SEED_ROLES: RoleRecord[] = [
     blurb: 'SpartBoard staff. Full access across every organization.',
     color: 'rose',
     system: true,
-    perms: full(allCaps),
+    perms: allWith('full'),
   },
   {
     id: 'domain_admin',
@@ -223,11 +230,7 @@ export const SEED_ROLES: RoleRecord[] = [
     color: 'indigo',
     system: true,
     perms: {
-      ...full(
-        allCaps.filter(
-          (c) => !['manageOrgs', 'toggleAI', 'viewPlatform'].includes(c)
-        )
-      ),
+      ...allWith('full'),
       manageOrgs: 'none',
       toggleAI: 'none',
       viewPlatform: 'none',

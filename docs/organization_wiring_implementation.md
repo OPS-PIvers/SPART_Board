@@ -23,13 +23,13 @@ If implementation is interrupted, do this before writing any code:
 
 ## Current State
 
-| Field               | Value                                |
-| ------------------- | ------------------------------------ |
-| Active phase        | _(none — not started)_               |
-| Active branch       | _(none)_                             |
-| Last completed task | _(none)_                             |
-| Last updated (UTC)  | 2026-04-18                           |
-| Next action         | Start Phase 1 — Schema and migration |
+| Field               | Value                                                                   |
+| ------------------- | ----------------------------------------------------------------------- |
+| Active phase        | Phase 1 — Schema, rules, migration                                      |
+| Active branch       | `claude/implement-phase-1-AB4DD` (local; opened against `dev-paul`)     |
+| Last completed task | Phase 1 / D — Rules unit tests                                          |
+| Last updated (UTC)  | 2026-04-18                                                              |
+| Next action         | Phase 1 / E–G (firebase deploy + migration run, needs live preview env) |
 
 ---
 
@@ -82,43 +82,43 @@ Each phase below calls out **which task groups can run in parallel** under sub-a
 
 Lays the data model, gets rules in place for read-only access, and migrates existing admins into the new `members` collection. No UI changes yet; `mockData.ts` continues to back every view.
 
-**Branch:** `claude/org-wiring-p1-schema`
-**Status:** Not started
+**Branch:** `claude/implement-phase-1-AB4DD` (tasks A–D landed here; opens against `dev-paul`)
+**Status:** Code tasks (A–D) complete; live-env tasks (E–G) deferred until a Firebase preview is available.
 
 ### Deliverables
 
-- [ ] `/organizations/orono` doc created in Firestore with seeded defaults
-- [ ] System roles (`super_admin`, `domain_admin`, `building_admin`, `teacher`) seeded into `/organizations/orono/roles/*`
-- [ ] Buildings seeded from input CSV into `/organizations/orono/buildings/*`
-- [ ] Every current `/admins/*` email upserted into `/organizations/orono/members/{emailLower}` with correct roleId
-- [ ] Every `admin_settings/user_roles.superAdmins` email upserted as `super_admin` role
-- [ ] `firestore.rules` extended with new helpers (`isSuperAdmin()`, `orgMember()`, `memberRole()`, `roleHasCap()`, `isDomainAdmin()`, `isBuildingAdmin()`)
-- [ ] Rules allow authed org members to `read` org/buildings/domains/roles/members; all writes still denied
-- [ ] Rules-unit tests green via `@firebase/rules-unit-testing`
-- [ ] `scripts/setup-organization.js` idempotent via `set(…, { merge: true })`, with `--dry-run` flag
+- [ ] `/organizations/orono` doc created in Firestore with seeded defaults _(deferred to task G)_
+- [ ] System roles (`super_admin`, `domain_admin`, `building_admin`, `teacher`) seeded into `/organizations/orono/roles/*` _(deferred to task G)_
+- [ ] Buildings seeded from input CSV into `/organizations/orono/buildings/*` _(deferred to task G)_
+- [ ] Every current `/admins/*` email upserted into `/organizations/orono/members/{emailLower}` with correct roleId _(deferred to task G)_
+- [ ] Every `admin_settings/user_roles.superAdmins` email upserted as `super_admin` role _(deferred to task G)_
+- [x] `firestore.rules` extended with new helpers (`isSuperAdmin()`, `orgMember()`, `memberRole()`, `roleHasCap()`, `isDomainAdmin()`, `isBuildingAdmin()`, plus `isOrgMember()`)
+- [x] Rules allow authed org members to `read` org/buildings/domains/roles/members; all writes still denied (Phase 3 TODO comments in place)
+- [x] Rules-unit tests written for `@firebase/rules-unit-testing` — green run requires the Firestore emulator (`pnpm run test:rules`)
+- [x] `scripts/setup-organization.js` idempotent via `set(…, { merge: true })`, with `--dry-run` flag
 
 ### Task ledger
 
 **Parallelizable (kick off together):**
 
-- [ ] **A — Type definitions.** Move `components/admin/Organization/types.ts` → `types/organization.ts` (shared between UI and hooks). Add `MemberRecord`, `InvitationRecord`, tighten `RoleRecord.perms` to `Record<CapabilityId, 'full' | 'building' | 'none'>`.
-- [ ] **B — Security rules.** Write new helpers in `firestore.rules`. Read-only for now; all `allow write` stubs return `false` with a TODO comment linking P3.
-- [ ] **C — Migration script.** `scripts/setup-organization.js` based on `scripts/setup-admins.js`. Reads org config from `scripts/org-seed.json` (gitignored — use `scripts/org-seed.example.json` as template). Supports `--dry-run`.
+- [x] **A — Type definitions.** Moved `components/admin/Organization/types.ts` → `types/organization.ts` (the old path re-exports for back-compat). Added `MemberRecord`, `InvitationRecord`, `CapabilityId` union, and tightened `RoleRecord.perms` to `Record<CapabilityId, CapabilityAccess>`. Updated `mockData.ts` + `RolesView.tsx` to satisfy the tighter type.
+- [x] **B — Security rules.** Added `isSuperAdmin()`, `orgMember()`, `memberRole()`, `roleHasCap()`, `isDomainAdmin()`, `isBuildingAdmin()`, and `isOrgMember()` helpers in `firestore.rules`. `/organizations/{orgId}` + sub-collections (`buildings`, `domains`, `roles`, `members`, `studentPageConfig`, `invitations`) are read-only for org members; `invitations` is fully locked. All write stubs are `if false` with `TODO(phase-3)` / `TODO(phase-4)` comments.
+- [x] **C — Migration script.** `scripts/setup-organization.js` mirrors `scripts/setup-admins.js`. Reads config from `scripts/org-seed.json` (gitignored — copy `scripts/org-seed.example.json`). Supports `--dry-run` and `--seed <path>`; batches writes in chunks of 400 with `{ merge: true }`.
 
 **Serial (after parallel block completes):**
 
-- [ ] **D — Rules tests.** `tests/e2e/firestore-rules-organizations.test.ts` covering: member can read, non-member cannot read, all writes denied. Run via `firebase emulators:exec`.
-- [ ] **E — Deploy rules to preview.** `firebase deploy --only firestore:rules --project <preview>`. Verify existing `isAdmin()` rules still pass by hitting a known admin-gated collection.
+- [x] **D — Rules tests.** `tests/rules/firestore-rules-organizations.test.ts` (not `tests/e2e/` — that dir is owned by Playwright; `tests/rules` is excluded from default vitest and invoked via `firebase emulators:exec` through `pnpm run test:rules`, using a dedicated `vitest.rules.config.ts`). Covers: member reads, outsider-reads-blocked (except own member-doc probe), super-admin bypass via legacy `admin_settings/user_roles.superAdmins`, all writes denied, invitations fully locked, and no regression on `/admins/{email}`.
+- [ ] **E — Deploy rules to preview.** `firebase deploy --only firestore:rules --project <preview>`. Verify existing `isAdmin()` rules still pass by hitting a known admin-gated collection. _(Requires preview-project access — not runnable in this session.)_
 - [ ] **F — Run migration dry-run.** `node scripts/setup-organization.js --dry-run` against preview; review planned writes.
 - [ ] **G — Run migration for real.** `node scripts/setup-organization.js`. Verify in Firebase console that `/organizations/orono/members` contains all expected emails.
-- [ ] **H — Update this doc.** Mark Phase 1 complete; set Current State → Phase 2.
+- [ ] **H — Update this doc.** Mark Phase 1 complete; set Current State → Phase 2. _(Blocked on E–G.)_
 
 ### Acceptance checklist
 
-- [ ] `pnpm run validate` passes
-- [ ] Firestore emulator rules tests pass
-- [ ] Migration script is idempotent (running twice produces no diff)
-- [ ] Existing admin users can still sign in and open Admin Settings (legacy `isAdmin()` still reads `/admins/*`)
+- [x] `pnpm run validate` passes (type-check, lint, format-check, unit tests)
+- [ ] Firestore emulator rules tests pass _(pending first emulator run — see task D)_
+- [ ] Migration script is idempotent (running twice produces no diff) _(verify during task G)_
+- [ ] Existing admin users can still sign in and open Admin Settings (legacy `isAdmin()` still reads `/admins/*`) _(verify during task E)_
 
 ---
 
@@ -305,6 +305,8 @@ Record non-obvious choices so future sessions don't re-litigate them. Append; do
 - **2026-04-18** — Per-view hooks, not one `useOrganization` mega-hook. Matches existing `useFeaturePermissions` convention; enables granular `onSnapshot` subscriptions + parallel agent implementation.
 - **2026-04-18** — Writes gate through existing `feature_permissions` collection (new `orgAdminWrites` key), not a new flag system. Reuses real-time sync infrastructure.
 - **2026-04-18** — Migration script is idempotent via `merge: true`, with `--dry-run` flag. Pattern: `scripts/setup-admins.js`.
+- **2026-04-18** — Rules tests live in `tests/rules/` (not `tests/e2e/`) because `tests/e2e/` is the Playwright test root; keeping emulator-dependent vitest tests in a separate directory lets the default `pnpm test` stay emulator-free while `pnpm run test:rules` wraps them in `firebase emulators:exec`.
+- **2026-04-18** — `isSuperAdmin()` in `firestore.rules` reads from the legacy `admin_settings/user_roles.superAdmins` list (not from an org-scoped `members` roleId). The check is called without an `orgId` context, so it has to use a global source; the migration also upserts supers into Orono's members for Phase 2 UI parity.
 
 ---
 
@@ -312,4 +314,4 @@ Record non-obvious choices so future sessions don't re-litigate them. Append; do
 
 Append one line per commit that advances this plan. Include short SHA + task letter.
 
-_(Empty — no work landed yet.)_
+- 2026-04-18 — Phase 1 A–D landed on `claude/implement-phase-1-AB4DD` (types, rules, migration script, rules-unit-testing suite).
