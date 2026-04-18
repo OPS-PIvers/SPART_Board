@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { LayoutGrid, Sparkles, Package, Archive } from 'lucide-react';
-import type { OrgRecord, Plan } from '../types';
+import { LayoutGrid, Sparkles, Package, Archive, Lock } from 'lucide-react';
+import type { ActorRole, OrgRecord, Plan } from '../types';
 import {
   Card,
   Field,
@@ -36,6 +36,7 @@ const PLAN_META: Record<
 interface Props {
   org: OrgRecord;
   isSuperAdmin: boolean;
+  actorRole: ActorRole;
   onUpdate: (patch: Partial<OrgRecord>) => void;
   onArchive: (orgId: string) => void;
 }
@@ -43,11 +44,14 @@ interface Props {
 export const OverviewView: React.FC<Props> = ({
   org,
   isSuperAdmin,
+  actorRole,
   onUpdate,
   onArchive,
 }) => {
   const [confirmArchive, setConfirmArchive] = useState(false);
   const aiGated = org.plan !== 'full';
+  // Building admins can view org-level settings but cannot modify them.
+  const canEditOrg = actorRole !== 'building_admin';
 
   return (
     <div>
@@ -62,17 +66,28 @@ export const OverviewView: React.FC<Props> = ({
             <LayoutGrid size={16} className="text-brand-blue-dark" />
             <h3 className="text-sm font-bold text-slate-900">General</h3>
           </div>
+          {!canEditOrg && (
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              <Lock size={14} className="mt-0.5 shrink-0 text-slate-500" />
+              <span>
+                Org-level settings are read-only for building admins. Contact a
+                domain admin to make changes.
+              </span>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Organization name">
               <Input
                 value={org.name}
                 onChange={(e) => onUpdate({ name: e.target.value })}
+                disabled={!canEditOrg}
               />
             </Field>
             <Field label="Short name" hint="Used in emails and the sidebar">
               <Input
                 value={org.shortName}
                 onChange={(e) => onUpdate({ shortName: e.target.value })}
+                disabled={!canEditOrg}
               />
             </Field>
             <Field label="Short code" hint="2-4 letters, used in avatars">
@@ -83,12 +98,14 @@ export const OverviewView: React.FC<Props> = ({
                     shortCode: e.target.value.toUpperCase().slice(0, 4),
                   })
                 }
+                disabled={!canEditOrg}
               />
             </Field>
             <Field label="State">
               <Input
                 value={org.state}
                 onChange={(e) => onUpdate({ state: e.target.value })}
+                disabled={!canEditOrg}
               />
             </Field>
             <div className="md:col-span-2">
@@ -101,6 +118,7 @@ export const OverviewView: React.FC<Props> = ({
                   onChange={(e) =>
                     onUpdate({ primaryAdminEmail: e.target.value })
                   }
+                  disabled={!canEditOrg}
                 />
               </Field>
             </div>

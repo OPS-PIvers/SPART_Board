@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
 // Color palette for badges and role accents.
@@ -515,17 +516,46 @@ export const OrgLogoTile: React.FC<{
 
 // Cell Popover ------------------------------------------------------
 
+// Rendered via a portal so it escapes any `overflow: hidden` ancestor (eg.
+// scrollable tables, rounded cards). Positioning is computed from the
+// anchor element's bounding rect. Callers pass `anchorRef` pointing at the
+// trigger element (usually the button that toggles `open`).
 export const CellPopover: React.FC<{
   open: boolean;
   onClose: () => void;
+  anchorRef: React.RefObject<HTMLElement | null>;
   children: React.ReactNode;
   className?: string;
-}> = ({ open, onClose, children, className = '' }) => {
+}> = ({ open, onClose, anchorRef, children, className = '' }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const measure = () => {
+      const el = anchorRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setPos({ top: r.bottom + 4, left: r.left });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    // Capture scrolls from any ancestor (tables, dialogs, etc.) by listening
+    // in the capture phase.
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [open, anchorRef]);
+
   useEffect(() => {
     if (!open) return undefined;
     const onDocClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      const target = e.target as Node;
+      if (ref.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      onClose();
     };
     const onEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -536,16 +566,19 @@ export const CellPopover: React.FC<{
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onEsc);
     };
-  }, [open, onClose]);
-  if (!open) return null;
-  return (
+  }, [open, onClose, anchorRef]);
+
+  if (!open || !pos || typeof document === 'undefined') return null;
+  return createPortal(
     <div
       ref={ref}
-      className={`absolute top-full left-0 mt-1 z-popover min-w-[260px] bg-white rounded-xl shadow-[0_10px_15px_-3px_rgba(29,42,93,.12),0_4px_6px_-4px_rgba(29,42,93,.08)] border border-slate-200 p-1 ${className}`}
+      style={{ position: 'fixed', top: pos.top, left: pos.left }}
+      className={`z-popover min-w-[260px] bg-white rounded-xl shadow-[0_10px_15px_-3px_rgba(29,42,93,.12),0_4px_6px_-4px_rgba(29,42,93,.08)] border border-slate-200 p-1 ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
       {children}
-    </div>
+    </div>,
+    document.body
   );
 };
 

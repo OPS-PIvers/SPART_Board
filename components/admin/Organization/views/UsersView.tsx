@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Users,
   Plus,
@@ -142,6 +142,16 @@ export const UsersView: React.FC<Props> = ({
   const canEditUser = (u: UserRecord) =>
     !isScoped || u.buildingIds.some((b) => actorBuildingIds.includes(b));
 
+  // Building admins should only see (and be able to assign into) the
+  // buildings they actually manage. Everyone else sees the whole org list.
+  const visibleBuildings = useMemo(
+    () =>
+      isScoped
+        ? buildings.filter((b) => actorBuildingIds.includes(b.id))
+        : buildings,
+    [buildings, isScoped, actorBuildingIds]
+  );
+
   const filtered = useMemo(() => {
     let list = users;
     if (isScoped) {
@@ -263,7 +273,7 @@ export const UsersView: React.FC<Props> = ({
           aria-label="Filter by building"
         >
           <option value="">All buildings</option>
-          {buildings.map((b) => (
+          {visibleBuildings.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
             </option>
@@ -385,12 +395,12 @@ export const UsersView: React.FC<Props> = ({
               key={u.id}
               user={u}
               roles={roles}
-              buildings={buildings}
+              buildings={visibleBuildings}
               selected={selected.has(u.id)}
               onToggle={() => toggleRow(u.id)}
               editable={editable}
               onUpdate={(patch) => onUpdate(u.id, patch)}
-              onDelete={() => onRemove([u.id])}
+              onDelete={() => (editable ? onRemove([u.id]) : undefined)}
             />
           );
         })}
@@ -405,11 +415,7 @@ export const UsersView: React.FC<Props> = ({
         isOpen={showInvite}
         onClose={() => setShowInvite(false)}
         roles={roles}
-        buildings={
-          isScoped
-            ? buildings.filter((b) => actorBuildingIds.includes(b.id))
-            : buildings
-        }
+        buildings={visibleBuildings}
         onInvite={(emails, role, bids, msg) => {
           onInvite(emails, role, bids, msg);
           setShowInvite(false);
@@ -472,6 +478,9 @@ const UserRow: React.FC<{
   const [buildingPopoverOpen, setBuildingPopoverOpen] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const [bSearch, setBSearch] = useState('');
+  const roleTriggerRef = useRef<HTMLButtonElement>(null);
+  const buildingTriggerRef = useRef<HTMLButtonElement>(null);
+  const statusTriggerRef = useRef<HTMLButtonElement>(null);
 
   const roleRecord = roles.find((r) => r.id === user.role);
   const userBuildings = user.buildingIds
@@ -507,6 +516,7 @@ const UserRow: React.FC<{
       {/* Role cell */}
       <div className="relative">
         <button
+          ref={roleTriggerRef}
           type="button"
           disabled={!editable}
           onClick={() => setRolePopoverOpen((o) => !o)}
@@ -524,6 +534,7 @@ const UserRow: React.FC<{
         <CellPopover
           open={rolePopoverOpen}
           onClose={() => setRolePopoverOpen(false)}
+          anchorRef={roleTriggerRef}
         >
           {roles.map((r) => (
             <PopoverOption
@@ -555,6 +566,7 @@ const UserRow: React.FC<{
       {/* Buildings cell */}
       <div className="relative">
         <button
+          ref={buildingTriggerRef}
           type="button"
           disabled={!editable}
           onClick={() => setBuildingPopoverOpen((o) => !o)}
@@ -580,6 +592,7 @@ const UserRow: React.FC<{
         <CellPopover
           open={buildingPopoverOpen}
           onClose={() => setBuildingPopoverOpen(false)}
+          anchorRef={buildingTriggerRef}
           className="min-w-[280px]"
         >
           <div className="p-2">
@@ -631,6 +644,7 @@ const UserRow: React.FC<{
       {/* Status cell */}
       <div className="relative">
         <button
+          ref={statusTriggerRef}
           type="button"
           disabled={!editable}
           onClick={() => setStatusPopoverOpen((o) => !o)}
@@ -641,6 +655,7 @@ const UserRow: React.FC<{
         <CellPopover
           open={statusPopoverOpen}
           onClose={() => setStatusPopoverOpen(false)}
+          anchorRef={statusTriggerRef}
         >
           {(['active', 'invited', 'inactive'] as UserStatus[]).map((s) => (
             <PopoverOption

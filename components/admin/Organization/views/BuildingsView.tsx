@@ -27,6 +27,8 @@ const TYPE_META: Record<
 
 interface Props {
   buildings: BuildingRecord[];
+  actorRole: 'super_admin' | 'domain_admin' | 'building_admin';
+  actorBuildingIds: string[];
   onAdd: (b: Partial<BuildingRecord>) => void;
   onUpdate: (id: string, b: Partial<BuildingRecord>) => void;
   onRemove: (id: string) => void;
@@ -34,6 +36,8 @@ interface Props {
 
 export const BuildingsView: React.FC<Props> = ({
   buildings,
+  actorRole,
+  actorBuildingIds,
   onAdd,
   onUpdate,
   onRemove,
@@ -41,6 +45,16 @@ export const BuildingsView: React.FC<Props> = ({
   const [view, setView] = useState<'list' | 'cards'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+
+  const isScoped = actorRole === 'building_admin';
+  // Building admins only see the buildings they manage and can't add new ones
+  // or archive existing ones. They can edit their own buildings.
+  const visibleBuildings = isScoped
+    ? buildings.filter((b) => actorBuildingIds.includes(b.id))
+    : buildings;
+  const canEdit = (id: string) => !isScoped || actorBuildingIds.includes(id);
+  const canCreate = !isScoped;
+  const canRemove = (id: string) => !isScoped && canEdit(id);
 
   return (
     <div>
@@ -58,30 +72,34 @@ export const BuildingsView: React.FC<Props> = ({
               ]}
               ariaLabel="View mode"
             />
-            <Btn
-              variant="primary"
-              icon={<Plus size={14} />}
-              onClick={() => setShowAdd(true)}
-            >
-              Add building
-            </Btn>
+            {canCreate && (
+              <Btn
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setShowAdd(true)}
+              >
+                Add building
+              </Btn>
+            )}
           </>
         }
       />
 
-      {buildings.length === 0 ? (
+      {visibleBuildings.length === 0 ? (
         <EmptyState
           icon={<School size={26} />}
           title="No buildings yet"
           message="Add your first school or site so you can invite users and assign them."
           cta={
-            <Btn
-              variant="primary"
-              icon={<Plus size={14} />}
-              onClick={() => setShowAdd(true)}
-            >
-              Add building
-            </Btn>
+            canCreate && (
+              <Btn
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setShowAdd(true)}
+              >
+                Add building
+              </Btn>
+            )
           }
         />
       ) : view === 'list' ? (
@@ -94,7 +112,7 @@ export const BuildingsView: React.FC<Props> = ({
             <div className="text-right">Users</div>
             <div />
           </div>
-          {buildings.map((b) => (
+          {visibleBuildings.map((b) => (
             <div
               key={b.id}
               className="grid grid-cols-[2fr_1fr_2fr_0.8fr_0.8fr_auto] items-center gap-4 px-5 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors"
@@ -137,11 +155,16 @@ export const BuildingsView: React.FC<Props> = ({
               </div>
               <RowMenu
                 items={[
-                  { label: 'Edit', onClick: () => setEditingId(b.id) },
+                  {
+                    label: 'Edit',
+                    onClick: () => setEditingId(b.id),
+                    disabled: !canEdit(b.id),
+                  },
                   {
                     label: 'Archive',
                     onClick: () => onRemove(b.id),
                     danger: true,
+                    disabled: !canRemove(b.id),
                   },
                 ]}
               />
@@ -150,7 +173,7 @@ export const BuildingsView: React.FC<Props> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {buildings.map((b) => (
+          {visibleBuildings.map((b) => (
             <div
               key={b.id}
               className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_2px_rgba(29,42,93,.06)] p-5"
@@ -161,11 +184,16 @@ export const BuildingsView: React.FC<Props> = ({
                 </div>
                 <RowMenu
                   items={[
-                    { label: 'Edit', onClick: () => setEditingId(b.id) },
+                    {
+                      label: 'Edit',
+                      onClick: () => setEditingId(b.id),
+                      disabled: !canEdit(b.id),
+                    },
                     {
                       label: 'Archive',
                       onClick: () => onRemove(b.id),
                       danger: true,
+                      disabled: !canRemove(b.id),
                     },
                   ]}
                 />

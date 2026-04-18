@@ -517,6 +517,7 @@ export const OrganizationPanel: React.FC = () => {
             <OverviewView
               org={activeOrg}
               isSuperAdmin={isSuperAdmin}
+              actorRole={actorRole}
               onUpdate={updateOrg}
               onArchive={archiveOrg}
             />
@@ -531,6 +532,8 @@ export const OrganizationPanel: React.FC = () => {
           {effectiveSection === 'buildings' && (
             <BuildingsView
               buildings={buildings.filter((b) => b.orgId === activeOrg.id)}
+              actorRole={actorRole}
+              actorBuildingIds={actorBuildingIds}
               onAdd={addBuilding}
               onUpdate={updateBuilding}
               onRemove={removeBuilding}

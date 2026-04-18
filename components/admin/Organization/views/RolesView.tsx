@@ -339,6 +339,7 @@ const MatrixCell: React.FC<{
   readOnly?: boolean;
 }> = ({ value, onChange, readOnly }) => {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const content = (() => {
     if (value === 'full')
@@ -372,6 +373,7 @@ const MatrixCell: React.FC<{
   return (
     <div className="relative inline-block">
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -381,7 +383,11 @@ const MatrixCell: React.FC<{
       >
         {content}
       </button>
-      <CellPopover open={open} onClose={() => setOpen(false)}>
+      <CellPopover
+        open={open}
+        onClose={() => setOpen(false)}
+        anchorRef={triggerRef}
+      >
         {(['full', 'building', 'none'] as CapabilityAccess[]).map((v) => (
           <PopoverOption
             key={v}
