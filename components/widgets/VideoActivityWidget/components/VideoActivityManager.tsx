@@ -38,8 +38,15 @@ import { LibraryGrid } from '@/components/common/library/LibraryGrid';
 import { LibraryItemCard } from '@/components/common/library/LibraryItemCard';
 import { AssignModal } from '@/components/common/library/AssignModal';
 import { AssignmentArchiveCard } from '@/components/common/library/AssignmentArchiveCard';
+import { FolderSidebar } from '@/components/common/library/FolderSidebar';
+import { LibraryDndContext } from '@/components/common/library/LibraryDndContext';
 import { useLibraryView } from '@/components/common/library/useLibraryView';
 import { useSortableReorder } from '@/components/common/library/useSortableReorder';
+import {
+  countItemsByFolder,
+  filterByFolder,
+} from '@/components/common/library/folderFilters';
+import { useFolders } from '@/hooks/useFolders';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { Toggle } from '@/components/common/Toggle';
 import type {
@@ -60,6 +67,8 @@ import type {
 /* ─── Props ───────────────────────────────────────────────────────────────── */
 
 export interface VideoActivityManagerProps {
+  /** Teacher's Firebase UID — scopes the folders subcollection. */
+  userId?: string;
   // Library (activity templates)
   activities: VideoActivityMetadata[];
   loading: boolean;
@@ -172,6 +181,7 @@ function statusToBadge(
 /* ─── Main component ──────────────────────────────────────────────────────── */
 
 export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
+  userId,
   activities,
   loading,
   error,
@@ -223,10 +233,39 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
     string | null
   >(null);
 
+  /* ─── Folder navigation (Wave 3-B-3) ──────────────────────────────────── */
+  const folderState = useFolders(userId, 'video_activity');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+
+  // Reset folder selection when the signed-in user changes or the selected
+  // folder no longer exists (adjust-state-during-render pattern).
+  const [prevFolderUserId, setPrevFolderUserId] = useState(userId);
+  if (prevFolderUserId !== userId) {
+    setPrevFolderUserId(userId);
+    setSelectedFolderId(null);
+  }
+  if (
+    !folderState.loading &&
+    selectedFolderId !== null &&
+    !folderState.folders.some((f) => f.id === selectedFolderId)
+  ) {
+    setSelectedFolderId(null);
+  }
+
+  const folderItemCounts = useMemo(
+    () => countItemsByFolder(activities),
+    [activities]
+  );
+
+  const folderFilteredActivities = useMemo(
+    () => filterByFolder(activities, selectedFolderId),
+    [activities, selectedFolderId]
+  );
+
   /* ─── Library (activities) view state ─────────────────────────────────── */
 
   const libraryView = useLibraryView<VideoActivityMetadata>({
-    items: activities,
+    items: folderFilteredActivities,
     initialSort: LIBRARY_INITIAL_SORT,
     searchFields: LIBRARY_SEARCH_FIELDS,
     sortComparators: LIBRARY_SORT_COMPARATORS,
@@ -246,6 +285,29 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
     getId: ACTIVITY_GET_ID,
     onCommit: onReorderCommit,
   });
+
+  /* ─── Drop-to-folder handler ──────────────────────────────────────────── */
+  const { moveItem } = folderState;
+  const handleDropOnFolder = useCallback(
+    async (itemId: string, folderId: string | null): Promise<void> => {
+      if (!userId) return;
+      try {
+        await moveItem(itemId, folderId);
+      } catch (err) {
+        console.error('[VideoActivityManager] moveItem failed:', err);
+      }
+    },
+    [userId, moveItem]
+  );
+
+  const handleReorderDrop = useCallback(
+    async (nextOrderedIds: string[]): Promise<void> => {
+      if (!onReorderActivities) return;
+      if (libraryView.reorderLocked) return;
+      await Promise.resolve(onReorderActivities(nextOrderedIds));
+    },
+    [libraryView.reorderLocked, onReorderActivities]
+  );
 
   /* ─── Assignment splits ───────────────────────────────────────────────── */
 
@@ -320,6 +382,9 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
     />
   );
 
+  const useExternalDnd = Boolean(userId);
+  const cardDragEnabled = useExternalDnd || Boolean(onReorderActivities);
+
   const renderLibraryTab = (): React.ReactElement => (
     <>
       {error && (
@@ -333,11 +398,14 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
         items={reorder.orderedItems}
         getId={(a) => a.id}
         onReorder={reorder.handleReorder}
-        dragDisabled={!onReorderActivities}
-        reorderLocked={libraryView.reorderLocked}
-        reorderLockedReason={libraryView.reorderLockedReason}
+        dragDisabled={!cardDragEnabled}
+        reorderLocked={useExternalDnd ? false : libraryView.reorderLocked}
+        reorderLockedReason={
+          useExternalDnd ? undefined : libraryView.reorderLockedReason
+        }
         layout={libraryView.state.viewMode}
         emptyState={libraryEmptyState}
+        useExternalDndContext={useExternalDnd}
         renderCard={(activity) => {
           const secondaryActions: LibraryMenuAction[] = [
             {
@@ -587,32 +655,97 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
 
   /* ─── Render ──────────────────────────────────────────────────────────── */
 
+  const folderSidebarSlot =
+    tab === 'library' && userId ? (
+      <FolderSidebar
+        widget="video_activity"
+        folders={folderState.folders}
+        loading={folderState.loading}
+        error={folderState.error}
+        selectedFolderId={selectedFolderId}
+        onSelectFolder={setSelectedFolderId}
+        itemCounts={folderItemCounts}
+        onCreateFolder={folderState.createFolder}
+        onRenameFolder={folderState.renameFolder}
+        onMoveFolder={folderState.moveFolder}
+        onDeleteFolder={folderState.deleteFolder}
+        enableDrop
+      />
+    ) : undefined;
+
+  const orderedIds = reorder.orderedItems.map(ACTIVITY_GET_ID);
+
+  const renderDragOverlay = (activeId: string): React.ReactNode => {
+    const activity = reorder.orderedItems.find((a) => a.id === activeId);
+    if (!activity) return null;
+    return (
+      <LibraryItemCard<VideoActivityMetadata>
+        id={activity.id}
+        title={activity.title}
+        subtitle={
+          <span className="truncate">
+            Updated{' '}
+            {new Date(
+              activity.updatedAt || activity.createdAt
+            ).toLocaleDateString()}
+          </span>
+        }
+        badges={activityBadges(activity)}
+        primaryAction={{
+          label: 'Assign',
+          icon: Link2,
+          onClick: () => setAssignTarget(activity),
+        }}
+        viewMode={libraryView.state.viewMode}
+        sortable={false}
+        isDragOverlay
+        meta={activity}
+      />
+    );
+  };
+
+  const shell = (
+    <LibraryShell
+      widgetLabel="Video Activity"
+      tab={tab}
+      onTabChange={setTab}
+      counts={tabCounts}
+      primaryAction={{
+        label: 'New',
+        icon: Plus,
+        onClick: onNew,
+      }}
+      secondaryActions={[
+        {
+          label: 'Import',
+          icon: FileUp,
+          onClick: onImport,
+        },
+      ]}
+      toolbarSlot={toolbar}
+      filterSidebarSlot={folderSidebarSlot}
+    >
+      {tab === 'library' && renderLibraryTab()}
+      {tab === 'active' && renderAssignmentList(activeAssignments, 'active')}
+      {tab === 'archive' &&
+        renderAssignmentList(inactiveAssignments, 'archive')}
+    </LibraryShell>
+  );
+
   return (
     <>
-      <LibraryShell
-        widgetLabel="Video Activity"
-        tab={tab}
-        onTabChange={setTab}
-        counts={tabCounts}
-        primaryAction={{
-          label: 'New',
-          icon: Plus,
-          onClick: onNew,
-        }}
-        secondaryActions={[
-          {
-            label: 'Import',
-            icon: FileUp,
-            onClick: onImport,
-          },
-        ]}
-        toolbarSlot={toolbar}
-      >
-        {tab === 'library' && renderLibraryTab()}
-        {tab === 'active' && renderAssignmentList(activeAssignments, 'active')}
-        {tab === 'archive' &&
-          renderAssignmentList(inactiveAssignments, 'archive')}
-      </LibraryShell>
+      {useExternalDnd && tab === 'library' ? (
+        <LibraryDndContext
+          itemIds={orderedIds}
+          onReorder={handleReorderDrop}
+          onDropOnFolder={handleDropOnFolder}
+          renderOverlay={renderDragOverlay}
+        >
+          {shell}
+        </LibraryDndContext>
+      ) : (
+        shell
+      )}
 
       {assignTarget && (
         <AssignModal<VideoActivitySessionSettings>

@@ -16,7 +16,7 @@
  * only, not functionality.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Plus,
   FileUp,
@@ -58,6 +58,8 @@ import {
   LibraryItemCard,
   AssignModal,
   AssignmentArchiveCard,
+  FolderSidebar,
+  LibraryDndContext,
   useLibraryView,
   useSortableReorder,
   type LibraryMenuAction,
@@ -66,6 +68,11 @@ import {
   type AssignmentStatusBadge,
   type LibraryBadgeTone,
 } from '@/components/common/library';
+import {
+  countItemsByFolder,
+  filterByFolder,
+} from '@/components/common/library/folderFilters';
+import { useFolders } from '@/hooks/useFolders';
 
 export interface PlcOptions {
   plcMode: boolean;
@@ -135,6 +142,8 @@ const ASSIGN_MODES: AssignModeOption[] = [
 /* ─── Props ───────────────────────────────────────────────────────────────── */
 
 interface QuizManagerProps {
+  /** Teacher's Firebase UID — used to scope the folders subcollection. */
+  userId?: string;
   quizzes: QuizMetadata[];
   loading: boolean;
   error: string | null;
@@ -236,6 +245,7 @@ const SORT_COMPARATORS: Record<
 /* ─── Main component ──────────────────────────────────────────────────────── */
 
 export const QuizManager: React.FC<QuizManagerProps> = ({
+  userId,
   quizzes,
   loading,
   error,
@@ -288,9 +298,44 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     }
   }
 
+  // ─── Folder navigation (Wave 3-B-3) ───────────────────────────────────────
+  const folderState = useFolders(userId, 'quiz');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+
+  // Reset folder selection when the signed-in user changes or the selected
+  // folder no longer exists (e.g. after delete, sign-out, or account switch).
+  // Done in render via React's "adjust state during render" pattern so the
+  // stale selection never participates in filtering.
+  const [prevFolderUserId, setPrevFolderUserId] = useState(userId);
+  if (prevFolderUserId !== userId) {
+    setPrevFolderUserId(userId);
+    setSelectedFolderId(null);
+  }
+  if (
+    !folderState.loading &&
+    selectedFolderId !== null &&
+    !folderState.folders.some((f) => f.id === selectedFolderId)
+  ) {
+    setSelectedFolderId(null);
+  }
+
+  // Count quizzes per folder id (+ `root` for unfoldered items) for sidebar
+  // badges.
+  const folderItemCounts = useMemo(
+    () => countItemsByFolder(quizzes),
+    [quizzes]
+  );
+
+  // Filter BEFORE useLibraryView so search/sort only operate on the
+  // currently-selected folder's quizzes.
+  const folderFilteredQuizzes = useMemo(
+    () => filterByFolder(quizzes, selectedFolderId),
+    [quizzes, selectedFolderId]
+  );
+
   // ─── Library tab toolbar state ────────────────────────────────────────────
   const libraryView = useLibraryView<QuizMetadata>({
-    items: quizzes,
+    items: folderFilteredQuizzes,
     initialSort: LIBRARY_INITIAL_SORT,
     searchFields: LIBRARY_SEARCH_FIELDS,
     sortComparators: SORT_COMPARATORS,
@@ -537,6 +582,39 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     setSelectedMode(null);
   };
 
+  // ─── Drop-to-folder handler ───────────────────────────────────────────────
+  const { moveItem } = folderState;
+  const handleDropOnFolder = useCallback(
+    async (itemId: string, folderId: string | null): Promise<void> => {
+      if (!userId) return;
+      try {
+        await moveItem(itemId, folderId);
+      } catch (err) {
+        console.error('[QuizManager] moveItem failed:', err);
+      }
+    },
+    [userId, moveItem]
+  );
+
+  // ─── Folder sidebar (Library tab only) ────────────────────────────────────
+  const folderSidebarSlot =
+    managerTab === 'library' && userId ? (
+      <FolderSidebar
+        widget="quiz"
+        folders={folderState.folders}
+        loading={folderState.loading}
+        error={folderState.error}
+        selectedFolderId={selectedFolderId}
+        onSelectFolder={setSelectedFolderId}
+        itemCounts={folderItemCounts}
+        onCreateFolder={folderState.createFolder}
+        onRenameFolder={folderState.renameFolder}
+        onMoveFolder={folderState.moveFolder}
+        onDeleteFolder={folderState.deleteFolder}
+        enableDrop
+      />
+    ) : undefined;
+
   // ─── Shell header actions ─────────────────────────────────────────────────
   const primaryAction =
     managerTab === 'library'
@@ -572,6 +650,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         primaryAction={primaryAction}
         secondaryActions={secondaryActions}
         toolbarSlot={toolbar}
+        filterSidebarSlot={folderSidebarSlot}
       >
         <div className="flex flex-col items-center justify-center h-full text-brand-blue-primary gap-3 py-10">
           <Loader2 className="w-8 h-8 animate-spin" />
@@ -581,58 +660,108 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     );
   }
 
+  // ─── Ordered ids for LibraryDndContext (for overlay + reorder routing) ───
+  const orderedIds = reorder.orderedItems.map(QUIZ_GET_ID);
+  const renderDragOverlay = (activeId: string): React.ReactNode => {
+    const quiz = reorder.orderedItems.find((q) => q.id === activeId);
+    if (!quiz) return null;
+    return (
+      <LibraryItemCard<QuizMetadata>
+        id={quiz.id}
+        title={quiz.title}
+        subtitle={
+          <span className="flex items-center gap-2">
+            <span className="bg-brand-blue-lighter text-brand-blue-primary font-bold rounded px-1.5 text-[10px] uppercase">
+              {quiz.questionCount} Qs
+            </span>
+            <span>
+              Updated{' '}
+              {new Date(quiz.updatedAt || quiz.createdAt).toLocaleDateString()}
+            </span>
+          </span>
+        }
+        primaryAction={{
+          label: 'Assign',
+          icon: Play,
+          onClick: () => setAssignTarget(quiz),
+        }}
+        secondaryActions={buildQuizSecondaryActions(quiz)}
+        viewMode="list"
+        sortable={false}
+        isDragOverlay
+        meta={quiz}
+      />
+    );
+  };
+
   // ─── Render ───────────────────────────────────────────────────────────────
+  const shell = (
+    <LibraryShell
+      widgetLabel="Quiz"
+      tab={managerTab}
+      onTabChange={(t) => onTabChange?.(t)}
+      counts={{
+        library: quizzes.length,
+        active: activeAssignments.length,
+        archive: inactiveAssignments.length,
+      }}
+      primaryAction={primaryAction}
+      secondaryActions={secondaryActions}
+      toolbarSlot={toolbar}
+      filterSidebarSlot={folderSidebarSlot}
+    >
+      {managerTab === 'library' && (
+        <LibraryTabContent
+          error={error}
+          orderedItems={reorder.orderedItems}
+          onAssignClick={(q) => setAssignTarget(q)}
+          buildSecondaryActions={buildQuizSecondaryActions}
+          onEdit={onEdit}
+          onImport={onImport}
+          totalCount={quizzes.length}
+          reorderLocked={libraryView.reorderLocked}
+          reorderLockedReason={libraryView.reorderLockedReason}
+          enableCardDrag={Boolean(userId)}
+        />
+      )}
+
+      {managerTab === 'active' && (
+        <AssignmentsList
+          assignments={activeAssignments}
+          loading={assignmentsLoading}
+          mode="active"
+          buildActions={buildArchiveActions}
+          emptyTitle="No quizzes in progress"
+          emptySub="Assign a quiz from the Library tab to get started. Active and paused assignments appear here."
+        />
+      )}
+
+      {managerTab === 'archive' && (
+        <AssignmentsList
+          assignments={inactiveAssignments}
+          loading={assignmentsLoading}
+          mode="archive"
+          buildActions={buildArchiveActions}
+          emptyTitle="No archived assignments"
+          emptySub="Ended assignments are moved here so you can review results and share them."
+        />
+      )}
+    </LibraryShell>
+  );
+
   return (
     <>
-      <LibraryShell
-        widgetLabel="Quiz"
-        tab={managerTab}
-        onTabChange={(t) => onTabChange?.(t)}
-        counts={{
-          library: quizzes.length,
-          active: activeAssignments.length,
-          archive: inactiveAssignments.length,
-        }}
-        primaryAction={primaryAction}
-        secondaryActions={secondaryActions}
-        toolbarSlot={toolbar}
-      >
-        {managerTab === 'library' && (
-          <LibraryTabContent
-            error={error}
-            orderedItems={reorder.orderedItems}
-            onAssignClick={(q) => setAssignTarget(q)}
-            buildSecondaryActions={buildQuizSecondaryActions}
-            onEdit={onEdit}
-            onImport={onImport}
-            totalCount={quizzes.length}
-            reorderLocked={libraryView.reorderLocked}
-            reorderLockedReason={libraryView.reorderLockedReason}
-          />
-        )}
-
-        {managerTab === 'active' && (
-          <AssignmentsList
-            assignments={activeAssignments}
-            loading={assignmentsLoading}
-            mode="active"
-            buildActions={buildArchiveActions}
-            emptyTitle="No quizzes in progress"
-            emptySub="Assign a quiz from the Library tab to get started. Active and paused assignments appear here."
-          />
-        )}
-
-        {managerTab === 'archive' && (
-          <AssignmentsList
-            assignments={inactiveAssignments}
-            loading={assignmentsLoading}
-            mode="archive"
-            buildActions={buildArchiveActions}
-            emptyTitle="No archived assignments"
-            emptySub="Ended assignments are moved here so you can review results and share them."
-          />
-        )}
-      </LibraryShell>
+      {userId && managerTab === 'library' ? (
+        <LibraryDndContext
+          itemIds={orderedIds}
+          onDropOnFolder={handleDropOnFolder}
+          renderOverlay={renderDragOverlay}
+        >
+          {shell}
+        </LibraryDndContext>
+      ) : (
+        shell
+      )}
 
       {assignTarget && (
         <AssignModal<QuizAssignOptions>
@@ -683,6 +812,12 @@ const LibraryTabContent: React.FC<{
   totalCount: number;
   reorderLocked: boolean;
   reorderLockedReason: string | undefined;
+  /**
+   * When true, cards are draggable (to folders) via the external
+   * `LibraryDndContext`. Quiz has no card-to-card reorder, but we still
+   * enable drag when a teacher is signed in so drag-to-folder works.
+   */
+  enableCardDrag: boolean;
 }> = ({
   error,
   orderedItems,
@@ -693,6 +828,7 @@ const LibraryTabContent: React.FC<{
   totalCount,
   reorderLocked,
   reorderLockedReason,
+  enableCardDrag,
 }) => {
   const emptyState =
     totalCount === 0 ? (
@@ -735,11 +871,15 @@ const LibraryTabContent: React.FC<{
       <LibraryGrid<QuizMetadata>
         items={orderedItems}
         getId={(q) => q.id}
-        dragDisabled
-        reorderLocked={reorderLocked}
-        reorderLockedReason={reorderLockedReason}
+        dragDisabled={!enableCardDrag}
+        // Quiz has no manual reorder, so reorderLocked is noise; only surface
+        // it when drag is fully disabled so the existing lock tooltip still
+        // works on grids without folder drag.
+        reorderLocked={enableCardDrag ? false : reorderLocked}
+        reorderLockedReason={enableCardDrag ? undefined : reorderLockedReason}
         layout="list"
         emptyState={emptyState}
+        useExternalDndContext={enableCardDrag}
         renderCard={(quiz) => (
           <LibraryItemCard<QuizMetadata>
             key={quiz.id}
@@ -766,7 +906,7 @@ const LibraryTabContent: React.FC<{
             secondaryActions={buildSecondaryActions(quiz)}
             onClick={() => onEdit(quiz)}
             viewMode="list"
-            sortable={false}
+            sortable={enableCardDrag}
             meta={quiz}
           />
         )}

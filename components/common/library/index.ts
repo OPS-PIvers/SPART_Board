@@ -17,6 +17,22 @@ export { useSortableReorder } from './useSortableReorder';
 export { AssignModal } from './AssignModal';
 export { AssignmentArchiveCard } from './AssignmentArchiveCard';
 export { PeriodSelector } from './PeriodSelector';
+export { LibraryDndContext } from './LibraryDndContext';
+export {
+  folderDroppableId,
+  FOLDER_DROPPABLE_PREFIX,
+} from './folderDropTargets';
+export type { FolderDropData } from './folderDropTargets';
+export { FolderSidebar } from './FolderSidebar';
+export type { FolderSidebarProps, FolderDeleteMode } from './FolderSidebar';
+export { FolderTree } from './FolderTree';
+export {
+  ROOT_FOLDER_COUNT_KEY,
+  filterByFolder,
+  countItemsByFolder,
+  filterSourcedEntriesByFolder,
+} from './folderFilters';
+export type { HasFolderId, HasFolderIdAndSource } from './folderFilters';
 
 export type {
   LibraryTab,

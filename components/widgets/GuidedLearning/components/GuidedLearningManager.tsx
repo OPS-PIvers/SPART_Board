@@ -44,8 +44,15 @@ import { LibraryShell } from '@/components/common/library/LibraryShell';
 import { LibraryToolbar } from '@/components/common/library/LibraryToolbar';
 import { LibraryGrid } from '@/components/common/library/LibraryGrid';
 import { LibraryItemCard } from '@/components/common/library/LibraryItemCard';
+import { FolderSidebar } from '@/components/common/library/FolderSidebar';
+import { LibraryDndContext } from '@/components/common/library/LibraryDndContext';
 import { useLibraryView } from '@/components/common/library/useLibraryView';
 import { useSortableReorder } from '@/components/common/library/useSortableReorder';
+import {
+  countItemsByFolder,
+  filterSourcedEntriesByFolder,
+} from '@/components/common/library/folderFilters';
+import { useFolders } from '@/hooks/useFolders';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import type {
   LibraryBadge,
@@ -77,11 +84,15 @@ interface LibraryEntry {
   driveFileId?: string;
   /** Building-only: the hydrated building set so callers can pass it through. */
   buildingSet?: GuidedLearningSet;
+  /** Personal-only: current folder assignment (`null` = root). */
+  folderId?: string | null;
 }
 
 /* ─── Props ───────────────────────────────────────────────────────────────── */
 
 export interface GuidedLearningManagerProps {
+  /** Teacher's Firebase UID — scopes the folders subcollection. */
+  userId?: string;
   /** Personal set metadata (Drive-backed). */
   sets: GuidedLearningSetMetadata[];
   /** Admin-authored building sets (Firestore-backed). */
@@ -216,6 +227,7 @@ const buildLibraryEntries = (
     createdAt: meta.createdAt,
     order: meta.order,
     driveFileId: meta.driveFileId,
+    folderId: meta.folderId ?? null,
   }));
 
   const building: LibraryEntry[] = buildingSets.map((set) => ({
@@ -244,6 +256,7 @@ const formatDate = (ms: number): string =>
 /* ─── Component ───────────────────────────────────────────────────────────── */
 
 export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
+  userId,
   sets,
   buildingSets,
   assignments,
@@ -271,9 +284,38 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
 }) => {
   const [tab, setTab] = React.useState<LibraryTab>('library');
 
+  // ─── Folder navigation (Wave 3-B-3) ─────────────────────────────────────
+  const folderState = useFolders(userId, 'guided_learning');
+  const [selectedFolderId, setSelectedFolderId] = React.useState<string | null>(
+    null
+  );
+
+  // Reset folder selection when the signed-in user changes or the selected
+  // folder no longer exists (adjust-state-during-render pattern).
+  const [prevFolderUserId, setPrevFolderUserId] = React.useState(userId);
+  if (prevFolderUserId !== userId) {
+    setPrevFolderUserId(userId);
+    setSelectedFolderId(null);
+  }
+  if (
+    !folderState.loading &&
+    selectedFolderId !== null &&
+    !folderState.folders.some((f) => f.id === selectedFolderId)
+  ) {
+    setSelectedFolderId(null);
+  }
+
+  // Only personal sets participate in folders. Building sets are always at
+  // root (they're shared at the building level and have no folderId field).
+  const folderItemCounts = useMemo(() => countItemsByFolder(sets), [sets]);
+
   const allEntries = useMemo(
-    () => buildLibraryEntries(sets, buildingSets),
-    [sets, buildingSets]
+    () =>
+      filterSourcedEntriesByFolder(
+        buildLibraryEntries(sets, buildingSets),
+        selectedFolderId
+      ),
+    [sets, buildingSets, selectedFolderId]
   );
 
   // ─── Toolbar state (search/sort/filter) via useLibraryView ────────────────
@@ -324,10 +366,42 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
     onCommit: onReorderCommit,
   });
 
-  const dragDisabled =
-    view.reorderLocked ||
-    activeSourceFilter !== 'personal' ||
-    personalEntries.length < 2;
+  // ─── Drop-to-folder handler ───────────────────────────────────────────────
+  const { moveItem } = folderState;
+  const handleDropOnFolder = useCallback(
+    async (itemId: string, folderId: string | null): Promise<void> => {
+      if (!userId) return;
+      // GL entry ids are prefixed "personal:" or "building:". Only personal
+      // entries participate in folders; building cards are `sortable={false}`
+      // so drops from them shouldn't fire, but we guard defensively.
+      if (!itemId.startsWith('personal:')) return;
+      const rawId = itemId.slice('personal:'.length);
+      try {
+        await moveItem(rawId, folderId);
+      } catch (err) {
+        console.error('[GuidedLearningManager] moveItem failed:', err);
+      }
+    },
+    [userId, moveItem]
+  );
+
+  const reorderDragActive =
+    !view.reorderLocked &&
+    activeSourceFilter === 'personal' &&
+    personalEntries.length >= 2;
+  // When folder drag is available we enable card drag even if manual reorder
+  // would be blocked (e.g. sort !== 'manual'). Drops on a folder tile move the
+  // item; drops on another card reorder (only honored when manual reorder is
+  // active — see `handleReorderDrop` below).
+  const enableCardDrag = Boolean(userId) || reorderDragActive;
+
+  const handleReorderDrop = useCallback(
+    (orderedIds: string[]) => {
+      if (!reorderDragActive) return;
+      void reorder.handleReorder(orderedIds);
+    },
+    [reorder, reorderDragActive]
+  );
 
   // ─── Counts for tabs ──────────────────────────────────────────────────────
   const activeAssignments = useMemo(
@@ -482,7 +556,7 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
             ? () => onEdit(rawId, entry.driveFileId, entry.buildingSet)
             : undefined
         }
-        sortable={entry.source === 'personal'}
+        sortable={entry.source === 'personal' && enableCardDrag}
         viewMode={view.state.viewMode}
         meta={entry}
       />
@@ -600,11 +674,14 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
           items={reorder.orderedItems}
           getId={(e) => e.id}
           renderCard={renderLibraryCard}
-          onReorder={reorder.handleReorder}
-          dragDisabled={dragDisabled}
-          reorderLocked={view.reorderLocked}
-          reorderLockedReason={view.reorderLockedReason}
+          onReorder={handleReorderDrop}
+          dragDisabled={!enableCardDrag}
+          reorderLocked={reorderDragActive ? view.reorderLocked : false}
+          reorderLockedReason={
+            reorderDragActive ? view.reorderLockedReason : undefined
+          }
           layout={view.state.viewMode}
+          useExternalDndContext={Boolean(userId)}
           emptyState={
             <ScaledEmptyState
               icon={BookOpen}
@@ -656,9 +733,71 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
     );
   };
 
+  /* ─── Folder sidebar + DnD overlay ─────────────────────────────────────── */
+
+  const folderSidebarSlot =
+    tab === 'library' && userId ? (
+      <FolderSidebar
+        widget="guided_learning"
+        folders={folderState.folders}
+        loading={folderState.loading}
+        error={folderState.error}
+        selectedFolderId={selectedFolderId}
+        onSelectFolder={setSelectedFolderId}
+        itemCounts={folderItemCounts}
+        onCreateFolder={folderState.createFolder}
+        onRenameFolder={folderState.renameFolder}
+        onMoveFolder={folderState.moveFolder}
+        onDeleteFolder={folderState.deleteFolder}
+        enableDrop
+      />
+    ) : undefined;
+
+  const orderedIds = reorder.orderedItems.map((e) => e.id);
+
+  const renderDragOverlay = (activeId: string): React.ReactNode => {
+    const entry = reorder.orderedItems.find((e) => e.id === activeId);
+    if (!entry) return null;
+    const thumbnail = entry.imageUrl ? (
+      <img
+        src={entry.imageUrl}
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full object-cover"
+      />
+    ) : (
+      <BookOpen className="h-5 w-5 text-slate-400" aria-hidden="true" />
+    );
+    const subtitle = (
+      <span>
+        {entry.stepCount} step{entry.stepCount === 1 ? '' : 's'}
+        {' · Updated '}
+        {formatDate(entry.updatedAt)}
+      </span>
+    );
+    return (
+      <LibraryItemCard<LibraryEntry>
+        id={entry.id}
+        title={entry.title}
+        subtitle={subtitle}
+        thumbnail={thumbnail}
+        badges={[{ label: MODE_LABELS[entry.mode], tone: 'info' }]}
+        primaryAction={{
+          label: 'Assign',
+          icon: Link2,
+          onClick: () => undefined,
+        }}
+        viewMode={view.state.viewMode}
+        sortable={false}
+        isDragOverlay
+        meta={entry}
+      />
+    );
+  };
+
   /* ─── Render ─────────────────────────────────────────────────────────────── */
 
-  return (
+  const shell = (
     <LibraryShell
       widgetLabel="Guided Learning"
       tab={tab}
@@ -670,6 +809,7 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
       }}
       primaryAction={tab === 'library' ? primaryAction : undefined}
       secondaryActions={tab === 'library' ? secondaryActions : undefined}
+      filterSidebarSlot={folderSidebarSlot}
       toolbarSlot={
         tab === 'library' ? (
           <LibraryToolbar
@@ -693,5 +833,18 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
       {tab === 'active' && renderAssignmentTab('active')}
       {tab === 'archive' && renderAssignmentTab('archive')}
     </LibraryShell>
+  );
+
+  return userId && tab === 'library' ? (
+    <LibraryDndContext
+      itemIds={orderedIds}
+      onDropOnFolder={handleDropOnFolder}
+      onReorder={handleReorderDrop}
+      renderOverlay={renderDragOverlay}
+    >
+      {shell}
+    </LibraryDndContext>
+  ) : (
+    shell
   );
 };
