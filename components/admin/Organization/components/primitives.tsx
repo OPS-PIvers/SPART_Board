@@ -536,14 +536,32 @@ export const CellPopover: React.FC<{
       const el = anchorRef.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, left: r.left });
+      // Clamp within the viewport so triggers near the right/bottom edge don't
+      // render the popover off-screen. Measure the popover's own rendered size
+      // once it's mounted; fall back to the min-width (260) on the first pass.
+      const margin = 8;
+      const panelW = ref.current?.offsetWidth ?? 260;
+      const panelH = ref.current?.offsetHeight ?? 0;
+      const maxLeft = Math.max(margin, window.innerWidth - panelW - margin);
+      const maxTop = Math.max(margin, window.innerHeight - panelH - margin);
+      const left = Math.min(Math.max(margin, r.left), maxLeft);
+      // If the panel would spill below the viewport, flip above the anchor.
+      const wantTop = r.bottom + 4;
+      const top =
+        panelH > 0 && wantTop + panelH + margin > window.innerHeight
+          ? Math.max(margin, r.top - panelH - 4)
+          : Math.min(wantTop, maxTop);
+      setPos({ top, left });
     };
     measure();
+    // Re-measure once the panel has actually rendered and we know its size.
+    const raf = requestAnimationFrame(measure);
     window.addEventListener('resize', measure);
     // Capture scrolls from any ancestor (tables, dialogs, etc.) by listening
     // in the capture phase.
     window.addEventListener('scroll', measure, true);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure, true);
     };

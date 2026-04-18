@@ -175,6 +175,41 @@ export const OrganizationPanel: React.FC = () => {
     []
   );
 
+  // Coalesce toasts from fast-fire handlers (e.g. org name edited on every
+  // keystroke) so the user only sees one "saved" toast once they stop typing.
+  const debouncedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const showToastDebounced = (message: string, type: OrgToastType = 'info') => {
+    if (debouncedToastTimer.current) clearTimeout(debouncedToastTimer.current);
+    debouncedToastTimer.current = setTimeout(() => {
+      showToast(message, type);
+      debouncedToastTimer.current = null;
+    }, 800);
+  };
+  useEffect(
+    () => () => {
+      if (debouncedToastTimer.current)
+        clearTimeout(debouncedToastTimer.current);
+    },
+    []
+  );
+
+  // Generate prototype IDs. Prefer crypto.randomUUID so rapid successive
+  // creates don't collide; fall back to a random-hex id on legacy runtimes.
+  const makeId = (prefix: string) => {
+    const c = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined;
+    if (c && typeof c.randomUUID === 'function') {
+      return `${prefix}-${c.randomUUID()}`;
+    }
+    const bytes = new Uint8Array(16);
+    c?.getRandomValues?.(bytes);
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(
+      ''
+    );
+    return `${prefix}-${hex}`;
+  };
+
   const visibleSections = useMemo(
     () =>
       SECTIONS.filter((s) => {
@@ -208,7 +243,7 @@ export const OrganizationPanel: React.FC = () => {
     setOrgs((prev) =>
       prev.map((o) => (o.id === activeOrg.id ? { ...o, ...patch } : o))
     );
-    showToast('Organization updated');
+    showToastDebounced('Organization updated');
   };
 
   const archiveOrg = (id: string) => {
@@ -219,7 +254,7 @@ export const OrganizationPanel: React.FC = () => {
   };
 
   const createOrg = (partial: Partial<OrgRecord>) => {
-    const id = `org-${Date.now()}`;
+    const id = makeId('org');
     const record: OrgRecord = {
       id,
       name: partial.name ?? 'New organization',
@@ -243,7 +278,7 @@ export const OrganizationPanel: React.FC = () => {
 
   const addBuilding = (b: Partial<BuildingRecord>) => {
     const record: BuildingRecord = {
-      id: `b-${Date.now()}`,
+      id: makeId('b'),
       orgId: activeOrg.id,
       name: b.name ?? 'New building',
       type: b.type ?? 'elementary',
@@ -270,7 +305,7 @@ export const OrganizationPanel: React.FC = () => {
 
   const addDomain = (d: Partial<DomainRecord>) => {
     const record: DomainRecord = {
-      id: `d-${Date.now()}`,
+      id: makeId('d'),
       orgId: activeOrg.id,
       domain: d.domain ?? '@example.com',
       authMethod: d.authMethod ?? 'google',
@@ -333,8 +368,8 @@ export const OrganizationPanel: React.FC = () => {
     roleId: string,
     buildingIds: string[]
   ) => {
-    const newbies = emails.map<UserRecord>((email, i) => ({
-      id: `u-new-${Date.now()}-${i}`,
+    const newbies = emails.map<UserRecord>((email) => ({
+      id: makeId('u-new'),
       orgId: activeOrg.id,
       name: email.split('@')[0]?.replace(/[._-]/g, ' ') ?? email,
       email,

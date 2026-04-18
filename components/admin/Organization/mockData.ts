@@ -319,7 +319,7 @@ export const SEED_ROLES: RoleRecord[] = [
   },
 ];
 
-// Build 24 teachers + 20 students + a few admins to exercise the table.
+// Build teachers and a few admins to exercise the table.
 const firstNames = [
   'Jacob',
   'Sarah',

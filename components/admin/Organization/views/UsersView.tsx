@@ -313,28 +313,28 @@ export const UsersView: React.FC<Props> = ({
           <span className="h-4 w-px bg-white/20" />
           <button
             type="button"
-            onClick={() =>
-              console.warn('[Users] bulk resend', Array.from(selected))
-            }
-            className="text-xs font-semibold hover:text-white/80"
+            disabled
+            aria-disabled="true"
+            title="Coming soon"
+            className="text-xs font-semibold text-white/50 cursor-not-allowed"
           >
             Resend invite
           </button>
           <button
             type="button"
-            onClick={() =>
-              console.warn('[Users] bulk change role', Array.from(selected))
-            }
-            className="text-xs font-semibold hover:text-white/80"
+            disabled
+            aria-disabled="true"
+            title="Coming soon"
+            className="text-xs font-semibold text-white/50 cursor-not-allowed"
           >
             Change role
           </button>
           <button
             type="button"
-            onClick={() =>
-              console.warn('[Users] bulk move', Array.from(selected))
-            }
-            className="text-xs font-semibold hover:text-white/80"
+            disabled
+            aria-disabled="true"
+            title="Coming soon"
+            className="text-xs font-semibold text-white/50 cursor-not-allowed"
           >
             Move to building
           </button>
