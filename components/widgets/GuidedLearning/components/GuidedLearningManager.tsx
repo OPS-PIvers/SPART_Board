@@ -286,6 +286,21 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
     null
   );
 
+  // Reset folder selection when the signed-in user changes or the selected
+  // folder no longer exists (adjust-state-during-render pattern).
+  const [prevFolderUserId, setPrevFolderUserId] = React.useState(userId);
+  if (prevFolderUserId !== userId) {
+    setPrevFolderUserId(userId);
+    setSelectedFolderId(null);
+  }
+  if (
+    !folderState.loading &&
+    selectedFolderId !== null &&
+    !folderState.folders.some((f) => f.id === selectedFolderId)
+  ) {
+    setSelectedFolderId(null);
+  }
+
   const folderItemCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     // Only personal sets participate in folders. Building sets are always at
@@ -300,11 +315,13 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
   const allEntries = useMemo(() => {
     const entries = buildLibraryEntries(sets, buildingSets);
     if (selectedFolderId === null) return entries;
-    // When a folder is selected, hide building entries (they can't live in a
-    // teacher's personal folder) and show only the matching personal entries.
+    // Folder selection only applies to personal sets. Keep building entries in
+    // the unified list so the toolbar Source filter can still switch to
+    // "Building" without producing a misleading empty state.
     return entries.filter(
       (e) =>
-        e.source === 'personal' && (e.folderId ?? null) === selectedFolderId
+        e.source === 'building' ||
+        (e.source === 'personal' && (e.folderId ?? null) === selectedFolderId)
     );
   }, [sets, buildingSets, selectedFolderId]);
 

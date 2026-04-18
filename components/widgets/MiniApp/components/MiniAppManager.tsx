@@ -233,6 +233,22 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
   const folderState = useFolders(userId, 'miniapp');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
+  // Reset folder selection when the signed-in user changes or the selected
+  // folder no longer exists (adjust-state-during-render pattern). We clear the
+  // selection on switch-to-global-view below, after `isGlobalView` is derived.
+  const [prevFolderUserId, setPrevFolderUserId] = useState(userId);
+  if (prevFolderUserId !== userId) {
+    setPrevFolderUserId(userId);
+    setSelectedFolderId(null);
+  }
+  if (
+    !folderState.loading &&
+    selectedFolderId !== null &&
+    !folderState.folders.some((f) => f.id === selectedFolderId)
+  ) {
+    setSelectedFolderId(null);
+  }
+
   // Count personal apps per folder id (+ `root` for unfoldered items) for the
   // sidebar badges. Global apps never live in a teacher's folder.
   const folderItemCounts = useMemo(() => {
@@ -300,6 +316,13 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
     (view.state.filterValues.source as MiniAppSource | undefined) ?? 'personal';
   const isGlobalView = source === 'global';
 
+  // Folder navigation is personal-only; switching to the global source clears
+  // any stale personal-folder selection so the library isn't hidden behind a
+  // filter that no longer applies.
+  if (isGlobalView && selectedFolderId !== null) {
+    setSelectedFolderId(null);
+  }
+
   /* ── Shell actions ────────────────────────────────────────────────────── */
   const primaryAction = {
     label: 'New App',
@@ -341,9 +364,9 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
     [userId, moveItem]
   );
 
-  /* ── Folder sidebar (Library tab only) ───────────────────────────────── */
+  /* ── Folder sidebar (Library tab + personal source only) ─────────────── */
   const folderSidebarSlot =
-    tab === 'library' && userId ? (
+    tab === 'library' && userId && !isGlobalView ? (
       <FolderSidebar
         widget="miniapp"
         folders={folderState.folders}

@@ -233,6 +233,21 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
   const folderState = useFolders(userId, 'video_activity');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
+  // Reset folder selection when the signed-in user changes or the selected
+  // folder no longer exists (adjust-state-during-render pattern).
+  const [prevFolderUserId, setPrevFolderUserId] = useState(userId);
+  if (prevFolderUserId !== userId) {
+    setPrevFolderUserId(userId);
+    setSelectedFolderId(null);
+  }
+  if (
+    !folderState.loading &&
+    selectedFolderId !== null &&
+    !folderState.folders.some((f) => f.id === selectedFolderId)
+  ) {
+    setSelectedFolderId(null);
+  }
+
   const folderItemCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const a of activities) {

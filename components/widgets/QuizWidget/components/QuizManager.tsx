@@ -298,6 +298,23 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   const folderState = useFolders(userId, 'quiz');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
+  // Reset folder selection when the signed-in user changes or the selected
+  // folder no longer exists (e.g. after delete, sign-out, or account switch).
+  // Done in render via React's "adjust state during render" pattern so the
+  // stale selection never participates in filtering.
+  const [prevFolderUserId, setPrevFolderUserId] = useState(userId);
+  if (prevFolderUserId !== userId) {
+    setPrevFolderUserId(userId);
+    setSelectedFolderId(null);
+  }
+  if (
+    !folderState.loading &&
+    selectedFolderId !== null &&
+    !folderState.folders.some((f) => f.id === selectedFolderId)
+  ) {
+    setSelectedFolderId(null);
+  }
+
   // Count quizzes per folder id (+ `root` for unfoldered items) for sidebar
   // badges.
   const folderItemCounts = useMemo(() => {
