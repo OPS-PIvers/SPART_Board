@@ -68,38 +68,46 @@ service cloud.firestore {
     // TODO(phase-3): replace `allow write: if false` with scoped rules using
     // isSuperAdmin(), isDomainAdmin(orgId), isBuildingAdmin(orgId).
 
+    // Short-circuit ordering note: `isOrgMember()` performs a single targeted
+    // `exists()` against the caller's member doc, while `isSuperAdmin()` runs
+    // `exists()` + `get()` on `admin_settings/user_roles`. Checking membership
+    // first keeps the common teacher path cheap and falls back to the super-
+    // admin lookup only for non-members.
+
     match /organizations/{orgId} {
-      allow read: if isSuperAdmin() || isOrgMember(orgId);
+      allow read: if isOrgMember(orgId) || isSuperAdmin();
       allow write: if false; // TODO(phase-3)
 
       match /buildings/{buildingId} {
-        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow read: if isOrgMember(orgId) || isSuperAdmin();
         allow write: if false; // TODO(phase-3)
       }
 
       match /domains/{domainId} {
-        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow read: if isOrgMember(orgId) || isSuperAdmin();
         allow write: if false; // TODO(phase-3)
       }
 
       match /roles/{roleId} {
-        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow read: if isOrgMember(orgId) || isSuperAdmin();
         allow write: if false; // TODO(phase-3)
       }
 
       match /members/{emailLower} {
         // Members can always see their own membership (to bootstrap useAuth);
-        // other org members can see the member directory.
-        allow read: if isSuperAdmin() ||
+        // other org members can see the member directory. Self-probe comes
+        // first so a non-member checking their own (absent) doc never triggers
+        // the super-admin lookup.
+        allow read: if (request.auth != null &&
+                       request.auth.token.email != null &&
+                       request.auth.token.email.lower() == emailLower) ||
                     isOrgMember(orgId) ||
-                    (request.auth != null &&
-                     request.auth.token.email != null &&
-                     request.auth.token.email.lower() == emailLower);
+                    isSuperAdmin();
         allow write: if false; // TODO(phase-3)
       }
 
       match /studentPageConfig/{configId} {
-        allow read: if isSuperAdmin() || isOrgMember(orgId);
+        allow read: if isOrgMember(orgId) || isSuperAdmin();
         allow write: if false; // TODO(phase-3)
       }
 

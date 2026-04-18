@@ -114,6 +114,18 @@ const SYSTEM_ROLES = [
       saveTemplate: 'full',
     },
   },
+  {
+    id: 'student',
+    name: 'Student',
+    blurb: 'Students. Can join sessions and view assignments.',
+    color: 'sky',
+    system: true,
+    perms: {
+      ...allWith('none'),
+      joinSession: 'full',
+      viewAssignments: 'full',
+    },
+  },
 ];
 
 function parseArgs(argv) {
