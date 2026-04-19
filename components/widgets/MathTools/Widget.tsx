@@ -115,8 +115,11 @@ export const MathToolsWidget: React.FC<{ widget: WidgetData }> = ({
   const header = (
     <div className="flex flex-col shrink-0 border-b border-slate-200">
       <div
-        className="flex items-center gap-2"
-        style={{ padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)' }}
+        className="flex items-center"
+        style={{
+          padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)',
+          gap: 'min(8px, 2cqmin)',
+        }}
       >
         <span style={{ fontSize: 'min(18px, 6cqmin)' }}>🧮</span>
         <span
@@ -125,7 +128,13 @@ export const MathToolsWidget: React.FC<{ widget: WidgetData }> = ({
         >
           Math Tools
         </span>
-        <div className="ml-auto flex items-center gap-1.5 bg-white/60 px-1.5 py-0.5 rounded-md border border-brand-blue-lighter/50 shadow-sm">
+        <div
+          className="ml-auto flex items-center bg-white/60 rounded-md border border-brand-blue-lighter/50 shadow-sm"
+          style={{
+            gap: 'min(6px, 1.2cqmin)',
+            padding: 'min(2px, 0.5cqmin) min(6px, 1.2cqmin)',
+          }}
+        >
           <span
             className="text-brand-blue-primary font-bold uppercase tracking-wider"
             style={{ fontSize: 'min(8px, 3cqmin)' }}
@@ -164,12 +173,13 @@ export const MathToolsWidget: React.FC<{ widget: WidgetData }> = ({
           <button
             key={s.id}
             onClick={() => setActiveTab(s.id)}
-            className={`px-3 py-1.5 rounded-t-xl font-black transition-colors border-t border-x ${
+            className={`rounded-t-xl font-black transition-colors border-t border-x ${
               activeTab === s.id
                 ? 'bg-white text-brand-blue-dark border-slate-200'
                 : 'bg-transparent text-brand-blue-light border-transparent hover:text-brand-blue-primary hover:bg-white/40'
             }`}
             style={{
+              padding: 'min(6px, 1.2cqmin) min(12px, 2.5cqmin)',
               fontSize: 'min(10px, 3.8cqmin)',
               marginBottom: '-1px', // Cover bottom border
               boxShadow:
@@ -190,11 +200,11 @@ export const MathToolsWidget: React.FC<{ widget: WidgetData }> = ({
       contentClassName="flex-1 min-h-0 flex flex-col"
       content={
         <div
-          className="flex-1 overflow-y-auto custom-scrollbar"
+          className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col"
           style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           <div
-            className="flex items-center gap-2 text-slate-400 font-medium"
+            className="flex items-center gap-2 text-slate-400 font-medium shrink-0"
             style={{
               fontSize: 'min(9px, 3.2cqmin)',
               marginBottom: 'min(12px, 2.5cqmin)',
@@ -209,7 +219,7 @@ export const MathToolsWidget: React.FC<{ widget: WidgetData }> = ({
 
           {visibleTools.length === 0 && (
             <div
-              className="flex flex-col items-center justify-center text-slate-400 h-32"
+              className="flex flex-col items-center justify-center text-slate-400 flex-1 min-h-0"
               style={{ gap: 'min(8px, 1.5cqmin)' }}
             >
               <span style={{ fontSize: 'min(32px, 10cqmin)', opacity: 0.5 }}>
