@@ -10,9 +10,10 @@ import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import type { MemberRecord, UserRecord } from '@/types/organization';
 
-// Firestore caps writeBatch at 500 operations; 400 leaves headroom for
-// incidental writes on the same path (e.g. migration scripts) without
-// hitting the limit. Matches the chunk size used by useFolders.
+// Firestore caps each writeBatch commit at 500 operations; 400 keeps a
+// safety margin so future additions to the same batch (e.g. audit-log
+// writes) can be appended without risking the limit. Matches the chunk
+// size used by useFolders.
 const BATCH_CHUNK = 400;
 
 const chunk = <T>(items: T[], size: number): T[][] => {

@@ -65,7 +65,7 @@ service cloud.firestore {
 
     // ---- Organizations collection (Phase 3: scoped writes enabled) ----
     // Rules enforce role scoping; the client additionally gates UI via the
-    // `orgAdminWrites` feature flag so ramp-up stays controlled. Writes that
+    // `org-admin-writes` feature flag so ramp-up stays controlled. Writes that
     // bypass the client gate still land in these rules.
     //
     // Scoping summary:
@@ -157,15 +157,25 @@ service cloud.firestore {
         // System roles are immutable from clients — the migration script
         // seeds them with `{ merge: true }` so the first write happens server
         // side; every client mutation is refused if `system == true`.
-        // Client-created roles must carry canonical path identity and be
-        // explicitly non-system.
+        // Client-created roles must carry canonical path identity, be
+        // explicitly non-system, and stay within the supported schema so
+        // clients can't attach unexpected fields.
         allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           request.resource.data.id == roleId &&
-          request.resource.data.system == false;
+          request.resource.data.system == false &&
+          request.resource.data.keys().hasAll(['id', 'name', 'system', 'perms']) &&
+          request.resource.data.keys().hasOnly([
+            'id', 'name', 'blurb', 'color', 'system', 'perms'
+          ]);
+        // Update whitelist keeps identity (id) and seed flag (system) pinned
+        // and blocks extensions beyond the known fields.
         allow update: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           resource.data.system != true &&
           request.resource.data.system == resource.data.system &&
-          request.resource.data.id == resource.data.id;
+          request.resource.data.id == resource.data.id &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'blurb', 'color', 'perms'
+          ]);
         allow delete: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           resource.data.system != true;
       }

@@ -762,6 +762,44 @@ describe('organizations/roles — writes (system role protection)', () => {
     );
   });
 
+  it('domain admin cannot create a role with unknown keys', async () => {
+    await assertFails(
+      setDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/custom-extra`),
+        {
+          id: 'custom-extra',
+          name: 'Extra',
+          system: false,
+          perms: {},
+          secretField: 'nope', // not in the whitelist
+        }
+      )
+    );
+  });
+
+  it('domain admin cannot create a role missing required fields', async () => {
+    await assertFails(
+      setDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/custom-thin`),
+        {
+          id: 'custom-thin',
+          name: 'Thin',
+          system: false,
+          // perms omitted — required by hasAll
+        }
+      )
+    );
+  });
+
+  it('domain admin cannot update a custom role with unknown keys', async () => {
+    await assertFails(
+      updateDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/custom-coach`),
+        { secretField: 'nope' }
+      )
+    );
+  });
+
   it('building admin cannot create or update roles', async () => {
     await assertFails(
       setDoc(doc(asBuildingAdmin(), `organizations/${ORG_ID}/roles/custom-x`), {

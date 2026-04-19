@@ -11,7 +11,7 @@ import type { OrgRecord } from '@/types/organization';
  * Writes: `updateOrg` patches the org doc; `archiveOrg` soft-archives by
  * setting `status: 'archived'` (the rules don't allow client delete at the
  * domain-admin tier, and hard-delete cascades across sub-collections). Both
- * mutations require the `orgAdminWrites` feature flag to be enabled in the
+ * mutations require the `org-admin-writes` feature flag to be enabled in the
  * client gate — the rules still enforce role scoping regardless.
  */
 export const useOrganization = (orgId: string | null) => {
