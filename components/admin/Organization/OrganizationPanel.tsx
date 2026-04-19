@@ -252,7 +252,7 @@ export const OrganizationPanel: React.FC = () => {
 
   return (
     <div className="max-w-[1440px] mx-auto h-full">
-      <div className="flex gap-6 h-full">
+      <div className="flex flex-col md:flex-row gap-6 h-full">
         {/* Left rail */}
         <aside className="w-[230px] shrink-0 hidden md:flex flex-col">
           {actorRole !== 'super_admin' ? (
