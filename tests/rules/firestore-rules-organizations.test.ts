@@ -1,15 +1,23 @@
-// Firestore security-rules tests for the Organization hierarchy (Phase 1).
+// Firestore security-rules tests for the Organization hierarchy.
 //
 // Requires a running Firestore emulator. Invoke via:
 //   pnpm run test:rules
 // which wraps this file in `firebase emulators:exec --only firestore`.
 //
-// Covers Phase 1 acceptance checks:
-//   - Org members can read /organizations/{orgId} and sub-collections
-//   - Non-members are denied reads (including super-admin bypass via
-//     admin_settings/user_roles.superAdmins)
-//   - All writes to organization/** are denied (Phase 3 wires these)
-//   - Legacy /admins/{email} reads still work for the owning user (no regression)
+// Covers:
+//   Phase 1 reads — org members can read sub-collections; outsiders blocked
+//   (except own member-doc probe); legacy /admins/{email} still works.
+//   Phase 3 writes — scoped writes enabled per role:
+//     * super admin: org create/delete; any field on any org
+//     * domain admin: update identity fields on own org (NOT aiEnabled/plan);
+//       full CRUD on buildings/domains/roles (custom only)/members/
+//       studentPageConfig
+//     * building admin: read-only everywhere, with two exceptions —
+//       (a) update buildings they manage, and
+//       (b) update `status` (only) on members whose buildingIds intersect
+//           the actor's buildingIds
+//     * system roles (`system: true`) are immutable from clients
+//     * invitations collection stays fully locked (Phase 4 wires it).
 
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -20,11 +28,16 @@ import {
   assertFails,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { setDoc, getDoc, doc } from 'firebase/firestore';
+import { setDoc, updateDoc, deleteDoc, getDoc, doc } from 'firebase/firestore';
 
 const PROJECT_ID = 'spartboard-rules-test';
 const ORG_ID = 'orono';
+const OTHER_ORG_ID = 'other-district';
 const MEMBER_EMAIL = 'paul.ivers@orono.k12.mn.us';
+const DOMAIN_ADMIN_EMAIL = MEMBER_EMAIL;
+const BUILDING_ADMIN_EMAIL = 'bldg.admin@orono.k12.mn.us';
+const TEACHER_EMAIL = 'teacher@orono.k12.mn.us';
+const OUT_OF_SCOPE_MEMBER_EMAIL = 'other.building@orono.k12.mn.us';
 const OUTSIDER_EMAIL = 'outsider@example.com';
 const SUPER_EMAIL = 'super@spartboard.io';
 
@@ -56,32 +69,117 @@ afterAll(async () => {
 beforeEach(async () => {
   await testEnv.clearFirestore();
 
-  // Seed org, member, role, building, domain, super-admin list using privileged context.
+  // Seed org, members, roles, buildings, domains, super-admin list using
+  // privileged context. Membership shape mirrors what the Phase 1 migration
+  // script writes: domain admin + building admin scoped to 'high', a teacher
+  // in 'middle', and an "out of scope" member in 'elementary'.
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
     await setDoc(doc(db, `organizations/${ORG_ID}`), {
       id: ORG_ID,
       name: 'Orono',
+      shortName: 'Orono',
+      shortCode: 'OPS',
+      state: 'MN',
       plan: 'full',
-    });
-    await setDoc(doc(db, `organizations/${ORG_ID}/members/${MEMBER_EMAIL}`), {
-      email: MEMBER_EMAIL,
-      orgId: ORG_ID,
-      roleId: 'domain_admin',
+      aiEnabled: true,
+      primaryAdminEmail: DOMAIN_ADMIN_EMAIL,
+      createdAt: '2026-01-01',
+      users: 4,
+      buildings: 1,
       status: 'active',
-      buildingIds: [],
+      seedColor: 'bg-indigo-600',
     });
+    await setDoc(doc(db, `organizations/${OTHER_ORG_ID}`), {
+      id: OTHER_ORG_ID,
+      name: 'Other',
+      plan: 'basic',
+      aiEnabled: false,
+    });
+
+    // Members
+    await setDoc(
+      doc(db, `organizations/${ORG_ID}/members/${DOMAIN_ADMIN_EMAIL}`),
+      {
+        email: DOMAIN_ADMIN_EMAIL,
+        orgId: ORG_ID,
+        roleId: 'domain_admin',
+        status: 'active',
+        buildingIds: ['high', 'middle'],
+      }
+    );
+    await setDoc(
+      doc(db, `organizations/${ORG_ID}/members/${BUILDING_ADMIN_EMAIL}`),
+      {
+        email: BUILDING_ADMIN_EMAIL,
+        orgId: ORG_ID,
+        roleId: 'building_admin',
+        status: 'active',
+        buildingIds: ['high'],
+      }
+    );
+    await setDoc(doc(db, `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`), {
+      email: TEACHER_EMAIL,
+      orgId: ORG_ID,
+      roleId: 'teacher',
+      status: 'active',
+      buildingIds: ['high'], // in the building admin's scope
+    });
+    await setDoc(
+      doc(db, `organizations/${ORG_ID}/members/${OUT_OF_SCOPE_MEMBER_EMAIL}`),
+      {
+        email: OUT_OF_SCOPE_MEMBER_EMAIL,
+        orgId: ORG_ID,
+        roleId: 'teacher',
+        status: 'active',
+        buildingIds: ['elementary'], // NOT in building admin's scope
+      }
+    );
+
+    // Roles — system + a custom one used by Phase 3 update tests.
     await setDoc(doc(db, `organizations/${ORG_ID}/roles/domain_admin`), {
       id: 'domain_admin',
       name: 'Domain admin',
       system: true,
       perms: {},
     });
+    await setDoc(doc(db, `organizations/${ORG_ID}/roles/building_admin`), {
+      id: 'building_admin',
+      name: 'Building admin',
+      system: true,
+      perms: {},
+    });
+    await setDoc(doc(db, `organizations/${ORG_ID}/roles/teacher`), {
+      id: 'teacher',
+      name: 'Teacher',
+      system: true,
+      perms: {},
+    });
+    await setDoc(doc(db, `organizations/${ORG_ID}/roles/custom-coach`), {
+      id: 'custom-coach',
+      name: 'Instructional Coach',
+      system: false,
+      perms: {},
+    });
+
+    // Buildings
     await setDoc(doc(db, `organizations/${ORG_ID}/buildings/high`), {
       id: 'high',
       orgId: ORG_ID,
       name: 'Orono High',
     });
+    await setDoc(doc(db, `organizations/${ORG_ID}/buildings/middle`), {
+      id: 'middle',
+      orgId: ORG_ID,
+      name: 'Orono Middle',
+    });
+    await setDoc(doc(db, `organizations/${ORG_ID}/buildings/elementary`), {
+      id: 'elementary',
+      orgId: ORG_ID,
+      name: 'Orono Elementary',
+    });
+
+    // Domains + student page config
     await setDoc(doc(db, `organizations/${ORG_ID}/domains/primary`), {
       id: 'primary',
       orgId: ORG_ID,
@@ -91,19 +189,29 @@ beforeEach(async () => {
       orgId: ORG_ID,
       heroText: 'Hi',
     });
+
+    // Super admin list (legacy)
     await setDoc(doc(db, 'admin_settings/user_roles'), {
       superAdmins: [SUPER_EMAIL],
     });
     // Legacy admin record used by the unchanged isAdmin() rule.
-    await setDoc(doc(db, `admins/${MEMBER_EMAIL}`), {
-      email: MEMBER_EMAIL,
+    await setDoc(doc(db, `admins/${DOMAIN_ADMIN_EMAIL}`), {
+      email: DOMAIN_ADMIN_EMAIL,
     });
   });
 });
 
-const asMember = () =>
+const asDomainAdmin = () =>
   testEnv
-    .authenticatedContext('member-uid', { email: MEMBER_EMAIL })
+    .authenticatedContext('member-uid', { email: DOMAIN_ADMIN_EMAIL })
+    .firestore();
+const asBuildingAdmin = () =>
+  testEnv
+    .authenticatedContext('bldg-uid', { email: BUILDING_ADMIN_EMAIL })
+    .firestore();
+const asTeacher = () =>
+  testEnv
+    .authenticatedContext('teacher-uid', { email: TEACHER_EMAIL })
     .firestore();
 const asOutsider = () =>
   testEnv
@@ -113,27 +221,34 @@ const asSuper = () =>
   testEnv.authenticatedContext('super-uid', { email: SUPER_EMAIL }).firestore();
 const asAnon = () => testEnv.unauthenticatedContext().firestore();
 
-describe('organizations — reads', () => {
+describe('organizations — reads (Phase 1)', () => {
   it('member can read the org doc', async () => {
-    await assertSucceeds(getDoc(doc(asMember(), `organizations/${ORG_ID}`)));
+    await assertSucceeds(
+      getDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}`))
+    );
   });
 
   it('member can read buildings, domains, roles, members, studentPageConfig', async () => {
     await assertSucceeds(
-      getDoc(doc(asMember(), `organizations/${ORG_ID}/buildings/high`))
+      getDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/buildings/high`))
     );
     await assertSucceeds(
-      getDoc(doc(asMember(), `organizations/${ORG_ID}/domains/primary`))
+      getDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/domains/primary`))
     );
     await assertSucceeds(
-      getDoc(doc(asMember(), `organizations/${ORG_ID}/roles/domain_admin`))
-    );
-    await assertSucceeds(
-      getDoc(doc(asMember(), `organizations/${ORG_ID}/members/${MEMBER_EMAIL}`))
+      getDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/domain_admin`))
     );
     await assertSucceeds(
       getDoc(
-        doc(asMember(), `organizations/${ORG_ID}/studentPageConfig/default`)
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/members/${MEMBER_EMAIL}`)
+      )
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(
+          asDomainAdmin(),
+          `organizations/${ORG_ID}/studentPageConfig/default`
+        )
       )
     );
   });
@@ -141,7 +256,7 @@ describe('organizations — reads', () => {
   it('super admin (legacy user_roles) can read every org', async () => {
     await assertSucceeds(getDoc(doc(asSuper(), `organizations/${ORG_ID}`)));
     await assertSucceeds(
-      getDoc(doc(asSuper(), `organizations/${ORG_ID}/buildings/high`))
+      getDoc(doc(asSuper(), `organizations/${OTHER_ORG_ID}`))
     );
   });
 
@@ -156,9 +271,6 @@ describe('organizations — reads', () => {
   });
 
   it('non-member CAN read their own (absent) member doc to bootstrap useAuth', async () => {
-    // Reading /organizations/{orgId}/members/{myEmail} must succeed even if
-    // the doc does not exist — the auth layer uses this probe to decide
-    // whether the user has an org membership.
     await assertSucceeds(
       getDoc(
         doc(asOutsider(), `organizations/${ORG_ID}/members/${OUTSIDER_EMAIL}`)
@@ -166,10 +278,7 @@ describe('organizations — reads', () => {
     );
   });
 
-  it('non-member cannot read another user\u2019s member doc', async () => {
-    // Self-probe is the ONLY reason a non-member can read /members/*.
-    // Reading some other user's membership must fall through to the
-    // isOrgMember / isSuperAdmin clauses and be denied.
+  it("non-member cannot read another user's member doc", async () => {
     await assertFails(
       getDoc(
         doc(asOutsider(), `organizations/${ORG_ID}/members/${MEMBER_EMAIL}`)
@@ -185,67 +294,497 @@ describe('organizations — reads', () => {
   });
 });
 
-describe('organizations — writes (all blocked in Phase 1)', () => {
-  it('member cannot write the org doc', async () => {
-    await assertFails(
-      setDoc(doc(asMember(), `organizations/${ORG_ID}`), { name: 'Changed' })
+describe('organizations — super admin writes (Phase 3)', () => {
+  it('super admin can create an org', async () => {
+    await assertSucceeds(
+      setDoc(doc(asSuper(), 'organizations/new-org'), {
+        id: 'new-org',
+        name: 'New',
+        plan: 'basic',
+        aiEnabled: false,
+      })
     );
   });
 
-  it('member cannot write buildings, domains, roles, members, studentPageConfig', async () => {
+  it('super admin can delete an org', async () => {
+    await assertSucceeds(
+      deleteDoc(doc(asSuper(), `organizations/${OTHER_ORG_ID}`))
+    );
+  });
+
+  it('super admin can flip aiEnabled / plan', async () => {
+    await assertSucceeds(
+      updateDoc(doc(asSuper(), `organizations/${ORG_ID}`), {
+        aiEnabled: false,
+        plan: 'expanded',
+      })
+    );
+  });
+
+  it('domain admin cannot create an org', async () => {
     await assertFails(
-      setDoc(doc(asMember(), `organizations/${ORG_ID}/buildings/new`), {
+      setDoc(doc(asDomainAdmin(), 'organizations/nope'), { name: 'Nope' })
+    );
+  });
+
+  it('domain admin cannot delete their own org', async () => {
+    await assertFails(
+      deleteDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}`))
+    );
+  });
+});
+
+describe('organizations — domain admin writes on own org', () => {
+  it('can update identity fields (name, shortName, seedColor, supportUrl)', async () => {
+    await assertSucceeds(
+      updateDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}`), {
+        name: 'Orono Public Schools',
+        shortName: 'Orono',
+        seedColor: 'bg-emerald-600',
+        supportUrl: 'https://orono.k12.mn.us/support',
+      })
+    );
+  });
+
+  it('cannot flip aiEnabled', async () => {
+    await assertFails(
+      updateDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}`), {
+        aiEnabled: false,
+      })
+    );
+  });
+
+  it('cannot change plan', async () => {
+    await assertFails(
+      updateDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}`), {
+        plan: 'basic',
+      })
+    );
+  });
+
+  it('cannot edit another org', async () => {
+    await assertFails(
+      updateDoc(doc(asDomainAdmin(), `organizations/${OTHER_ORG_ID}`), {
+        name: 'Hijacked',
+      })
+    );
+  });
+});
+
+describe('organizations — building admin writes on org doc (denied)', () => {
+  it('building admin cannot update org identity fields', async () => {
+    await assertFails(
+      updateDoc(doc(asBuildingAdmin(), `organizations/${ORG_ID}`), {
+        name: 'Nope',
+      })
+    );
+  });
+
+  it('teacher cannot update org doc', async () => {
+    await assertFails(
+      updateDoc(doc(asTeacher(), `organizations/${ORG_ID}`), { name: 'Nope' })
+    );
+  });
+});
+
+describe('organizations/buildings — writes', () => {
+  it('domain admin can create, update, delete any building', async () => {
+    await assertSucceeds(
+      setDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/buildings/new`), {
+        id: 'new',
+        name: 'New School',
+      })
+    );
+    await assertSucceeds(
+      updateDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/buildings/middle`),
+        { name: 'Orono Middle School' }
+      )
+    );
+    await assertSucceeds(
+      deleteDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/buildings/elementary`)
+      )
+    );
+  });
+
+  it('building admin can update a building in their scope', async () => {
+    await assertSucceeds(
+      updateDoc(
+        doc(asBuildingAdmin(), `organizations/${ORG_ID}/buildings/high`),
+        { address: '123 Spartan Way' }
+      )
+    );
+  });
+
+  it('building admin cannot update a building outside their scope', async () => {
+    await assertFails(
+      updateDoc(
+        doc(asBuildingAdmin(), `organizations/${ORG_ID}/buildings/middle`),
+        { address: 'nope' }
+      )
+    );
+  });
+
+  it('building admin cannot create or delete buildings', async () => {
+    await assertFails(
+      setDoc(doc(asBuildingAdmin(), `organizations/${ORG_ID}/buildings/new`), {
+        id: 'new',
         name: 'X',
       })
     );
     await assertFails(
-      setDoc(doc(asMember(), `organizations/${ORG_ID}/domains/new`), {
+      deleteDoc(
+        doc(asBuildingAdmin(), `organizations/${ORG_ID}/buildings/high`)
+      )
+    );
+  });
+
+  it('teacher cannot update a building', async () => {
+    await assertFails(
+      updateDoc(doc(asTeacher(), `organizations/${ORG_ID}/buildings/high`), {
+        name: 'nope',
+      })
+    );
+  });
+});
+
+describe('organizations/domains — writes', () => {
+  it('domain admin can create, update, delete domains', async () => {
+    await assertSucceeds(
+      setDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/domains/students`), {
+        id: 'students',
+        domain: '@students.orono.k12.mn.us',
+      })
+    );
+    await assertSucceeds(
+      updateDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/domains/primary`),
+        { authMethod: 'google' }
+      )
+    );
+    await assertSucceeds(
+      deleteDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/domains/primary`))
+    );
+  });
+
+  it('building admin cannot write domains', async () => {
+    await assertFails(
+      setDoc(doc(asBuildingAdmin(), `organizations/${ORG_ID}/domains/new`), {
+        id: 'new',
         domain: '@x.com',
       })
     );
     await assertFails(
-      setDoc(doc(asMember(), `organizations/${ORG_ID}/roles/custom`), {
-        name: 'Custom',
+      updateDoc(
+        doc(asBuildingAdmin(), `organizations/${ORG_ID}/domains/primary`),
+        { authMethod: 'saml' }
+      )
+    );
+    await assertFails(
+      deleteDoc(
+        doc(asBuildingAdmin(), `organizations/${ORG_ID}/domains/primary`)
+      )
+    );
+  });
+});
+
+describe('organizations/roles — writes (system role protection)', () => {
+  it('domain admin can create a custom role (system:false)', async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/custom-specialist`),
+        {
+          id: 'custom-specialist',
+          name: 'Specialist',
+          system: false,
+          perms: {},
+        }
+      )
+    );
+  });
+
+  it('domain admin cannot create a role with system:true', async () => {
+    await assertFails(
+      setDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/hacked`), {
+        id: 'hacked',
+        name: 'Hacked',
+        system: true,
+        perms: {},
+      })
+    );
+  });
+
+  it('domain admin can update a custom role', async () => {
+    await assertSucceeds(
+      updateDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/custom-coach`),
+        { name: 'Instructional Coach (renamed)' }
+      )
+    );
+  });
+
+  it('domain admin cannot update a system role', async () => {
+    await assertFails(
+      updateDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/domain_admin`),
+        { name: 'Renamed' }
+      )
+    );
+  });
+
+  it('domain admin cannot flip system:true to false', async () => {
+    // Starting from system:true; request tries to change to false.
+    await assertFails(
+      updateDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/teacher`), {
+        system: false,
+      })
+    );
+  });
+
+  it('domain admin cannot flip system:false to true on a custom role', async () => {
+    await assertFails(
+      updateDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/custom-coach`),
+        { system: true }
+      )
+    );
+  });
+
+  it('domain admin cannot delete a system role', async () => {
+    await assertFails(
+      deleteDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/domain_admin`)
+      )
+    );
+  });
+
+  it('domain admin can delete a custom role', async () => {
+    await assertSucceeds(
+      deleteDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/roles/custom-coach`)
+      )
+    );
+  });
+
+  it('building admin cannot create or update roles', async () => {
+    await assertFails(
+      setDoc(doc(asBuildingAdmin(), `organizations/${ORG_ID}/roles/custom-x`), {
+        id: 'custom-x',
+        name: 'X',
+        system: false,
+        perms: {},
       })
     );
     await assertFails(
-      setDoc(
-        doc(asMember(), `organizations/${ORG_ID}/members/new@example.com`),
-        { roleId: 'teacher' }
+      updateDoc(
+        doc(asBuildingAdmin(), `organizations/${ORG_ID}/roles/custom-coach`),
+        { name: 'hack' }
       )
     );
-    await assertFails(
+  });
+});
+
+describe('organizations/members — writes', () => {
+  it('domain admin can create a new member', async () => {
+    await assertSucceeds(
       setDoc(
-        doc(asMember(), `organizations/${ORG_ID}/studentPageConfig/default`),
-        { heroText: 'Hacked' }
+        doc(
+          asDomainAdmin(),
+          `organizations/${ORG_ID}/members/new.teacher@orono.k12.mn.us`
+        ),
+        {
+          email: 'new.teacher@orono.k12.mn.us',
+          orgId: ORG_ID,
+          roleId: 'teacher',
+          status: 'invited',
+          buildingIds: ['high'],
+        }
       )
     );
   });
 
-  it('super admin cannot write either (Phase 3 will enable)', async () => {
-    await assertFails(
-      setDoc(doc(asSuper(), `organizations/${ORG_ID}`), { name: 'Changed' })
+  it('domain admin can update roleId and buildingIds', async () => {
+    await assertSucceeds(
+      updateDoc(
+        doc(
+          asDomainAdmin(),
+          `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`
+        ),
+        { roleId: 'building_admin', buildingIds: ['high', 'middle'] }
+      )
     );
   });
 
+  it('domain admin can delete a member', async () => {
+    await assertSucceeds(
+      deleteDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`)
+      )
+    );
+  });
+
+  it('building admin can update status for a member in their scope', async () => {
+    // TEACHER_EMAIL has buildingIds: ['high'] which intersects bldg admin's ['high'].
+    await assertSucceeds(
+      updateDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`
+        ),
+        { status: 'inactive' }
+      )
+    );
+  });
+
+  it('building admin cannot change roleId even within scope', async () => {
+    await assertFails(
+      updateDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`
+        ),
+        { roleId: 'domain_admin' }
+      )
+    );
+  });
+
+  it('building admin cannot change buildingIds even within scope', async () => {
+    await assertFails(
+      updateDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`
+        ),
+        { buildingIds: ['high', 'elementary'] }
+      )
+    );
+  });
+
+  it('building admin cannot update members outside their scope', async () => {
+    await assertFails(
+      updateDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/members/${OUT_OF_SCOPE_MEMBER_EMAIL}`
+        ),
+        { status: 'inactive' }
+      )
+    );
+  });
+
+  it('building admin cannot create or delete members', async () => {
+    await assertFails(
+      setDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/members/new@orono.k12.mn.us`
+        ),
+        {
+          email: 'new@orono.k12.mn.us',
+          orgId: ORG_ID,
+          roleId: 'teacher',
+          status: 'invited',
+          buildingIds: ['high'],
+        }
+      )
+    );
+    await assertFails(
+      deleteDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`
+        )
+      )
+    );
+  });
+
+  it('teacher cannot update any member', async () => {
+    await assertFails(
+      updateDoc(
+        doc(asTeacher(), `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`),
+        { status: 'inactive' }
+      )
+    );
+  });
+});
+
+describe('organizations/studentPageConfig — writes', () => {
+  it('domain admin can update student page config', async () => {
+    await assertSucceeds(
+      updateDoc(
+        doc(
+          asDomainAdmin(),
+          `organizations/${ORG_ID}/studentPageConfig/default`
+        ),
+        { heroText: 'Welcome Spartans!', accentColor: '#ad2122' }
+      )
+    );
+  });
+
+  it('super admin can update student page config', async () => {
+    await assertSucceeds(
+      updateDoc(
+        doc(asSuper(), `organizations/${ORG_ID}/studentPageConfig/default`),
+        { heroText: 'From super' }
+      )
+    );
+  });
+
+  it('building admin cannot update student page config', async () => {
+    await assertFails(
+      updateDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/studentPageConfig/default`
+        ),
+        { heroText: 'nope' }
+      )
+    );
+  });
+
+  it('teacher cannot update student page config', async () => {
+    await assertFails(
+      updateDoc(
+        doc(asTeacher(), `organizations/${ORG_ID}/studentPageConfig/default`),
+        { heroText: 'nope' }
+      )
+    );
+  });
+});
+
+describe('organizations/invitations — fully locked (Phase 4)', () => {
   it('invitations collection is fully locked from clients', async () => {
     await assertFails(
-      getDoc(doc(asMember(), `organizations/${ORG_ID}/invitations/token-123`))
+      getDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/invitations/token-123`)
+      )
     );
     await assertFails(
-      setDoc(doc(asMember(), `organizations/${ORG_ID}/invitations/token-123`), {
-        email: 'x@y.com',
-      })
+      setDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/invitations/token-123`),
+        { email: 'x@y.com' }
+      )
+    );
+    await assertFails(
+      setDoc(
+        doc(asSuper(), `organizations/${ORG_ID}/invitations/token-super`),
+        { email: 'x@y.com' }
+      )
     );
   });
 });
 
 describe('no regression on legacy /admins/{email}', () => {
   it('owning user can still read their own admin doc', async () => {
-    await assertSucceeds(getDoc(doc(asMember(), `admins/${MEMBER_EMAIL}`)));
+    await assertSucceeds(
+      getDoc(doc(asDomainAdmin(), `admins/${DOMAIN_ADMIN_EMAIL}`))
+    );
   });
 
   it('other users still cannot read another admin doc', async () => {
-    await assertFails(getDoc(doc(asOutsider(), `admins/${MEMBER_EMAIL}`)));
+    await assertFails(
+      getDoc(doc(asOutsider(), `admins/${DOMAIN_ADMIN_EMAIL}`))
+    );
   });
 });

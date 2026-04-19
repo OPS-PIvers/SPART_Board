@@ -2912,7 +2912,8 @@ export type GlobalFeature =
   | 'remote-control'
   | 'embed-mini-app'
   | 'video-activity-audio-transcription'
-  | 'ai-file-context';
+  | 'ai-file-context'
+  | 'org-admin-writes';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;

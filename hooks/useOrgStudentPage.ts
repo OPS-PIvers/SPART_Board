@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import type { StudentPageConfig } from '@/types/organization';
@@ -8,8 +8,9 @@ import type { StudentPageConfig } from '@/types/organization';
  * Subscribes to `/organizations/{orgId}/studentPageConfig/default`. Reads
  * allowed for org members + super admins via Firestore rules.
  *
- * Writes are stubbed — Phase 3 wires real mutations behind the
- * `orgAdminWrites` feature flag.
+ * Writes: `updateStudentPage` upserts the config doc (setDoc with `merge:
+ * true`) so the first write still works even if the migration script hasn't
+ * seeded the config yet. Rules restrict writes to domain+ admins.
  */
 export const useOrgStudentPage = (orgId: string | null) => {
   const { user } = useAuth();
@@ -53,10 +54,19 @@ export const useOrgStudentPage = (orgId: string | null) => {
     return unsub;
   }, [shouldSubscribe, orgId]);
 
-  const updateStudentPage = (
-    _patch: Partial<StudentPageConfig>
-  ): Promise<void> =>
-    Promise.reject(new Error('Student page edits will be enabled in Phase 3.'));
+  const updateStudentPage = async (
+    patch: Partial<StudentPageConfig>
+  ): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    const { orgId: _omit, ...rest } = patch;
+    await setDoc(
+      doc(db, 'organizations', orgId, 'studentPageConfig', 'default'),
+      { orgId, ...rest },
+      { merge: true }
+    );
+  };
 
   return {
     studentPage,

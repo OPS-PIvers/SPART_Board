@@ -1,8 +1,31 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import type { OrgRecord } from '@/types/organization';
+
+// Derive a URL-friendly id from an org name. Falls back to a UUID when the
+// name has no alphanumeric content (keeps document paths valid either way).
+const slugFromName = (name: string): string => {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48);
+  if (base) return base;
+  // crypto.randomUUID is guaranteed on every runtime we support (modern
+  // browsers + Node 19+). Matches the id-gen pattern used by other hooks.
+  return (globalThis.crypto?.randomUUID?.() ?? `org-${Date.now()}`).slice(
+    0,
+    24
+  );
+};
 
 /**
  * Subscribes to the top-level `/organizations` collection.
@@ -12,8 +35,10 @@ import type { OrgRecord } from '@/types/organization';
  * gates the subscription behind `isSuperAdmin` so the common teacher path
  * never triggers a failing listener.
  *
- * Writes (create / archive) are stubbed as no-ops that throw — Phase 3 wires
- * real mutations once the `orgAdminWrites` feature flag lands.
+ * Writes (create / archive) are super-admin-only at the rules tier. Archive
+ * is a soft-archive (sets `status: 'archived'`) rather than a hard delete so
+ * sub-collections aren't orphaned — the rules allow hard delete via
+ * super-admin, but we keep archive non-destructive by default.
  */
 export const useOrganizations = () => {
   const { user, userRoles } = useAuth();
@@ -66,15 +91,37 @@ export const useOrganizations = () => {
     return unsub;
   }, [shouldSubscribe]);
 
-  const createOrg = (_org: Partial<OrgRecord>): Promise<void> =>
-    Promise.reject(
-      new Error('Organization creation will be enabled in Phase 3.')
-    );
+  const createOrg = async (partial: Partial<OrgRecord>): Promise<void> => {
+    const name = partial.name?.trim();
+    if (!name) {
+      throw new Error('Organization name is required.');
+    }
+    const id = partial.id ?? slugFromName(name);
+    const record = {
+      id,
+      name,
+      shortName: partial.shortName ?? name,
+      shortCode: partial.shortCode ?? name.slice(0, 4).toUpperCase(),
+      state: partial.state ?? '',
+      plan: partial.plan ?? 'basic',
+      aiEnabled: partial.aiEnabled ?? false,
+      primaryAdminEmail: partial.primaryAdminEmail ?? '',
+      createdAt: new Date().toISOString(),
+      users: 0,
+      buildings: 0,
+      status: partial.status ?? 'trial',
+      seedColor: partial.seedColor ?? 'bg-indigo-600',
+      ...(partial.supportUrl ? { supportUrl: partial.supportUrl } : {}),
+    };
+    await setDoc(doc(db, 'organizations', id), record);
+  };
 
-  const archiveOrg = (_orgId: string): Promise<void> =>
-    Promise.reject(
-      new Error('Organization archival will be enabled in Phase 3.')
-    );
+  const archiveOrg = async (orgId: string): Promise<void> => {
+    if (!orgId) {
+      throw new Error('Organization id is required.');
+    }
+    await updateDoc(doc(db, 'organizations', orgId), { status: 'archived' });
+  };
 
   return {
     organizations,

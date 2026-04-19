@@ -1,13 +1,14 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { useOrgStudentPage } from './useOrgStudentPage';
 import { useAuth } from '@/context/useAuth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import type { StudentPageConfig } from '@/types/organization';
 
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   onSnapshot: vi.fn(),
+  setDoc: vi.fn(),
 }));
 
 vi.mock('@/config/firebase', () => ({
@@ -32,10 +33,14 @@ describe('useOrgStudentPage', () => {
   const mockUseAuth = useAuth as Mock;
   const mockDoc = doc as Mock;
   const mockOnSnapshot = onSnapshot as Mock;
+  const mockSetDoc = setDoc as Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDoc.mockReturnValue('student-page-doc');
+    mockDoc.mockImplementation((_db: unknown, ...segs: string[]) =>
+      segs.join('/')
+    );
+    mockSetDoc.mockResolvedValue(undefined);
   });
 
   it('skips subscription when orgId is null', () => {
@@ -69,11 +74,40 @@ describe('useOrgStudentPage', () => {
     });
   });
 
-  it('write stub throws phase-3 error', async () => {
-    mockUseAuth.mockReturnValue({ user: null });
+  it('updateStudentPage upserts the config doc with merge + canonical orgId', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
     const { result } = renderHook(() => useOrgStudentPage('orono'));
+
+    await act(async () => {
+      await result.current.updateStudentPage({
+        orgId: 'ignored',
+        heroText: 'Go Spartans!',
+        showLunchMenu: true,
+      });
+    });
+
+    expect(mockSetDoc).toHaveBeenCalledTimes(1);
+    const [ref, payload, options] = mockSetDoc.mock.calls[0] as [
+      string,
+      unknown,
+      unknown,
+    ];
+    expect(ref).toBe('organizations/orono/studentPageConfig/default');
+    expect(payload).toEqual({
+      orgId: 'orono',
+      heroText: 'Go Spartans!',
+      showLunchMenu: true,
+    });
+    expect(options).toEqual({ merge: true });
+  });
+
+  it('updateStudentPage rejects when orgId is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const { result } = renderHook(() => useOrgStudentPage(null));
     await expect(result.current.updateStudentPage({})).rejects.toThrow(
-      /Phase 3/
+      /No organization/
     );
   });
 });

@@ -63,10 +63,21 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.token.email.lower()));
     }
 
-    // ---- Organizations collection (Phase 1: read-only foundation) ----
-    // All writes are blocked until Phase 3 wires the scoping + feature flag.
-    // TODO(phase-3): replace `allow write: if false` with scoped rules using
-    // isSuperAdmin(), isDomainAdmin(orgId), isBuildingAdmin(orgId).
+    // ---- Organizations collection (Phase 3: scoped writes enabled) ----
+    // Rules enforce role scoping; the client additionally gates UI via the
+    // `orgAdminWrites` feature flag so ramp-up stays controlled. Writes that
+    // bypass the client gate still land in these rules.
+    //
+    // Scoping summary:
+    //   - Super admins: any field, any org.
+    //   - Domain admins: org-wide writes for their org (except AI/plan flags
+    //     reserved to super admins) — create/update/delete on buildings,
+    //     domains, roles (custom only), members, studentPageConfig.
+    //   - Building admins: read-only almost everywhere; on members, may
+    //     update `status` for a member whose existing buildingIds intersect
+    //     the actor's own buildingIds. Never roleId.
+    //   - System roles (`system: true`) are immutable from clients —
+    //     migration script seeds them once; clone-to-customize is the path.
 
     // Short-circuit ordering note: `isOrgMember()` performs a single targeted
     // `exists()` against the caller's member doc, while `isSuperAdmin()` runs
@@ -76,21 +87,45 @@ service cloud.firestore {
 
     match /organizations/{orgId} {
       allow read: if isOrgMember(orgId) || isSuperAdmin();
-      allow write: if false; // TODO(phase-3)
+      // Only super admins can create, archive (delete), or flip AI/plan.
+      // Domain admins can edit identity-ish fields for their own org.
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() ||
+        (isDomainAdmin(orgId) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'name', 'shortName', 'shortCode', 'state', 'primaryAdminEmail',
+           'users', 'buildings', 'status', 'seedColor', 'supportUrl'
+         ]));
 
       match /buildings/{buildingId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // Only domain+ admins can create/delete buildings.
+        allow create, delete: if isSuperAdmin() || isDomainAdmin(orgId);
+        // Building admins can edit buildings they manage (name, address,
+        // grades, type, adminEmails). Domain+ admins edit any building.
+        allow update: if isSuperAdmin() || isDomainAdmin(orgId) ||
+          (isBuildingAdmin(orgId) &&
+           buildingId in orgMember(orgId).buildingIds);
       }
 
       match /domains/{domainId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // Domain admin or super admin only.
+        allow create, update, delete: if isSuperAdmin() || isDomainAdmin(orgId);
       }
 
       match /roles/{roleId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // System roles are immutable from clients — the migration script
+        // seeds them with `{ merge: true }` so the first write happens server
+        // side; every client mutation is refused if `system == true`.
+        allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          request.resource.data.system != true;
+        allow update: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          resource.data.system != true &&
+          request.resource.data.system == resource.data.system;
+        allow delete: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          resource.data.system != true;
       }
 
       match /members/{emailLower} {
@@ -103,12 +138,19 @@ service cloud.firestore {
                        request.auth.token.email.lower() == emailLower) ||
                     isOrgMember(orgId) ||
                     isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // Domain+ admins fully manage members. Building admins can only
+        // update `status` on members whose buildingIds intersect their own.
+        // roleId is never editable by building admins.
+        allow create, delete: if isSuperAdmin() || isDomainAdmin(orgId);
+        allow update: if isSuperAdmin() || isDomainAdmin(orgId) ||
+          (isBuildingAdmin(orgId) &&
+           resource.data.buildingIds.hasAny(orgMember(orgId).buildingIds) &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       }
 
       match /studentPageConfig/{configId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        allow create, update, delete: if isSuperAdmin() || isDomainAdmin(orgId);
       }
 
       match /invitations/{token} {

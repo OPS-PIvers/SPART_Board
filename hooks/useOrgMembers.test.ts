@@ -1,13 +1,22 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { useOrgMembers } from './useOrgMembers';
 import { useAuth } from '@/context/useAuth';
-import { collection, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  updateDoc,
+} from 'firebase/firestore';
 import type { MemberRecord } from '@/types/organization';
 
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
+  deleteDoc: vi.fn(),
+  doc: vi.fn(),
   onSnapshot: vi.fn(),
+  updateDoc: vi.fn(),
 }));
 
 vi.mock('@/config/firebase', () => ({
@@ -33,10 +42,18 @@ describe('useOrgMembers', () => {
   const mockUseAuth = useAuth as Mock;
   const mockCollection = collection as Mock;
   const mockOnSnapshot = onSnapshot as Mock;
+  const mockDoc = doc as Mock;
+  const mockUpdateDoc = updateDoc as Mock;
+  const mockDeleteDoc = deleteDoc as Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockCollection.mockReturnValue('members-ref');
+    mockDoc.mockImplementation((_db: unknown, ...segs: string[]) =>
+      segs.join('/')
+    );
+    mockUpdateDoc.mockResolvedValue(undefined);
+    mockDeleteDoc.mockResolvedValue(undefined);
   });
 
   it('skips subscription when orgId is null', () => {
@@ -76,18 +93,105 @@ describe('useOrgMembers', () => {
     });
   });
 
-  it('write stubs throw with correct phase labels', async () => {
-    mockUseAuth.mockReturnValue({ user: null });
+  it('updateMember translates role → roleId and strips identity fields', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
     const { result } = renderHook(() => useOrgMembers('orono'));
-    await expect(result.current.updateMember('id', {})).rejects.toThrow(
-      /Phase 3/
+
+    await act(async () => {
+      await result.current.updateMember('paul@x.com', {
+        id: 'ignored',
+        email: 'ignored',
+        orgId: 'ignored',
+        role: 'teacher',
+        status: 'inactive',
+      });
+    });
+
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      'organizations/orono/members/paul@x.com',
+      { roleId: 'teacher', status: 'inactive' }
     );
-    await expect(result.current.bulkUpdateMembers([], {})).rejects.toThrow(
-      /Phase 3/
+  });
+
+  it('updateMember no-ops when patch is empty', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
+    const { result } = renderHook(() => useOrgMembers('orono'));
+
+    await act(async () => {
+      await result.current.updateMember('paul@x.com', {});
+    });
+
+    expect(mockUpdateDoc).not.toHaveBeenCalled();
+  });
+
+  it('bulkUpdateMembers fans out across ids', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
+    const { result } = renderHook(() => useOrgMembers('orono'));
+
+    await act(async () => {
+      await result.current.bulkUpdateMembers(['a@x.com', 'b@x.com'], {
+        status: 'inactive',
+      });
+    });
+
+    expect(mockUpdateDoc).toHaveBeenCalledTimes(2);
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      'organizations/orono/members/a@x.com',
+      { status: 'inactive' }
     );
-    await expect(result.current.removeMembers([])).rejects.toThrow(/Phase 3/);
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      'organizations/orono/members/b@x.com',
+      { status: 'inactive' }
+    );
+  });
+
+  it('removeMembers fans out deleteDoc calls', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
+    const { result } = renderHook(() => useOrgMembers('orono'));
+
+    await act(async () => {
+      await result.current.removeMembers(['a@x.com', 'b@x.com']);
+    });
+
+    expect(mockDeleteDoc).toHaveBeenCalledTimes(2);
+    expect(mockDeleteDoc).toHaveBeenCalledWith(
+      'organizations/orono/members/a@x.com'
+    );
+    expect(mockDeleteDoc).toHaveBeenCalledWith(
+      'organizations/orono/members/b@x.com'
+    );
+  });
+
+  it('inviteMembers is still a Phase 4 stub', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
+    const { result } = renderHook(() => useOrgMembers('orono'));
+
     await expect(
       result.current.inviteMembers([], 'teacher', [])
     ).rejects.toThrow(/Phase 4/);
+  });
+
+  it('writes reject when orgId is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const { result } = renderHook(() => useOrgMembers(null));
+    await expect(
+      result.current.updateMember('x', { status: 'active' })
+    ).rejects.toThrow(/No organization/);
+    await expect(
+      result.current.bulkUpdateMembers(['x'], { status: 'active' })
+    ).rejects.toThrow(/No organization/);
+    await expect(result.current.removeMembers(['x'])).rejects.toThrow(
+      /No organization/
+    );
   });
 });

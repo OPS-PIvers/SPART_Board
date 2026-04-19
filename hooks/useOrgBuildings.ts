@@ -1,14 +1,39 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
-import type { BuildingRecord } from '@/types/organization';
+import type { BuildingRecord, BuildingType } from '@/types/organization';
+
+const slug = (s: string): string =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48);
+
+const defaultBuildingId = (b: Partial<BuildingRecord>): string => {
+  const base = slug(b.name ?? '');
+  if (base) return base;
+  return (globalThis.crypto?.randomUUID?.() ?? `building-${Date.now()}`).slice(
+    0,
+    24
+  );
+};
 
 /**
  * Subscribes to `/organizations/{orgId}/buildings`. Reads allowed for org
  * members + super admins via Firestore rules.
  *
- * Writes are stubbed — Phase 3 wires real mutations.
+ * Writes (add/update/remove) are scoped at the rules tier: domain+ admins
+ * can CRUD any building in their org; building admins can only update
+ * buildings listed in their own `buildingIds`.
  */
 export const useOrgBuildings = (orgId: string | null) => {
   const { user } = useAuth();
@@ -51,17 +76,43 @@ export const useOrgBuildings = (orgId: string | null) => {
     return unsub;
   }, [shouldSubscribe, orgId]);
 
-  const addBuilding = (_building: Partial<BuildingRecord>): Promise<void> =>
-    Promise.reject(new Error('Building creation will be enabled in Phase 3.'));
+  const addBuilding = async (
+    building: Partial<BuildingRecord>
+  ): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    const id = building.id ?? defaultBuildingId(building);
+    const record: BuildingRecord = {
+      id,
+      orgId,
+      name: building.name ?? '',
+      type: (building.type as BuildingType) ?? 'other',
+      address: building.address ?? '',
+      grades: building.grades ?? '',
+      users: building.users ?? 0,
+      adminEmails: building.adminEmails ?? [],
+    };
+    await setDoc(doc(db, 'organizations', orgId, 'buildings', id), record);
+  };
 
-  const updateBuilding = (
-    _id: string,
-    _patch: Partial<BuildingRecord>
-  ): Promise<void> =>
-    Promise.reject(new Error('Building edits will be enabled in Phase 3.'));
+  const updateBuilding = async (
+    id: string,
+    patch: Partial<BuildingRecord>
+  ): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    const { id: _omitId, orgId: _omitOrg, ...rest } = patch;
+    await updateDoc(doc(db, 'organizations', orgId, 'buildings', id), rest);
+  };
 
-  const removeBuilding = (_id: string): Promise<void> =>
-    Promise.reject(new Error('Building archival will be enabled in Phase 3.'));
+  const removeBuilding = async (id: string): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    await deleteDoc(doc(db, 'organizations', orgId, 'buildings', id));
+  };
 
   return {
     buildings,
