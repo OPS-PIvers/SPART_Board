@@ -1899,7 +1899,6 @@ export const adminAnalytics = onRequest(
     invoker: 'public',
   },
   async (req, res) => {
-
     // 1. Verify caller is authenticated via Bearer token
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
