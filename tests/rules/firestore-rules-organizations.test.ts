@@ -1159,18 +1159,39 @@ describe('organizations/studentPageConfig — writes', () => {
   });
 });
 
-describe('organizations/invitations — fully locked (Phase 4)', () => {
-  it('invitations collection is fully locked from clients', async () => {
+describe('organizations/invitations — fully locked from every client role (Phase 4)', () => {
+  // The invitations collection is owned entirely by Cloud Functions. The
+  // `createOrganizationInvites` and `claimOrganizationInvite` callables use
+  // the Admin SDK which bypasses rules; every client path must hit these
+  // denies. If anyone ever adds a client-visible path to invitations, this
+  // suite catches it.
+
+  it('domain admin cannot read, write, or delete invitations from the client', async () => {
     await assertFails(
       getDoc(
-        doc(asDomainAdmin(), `organizations/${ORG_ID}/invitations/token-123`)
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/invitations/token-da`)
       )
     );
     await assertFails(
       setDoc(
-        doc(asDomainAdmin(), `organizations/${ORG_ID}/invitations/token-123`),
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/invitations/token-da`),
         { email: 'x@y.com' }
       )
+    );
+    await assertFails(
+      deleteDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/invitations/token-da`)
+      )
+    );
+  });
+
+  it('super admin cannot read or write invitations from the client', async () => {
+    // Super admins have bypass-level access almost everywhere else, but
+    // invitations stay CF-only so the contract is simple: invite lifecycle
+    // is never half-managed across client + CF. Anything super admins need
+    // to do goes through the callable.
+    await assertFails(
+      getDoc(doc(asSuper(), `organizations/${ORG_ID}/invitations/token-super`))
     );
     await assertFails(
       setDoc(
@@ -1179,6 +1200,57 @@ describe('organizations/invitations — fully locked (Phase 4)', () => {
       )
     );
   });
+
+  it('building admin, teacher, and outsider cannot read or write invitations', async () => {
+    await assertFails(
+      getDoc(
+        doc(asBuildingAdmin(), `organizations/${ORG_ID}/invitations/token-ba`)
+      )
+    );
+    await assertFails(
+      getDoc(doc(asTeacher(), `organizations/${ORG_ID}/invitations/token-t`))
+    );
+    await assertFails(
+      getDoc(doc(asOutsider(), `organizations/${ORG_ID}/invitations/token-o`))
+    );
+  });
+});
+
+describe('organizations/members — uid write restricted to Cloud Functions (Phase 4)', () => {
+  // Phase 4 first-sign-in links a member's uid to their Google auth uid. This
+  // MUST go through the `claimOrganizationInvite` callable — the Admin SDK
+  // bypasses rules and can legally write `uid`. A client-writable path would
+  // let any writer reassign a member's uid, hijacking the linked account.
+  // The member-update whitelist at firestore.rules:228 intentionally excludes
+  // `uid`; these tests codify that decision across every non-super-admin
+  // actor that can reach the member collection.
+
+  it('teacher cannot write uid on their own member doc', async () => {
+    // Teachers have no direct write access to member docs at all. This is
+    // the attack vector: a malicious invitee tries to set `uid` to their
+    // own auth uid to bypass the claim flow.
+    await assertFails(
+      updateDoc(
+        doc(asTeacher(), `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`),
+        { uid: 'teacher-uid' }
+      )
+    );
+  });
+
+  it('building admin cannot write uid on a member doc in their scope', async () => {
+    await assertFails(
+      updateDoc(
+        doc(
+          asBuildingAdmin(),
+          `organizations/${ORG_ID}/members/${TEACHER_EMAIL}`
+        ),
+        { uid: 'impostor-uid' }
+      )
+    );
+  });
+
+  // Domain admin's uid-write rejection is already covered in "domain admin
+  // cannot spoof member identity (email, orgId, uid)" above — not duplicated.
 });
 
 describe('no regression on legacy /admins/{email}', () => {

@@ -6,9 +6,37 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { db, isAuthBypass } from '@/config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import type { MemberRecord, UserRecord } from '@/types/organization';
+
+// Response shape returned by the `createOrganizationInvites` callable
+// (see `functions/src/organizationInvites.ts`). Mirrored here so view code
+// doesn't need to import from functions/.
+export interface InviteResult {
+  email: string;
+  token: string;
+  claimUrl: string;
+  status: 'created' | 'already_active' | 'skipped';
+}
+export interface InviteError {
+  email: string;
+  reason: string;
+}
+export interface InviteResponse {
+  invitations: InviteResult[];
+  errors: InviteError[];
+}
+
+// Bulk-invite payload: one entry per invitee, each with its own role + buildings.
+// Matches the `invitations[]` shape the callable accepts.
+export interface BulkInviteIntent {
+  email: string;
+  roleId: string;
+  buildingIds: string[];
+  name?: string;
+}
 
 // Firestore caps each writeBatch commit at 500 operations; 400 keeps a
 // safety margin so future additions to the same batch (e.g. audit-log
@@ -174,13 +202,66 @@ export const useOrgMembers = (orgId: string | null) => {
     );
   };
 
-  const inviteMembers = (
-    _emails: string[],
-    _roleId: string,
-    _buildingIds: string[],
-    _message?: string
-  ): Promise<void> =>
-    Promise.reject(new Error('Invitations will be enabled in Phase 4.'));
+  // Phase 4: invite flow routes through the `createOrganizationInvites`
+  // Cloud Function. The CF (Admin SDK) writes both the `members` doc
+  // (status: 'invited') and the `invitations/{token}` doc atomically per
+  // invitee; the client never touches `invitations` (rules block it).
+  //
+  // Two entry points share the same callable:
+  //   - `inviteMembers(emails, roleId, buildingIds, message?)` — the single-
+  //     role invite modal (uniform role/buildings across all emails).
+  //   - `bulkInviteMembers(intents, message?)` — the CSV flow, where each
+  //     row carries its own role + buildings.
+  const inviteMembers = async (
+    emails: string[],
+    roleId: string,
+    buildingIds: string[],
+    message?: string
+  ): Promise<InviteResponse> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    const callable = httpsCallable<
+      {
+        orgId: string;
+        invitations: BulkInviteIntent[];
+        message?: string;
+      },
+      InviteResponse
+    >(functions, 'createOrganizationInvites');
+    const result = await callable({
+      orgId,
+      invitations: emails.map((email) => ({
+        email,
+        roleId,
+        buildingIds,
+      })),
+      message,
+    });
+    return result.data;
+  };
+
+  const bulkInviteMembers = async (
+    intents: BulkInviteIntent[],
+    message?: string
+  ): Promise<InviteResponse> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    if (intents.length === 0) {
+      return { invitations: [], errors: [] };
+    }
+    const callable = httpsCallable<
+      {
+        orgId: string;
+        invitations: BulkInviteIntent[];
+        message?: string;
+      },
+      InviteResponse
+    >(functions, 'createOrganizationInvites');
+    const result = await callable({ orgId, invitations: intents, message });
+    return result.data;
+  };
 
   return {
     members,
@@ -191,5 +272,6 @@ export const useOrgMembers = (orgId: string | null) => {
     bulkUpdateMembers,
     removeMembers,
     inviteMembers,
+    bulkInviteMembers,
   };
 };

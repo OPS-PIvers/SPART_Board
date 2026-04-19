@@ -225,6 +225,8 @@ export const OrganizationPanel: React.FC = () => {
     updateMember,
     bulkUpdateMembers,
     removeMembers,
+    inviteMembers,
+    bulkInviteMembers,
   } = useOrgMembers(orgScopedOrgId);
   const {
     studentPage,
@@ -353,17 +355,105 @@ export const OrganizationPanel: React.FC = () => {
       `Removed ${ids.length} users`
     );
   };
-  const handleInvite = (
-    _emails: string[],
-    _role: string,
-    _bids: string[],
-    _msg?: string
+  // Phase 4: invitations go through the `createOrganizationInvites` CF
+  // (Admin SDK) which writes both a `members/{emailLower}` doc (status
+  // `invited`) and an `invitations/{token}` doc atomically per invitee.
+  // No transactional email — the CF returns a claim URL and the UI copies
+  // it to the clipboard so the admin can paste it wherever (Gmail, Slack,
+  // etc.). Defers real email delivery to Phase 4.1.
+  const handleInviteSuccess = async (
+    invitations: Array<{
+      email: string;
+      claimUrl: string;
+      status: string;
+    }>,
+    errors: Array<{ email: string; reason: string }>
   ) => {
-    // Invitations require a Cloud Function (Phase 4); surface a dedicated
-    // info toast rather than forwarding to the rejection stub (which would
-    // render as a misleading error toast).
+    const created = invitations.filter((r) => r.status === 'created');
+    const skipped = invitations.filter((r) => r.status !== 'created');
+
+    // Auto-copy the claim URL when there's exactly one new invite; that's
+    // the common single-invite case and avoids an extra click.
+    if (created.length === 1 && created[0]) {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(created[0].claimUrl);
+          showToast(
+            `Invite link copied for ${created[0].email}. Paste it into your email or chat.`,
+            'success'
+          );
+        } else {
+          showToast(
+            `Invite created for ${created[0].email}. Link: ${created[0].claimUrl}`,
+            'success'
+          );
+        }
+      } catch {
+        showToast(
+          `Invite created for ${created[0].email}. Link: ${created[0].claimUrl}`,
+          'success'
+        );
+      }
+    } else if (created.length > 1) {
+      showToast(
+        `Created ${created.length} invites. Copy each link from the users list.`,
+        'success'
+      );
+    }
+    if (skipped.length > 0) {
+      showToast(
+        `${skipped.length} invite(s) skipped (already active or duplicate).`,
+        'info'
+      );
+    }
+    if (errors.length > 0) {
+      showToast(
+        `${errors.length} invite(s) failed: ${errors[0]?.reason ?? 'unknown'}`,
+        'error'
+      );
+    }
+  };
+
+  const handleInvite = (
+    emails: string[],
+    role: string,
+    bids: string[],
+    message?: string
+  ) => {
     if (!writesEnabled) return comingSoon('Invite users');
-    showToast('Invitations — coming in Phase 4', 'info');
+    inviteMembers(emails, role, bids, message)
+      .then((response) =>
+        handleInviteSuccess(response.invitations, response.errors)
+      )
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        showToast(`Invite failed: ${msg}`, 'error');
+      });
+  };
+
+  // CSV bulk-invite: each row carries its own role + buildings (resolved
+  // by `utils/csvImport.parseInvitesCsv` before it reaches this handler).
+  const handleBulkInvite = (
+    intents: Array<{
+      email: string;
+      roleId: string;
+      buildingIds: string[];
+      name?: string;
+    }>
+  ) => {
+    if (!writesEnabled) return comingSoon('Bulk import users');
+    if (intents.length === 0) {
+      showToast('No valid rows in the CSV.', 'info');
+      return;
+    }
+    bulkInviteMembers(intents)
+      .then((response) =>
+        handleInviteSuccess(response.invitations, response.errors)
+      )
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        showToast(`Bulk invite failed: ${msg}`, 'error');
+      });
   };
   const handleUpdateStudentPage = (patch: Partial<StudentPageConfig>) => {
     if (!writesEnabled) return comingSoon('Student page edits');
@@ -605,6 +695,7 @@ export const OrganizationPanel: React.FC = () => {
                   onBulkUpdate={handleBulkUpdateUsers}
                   onRemove={handleRemoveUsers}
                   onInvite={handleInvite}
+                  onBulkInvite={handleBulkInvite}
                 />
               )}
               {effectiveSection === 'student' &&

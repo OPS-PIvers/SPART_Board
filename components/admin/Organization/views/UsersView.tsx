@@ -36,6 +36,7 @@ import {
   LocalModal,
   Textarea,
 } from '../components/primitives';
+import { parseInvitesCsv, type InviteIntent } from '@/utils/csvImport';
 
 interface Props {
   users: UserRecord[];
@@ -52,6 +53,10 @@ interface Props {
     buildingIds: string[],
     message?: string
   ) => void;
+  // Phase 4: CSV bulk invite. Each row already has its resolved roleId and
+  // buildingIds (from `parseInvitesCsv`). Returns void; the parent surfaces
+  // success/error toasts via its own callback.
+  onBulkInvite: (intents: InviteIntent[]) => void;
 }
 
 type StatusFilter = 'all' | UserStatus;
@@ -106,6 +111,7 @@ export const UsersView: React.FC<Props> = ({
   onBulkUpdate,
   onRemove,
   onInvite,
+  onBulkInvite,
 }) => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
@@ -422,33 +428,16 @@ export const UsersView: React.FC<Props> = ({
         }}
       />
 
-      <LocalModal
+      <BulkImportModal
         isOpen={showImport}
         onClose={() => setShowImport(false)}
-        title="Bulk import users"
-        icon={<Upload size={18} />}
-        footer={
-          <>
-            <Btn variant="ghost" onClick={() => setShowImport(false)}>
-              Close
-            </Btn>
-            <Btn variant="primary" disabled>
-              Upload CSV
-            </Btn>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-slate-600">
-            Upload a CSV with columns: <code>name</code>, <code>email</code>,{' '}
-            <code>role</code>, <code>building</code>. We&apos;ll send
-            invitations automatically.
-          </p>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-sm text-slate-500">
-            Drop your CSV here, or click to browse.
-          </div>
-        </div>
-      </LocalModal>
+        roles={roles}
+        buildings={visibleBuildings}
+        onSubmit={(intents) => {
+          onBulkInvite(intents);
+          setShowImport(false);
+        }}
+      />
     </div>
   );
 };
@@ -889,6 +878,194 @@ const InviteModal: React.FC<{
             placeholder="Welcome to SpartBoard! You'll use this to run classroom boards…"
           />
         </Field>
+      </div>
+    </LocalModal>
+  );
+};
+
+// ---------- Bulk import modal (Phase 4) ----------
+
+/**
+ * CSV-driven bulk invite. Accepts a file upload or pasted CSV text, runs
+ * `parseInvitesCsv` against the current org's roles + buildings, and lets
+ * the admin preview valid rows + errors before submitting. Unresolved
+ * roles/buildings reject their rows with a per-row error (never a silent
+ * drop). On submit, the parent calls `createOrganizationInvites` via the
+ * `onBulkInvite` prop.
+ */
+const BulkImportModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  roles: RoleRecord[];
+  buildings: BuildingRecord[];
+  onSubmit: (intents: InviteIntent[]) => void;
+}> = ({ isOpen, onClose, roles, buildings, onSubmit }) => {
+  const [csvText, setCsvText] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const parsed = useMemo(() => {
+    if (!csvText.trim()) return null;
+    return parseInvitesCsv(csvText, {
+      roles: roles.map((r) => ({ id: r.id, name: r.name })),
+      buildings: buildings.map((b) => ({ id: b.id, name: b.name })),
+    });
+  }, [csvText, roles, buildings]);
+
+  const reset = () => {
+    setCsvText('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const raw = e.target?.result;
+      setCsvText(typeof raw === 'string' ? raw : '');
+    };
+    reader.readAsText(file);
+  };
+
+  const validCount = parsed?.valid.length ?? 0;
+  const errorCount = parsed?.errors.length ?? 0;
+
+  return (
+    <LocalModal
+      isOpen={isOpen}
+      onClose={() => {
+        reset();
+        onClose();
+      }}
+      title="Bulk import users"
+      icon={<Upload size={18} />}
+      size="lg"
+      footer={
+        <>
+          <Btn
+            variant="ghost"
+            onClick={() => {
+              reset();
+              onClose();
+            }}
+          >
+            Cancel
+          </Btn>
+          <Btn
+            variant="primary"
+            disabled={validCount === 0}
+            onClick={() => {
+              if (!parsed) return;
+              onSubmit(parsed.valid);
+              reset();
+            }}
+          >
+            Send {validCount || ''} invite{validCount === 1 ? '' : 's'}
+          </Btn>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600">
+          Upload a CSV with columns <code>name</code>, <code>email</code>,{' '}
+          <code>role</code>, <code>building</code>. Roles and buildings are
+          matched case-insensitively against this organization&apos;s list.
+          Invite links are copied to your clipboard — no email is sent.
+        </p>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+          }}
+        />
+        <div className="flex gap-2">
+          <Btn
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={14} className="mr-1.5" />
+            Choose CSV file
+          </Btn>
+          {csvText && (
+            <Btn variant="ghost" onClick={reset}>
+              Clear
+            </Btn>
+          )}
+        </div>
+
+        <Field
+          label="Or paste CSV here"
+          hint="Header row required. Columns in any order."
+        >
+          <Textarea
+            rows={6}
+            value={csvText}
+            onChange={(e) => setCsvText(e.target.value)}
+            placeholder={
+              'name,email,role,building\nPaul Ivers,paul@orono.k12.mn.us,teacher,High School'
+            }
+          />
+        </Field>
+
+        {parsed && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-emerald-700 font-semibold">
+                {validCount} valid
+              </span>
+              {errorCount > 0 && (
+                <span className="text-rose-700 font-semibold">
+                  {errorCount} error{errorCount === 1 ? '' : 's'}
+                </span>
+              )}
+            </div>
+            {validCount > 0 && (
+              <div className="border border-slate-200 rounded-lg max-h-40 overflow-y-auto">
+                {parsed.valid.slice(0, 20).map((v, i) => (
+                  <div
+                    key={`${v.email}-${i}`}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs border-b border-slate-100 last:border-b-0"
+                  >
+                    <Badge color="emerald">{v.roleId}</Badge>
+                    <span className="font-mono text-slate-700">{v.email}</span>
+                    <span className="text-slate-400">
+                      {v.buildingIds.length} building
+                      {v.buildingIds.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                ))}
+                {parsed.valid.length > 20 && (
+                  <div className="px-3 py-1.5 text-xs text-slate-500">
+                    …and {parsed.valid.length - 20} more.
+                  </div>
+                )}
+              </div>
+            )}
+            {errorCount > 0 && (
+              <div className="border border-rose-200 bg-rose-50 rounded-lg max-h-40 overflow-y-auto">
+                {parsed.errors.slice(0, 10).map((e, i) => (
+                  <div
+                    key={`${e.line}-${i}`}
+                    className="px-3 py-1.5 text-xs border-b border-rose-100 last:border-b-0"
+                  >
+                    <span className="font-mono text-rose-700">
+                      line {e.line}
+                    </span>
+                    <span className="text-slate-700"> — {e.reason}</span>
+                  </div>
+                ))}
+                {parsed.errors.length > 10 && (
+                  <div className="px-3 py-1.5 text-xs text-slate-500">
+                    …and {parsed.errors.length - 10} more.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </LocalModal>
   );

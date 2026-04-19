@@ -9,6 +9,7 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import type { MemberRecord } from '@/types/organization';
 
 vi.mock('firebase/firestore', () => ({
@@ -19,8 +20,13 @@ vi.mock('firebase/firestore', () => ({
   writeBatch: vi.fn(),
 }));
 
+vi.mock('firebase/functions', () => ({
+  httpsCallable: vi.fn(),
+}));
+
 vi.mock('@/config/firebase', () => ({
   db: {},
+  functions: {},
   isAuthBypass: false,
 }));
 
@@ -202,15 +208,93 @@ describe('useOrgMembers', () => {
     expect(batchCommit).toHaveBeenCalledTimes(1);
   });
 
-  it('inviteMembers is still a Phase 4 stub', async () => {
+  it('inviteMembers calls the createOrganizationInvites callable with the correct payload', async () => {
     mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
     mockOnSnapshot.mockReturnValue(() => undefined);
 
+    const mockCallable = vi.fn().mockResolvedValue({
+      data: {
+        invitations: [
+          {
+            email: 'a@x.com',
+            token: 't',
+            claimUrl: 'https://x/invite/t',
+            status: 'created',
+          },
+        ],
+        errors: [],
+      },
+    });
+    (httpsCallable as Mock).mockReturnValue(mockCallable);
+
     const { result } = renderHook(() => useOrgMembers('orono'));
 
+    const response = await result.current.inviteMembers(
+      ['a@x.com'],
+      'teacher',
+      ['high'],
+      'welcome'
+    );
+
+    expect(httpsCallable).toHaveBeenCalledWith(
+      expect.anything(),
+      'createOrganizationInvites'
+    );
+    expect(mockCallable).toHaveBeenCalledWith({
+      orgId: 'orono',
+      invitations: [
+        { email: 'a@x.com', roleId: 'teacher', buildingIds: ['high'] },
+      ],
+      message: 'welcome',
+    });
+    expect(response.invitations).toHaveLength(1);
+    expect(response.invitations[0]?.claimUrl).toBe('https://x/invite/t');
+  });
+
+  it('bulkInviteMembers passes per-row role + buildings through unchanged', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
+    const mockCallable = vi
+      .fn()
+      .mockResolvedValue({ data: { invitations: [], errors: [] } });
+    (httpsCallable as Mock).mockReturnValue(mockCallable);
+
+    const { result } = renderHook(() => useOrgMembers('orono'));
+
+    await result.current.bulkInviteMembers([
+      { email: 'a@x.com', roleId: 'teacher', buildingIds: ['high'] },
+      { email: 'b@x.com', roleId: 'domain_admin', buildingIds: [] },
+    ]);
+
+    expect(mockCallable).toHaveBeenCalledWith({
+      orgId: 'orono',
+      invitations: [
+        { email: 'a@x.com', roleId: 'teacher', buildingIds: ['high'] },
+        { email: 'b@x.com', roleId: 'domain_admin', buildingIds: [] },
+      ],
+      message: undefined,
+    });
+  });
+
+  it('bulkInviteMembers short-circuits on empty intent list without calling the CF', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+    const mockCallable = vi.fn();
+    (httpsCallable as Mock).mockReturnValue(mockCallable);
+
+    const { result } = renderHook(() => useOrgMembers('orono'));
+    const response = await result.current.bulkInviteMembers([]);
+    expect(mockCallable).not.toHaveBeenCalled();
+    expect(response).toEqual({ invitations: [], errors: [] });
+  });
+
+  it('inviteMembers rejects when orgId is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const { result } = renderHook(() => useOrgMembers(null));
     await expect(
-      result.current.inviteMembers([], 'teacher', [])
-    ).rejects.toThrow(/Phase 4/);
+      result.current.inviteMembers(['a@x.com'], 'teacher', [])
+    ).rejects.toThrow(/No organization/);
   });
 
   it('writes reject when orgId is null', async () => {
