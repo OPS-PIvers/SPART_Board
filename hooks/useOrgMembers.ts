@@ -1,14 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   collection,
-  deleteDoc,
   doc,
   onSnapshot,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import type { MemberRecord, UserRecord } from '@/types/organization';
+
+// Firestore caps writeBatch at 500 operations; 400 leaves headroom for
+// incidental writes on the same path (e.g. migration scripts) without
+// hitting the limit. Matches the chunk size used by useFolders.
+const BATCH_CHUNK = 400;
+
+const chunk = <T>(items: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+};
 
 // Derive a display name from an email local-part when the member record
 // doesn't carry one. Matches the pattern used by the prototype invite flow.
@@ -131,9 +144,16 @@ export const useOrgMembers = (orgId: string | null) => {
     const memberPatch = userPatchToMemberPatch(patch);
     if (Object.keys(memberPatch).length === 0 || ids.length === 0) return;
     await Promise.all(
-      ids.map((id) =>
-        updateDoc(doc(db, 'organizations', orgId, 'members', id), memberPatch)
-      )
+      chunk(ids, BATCH_CHUNK).map((batchIds) => {
+        const batch = writeBatch(db);
+        for (const id of batchIds) {
+          batch.update(
+            doc(db, 'organizations', orgId, 'members', id),
+            memberPatch
+          );
+        }
+        return batch.commit();
+      })
     );
   };
 
@@ -143,7 +163,13 @@ export const useOrgMembers = (orgId: string | null) => {
     }
     if (ids.length === 0) return;
     await Promise.all(
-      ids.map((id) => deleteDoc(doc(db, 'organizations', orgId, 'members', id)))
+      chunk(ids, BATCH_CHUNK).map((batchIds) => {
+        const batch = writeBatch(db);
+        for (const id of batchIds) {
+          batch.delete(doc(db, 'organizations', orgId, 'members', id));
+        }
+        return batch.commit();
+      })
     );
   };
 

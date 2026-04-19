@@ -103,24 +103,31 @@ service cloud.firestore {
       match /buildings/{buildingId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
         // Only domain+ admins can create/delete buildings. Create must carry
-        // the canonical orgId and matching doc id so clients can't seed
-        // records that misrepresent their parent.
+        // the canonical orgId + matching doc id, pin `users == 0` (derived
+        // count, server-managed), and only include the known building fields
+        // so clients can't seed unexpected attributes.
         allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           request.resource.data.orgId == orgId &&
-          request.resource.data.id == buildingId;
+          request.resource.data.id == buildingId &&
+          request.resource.data.users == 0 &&
+          request.resource.data.keys().hasOnly([
+            'id', 'orgId', 'name', 'address', 'grades', 'type',
+            'adminEmails', 'users'
+          ]);
         allow delete: if isSuperAdmin() || isDomainAdmin(orgId);
-        // Building admins can edit the mutable fields of buildings they
-        // manage; domain+ admins edit any building. Identity fields
-        // (id, orgId) are immutable for all tiers below super admin.
-        allow update: if (isSuperAdmin() ||
-            (isDomainAdmin(orgId) &&
+        // Domain+ admins edit any building in their org; building admins edit
+        // only buildings they manage. Both tiers share a field whitelist so
+        // neither can touch identity fields (id, orgId) or the server-managed
+        // `users` count. Super admins are unrestricted.
+        allow update: if isSuperAdmin() ||
+            ((isDomainAdmin(orgId) ||
+              (isBuildingAdmin(orgId) &&
+               buildingId in orgMember(orgId).buildingIds)) &&
              request.resource.data.id == resource.data.id &&
-             request.resource.data.orgId == resource.data.orgId) ||
-            (isBuildingAdmin(orgId) &&
-             buildingId in orgMember(orgId).buildingIds &&
+             request.resource.data.orgId == resource.data.orgId &&
              request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                'name', 'address', 'grades', 'type', 'adminEmails'
-             ])));
+             ]));
       }
 
       match /domains/{domainId} {
@@ -204,9 +211,15 @@ service cloud.firestore {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
         // Only the canonical `default` doc is writable; clients never need
         // arbitrary config ids, and delete is refused so the org always has
-        // a config doc (rules tier narrows the attack surface).
+        // a config doc. Payload must carry the canonical orgId and only the
+        // known config fields so clients can't seed unexpected attributes.
         allow create, update: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
-          configId == 'default';
+          configId == 'default' &&
+          request.resource.data.orgId == orgId &&
+          request.resource.data.keys().hasOnly([
+            'orgId', 'showAnnouncements', 'showTeacherDirectory',
+            'showLunchMenu', 'accentColor', 'heroText'
+          ]);
         allow delete: if false;
       }
 

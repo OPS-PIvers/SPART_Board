@@ -68,6 +68,9 @@ export const useOrgBuildings = (orgId: string | null) => {
       throw new Error('No organization selected.');
     }
     const id = building.id ?? slugOrFallback(building.name ?? '', 'building');
+    // `users` is a derived count maintained server-side; `id`/`orgId` are
+    // fixed by the path. Hard-code safe defaults so caller data can't
+    // spoof counts — the rules also pin `users == 0` on create.
     const record: BuildingRecord = {
       id,
       orgId,
@@ -75,7 +78,7 @@ export const useOrgBuildings = (orgId: string | null) => {
       type: (building.type as BuildingType) ?? 'other',
       address: building.address ?? '',
       grades: building.grades ?? '',
-      users: building.users ?? 0,
+      users: 0,
       adminEmails: building.adminEmails ?? [],
     };
     await setDoc(doc(db, 'organizations', orgId, 'buildings', id), record);
@@ -88,7 +91,9 @@ export const useOrgBuildings = (orgId: string | null) => {
     if (!orgId) {
       throw new Error('No organization selected.');
     }
-    const { id: _omitId, orgId: _omitOrg, ...rest } = patch;
+    // Strip identity + server-managed fields defensively — rules reject these
+    // via the field whitelist, but filtering client-side avoids the round-trip.
+    const { id: _omitId, orgId: _omitOrg, users: _omitUsers, ...rest } = patch;
     if (Object.keys(rest).length === 0) return;
     await updateDoc(doc(db, 'organizations', orgId, 'buildings', id), rest);
   };

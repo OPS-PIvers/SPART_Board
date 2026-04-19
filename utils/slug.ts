@@ -20,7 +20,7 @@ export const slugify = (input: string): string =>
     .toLowerCase()
     .replace(/^@/, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/^-+|-+$/g, '')
     .slice(0, MAX_SLUG_LENGTH);
 
 /**

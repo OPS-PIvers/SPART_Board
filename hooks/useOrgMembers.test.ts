@@ -4,19 +4,19 @@ import { useOrgMembers } from './useOrgMembers';
 import { useAuth } from '@/context/useAuth';
 import {
   collection,
-  deleteDoc,
   doc,
   onSnapshot,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import type { MemberRecord } from '@/types/organization';
 
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
-  deleteDoc: vi.fn(),
   doc: vi.fn(),
   onSnapshot: vi.fn(),
   updateDoc: vi.fn(),
+  writeBatch: vi.fn(),
 }));
 
 vi.mock('@/config/firebase', () => ({
@@ -44,7 +44,10 @@ describe('useOrgMembers', () => {
   const mockOnSnapshot = onSnapshot as Mock;
   const mockDoc = doc as Mock;
   const mockUpdateDoc = updateDoc as Mock;
-  const mockDeleteDoc = deleteDoc as Mock;
+  const mockWriteBatch = writeBatch as Mock;
+  const batchUpdate = vi.fn();
+  const batchDelete = vi.fn();
+  const batchCommit = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,7 +56,14 @@ describe('useOrgMembers', () => {
       segs.join('/')
     );
     mockUpdateDoc.mockResolvedValue(undefined);
-    mockDeleteDoc.mockResolvedValue(undefined);
+    batchUpdate.mockReset();
+    batchDelete.mockReset();
+    batchCommit.mockReset().mockResolvedValue(undefined);
+    mockWriteBatch.mockReturnValue({
+      update: batchUpdate,
+      delete: batchDelete,
+      commit: batchCommit,
+    });
   });
 
   it('skips subscription when orgId is null', () => {
@@ -128,7 +138,7 @@ describe('useOrgMembers', () => {
     expect(mockUpdateDoc).not.toHaveBeenCalled();
   });
 
-  it('bulkUpdateMembers fans out across ids', async () => {
+  it('bulkUpdateMembers batches writes via writeBatch', async () => {
     mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
     mockOnSnapshot.mockReturnValue(() => undefined);
 
@@ -140,18 +150,38 @@ describe('useOrgMembers', () => {
       });
     });
 
-    expect(mockUpdateDoc).toHaveBeenCalledTimes(2);
-    expect(mockUpdateDoc).toHaveBeenCalledWith(
+    expect(mockWriteBatch).toHaveBeenCalledTimes(1);
+    expect(batchUpdate).toHaveBeenCalledTimes(2);
+    expect(batchUpdate).toHaveBeenCalledWith(
       'organizations/orono/members/a@x.com',
       { status: 'inactive' }
     );
-    expect(mockUpdateDoc).toHaveBeenCalledWith(
+    expect(batchUpdate).toHaveBeenCalledWith(
       'organizations/orono/members/b@x.com',
       { status: 'inactive' }
     );
+    expect(batchCommit).toHaveBeenCalledTimes(1);
+    expect(mockUpdateDoc).not.toHaveBeenCalled();
   });
 
-  it('removeMembers fans out deleteDoc calls', async () => {
+  it('bulkUpdateMembers chunks batches at the 400-op ceiling', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
+    const { result } = renderHook(() => useOrgMembers('orono'));
+
+    const ids = Array.from({ length: 450 }, (_, i) => `u${i}@x.com`);
+
+    await act(async () => {
+      await result.current.bulkUpdateMembers(ids, { status: 'inactive' });
+    });
+
+    expect(mockWriteBatch).toHaveBeenCalledTimes(2);
+    expect(batchUpdate).toHaveBeenCalledTimes(450);
+    expect(batchCommit).toHaveBeenCalledTimes(2);
+  });
+
+  it('removeMembers batches deletes via writeBatch', async () => {
     mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
     mockOnSnapshot.mockReturnValue(() => undefined);
 
@@ -161,13 +191,15 @@ describe('useOrgMembers', () => {
       await result.current.removeMembers(['a@x.com', 'b@x.com']);
     });
 
-    expect(mockDeleteDoc).toHaveBeenCalledTimes(2);
-    expect(mockDeleteDoc).toHaveBeenCalledWith(
+    expect(mockWriteBatch).toHaveBeenCalledTimes(1);
+    expect(batchDelete).toHaveBeenCalledTimes(2);
+    expect(batchDelete).toHaveBeenCalledWith(
       'organizations/orono/members/a@x.com'
     );
-    expect(mockDeleteDoc).toHaveBeenCalledWith(
+    expect(batchDelete).toHaveBeenCalledWith(
       'organizations/orono/members/b@x.com'
     );
+    expect(batchCommit).toHaveBeenCalledTimes(1);
   });
 
   it('inviteMembers is still a Phase 4 stub', async () => {

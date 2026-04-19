@@ -415,6 +415,7 @@ describe('organizations/buildings — writes', () => {
         id: 'new',
         orgId: ORG_ID,
         name: 'New School',
+        users: 0,
       })
     );
     await assertSucceeds(
@@ -436,6 +437,7 @@ describe('organizations/buildings — writes', () => {
         id: 'sneaky',
         orgId: OTHER_ORG_ID, // spoofed parent
         name: 'Sneaky',
+        users: 0,
       })
     );
   });
@@ -446,7 +448,43 @@ describe('organizations/buildings — writes', () => {
         id: 'fake',
         orgId: ORG_ID,
         name: 'Mismatch',
+        users: 0,
       })
+    );
+  });
+
+  it('domain admin cannot create a building with users != 0', async () => {
+    await assertFails(
+      setDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/buildings/inflate`),
+        {
+          id: 'inflate',
+          orgId: ORG_ID,
+          name: 'Inflated',
+          users: 9999, // derived count — server-managed
+        }
+      )
+    );
+  });
+
+  it('domain admin cannot create a building with unknown keys', async () => {
+    await assertFails(
+      setDoc(doc(asDomainAdmin(), `organizations/${ORG_ID}/buildings/extra`), {
+        id: 'extra',
+        orgId: ORG_ID,
+        name: 'Extra',
+        users: 0,
+        secretField: 'nope', // not in the whitelist
+      })
+    );
+  });
+
+  it('domain admin cannot mutate derived `users` on a building', async () => {
+    await assertFails(
+      updateDoc(
+        doc(asDomainAdmin(), `organizations/${ORG_ID}/buildings/high`),
+        { users: 9999 }
+      )
     );
   });
 
@@ -498,6 +536,7 @@ describe('organizations/buildings — writes', () => {
         id: 'new',
         orgId: ORG_ID,
         name: 'X',
+        users: 0,
       })
     );
     await assertFails(
@@ -1014,6 +1053,34 @@ describe('organizations/studentPageConfig — writes', () => {
     await assertFails(
       deleteDoc(
         doc(asSuper(), `organizations/${ORG_ID}/studentPageConfig/default`)
+      )
+    );
+  });
+
+  it('domain admin cannot create student page config with mismatched orgId', async () => {
+    await assertFails(
+      setDoc(
+        doc(
+          asDomainAdmin(),
+          `organizations/${ORG_ID}/studentPageConfig/default`
+        ),
+        { orgId: OTHER_ORG_ID, heroText: 'spoof' }
+      )
+    );
+  });
+
+  it('domain admin cannot create student page config with unknown keys', async () => {
+    await assertFails(
+      setDoc(
+        doc(
+          asDomainAdmin(),
+          `organizations/${ORG_ID}/studentPageConfig/default`
+        ),
+        {
+          orgId: ORG_ID,
+          heroText: 'Hi',
+          secretField: 'nope', // not in whitelist
+        }
       )
     );
   });
