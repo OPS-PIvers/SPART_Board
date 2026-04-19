@@ -204,10 +204,11 @@ export const MathToolsWidget: React.FC<{ widget: WidgetData }> = ({
           style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           <div
-            className="flex items-center gap-2 text-slate-400 font-medium shrink-0"
+            className="flex items-center text-slate-400 font-medium shrink-0"
             style={{
               fontSize: 'min(9px, 3.2cqmin)',
               marginBottom: 'min(12px, 2.5cqmin)',
+              gap: 'min(8px, 1.8cqmin)',
             }}
           >
             <span>{activeSection.subtitle}</span>
