@@ -417,7 +417,35 @@ export const RowMenu: React.FC<{ items: MenuItem[]; label?: string }> = ({
       const el = triggerRef.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+      const menuRect = menuRef.current?.getBoundingClientRect();
+      const viewportMargin = 8;
+      const gap = 4;
+      const menuWidth = Math.max(menuRect?.width ?? 0, 200);
+      const menuHeight = menuRect?.height ?? 0;
+
+      const preferredTop = r.bottom + gap;
+      const flippedTop = r.top - menuHeight - gap;
+      const maxTop = Math.max(
+        viewportMargin,
+        window.innerHeight - menuHeight - viewportMargin
+      );
+      const top =
+        menuHeight > 0 &&
+        preferredTop + menuHeight > window.innerHeight - viewportMargin
+          ? Math.max(viewportMargin, flippedTop)
+          : Math.min(preferredTop, maxTop);
+
+      const preferredRight = window.innerWidth - r.right;
+      const maxRight = Math.max(
+        viewportMargin,
+        window.innerWidth - menuWidth - viewportMargin
+      );
+      const right = Math.min(
+        Math.max(preferredRight, viewportMargin),
+        maxRight
+      );
+
+      setPos({ top, right });
     };
     measure();
     const raf = requestAnimationFrame(measure);
