@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import type { OrgRecord } from '@/types/organization';
@@ -8,7 +8,11 @@ import type { OrgRecord } from '@/types/organization';
  * Subscribes to a single `/organizations/{orgId}` doc. Reads are gated at the
  * rules layer to org members + super admins; non-members will see an error.
  *
- * Writes (update / archive) are stubbed — Phase 3 wires real mutations.
+ * Writes: `updateOrg` patches the org doc; `archiveOrg` soft-archives by
+ * setting `status: 'archived'` (the rules don't allow client delete at the
+ * domain-admin tier, and hard-delete cascades across sub-collections). Both
+ * mutations require the `org-admin-writes` feature flag to be enabled in the
+ * client gate — the rules still enforce role scoping regardless.
  */
 export const useOrganization = (orgId: string | null) => {
   const { user } = useAuth();
@@ -50,13 +54,22 @@ export const useOrganization = (orgId: string | null) => {
     return unsub;
   }, [shouldSubscribe, orgId]);
 
-  const updateOrg = (_patch: Partial<OrgRecord>): Promise<void> =>
-    Promise.reject(new Error('Organization edits will be enabled in Phase 3.'));
+  const updateOrg = async (patch: Partial<OrgRecord>): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    // Never let a client clobber the doc id field.
+    const { id: _omit, ...rest } = patch;
+    if (Object.keys(rest).length === 0) return;
+    await updateDoc(doc(db, 'organizations', orgId), rest);
+  };
 
-  const archiveOrg = (): Promise<void> =>
-    Promise.reject(
-      new Error('Organization archival will be enabled in Phase 3.')
-    );
+  const archiveOrg = async (): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    await updateDoc(doc(db, 'organizations', orgId), { status: 'archived' });
+  };
 
   return {
     organization,

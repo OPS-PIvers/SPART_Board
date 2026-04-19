@@ -63,10 +63,21 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.token.email.lower()));
     }
 
-    // ---- Organizations collection (Phase 1: read-only foundation) ----
-    // All writes are blocked until Phase 3 wires the scoping + feature flag.
-    // TODO(phase-3): replace `allow write: if false` with scoped rules using
-    // isSuperAdmin(), isDomainAdmin(orgId), isBuildingAdmin(orgId).
+    // ---- Organizations collection (Phase 3: scoped writes enabled) ----
+    // Rules enforce role scoping; the client additionally gates UI via the
+    // `org-admin-writes` feature flag so ramp-up stays controlled. Writes that
+    // bypass the client gate still land in these rules.
+    //
+    // Scoping summary:
+    //   - Super admins: any field, any org.
+    //   - Domain admins: org-wide writes for their org (except AI/plan flags
+    //     reserved to super admins) — create/update/delete on buildings,
+    //     domains, roles (custom only), members, studentPageConfig.
+    //   - Building admins: read-only almost everywhere; on members, may
+    //     update `status` for a member whose existing buildingIds intersect
+    //     the actor's own buildingIds. Never roleId.
+    //   - System roles (`system: true`) are immutable from clients —
+    //     migration script seeds them once; clone-to-customize is the path.
 
     // Short-circuit ordering note: `isOrgMember()` performs a single targeted
     // `exists()` against the caller's member doc, while `isSuperAdmin()` runs
@@ -76,21 +87,103 @@ service cloud.firestore {
 
     match /organizations/{orgId} {
       allow read: if isOrgMember(orgId) || isSuperAdmin();
-      allow write: if false; // TODO(phase-3)
+      // Only super admins can create, archive (delete), flip AI/plan, or
+      // change `status` (soft-archive). Domain admins can edit identity-ish
+      // fields for their own org. `users`/`buildings` are derived counts
+      // maintained server-side — never settable from the client at the
+      // domain-admin tier.
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() ||
+        (isDomainAdmin(orgId) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'name', 'shortName', 'shortCode', 'state', 'primaryAdminEmail',
+           'seedColor', 'supportUrl'
+         ]));
 
       match /buildings/{buildingId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // Only domain+ admins can create/delete buildings. Create must carry
+        // the canonical orgId + matching doc id, pin `users == 0` (derived
+        // count, server-managed), and only include the known building fields
+        // so clients can't seed unexpected attributes.
+        allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          request.resource.data.orgId == orgId &&
+          request.resource.data.id == buildingId &&
+          request.resource.data.users == 0 &&
+          request.resource.data.keys().hasOnly([
+            'id', 'orgId', 'name', 'address', 'grades', 'type',
+            'adminEmails', 'users'
+          ]);
+        allow delete: if isSuperAdmin() || isDomainAdmin(orgId);
+        // Domain+ admins edit any building in their org; building admins edit
+        // only buildings they manage. Both tiers share a field whitelist so
+        // neither can touch identity fields (id, orgId) or the server-managed
+        // `users` count. Super admins are unrestricted.
+        allow update: if isSuperAdmin() ||
+            ((isDomainAdmin(orgId) ||
+              (isBuildingAdmin(orgId) &&
+               buildingId in orgMember(orgId).buildingIds)) &&
+             request.resource.data.id == resource.data.id &&
+             request.resource.data.orgId == resource.data.orgId &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+               'name', 'address', 'grades', 'type', 'adminEmails'
+             ]));
       }
 
       match /domains/{domainId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // Domain admin or super admin only. Create must carry canonical
+        // orgId + matching doc id, and clients cannot seed `status:'verified'`
+        // or inflate `users` — verification is DNS-based server-side, and
+        // `users` is a derived count. `keys().hasOnly([...])` mirrors the
+        // shape enforced on buildings/roles/members so clients can't stash
+        // arbitrary fields on create. Update is whitelisted to the fields
+        // admins actually configure.
+        allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          request.resource.data.orgId == orgId &&
+          request.resource.data.id == domainId &&
+          request.resource.data.status == 'pending' &&
+          request.resource.data.users == 0 &&
+          request.resource.data.keys().hasOnly([
+            'id', 'orgId', 'domain', 'authMethod', 'status', 'role',
+            'users', 'addedAt'
+          ]);
+        allow delete: if isSuperAdmin() || isDomainAdmin(orgId);
+        allow update: if isSuperAdmin() ||
+          (isDomainAdmin(orgId) &&
+           request.resource.data.id == resource.data.id &&
+           request.resource.data.orgId == resource.data.orgId &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'domain', 'authMethod', 'role'
+           ]));
       }
 
       match /roles/{roleId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // System roles are immutable from clients — the migration script
+        // seeds them with `{ merge: true }` so the first write happens server
+        // side; every client mutation is refused if `system == true`.
+        // Client-created roles must carry canonical path identity, be
+        // explicitly non-system, and stay within the supported schema so
+        // clients can't attach unexpected fields.
+        allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          request.resource.data.id == roleId &&
+          request.resource.data.system == false &&
+          request.resource.data.keys().hasAll(['id', 'name', 'system', 'perms']) &&
+          request.resource.data.keys().hasOnly([
+            'id', 'name', 'blurb', 'color', 'system', 'perms'
+          ]);
+        // Update whitelist keeps identity (id) and seed flag (system) pinned
+        // and blocks extensions beyond the known fields.
+        allow update: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          resource.data.system != true &&
+          request.resource.data.system == resource.data.system &&
+          request.resource.data.id == resource.data.id &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'blurb', 'color', 'perms'
+          ]);
+        allow delete: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          resource.data.system != true;
       }
 
       match /members/{emailLower} {
@@ -103,12 +196,63 @@ service cloud.firestore {
                        request.auth.token.email.lower() == emailLower) ||
                     isOrgMember(orgId) ||
                     isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // Domain+ admins manage members with a field whitelist so identity
+        // fields (email, orgId, uid, addedBy, addedBySource) stay pinned to
+        // what the invitation/sign-in flow set. `uid` is intentionally not
+        // in the update whitelist: Phase 4's first-sign-in link-uid write
+        // must happen through a Cloud Function (Admin SDK bypasses these
+        // rules) so no client actor can reassign a member's uid and hijack
+        // the linked account. Building admins can only update `status` on
+        // members whose buildingIds intersect their own — see the update
+        // branch below for the `hasAny()` scoping note.
+        // Create enforces shape: doc id == lowercased email (both the path
+        // segment and payload field must be lowercase so isOrgMember() — which
+        // always looks up `members/{token.email.lower()}` — can find the
+        // record), required fields present, and only the invite-shape keys
+        // are allowed.
+        allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          emailLower == emailLower.lower() &&
+          request.resource.data.email == emailLower &&
+          request.resource.data.email == request.resource.data.email.lower() &&
+          request.resource.data.orgId == orgId &&
+          request.resource.data.keys().hasAll(['email', 'orgId', 'roleId', 'buildingIds', 'status']) &&
+          request.resource.data.keys().hasOnly([
+            'email', 'orgId', 'roleId', 'buildingIds', 'status',
+            'name', 'invitedAt', 'addedBy', 'addedBySource'
+          ]);
+        allow delete: if isSuperAdmin() || isDomainAdmin(orgId);
+        allow update: if isSuperAdmin() ||
+          (isDomainAdmin(orgId) &&
+           request.resource.data.email == resource.data.email &&
+           request.resource.data.orgId == resource.data.orgId &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'roleId', 'buildingIds', 'status', 'name', 'invitedAt', 'lastActive'
+           ])) ||
+          // Building admin can flip `status` on a member whose buildingIds
+          // overlap their own. `hasAny([])` returns false, so a newly
+          // invited member with `buildingIds: []` is *not* editable by a
+          // building admin — the domain admin must assign a building first.
+          // This is intentional: building admins shouldn't be able to act on
+          // members who haven't been scoped into their building yet.
+          (isBuildingAdmin(orgId) &&
+           resource.data.buildingIds.hasAny(orgMember(orgId).buildingIds) &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       }
 
       match /studentPageConfig/{configId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        allow write: if false; // TODO(phase-3)
+        // Only the canonical `default` doc is writable; clients never need
+        // arbitrary config ids, and delete is refused so the org always has
+        // a config doc. Payload must carry the canonical orgId and only the
+        // known config fields so clients can't seed unexpected attributes.
+        allow create, update: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
+          configId == 'default' &&
+          request.resource.data.orgId == orgId &&
+          request.resource.data.keys().hasOnly([
+            'orgId', 'showAnnouncements', 'showTeacherDirectory',
+            'showLunchMenu', 'accentColor', 'heroText'
+          ]);
+        allow delete: if false;
       }
 
       match /invitations/{token} {

@@ -3,8 +3,8 @@
 Wire the newly-merged `components/admin/Organization/` scaffold (PR #1348) to real Firestore, replacing `mockData.ts`. The scaffold is UI-complete and landed on `dev-paul` as a non-functional preview; this plan delivers real persistence in four shippable phases.
 
 **Base branch:** `dev-paul`
-**Last updated:** 2026-04-18
-**Status:** Phase 2 complete — PR #1351 cleared for merge (pending preview QA); Phase 3 ready to start on `claude/org-wiring-p3-writes`
+**Last updated:** 2026-04-19
+**Status:** Phase 3 review fixes landed on `claude/implement-org-wiring-phase-3-qtCsb` (commit `702e07f4`); rules-unit suite green locally (83/83), `pnpm run validate` green (1331 tests). Awaiting Paul's manual QA in preview before merging to `dev-paul` and kicking off Phase 4.
 
 ---
 
@@ -23,13 +23,13 @@ If implementation is interrupted, do this before writing any code:
 
 ## Current State
 
-| Field               | Value                                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Active phase        | Phase 2 complete — ready for Phase 3                                                                                                 |
-| Active branch       | `claude/implement-org-wiring-phase-2-NRzzg` — PR #1351 (commits `180e370`, `27beb25`, `5fd0e6b`); merge pending manual QA in preview |
-| Last completed task | Phase 2 / R — review-feedback fixes applied (defensive `id` spread, super-admin listener gating, membership hydration loading, docs) |
-| Last updated (UTC)  | 2026-04-18                                                                                                                           |
-| Next action         | Phase 2 / Q (manual QA in preview) then kick off Phase 3 on `claude/org-wiring-p3-writes`                                            |
+| Field               | Value                                                                                                                                                                                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase        | Phase 3 implementation complete + review fixes applied — awaiting Paul's manual QA (task R) before Phase 4                                                                                                                                          |
+| Active branch       | `claude/implement-org-wiring-phase-3-qtCsb` (PR #1352, currently draft, MERGEABLE)                                                                                                                                                                  |
+| Last completed task | Phase 3 / T — review-feedback fixes (`702e07f4`): domain `keys().hasOnly([...])`, uid-CF-only rules comment, empty-`buildingIds` rules comment, `handleArchiveOrg` dev warning, deploy-order doc, +1 rules test. Rules suite green locally (83/83). |
+| Last updated (UTC)  | 2026-04-19                                                                                                                                                                                                                                          |
+| Next action         | Phase 3 / R (Paul manual QA in preview) → flip PR out of draft → merge → kick off Phase 4 on `claude/org-wiring-p4-invites`                                                                                                                         |
 
 ---
 
@@ -172,12 +172,12 @@ View prop signatures were not changed — instead, the panel wires hook data in 
 **Serial:**
 
 - [x] **P — Remove `mockData.ts`.** Deleted. `CAPABILITY_GROUPS` was extracted to `config/organizationCapabilities.ts` first so it remained the source of truth for the Roles matrix + the migration script's `SYSTEM_ROLES.perms` block.
-- [ ] **Q — Manual QA in preview.** Sign in as paul.ivers@orono.k12.mn.us; verify every section loads real data. _(Pending — requires preview deploy from this branch; this is the only remaining blocker before the PR merges.)_
-- [x] **R — Update this doc.** Phase 2 task ledger closed (commits `180e370` → `27beb25` → `5fd0e6b`); Current State advanced to Phase 3 handoff.
+- [x] **Q — Manual QA in preview.** Signed in as paul.ivers@orono.k12.mn.us on 2026-04-19; every section loads real Firestore data. Mobile viewport required a follow-up fix (`b593c9ca`) — the panel's outer `flex gap-6` wrapper was a flex-row with no mobile override, so the `md:hidden w-full` section selector claimed 100% width and squeezed `<main>` (flex-1) to 0px, making every tab appear blank on mobile. Fix: added `flex-col md:flex-row` so the layout stacks vertically on mobile. Counters (`users` on org/buildings/domains) still render as 0; this is expected — they're denormalized fields whose maintenance ships as a Phase 4 Cloud Function.
+- [x] **R — Update this doc.** Phase 2 task ledger closed (commits `180e370` → `27beb25` → `5fd0e6b` → `b593c9ca`); Current State advanced to Phase 3 handoff.
 
 ### Acceptance checklist
 
-- [ ] Every view renders real Firestore data (verified in preview) _(pending preview QA — task Q)_
+- [x] Every view renders real Firestore data (verified in preview 2026-04-19)
 - [x] No `SEED_*` references remain in `components/admin/Organization/` (verified via `rg 'SEED_' components/admin/Organization` → no matches)
 - [x] Write buttons/menus show "Coming soon" toasts (not errors) — all handlers route through `OrganizationPanel`'s `showComingSoon()` helper
 - [x] `pnpm run validate` passes — green on `5fd0e6b` (type-check + lint + format-check + 1312 unit tests)
@@ -189,58 +189,86 @@ View prop signatures were not changed — instead, the panel wires hook data in 
 
 Enable writes for each view, gated on a new `orgAdminWrites` entry in the existing `feature_permissions` collection. Paul tests live first as the sole beta user; graduate to `admin` or `public` once verified.
 
-**Branch:** `claude/org-wiring-p3-writes`
+**Branch:** `claude/implement-org-wiring-phase-3-qtCsb`
 **Depends on:** Phase 2
-**Status:** Not started
+**Status:** Implementation complete; awaiting Paul's manual QA in preview (task R).
 
 ### Deliverables
 
-- [ ] `feature_permissions/orgAdminWrites` document exists with `accessLevel: 'beta'`, `betaUsers: ['paul.ivers@orono.k12.mn.us']`
-- [ ] Each hook's `add`/`update`/`remove` runs real Firestore writes when flag allows, else throws a gated error caught by view layer
-- [ ] `firestore.rules` enforces scoping: super-admin for org create/delete, domain-admin for org-wide fields, building-admin restricted to diff of `buildingIds` + `status` on members within their buildings
-- [ ] Rules-unit tests cover: domain-admin cannot edit another org; building-admin cannot change member `roleId`; building-admin can update member `status` only within their buildings
-- [ ] Debounced "saving…" indicator (reuse existing pattern from other admin views)
+- [x] `global_permissions/org-admin-writes` seeded via `scripts/init-global-perms.js` with `accessLevel: 'beta'`, `betaUsers: ['paul.ivers@orono.k12.mn.us']` (new `GlobalFeature` union member `'org-admin-writes'`)
+- [x] Each hook's `add`/`update`/`remove` runs real Firestore writes; panel throws `"No organization selected"` when `orgId` is null (view layer catches via the `run()` helper and surfaces an error toast)
+- [x] `firestore.rules` enforces scoping: super-admin for org `create`/`delete` + `aiEnabled`/`plan`; domain-admin for identity fields (via `affectedKeys().hasOnly([...])`); building-admin restricted to diffing member `status` within their `buildingIds`; system roles (`system:true`) immutable at the rules tier
+- [x] Rules-unit tests cover: domain-admin cannot touch `aiEnabled`/`plan`; building-admin cannot change member `roleId` or `buildingIds`; building-admin can update member `status` only within their buildings; system roles cannot be mutated or deleted; cross-org writes blocked; invitations fully locked
+- [x] Toasts surface success/error per mutation (reuses the Phase 2 `OrgToast` primitive; no debounced saving indicator needed because writes are optimistic via `onSnapshot`)
 
 ### Task ledger
 
 **Serial (rules must land before writes are attempted):**
 
-- [ ] **A — Rules update.** Replace `allow write: if false` stubs in `firestore.rules` with real scoping using helpers added in P1. Deploy to preview.
-- [ ] **B — Rules tests.** Expand `tests/e2e/firestore-rules-organizations.test.ts` to cover every write path. Must pass before any hook write lands.
+- [x] **A — Rules update.** Replaced `allow write: if false` stubs in `firestore.rules` with real scoping using helpers added in P1. `affectedKeys().hasOnly([...])` enforces field whitelists per actor role; system roles are blocked entirely. _Deploy is a user-owned step — `firebase deploy --only firestore:rules --project spartboard` from a host with credentials._
+- [x] **B — Rules tests.** Expanded `tests/rules/firestore-rules-organizations.test.ts` to cover every write path (super admin, domain admin, building admin; in-scope + out-of-scope member updates; system-role immutability; invitations still locked; legacy `/admins/*` still readable). First green run still requires a host with Java for the emulator.
 
 **Parallelizable — batch 1 (each hook gets a write path; no cross-file writes):**
 
-- [ ] **C — Writes in `useOrganization.ts`** (updateOrg, archiveOrg) + tests
-- [ ] **D — Writes in `useOrgBuildings.ts`** (add, update, remove) + tests
-- [ ] **E — Writes in `useOrgDomains.ts`** + tests
-- [ ] **F — Writes in `useOrgRoles.ts`** (create/clone/delete system-role-protected) + tests
-- [ ] **G — Writes in `useOrgMembers.ts`** (status, roleId, buildingIds, bulk update) + tests
-- [ ] **H — Writes in `useOrgStudentPage.ts`** + tests
-- [ ] **I — Writes in `useOrganizations.ts`** (create org, archive) + tests — super-admin only
+- [x] **C — Writes in `useOrganization.ts`** (`updateOrg` strips `id`; `archiveOrg` sets `status:'archived'`) + tests
+- [x] **D — Writes in `useOrgBuildings.ts`** (`addBuilding` derives slug id + defaults; `updateBuilding` strips `id`/`orgId`; `removeBuilding` deletes) + tests
+- [x] **E — Writes in `useOrgDomains.ts`** (`addDomain` derives a slug id from the domain string with dot→dash; `removeDomain` deletes) + tests
+- [x] **F — Writes in `useOrgRoles.ts`** (`saveRoles` upserts non-system roles + deletes custom roles dropped from the working set; system roles are filtered out client-side because the rules tier blocks writes to them; `resetRoles` deletes every custom role) + tests
+- [x] **G — Writes in `useOrgMembers.ts`** (`updateMember` translates UI `role` → `roleId` and strips identity fields; `bulkUpdateMembers` + `removeMembers` fan out via `Promise.all`; `inviteMembers` remains a Phase-4 stub that rejects) + tests
+- [x] **H — Writes in `useOrgStudentPage.ts`** (`updateStudentPage` uses `setDoc(..., { merge: true })` so the first write still works if the migration hasn't seeded the config; strips `orgId` from the patch and re-injects the canonical value) + tests
+- [x] **I — Writes in `useOrganizations.ts`** (`createOrg` derives an id via `slugFromName()` and seeds `{ createdAt: ISO, plan:'basic', status:'trial', users:0, buildings:0, seedColor }`; `archiveOrg(orgId)` sets `status:'archived'`) + tests — super-admin only
 
 **Parallelizable — batch 2 (each view swaps its no-op handlers for real writes):**
 
-- [ ] **J — AllOrganizationsView** mutations live
-- [ ] **K — OverviewView** mutations live
-- [ ] **L — BuildingsView** mutations live
-- [ ] **M — DomainsView** mutations live
-- [ ] **N — RolesView** mutations live
-- [ ] **O — UsersView** mutations live (bulk + inline)
-- [ ] **P — StudentPageView** mutations live
+- [x] **J–P — View wiring in `OrganizationPanel.tsx`.** Every `comingSoon()` handler replaced with a `handleX()` wrapper that routes through a shared `run(label, task, successMsg?)` helper. The helper awaits the hook promise, shows a success toast on resolve, and an error toast with the rejection message on reject. View prop signatures were unchanged — this keeps `views/*.tsx` diff-free for Phase 3 and preserves the Phase-2 read-only layout.
 
 **Serial:**
 
-- [ ] **Q — Add `useFeaturePermissions` gate** in `OrganizationPanel.tsx`. When flag is off, views remain read-only and "Coming soon" toasts persist.
-- [ ] **R — Paul manual QA in preview.** Walk every mutation path; confirm rules fail out-of-scope writes.
-- [ ] **S — Update this doc.** Mark Phase 3 complete; set Current State → Phase 4.
+- [x] **Q — `canAccessFeature('org-admin-writes')` gate** in `OrganizationPanel.tsx`. When the flag is off (or the current user isn't in `betaUsers`), every `handleX` short-circuits to the Phase-2 "coming soon" toast. `'org-admin-writes'` added to the `GlobalFeature` union in `types.ts`; `scripts/init-global-perms.js` seeds the global-permissions doc as `accessLevel:'beta', betaUsers:['paul.ivers@orono.k12.mn.us']` so the default-allow behaviour of `canAccessFeature` doesn't accidentally open the gate for everyone.
+- [ ] **R — Paul manual QA in preview.** Walk every mutation path; confirm rules fail out-of-scope writes and that the flag genuinely gates on non-beta accounts.
+- [x] **S — Update this doc.** Phase 3 task ledger closed; Current State advanced to Phase 4 handoff (pending task R).
+- [x] **T — Review-feedback fixes (`702e07f4`)** from the merge-readiness review on PR #1352:
+  - `firestore.rules` — domain `create` gained `keys().hasOnly([...])` to match the shape enforcement on buildings/roles/members (clients can no longer stash arbitrary fields on a new domain doc).
+  - `firestore.rules` — member-update rule gained an explicit comment documenting that `uid` is intentionally excluded from the whitelist: Phase 4's first-sign-in link-uid write must go through a Cloud Function so no client actor can reassign a member's uid and hijack the linked account.
+  - `firestore.rules` — building-admin member-update branch gained a comment documenting the `hasAny([])` gotcha: a newly invited member with `buildingIds: []` is intentionally not editable by a building admin until a domain admin assigns a building first.
+  - `tests/rules/firestore-rules-organizations.test.ts` — new negative test for the domain `hasOnly` constraint (now 83 rules tests).
+  - `components/admin/Organization/OrganizationPanel.tsx` — `handleArchiveOrg` logs a `console.warn` on `targetOrgId !== activeOrgId` instead of silently dropping the write, so wiring bugs surface in dev.
+  - This doc — Phase 3 deploy-order section added (perm doc must be seeded before rules deploy, or the beta gate briefly opens for every domain admin).
+  - Rules-unit tests run locally against the Firestore emulator (Java 21 installed via `openjdk-21-jre-headless`): **83/83 pass**. `pnpm run validate` green (1331 unit tests).
 
 ### Acceptance checklist
 
-- [ ] `pnpm run validate` passes
-- [ ] All rules-unit tests pass
-- [ ] With flag off, no writes happen (toasts only)
-- [ ] With flag on for paul.ivers, every mutation persists and re-renders via snapshot
+- [x] `pnpm run validate` passes — green on `702e07f4` (type-check + lint + format-check + 1331 unit tests)
+- [x] All rules-unit tests pass — 83/83 green locally on 2026-04-19 against the Firestore emulator (Java 21 installed in the devcontainer; CI still runs them via `pnpm run test:rules` wrapping `firebase emulators:exec`)
+- [ ] With flag off, no writes happen (toasts only) _(verify in preview as part of task R)_
+- [ ] With flag on for paul.ivers, every mutation persists and re-renders via snapshot _(verify in preview as part of task R)_
 - [ ] Cross-org writes are rejected by rules (verified in preview console)
+
+### Deploy order (important)
+
+Order matters for Phase 3 rollout. The `global_permissions/org-admin-writes`
+doc was seeded on 2026-04-19 ahead of merge (see Decisions Log), so the
+rules can now deploy without opening the beta gate. If you ever re-seed
+from scratch, follow this order:
+
+1. **Seed the perm doc first.** Do NOT run `scripts/init-global-perms.js`
+   as-is — it uses unconditional `set()` (not merge) with stale config
+   values and would clobber live `gemini-functions`/`smart-poll`/
+   `live-session`/`embed-mini-app` entries. Either (a) run a targeted
+   one-off that only writes `global_permissions/org-admin-writes` with
+   `merge: true`, or (b) first align `init-global-perms.js` with prod and
+   switch it to `set(..., { merge: true })`. A follow-up task should fix
+   the script so it's safe to run again; until then treat it as unsafe.
+   If the doc is missing at deploy time, `canAccessFeature('org-admin-writes')`
+   falls back to the default-allow path in `AuthContext` (no permission
+   record ⇒ public), so every domain admin would briefly get write UI
+   without the beta gate.
+2. **Deploy the rules.** CI does this automatically on push to `dev-*` or
+   `main` (`firebase deploy --only functions,firestore,storage` in
+   `.github/workflows/firebase-dev-deploy.yml`). Manual: `firebase deploy --only firestore:rules --project spartboard` from a host with creds.
+3. **Smoke test as paul.ivers** (in `betaUsers`) — writes should persist.
+4. **Smoke test as a non-beta domain admin** — writes should still show the
+   Phase-2 "coming soon" toast.
 
 ---
 
@@ -249,8 +277,16 @@ Enable writes for each view, gated on a new `orgAdminWrites` entry in the existi
 Activates the invitation flow, CSV bulk-import, and the Cloud Function that keeps `/admins/{email}` in sync with membership changes (so `isAdmin()` keeps working for any new domain admins added via the panel).
 
 **Branch:** `claude/org-wiring-p4-invites`
-**Depends on:** Phase 3
-**Status:** Not started
+**Depends on:** Phase 3 (merged to `dev-paul`)
+**Status:** Not started — ready to pick up once Phase 3 merges.
+
+### Pre-work already done (carry into Phase 4)
+
+- **Rules are Phase-4-compatible.** Invitations collection stays locked (`allow read, write: if false`) so CFs own it end-to-end. Member update rule intentionally excludes `uid` from the whitelist — link-uid writes MUST go through a CF (see Decisions Log 2026-04-19).
+- **User counters are Phase 4's responsibility.** `users` on org/building/domain docs currently reads 0 because only migrated admins have `members` docs. A Phase-4 CF (counter trigger on `members/{email}` writes) needs to maintain these. Treat this as deliverable alongside `organizationMembersSync`.
+- **Existing teachers need backfill.** The migration only upserted `/admins/*` + `superAdmins` into `members`. The ~90 active teachers at `/users/{uid}` have no member doc. Phase 4's acceptance-flow hook (step F) handles new invitees, but a one-shot backfill script is needed for existing teachers so they appear in the Users view with real counts. Recommend adding task A2 to the parallel batch below: `scripts/backfill-org-members.js` that iterates `/users/{uid}`, resolves each user's email + selectedBuildings, and upserts `/organizations/orono/members/{emailLower}` with `roleId: 'teacher'`. Idempotent via `{ merge: true }`.
+- **Rules-unit tests run locally.** Java 21 is installed in the devcontainer; `pnpm run test:rules` works without needing a separate host. Add Phase 4 cases (invitation claim, uid link via CF, counter triggers) to the existing `tests/rules/firestore-rules-organizations.test.ts` file.
+- **Feature flag graduation path.** `global_permissions/org-admin-writes` is currently `accessLevel: 'beta', betaUsers: ['paul.ivers@orono.k12.mn.us']`. Phase 4 step K graduates to `accessLevel: 'admin'`. That change is a single doc update via `scripts/init-global-perms.js` — rewrite the `betaUsers` entry and re-run.
 
 ### Deliverables
 
@@ -314,6 +350,18 @@ Record non-obvious choices so future sessions don't re-litigate them. Append; do
 - **2026-04-18** — Task E terminology clarified: `.firebaserc` has only one project (`spartboard`). Firebase preview channels only cover Hosting; Firestore rules + collections live on the single production database. "Deploy to preview" in the plan effectively means "deploy to prod Firestore." Phase 1 rules are additive (new read grants only, all writes denied) so blast radius is tiny.
 - **2026-04-18** — Added `applicationDefault()` fallback path to `scripts/setup-organization.js`. Original script only accepted `FIREBASE_SERVICE_ACCOUNT` env or `scripts/service-account-key.json`; ADC fallback lets the script run from any host that has `gcloud auth application-default login` or a `GOOGLE_APPLICATION_CREDENTIALS` file. Service-account path remains the primary pattern for CI.
 - **2026-04-18** — `/admins/*` contains 8 docs but only 6 unique emails after lowercase-dedup. Two admin docs are case-duplicates of other entries. The migration handles this correctly via `Set` on lowercased emails, but the duplicate admin docs are a data-quality item worth cleaning up in a follow-up (not a Phase-1 blocker).
+- **2026-04-19** — Phase 3 feature flag key is `'org-admin-writes'` (hyphenated to match the existing `GlobalFeature` union convention) rather than `orgAdminWrites`. Stored in the `global_permissions` collection because `canAccessFeature` reads from there; the per-widget `feature_permissions` path is typed against `WidgetType | InternalToolType` and doesn't accept string-keyed features.
+- **2026-04-19** — `canAccessFeature` defaults to `true` when no permission doc exists. For Phase 3's beta rollout we must seed the global-permissions doc (otherwise the gate opens for every user). `scripts/init-global-perms.js` now covers this; operators running a fresh environment still need to execute it.
+- **2026-04-19** — Org archive is a soft archive (`status:'archived'`) for both super and domain admins rather than a hard delete. Hard delete is available at the rules tier for super admins, but it orphans sub-collections (`buildings`, `domains`, `roles`, `members`, `studentPageConfig`). Soft archive keeps the data recoverable and lets us write a real deletion path later if the business actually needs it.
+- **2026-04-19** — System role immutability is enforced at the rules tier (`resource.data.system == true` blocks updates; `system: true` on create is rejected). `useOrgRoles.saveRoles` still filters system roles client-side so the UI never sends doomed writes — the rules check is defence-in-depth, not the primary UX path.
+- **2026-04-19** — View prop signatures were deliberately left untouched in Phase 3. The real mutation callbacks are wired inside `OrganizationPanel` via a `run()` helper that awaits the hook promise and surfaces a toast on both success and failure. Views remain pure presentation components; this keeps Phase 2's view layer diff-free.
+- **2026-04-19** — Slug-based id derivation (buildings, domains, orgs) generates URL-safe ids from user-provided names via `name.toLowerCase().replace(/[^a-z0-9]+/g, '-')`. If the resulting slug is empty it falls back to a `crypto.randomUUID()` prefix so document paths stay valid. Views never surface ids to end-users — they're opaque routing keys.
+- **2026-04-19** — Denormalized user counters (`users` on `/organizations/{orgId}`, `/buildings/{id}`, `/domains/{id}`) stay at 0 through Phase 3. Only the 6 migrated admins currently have `members` docs; the ~90 active teachers exist at `/users/{uid}` but haven't been backfilled into the org's member tree. Phase 4's Cloud Functions (`organizationMembersSync` + a counter-maintenance trigger) will keep these accurate. Teachers signing in before Phase 4 will NOT lose data: their `/users/{uid}/*` subtrees are untouched by the org layer, and `AuthContext`'s membership listener handles missing member docs gracefully (leaves `orgId`/`roleId`/`buildingIds` null/empty).
+- **2026-04-19** — Phase 4 link-uid write **must** happen through a Cloud Function, not the client. The member-update rule's whitelist at `firestore.rules` intentionally excludes `uid`. Admin SDK in a CF bypasses rules, so the trigger can safely link `uid` on first sign-in; a client-side link would let any domain admin reassign a member's uid and hijack the linked account. Documented in the rules file itself so future contributors don't quietly add `uid` to the whitelist.
+- **2026-04-19** — Phase 3 deploy order is perm-doc-first: `node scripts/init-global-perms.js` before `firebase deploy --only firestore:rules --project spartboard`. Deploying rules first opens the beta gate briefly for every domain admin because `canAccessFeature` defaults to `true` when no permission record exists. This order is enforced by the deploy-order section in this doc rather than tooling — the scripts are separately owned.
+- **2026-04-19** — Mobile layout bug in `OrganizationPanel.tsx` found during Phase 2 QA: the outer wrapper was `<div className="flex gap-6 h-full">` (flex-row) with no mobile stacking override. On mobile, the aside is `hidden md:flex` so it disappears, but the mobile section `<select>` wrapper is `md:hidden w-full` — with `w-full` it claimed 100% of the row's width, leaving 0px for `<main className="flex-1">`. Every tab appeared blank. Fix is a one-line addition of `flex-col md:flex-row` so mobile stacks vertically. Landed on `dev-paul` as `b593c9ca` (separate from the Phase 3 PR so Phase 2 shippability wasn't blocked).
+- **2026-04-19** — `global_permissions/org-admin-writes` seeded directly in prod Firestore ahead of the Phase 3 merge. Targeted `setDoc(..., { merge: true })` of the single doc (not via `init-global-perms.js` — see next entry). Before: doc did not exist → `canAccessFeature` would default-allow. After: `{ accessLevel: 'beta', enabled: true, betaUsers: ['paul.ivers@orono.k12.mn.us'], featureId: 'org-admin-writes', config: {} }`. This unblocks the automatic rules deploy CI runs on merge to `dev-paul`.
+- **2026-04-19** — `scripts/init-global-perms.js` has drifted from prod and is **unsafe to run as-is**. It uses unconditional `set()` (not merge) and carries stale config for `gemini-functions` (`dailyLimit: 20` vs. prod `3`), `smart-poll` (flips prod `admin`/`disabled` back to `public`/`enabled`), `live-session` (flips prod `admin`/`disabled` back to `public`/`enabled`), `embed-mini-app` (re-enables and raises daily cap), and `video-activity-audio-transcription` (`dailyLimit: 5` vs. prod `3`). Follow-up task (outside Phase 3 scope): rebuild the script from a current prod snapshot and switch it to `set(..., { merge: true })`. Until then, targeted one-off scripts are the safe path.
 
 ---
 
@@ -331,3 +379,6 @@ Append one line per commit that advances this plan. Include short SHA + task let
 - 2026-04-18 — `27beb25` — Phase 2 review-feedback round 1 (Copilot on PR #1351): (a) collection hooks now spread `{ id: d.id, ...d.data() }` so Firestore doc IDs survive the snapshot hydration (`useOrganizations`, `useOrgBuildings`, `useOrgDomains`, `useOrgRoles`; `useOrgMembers` uses `email: d.id` since the doc ID is `emailLower`); (b) hook tests updated to the `docs[]` mock shape; (c) `DEFAULT_ORG_ID` moved below imports in `AuthContext`; (d) `setOrgId(member.orgId ?? DEFAULT_ORG_ID)` uses the member-doc-derived org when available.
 - 2026-04-18 — `5fd0e6b` — Phase 2 review-feedback round 2 (Gemini on PR #1351): (a) `OrganizationPanel` hook order reshuffled so `section`/`visibleSections`/`effectiveSection` are computed before hooks, letting `orgScopedOrgId = effectiveSection === 'orgs' ? null : activeOrgId` short-circuit org-scoped `onSnapshot` subscriptions when a super-admin is on the orgs list; (b) panel-level `isMembershipHydrating = !isSuperAdmin && Boolean(user) && authOrgId === null` now keeps every org-scoped section in loading state until the `useAuth` membership listener returns (prevents brief empty-state flashes); (c) removed unreachable `building_admin` fallback in `actorBuildingIds` (the branch was unreachable because `actorRole === 'building_admin'` already handled it). No behavioural regressions; all 1312 tests green.
 - 2026-04-18 — Phase 2 final-review subagent pass confirmed production-ready; Current State advanced to Phase 3 handoff; PR #1351 cleared for merge pending preview QA (task Q).
+- 2026-04-19 — Phase 3 A–S landed on `claude/implement-org-wiring-phase-3-qtCsb`: (A) `firestore.rules` replaced every `allow write: if false` stub with real scoping — super admin for `create`/`delete` + `aiEnabled`/`plan`; domain admin for identity fields via `affectedKeys().hasOnly([...])`; building admin restricted to member-`status`-only within `buildingIds`; system roles immutable; invitations still locked. (B) `tests/rules/firestore-rules-organizations.test.ts` expanded to cover every write path including negative cases. (C–I) All seven per-view hooks gained real writes replacing the Phase-2 stubs: `useOrganization` (updateOrg/archiveOrg), `useOrganizations` (createOrg w/ slug id, archiveOrg), `useOrgBuildings` (add/update/remove w/ slug id + defaults), `useOrgDomains` (add/remove w/ slug from `@domain.tld`), `useOrgRoles` (saveRoles upsert+delete, system-role-safe; resetRoles), `useOrgMembers` (updateMember translates `role`→`roleId`; bulk + remove fan out; invite still Phase-4 stub), `useOrgStudentPage` (setDoc merge). (J–P) `OrganizationPanel.tsx` replaced every `comingSoon()` handler with a `handleX()` wrapper routed through a shared `run()` helper that surfaces success/error toasts. (Q) `'org-admin-writes'` added to `GlobalFeature` union; `canAccessFeature('org-admin-writes')` gates every write handler; `scripts/init-global-perms.js` seeds the flag as `accessLevel:'beta'` with Paul as the sole beta user. (S) Doc updated; Current State advanced to Phase 3 QA handoff.
+- 2026-04-19 — `b593c9ca` — Phase 2 follow-up on `dev-paul`: mobile layout fix in `OrganizationPanel.tsx` (outer wrapper gains `flex-col md:flex-row` so `<main>` doesn't collapse to 0px beside the `w-full` mobile section selector). Found during preview QA (task Q); every tab appeared blank on mobile until fixed.
+- 2026-04-19 — `702e07f4` — Phase 3 review-feedback fixes landed on `claude/implement-org-wiring-phase-3-qtCsb`: (T1) domain `create` rule gained `keys().hasOnly([...])` to match other sub-collections' shape enforcement + new negative test in the rules suite. (T2) Member update rule gained a comment documenting that `uid` is intentionally excluded from the whitelist — Phase 4 link-uid writes must go through a Cloud Function. (T3) Building-admin member-update branch gained a comment documenting the `hasAny([])` empty-`buildingIds` gotcha. (T4) `OrganizationPanel.handleArchiveOrg` now logs a `console.warn` on target/active org-id mismatch instead of silently dropping the write. (T5) Phase 3 deploy-order note added to this doc (seed perm doc first). Rules-unit tests run locally against the emulator — **83/83 pass**; `pnpm run validate` green (1331 unit tests).

@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import type { RoleRecord } from '@/types/organization';
@@ -8,8 +14,10 @@ import type { RoleRecord } from '@/types/organization';
  * Subscribes to `/organizations/{orgId}/roles`. Reads allowed for org members
  * + super admins via Firestore rules.
  *
- * Writes are stubbed — Phase 3 wires real role save / reset behind the
- * `orgAdminWrites` feature flag, with system-role protection in the rules.
+ * Writes: `saveRoles(working)` diffs the working set against live state and
+ * upserts / deletes custom roles (system roles are never touched — the rules
+ * block updates on `system:true`). `resetRoles()` deletes every custom role
+ * (system roles remain as seeded by the migration script).
  */
 export const useOrgRoles = (orgId: string | null) => {
   const { user } = useAuth();
@@ -52,11 +60,49 @@ export const useOrgRoles = (orgId: string | null) => {
     return unsub;
   }, [shouldSubscribe, orgId]);
 
-  const saveRoles = (_roles: RoleRecord[]): Promise<void> =>
-    Promise.reject(new Error('Role edits will be enabled in Phase 3.'));
+  const saveRoles = async (workingRoles: RoleRecord[]): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
 
-  const resetRoles = (): Promise<void> =>
-    Promise.reject(new Error('Role reset will be enabled in Phase 3.'));
+    const workingIds = new Set(workingRoles.map((r) => r.id));
+    // Upsert every non-system role from the working set. System roles are
+    // intentionally skipped: rules reject `system:true` updates from clients,
+    // and the UI never mutates them (clone-to-customize creates a new role).
+    const upserts = workingRoles
+      .filter((r) => !r.system)
+      .map((r) =>
+        setDoc(doc(db, 'organizations', orgId, 'roles', r.id), {
+          id: r.id,
+          name: r.name,
+          blurb: r.blurb ?? '',
+          color: r.color,
+          system: false,
+          perms: r.perms ?? {},
+        })
+      );
+
+    // Delete custom roles that disappeared from the working set.
+    const deletions = roles
+      .filter((r) => !r.system && !workingIds.has(r.id))
+      .map((r) => deleteDoc(doc(db, 'organizations', orgId, 'roles', r.id)));
+
+    await Promise.all([...upserts, ...deletions]);
+  };
+
+  const resetRoles = async (): Promise<void> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    // Client-side reset is "drop all custom roles". System role perms live in
+    // the migration script and `config/organizationCapabilities.ts`; re-seeding
+    // those happens out-of-band (the rules block client writes to
+    // `system:true` docs).
+    const deletions = roles
+      .filter((r) => !r.system)
+      .map((r) => deleteDoc(doc(db, 'organizations', orgId, 'roles', r.id)));
+    await Promise.all(deletions);
+  };
 
   return {
     roles,

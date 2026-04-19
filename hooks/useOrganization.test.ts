@@ -1,13 +1,14 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { useOrganization } from './useOrganization';
 import { useAuth } from '@/context/useAuth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import type { OrgRecord } from '@/types/organization';
 
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   onSnapshot: vi.fn(),
+  updateDoc: vi.fn(),
 }));
 
 vi.mock('@/config/firebase', () => ({
@@ -39,10 +40,14 @@ describe('useOrganization', () => {
   const mockUseAuth = useAuth as Mock;
   const mockDoc = doc as Mock;
   const mockOnSnapshot = onSnapshot as Mock;
+  const mockUpdateDoc = updateDoc as Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDoc.mockReturnValue('org-doc-ref');
+    mockDoc.mockImplementation((_db: unknown, ...segs: string[]) =>
+      segs.join('/')
+    );
+    mockUpdateDoc.mockResolvedValue(undefined);
   });
 
   it('returns null org and clears loading when orgId is null', () => {
@@ -75,10 +80,47 @@ describe('useOrganization', () => {
     });
   });
 
-  it('write stubs throw phase-3 errors', async () => {
-    mockUseAuth.mockReturnValue({ user: null });
+  it('updateOrg patches the org doc (stripping id)', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
     const { result } = renderHook(() => useOrganization('orono'));
-    await expect(result.current.updateOrg({})).rejects.toThrow(/Phase 3/);
-    await expect(result.current.archiveOrg()).rejects.toThrow(/Phase 3/);
+
+    await act(async () => {
+      await result.current.updateOrg({
+        id: 'ignored',
+        name: 'Orono Public',
+      });
+    });
+
+    expect(mockUpdateDoc).toHaveBeenCalledWith('organizations/orono', {
+      name: 'Orono Public',
+    });
+  });
+
+  it('archiveOrg sets status to archived', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    mockOnSnapshot.mockReturnValue(() => undefined);
+
+    const { result } = renderHook(() => useOrganization('orono'));
+
+    await act(async () => {
+      await result.current.archiveOrg();
+    });
+
+    expect(mockUpdateDoc).toHaveBeenCalledWith('organizations/orono', {
+      status: 'archived',
+    });
+  });
+
+  it('updateOrg rejects when orgId is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const { result } = renderHook(() => useOrganization(null));
+    await expect(result.current.updateOrg({ name: 'X' })).rejects.toThrow(
+      /No organization/
+    );
+    await expect(result.current.archiveOrg()).rejects.toThrow(
+      /No organization/
+    );
   });
 });

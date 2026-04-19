@@ -18,7 +18,15 @@ import { useOrgDomains } from '@/hooks/useOrgDomains';
 import { useOrgRoles } from '@/hooks/useOrgRoles';
 import { useOrgMembers } from '@/hooks/useOrgMembers';
 import { useOrgStudentPage } from '@/hooks/useOrgStudentPage';
-import type { ActorRole } from '@/types/organization';
+import type {
+  ActorRole,
+  BuildingRecord,
+  DomainRecord,
+  OrgRecord,
+  RoleRecord,
+  StudentPageConfig,
+  UserRecord,
+} from '@/types/organization';
 import { AllOrganizationsView } from './views/AllOrganizationsView';
 import { OverviewView } from './views/OverviewView';
 import { DomainsView } from './views/DomainsView';
@@ -120,6 +128,7 @@ export const OrganizationPanel: React.FC = () => {
     user,
     orgId: authOrgId,
     buildingIds: memberBuildingIds,
+    canAccessFeature,
   } = useAuth();
   const isSuperAdmin = Boolean(
     user?.email &&
@@ -184,16 +193,44 @@ export const OrganizationPanel: React.FC = () => {
   // "no data" empty state.
   const isMembershipHydrating =
     !isSuperAdmin && Boolean(user) && authOrgId === null;
-  const { organizations, loading: orgsLoading } = useOrganizations();
-  const { organization: activeOrg, loading: orgLoadingRaw } =
-    useOrganization(orgScopedOrgId);
-  const { buildings, loading: buildingsLoadingRaw } =
-    useOrgBuildings(orgScopedOrgId);
-  const { domains, loading: domainsLoadingRaw } = useOrgDomains(orgScopedOrgId);
-  const { roles, loading: rolesLoadingRaw } = useOrgRoles(orgScopedOrgId);
-  const { users, loading: usersLoadingRaw } = useOrgMembers(orgScopedOrgId);
-  const { studentPage, loading: studentPageLoadingRaw } =
-    useOrgStudentPage(orgScopedOrgId);
+  const { organizations, loading: orgsLoading, createOrg } = useOrganizations();
+  const {
+    organization: activeOrg,
+    loading: orgLoadingRaw,
+    updateOrg,
+    archiveOrg,
+  } = useOrganization(orgScopedOrgId);
+  const {
+    buildings,
+    loading: buildingsLoadingRaw,
+    addBuilding,
+    updateBuilding,
+    removeBuilding,
+  } = useOrgBuildings(orgScopedOrgId);
+  const {
+    domains,
+    loading: domainsLoadingRaw,
+    addDomain,
+    removeDomain,
+  } = useOrgDomains(orgScopedOrgId);
+  const {
+    roles,
+    loading: rolesLoadingRaw,
+    saveRoles,
+    resetRoles,
+  } = useOrgRoles(orgScopedOrgId);
+  const {
+    users,
+    loading: usersLoadingRaw,
+    updateMember,
+    bulkUpdateMembers,
+    removeMembers,
+  } = useOrgMembers(orgScopedOrgId);
+  const {
+    studentPage,
+    loading: studentPageLoadingRaw,
+    updateStudentPage,
+  } = useOrgStudentPage(orgScopedOrgId);
   const orgLoading = orgLoadingRaw || isMembershipHydrating;
   const buildingsLoading = buildingsLoadingRaw || isMembershipHydrating;
   const domainsLoading = domainsLoadingRaw || isMembershipHydrating;
@@ -218,13 +255,120 @@ export const OrganizationPanel: React.FC = () => {
     []
   );
 
-  // Phase 2 is read-only: every write handler surfaces a single "Coming soon"
-  // toast. Phase 3 replaces these with real mutations behind the
-  // `orgAdminWrites` feature flag.
+  // Phase 3: real writes are gated behind the `org-admin-writes` global
+  // feature flag. When the flag is off (or not yet enabled for this user) we
+  // fall back to the Phase 2 "coming soon" toast so the UI stays safe.
+  const writesEnabled = canAccessFeature('org-admin-writes');
   const comingSoon = (label: string) =>
-    showToast(`${label} — coming in Phase 3`, 'info');
-  const inviteComingSoon = () =>
+    showToast(`${label} — coming soon`, 'info');
+
+  // Wrap a hook promise so it surfaces a success/error toast uniformly. The
+  // views call these fire-and-forget; Firestore writes are optimistic via
+  // `onSnapshot` so we don't need to block on resolution.
+  const run = (
+    label: string,
+    task: () => Promise<void>,
+    successMsg?: string
+  ) => {
+    task()
+      .then(() => {
+        if (successMsg) showToast(successMsg, 'success');
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        showToast(`${label} failed: ${msg}`, 'error');
+      });
+  };
+
+  const handleCreateOrg = (o: Partial<OrgRecord>) => {
+    if (!writesEnabled) return comingSoon('Create organization');
+    run('Create organization', () => createOrg(o), `Created "${o.name ?? ''}"`);
+  };
+  const handleUpdateOrg = (patch: Partial<OrgRecord>) => {
+    if (!writesEnabled) return comingSoon('Organization edits');
+    run('Update organization', () => updateOrg(patch));
+  };
+  // `archiveOrg` is scoped to the hook's active orgId, so the caller's id
+  // should always match. Assert it so a stale row in the view can't silently
+  // archive the wrong org.
+  const handleArchiveOrg = (targetOrgId: string) => {
+    if (!writesEnabled) return comingSoon('Archive organization');
+    if (targetOrgId !== activeOrgId) {
+      // A mismatch means the view passed an org id that doesn't match the
+      // hook's subscription — almost always a wiring bug. Warn so we notice
+      // in dev rather than silently dropping the write.
+      console.warn(
+        '[OrganizationPanel] Archive skipped: targetOrgId mismatch',
+        { targetOrgId, activeOrgId }
+      );
+      return;
+    }
+    run('Archive organization', archiveOrg, 'Organization archived');
+  };
+  const handleAddBuilding = (b: Partial<BuildingRecord>) => {
+    if (!writesEnabled) return comingSoon('Add building');
+    run('Add building', () => addBuilding(b), `Added "${b.name ?? ''}"`);
+  };
+  const handleUpdateBuilding = (id: string, patch: Partial<BuildingRecord>) => {
+    if (!writesEnabled) return comingSoon('Edit building');
+    run('Update building', () => updateBuilding(id, patch));
+  };
+  const handleRemoveBuilding = (id: string) => {
+    if (!writesEnabled) return comingSoon('Archive building');
+    run('Remove building', () => removeBuilding(id), 'Building removed');
+  };
+  const handleAddDomain = (d: Partial<DomainRecord>) => {
+    if (!writesEnabled) return comingSoon('Add domain');
+    run('Add domain', () => addDomain(d), `Added ${d.domain ?? 'domain'}`);
+  };
+  const handleRemoveDomain = (id: string) => {
+    if (!writesEnabled) return comingSoon('Remove domain');
+    run('Remove domain', () => removeDomain(id), 'Domain removed');
+  };
+  const handleSaveRoles = (working: RoleRecord[]) => {
+    if (!writesEnabled) return comingSoon('Save roles');
+    run('Save roles', () => saveRoles(working), 'Roles saved');
+  };
+  const handleResetRoles = () => {
+    if (!writesEnabled) return comingSoon('Reset roles');
+    run('Reset roles', resetRoles, 'Roles reset to defaults');
+  };
+  const handleUpdateUser = (id: string, patch: Partial<UserRecord>) => {
+    if (!writesEnabled) return comingSoon('Update user');
+    run('Update user', () => updateMember(id, patch));
+  };
+  const handleBulkUpdateUsers = (ids: string[], patch: Partial<UserRecord>) => {
+    if (!writesEnabled) return comingSoon('Bulk update users');
+    run(
+      'Bulk update users',
+      () => bulkUpdateMembers(ids, patch),
+      `Updated ${ids.length} users`
+    );
+  };
+  const handleRemoveUsers = (ids: string[]) => {
+    if (!writesEnabled) return comingSoon('Remove users');
+    run(
+      'Remove users',
+      () => removeMembers(ids),
+      `Removed ${ids.length} users`
+    );
+  };
+  const handleInvite = (
+    _emails: string[],
+    _role: string,
+    _bids: string[],
+    _msg?: string
+  ) => {
+    // Invitations require a Cloud Function (Phase 4); surface a dedicated
+    // info toast rather than forwarding to the rejection stub (which would
+    // render as a misleading error toast).
+    if (!writesEnabled) return comingSoon('Invite users');
     showToast('Invitations — coming in Phase 4', 'info');
+  };
+  const handleUpdateStudentPage = (patch: Partial<StudentPageConfig>) => {
+    if (!writesEnabled) return comingSoon('Student page edits');
+    run('Update student page', () => updateStudentPage(patch));
+  };
 
   // Building-admin scope: restrict strictly to the member doc's buildingIds.
   // A building admin with no assigned buildings sees an empty list — this
@@ -411,7 +555,7 @@ export const OrganizationPanel: React.FC = () => {
                     setSelectedOrgId(id);
                     setSection('overview');
                   }}
-                  onCreate={() => comingSoon('Create organization')}
+                  onCreate={handleCreateOrg}
                 />
               )}
               {effectiveSection === 'overview' &&
@@ -420,8 +564,8 @@ export const OrganizationPanel: React.FC = () => {
                     org={activeOrg}
                     isSuperAdmin={isSuperAdmin}
                     actorRole={actorRole}
-                    onUpdate={() => comingSoon('Organization edits')}
-                    onArchive={() => comingSoon('Archive organization')}
+                    onUpdate={handleUpdateOrg}
+                    onArchive={handleArchiveOrg}
                   />
                 ) : (
                   <PanelEmpty message="No organization found for this account." />
@@ -429,8 +573,8 @@ export const OrganizationPanel: React.FC = () => {
               {effectiveSection === 'domains' && (
                 <DomainsView
                   domains={domains}
-                  onAdd={() => comingSoon('Add domain')}
-                  onRemove={() => comingSoon('Remove domain')}
+                  onAdd={handleAddDomain}
+                  onRemove={handleRemoveDomain}
                 />
               )}
               {effectiveSection === 'buildings' && (
@@ -438,16 +582,16 @@ export const OrganizationPanel: React.FC = () => {
                   buildings={buildings}
                   actorRole={actorRole}
                   actorBuildingIds={actorBuildingIds}
-                  onAdd={() => comingSoon('Add building')}
-                  onUpdate={() => comingSoon('Edit building')}
-                  onRemove={() => comingSoon('Archive building')}
+                  onAdd={handleAddBuilding}
+                  onUpdate={handleUpdateBuilding}
+                  onRemove={handleRemoveBuilding}
                 />
               )}
               {effectiveSection === 'roles' && (
                 <RolesView
                   roles={roles}
-                  onSave={() => comingSoon('Save roles')}
-                  onReset={() => comingSoon('Reset roles')}
+                  onSave={handleSaveRoles}
+                  onReset={handleResetRoles}
                 />
               )}
               {effectiveSection === 'users' && (
@@ -457,10 +601,10 @@ export const OrganizationPanel: React.FC = () => {
                   buildings={buildings}
                   actorRole={actorRole}
                   actorBuildingIds={actorBuildingIds}
-                  onUpdate={() => comingSoon('Update user')}
-                  onBulkUpdate={() => comingSoon('Bulk update users')}
-                  onRemove={() => comingSoon('Remove users')}
-                  onInvite={inviteComingSoon}
+                  onUpdate={handleUpdateUser}
+                  onBulkUpdate={handleBulkUpdateUsers}
+                  onRemove={handleRemoveUsers}
+                  onInvite={handleInvite}
                 />
               )}
               {effectiveSection === 'student' &&
@@ -468,7 +612,7 @@ export const OrganizationPanel: React.FC = () => {
                   <StudentPageView
                     config={studentPage}
                     orgName={activeOrg.name}
-                    onUpdate={() => comingSoon('Student page edits')}
+                    onUpdate={handleUpdateStudentPage}
                   />
                 ) : (
                   <PanelEmpty message="Student page config has not been seeded yet." />
