@@ -47,9 +47,15 @@
  *      `gcloud auth application-default login`
  */
 
-const admin = require('firebase-admin');
-const fs = require('fs');
-const path = require('path');
+import { initializeApp, applicationDefault, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const PROJECT_ID = 'spartboard';
 const BACKFILL_TAG = 'backfill:2026-04-19';
@@ -87,9 +93,9 @@ function loadCredentials() {
       );
     }
   }
-  const keyPath = path.join(__dirname, 'service-account-key.json');
+  const keyPath = join(__dirname, 'service-account-key.json');
   try {
-    const raw = fs.readFileSync(keyPath, 'utf8');
+    const raw = readFileSync(keyPath, 'utf8');
     return {
       source: 'scripts/service-account-key.json',
       creds: JSON.parse(raw),
@@ -181,7 +187,7 @@ async function resolveEmailAndName(db, uid, userDocData, verbose) {
   // lack email/displayName entirely.
   let authUser = null;
   try {
-    authUser = await admin.auth().getUser(uid);
+    authUser = await getAuth().getUser(uid);
   } catch (err) {
     if (verbose) {
       console.log(
@@ -227,13 +233,13 @@ async function run() {
     projectId: (creds && creds.project_id) || PROJECT_ID,
   };
   if (useApplicationDefault) {
-    initOpts.credential = admin.credential.applicationDefault();
+    initOpts.credential = applicationDefault();
   } else {
-    initOpts.credential = admin.credential.cert(creds);
+    initOpts.credential = cert(creds);
   }
-  admin.initializeApp(initOpts);
+  initializeApp(initOpts);
 
-  const db = admin.firestore();
+  const db = getFirestore();
   const orgId = args.orgId;
   console.log(
     'Target org: ' +
@@ -248,6 +254,7 @@ async function run() {
   const stats = {
     considered: 0,
     skipped_no_email: 0,
+    skipped_student_id: 0,
     skipped_existing_admin: 0,
     upserted: 0,
     dry_run: args.dryRun,
@@ -282,6 +289,19 @@ async function run() {
     if (!email) {
       stats.skipped_no_email += 1;
       console.log('  [skip] uid=' + uid + ' has no resolvable email');
+      continue;
+    }
+
+    // Skip student-ID-shaped emails (all-digits local part, e.g. 704522@...).
+    // Orono teacher emails are firstname.lastname@; numeric locals are student
+    // accounts that accidentally landed in /users/{uid} and must not be
+    // backfilled as teachers.
+    const localPart = email.split('@')[0] || '';
+    if (/^\d+$/.test(localPart)) {
+      stats.skipped_student_id += 1;
+      console.log(
+        '  [skip] ' + email + ' uid=' + uid + ' looks like a student ID'
+      );
       continue;
     }
 
@@ -348,6 +368,7 @@ async function run() {
   console.log('Summary:');
   console.log('  considered:              ' + stats.considered);
   console.log('  skipped_no_email:        ' + stats.skipped_no_email);
+  console.log('  skipped_student_id:      ' + stats.skipped_student_id);
   console.log('  skipped_existing_admin:  ' + stats.skipped_existing_admin);
   console.log('  upserted:                ' + stats.upserted);
   console.log('  dry_run:                 ' + stats.dry_run);
