@@ -145,8 +145,15 @@ export const UsersView: React.FC<Props> = ({
   };
 
   const isScoped = actorRole === 'building_admin';
-  const canEditUser = (u: UserRecord) =>
+  // In-scope for this actor: row appears, and status is toggleable. Building
+  // admins only ever see their own buildings' members (UI) and the Firestore
+  // rules enforce the same check server-side.
+  const isInScope = (u: UserRecord) =>
     !isScoped || u.buildingIds.some((b) => actorBuildingIds.includes(b));
+  // Management actions (role, building assignments, delete, invite) require
+  // domain admin or higher. Building admins can only flip status on members
+  // within their scope; everything else is read-only for them.
+  const canManageUsers = actorRole !== 'building_admin';
 
   // Building admins should only see (and be able to assign into) the
   // buildings they actually manage. Everyone else sees the whole org list.
@@ -227,22 +234,24 @@ export const UsersView: React.FC<Props> = ({
         title="Users"
         blurb="Invite, assign, and deactivate people across your district."
         actions={
-          <>
-            <Btn
-              variant="secondary"
-              icon={<Upload size={14} />}
-              onClick={() => setShowImport(true)}
-            >
-              Bulk import
-            </Btn>
-            <Btn
-              variant="primary"
-              icon={<Plus size={14} />}
-              onClick={() => setShowInvite(true)}
-            >
-              Invite users
-            </Btn>
-          </>
+          canManageUsers ? (
+            <>
+              <Btn
+                variant="secondary"
+                icon={<Upload size={14} />}
+                onClick={() => setShowImport(true)}
+              >
+                Bulk import
+              </Btn>
+              <Btn
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setShowInvite(true)}
+              >
+                Invite users
+              </Btn>
+            </>
+          ) : null
         }
       />
 
@@ -319,33 +328,37 @@ export const UsersView: React.FC<Props> = ({
             {selected.size} selected
           </span>
           <span className="h-4 w-px bg-white/20" />
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            title="Coming soon"
-            className="text-xs font-semibold text-white/50 cursor-not-allowed"
-          >
-            Resend invite
-          </button>
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            title="Coming soon"
-            className="text-xs font-semibold text-white/50 cursor-not-allowed"
-          >
-            Change role
-          </button>
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            title="Coming soon"
-            className="text-xs font-semibold text-white/50 cursor-not-allowed"
-          >
-            Move to building
-          </button>
+          {canManageUsers && (
+            <>
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="Coming soon"
+                className="text-xs font-semibold text-white/50 cursor-not-allowed"
+              >
+                Resend invite
+              </button>
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="Coming soon"
+                className="text-xs font-semibold text-white/50 cursor-not-allowed"
+              >
+                Change role
+              </button>
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="Coming soon"
+                className="text-xs font-semibold text-white/50 cursor-not-allowed"
+              >
+                Move to building
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -356,16 +369,18 @@ export const UsersView: React.FC<Props> = ({
           >
             Deactivate
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              onRemove(Array.from(selected));
-              setSelected(new Set());
-            }}
-            className="text-xs font-semibold text-rose-300 hover:text-rose-200"
-          >
-            Delete
-          </button>
+          {canManageUsers && (
+            <button
+              type="button"
+              onClick={() => {
+                onRemove(Array.from(selected));
+                setSelected(new Set());
+              }}
+              className="text-xs font-semibold text-rose-300 hover:text-rose-200"
+            >
+              Delete
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSelected(new Set())}
@@ -399,7 +414,7 @@ export const UsersView: React.FC<Props> = ({
               <div />
             </div>
             {filtered.map((u) => {
-              const editable = canEditUser(u);
+              const inScope = isInScope(u);
               return (
                 <UserRow
                   key={u.id}
@@ -408,9 +423,12 @@ export const UsersView: React.FC<Props> = ({
                   buildings={visibleBuildings}
                   selected={selected.has(u.id)}
                   onToggle={() => toggleRow(u.id)}
-                  editable={editable}
+                  inScope={inScope}
+                  canManage={canManageUsers}
                   onUpdate={(patch) => onUpdate(u.id, patch)}
-                  onDelete={() => (editable ? onRemove([u.id]) : undefined)}
+                  onDelete={() =>
+                    canManageUsers && inScope ? onRemove([u.id]) : undefined
+                  }
                 />
               );
             })}
@@ -456,7 +474,10 @@ const UserRow: React.FC<{
   buildings: BuildingRecord[];
   selected: boolean;
   onToggle: () => void;
-  editable: boolean;
+  // Row is within the actor's scope. Status is editable when in scope.
+  inScope: boolean;
+  // Actor can manage users (role, buildings, delete). False for building_admin.
+  canManage: boolean;
   onUpdate: (patch: Partial<UserRecord>) => void;
   onDelete: () => void;
 }> = ({
@@ -465,10 +486,17 @@ const UserRow: React.FC<{
   buildings,
   selected,
   onToggle,
-  editable,
+  inScope,
+  canManage,
   onUpdate,
   onDelete,
 }) => {
+  // Granular gating: status toggle only needs in-scope; role/buildings/delete
+  // additionally require manage privileges (domain admin or higher).
+  const canEditStatus = inScope;
+  const canEditRole = canManage && inScope;
+  const canEditBuildings = canManage && inScope;
+  const canDelete = canManage && inScope;
   const [rolePopoverOpen, setRolePopoverOpen] = useState(false);
   const [buildingPopoverOpen, setBuildingPopoverOpen] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
@@ -486,14 +514,14 @@ const UserRow: React.FC<{
     <div
       className={`grid grid-cols-[32px_2.2fr_1.3fr_1.5fr_1fr_1fr_auto] items-center gap-4 px-5 py-2 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors ${
         selected ? 'bg-brand-blue-lighter/30' : ''
-      } ${!editable ? 'opacity-60' : ''}`}
+      } ${!inScope ? 'opacity-60' : ''}`}
     >
       <div>
         <Checkbox
           checked={selected}
           onChange={onToggle}
           aria-label={`Select ${user.name}`}
-          disabled={!editable}
+          disabled={!inScope}
         />
       </div>
       <div className="flex items-center gap-3 min-w-0">
@@ -513,10 +541,10 @@ const UserRow: React.FC<{
         <button
           ref={roleTriggerRef}
           type="button"
-          disabled={!editable}
+          disabled={!canEditRole}
           onClick={() => setRolePopoverOpen((o) => !o)}
-          className="inline-flex items-center gap-1 -mx-2 px-2 py-1 rounded-md hover:bg-slate-100 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30"
-          title={!editable ? 'Domain admin only' : undefined}
+          className="inline-flex items-center gap-1 -mx-2 px-2 py-1 rounded-md hover:bg-slate-100 disabled:hover:bg-transparent disabled:cursor-not-allowed focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30"
+          title={!canEditRole ? 'Domain admin only' : undefined}
         >
           {roleRecord ? (
             <Badge color={ROLE_COLOR[roleRecord.id] ?? 'slate'}>
@@ -563,9 +591,10 @@ const UserRow: React.FC<{
         <button
           ref={buildingTriggerRef}
           type="button"
-          disabled={!editable}
+          disabled={!canEditBuildings}
           onClick={() => setBuildingPopoverOpen((o) => !o)}
-          className="inline-flex flex-wrap items-center gap-1 -mx-2 px-2 py-1 rounded-md hover:bg-slate-100 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30 text-left"
+          className="inline-flex flex-wrap items-center gap-1 -mx-2 px-2 py-1 rounded-md hover:bg-slate-100 disabled:hover:bg-transparent disabled:cursor-not-allowed focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30 text-left"
+          title={!canEditBuildings ? 'Domain admin only' : undefined}
         >
           {userBuildings.length === 0 ? (
             <span className="text-sm text-slate-400">No buildings</span>
@@ -636,14 +665,14 @@ const UserRow: React.FC<{
         </CellPopover>
       </div>
 
-      {/* Status cell */}
+      {/* Status cell — building admins CAN toggle this for in-scope members. */}
       <div className="relative">
         <button
           ref={statusTriggerRef}
           type="button"
-          disabled={!editable}
+          disabled={!canEditStatus}
           onClick={() => setStatusPopoverOpen((o) => !o)}
-          className="-mx-2 px-2 py-1 rounded-md hover:bg-slate-100 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30"
+          className="-mx-2 px-2 py-1 rounded-md hover:bg-slate-100 disabled:hover:bg-transparent disabled:cursor-not-allowed focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30"
         >
           <StatusPill status={user.status} />
         </button>
@@ -693,39 +722,39 @@ const UserRow: React.FC<{
             label: 'Edit',
             icon: <Edit3 size={14} />,
             onClick: () => console.warn('[Users] edit', user.id),
-            disabled: !editable,
+            disabled: !canManage || !inScope,
           },
           {
             label: 'Resend invite',
             icon: <Mail size={14} />,
             onClick: () => console.warn('[Users] resend', user.id),
-            disabled: !editable || user.status !== 'invited',
+            disabled: !canManage || !inScope || user.status !== 'invited',
           },
           {
             label: 'Reset password',
             icon: <KeyRound size={14} />,
             onClick: () => console.warn('[Users] reset password', user.id),
-            disabled: !editable,
+            disabled: !canManage || !inScope,
           },
           user.status === 'inactive'
             ? {
                 label: 'Reactivate',
                 icon: <UserCheck size={14} />,
                 onClick: () => onUpdate({ status: 'active' }),
-                disabled: !editable,
+                disabled: !canEditStatus,
               }
             : {
                 label: 'Deactivate',
                 icon: <UserMinus size={14} />,
                 onClick: () => onUpdate({ status: 'inactive' }),
-                disabled: !editable,
+                disabled: !canEditStatus,
               },
           {
             label: 'Delete',
             icon: <Trash2 size={14} />,
             onClick: onDelete,
             danger: true,
-            disabled: !editable,
+            disabled: !canDelete,
           },
         ]}
       />

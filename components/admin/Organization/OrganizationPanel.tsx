@@ -109,15 +109,24 @@ const SECTIONS: SectionDef[] = [
 
 const STORAGE_KEY = 'adm.section';
 
-// Resolve the actor's role from auth context. isAdmin maps to domain_admin;
-// superAdmins maps to super_admin. Building admin isn't a first-class
-// concept in the current auth layer — default to domain_admin for admins.
+// Resolve the actor's role. The member doc (`/organizations/{orgId}/members/{email}.roleId`)
+// is authoritative — it's what Firestore rules use to gate writes. The legacy
+// `admin_settings/user_roles.superAdmins[]` list still wins for super admin
+// because that's the only source the rules currently check for super-admin
+// status (a harmonization pass is on the Phase 4.1 backlog). Fall back to the
+// legacy `isAdmin` flag only when there's no member doc yet, so a pre-Phase-4
+// admin still sees the panel while their membership hydrates.
 const resolveActorRole = (
-  isAdmin: boolean | null,
-  isSuperAdmin: boolean
+  legacySuperAdmin: boolean,
+  legacyIsAdmin: boolean | null,
+  memberRoleId: string | null
 ): ActorRole => {
-  if (isSuperAdmin) return 'super_admin';
-  if (isAdmin) return 'domain_admin';
+  if (legacySuperAdmin) return 'super_admin';
+  if (memberRoleId === 'super_admin') return 'super_admin';
+  if (memberRoleId === 'domain_admin') return 'domain_admin';
+  if (memberRoleId === 'building_admin') return 'building_admin';
+  if (memberRoleId) return 'building_admin'; // teacher/student fall through to least-privileged
+  if (legacyIsAdmin) return 'domain_admin';
   return 'building_admin';
 };
 
@@ -127,6 +136,7 @@ export const OrganizationPanel: React.FC = () => {
     userRoles,
     user,
     orgId: authOrgId,
+    roleId: memberRoleId,
     buildingIds: memberBuildingIds,
     canAccessFeature,
   } = useAuth();
@@ -136,7 +146,7 @@ export const OrganizationPanel: React.FC = () => {
       (e) => e.toLowerCase() === user.email?.toLowerCase()
     )
   );
-  const actorRole = resolveActorRole(isAdmin, isSuperAdmin);
+  const actorRole = resolveActorRole(isSuperAdmin, isAdmin, memberRoleId);
 
   // Super admins pick from the orgs list; everyone else is pinned to their
   // own org (from /organizations/{orgId}/members/{email}).
