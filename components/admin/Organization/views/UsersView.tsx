@@ -77,8 +77,15 @@ const STATUS_META: Record<UserStatus, { label: string; description: string }> =
       description: 'Invitation sent; awaiting first sign-in.',
     },
     inactive: {
+      // Phase 4: 'inactive' removes admin powers via the
+      // organizationMembersSync CF (the /admins/{email} doc is deleted) but
+      // does NOT block the user from signing in — Firestore rules and
+      // AuthContext don't gate on member.status yet. Full sign-in lockout is
+      // on the Phase 4.1 backlog. Copy here deliberately says "admin access"
+      // rather than "account" so admins don't expect a power they don't have.
       label: 'Inactive',
-      description: "Account disabled — can't sign in.",
+      description:
+        'Revokes admin access. User can still sign in (full lockout coming in a future release).',
     },
   };
 
