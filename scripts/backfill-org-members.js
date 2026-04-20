@@ -60,6 +60,24 @@ const __dirname = dirname(__filename);
 const PROJECT_ID = 'spartboard';
 const BACKFILL_TAG = 'backfill:2026-04-19';
 
+// Legacy→canonical building-id map. Teachers' /users/{uid}/userProfile/profile
+// stores `selectedBuildings` using the long form from `config/buildings.ts`
+// (e.g. 'schumann-elementary'), but the /organizations/orono/buildings
+// subcollection (seeded by scripts/setup-organization.js from org-seed.json)
+// uses short ids ('schumann'). Member docs must use the canonical short ids
+// so the Organization panel's building lookups resolve. See the "ClassLink
+// building id alignment" open question in docs/organization_wiring_implementation.md.
+const BUILDING_ID_LEGACY_TO_CANONICAL = {
+  'schumann-elementary': 'schumann',
+  'orono-intermediate-school': 'intermediate',
+  'orono-middle-school': 'middle',
+  'orono-high-school': 'high',
+};
+
+function normalizeBuildingId(id) {
+  return BUILDING_ID_LEGACY_TO_CANONICAL[id] ?? id;
+}
+
 function parseArgs(argv) {
   const args = { dryRun: false, orgId: 'orono', verbose: false, help: false };
   for (let i = 0; i < argv.length; i++) {
@@ -150,9 +168,9 @@ async function resolveBuildingIds(db, uid, verbose) {
   if (primary.exists) {
     const data = primary.data() || {};
     if (Array.isArray(data.selectedBuildings)) {
-      const clean = data.selectedBuildings.filter(
-        (v) => typeof v === 'string' && v.length > 0
-      );
+      const clean = data.selectedBuildings
+        .filter((v) => typeof v === 'string' && v.length > 0)
+        .map(normalizeBuildingId);
       return { buildingIds: clean, found: true };
     }
     if (verbose) {
@@ -173,9 +191,9 @@ async function resolveBuildingIds(db, uid, verbose) {
   if (!sub.empty) {
     const data = sub.docs[0].data() || {};
     if (Array.isArray(data.selectedBuildings)) {
-      const clean = data.selectedBuildings.filter(
-        (v) => typeof v === 'string' && v.length > 0
-      );
+      const clean = data.selectedBuildings
+        .filter((v) => typeof v === 'string' && v.length > 0)
+        .map(normalizeBuildingId);
       return { buildingIds: clean, found: true };
     }
   }
