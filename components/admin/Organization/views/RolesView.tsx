@@ -18,8 +18,6 @@ import { CAPABILITY_GROUPS } from '@/config/organizationCapabilities';
 import {
   Badge,
   Btn,
-  CellPopover,
-  PopoverOption,
   ViewHeader,
   Field,
   Input,
@@ -32,7 +30,21 @@ interface Props {
   roles: RoleRecord[];
   onSave: (roles: RoleRecord[]) => void;
   onReset: () => void;
+  /**
+   * Super admins can edit system role perms in place (rules allow perms-only
+   * updates on `system:true` docs). Non-super-admins still have to clone.
+   */
+  isSuperAdmin?: boolean;
 }
+
+// Click-to-cycle order used by every MatrixCell. Starting from an empty cell
+// the first click grants full access, the second scopes to building, and the
+// third clears it. Keeps the keyboard/mouse interaction identical.
+const CYCLE_NEXT: Record<CapabilityAccess, CapabilityAccess> = {
+  none: 'full',
+  full: 'building',
+  building: 'none',
+};
 
 const ACCESS_META: Record<
   CapabilityAccess,
@@ -55,7 +67,12 @@ const ACCESS_META: Record<
   },
 };
 
-export const RolesView: React.FC<Props> = ({ roles, onSave, onReset }) => {
+export const RolesView: React.FC<Props> = ({
+  roles,
+  onSave,
+  onReset,
+  isSuperAdmin = false,
+}) => {
   const [working, setWorking] = useState<RoleRecord[]>(roles);
   const [lastSyncedRoles, setLastSyncedRoles] = useState(roles);
   const [activeRoleId, setActiveRoleId] = useState<RoleId>(
@@ -110,7 +127,7 @@ export const RolesView: React.FC<Props> = ({ roles, onSave, onReset }) => {
     <div>
       <ViewHeader
         title="Roles & permissions"
-        blurb="Define what each role can do. Click any cell to pick Full, Own-building, or No access."
+        blurb="Define what each role can do. Click any cell to cycle through Full, Own-building, and No access."
         actions={
           <>
             <Btn
@@ -220,7 +237,7 @@ export const RolesView: React.FC<Props> = ({ roles, onSave, onReset }) => {
                             onChange={(v) =>
                               setCellValue(activeRole.id, cap.id, v)
                             }
-                            readOnly={activeRole.system}
+                            readOnly={activeRole.system && !isSuperAdmin}
                           />
                         </td>
                       </tr>
@@ -347,9 +364,6 @@ const MatrixCell: React.FC<{
   onChange: (v: CapabilityAccess) => void;
   readOnly?: boolean;
 }> = ({ value, onChange, readOnly }) => {
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
   const content = (() => {
     if (value === 'full')
       return (
@@ -379,57 +393,17 @@ const MatrixCell: React.FC<{
     );
   }
 
+  const next = CYCLE_NEXT[value];
   return (
-    <div className="relative inline-block">
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={`Access: ${ACCESS_META[value].label}`}
-        onClick={() => setOpen((o) => !o)}
-        className="p-1 rounded-md hover:bg-slate-100 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30"
-      >
-        {content}
-      </button>
-      <CellPopover
-        open={open}
-        onClose={() => setOpen(false)}
-        anchorRef={triggerRef}
-      >
-        {(['full', 'building', 'none'] as CapabilityAccess[]).map((v) => (
-          <PopoverOption
-            key={v}
-            onClick={() => {
-              onChange(v);
-              setOpen(false);
-            }}
-            selected={value === v}
-            label={ACCESS_META[v].label}
-            description={ACCESS_META[v].description}
-            icon={<AccessIcon value={v} />}
-          />
-        ))}
-      </CellPopover>
-    </div>
-  );
-};
-
-const AccessIcon: React.FC<{ value: CapabilityAccess }> = ({ value }) => {
-  if (value === 'full')
-    return (
-      <div className="h-5 w-5 rounded bg-emerald-500 text-white flex items-center justify-center">
-        <Check size={12} />
-      </div>
-    );
-  if (value === 'building')
-    return (
-      <div className="h-5 w-5 rounded bg-amber-400 text-white flex items-center justify-center">
-        <HomeIcon size={12} />
-      </div>
-    );
-  return (
-    <div className="h-5 w-5 rounded border-2 border-dashed border-slate-300" />
+    <button
+      type="button"
+      aria-label={`Access: ${ACCESS_META[value].label}. Click to set ${ACCESS_META[next].label}.`}
+      title={`${ACCESS_META[value].label} — click to set ${ACCESS_META[next].label}`}
+      onClick={() => onChange(next)}
+      className="p-1 rounded-md hover:bg-slate-100 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30"
+    >
+      {content}
+    </button>
   );
 };
 

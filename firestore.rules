@@ -174,14 +174,27 @@ service cloud.firestore {
             'id', 'name', 'blurb', 'color', 'system', 'perms'
           ]);
         // Update whitelist keeps identity (id) and seed flag (system) pinned
-        // and blocks extensions beyond the known fields.
-        allow update: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
-          resource.data.system != true &&
-          request.resource.data.system == resource.data.system &&
-          request.resource.data.id == resource.data.id &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'name', 'blurb', 'color', 'perms'
-          ]);
+        // and blocks extensions beyond the known fields. Super admins may
+        // additionally edit `perms` on system roles (still identity-pinned and
+        // `system:true` preserved) so they can tune capability defaults from
+        // the admin console; domain admins remain locked out of system docs.
+        allow update: if
+          (isSuperAdmin() &&
+           request.resource.data.system == resource.data.system &&
+           request.resource.data.id == resource.data.id &&
+           ((resource.data.system == true &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['perms'])) ||
+            (resource.data.system != true &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+               'name', 'blurb', 'color', 'perms'
+             ])))) ||
+          (isDomainAdmin(orgId) &&
+           resource.data.system != true &&
+           request.resource.data.system == resource.data.system &&
+           request.resource.data.id == resource.data.id &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'name', 'blurb', 'color', 'perms'
+           ]));
         allow delete: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           resource.data.system != true;
       }

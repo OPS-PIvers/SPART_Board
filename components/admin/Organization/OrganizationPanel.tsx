@@ -339,7 +339,11 @@ export const OrganizationPanel: React.FC = () => {
   };
   const handleSaveRoles = (working: RoleRecord[]) => {
     if (!writesEnabled) return comingSoon('Save roles');
-    run('Save roles', () => saveRoles(working), 'Roles saved');
+    run(
+      'Save roles',
+      () => saveRoles(working, { canEditSystemRoles: isSuperAdmin }),
+      'Roles saved'
+    );
   };
   const handleResetRoles = () => {
     if (!writesEnabled) return comingSoon('Reset roles');
@@ -692,6 +696,7 @@ export const OrganizationPanel: React.FC = () => {
                   roles={roles}
                   onSave={handleSaveRoles}
                   onReset={handleResetRoles}
+                  isSuperAdmin={isSuperAdmin}
                 />
               )}
               {effectiveSection === 'users' && (
