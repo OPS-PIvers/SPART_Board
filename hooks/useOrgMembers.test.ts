@@ -248,7 +248,12 @@ describe('useOrgMembers', () => {
       message: 'welcome',
     });
     expect(response.invitations).toHaveLength(1);
-    expect(response.invitations[0]?.claimUrl).toBe('https://x/invite/t');
+    // The hook rewrites the CF-minted claimUrl with one pinned to the
+    // current browser origin so invite links stay on the deploy the admin
+    // is using. In jsdom that origin is http://localhost:3000.
+    expect(response.invitations[0]?.claimUrl).toBe(
+      `${window.location.origin}/invite/t`
+    );
   });
 
   it('bulkInviteMembers passes per-row role + buildings through unchanged', async () => {

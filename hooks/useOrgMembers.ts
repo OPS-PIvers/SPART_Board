@@ -14,6 +14,12 @@ import type { MemberRecord, UserRecord } from '@/types/organization';
 // Response shape returned by the `createOrganizationInvites` callable
 // (see `functions/src/organizationInvites.ts`). Mirrored here so view code
 // doesn't need to import from functions/.
+//
+// The CF returns its own `claimUrl` built from a hardcoded prod origin. We
+// rewrite it client-side from `window.location.origin` before handing the
+// result to callers so invite links minted on a dev/preview deploy stay on
+// that deploy — otherwise admins paste a prod URL while testing and the
+// claim transaction runs against a different build than they can see.
 export interface InviteResult {
   email: string;
   token: string;
@@ -54,6 +60,23 @@ const chunk = <T>(items: T[], size: number): T[][] => {
 
 // Derive a display name from an email local-part when the member record
 // doesn't carry one. Matches the pattern used by the prototype invite flow.
+// Overwrites the CF-minted claimUrl with one pinned to the current browser
+// origin. The token is stable across environments (it's the Firestore doc id
+// of the invitation), so we just re-wrap it. `skipped` / `already_active`
+// entries have empty tokens and stay unchanged.
+const rewriteClaimUrls = (response: InviteResponse): InviteResponse => {
+  const origin =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : '';
+  return {
+    ...response,
+    invitations: response.invitations.map((inv) =>
+      inv.token ? { ...inv, claimUrl: `${origin}/invite/${inv.token}` } : inv
+    ),
+  };
+};
+
 const nameFromEmail = (email: string): string => {
   const local = email.split('@')[0] ?? email;
   return local
@@ -238,7 +261,7 @@ export const useOrgMembers = (orgId: string | null) => {
       })),
       message,
     });
-    return result.data;
+    return rewriteClaimUrls(result.data);
   };
 
   const bulkInviteMembers = async (
@@ -260,7 +283,7 @@ export const useOrgMembers = (orgId: string | null) => {
       InviteResponse
     >(functions, 'createOrganizationInvites');
     const result = await callable({ orgId, invitations: intents, message });
-    return result.data;
+    return rewriteClaimUrls(result.data);
   };
 
   return {
