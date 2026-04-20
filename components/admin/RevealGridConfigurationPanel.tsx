@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { RevealGridGlobalConfig, GlobalFontFamily } from '@/types';
 
 interface RevealGridConfigurationPanelProps {
@@ -10,6 +10,7 @@ interface RevealGridConfigurationPanelProps {
 export const RevealGridConfigurationPanel: React.FC<
   RevealGridConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [activeBuildingId, setActiveBuildingId] = useState(BUILDINGS[0].id);
 
   // Cast the incoming config to our typed interface.

@@ -10,7 +10,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import {
   SpecialistScheduleGlobalConfig,
@@ -54,6 +54,7 @@ const INTERMEDIATE_DEFAULT_OPTIONS = [
 export const SpecialistScheduleConfigurationModal: React.FC<
   SpecialistScheduleConfigurationModalProps
 > = ({ isOpen, onClose }) => {
+  const BUILDINGS = useAdminBuildings();
   const [config, setConfig] = useState<SpecialistScheduleGlobalConfig>({
     buildingDefaults: {},
   });

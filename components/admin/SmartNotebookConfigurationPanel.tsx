@@ -3,8 +3,7 @@ import {
   SmartNotebookGlobalConfig,
   BuildingSmartNotebookDefaults,
 } from '@/types';
-import { BUILDINGS } from '@/config/buildings';
-
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 interface Props {
   config: SmartNotebookGlobalConfig;
   onChange: (newConfig: SmartNotebookGlobalConfig) => void;
@@ -14,6 +13,7 @@ export const SmartNotebookConfigurationPanel: React.FC<Props> = ({
   config,
   onChange,
 }) => {
+  const BUILDINGS = useAdminBuildings();
   const [activeBuildingId, setActiveBuildingId] = useState<string>(
     BUILDINGS.length > 0 ? BUILDINGS[0].id : ''
   );

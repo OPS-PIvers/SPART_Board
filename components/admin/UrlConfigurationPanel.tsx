@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { UrlGlobalConfig } from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -26,6 +26,7 @@ export const UrlConfigurationPanel: React.FC<UrlConfigurationPanelProps> = ({
   config,
   onChange,
 }) => {
+  const BUILDINGS = useAdminBuildings();
   const [activeTab, setActiveTab] = useState(BUILDINGS[0].id);
 
   const typedConfig = config as UrlGlobalConfig;

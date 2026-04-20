@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ConceptWebGlobalConfig, GlobalFontFamily } from '@/types';
-import { BUILDINGS } from '@/config/buildings';
-
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 interface Props {
   config: Record<string, unknown>;
   onChange: (newConfig: Record<string, unknown>) => void;
@@ -11,6 +10,7 @@ export const ConceptWebConfigurationPanel: React.FC<Props> = ({
   config: baseConfig,
   onChange,
 }) => {
+  const BUILDINGS = useAdminBuildings();
   const config = (baseConfig as unknown as ConceptWebGlobalConfig) ?? {
     buildingDefaults: {},
   };

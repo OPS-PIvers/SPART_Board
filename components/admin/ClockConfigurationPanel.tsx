@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import { ClockGlobalConfig, BuildingClockDefaults } from '@/types';
 import { Toggle } from '../common/Toggle';
@@ -22,6 +22,7 @@ const FONT_FAMILY_OPTIONS = [
 export const ClockConfigurationPanel: React.FC<
   ClockConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

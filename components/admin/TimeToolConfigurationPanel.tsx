@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import { TimeToolGlobalConfig, BuildingTimeToolDefaults } from '@/types';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
@@ -26,6 +26,7 @@ const COLOR_CLASSES: Record<string, string> = {
 export const TimeToolConfigurationPanel: React.FC<
   TimeToolConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

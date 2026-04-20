@@ -1,6 +1,6 @@
 import { Card } from '@/components/common/Card';
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import {
   TrafficLightGlobalConfig,
@@ -57,6 +57,7 @@ const LIGHT_OPTIONS: {
 export const TrafficLightConfigurationPanel: React.FC<
   TrafficLightConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

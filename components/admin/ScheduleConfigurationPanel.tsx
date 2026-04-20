@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import { useDialog } from '@/context/useDialog';
 import {
@@ -161,6 +161,7 @@ SortableItem.displayName = 'SortableItem';
 export const ScheduleConfigurationPanel: React.FC<
   ScheduleConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

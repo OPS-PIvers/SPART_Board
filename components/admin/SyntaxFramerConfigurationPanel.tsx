@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
 import {
   SyntaxFramerGlobalConfig,
@@ -16,6 +16,7 @@ interface SyntaxFramerConfigurationPanelProps {
 export const SyntaxFramerConfigurationPanel: React.FC<
   SyntaxFramerConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

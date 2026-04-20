@@ -13,7 +13,7 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import {
   CalendarGlobalConfig,
@@ -36,6 +36,7 @@ interface CalendarConfigurationModalProps {
 export const CalendarConfigurationModal: React.FC<
   CalendarConfigurationModalProps
 > = ({ isOpen, onClose }) => {
+  const BUILDINGS = useAdminBuildings();
   const { calendarService, isConnected, refreshGoogleToken } =
     useGoogleCalendar();
   const [config, setConfig] = useState<CalendarGlobalConfig>({

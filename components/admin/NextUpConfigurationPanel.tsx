@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import { NextUpGlobalConfig } from '@/types';
 import { Settings2, ListOrdered, Palette, Type } from 'lucide-react';
@@ -12,6 +12,7 @@ interface NextUpConfigurationPanelProps {
 export const NextUpConfigurationPanel: React.FC<
   NextUpConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

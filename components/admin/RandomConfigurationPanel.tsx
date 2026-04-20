@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import { RandomGlobalConfig, BuildingRandomDefaults } from '@/types';
 import { Toggle } from '../common/Toggle';
@@ -23,6 +23,7 @@ const VISUAL_STYLE_OPTIONS: {
 export const RandomConfigurationPanel: React.FC<
   RandomConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

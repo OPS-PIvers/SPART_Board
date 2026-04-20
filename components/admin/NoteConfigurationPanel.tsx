@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import { NoteGlobalConfig, BuildingNoteDefaults } from '@/types';
 import { STICKY_NOTE_COLORS } from '@/config/colors';
@@ -25,6 +25,7 @@ export const NoteConfigurationPanel: React.FC<NoteConfigurationPanelProps> = ({
   config,
   onChange,
 }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

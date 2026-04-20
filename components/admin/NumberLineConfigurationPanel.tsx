@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import {
   NumberLineGlobalConfig,
   BuildingNumberLineDefaults,
@@ -15,6 +15,7 @@ interface NumberLineConfigurationPanelProps {
 export const NumberLineConfigurationPanel: React.FC<
   NumberLineConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

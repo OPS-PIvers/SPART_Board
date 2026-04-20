@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import { SoundGlobalConfig, BuildingSoundDefaults } from '@/types';
 import { Card } from '@/components/common/Card';
@@ -27,6 +27,7 @@ const VISUAL_OPTIONS: {
 export const SoundConfigurationPanel: React.FC<
   SoundConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );

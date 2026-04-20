@@ -1,6 +1,6 @@
 import React from 'react';
 import { BuildingSelector } from './BuildingSelector';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import {
   ActivityWallGlobalConfig,
   ActivityWallBuildingConfig,
@@ -16,6 +16,7 @@ interface ActivityWallConfigurationPanelProps {
 export const ActivityWallConfigurationPanel: React.FC<
   ActivityWallConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = React.useState<string>(
     BUILDINGS[0].id
   );

@@ -8,7 +8,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import {
   BloomsTaxonomyGlobalConfig,
@@ -43,6 +43,7 @@ interface BloomsTaxonomyConfigurationModalProps {
 export const BloomsTaxonomyConfigurationModal: React.FC<
   BloomsTaxonomyConfigurationModalProps
 > = ({ isOpen, onClose, permission, onSave }) => {
+  const BUILDINGS = useAdminBuildings();
   const [config, setConfig] = useState<BloomsTaxonomyGlobalConfig>(() =>
     normalizeConfig(permission.config)
   );

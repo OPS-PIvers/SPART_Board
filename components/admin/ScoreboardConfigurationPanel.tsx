@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { BuildingSelector } from './BuildingSelector';
 import {
   ScoreboardGlobalConfig,
@@ -26,6 +26,7 @@ const DEFAULT_TEAMS: ScoreboardDefaultTeam[] = [
 export const ScoreboardConfigurationPanel: React.FC<
   ScoreboardConfigurationPanelProps
 > = ({ config, onChange }) => {
+  const BUILDINGS = useAdminBuildings();
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
     BUILDINGS[0].id
   );
