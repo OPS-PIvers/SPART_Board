@@ -9,7 +9,24 @@ import {
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
-import type { RoleRecord } from '@/types/organization';
+import type { CapabilityAccess, RoleRecord } from '@/types/organization';
+
+// Key-by-key compare so we can't be tripped up by key-ordering differences
+// between a Firestore snapshot and the working state. Both sides are flat
+// string→enum maps.
+const permsEqual = (
+  a: Record<string, CapabilityAccess> | undefined,
+  b: Record<string, CapabilityAccess> | undefined
+): boolean => {
+  const left = a ?? {};
+  const right = b ?? {};
+  const leftKeys = Object.keys(left);
+  if (leftKeys.length !== Object.keys(right).length) return false;
+  for (const key of leftKeys) {
+    if (left[key] !== right[key]) return false;
+  }
+  return true;
+};
 
 /**
  * Subscribes to `/organizations/{orgId}/roles`. Reads allowed for org members
@@ -97,9 +114,7 @@ export const useOrgRoles = (orgId: string | null) => {
           .filter((r) => {
             const live = liveById.get(r.id);
             if (!live) return false;
-            return (
-              JSON.stringify(live.perms ?? {}) !== JSON.stringify(r.perms ?? {})
-            );
+            return !permsEqual(live.perms, r.perms);
           })
           .map((r) =>
             updateDoc(doc(db, 'organizations', orgId, 'roles', r.id), {
