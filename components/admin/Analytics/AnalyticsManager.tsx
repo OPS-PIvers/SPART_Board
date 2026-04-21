@@ -1373,12 +1373,16 @@ export const AnalyticsManager: React.FC = () => {
 
   const fetchAnalytics = useCallback(async () => {
     if (!orgId) {
-      // Org membership hasn't resolved yet; skip the request rather than
-      // firing one that the backend would reject for missing org scope.
-      // Clear the initial loading flag so the UI shows an empty state instead
-      // of a permanent spinner for users who don't have an active org.
+      // No active org: clear any stale data from a previous org and surface an
+      // explicit message rather than a permanent spinner or a blank page. This
+      // also handles the case where `orgId` flips back to null after a prior
+      // successful load (e.g., the user is removed from the org).
       if (isMountedRef.current) {
         setLoading(false);
+        setData(null);
+        setError(
+          'No organization selected. Analytics require an active organization.'
+        );
       }
       return;
     }

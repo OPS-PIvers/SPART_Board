@@ -29,9 +29,10 @@ vi.mock('firebase-functions/logger', () => ({
 const mockState = vi.hoisted(() => ({
   buildingsByOrg: new Map<string, number>(),
   shouldFailNext: false,
-  updateSpy: vi.fn(() => Promise.resolve()),
-  countGetSpy: vi.fn(),
-  countSpy: vi.fn(),
+  updateSpy:
+    vi.fn<(call: { path: string; patch: Record<string, unknown> }) => void>(),
+  countGetSpy: vi.fn<(path: string) => void>(),
+  countSpy: vi.fn<(path: string) => void>(),
 }));
 
 vi.mock('firebase-admin', () => {

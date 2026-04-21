@@ -2118,20 +2118,14 @@ export const adminAnalytics = onRequest(
         }
       }
 
-      // 3b. Build the buildings map (uid → buildingIds) from the member record
-      // (admin-assigned) rather than from each user's self-selected
-      // `selectedBuildings` profile field. The member record's `buildingIds`
-      // are the authoritative source and are guaranteed to match live building
-      // doc ids, so the client-side "Unknown (…)" fallbacks disappear. Only
-      // members with a resolved `uid` land in the map (widget drilldowns key
-      // off uid); totals/bucketing iterate `members` directly below so invited
-      // users without a uid still count.
-      const buildingsMap = new Map<string, string[]>();
+      // 3b. Build a uid → member lookup so downstream dashboard/AI filters can
+      // scope to org members without being gated on a successful
+      // `auth().getUsers()` round-trip. `authUsersMap` is only used to join
+      // lastSignIn metadata; an auth lookup failure must not silently drop a
+      // real member's dashboards or AI usage from the totals.
+      const memberUids = new Set<string>();
       for (const m of members) {
-        if (!m.uid) continue;
-        if (m.buildingIds.length > 0) {
-          buildingsMap.set(m.uid, m.buildingIds);
-        }
+        if (m.uid) memberUids.add(m.uid);
       }
 
       // 3c. Time constants & helpers (engagement computed after dashboard
@@ -2182,8 +2176,10 @@ export const adminAnalytics = onRequest(
         // Extract owner UID from path: users/{uid}/dashboards/{dashId}
         const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
 
-        // Skip dashboards owned by anonymous users (not in filtered auth map)
-        if (!ownerUid || !authUsersMap.has(ownerUid)) continue;
+        // Skip dashboards not owned by a member of this org. Use the member
+        // roster (not `authUsersMap`) so a transient `auth().getUsers()`
+        // failure doesn't silently drop real members' dashboards from totals.
+        if (!ownerUid || !memberUids.has(ownerUid)) continue;
 
         totalDashboards++;
         allDashboardOwnerUids.add(ownerUid);
@@ -2436,8 +2432,10 @@ export const adminAnalytics = onRequest(
 
         if (!uid || !datePart) continue;
 
-        // Skip AI usage from anonymous users (not in filtered auth map)
-        if (!authUsersMap.has(uid)) continue;
+        // Skip AI usage not attributed to a member of this org. Scope by the
+        // member roster rather than `authUsersMap` so auth lookup failures
+        // don't silently drop members' AI calls from the totals.
+        if (!memberUids.has(uid)) continue;
 
         const usageData = usageDoc.data();
         const count = typeof usageData.count === 'number' ? usageData.count : 0;
