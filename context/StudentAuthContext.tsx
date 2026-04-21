@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { auth, isAuthBypass } from '@/config/firebase';
+import { useStudentIdleTimeout } from '@/hooks/useStudentIdleTimeout';
 import {
   StudentAuthContext,
   type StudentAuthStatus,
@@ -44,9 +45,6 @@ import {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes, per plan
-const INTERACTION_THROTTLE_MS = 5 * 1000; // Throttle interaction updates
 
 /** Protected student-facing routes. `/student/login` is NOT protected. */
 const PROTECTED_STUDENT_PATH_PREFIXES: readonly string[] = [
@@ -223,57 +221,10 @@ export const StudentAuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return unsubscribe;
   }, []);
 
-  // --- Idle timeout (15 minutes) --------------------------------------------
-  //
-  // A single setTimeout that's reset on interaction. We intentionally do NOT
-  // poll — 60fps mousemove would reset the timeout thousands of times per
-  // minute, which is wasteful even if functionally correct.
-  useEffect(() => {
-    if (isAuthBypass) return;
-    if (state.status !== 'authenticated') return;
-
-    let timeoutId: number | undefined;
-    let lastInteractionAt = Date.now();
-
-    const triggerIdleSignOut = () => {
-      void firebaseSignOut(auth).catch(() => {
-        // Swallow — onIdTokenChanged will pick up the sign-out and redirect.
-      });
-      if (typeof window !== 'undefined') {
-        window.location.assign(STUDENT_LOGIN_PATH);
-      }
-    };
-
-    const scheduleTimeout = () => {
-      if (typeof window === 'undefined') return;
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-      timeoutId = window.setTimeout(triggerIdleSignOut, IDLE_TIMEOUT_MS);
-    };
-
-    const handleInteraction = () => {
-      const now = Date.now();
-      // Throttle: don't reset the timeout more than once per 5s.
-      if (now - lastInteractionAt < INTERACTION_THROTTLE_MS) return;
-      lastInteractionAt = now;
-      scheduleTimeout();
-    };
-
-    scheduleTimeout();
-
-    const events = ['mousemove', 'keydown', 'touchstart', 'click'] as const;
-    const options: AddEventListenerOptions = { passive: true, capture: true };
-    events.forEach((event) => {
-      window.addEventListener(event, handleInteraction, options);
-    });
-
-    return () => {
-      if (typeof window === 'undefined') return;
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-      events.forEach((event) => {
-        window.removeEventListener(event, handleInteraction, options);
-      });
-    };
-  }, [state.status]);
+  // Idle timeout (15 minutes). `useStudentIdleTimeout` owns the listeners,
+  // throttle, timer, and sign-out+redirect. Armed only for authenticated
+  // student sessions; bypass mode and teacher previews never arm it.
+  useStudentIdleTimeout(!isAuthBypass && state.status === 'authenticated');
 
   // --- Imperative sign-out (exposed on context) -----------------------------
   const signOut = useCallback(async () => {

@@ -73,7 +73,10 @@ export const SubmissionsModal: React.FC<SubmissionsModalProps> = ({
         setLoading(false);
       },
       (err) => {
-        console.error('[SubmissionsModal] Failed to load submissions:', err);
+        console.error(
+          '[SubmissionsModal] Failed to load submissions:',
+          err instanceof Error ? err.message : 'unknown'
+        );
         setError('Could not load submissions.');
         setLoading(false);
       }

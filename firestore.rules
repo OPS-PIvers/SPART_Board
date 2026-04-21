@@ -823,7 +823,9 @@ service cloud.firestore {
           passesStudentClassGate(maSessionClassId()) &&
           (isStudentRoleUser() || submissionId == request.auth.uid) &&
           request.resource.data.keys().hasOnly(['submittedAt', 'payload']) &&
-          request.resource.data.submittedAt is int;
+          request.resource.data.submittedAt is int &&
+          request.resource.data.payload is map &&
+          request.resource.data.payload.size() <= 50;
 
         // Only the owning teacher or an admin may delete submissions —
         // used when a teacher wipes an assignment.

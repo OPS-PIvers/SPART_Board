@@ -2543,6 +2543,16 @@ function normalizeEmailDomain(email: string): string | null {
 }
 
 /**
+ * Rejects emails that would break (or be injected into) an unquoted
+ * OneRoster `filter=email='...'` string. Real Google-verified school emails
+ * never contain `'` or `\`, so callers short-circuit to the standard
+ * "not in roster" path rather than disclosing the guard's existence.
+ */
+function isSafeEmailForOneRosterFilter(email: string): boolean {
+  return !/['\\]/.test(email);
+}
+
+/**
  * Looks up the organization that owns the given email domain. Matches against
  * the existing /organizations/{orgId}/domains/{doc} subcollection, requiring
  * `status === 'verified'`. Domain values in that collection are stored with a
@@ -2682,6 +2692,13 @@ export const studentLoginV1 = onCall(
     let sourcedId: string;
     let classIds: string[];
     try {
+      if (!isSafeEmailForOneRosterFilter(email)) {
+        console.warn('[studentLoginV1] students_not_in_roster');
+        throw new HttpsError(
+          'not-found',
+          'No student record found in ClassLink roster.'
+        );
+      }
       const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
       const userParams = { filter: `email='${email}'` };
       const userHeaders = getOAuthHeaders(
@@ -2876,6 +2893,12 @@ export const getPseudonymsForAssignmentV1 = onCall(
     // roster pseudonyms. A teacher can only retrieve pseudonyms for their
     // own classes.
     try {
+      if (!isSafeEmailForOneRosterFilter(teacherEmail)) {
+        throw new HttpsError(
+          'not-found',
+          'Teacher not found in ClassLink roster.'
+        );
+      }
       const teacherUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
       const teacherParams = { filter: `email='${teacherEmail}'` };
       const teacherHeaders = getOAuthHeaders(

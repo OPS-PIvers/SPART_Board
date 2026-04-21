@@ -15,6 +15,7 @@ import {
   StudentAuthProvider,
   RequireStudentAuth,
 } from './context/StudentAuthContext';
+import { StudentIdleTimeoutGuard } from './components/student/StudentIdleTimeoutGuard';
 
 // Lazy load heavy components for code splitting
 // Using named export pattern: import(...).then(module => ({ default: module.ExportName }))
@@ -196,10 +197,14 @@ const App: React.FC = () => {
   const isMyAssignmentsRoute =
     pathname === '/my-assignments' || pathname.startsWith('/my-assignments/');
 
-  // MiniApp student route — anonymous entry, no teacher auth needed
+  // MiniApp student route — anonymous entry, no teacher auth needed.
+  // StudentIdleTimeoutGuard is a no-op unless a studentRole (ClassLink-via-
+  // Google) session is active; anonymous code+PIN launches and teacher
+  // previews pass through untouched.
   if (isMiniAppRoute) {
     return (
       <DialogProvider>
+        <StudentIdleTimeoutGuard />
         <Suspense fallback={<FullPageLoader />}>
           <MiniAppStudentApp />
         </Suspense>
@@ -212,6 +217,7 @@ const App: React.FC = () => {
   if (isVideoActivityRoute) {
     return (
       <DialogProvider>
+        <StudentIdleTimeoutGuard />
         <Suspense fallback={<FullPageLoader />}>
           <VideoActivityStudentApp />
         </Suspense>
@@ -223,6 +229,7 @@ const App: React.FC = () => {
   if (isActivityWallRoute) {
     return (
       <DialogProvider>
+        <StudentIdleTimeoutGuard />
         <Suspense fallback={<FullPageLoader />}>
           <ActivityWallStudentApp />
         </Suspense>
@@ -237,6 +244,7 @@ const App: React.FC = () => {
   if (isGuidedLearningRoute) {
     return (
       <DialogProvider>
+        <StudentIdleTimeoutGuard />
         <Suspense fallback={<FullPageLoader />}>
           <GuidedLearningStudentApp />
         </Suspense>
