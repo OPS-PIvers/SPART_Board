@@ -100,36 +100,54 @@ git add --renormalize .
 
 # 4. Commit the churn
 git commit -m "chore: normalize line endings to LF per .gitattributes"
-
-# 5. Capture the commit hash for blame-ignore
-git rev-parse HEAD
 ```
 
-Then **edit `.git-blame-ignore-revs`** and append the hash from step 5 on a new line, commit that change separately:
+**Do not add the commit hash to `.git-blame-ignore-revs` in this PR.** This repo uses "Squash and merge" (see [PR #1365](https://github.com/OPS-PIvers/SpartBoard/pull/1365)), so the hash on your PR branch will **not** be the hash that lands on `main` — the squash produces a new commit. Pre-capturing a hash here records a ref that never exists on `main`, silently breaking blame-ignore.
+
+### Step 3 — PR 3: register the squash hash in blame-ignore (trivial follow-up)
+
+After PR 2 is merged:
 
 ```bash
-echo "<commit-hash-from-step-5>" >> .git-blame-ignore-revs
+git checkout main
+git pull
+# Copy the hash of the squash-merge commit that landed on main
+SQUASH_HASH=$(git log -1 --format=%H)
+git checkout -b chore/blame-ignore-renormalize
+echo "$SQUASH_HASH" >> .git-blame-ignore-revs
 git add .git-blame-ignore-revs
 git commit -m "chore: register line-ending renormalize in blame-ignore"
+git push -u origin chore/blame-ignore-renormalize
+gh pr create --base main --title "chore: register line-ending renormalize in blame-ignore" --body "Follow-up to PR 2."
 ```
 
-Push both commits in a single PR.
+Keep PR 3 separate and small so the hash is the real post-squash hash from `main`.
 
-### Step 3 — verify before merging PR 2
+### Step 4 — verify before merging PR 2
 
 - `git diff main...HEAD -- . ':!*.png' ':!*.jpg' ':!*.pdf' | head -50` — spot-check diff shows only line-ending changes (no content drift).
 - `git diff main...HEAD --ignore-all-space --ignore-cr-at-eol` should be **empty** (or only touch `.gitattributes` / `.git-blame-ignore-revs`). This is the single most important check.
 - `pnpm run validate` passes cleanly on Windows (no more `Delete ␍` errors).
 - CI passes (same checks as any other PR).
 
-### Step 4 — post-merge cleanup
+### Step 5 — post-merge cleanup
 
 Immediately after PR 2 merges:
 
-- In each local worktree: `git pull && git add --renormalize . && git status`. If git reports unexpected modifications, investigate before committing.
-- Any branch with in-progress work: `git rebase main` — conflicts should be line-ending-only, resolvable with `git checkout --theirs` on each conflicted file then `git add --renormalize .`.
+- In each local worktree, **force git to re-check-out every file through the new `.gitattributes` rules**:
+
+  ```bash
+  git pull
+  git rm --cached -r .
+  git reset --hard
+  git status   # should be clean
+  ```
+
+  `git add --renormalize .` alone only fixes the index, not the files on disk — `git rm --cached -r .` followed by `git reset --hard` is what actually rewrites the working-tree files to LF. Only run this in a worktree with no uncommitted changes.
+
+- Any branch with in-progress work: `git rebase main` — conflicts should be line-ending-only. Resolve each conflicted file with `git checkout --theirs -- <file>` and then follow with the same `git rm --cached -r . && git reset --hard` once the rebase completes.
 - Inform teammates (or your other machines) to run the same refresh or re-clone.
-- Optionally in each clone: `git config --local core.autocrlf input` so future checkouts don't reintroduce CRLF.
+- Optionally in each clone: `git config --local core.autocrlf input` so future checkouts don't reintroduce CRLF if `.gitattributes` ever loses a rule.
 
 ## Rollback
 
@@ -152,6 +170,7 @@ Safe because it's a pure textual revert. Then investigate and retry.
 
 - PR 1: ~15 minutes (config only, trivial review).
 - PR 2: ~10 minutes to execute, ~10 minutes to verify the diff is ending-only, ~5 minutes for CI.
+- PR 3: ~5 minutes (one-line change registering the post-squash hash).
 - Post-merge rebases of in-flight branches: depends on count. Budget ~5 min per branch.
 
 ## References
