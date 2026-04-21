@@ -133,7 +133,7 @@ export const FolderPickerPopover: React.FC<FolderPickerPopoverProps> = ({
   }, [isPortaledPopover, anchorRef]);
 
   useEffect(() => {
-    const handlePointer = (event: MouseEvent): void => {
+    const handlePointer = (event: MouseEvent | TouchEvent): void => {
       const target = event.target as Node | null;
       if (!target) return;
       if (containerRef.current && containerRef.current.contains(target)) return;
@@ -150,9 +150,11 @@ export const FolderPickerPopover: React.FC<FolderPickerPopoverProps> = ({
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
     document.addEventListener('keydown', handleKey);
     return () => {
       document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
       document.removeEventListener('keydown', handleKey);
     };
   }, [onClose, isPortaledPopover, anchorRef]);
