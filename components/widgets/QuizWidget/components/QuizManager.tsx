@@ -165,6 +165,16 @@ interface QuizManagerProps {
   ) => void;
   onResults: (quiz: QuizMetadata) => void;
   onDelete: (quiz: QuizMetadata) => void | Promise<void>;
+  /**
+   * Optional batch delete that bypasses the per-quiz confirmation/toasts
+   * fired by `onDelete` (see QuizWidget's `onDelete` wiring, which prompts
+   * per-quiz when archived assignments exist). Receives every selected
+   * quiz — implementers are responsible for their own aggregated confirms
+   * and summary toasts. Resolve to `true` when a delete was attempted
+   * (selection will be cleared) or `false` when the handler aborted or
+   * the user cancelled (selection will be preserved so they can retry).
+   */
+  onBulkDelete?: (quizzes: QuizMetadata[]) => Promise<boolean>;
   onShare: (quiz: QuizMetadata) => void;
   rosters: ClassRoster[];
   config: QuizConfig;
@@ -264,6 +274,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onAssign,
   onResults,
   onDelete,
+  onBulkDelete,
   onShare,
   rosters,
   config,
@@ -658,32 +669,46 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
 
   const handleBulkDelete = useCallback(async (): Promise<void> => {
     if (selection.count === 0) return;
-    const ok = window.confirm(
-      `Delete ${selection.count} quiz${selection.count === 1 ? '' : 'zes'}? This cannot be undone.`
-    );
-    if (!ok) return;
-    const ids = Array.from(selection.selectedIds);
-    const targets = quizzes.filter((q) => ids.includes(q.id));
+    const targets = quizzes.filter((q) => selection.selectedIds.has(q.id));
+    if (targets.length === 0) return;
     setBulkBusy(true);
     try {
-      const results = await Promise.allSettled(
-        targets.map(async (quiz) => onDelete(quiz))
-      );
-      results.forEach((result, idx) => {
-        if (result.status === 'rejected') {
-          console.error(
-            '[QuizManager] bulk delete failed for',
-            targets[idx]?.id,
-            result.reason
+      // `didAttempt` gates the selection clear: if the user cancelled a
+      // confirm or the widget-level handler aborted (e.g. assignments
+      // still loading), keep the selection so they can retry without
+      // re-selecting everything.
+      let didAttempt = false;
+      if (onBulkDelete) {
+        // Widget-level handler owns confirmation + summary toasts.
+        didAttempt = await onBulkDelete(targets);
+      } else {
+        const ok = window.confirm(
+          `Delete ${targets.length} quiz${targets.length === 1 ? '' : 'zes'}? This cannot be undone.`
+        );
+        if (ok) {
+          const results = await Promise.allSettled(
+            targets.map(async (quiz) => onDelete(quiz))
           );
+          results.forEach((result, idx) => {
+            if (result.status === 'rejected') {
+              console.error(
+                '[QuizManager] bulk delete failed for',
+                targets[idx]?.id,
+                result.reason
+              );
+            }
+          });
+          didAttempt = true;
         }
-      });
-      selection.clear();
-      setSelectionMode(false);
+      }
+      if (didAttempt) {
+        selection.clear();
+        setSelectionMode(false);
+      }
     } finally {
       setBulkBusy(false);
     }
-  }, [selection, quizzes, onDelete]);
+  }, [selection, quizzes, onDelete, onBulkDelete]);
 
   // ─── Folder sidebar (Library tab only) ────────────────────────────────────
   const folderSidebarSlot =
