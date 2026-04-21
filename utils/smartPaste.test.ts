@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectWidgetType } from './smartPaste';
-import { EmbedConfig, ChecklistConfig, StickerConfig } from '../types';
+import { EmbedConfig, ChecklistConfig, StickerConfig } from '@/types';
 
 describe('detectWidgetType (Smart Paste)', () => {
   it('returns null for empty or whitespace-only input', () => {
