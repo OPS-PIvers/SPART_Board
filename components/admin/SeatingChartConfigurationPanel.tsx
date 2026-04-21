@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SeatingChartGlobalConfig } from '@/types';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
+import { useBuildingSelection } from '@/hooks/useBuildingSelection';
 interface SeatingChartConfigurationPanelProps {
   config: Record<string, unknown>;
   onChange: (newConfig: Record<string, unknown>) => void;
@@ -10,7 +11,8 @@ export const SeatingChartConfigurationPanel: React.FC<
   SeatingChartConfigurationPanelProps
 > = ({ config, onChange }) => {
   const BUILDINGS = useAdminBuildings();
-  const [activeBuildingId, setActiveBuildingId] = useState(BUILDINGS[0]?.id);
+  const [activeBuildingId, setActiveBuildingId] =
+    useBuildingSelection(BUILDINGS);
 
   if (!activeBuildingId) {
     return (

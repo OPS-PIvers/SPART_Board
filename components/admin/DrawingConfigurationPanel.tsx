@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
+import { useBuildingSelection } from '@/hooks/useBuildingSelection';
 import { BuildingSelector } from './BuildingSelector';
 import { DrawingGlobalConfig, BuildingDrawingDefaults } from '@/types';
 import { WIDGET_PALETTE } from '@/config/colors';
@@ -15,9 +16,8 @@ export const DrawingConfigurationPanel: React.FC<
   DrawingConfigurationPanelProps
 > = ({ config, onChange }) => {
   const BUILDINGS = useAdminBuildings();
-  const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
-    BUILDINGS[0].id
-  );
+  const [selectedBuildingId, setSelectedBuildingId] =
+    useBuildingSelection(BUILDINGS);
 
   const buildingDefaults = config.buildingDefaults ?? {};
   const currentBuildingConfig: BuildingDrawingDefaults = buildingDefaults[

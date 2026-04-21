@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ConceptWebGlobalConfig, GlobalFontFamily } from '@/types';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
+import { useBuildingSelection } from '@/hooks/useBuildingSelection';
 interface Props {
   config: Record<string, unknown>;
   onChange: (newConfig: Record<string, unknown>) => void;
@@ -14,7 +15,8 @@ export const ConceptWebConfigurationPanel: React.FC<Props> = ({
   const config = (baseConfig as unknown as ConceptWebGlobalConfig) ?? {
     buildingDefaults: {},
   };
-  const [activeBuildingId, setActiveBuildingId] = useState(BUILDINGS[0].id);
+  const [activeBuildingId, setActiveBuildingId] =
+    useBuildingSelection(BUILDINGS);
 
   const buildingConfig = config.buildingDefaults?.[activeBuildingId] ?? {
     buildingId: activeBuildingId,

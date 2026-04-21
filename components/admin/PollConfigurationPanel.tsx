@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
+import { useBuildingSelection } from '@/hooks/useBuildingSelection';
 import { BuildingSelector } from './BuildingSelector';
 import {
   PollGlobalConfig,
@@ -28,9 +29,8 @@ export const PollConfigurationPanel: React.FC<PollConfigurationPanelProps> = ({
   onChange,
 }) => {
   const BUILDINGS = useAdminBuildings();
-  const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
-    BUILDINGS[0].id
-  );
+  const [selectedBuildingId, setSelectedBuildingId] =
+    useBuildingSelection(BUILDINGS);
 
   const buildingDefaults = config.buildingDefaults ?? {};
   const currentBuildingConfig: BuildingPollDefaults = buildingDefaults[

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BuildingSelector } from './BuildingSelector';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
+import { useBuildingSelection } from '@/hooks/useBuildingSelection';
 import {
   ActivityWallGlobalConfig,
   ActivityWallBuildingConfig,
@@ -17,9 +18,8 @@ export const ActivityWallConfigurationPanel: React.FC<
   ActivityWallConfigurationPanelProps
 > = ({ config, onChange }) => {
   const BUILDINGS = useAdminBuildings();
-  const [selectedBuildingId, setSelectedBuildingId] = React.useState<string>(
-    BUILDINGS[0].id
-  );
+  const [selectedBuildingId, setSelectedBuildingId] =
+    useBuildingSelection(BUILDINGS);
 
   const globalConfig = config as unknown as ActivityWallGlobalConfig;
   const buildingDefaults = globalConfig.buildingDefaults ?? {};

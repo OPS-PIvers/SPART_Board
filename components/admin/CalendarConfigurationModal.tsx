@@ -14,6 +14,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
+import { useBuildingSelection } from '@/hooks/useBuildingSelection';
 import { BuildingSelector } from './BuildingSelector';
 import {
   CalendarGlobalConfig,
@@ -51,9 +52,8 @@ export const CalendarConfigurationModal: React.FC<
     text: string;
     type: 'success' | 'error';
   } | null>(null);
-  const [selectedBuildingId, setSelectedBuildingId] = useState<string>(
-    BUILDINGS[0].id
-  );
+  const [selectedBuildingId, setSelectedBuildingId] =
+    useBuildingSelection(BUILDINGS);
 
   const fetchConfig = useCallback(async () => {
     if (isAuthBypass) {
