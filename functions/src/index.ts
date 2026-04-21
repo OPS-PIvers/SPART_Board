@@ -1910,8 +1910,6 @@ export const adminAnalytics = onRequest(
     invoker: 'public',
   },
   async (req, res) => {
-    console.log('[getAdminAnalytics] Function started');
-
     // 1. Verify caller is authenticated via Bearer token
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -1937,7 +1935,6 @@ export const adminAnalytics = onRequest(
     const db = admin.firestore();
 
     // 2. Verify caller is an admin
-    console.log(`[getAdminAnalytics] Verifying admin status for: ${email}`);
     const adminDoc = await db.collection('admins').doc(email).get();
     if (!adminDoc.exists) {
       console.error(
@@ -1952,7 +1949,6 @@ export const adminAnalytics = onRequest(
       // 3a. Collect ALL user data from Firebase Auth (authoritative source
       // for MAU/DAU). This replaces the previous Firestore-only approach
       // which missed users without a /users/{uid} root doc.
-      console.log('[getAdminAnalytics] Fetching users from Firebase Auth...');
       const authUsersMap = new Map<
         string,
         { email: string; lastSignInMs: number }
@@ -1975,8 +1971,6 @@ export const adminAnalytics = onRequest(
         }
         authPageToken = listResult.pageToken;
       } while (authPageToken);
-
-      console.log(`[getAdminAnalytics] Found ${authUsersMap.size} Auth users`);
 
       // 3b. Batch-read /users/{uid}/userProfile/profile for building assignments
       // The source of truth for buildings is the profile subcollection, not the
@@ -2023,10 +2017,6 @@ export const adminAnalytics = onRequest(
         if (isMonthlyActive) bucket[key].monthly += 1;
         if (isDailyActive) bucket[key].daily += 1;
       };
-
-      console.log(
-        '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
-      );
       // 4. Fetch Dashboards for Widget Stats
       let totalDashboards = 0;
       const totalWidgetCounts: Record<string, number> = {};
@@ -2100,8 +2090,6 @@ export const adminAnalytics = onRequest(
         }
       }
 
-      console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
-
       // 4b. Compute engagement using last-edit timestamps (not last-login)
       //     A user is "active" if they edited a dashboard within the window.
       const usersByDomain: Record<string, EngagementCounts> = {};
@@ -2163,11 +2151,6 @@ export const adminAnalytics = onRequest(
           }
         }
       }
-
-      const totalUsers = authUsersMap.size;
-      console.log(
-        `[getAdminAnalytics] Computed engagement for ${totalUsers} users`
-      );
 
       // 4c. Build per-user detail list for KPI drilldowns
       const userList = Array.from(authUsersMap.entries()).map(
@@ -2270,10 +2253,7 @@ export const adminAnalytics = onRequest(
             .sort(),
         };
       }
-
-      console.log('[getAdminAnalytics] Fetching AI usage...');
       // 5. Fetch AI Usage
-      let totalAiUsageRecords = 0;
       let totalAiCalls = 0;
       const callsPerUser: Record<string, number> = {};
       const dailyCallCounts: Record<string, number> = {};
@@ -2295,7 +2275,6 @@ export const adminAnalytics = onRequest(
 
       for await (const usageDoc of aiUsageStream) {
         if (!usageDoc.exists) continue;
-        totalAiUsageRecords++;
         const idParts = usageDoc.id.split('_');
         if (idParts.length < 2) continue;
 
@@ -2329,10 +2308,6 @@ export const adminAnalytics = onRequest(
           dailyCallCounts[datePart] = (dailyCallCounts[datePart] ?? 0) + count;
         }
       }
-
-      console.log(
-        `[getAdminAnalytics] Found ${totalAiUsageRecords} AI usage records`
-      );
 
       const uniqueDays = Object.keys(dailyCallCounts).length || 1;
       const avgDailyCalls = Math.round(totalAiCalls / uniqueDays);
@@ -2381,8 +2356,6 @@ export const adminAnalytics = onRequest(
           count,
           email: topUserEmails[uid] ?? `Unknown (${uid})`,
         }));
-
-      console.log('[getAdminAnalytics] Analysis complete, returning results');
       res.json({
         users: {
           total: totalEngagement.total,
