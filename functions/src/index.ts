@@ -1984,28 +1984,34 @@ export const adminAnalytics = onRequest(
       const buildingsMap = new Map<string, string[]>();
       const authUids = Array.from(authUsersMap.keys());
       const PROFILE_BATCH = 500;
-      const batchPromises = [];
-      for (let i = 0; i < authUids.length; i += PROFILE_BATCH) {
-        const batch = authUids.slice(i, i + PROFILE_BATCH);
-        const refs = batch.map((uid) =>
-          db.doc(`users/${uid}/userProfile/profile`)
-        );
-        batchPromises.push(db.getAll(...refs));
-      }
+      const CONCURRENCY_LIMIT = 10;
 
-      const allSnapshots = await Promise.all(batchPromises);
-      for (const snapshots of allSnapshots) {
-        for (const snap of snapshots) {
-          if (!snap.exists) continue;
-          const data = snap.data();
-          if (
-            data &&
-            Array.isArray(data.selectedBuildings) &&
-            data.selectedBuildings.length > 0
-          ) {
-            const uid = snap.ref.parent.parent?.id;
-            if (!uid) continue;
-            buildingsMap.set(uid, data.selectedBuildings.map(String));
+      for (let i = 0; i < authUids.length; i += PROFILE_BATCH * CONCURRENCY_LIMIT) {
+        const chunkUids = authUids.slice(i, i + PROFILE_BATCH * CONCURRENCY_LIMIT);
+        const chunkPromises: Promise<admin.firestore.DocumentSnapshot[]>[] = [];
+
+        for (let j = 0; j < chunkUids.length; j += PROFILE_BATCH) {
+          const batch = chunkUids.slice(j, j + PROFILE_BATCH);
+          const refs = batch.map((uid) =>
+            db.doc(`users/${uid}/userProfile/profile`)
+          );
+          chunkPromises.push(db.getAll(...refs));
+        }
+
+        const chunkSnapshots = await Promise.all(chunkPromises);
+        for (const snapshots of chunkSnapshots) {
+          for (const snap of snapshots) {
+            if (!snap.exists) continue;
+            const data = snap.data();
+            if (
+              data &&
+              Array.isArray(data.selectedBuildings) &&
+              data.selectedBuildings.length > 0
+            ) {
+              const uid = snap.ref.parent.parent?.id;
+              if (!uid) continue;
+              buildingsMap.set(uid, data.selectedBuildings.map(String));
+            }
           }
         }
       }

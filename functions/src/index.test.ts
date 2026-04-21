@@ -38,13 +38,16 @@ const toAsyncStream = (docs: MockDocInput[]) => ({
   },
 });
 
+interface MockDocRef {
+  path: string;
+}
+
 const mockFirestore = {
   doc: vi.fn((path: string) => ({
     path,
     get: vi.fn(() => Promise.resolve({ exists: false })),
   })),
-  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
-  getAll: vi.fn((...refs: any[]) => {
+  getAll: vi.fn((...refs: MockDocRef[]) => {
     return Promise.resolve(
       refs.map((ref) => {
         // Expected path: users/{uid}/userProfile/profile
@@ -68,7 +71,6 @@ const mockFirestore = {
       })
     );
   }),
-  /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   collection: vi.fn((name: string) => {
     if (name === 'admins') {
       return {
@@ -146,9 +148,12 @@ vi.mock('firebase-admin', () => {
     },
   });
 
+  const apps: unknown[] = [];
   return {
-    apps: [],
-    initializeApp: vi.fn(),
+    apps,
+    initializeApp: vi.fn(() => {
+      if (apps.length === 0) apps.push({ name: '[DEFAULT]' });
+    }),
     firestore: firestoreFn,
     auth: vi.fn(() => ({
       verifyIdToken: vi.fn().mockResolvedValue({ email: 'admin@school.org' }),
