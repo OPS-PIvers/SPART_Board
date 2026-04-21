@@ -11,6 +11,10 @@ import { UpdateNotification } from './components/layout/UpdateNotification';
 import { DriveDisconnectBanner } from './components/common/DriveDisconnectBanner';
 import { isConfigured, isAuthBypass } from './config/firebase';
 import { StudentProvider } from './components/student/StudentContexts';
+import {
+  StudentAuthProvider,
+  RequireStudentAuth,
+} from './context/StudentAuthContext';
 
 // Lazy load heavy components for code splitting
 // Using named export pattern: import(...).then(module => ({ default: module.ExportName }))
@@ -58,6 +62,16 @@ const GuidedLearningStudentApp = lazy(() =>
   import('./components/guidedLearning/GuidedLearningStudentApp').then(
     (module) => ({ default: module.GuidedLearningStudentApp })
   )
+);
+const StudentLoginPage = lazy(() =>
+  import('./components/student/StudentLoginPage').then((module) => ({
+    default: module.StudentLoginPage,
+  }))
+);
+const MyAssignmentsPage = lazy(() =>
+  import('./components/student/MyAssignmentsPage').then((module) => ({
+    default: module.MyAssignmentsPage,
+  }))
 );
 const LoginScreen = lazy(() =>
   import('./components/auth/LoginScreen').then((module) => ({
@@ -177,6 +191,10 @@ const App: React.FC = () => {
   const isActivityWallRoute =
     pathname === '/activity-wall' || pathname.startsWith('/activity-wall/');
   const isInviteRoute = pathname.startsWith('/invite/');
+  const isStudentLoginRoute =
+    pathname === '/student/login' || pathname.startsWith('/student/login/');
+  const isMyAssignmentsRoute =
+    pathname === '/my-assignments' || pathname.startsWith('/my-assignments/');
 
   // MiniApp student route — anonymous entry, no teacher auth needed
   if (isMiniAppRoute) {
@@ -222,6 +240,39 @@ const App: React.FC = () => {
         <Suspense fallback={<FullPageLoader />}>
           <GuidedLearningStudentApp />
         </Suspense>
+        <DialogContainer />
+      </DialogProvider>
+    );
+  }
+
+  // Student login route — PII-free GIS sign-in, NOT behind AuthProvider.
+  // The page is itself the auth gate; it signs the student in with a custom
+  // token once the Cloud Function verifies the Google id_token.
+  if (isStudentLoginRoute) {
+    return (
+      <DialogProvider>
+        <Suspense fallback={<FullPageLoader />}>
+          <StudentLoginPage />
+        </Suspense>
+        <DialogContainer />
+      </DialogProvider>
+    );
+  }
+
+  // My Assignments route — landing page for GIS-authenticated students.
+  // StudentAuthProvider owns the auth lifecycle (idle timeout, custom claims).
+  // RequireStudentAuth gates rendering on a valid student token and redirects
+  // to /student/login when missing.
+  if (isMyAssignmentsRoute) {
+    return (
+      <DialogProvider>
+        <StudentAuthProvider>
+          <RequireStudentAuth>
+            <Suspense fallback={<FullPageLoader />}>
+              <MyAssignmentsPage />
+            </Suspense>
+          </RequireStudentAuth>
+        </StudentAuthProvider>
         <DialogContainer />
       </DialogProvider>
     );

@@ -1,21 +1,28 @@
 /**
  * MiniAppStudentApp — student-facing MiniApp experience.
- * Accessible at /miniapp/:sessionId (no Google auth required).
+ * Accessible at /miniapp/:sessionId.
  *
  * Flow:
- *  1. Anonymous Firebase auth (satisfies Firestore security rules)
+ *  1. If no Firebase Auth user (legacy shared-link launch), sign in anonymously.
+ *     Students launched via /my-assignments arrive already authenticated with
+ *     a studentRole custom-token user — we keep that auth and do not re-sign.
  *  2. Load session from Firestore by sessionId
  *  3. If active: render the app HTML in a sandboxed iframe immediately
  *  4. If ended: show "session ended" screen
- *  5. If collectResults configured: forward SPART_MINIAPP_RESULT postMessages to Apps Script
+ *  5. When the iframe posts SPART_MINIAPP_RESULT, write a submission doc under
+ *     `mini_app_sessions/{sessionId}/submissions/{docId}`. For studentRole
+ *     users the docId is an opaque per-assignment pseudonym (via
+ *     getAssignmentPseudonymV1) so grading can match-back without persisting
+ *     PII; for anonymous users the docId is the anon Firebase Auth UID.
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { signInAnonymously } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { Loader2, AlertCircle, CheckCircle2, Box } from 'lucide-react';
-import { auth, db } from '@/config/firebase';
-import { MiniAppSession } from '@/types';
+import { auth, db, functions } from '@/config/firebase';
+import { MiniAppSession, MiniAppSubmission } from '@/types';
 
 const SESSIONS_COLLECTION = 'mini_app_sessions';
 
@@ -111,6 +118,50 @@ const SessionLoader: React.FC = () => {
   return <AppViewer session={session} />;
 };
 
+// ─── Submission doc-ID resolution ──────────────────────────────────────────────
+//
+// Pseudonym cache: sessionId -> pseudonym (Promise-valued so concurrent
+// submissions within the same session de-dupe the callable round trip).
+// Rebuild whenever the authenticated uid changes (tracked by
+// `pseudonymCacheOwnerUid`). Mirrors the pattern in MyAssignmentsPage.
+
+let pseudonymCacheOwnerUid: string | null = null;
+let pseudonymCache: Map<string, Promise<string>> = new Map();
+
+function getCachedPseudonym(
+  sessionId: string,
+  pseudonymUid: string
+): Promise<string> {
+  if (pseudonymCacheOwnerUid !== pseudonymUid) {
+    pseudonymCache = new Map();
+    pseudonymCacheOwnerUid = pseudonymUid;
+  }
+  const cached = pseudonymCache.get(sessionId);
+  if (cached) return cached;
+
+  const callable = httpsCallable<
+    { assignmentId: string },
+    { pseudonym?: string }
+  >(functions, 'getAssignmentPseudonymV1');
+
+  const promise = callable({ assignmentId: sessionId }).then((res) => {
+    const p = res.data?.pseudonym;
+    if (typeof p !== 'string' || p.length === 0) {
+      throw new Error('Pseudonym missing from callable response.');
+    }
+    return p;
+  });
+
+  pseudonymCache.set(sessionId, promise);
+  promise.catch(() => {
+    if (pseudonymCache.get(sessionId) === promise) {
+      pseudonymCache.delete(sessionId);
+    }
+  });
+
+  return promise;
+}
+
 // ─── App Viewer ────────────────────────────────────────────────────────────────
 
 const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
@@ -121,30 +172,46 @@ const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
 
       const data = event.data as { type?: string; payload?: unknown } | null;
-      if (data?.type === 'SPART_MINIAPP_RESULT' && session.submissionUrl) {
-        try {
-          await fetch(session.submissionUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sheetId: session.googleSheetId ?? '',
-              studentPin: 'Student',
-              data: data.payload,
-            }),
-          });
-        } catch (err) {
-          console.error('[MiniAppStudentApp] Result submission failed:', err);
-        }
+      if (data?.type !== 'SPART_MINIAPP_RESULT') return;
+
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('[MiniAppStudentApp] No auth user; skipping submission.');
+        return;
+      }
+
+      try {
+        // studentRole users (ClassLink-launched) submit under an opaque
+        // per-assignment pseudonym so the teacher can match-back without
+        // persisting PII. Anonymous shared-link users submit under their
+        // anon Firebase Auth UID.
+        const tokenResult = await currentUser.getIdTokenResult();
+        const isStudentRole = tokenResult.claims?.studentRole === true;
+
+        const docId = isStudentRole
+          ? await getCachedPseudonym(session.id, currentUser.uid)
+          : currentUser.uid;
+
+        const submission: MiniAppSubmission = {
+          submittedAt: Date.now(),
+          payload: data.payload,
+        };
+
+        await setDoc(
+          doc(db, SESSIONS_COLLECTION, session.id, 'submissions', docId),
+          submission
+        );
+      } catch (err) {
+        console.error('[MiniAppStudentApp] Submission write failed:', err);
       }
     },
-    [session.submissionUrl, session.googleSheetId]
+    [session.id]
   );
 
   useEffect(() => {
-    if (!session.submissionUrl) return;
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [session.submissionUrl, handleMessage]);
+  }, [handleMessage]);
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-slate-900 flex flex-col">
