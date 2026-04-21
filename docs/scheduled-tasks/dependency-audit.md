@@ -3,7 +3,7 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: weekly — Tuesday_
-_Last audited: 2026-04-14_
+_Last audited: 2026-04-21_
 _Last action: 2026-04-14_
 
 ---
@@ -23,15 +23,17 @@ _Nothing currently in progress._
 - **Detail:** HIGH vulnerability in the Vite dev server allows arbitrary file reads via path traversal in certain server configurations. While this only affects the dev server (not production builds), it affects the development environment and CI preview builds.
 - **Fix:** `pnpm up vite@latest` within the ^6.x range, or upgrade to vite 7+ if a patched version is available. Also check rollup (locked at 4.55.1) — HIGH path traversal in rollup >=4.0.0 <4.59.0, fix: rollup@>=4.59.0. Running `pnpm up vite` should pull in the updated rollup as a transitive dep.
 
-### HIGH `hono` has authorization bypass and arbitrary file access vulnerabilities
+### HIGH `hono` has authorization bypass, arbitrary file access, and HTML injection vulnerabilities
 
 - **Detected:** 2026-04-14
+- **Updated:** 2026-04-21
 - **File:** package.json (`"hono": "^4.11.4"`), locked at 4.11.x
-- **Detail:** Two HIGH CVEs:
+- **Detail:** Three CVEs — two HIGH, one MODERATE:
   - `@hono/node-server` has authorization bypass for certain request patterns.
   - Hono vulnerable to arbitrary file access via path traversal in static file serving.
-    Current locked version 4.11.x is affected; latest is 4.12.12 which patches both.
-- **Fix:** `pnpm up hono@^4.12.12` — semver-compatible within the ^4 range. Review any static file serving configuration in hono routes after upgrade.
+  - GHSA-458j-xx4x-4375 (moderate): Hono improperly handles JSX attribute names, allowing HTML injection in `hono/jsx` SSR — patched in >=4.12.14.
+    Current locked version 4.11.x is affected by all three; latest is 4.12.14 which patches all.
+- **Fix:** `pnpm up hono@^4.12.14` — semver-compatible within the ^4 range. Target 4.12.14 specifically (not just 4.12.12) to resolve the HTML injection moderate CVE as well. Review any static file serving configuration in hono routes after upgrade.
 
 ### MEDIUM `firebase-tools` brings in multiple vulnerable transitive deps
 
@@ -77,18 +79,26 @@ _Nothing currently in progress._
 - **Detail:** HIGH — lodash >=4.0.0 <=4.17.23 vulnerable to code injection via `_.template`. This comes via `firebase-functions-test > lodash`. Only in test infrastructure, not production runtime.
 - **Fix:** Update `firebase-functions-test` from 3.4.1 to latest — check if newer version depends on a patched lodash. This is a test-only devDependency.
 
+### MEDIUM `dompurify` has ADD_TAGS bypass via short-circuit evaluation
+
+- **Detected:** 2026-04-21
+- **File:** package.json (transitive via `@monaco-editor/react > monaco-editor > dompurify`)
+- **Detail:** GHSA-39q2-94rc-95cp (moderate): DOMPurify's `ADD_TAGS` function bypasses `FORBID_TAGS` due to short-circuit evaluation in versions <=3.3.3. Patched in >=3.4.0. This affects the Monaco editor used in the widget builder. Not directly exploitable by end users unless they can craft input that passes through the Monaco editor's sanitization path, but it is a sanitization bypass.
+- **Fix:** This is a transitive dep two levels deep (`@monaco-editor/react > monaco-editor > dompurify`). Updating `@monaco-editor/react` to latest may pull in a fixed `monaco-editor` that pins `dompurify >= 3.4.0`. Check: `pnpm why dompurify` to trace the resolution and `pnpm up @monaco-editor/react@latest` if a patched version is available.
+
 ### LOW Major version updates available — require planned migration
 
 - **Detected:** 2026-04-14
+- **Updated:** 2026-04-21
 - **File:** package.json
 - **Detail:** Several packages have major version releases available that require migration planning (breaking changes):
-  - `tailwindcss`: 3.4.19 → **4.2.2** (major — config format changed completely)
-  - `vite`: 6.4.1 → **8.0.8** (2 majors ahead, but focus on patching within v6 first)
-  - `eslint`: 9.39.2 → **10.2.0** (major — verify flat config compatibility)
+  - `tailwindcss`: 3.4.19 → **4.2.3** (major — config format changed completely)
+  - `vite`: 6.4.1 → **8.0.9** (2 majors ahead, but focus on patching within v6 first)
+  - `eslint`: 9.39.2 → **10.2.1** (major — verify flat config compatibility)
   - `@eslint/js`: 9.39.2 → **10.0.1** (paired with eslint)
-  - `typescript`: 5.9.3 → **6.0.2** (major — strict mode changes)
-  - `i18next`: 25.8.13 → **26.0.4** (major — API changes)
-  - `react-i18next`: 16.5.4 → **17.0.2** (paired with i18next)
+  - `typescript`: 5.9.3 → **6.0.3** (major — strict mode changes)
+  - `i18next`: 25.8.13 → **26.0.6** (major — API changes)
+  - `react-i18next`: 16.5.4 → **17.0.4** (paired with i18next)
   - `lucide-react`: 0.563.0 → **1.8.0** (first stable major — icon API changes possible)
   - `@vitejs/plugin-react`: 5.1.2 → **6.0.1** (major)
   - `jsdom` (test): 27.4.0 → **29.0.2** (2 majors)
