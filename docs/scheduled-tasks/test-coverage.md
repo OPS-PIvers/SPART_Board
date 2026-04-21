@@ -3,8 +3,8 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: weekly — Monday_
-_Last audited: 2026-04-13_
-_Last action: never_
+_Last audited: 2026-04-20_
+_Last action: 2026-04-20_
 
 ---
 
@@ -16,24 +16,21 @@ _Nothing currently in progress._
 
 ## Open
 
-### HIGH hooks/ coverage — 27 of 33 hooks have no dedicated tests
+### HIGH hooks/ coverage — session hooks still missing tests (partial progress)
 
 - **Detected:** 2026-04-13
-- **File:** hooks/ directory
-- **Detail:** Only 6 hook files have matching test files in tests/hooks/. The following critical hooks have zero test coverage:
-  - `useLiveSession.ts` — manages live classroom sessions, teacher/student role switching, PIN validation
+- **Progress (2026-04-20):** Added initial test coverage for `useLiveSession.ts` (9 tests covering `joinSession` input validation and sanitization — code normalization, PIN truncation, duplicate-PIN rejection, self-rejoin allowance, and all error paths). Also confirmed pre-existing coverage for `useGuidedLearningSession.ts` (pure-helper test) and `useGoogleDrive.ts` / `useStorage.ts` (full test files in `tests/hooks/`). Remaining critical hooks with zero coverage:
   - `useQuizSession.ts` — quiz session state for both teacher and student flows
-  - `useGuidedLearningSession.ts` — guided learning session orchestration
   - `useVideoActivity.ts` / `useVideoActivitySession.ts` — video activity session management
   - `useMiniAppSession.ts` — mini-app assignment session lifecycle
   - `useRosters.ts` — roster CRUD, student list management
-  - `useGoogleDrive.ts` — Google Drive dashboard sync (has a test file but missing coverage for core sync flows)
   - `useImageUpload.ts` — image upload handling with Firebase Storage
   - `useFirestore.ts` — core Firestore CRUD for dashboards
   - `useStarterPacks.ts` — starter pack template management
   - `useScreenRecord.ts` — screen recording lifecycle
-  - `useMusicStations.ts` — music station state (has partial tests)
-- **Fix:** Prioritize test coverage for session hooks (useLiveSession, useQuizSession, useGuidedLearningSession) as these are the most complex stateful hooks. Use Vitest with mock Firebase adapters. See existing tests in tests/hooks/useMusicStations.test.ts as a reference pattern.
+  - `useLiveSession.ts` — needs deeper coverage (teacher actions: `startSession`, `updateSessionConfig`, `endSession`, `toggleFreezeStudent`, `toggleGlobalFreeze`)
+- **File:** hooks/ directory
+- **Fix:** Next priority: add `useQuizSession.ts` coverage, then expand `useLiveSession` to cover teacher-mode actions. Use Vitest with mock Firebase adapters. See `tests/hooks/useLiveSession.test.ts` and `tests/hooks/useMusicStations.test.ts` as reference patterns.
 
 ### MEDIUM utils/ coverage — 31 of 41 utility files have no tests
 

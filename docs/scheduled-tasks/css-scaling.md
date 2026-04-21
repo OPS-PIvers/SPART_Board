@@ -3,8 +3,8 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
-_Last audited: 2026-04-18_
-_Last action: 2026-04-17_
+_Last audited: 2026-04-21_
+_Last action: 2026-04-19_
 
 ---
 
@@ -21,13 +21,6 @@ _Nothing currently in progress._
 ---
 
 ## Open
-
-### MEDIUM MathToolsWidget uses `h-32` to cap an empty-state content container
-
-- **Detected:** 2026-04-14
-- **File:** components/widgets/MathTools/Widget.tsx:213
-- **Detail:** The empty-state container for the math tool list uses `h-32` — a fixed 128 px height cap. Widget has `skipScaling: true`. When the widget is large this truncates the container, wasting space. Also has hardcoded `gap-2`, `gap-1.5`, `px-3 py-1.5` on the tab bar and controls.
-- **Fix:** Replace `h-32` with `min-h-0 flex-1` so the empty-state fills available space. Convert tab-bar spacing (`px-3 py-1.5`, `gap-2`, `gap-1.5`) to `cqmin` inline styles.
 
 ### MEDIUM GraphicOrganizerWidget has hardcoded padding throughout node layouts (post-text-fix)
 
@@ -58,7 +51,6 @@ _Nothing currently in progress._
   - `CatalystWidget/Widget.tsx:88` — `mr-2` on back button
   - `DiceWidget/Widget.tsx:109, :113-116` — `px-3 pb-3` footer, `py-4 px-6 gap-3` Roll Dice button
   - `GuidedLearning/Widget.tsx:231` — `w-8 h-8` on Loader2 loading icon
-  - `MathTools/Widget.tsx:118, :128, :167-168` — `gap-2`, `gap-1.5`, `px-3 py-1.5` tab buttons
   - `NextUp/Widget.tsx:295, :331, :344, :346, :360, :409, :425, :430` — `p-6`, `gap-2`, `p-1`, `px-3 py-1`, `mb-2 px-1`, `space-y-2`, `py-8`
   - `random/RandomWidget.tsx:711, :750, :752` — `px-2 pb-2` footer, `h-12` Randomize button, `w-4 h-4` RefreshCw icon
   - `SoundWidget/Widget.tsx:182, :210, :212` — `p-2` content wrapper, `pb-3` footer, `px-6 py-2` level label
@@ -71,6 +63,14 @@ _Nothing currently in progress._
 ---
 
 ## Completed
+
+### MEDIUM MathToolsWidget uses `h-32` to cap an empty-state content container
+
+- **Detected:** 2026-04-14
+- **Completed:** 2026-04-19
+- **File:** components/widgets/MathTools/Widget.tsx
+- **Detail:** The empty-state container for the math tool list used `h-32` — a fixed 128 px height cap. Widget has `skipScaling: true`. When the widget grew large, this truncated the empty state and wasted space. The tab bar and grade-selector pill also had hardcoded `gap-2`, `gap-1.5`, `px-3 py-1.5`, `px-1.5 py-0.5` Tailwind spacing.
+- **Resolution:** Made the scrollable content wrapper a flex column (`flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col`) and replaced `h-32` on the empty-state container with `flex-1 min-h-0` so it now fills the available content area. Marked the subtitle row `shrink-0` so it does not collapse. Converted the header row's `gap-2` to inline `gap: 'min(8px, 2cqmin)'`. Converted the grade-selector pill's `gap-1.5 px-1.5 py-0.5` to inline `gap: 'min(6px, 1.2cqmin)'` and `padding: 'min(2px, 0.5cqmin) min(6px, 1.2cqmin)'`. Converted each tab button's `px-3 py-1.5` to inline `padding: 'min(6px, 1.2cqmin) min(12px, 2.5cqmin)'`. Also covers the corresponding MathTools entries from the LOW group "Multiple widgets with hardcoded gap/padding" item, which were removed. `pnpm type-check`, `pnpm lint --max-warnings 0`, and prettier check on the changed file all clean.
 
 ### MEDIUM ExpectationsWidget uses `text-xs` on the empty-state content area
 
