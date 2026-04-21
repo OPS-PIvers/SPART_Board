@@ -8,6 +8,7 @@ import {
   doc,
   onSnapshot,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import type { RoleRecord } from '@/types/organization';
 
@@ -17,6 +18,7 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   onSnapshot: vi.fn(),
   setDoc: vi.fn(),
+  updateDoc: vi.fn(),
 }));
 
 vi.mock('@/config/firebase', () => ({
@@ -53,6 +55,7 @@ describe('useOrgRoles', () => {
   const mockDoc = doc as Mock;
   const mockSetDoc = setDoc as Mock;
   const mockDeleteDoc = deleteDoc as Mock;
+  const mockUpdateDoc = updateDoc as Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -62,6 +65,7 @@ describe('useOrgRoles', () => {
     );
     mockSetDoc.mockResolvedValue(undefined);
     mockDeleteDoc.mockResolvedValue(undefined);
+    mockUpdateDoc.mockResolvedValue(undefined);
   });
 
   // Helper: seed the hook with a given roles snapshot and return the result
@@ -171,5 +175,86 @@ describe('useOrgRoles', () => {
     await expect(result.current.resetRoles()).rejects.toThrow(
       /No organization/
     );
+  });
+
+  it('saveRoles patches system role perms via updateDoc when canEditSystemRoles is true', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    seedRoles([systemRole]);
+
+    const { result } = renderHook(() => useOrgRoles('orono'));
+    await waitFor(() => {
+      expect(result.current.roles).toHaveLength(1);
+    });
+
+    const edited = {
+      ...systemRole,
+      perms: { viewBoards: 'full' },
+    } as unknown as RoleRecord;
+
+    await act(async () => {
+      await result.current.saveRoles([edited], { canEditSystemRoles: true });
+    });
+
+    expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      'organizations/orono/roles/teacher',
+      { perms: { viewBoards: 'full' } }
+    );
+    // System roles must never go through setDoc (identity/seed fields would
+    // round-trip and the rules reject that).
+    expect(mockSetDoc).not.toHaveBeenCalled();
+  });
+
+  it('saveRoles does not touch system roles when canEditSystemRoles is false', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    seedRoles([systemRole]);
+
+    const { result } = renderHook(() => useOrgRoles('orono'));
+    await waitFor(() => {
+      expect(result.current.roles).toHaveLength(1);
+    });
+
+    const edited = {
+      ...systemRole,
+      perms: { viewBoards: 'full' },
+    } as unknown as RoleRecord;
+
+    // Default options (no canEditSystemRoles) — domain admins hit this path.
+    await act(async () => {
+      await result.current.saveRoles([edited]);
+    });
+
+    expect(mockUpdateDoc).not.toHaveBeenCalled();
+  });
+
+  it('saveRoles skips system role update when perms are unchanged (even with canEditSystemRoles)', async () => {
+    mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    // Seed with two keys in a known insertion order.
+    const seeded = {
+      ...systemRole,
+      perms: { viewBoards: 'full', editBoards: 'building' },
+    } as unknown as RoleRecord;
+    seedRoles([seeded]);
+
+    const { result } = renderHook(() => useOrgRoles('orono'));
+    await waitFor(() => {
+      expect(result.current.roles).toHaveLength(1);
+    });
+
+    // Same content, opposite insertion order — permsEqual must treat these as
+    // equal so we don't issue a no-op Firestore write just because the keys
+    // came back in a different order from the snapshot.
+    const sameContent = {
+      ...systemRole,
+      perms: { editBoards: 'building', viewBoards: 'full' },
+    } as unknown as RoleRecord;
+
+    await act(async () => {
+      await result.current.saveRoles([sameContent], {
+        canEditSystemRoles: true,
+      });
+    });
+
+    expect(mockUpdateDoc).not.toHaveBeenCalled();
   });
 });

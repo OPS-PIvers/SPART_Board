@@ -160,9 +160,11 @@ service cloud.firestore {
 
       match /roles/{roleId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        // System roles are immutable from clients — the migration script
-        // seeds them with `{ merge: true }` so the first write happens server
-        // side; every client mutation is refused if `system == true`.
+        // System roles are seeded by the migration script with `{ merge: true }`
+        // and are otherwise immutable from clients — every client mutation is
+        // refused if `system == true`, with one narrow exception: super admins
+        // may patch `perms` on system roles so they can tune capability
+        // defaults from the admin console (see the `update` branch below).
         // Client-created roles must carry canonical path identity, be
         // explicitly non-system, and stay within the supported schema so
         // clients can't attach unexpected fields.
@@ -174,14 +176,27 @@ service cloud.firestore {
             'id', 'name', 'blurb', 'color', 'system', 'perms'
           ]);
         // Update whitelist keeps identity (id) and seed flag (system) pinned
-        // and blocks extensions beyond the known fields.
-        allow update: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
-          resource.data.system != true &&
-          request.resource.data.system == resource.data.system &&
-          request.resource.data.id == resource.data.id &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'name', 'blurb', 'color', 'perms'
-          ]);
+        // and blocks extensions beyond the known fields. Super admins may
+        // additionally edit `perms` on system roles (still identity-pinned and
+        // `system:true` preserved) so they can tune capability defaults from
+        // the admin console; domain admins remain locked out of system docs.
+        allow update: if
+          (isSuperAdmin() &&
+           request.resource.data.system == resource.data.system &&
+           request.resource.data.id == resource.data.id &&
+           ((resource.data.system == true &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['perms'])) ||
+            (resource.data.system != true &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+               'name', 'blurb', 'color', 'perms'
+             ])))) ||
+          (isDomainAdmin(orgId) &&
+           resource.data.system != true &&
+           request.resource.data.system == resource.data.system &&
+           request.resource.data.id == resource.data.id &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'name', 'blurb', 'color', 'perms'
+           ]));
         allow delete: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           resource.data.system != true;
       }
@@ -377,6 +392,15 @@ service cloud.firestore {
     match /global_permissions/{featureId=**} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
+    }
+
+    // Mail queue consumed by the `firestore-send-email` Firebase extension.
+    // Writes happen server-side only (Admin SDK bypasses rules, so the
+    // `createOrganizationInvites` CF can still enqueue sends). Clients must
+    // never read or write — these docs contain pending recipient addresses
+    // and the extension's `delivery` subfield exposes SMTP response details.
+    match /mail/{mailId} {
+      allow read, write: if false;
     }
 
     // Guided Learning

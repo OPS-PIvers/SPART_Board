@@ -825,6 +825,39 @@ describe('organizations/roles — writes (system role protection)', () => {
       )
     );
   });
+
+  it('super admin can update perms on a system role', async () => {
+    await assertSucceeds(
+      updateDoc(doc(asSuper(), `organizations/${ORG_ID}/roles/domain_admin`), {
+        perms: { viewBoards: 'full' },
+      })
+    );
+  });
+
+  it('super admin cannot change non-perms fields on a system role', async () => {
+    await assertFails(
+      updateDoc(doc(asSuper(), `organizations/${ORG_ID}/roles/teacher`), {
+        name: 'Renamed system role',
+      })
+    );
+  });
+
+  it('super admin cannot flip system:true to false', async () => {
+    await assertFails(
+      updateDoc(doc(asSuper(), `organizations/${ORG_ID}/roles/teacher`), {
+        system: false,
+      })
+    );
+  });
+
+  it('super admin can still update name/perms on a custom role', async () => {
+    await assertSucceeds(
+      updateDoc(doc(asSuper(), `organizations/${ORG_ID}/roles/custom-coach`), {
+        name: 'Coach (super renamed)',
+        perms: { viewBoards: 'building' },
+      })
+    );
+  });
 });
 
 describe('organizations/members — writes', () => {
