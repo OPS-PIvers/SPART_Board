@@ -24,6 +24,14 @@ function setupGapiMock() {
  * DocsView and PickerBuilder are used with `new` in the hook, so they must
  * be real constructor functions (not arrow-function vi.fn mocks).
  */
+/**
+ * Captured references to the most recent picker mock — tests can read
+ * these after calling `openPicker` to assert on how the builder was
+ * configured (view id, mime types, include-folders, etc.).
+ */
+let lastDocsViewArg: string | undefined;
+let lastDocsViewInstance: Record<string, Mock> | undefined;
+
 function setupPickerMock(
   action: 'picked' | 'cancel',
   fileData?: { id: string; name: string; mimeType: string }
@@ -50,6 +58,8 @@ function setupPickerMock(
 
   const docsViewInstance = chainable();
   const builderInstance = chainable();
+  lastDocsViewInstance = docsViewInstance;
+  lastDocsViewArg = undefined;
 
   // setCallback captures the picker response callback, build().setVisible() invokes it
   builderInstance.setCallback = vi.fn().mockImplementation(function (
@@ -77,10 +87,11 @@ function setupPickerMock(
       Action: { PICKED: 'picked', CANCEL: 'cancel' },
       Response: { ACTION: 'action', DOCUMENTS: 'docs' },
       Document: { ID: 'id', NAME: 'name', MIME_TYPE: 'mimeType' },
-      ViewId: { DOCS: 'docs' },
+      ViewId: { DOCS: 'docs', DOCS_IMAGES: 'docs-images' },
       DocsViewMode: { LIST: 'list' },
       // Must use function() — not arrow — so `new` works
-      DocsView: function DocsView() {
+      DocsView: function DocsView(viewId: string) {
+        lastDocsViewArg = viewId;
         return docsViewInstance;
       },
       PickerBuilder: function PickerBuilder() {
@@ -183,6 +194,35 @@ describe('useGooglePicker', () => {
       name: 'My Document',
       mimeType: 'application/vnd.google-apps.document',
     });
+  });
+
+  it('configures the picker for images mode with image MIME types', async () => {
+    setupGapiMock();
+    setupPickerMock('cancel');
+    const { useGooglePicker } = await import('@/hooks/useGooglePicker');
+    const { result } = renderHook(() => useGooglePicker());
+
+    await vi.advanceTimersByTimeAsync(300);
+    await result.current.openPicker({ mode: 'images' });
+
+    expect(lastDocsViewArg).toBe('docs-images');
+    expect(lastDocsViewInstance?.setMimeTypes).toHaveBeenCalledWith(
+      'image/jpeg,image/png,image/webp'
+    );
+    expect(lastDocsViewInstance?.setIncludeFolders).toHaveBeenCalledWith(false);
+  });
+
+  it('defaults to docs mode with document MIME types', async () => {
+    setupGapiMock();
+    setupPickerMock('cancel');
+    const { useGooglePicker } = await import('@/hooks/useGooglePicker');
+    const { result } = renderHook(() => useGooglePicker());
+
+    await vi.advanceTimersByTimeAsync(300);
+    await result.current.openPicker();
+
+    expect(lastDocsViewArg).toBe('docs');
+    expect(lastDocsViewInstance?.setIncludeFolders).toHaveBeenCalledWith(true);
   });
 
   it('dynamically injects gapi script tag when picker is opened', async () => {
