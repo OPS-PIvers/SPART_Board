@@ -1791,6 +1791,17 @@ export const generateGuidedLearning = onCall(
         'At least one image is required.'
       );
     }
+
+    const MAX_IMAGES = 10;
+    const MAX_TOTAL_RAW_BYTES = 20 * 1024 * 1024; // 20 MB raw (~27 MB base64)
+    if (images.length > MAX_IMAGES) {
+      throw new HttpsError(
+        'invalid-argument',
+        `Too many images — please limit to ${MAX_IMAGES} per request.`
+      );
+    }
+
+    let totalRawBytes = 0;
     for (const img of images) {
       if (!img.base64 || !img.mimeType) {
         throw new HttpsError(
@@ -1798,6 +1809,14 @@ export const generateGuidedLearning = onCall(
           'Every image must include base64 data and mimeType.'
         );
       }
+      // Base64 decodes to ~0.75 bytes per char (minus padding).
+      totalRawBytes += Math.ceil((img.base64.length * 3) / 4);
+    }
+    if (totalRawBytes > MAX_TOTAL_RAW_BYTES) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Image payload is too large. Please use fewer or smaller images (under 20 MB total).'
+      );
     }
 
     const apiKey = GEMINI_API_KEY.value();

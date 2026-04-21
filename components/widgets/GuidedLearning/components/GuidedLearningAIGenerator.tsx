@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Sparkles,
   Upload,
@@ -53,6 +53,9 @@ interface GeneratorImage {
   fileName: string;
   caption: string;
 }
+
+const MAX_IMAGES = 10;
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB (matches HotspotImageSettings)
 
 interface SortableImageRowProps {
   image: GeneratorImage;
@@ -172,11 +175,36 @@ export const GuidedLearningAIGenerator: React.FC<Props> = ({
   const addFiles = useCallback(
     async (files: File[]) => {
       if (files.length === 0 || !user) return;
-      setError('');
+
+      const oversized = files.find((f) => f.size > MAX_FILE_BYTES);
+      if (oversized) {
+        setError(
+          `"${oversized.name}" is larger than 10 MB. Please choose a smaller image.`
+        );
+        return;
+      }
+
+      const remaining = MAX_IMAGES - images.length;
+      if (remaining <= 0) {
+        setError(
+          `You can attach at most ${MAX_IMAGES} images. Remove one before adding more.`
+        );
+        return;
+      }
+
+      const accepted = files.slice(0, remaining);
+      if (files.length > remaining) {
+        setError(
+          `Only the first ${remaining} of ${files.length} images were added (max ${MAX_IMAGES} per request).`
+        );
+      } else {
+        setError('');
+      }
+
       setUploadingImages(true);
       try {
         const uploads = await Promise.all(
-          files.map(async (file) => {
+          accepted.map(async (file) => {
             const [url, base64] = await Promise.all([
               uploadHotspotImage(user.uid, file),
               blobToBase64(file),
@@ -202,7 +230,7 @@ export const GuidedLearningAIGenerator: React.FC<Props> = ({
         setUploadingImages(false);
       }
     },
-    [user, uploadHotspotImage]
+    [user, uploadHotspotImage, images.length]
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,8 +239,10 @@ export const GuidedLearningAIGenerator: React.FC<Props> = ({
     if (files.length > 0) void addFiles(files);
   };
 
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLDivElement>) => {
+  // Window-level paste listener — an onPaste on the overlay <div> only fires
+  // when focus happens to be inside a child input, so it made Ctrl+V unreliable.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
       const imageFiles: File[] = [];
@@ -226,9 +256,10 @@ export const GuidedLearningAIGenerator: React.FC<Props> = ({
         e.preventDefault();
         void addFiles(imageFiles);
       }
-    },
-    [addFiles]
-  );
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [addFiles]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -317,7 +348,6 @@ export const GuidedLearningAIGenerator: React.FC<Props> = ({
   return (
     <div
       className="absolute inset-0 z-widget-internal-overlay bg-slate-900/95 backdrop-blur-sm flex flex-col p-4"
-      onPaste={handlePaste}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
     >
