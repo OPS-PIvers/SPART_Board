@@ -48,11 +48,16 @@ export const DriveImagePicker: React.FC<DriveImagePickerProps> = ({
       if (disabled || loading || !user) return;
       setError(null);
 
+      // Flip `loading` before opening the picker so the button is disabled for
+      // the entire async flow (picker open → download → upload). Otherwise a
+      // double-click while the picker modal is up could launch a second picker
+      // and race two uploads.
+      setLoading(true);
+
       try {
         const picked = await openPicker({ mode: 'images' });
         if (!picked) return;
 
-        setLoading(true);
         const downloaded = await getDriveFileAsBlob(picked.id);
         if (!downloaded) {
           setError('Could not download the selected image from Drive.');
@@ -106,7 +111,7 @@ export const DriveImagePicker: React.FC<DriveImagePickerProps> = ({
       <button
         type="button"
         onClick={handlePick}
-        disabled={disabled || loading}
+        disabled={disabled || loading || !user}
         className={buttonClasses}
       >
         {loading ? (

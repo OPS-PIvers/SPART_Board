@@ -1331,6 +1331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         orgId,
         roleId,
         buildingIds,
+        orgBuildings,
       }}
     >
       {children}

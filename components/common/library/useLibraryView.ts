@@ -31,8 +31,15 @@ export function useLibraryView<TItem>(
     useState<LibraryViewMode>(initialViewMode);
   const handleViewModeChange = useCallback(
     (next: LibraryViewMode) => {
-      setViewModeState(next);
-      onViewModeChange?.(next);
+      setViewModeState((prev) => {
+        // Only notify the consumer when the mode actually changes. Without
+        // this guard, clicking the active view-mode button would trigger a
+        // redundant Firestore write from every consumer that persists this.
+        if (prev !== next) {
+          onViewModeChange?.(next);
+        }
+        return next;
+      });
     },
     [onViewModeChange]
   );

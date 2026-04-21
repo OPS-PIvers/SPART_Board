@@ -64,6 +64,7 @@ const mockAuth: AuthContextType = {
   orgId: null,
   roleId: null,
   buildingIds: [],
+  orgBuildings: [],
 };
 
 // --- MOCK DASHBOARD ---

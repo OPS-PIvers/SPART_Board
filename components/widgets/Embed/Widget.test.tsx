@@ -416,6 +416,7 @@ describe('EmbedWidget', () => {
         orgId: null,
         roleId: null,
         buildingIds: [],
+        orgBuildings: [],
       });
 
       render(<EmbedWidget widget={validWidget} />);
