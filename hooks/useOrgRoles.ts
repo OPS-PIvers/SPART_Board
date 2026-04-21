@@ -9,18 +9,18 @@ import {
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
-import type { CapabilityAccess, RoleRecord } from '@/types/organization';
+import type { CapabilityId, RoleRecord } from '@/types/organization';
 
 // Key-by-key compare so we can't be tripped up by key-ordering differences
 // between a Firestore snapshot and the working state. Both sides are flat
-// string→enum maps.
+// CapabilityId→enum maps.
 const permsEqual = (
-  a: Record<string, CapabilityAccess> | undefined,
-  b: Record<string, CapabilityAccess> | undefined
+  a: RoleRecord['perms'] | undefined,
+  b: RoleRecord['perms'] | undefined
 ): boolean => {
-  const left = a ?? {};
-  const right = b ?? {};
-  const leftKeys = Object.keys(left);
+  const left = (a ?? {}) as RoleRecord['perms'];
+  const right = (b ?? {}) as RoleRecord['perms'];
+  const leftKeys = Object.keys(left) as CapabilityId[];
   if (leftKeys.length !== Object.keys(right).length) return false;
   for (const key of leftKeys) {
     if (left[key] !== right[key]) return false;

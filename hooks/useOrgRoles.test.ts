@@ -229,9 +229,10 @@ describe('useOrgRoles', () => {
 
   it('saveRoles skips system role update when perms are unchanged (even with canEditSystemRoles)', async () => {
     mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
+    // Seed with two keys in a known insertion order.
     const seeded = {
       ...systemRole,
-      perms: { viewBoards: 'full' },
+      perms: { viewBoards: 'full', editBoards: 'building' },
     } as unknown as RoleRecord;
     seedRoles([seeded]);
 
@@ -240,11 +241,12 @@ describe('useOrgRoles', () => {
       expect(result.current.roles).toHaveLength(1);
     });
 
-    // Same perms, different key order — permsEqual should treat these as equal
-    // and skip the write.
+    // Same content, opposite insertion order — permsEqual must treat these as
+    // equal so we don't issue a no-op Firestore write just because the keys
+    // came back in a different order from the snapshot.
     const sameContent = {
       ...systemRole,
-      perms: { viewBoards: 'full' },
+      perms: { editBoards: 'building', viewBoards: 'full' },
     } as unknown as RoleRecord;
 
     await act(async () => {
