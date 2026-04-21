@@ -127,7 +127,7 @@ export const RolesView: React.FC<Props> = ({
     <div>
       <ViewHeader
         title="Roles & permissions"
-        blurb="Define what each role can do. Click any cell to cycle through Full, Own-building, and No access."
+        blurb="Define what each role can do. Click editable cells to cycle through Full, Own-building, and No access."
         actions={
           <>
             <Btn
@@ -386,6 +386,8 @@ const MatrixCell: React.FC<{
     return (
       <div
         className="relative inline-block"
+        role="img"
+        aria-label={`${ACCESS_META[value].label} — locked (system role; clone to customize).`}
         title="System role — clone to customize."
       >
         {content}
