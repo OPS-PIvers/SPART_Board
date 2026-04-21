@@ -1,3 +1,7 @@
+// Pin timezone to UTC so Date.prototype.toLocale* output is deterministic
+// across developer machines and CI. Must be set before any Date is formatted.
+process.env.TZ = 'UTC';
+
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import '../i18n'; // Initialise i18next with English translations for all tests
