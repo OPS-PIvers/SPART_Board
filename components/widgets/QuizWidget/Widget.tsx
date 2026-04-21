@@ -67,6 +67,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     assignments,
     loading: assignmentsLoading,
+    error: assignmentsError,
     createAssignment,
     pauseAssignment,
     resumeAssignment,
@@ -808,10 +809,14 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
           // Guard against stale/empty assignments: the live-assignment check
           // is load-bearing for student safety. Abort if the listener hasn't
-          // populated yet so we don't misclassify a live quiz as deletable.
-          if (assignmentsLoading) {
+          // populated yet — or if it errored (hook flips loading→false and
+          // leaves `assignments=[]` on error, which would otherwise let a
+          // live quiz get misclassified as deletable).
+          if (assignmentsLoading || assignmentsError) {
             addToast(
-              'Still loading assignment data — try bulk delete again in a moment.',
+              assignmentsError
+                ? "Couldn't verify assignment status — try bulk delete again in a moment."
+                : 'Still loading assignment data — try bulk delete again in a moment.',
               'info'
             );
             return false;
