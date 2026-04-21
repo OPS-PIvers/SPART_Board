@@ -65,7 +65,7 @@ const mockFirestore = {
     };
   }),
   getAll: vi.fn((...refs: { parent: { parent: { id: string } } }[]) => {
-    return Promise.all(
+    return Promise.resolve(
       refs.map((ref) => {
         const uid = ref.parent.parent.id;
         const user = mockFirestoreState.users.find((u) => u.id === uid);
