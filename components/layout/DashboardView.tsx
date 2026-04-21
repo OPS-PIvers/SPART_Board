@@ -231,7 +231,8 @@ export const DashboardView: React.FC = () => {
 
   // Handle pending shared assignment import from URL/paste.
   // Imports copy the quiz into the user's library and create a paused
-  // assignment, then surface the Quiz widget to the Active tab.
+  // assignment, then surface the Quiz widget to the Active tab — which
+  // shows live and paused assignments (Archive only shows inactive ones).
   useEffect(() => {
     if (!pendingAssignmentShareId || !user) return;
     // Clear synchronously BEFORE awaiting — see the quiz-share effect above
@@ -247,7 +248,7 @@ export const DashboardView: React.FC = () => {
           'Shared assignment imported! Click Start to begin.',
           'success'
         );
-        openQuizWidgetToTab('archive');
+        openQuizWidgetToTab('active');
       })
       .catch((err: unknown) => {
         const msg =
