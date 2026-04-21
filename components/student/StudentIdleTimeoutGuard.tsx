@@ -24,18 +24,30 @@ export const StudentIdleTimeoutGuard: React.FC = () => {
 
   useEffect(() => {
     if (isAuthBypass) return;
-    return onIdTokenChanged(auth, (user) => {
+    let cancelled = false;
+    const unsubscribe = onIdTokenChanged(auth, (user) => {
       if (!user) {
-        setIsStudentRole(false);
+        if (!cancelled) setIsStudentRole(false);
         return;
       }
       void user
         .getIdTokenResult()
         .then((result) => {
+          if (cancelled) return;
+          // Drop stale resolutions: if the current user changed between
+          // callback fire and promise resolve, a newer callback will set
+          // the correct value.
+          if (auth.currentUser?.uid !== user.uid) return;
           setIsStudentRole(result.claims.studentRole === true);
         })
-        .catch(() => setIsStudentRole(false));
+        .catch(() => {
+          if (!cancelled) setIsStudentRole(false);
+        });
     });
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   useStudentIdleTimeout(isStudentRole);

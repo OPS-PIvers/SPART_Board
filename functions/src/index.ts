@@ -356,6 +356,9 @@ export const getClassLinkRosterV1 = onCall(
     const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
 
     try {
+      if (!isSafeEmailForOneRosterFilter(userEmail)) {
+        return { classes: [], studentsByClass: {} };
+      }
       const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
       const userParams = { filter: `email='${userEmail}'` };
 

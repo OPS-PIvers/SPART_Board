@@ -12,7 +12,10 @@ import {
 } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { auth, isAuthBypass } from '@/config/firebase';
-import { useStudentIdleTimeout } from '@/hooks/useStudentIdleTimeout';
+import {
+  useStudentIdleTimeout,
+  STUDENT_LOGIN_PATH,
+} from '@/hooks/useStudentIdleTimeout';
 import {
   StudentAuthContext,
   type StudentAuthStatus,
@@ -54,8 +57,6 @@ const PROTECTED_STUDENT_PATH_PREFIXES: readonly string[] = [
 
 const isProtectedStudentRoute = (pathname: string): boolean =>
   PROTECTED_STUDENT_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-
-const STUDENT_LOGIN_PATH = '/student/login';
 
 // ---------------------------------------------------------------------------
 // Claim validation

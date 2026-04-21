@@ -73,10 +73,17 @@ export const SubmissionsModal: React.FC<SubmissionsModalProps> = ({
         setLoading(false);
       },
       (err) => {
-        console.error(
-          '[SubmissionsModal] Failed to load submissions:',
-          err instanceof Error ? err.message : 'unknown'
-        );
+        // FirestoreError carries a structured `code` (permission-denied,
+        // unavailable, etc.) — more diagnostic than .message under minified
+        // builds, and does not leak PII.
+        const code =
+          err &&
+          typeof err === 'object' &&
+          'code' in err &&
+          typeof (err as { code?: unknown }).code === 'string'
+            ? (err as { code: string }).code
+            : 'unknown';
+        console.error('[SubmissionsModal] Failed to load submissions:', code);
         setError('Could not load submissions.');
         setLoading(false);
       }
