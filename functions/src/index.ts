@@ -2806,10 +2806,18 @@ export const getAssignmentPseudonymV1 = onCall(
  * getPseudonymsForAssignmentV1
  *
  * Called by a teacher's client when rendering the grading view for an
- * assignment. Returns `{ sourcedId -> pseudonym }` for every student in the
- * targeted ClassLink class so the teacher's client can join Firestore
- * responses (keyed by pseudonym) back to roster identity (keyed by
- * sourcedId). The HMAC secret never leaves the server.
+ * assignment. Returns both pseudonyms plus names for every student in the
+ * targeted ClassLink class:
+ *   { sourcedId -> { studentUid, assignmentPseudonym, givenName, familyName } }
+ * so the teacher's client can join Firestore responses (keyed by either the
+ * session-scoped studentUid for quiz/video/guided-learning or the
+ * assignment-scoped pseudonym for mini-app submissions) back to roster
+ * identity and display names. Names never touch Firestore — they stay in
+ * teacher-browser memory for the session. The HMAC secret never leaves the
+ * server.
+ *
+ * Only callable by a teacher who actually teaches the requested class
+ * (ClassLink membership is re-verified on every call).
  */
 export const getPseudonymsForAssignmentV1 = onCall(
   {
@@ -2925,15 +2933,37 @@ export const getPseudonymsForAssignmentV1 = onCall(
       );
       const students = studentsResp.data.users ?? [];
 
-      const pseudonyms: Record<string, string> = {};
+      // Return both pseudonyms so teacher viewers can match whichever one
+      // the response doc is keyed by:
+      //  - studentUid            — HMAC(sourcedId, secret); equals the
+      //                            ClassLink student's Firebase Auth UID.
+      //                            Used by quiz/video-activity/guided-learning
+      //                            response docs that key on auth.currentUser.uid.
+      //  - assignmentPseudonym   — HMAC(studentUid + assignmentId, secret).
+      //                            Used by mini-app submission docs that key
+      //                            on a per-assignment opaque id.
+      const pseudonyms: Record<
+        string,
+        {
+          studentUid: string;
+          assignmentPseudonym: string;
+          givenName: string;
+          familyName: string;
+        }
+      > = {};
       for (const s of students) {
         if (!s.sourcedId) continue;
-        const uid = computeStudentUid(s.sourcedId, hmacSecret);
-        pseudonyms[s.sourcedId] = computeAssignmentPseudonym(
-          uid,
-          assignmentId,
-          hmacSecret
-        );
+        const studentUid = computeStudentUid(s.sourcedId, hmacSecret);
+        pseudonyms[s.sourcedId] = {
+          studentUid,
+          assignmentPseudonym: computeAssignmentPseudonym(
+            studentUid,
+            assignmentId,
+            hmacSecret
+          ),
+          givenName: s.givenName ?? '',
+          familyName: s.familyName ?? '',
+        };
       }
       return { pseudonyms };
     } catch (err) {

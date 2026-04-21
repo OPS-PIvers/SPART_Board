@@ -7,12 +7,21 @@
  * launches) or an anonymous Firebase Auth UID (legacy shared-link launches).
  * No PII is persisted; the payload is arbitrary JSON forwarded from the
  * sandboxed mini-app iframe's postMessage.
+ *
+ * When the session was class-targeted (`classId` present), we call
+ * `getPseudonymsForAssignmentV1` to build a pseudonym -> name reverse map
+ * in teacher-browser memory so grading shows real names. Unmatched doc IDs
+ * (legacy shared-link launches) fall back to the opaque id.
  */
 
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { X, Loader2, Inbox, ChevronDown, ChevronRight } from 'lucide-react';
 import { db } from '@/config/firebase';
+import {
+  useAssignmentPseudonyms,
+  formatStudentName,
+} from '@/hooks/useAssignmentPseudonyms';
 
 interface SubmissionRow {
   id: string;
@@ -23,14 +32,20 @@ interface SubmissionRow {
 interface SubmissionsModalProps {
   sessionId: string;
   assignmentName: string;
+  classId?: string;
   onClose: () => void;
 }
 
 export const SubmissionsModal: React.FC<SubmissionsModalProps> = ({
   sessionId,
   assignmentName,
+  classId,
   onClose,
 }) => {
+  const { byAssignmentPseudonym } = useAssignmentPseudonyms(
+    sessionId,
+    classId ?? null
+  );
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +131,9 @@ export const SubmissionsModal: React.FC<SubmissionsModalProps> = ({
                 <SubmissionRowView
                   key={s.id}
                   submission={s}
+                  studentName={formatStudentName(
+                    byAssignmentPseudonym.get(s.id)
+                  )}
                   expanded={expandedId === s.id}
                   onToggle={() =>
                     setExpandedId((prev) => (prev === s.id ? null : s.id))
@@ -132,9 +150,10 @@ export const SubmissionsModal: React.FC<SubmissionsModalProps> = ({
 
 const SubmissionRowView: React.FC<{
   submission: SubmissionRow;
+  studentName: string;
   expanded: boolean;
   onToggle: () => void;
-}> = ({ submission, expanded, onToggle }) => {
+}> = ({ submission, studentName, expanded, onToggle }) => {
   const Chevron = expanded ? ChevronDown : ChevronRight;
 
   return (
@@ -145,9 +164,20 @@ const SubmissionRowView: React.FC<{
       >
         <Chevron className="w-4 h-4 text-slate-500 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-xs text-slate-600 truncate">
-            {submission.id}
-          </p>
+          {studentName ? (
+            <>
+              <p className="text-sm font-bold text-slate-800 truncate">
+                {studentName}
+              </p>
+              <p className="font-mono text-[10px] text-slate-400 truncate">
+                {submission.id}
+              </p>
+            </>
+          ) : (
+            <p className="font-mono text-xs text-slate-600 truncate">
+              {submission.id}
+            </p>
+          )}
           <p className="text-xs text-slate-400">
             {submission.submittedAt > 0
               ? new Date(submission.submittedAt).toLocaleString()
