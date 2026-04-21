@@ -338,21 +338,12 @@ export const LibraryShell: React.FC<LibraryShellProps> = ({
                   }
                   aria-label="Toggle folder panel"
                 >
-                  {effectiveFolderPanelMode === 'full' ? (
-                    <ChevronsLeft
-                      style={{
-                        width: 'min(16px, 4.5cqmin)',
-                        height: 'min(16px, 4.5cqmin)',
-                      }}
-                    />
-                  ) : (
-                    <ChevronsRight
-                      style={{
-                        width: 'min(16px, 4.5cqmin)',
-                        height: 'min(16px, 4.5cqmin)',
-                      }}
-                    />
-                  )}
+                  <ChevronsLeft
+                    style={{
+                      width: 'min(16px, 4.5cqmin)',
+                      height: 'min(16px, 4.5cqmin)',
+                    }}
+                  />
                 </button>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto">
@@ -371,7 +362,7 @@ export const LibraryShell: React.FC<LibraryShellProps> = ({
           >
             <button
               type="button"
-              onClick={() => setFolderPanelSetting('rail')}
+              onClick={() => setFolderPanelSetting('full')}
               className="inline-flex items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white/70 hover:text-brand-blue-primary"
               style={{
                 width: 'min(28px, 7cqmin)',
