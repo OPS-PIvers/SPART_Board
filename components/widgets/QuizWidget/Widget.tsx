@@ -800,13 +800,34 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           // confirm for the archived-assignment warning, regardless of how
           // many quizzes are selected — replaces the old per-item dialogs
           // that would fire up to N times when bulk-deleting N quizzes.
+
+          // Guard against stale/empty assignments: the live-assignment check
+          // is load-bearing for student safety. Abort if the listener hasn't
+          // populated yet so we don't misclassify a live quiz as deletable.
+          if (assignmentsLoading) {
+            addToast(
+              'Still loading assignment data — try bulk delete again in a moment.',
+              'info'
+            );
+            return;
+          }
+
+          // Pre-index assignments by quizId so partitioning stays O(N+M)
+          // rather than O(N*M) for large teacher archives.
+          const byQuizId = new Map<string, QuizAssignment[]>();
+          for (const a of assignments) {
+            const list = byQuizId.get(a.quizId);
+            if (list) list.push(a);
+            else byQuizId.set(a.quizId, [a]);
+          }
+
           const blocked: QuizMetadata[] = [];
           const withArchived: QuizMetadata[] = [];
           const clean: QuizMetadata[] = [];
           for (const meta of metas) {
-            const related = assignments.filter((a) => a.quizId === meta.id);
-            const live = related.filter((a) => a.status !== 'inactive');
-            if (live.length > 0) {
+            const related = byQuizId.get(meta.id) ?? [];
+            const hasLive = related.some((a) => a.status !== 'inactive');
+            if (hasLive) {
               blocked.push(meta);
             } else if (related.length > 0) {
               withArchived.push(meta);

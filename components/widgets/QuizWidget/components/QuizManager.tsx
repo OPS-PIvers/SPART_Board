@@ -667,8 +667,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
 
   const handleBulkDelete = useCallback(async (): Promise<void> => {
     if (selection.count === 0) return;
-    const ids = Array.from(selection.selectedIds);
-    const targets = quizzes.filter((q) => ids.includes(q.id));
+    const targets = quizzes.filter((q) => selection.selectedIds.has(q.id));
     if (targets.length === 0) return;
     setBulkBusy(true);
     try {
