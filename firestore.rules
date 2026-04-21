@@ -160,9 +160,11 @@ service cloud.firestore {
 
       match /roles/{roleId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
-        // System roles are immutable from clients — the migration script
-        // seeds them with `{ merge: true }` so the first write happens server
-        // side; every client mutation is refused if `system == true`.
+        // System roles are seeded by the migration script with `{ merge: true }`
+        // and are otherwise immutable from clients — every client mutation is
+        // refused if `system == true`, with one narrow exception: super admins
+        // may patch `perms` on system roles so they can tune capability
+        // defaults from the admin console (see the `update` branch below).
         // Client-created roles must carry canonical path identity, be
         // explicitly non-system, and stay within the supported schema so
         // clients can't attach unexpected fields.
