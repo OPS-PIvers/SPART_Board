@@ -49,26 +49,7 @@ const mockFirestore = {
   })),
   getAll: vi.fn((...refs: MockDocRef[]) => {
     return Promise.resolve(
-      refs.map((ref) => {
-        // Expected path: users/{uid}/userProfile/profile
-        const parts = ref.path.split('/');
-        const uid = parts[1];
-        const user = mockFirestoreState.users.find((u) => u.id === uid);
-        if (user) {
-          return {
-            exists: true,
-            data: () => ({
-              selectedBuildings: user.data.buildings,
-            }),
-            ref: {
-              parent: {
-                parent: { id: uid },
-              },
-            },
-          };
-        }
-        return { exists: false, data: () => ({}) };
-      })
+      refs.map(() => ({ exists: false, data: () => ({}) }))
     );
   }),
   collection: vi.fn((name: string) => {
@@ -79,6 +60,28 @@ const mockFirestore = {
             Promise.resolve({ exists: mockFirestoreState.admins.has(id) })
           ),
         })),
+      };
+    }
+
+    // Members collection for org-scoped analytics. Each `mockFirestoreState.users`
+    // entry represents a member of the org with `id` as their uid, `email` as
+    // their member email, and `buildings` as their admin-assigned buildingIds.
+    if (name.startsWith('organizations/') && name.endsWith('/members')) {
+      return {
+        get: vi.fn(() =>
+          Promise.resolve({
+            docs: mockFirestoreState.users
+              .filter((u) => !u.anonymous)
+              .map((u) => ({
+                id: (u.data.email as string | undefined) ?? u.id,
+                data: () => ({
+                  email: u.data.email,
+                  uid: u.id,
+                  buildingIds: u.data.buildings ?? [],
+                }),
+              })),
+          })
+        ),
       };
     }
 
@@ -177,6 +180,11 @@ vi.mock('firebase-admin', () => {
           .map((u) => ({
             uid: u.id,
             email: u.anonymous ? undefined : (u.data.email as string),
+            metadata: {
+              lastSignInTime: u.data.lastLogin
+                ? new Date(u.data.lastLogin as number).toISOString()
+                : undefined,
+            },
           }));
         return Promise.resolve({ users });
       }),
@@ -537,6 +545,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
 
       (handler as any)(mockReq, mockRes);
@@ -614,6 +623,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
 
       (handler as any)(mockReq, mockRes);
@@ -698,6 +708,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
       (adminAnalytics as any)(mockReq, mockRes);
     });
@@ -755,6 +766,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
       (adminAnalytics as any)(mockReq, mockRes);
     });
@@ -837,6 +849,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
       (adminAnalytics as any)(mockReq, mockRes);
     });

@@ -20,6 +20,7 @@ export {
 } from './organizationInvites';
 export { organizationMembersSync } from './organizationMembersSync';
 export { organizationMemberCounters } from './organizationMemberCounters';
+export { organizationBuildingCounters } from './organizationBuildingCounters';
 export { resetOrganizationUserPassword } from './organizationResetPassword';
 export { getOrgUserActivity } from './organizationUserActivity';
 
@@ -2000,13 +2001,31 @@ export const adminAnalytics = onRequest(
       return;
     }
 
+    // 1b. Require an orgId in the request body so analytics can be scoped to
+    // a single tenant. The previous behavior listed every Firebase Auth user
+    // globally, which leaked foreign-domain accounts into the calling admin's
+    // analytics view.
+    const rawBody = req.body as { orgId?: unknown } | undefined;
+    const orgId =
+      rawBody && typeof rawBody.orgId === 'string' ? rawBody.orgId.trim() : '';
+    if (!orgId) {
+      res
+        .status(400)
+        .json({ error: 'invalid-argument', message: 'orgId is required' });
+      return;
+    }
+
     const db = admin.firestore();
 
-    // 2. Verify caller is an admin
-    const adminDoc = await db.collection('admins').doc(email).get();
-    if (!adminDoc.exists) {
+    // 2. Verify caller is an admin (super admin in /admins, or a member of
+    // the requested org — org-scoped admins should see their own analytics).
+    const [adminDoc, memberDoc] = await Promise.all([
+      db.collection('admins').doc(email).get(),
+      db.doc(`organizations/${orgId}/members/${email}`).get(),
+    ]);
+    if (!adminDoc.exists && !memberDoc.exists) {
       console.error(
-        `[getAdminAnalytics] Unauthorized access: ${email} is not an admin`
+        `[getAdminAnalytics] Unauthorized access: ${email} is not an admin of ${orgId}`
       );
       res.status(403).json({ error: 'permission-denied' });
       return;
@@ -2014,74 +2033,84 @@ export const adminAnalytics = onRequest(
 
     try {
       const now = Date.now();
-      // 3a. Collect ALL user data from Firebase Auth (authoritative source
-      // for MAU/DAU). This replaces the previous Firestore-only approach
-      // which missed users without a /users/{uid} root doc.
+      // 3a. Load the org's members as the authoritative user roster. This
+      // replaces the previous global `listUsers()` scan, which pulled in every
+      // Firebase Auth account regardless of org and caused foreign-domain
+      // users to show up in a different org's analytics.
+      //
+      // For each member we need auth metadata (lastSignInTime) to compute
+      // engagement. Members without a `uid` (invited but never signed in)
+      // still count toward totals but have zero engagement.
+      interface MemberLite {
+        email: string;
+        uid: string | null;
+        buildingIds: string[];
+      }
+      const members: MemberLite[] = [];
+      const membersSnap = await db
+        .collection(`organizations/${orgId}/members`)
+        .get();
+      for (const doc of membersSnap.docs) {
+        const data = doc.data() as {
+          email?: unknown;
+          uid?: unknown;
+          buildingIds?: unknown;
+        };
+        const memberEmail =
+          typeof data.email === 'string' ? data.email.toLowerCase() : doc.id;
+        const uid = typeof data.uid === 'string' && data.uid ? data.uid : null;
+        const buildingIds = Array.isArray(data.buildingIds)
+          ? data.buildingIds.filter(
+              (id): id is string => typeof id === 'string' && id.length > 0
+            )
+          : [];
+        members.push({ email: memberEmail, uid, buildingIds });
+      }
+
+      // Resolve Firebase Auth metadata for members that have a linked uid.
+      // `getUsers()` tolerates up to 100 identifiers per call and silently
+      // drops uids that no longer exist in Auth, which is the right behavior
+      // for a member doc whose uid was revoked.
       const authUsersMap = new Map<
         string,
         { email: string; lastSignInMs: number }
       >();
-      let authPageToken: string | undefined;
-      do {
-        const listResult = await admin.auth().listUsers(1000, authPageToken);
-        for (const u of listResult.users) {
-          // Skip anonymous auth users (student accounts) — they have no
-          // linked providers and no email, and should not appear in analytics.
-          if (!u.email && u.providerData.length === 0) continue;
-
-          const lastSignIn = u.metadata.lastSignInTime
-            ? new Date(u.metadata.lastSignInTime).getTime()
-            : 0;
-          authUsersMap.set(u.uid, {
-            email: u.email ?? '',
-            lastSignInMs: lastSignIn,
+      const uidsToResolve = members
+        .map((m) => m.uid)
+        .filter((uid): uid is string => uid !== null);
+      for (let i = 0; i < uidsToResolve.length; i += 100) {
+        const chunk = uidsToResolve.slice(i, i + 100).map((uid) => ({ uid }));
+        if (chunk.length === 0) continue;
+        try {
+          const result = await admin.auth().getUsers(chunk);
+          for (const u of result.users) {
+            const lastSignIn = u.metadata.lastSignInTime
+              ? new Date(u.metadata.lastSignInTime).getTime()
+              : 0;
+            authUsersMap.set(u.uid, {
+              email: u.email ?? '',
+              lastSignInMs: lastSignIn,
+            });
+          }
+        } catch (err) {
+          console.warn('[getAdminAnalytics] auth().getUsers() chunk failed', {
+            orgId,
+            chunkSize: chunk.length,
+            error: err instanceof Error ? err.message : String(err),
           });
         }
-        authPageToken = listResult.pageToken;
-      } while (authPageToken);
+      }
 
-      // 3b. Batch-read /users/{uid}/userProfile/profile for building assignments
-      // The source of truth for buildings is the profile subcollection, not the
-      // root user doc (which is only populated on recent logins).
+      // 3b. Build the buildings map from the member record (admin-assigned)
+      // rather than from each user's self-selected `selectedBuildings`
+      // profile field. The member record's `buildingIds` are the authoritative
+      // source and are guaranteed to match live building doc ids, so the
+      // client-side "Unknown (…)" fallbacks disappear.
       const buildingsMap = new Map<string, string[]>();
-      const authUids = Array.from(authUsersMap.keys());
-      const PROFILE_BATCH = 500;
-      const CONCURRENCY_LIMIT = 10;
-
-      for (
-        let i = 0;
-        i < authUids.length;
-        i += PROFILE_BATCH * CONCURRENCY_LIMIT
-      ) {
-        const chunkUids = authUids.slice(
-          i,
-          i + PROFILE_BATCH * CONCURRENCY_LIMIT
-        );
-        const chunkPromises: Promise<admin.firestore.DocumentSnapshot[]>[] = [];
-
-        for (let j = 0; j < chunkUids.length; j += PROFILE_BATCH) {
-          const batch = chunkUids.slice(j, j + PROFILE_BATCH);
-          const refs = batch.map((uid) =>
-            db.doc(`users/${uid}/userProfile/profile`)
-          );
-          chunkPromises.push(db.getAll(...refs));
-        }
-
-        const chunkSnapshots = await Promise.all(chunkPromises);
-        for (const snapshots of chunkSnapshots) {
-          for (const snap of snapshots) {
-            if (!snap.exists) continue;
-            const data = snap.data();
-            if (
-              data &&
-              Array.isArray(data.selectedBuildings) &&
-              data.selectedBuildings.length > 0
-            ) {
-              const uid = snap.ref.parent.parent?.id;
-              if (!uid) continue;
-              buildingsMap.set(uid, data.selectedBuildings.map(String));
-            }
-          }
+      for (const m of members) {
+        if (!m.uid) continue;
+        if (m.buildingIds.length > 0) {
+          buildingsMap.set(m.uid, m.buildingIds);
         }
       }
 

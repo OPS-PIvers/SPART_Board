@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
+import { useAuth } from '@/context/useAuth';
 import type { Building } from '@/config/buildings';
 import { TOOLS } from '@/config/tools';
 
@@ -1350,6 +1351,7 @@ const DataTable: React.FC<{
 
 export const AnalyticsManager: React.FC = () => {
   const KNOWN_BUILDINGS = useKnownBuildings();
+  const { orgId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1370,6 +1372,11 @@ export const AnalyticsManager: React.FC = () => {
   }, []);
 
   const fetchAnalytics = useCallback(async () => {
+    if (!orgId) {
+      // Org membership hasn't resolved yet; skip the request rather than
+      // firing one that the backend would reject for missing org scope.
+      return;
+    }
     const requestId = requestSequenceRef.current + 1;
     requestSequenceRef.current = requestId;
 
@@ -1387,7 +1394,7 @@ export const AnalyticsManager: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ orgId }),
       });
 
       if (!response.ok) {
@@ -1450,7 +1457,7 @@ export const AnalyticsManager: React.FC = () => {
         setLoading(false);
       }
     }
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
     void fetchAnalytics();
