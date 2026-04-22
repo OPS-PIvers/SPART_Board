@@ -255,9 +255,17 @@ export const FeaturePermissionsManager: React.FC = () => {
       newLevels = [...currentLevels, level];
     }
 
-    // NOTE: If newLevels is empty, the widget will be hidden from all specific grade filters
-    // but will still be visible when the 'All' filter is selected.
-    updatePermission(widgetType, { gradeLevels: newLevels });
+    // If deselecting the last level would leave an empty array, fall back to the
+    // widget's configured default instead. An empty override is read as "no
+    // override" by matchesUserBuilding, so writing [] here would silently reset
+    // to the default anyway — writing the default explicitly keeps the UI state
+    // consistent with the persisted state and mirrors toggleAllGradeLevels.
+    updatePermission(widgetType, {
+      gradeLevels:
+        newLevels.length > 0
+          ? newLevels
+          : [...getWidgetGradeLevels(widgetType)],
+    });
   };
 
   const toggleAllGradeLevels = (widgetType: WidgetType | InternalToolType) => {
