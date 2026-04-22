@@ -35,9 +35,13 @@
  *   - PASS 2: collectionGroup sweep over `userProfile` docs to catch
  *     orphan profiles whose parent /users/{uid} doc is a Firestore
  *     "phantom" (exists only as the implicit ancestor of subcollection
- *     writes, no fields, so PASS 1's collection() query skips it).
- *   - Rewrites `selectedBuildings` and `buildings` to canonical IDs,
- *     deduplicating in the process.
+ *     writes, no fields, so PASS 1's collection() query skips it), and
+ *     rewrites only `selectedBuildings` on those profile docs. PASS 2
+ *     does NOT write a root `buildings` field — phantom parents have no
+ *     existing `buildings` to canonicalize, and the app self-heals the
+ *     root field on next login via `canonicalizeBuildingIds()`.
+ *   - Rewrites stored building-ID arrays to canonical IDs, deduplicating
+ *     in the process.
  *   - Skips writes when the array is already canonical (idempotent —
  *     safe to re-run).
  *
@@ -210,10 +214,10 @@ async function main() {
   let profilesChanged = 0;
 
   // Track which UIDs PASS 1 already covered, so PASS 2 can skip them.
-  // PASS 1 is needed because it's the only place we read & rewrite the
-  // root /users/{uid}.buildings field (collectionGroup can't reach
-  // arbitrary root-doc fields).
-  const profilesProcessed = new Set();
+  // PASS 1 is needed because it's the only way we can enumerate the root
+  // /users/{uid}.buildings field via a straightforward collection().get()
+  // (collectionGroup can't reach arbitrary root-doc fields).
+  const uidsProcessed = new Set();
 
   const usersSnap = await db.collection('users').get();
   console.log(
@@ -253,7 +257,7 @@ async function main() {
       .collection('userProfile')
       .doc('profile');
     const profileSnap = await profileRef.get();
-    profilesProcessed.add(uid);
+    uidsProcessed.add(uid);
     if (!profileSnap.exists) {
       if (args.verbose) {
         console.log(`  [users/${uid}/userProfile/profile] missing, skipping`);
@@ -301,7 +305,7 @@ async function main() {
     const parentUserRef = profileDoc.ref.parent.parent;
     if (!parentUserRef || parentUserRef.parent.id !== 'users') continue;
     const uid = parentUserRef.id;
-    if (profilesProcessed.has(uid)) continue;
+    if (uidsProcessed.has(uid)) continue;
     orphanProfilesScanned++;
     const profileData = profileDoc.data() ?? {};
     if (!Array.isArray(profileData.selectedBuildings)) continue;
