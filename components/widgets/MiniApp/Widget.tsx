@@ -373,6 +373,13 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      // Test-class fetch is gated on `isAdmin && orgId`. Super admins are
+      // seeded as `/organizations/{orgId}/members` with roleId 'super_admin'
+      // by the Phase 1 migration, so their `orgId` is populated through the
+      // same member-doc path as domain admins — this check does not exclude
+      // them in practice. Skipping the read when orgId is null is correct:
+      // testClasses docs live under a specific org, so there is no valid
+      // query to issue without one.
       const [rosterResult, testClassesResult] = await Promise.allSettled([
         classLinkService.getRosters(),
         isAdmin && orgId

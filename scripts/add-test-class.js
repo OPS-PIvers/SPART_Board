@@ -35,28 +35,37 @@ function parseArgs(argv) {
   const args = { emails: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    const next = () => argv[++i];
+    // Takes the value immediately following `flag`. Rejects a missing value
+    // or one that looks like another flag so misuse crashes with a clear
+    // message instead of silently consuming the next flag as a value.
+    const requireValue = (flag) => {
+      const v = argv[++i];
+      if (v === undefined || v.startsWith('--')) {
+        throw new Error(`Missing value for ${flag}`);
+      }
+      return v;
+    };
     switch (a) {
       case '--org':
-        args.org = next();
+        args.org = requireValue(a);
         break;
       case '--classId':
-        args.classId = next();
+        args.classId = requireValue(a);
         break;
       case '--title':
-        args.title = next();
+        args.title = requireValue(a);
         break;
       case '--subject':
-        args.subject = next();
+        args.subject = requireValue(a);
         break;
       case '--emails':
-        args.emails = next()
+        args.emails = requireValue(a)
           .split(',')
           .map((e) => e.trim().toLowerCase())
           .filter(Boolean);
         break;
       case '--createdBy':
-        args.createdBy = next();
+        args.createdBy = requireValue(a);
         break;
       case '--delete':
         args.delete = true;
