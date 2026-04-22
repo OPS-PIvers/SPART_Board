@@ -1288,8 +1288,13 @@ export interface MiniAppSession {
  */
 export interface MiniAppSubmission {
   submittedAt: number;
-  /** Arbitrary payload forwarded from the sandboxed iframe's postMessage. */
-  payload: unknown;
+  /**
+   * Payload forwarded from the sandboxed iframe's postMessage. Always a
+   * top-level object because Firestore rules enforce `payload is map`;
+   * scalar/array payloads from the iframe are wrapped in `{ value }` by
+   * the submission handler before persisting.
+   */
+  payload: Record<string, unknown>;
 }
 
 export interface PdfItem {

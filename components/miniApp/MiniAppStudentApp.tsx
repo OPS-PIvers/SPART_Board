@@ -20,9 +20,21 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { signInAnonymously } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { Loader2, AlertCircle, CheckCircle2, Box } from 'lucide-react';
+import {
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Box,
+  RefreshCw,
+} from 'lucide-react';
 import { auth, db, functions } from '@/config/firebase';
 import { MiniAppSession, MiniAppSubmission } from '@/types';
+
+type SubmissionStatus =
+  | { kind: 'idle' }
+  | { kind: 'submitting' }
+  | { kind: 'saved'; at: number }
+  | { kind: 'error'; payload: unknown };
 
 const SESSIONS_COLLECTION = 'mini_app_sessions';
 
@@ -166,20 +178,18 @@ function getCachedPseudonym(
 
 const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [status, setStatus] = useState<SubmissionStatus>({ kind: 'idle' });
 
-  const handleMessage = useCallback(
-    async (event: MessageEvent) => {
-      if (event.source !== iframeRef.current?.contentWindow) return;
-
-      const data = event.data as { type?: string; payload?: unknown } | null;
-      if (data?.type !== 'SPART_MINIAPP_RESULT') return;
-
+  const submit = useCallback(
+    async (payload: unknown) => {
       const currentUser = auth.currentUser;
       if (!currentUser) {
         console.warn('[MiniAppStudentApp] No auth user; skipping submission.');
+        setStatus({ kind: 'error', payload });
         return;
       }
 
+      setStatus({ kind: 'submitting' });
       try {
         // studentRole users (ClassLink-launched) submit under an opaque
         // per-assignment pseudonym so the teacher can match-back without
@@ -192,26 +202,56 @@ const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
           ? await getCachedPseudonym(session.id, currentUser.uid)
           : currentUser.uid;
 
+        // Rules require `payload is map`; coerce non-object payloads into a
+        // `{ value }` wrapper so mini-apps that post scalars or arrays still
+        // persist instead of silently failing the write.
+        const normalisedPayload =
+          payload !== null &&
+          typeof payload === 'object' &&
+          !Array.isArray(payload)
+            ? (payload as Record<string, unknown>)
+            : { value: payload };
+
         const submission: MiniAppSubmission = {
           submittedAt: Date.now(),
-          payload: data.payload,
+          payload: normalisedPayload,
         };
 
         await setDoc(
           doc(db, SESSIONS_COLLECTION, session.id, 'submissions', docId),
           submission
         );
+        setStatus({ kind: 'saved', at: Date.now() });
       } catch (err) {
         console.error('[MiniAppStudentApp] Submission write failed:', err);
+        setStatus({ kind: 'error', payload });
       }
     },
     [session.id]
+  );
+
+  const handleMessage = useCallback(
+    (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      const data = event.data as { type?: string; payload?: unknown } | null;
+      if (data?.type !== 'SPART_MINIAPP_RESULT') return;
+      void submit(data.payload);
+    },
+    [submit]
   );
 
   useEffect(() => {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [handleMessage]);
+
+  // Auto-clear the transient "Saved" confirmation after 2.5s so it doesn't
+  // linger over the activity.
+  useEffect(() => {
+    if (status.kind !== 'saved') return;
+    const timeout = window.setTimeout(() => setStatus({ kind: 'idle' }), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [status]);
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-slate-900 flex flex-col">
@@ -224,6 +264,59 @@ const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
         className="flex-1 w-full border-0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
       />
+      <SubmissionStatusOverlay status={status} onRetry={submit} />
+    </div>
+  );
+};
+
+// ─── Submission status overlay ─────────────────────────────────────────────────
+
+const SubmissionStatusOverlay: React.FC<{
+  status: SubmissionStatus;
+  onRetry: (payload: unknown) => void;
+}> = ({ status, onRetry }) => {
+  if (status.kind === 'idle') return null;
+
+  const base =
+    'fixed bottom-4 left-1/2 -translate-x-1/2 z-20 rounded-xl px-4 py-3 shadow-lg flex items-center gap-2 text-sm font-medium';
+
+  if (status.kind === 'submitting') {
+    return (
+      <div className={`${base} bg-slate-800 text-white`} role="status">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Saving your answer…
+      </div>
+    );
+  }
+
+  if (status.kind === 'saved') {
+    return (
+      <div
+        className={`${base} bg-emerald-600 text-white`}
+        role="status"
+        aria-live="polite"
+      >
+        <CheckCircle2 className="w-4 h-4" />
+        Saved
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${base} bg-red-600 text-white`}
+      role="alert"
+      aria-live="assertive"
+    >
+      <AlertCircle className="w-4 h-4" />
+      <span>Couldn&apos;t save your answer.</span>
+      <button
+        onClick={() => onRetry(status.payload)}
+        className="inline-flex items-center gap-1 rounded-lg bg-white/20 hover:bg-white/30 px-2 py-1 text-xs font-bold"
+      >
+        <RefreshCw className="w-3 h-3" />
+        Retry
+      </button>
     </div>
   );
 };

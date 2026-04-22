@@ -566,3 +566,135 @@ describe('activity_wall_sessions/submissions — student-role gate', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// mini_app_sessions/submissions — create/update gate + payload validation
+// ---------------------------------------------------------------------------
+
+describe('mini_app_sessions/submissions — student-role gate', () => {
+  const col = 'mini_app_sessions';
+  const subPath = (session: string, uid: string) =>
+    `${col}/${session}/submissions/${uid}`;
+  const validSub = () => ({
+    submittedAt: 1000,
+    payload: { score: 42, answers: [1, 2, 3] } as Record<string, unknown>,
+  });
+
+  beforeEach(async () => {
+    await testEnv.clearFirestore();
+    await seedSessions([col]);
+  });
+
+  it('student in class-A can submit to session-A under their own pseudonym', async () => {
+    await assertSucceeds(
+      setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), validSub())
+    );
+  });
+
+  it('student in class-A cannot submit to session-B (wrong class)', async () => {
+    await assertFails(
+      setDoc(doc(asStudentA(), subPath(SESSION_B, STUDENT_A_UID)), validSub())
+    );
+  });
+
+  it('student with empty classIds cannot submit to any session', async () => {
+    await assertFails(
+      setDoc(
+        doc(asStudentEmpty(), subPath(SESSION_A, STUDENT_EMPTY_UID)),
+        validSub()
+      )
+    );
+  });
+
+  it('anonymous PIN student can submit under their own auth uid', async () => {
+    await assertSucceeds(
+      setDoc(doc(asAnonStudent(), subPath(SESSION_A, ANON_UID)), validSub())
+    );
+  });
+
+  it('anonymous PIN student cannot submit under a different uid', async () => {
+    await assertFails(
+      setDoc(
+        doc(asAnonStudent(), subPath(SESSION_A, 'some-other-uid')),
+        validSub()
+      )
+    );
+  });
+
+  it('unauthenticated caller cannot submit', async () => {
+    await assertFails(
+      setDoc(doc(asUnauth(), subPath(SESSION_A, 'x')), validSub())
+    );
+  });
+
+  it('submission with extra keys is rejected', async () => {
+    await assertFails(
+      setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), {
+        ...validSub(),
+        sneaky: 'extra-field',
+      })
+    );
+  });
+
+  it('submission with non-map payload is rejected', async () => {
+    await assertFails(
+      setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), {
+        submittedAt: 1000,
+        payload: 'just-a-string',
+      })
+    );
+  });
+
+  it('submission with non-int submittedAt is rejected', async () => {
+    await assertFails(
+      setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), {
+        submittedAt: 'not-a-number',
+        payload: { score: 1 },
+      })
+    );
+  });
+
+  it('submission to ended session is rejected', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `${col}/${SESSION_A}`), {
+        teacherUid: TEACHER_UID,
+        classId: CLASS_A,
+        status: 'ended',
+      });
+    });
+    await assertFails(
+      setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), validSub())
+    );
+  });
+
+  it('student can read own submission; cannot read another student uid', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), subPath(SESSION_A, STUDENT_A_UID)),
+        validSub()
+      );
+      await setDoc(
+        doc(ctx.firestore(), subPath(SESSION_A, 'other-uid')),
+        validSub()
+      );
+    });
+    await assertSucceeds(
+      getDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)))
+    );
+    await assertFails(
+      getDoc(doc(asStudentA(), subPath(SESSION_A, 'other-uid')))
+    );
+  });
+
+  it('teacher can read any submission on their session', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), subPath(SESSION_A, 'anyone')),
+        validSub()
+      );
+    });
+    await assertSucceeds(
+      getDoc(doc(asTeacher(), subPath(SESSION_A, 'anyone')))
+    );
+  });
+});
