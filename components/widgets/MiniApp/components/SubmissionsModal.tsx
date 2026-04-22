@@ -8,10 +8,10 @@
  * No PII is persisted; the payload is arbitrary JSON forwarded from the
  * sandboxed mini-app iframe's postMessage.
  *
- * When the session was class-targeted (`classId` present), we call
- * `getPseudonymsForAssignmentV1` to build a pseudonym -> name reverse map
- * in teacher-browser memory so grading shows real names. Unmatched doc IDs
- * (legacy shared-link launches) fall back to the opaque id.
+ * When the session was class-targeted (`classIds` non-empty), we call
+ * `getPseudonymsForAssignmentV1` per class to build a pseudonym -> name
+ * reverse map in teacher-browser memory so grading shows real names.
+ * Unmatched doc IDs (legacy shared-link launches) fall back to the opaque id.
  */
 
 import React, { useEffect, useState } from 'react';

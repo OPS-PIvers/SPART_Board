@@ -247,6 +247,7 @@ const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
 
         const submission: MiniAppSubmission = {
           submittedAt: Date.now(),
+          studentUid: currentUser.uid,
           payload: normalisedPayload,
         };
 

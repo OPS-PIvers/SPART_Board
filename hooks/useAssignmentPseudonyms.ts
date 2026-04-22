@@ -167,23 +167,32 @@ export function useAssignmentPseudonymsMulti(
   assignmentId: string | null | undefined,
   classIds: readonly string[] | null | undefined
 ): AssignmentPseudonymMaps {
-  const cleaned = (classIds ?? []).filter(
-    (c): c is string => typeof c === 'string' && c.length > 0
-  );
-  const classIdsKey = cleaned.slice().sort().join('|');
+  // `classIdsKey` is the canonical, value-stable identity for the caller's
+  // class list. Deriving it from the raw prop (instead of from a pre-filtered
+  // array) lets the effect depend on just `[assignmentId, classIdsKey]`
+  // without an exhaustive-deps suppression — the effect itself re-derives
+  // the cleaned list from `classIdsKey`.
+  const classIdsKey = (classIds ?? [])
+    .filter((c): c is string => typeof c === 'string' && c.length > 0)
+    .slice()
+    .sort()
+    .join('|');
   const [resolved, setResolved] = useState<{
     key: string;
     maps: AssignmentPseudonymMaps;
   }>({ key: '', maps: EMPTY_MAPS });
 
   useEffect(() => {
-    if (!assignmentId || cleaned.length === 0) return;
+    if (!assignmentId || classIdsKey.length === 0) return;
     const teacherUid = auth.currentUser?.uid ?? '';
     if (!teacherUid) return;
+    const cleanedInEffect = classIdsKey.split('|');
     let cancelled = false;
     const key = `${assignmentId}::${classIdsKey}`;
     Promise.all(
-      cleaned.map((cid) => fetchPseudonymMaps(assignmentId, cid, teacherUid))
+      cleanedInEffect.map((cid) =>
+        fetchPseudonymMaps(assignmentId, cid, teacherUid)
+      )
     )
       .then((all) => {
         if (cancelled) return;
@@ -205,12 +214,12 @@ export function useAssignmentPseudonymsMulti(
     return () => {
       cancelled = true;
     };
-    // `classIdsKey` gives us value-based comparison across re-renders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignmentId, classIdsKey]);
 
   const currentKey =
-    assignmentId && cleaned.length > 0 ? `${assignmentId}::${classIdsKey}` : '';
+    assignmentId && classIdsKey.length > 0
+      ? `${assignmentId}::${classIdsKey}`
+      : '';
   return resolved.key === currentKey && currentKey !== ''
     ? resolved.maps
     : EMPTY_MAPS;

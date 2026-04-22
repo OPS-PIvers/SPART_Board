@@ -1288,6 +1288,16 @@ export interface MiniAppSession {
 export interface MiniAppSubmission {
   submittedAt: number;
   /**
+   * The submitting student's Firebase Auth uid. Matches `request.auth.uid` at
+   * write time. For studentRole (ClassLink) launches this is the ephemeral
+   * per-session SSO uid — the stable identity is the doc ID (pseudonym). For
+   * anonymous launches this equals the doc ID. Firestore rules key self-reads
+   * off this field so studentRole users can read their own submission back
+   * via the completion check in /my-assignments without exposing anyone
+   * else's submission.
+   */
+  studentUid: string;
+  /**
    * Payload forwarded from the sandboxed iframe's postMessage. Always a
    * top-level object because Firestore rules enforce `payload is map`;
    * scalar/array payloads from the iframe are wrapped in `{ value }` by
