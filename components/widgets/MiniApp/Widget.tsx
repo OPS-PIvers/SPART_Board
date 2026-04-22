@@ -280,14 +280,16 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
   // deployments — querying on that flag would trigger a permission-denied
   // round-trip for them. See `resolveActorRole` in OrganizationPanel for the
   // reference pattern.
-  const canReadTestClasses = Boolean(
-    (user?.email &&
-      userRoles?.superAdmins?.some(
-        (e) => e.toLowerCase() === user.email?.toLowerCase()
-      )) ||
-    roleId === 'super_admin' ||
-    roleId === 'domain_admin'
+  const isSuperAdminByEmail = Boolean(
+    user?.email &&
+    userRoles?.superAdmins?.some(
+      (e) => e.toLowerCase() === user.email?.toLowerCase()
+    )
   );
+  const canReadTestClasses =
+    isSuperAdminByEmail ||
+    roleId === 'super_admin' ||
+    roleId === 'domain_admin';
   const { showConfirm } = useDialog();
   const config = (widget.config ?? {}) as MiniAppConfig;
   const activeApp = config.activeApp ?? null;
