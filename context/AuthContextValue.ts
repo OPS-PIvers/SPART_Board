@@ -11,6 +11,7 @@ import {
   AppSettings,
   DockPosition,
 } from '../types';
+import type { BuildingRecord } from '../types/organization';
 
 export interface AuthContextType {
   user: User | null;
@@ -91,6 +92,13 @@ export interface AuthContextType {
    * themselves. Empty array when the user is not a member or has org-wide scope.
    */
   buildingIds: string[];
+  /**
+   * Live snapshot of `/organizations/{orgId}/buildings` for the active org.
+   * Maintained by a single AuthProvider-level `onSnapshot` so consumers
+   * (grade-level resolution, admin UIs via `useAdminBuildings`) share one
+   * Firestore listener instead of each opening its own.
+   */
+  orgBuildings: BuildingRecord[];
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

@@ -54,6 +54,7 @@ describe('useOrgMembers', () => {
   const batchUpdate = vi.fn();
   const batchDelete = vi.fn();
   const batchCommit = vi.fn();
+  const mockHttpsCallable = httpsCallable as Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -70,6 +71,11 @@ describe('useOrgMembers', () => {
       delete: batchDelete,
       commit: batchCommit,
     });
+    // Default: any callable resolves with an empty activity payload. Tests that
+    // exercise a specific callable (e.g. bulkInviteMembers) override this.
+    mockHttpsCallable.mockReturnValue(
+      vi.fn().mockResolvedValue({ data: { activity: [] } })
+    );
   });
 
   it('skips subscription when orgId is null', () => {
@@ -285,12 +291,16 @@ describe('useOrgMembers', () => {
   it('bulkInviteMembers short-circuits on empty intent list without calling the CF', async () => {
     mockUseAuth.mockReturnValue({ user: { uid: 'u' } });
     mockOnSnapshot.mockReturnValue(() => undefined);
-    const mockCallable = vi.fn();
-    (httpsCallable as Mock).mockReturnValue(mockCallable);
+    const inviteCallable = vi.fn();
+    mockHttpsCallable.mockImplementation((_fns: unknown, name: string) =>
+      name === 'createOrganizationInvites'
+        ? inviteCallable
+        : vi.fn().mockResolvedValue({ data: { activity: [] } })
+    );
 
     const { result } = renderHook(() => useOrgMembers('orono'));
     const response = await result.current.bulkInviteMembers([]);
-    expect(mockCallable).not.toHaveBeenCalled();
+    expect(inviteCallable).not.toHaveBeenCalled();
     expect(response).toEqual({ invitations: [], errors: [] });
   });
 

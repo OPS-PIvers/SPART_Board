@@ -14,6 +14,7 @@ import {
   type QuizSessionOptions,
 } from '@/hooks/useQuizSession';
 import { useQuizAssignments } from '@/hooks/useQuizAssignments';
+import { useFolders } from '@/hooks/useFolders';
 import { QuizManager, PlcOptions } from './components/QuizManager';
 import { ImportWizard } from '@/components/common/library/importer';
 import { createQuizImportAdapter } from './adapters/quizImportAdapter';
@@ -66,6 +67,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     assignments,
     loading: assignmentsLoading,
+    error: assignmentsError,
     createAssignment,
     pauseAssignment,
     resumeAssignment,
@@ -74,6 +76,14 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     updateAssignmentSettings,
     shareAssignment,
   } = useQuizAssignments(user?.uid);
+
+  // Folders are managed by QuizManager separately; this duplicate binding is
+  // used only so the editor modal can surface a folder picker and commit
+  // moves via `moveItem` without leaving the modal.
+  const { folders: quizFolders, moveItem: moveQuizItem } = useFolders(
+    user?.uid,
+    'quiz'
+  );
 
   // Ephemeral modal state for per-assignment settings editing.
   const [editingAssignment, setEditingAssignment] =
@@ -657,7 +667,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           meta,
           mode,
           plcOptions: PlcOptions,
-          sessionOptions: QuizSessionOptions
+          sessionOptions: QuizSessionOptions,
+          classId: string | null
         ) => {
           const data = await loadQuiz(meta);
           if (!data) return;
@@ -679,23 +690,35 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 periodNames: plcOptions.periodNames,
                 plcSheetUrl: plcOptions.plcSheetUrl,
               },
-              'active'
+              'paused',
+              classId ?? undefined
             );
+            // Persist the teacher's last-used classId per quiz so re-launching
+            // the same quiz pre-selects the same class. Clearing (picking "No
+            // class") removes the entry rather than writing an empty string
+            // to keep the config map small.
+            const prevMap = config.lastClassIdByQuizId ?? {};
+            const nextMap: Record<string, string> = { ...prevMap };
+            if (classId) {
+              nextMap[meta.id] = classId;
+            } else {
+              delete nextMap[meta.id];
+            }
             updateWidget(widget.id, {
               config: {
                 ...config,
-                view: 'monitor',
+                view: 'manager',
                 managerTab: 'active',
                 selectedQuizId: meta.id,
                 selectedQuizTitle: meta.title,
                 activeAssignmentId: assignmentId,
-                activeLiveSessionCode: code,
                 plcMode: plcOptions.plcMode,
                 teacherName: plcOptions.teacherName ?? '',
                 periodName:
                   plcOptions.periodNames?.[0] ?? plcOptions.periodName ?? '',
                 periodNames: plcOptions.periodNames ?? [],
                 plcSheetUrl: plcOptions.plcSheetUrl ?? '',
+                lastClassIdByQuizId: nextMap,
               } as QuizConfig,
             });
             const url = `${window.location.origin}/quiz?code=${code}`;
@@ -703,17 +726,20 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               void navigator.clipboard
                 .writeText(url)
                 .then(() =>
-                  addToast('Assignment link copied to clipboard!', 'success')
+                  addToast(
+                    'Student link copied — press Play when you\u2019re ready to start.',
+                    'success'
+                  )
                 )
                 .catch(() =>
                   addToast(
-                    'Assignment created, but link could not be copied.',
+                    'Assignment created (paused), but link could not be copied.',
                     'info'
                   )
                 );
             } else {
               addToast(
-                'Assignment created, but link could not be copied.',
+                'Assignment created (paused), but link could not be copied.',
                 'info'
               );
             }
@@ -778,6 +804,111 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             );
           }
         }}
+        onBulkDelete={async (metas): Promise<boolean> => {
+          // Aggregated variant of the single-quiz onDelete handler above.
+          // Partitions targets into:
+          //   - blocked: has live/paused assignments → cannot delete
+          //   - withArchived: has only archived assignments → needs warning
+          //   - clean: no assignments → delete silently
+          // Shows ONE summary toast for blocked items and ONE aggregated
+          // confirm for the archived-assignment warning, regardless of how
+          // many quizzes are selected — replaces the old per-item dialogs
+          // that would fire up to N times when bulk-deleting N quizzes.
+          //
+          // Returns `true` when a delete was attempted (caller clears
+          // selection) and `false` when the handler aborted or the user
+          // cancelled (caller preserves selection so the teacher can retry
+          // without re-selecting everything).
+
+          // Guard against stale/empty assignments: the live-assignment check
+          // is load-bearing for student safety. Abort if the listener hasn't
+          // populated yet — or if it errored (hook flips loading→false and
+          // leaves `assignments=[]` on error, which would otherwise let a
+          // live quiz get misclassified as deletable).
+          if (assignmentsLoading || assignmentsError) {
+            addToast(
+              assignmentsError
+                ? "Couldn't verify assignment status — try bulk delete again in a moment."
+                : 'Still loading assignment data — try bulk delete again in a moment.',
+              'info'
+            );
+            return false;
+          }
+
+          // Pre-index assignments by quizId so partitioning stays O(N+M)
+          // rather than O(N*M) for large teacher archives.
+          const byQuizId = new Map<string, QuizAssignment[]>();
+          for (const a of assignments) {
+            const list = byQuizId.get(a.quizId);
+            if (list) list.push(a);
+            else byQuizId.set(a.quizId, [a]);
+          }
+
+          const blocked: QuizMetadata[] = [];
+          const withArchived: QuizMetadata[] = [];
+          const clean: QuizMetadata[] = [];
+          for (const meta of metas) {
+            const related = byQuizId.get(meta.id) ?? [];
+            const hasLive = related.some((a) => a.status !== 'inactive');
+            if (hasLive) {
+              blocked.push(meta);
+            } else if (related.length > 0) {
+              withArchived.push(meta);
+            } else {
+              clean.push(meta);
+            }
+          }
+
+          if (blocked.length > 0) {
+            addToast(
+              `Skipped ${blocked.length} quiz${blocked.length === 1 ? '' : 'zes'} with active or paused assignments. Deactivate them first.`,
+              'error'
+            );
+          }
+
+          const deletable = [...clean, ...withArchived];
+          if (deletable.length === 0) return false;
+
+          const confirmMsg =
+            withArchived.length > 0
+              ? `Delete ${deletable.length} quiz${deletable.length === 1 ? '' : 'zes'}? ` +
+                `${withArchived.length} ${withArchived.length === 1 ? 'has' : 'have'} archived assignments — ` +
+                `deleting will prevent viewing their monitor and results. This cannot be undone.`
+              : `Delete ${deletable.length} quiz${deletable.length === 1 ? '' : 'zes'}? This cannot be undone.`;
+          const ok = window.confirm(confirmMsg);
+          if (!ok) return false;
+
+          const results = await Promise.allSettled(
+            deletable.map((meta) => deleteQuiz(meta.id, meta.driveFileId))
+          );
+          const failed: string[] = [];
+          results.forEach((result, idx) => {
+            if (result.status === 'rejected') {
+              const id = deletable[idx]?.id ?? '?';
+              failed.push(id);
+              console.error(
+                '[QuizWidget] bulk delete failed for',
+                id,
+                result.reason
+              );
+            }
+          });
+
+          const succeeded = deletable.length - failed.length;
+          if (succeeded > 0) {
+            addToast(
+              `Deleted ${succeeded} quiz${succeeded === 1 ? '' : 'zes'}.`,
+              'success'
+            );
+          }
+          if (failed.length > 0) {
+            addToast(
+              `${failed.length} quiz${failed.length === 1 ? '' : 'zes'} failed to delete.`,
+              'error'
+            );
+          }
+          return true;
+        }}
         // ─── Archive tab ─────────────────────────────────────────────────────
         managerTab={config.managerTab ?? 'library'}
         onTabChange={(tab) => handleUpdateQuizConfig({ managerTab: tab })}
@@ -788,10 +919,10 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           if (typeof navigator !== 'undefined' && navigator.clipboard) {
             void navigator.clipboard
               .writeText(url)
-              .then(() => addToast('Join link copied!', 'success'))
-              .catch(() => addToast(`Join link: ${url}`, 'info'));
+              .then(() => addToast('Student link copied!', 'success'))
+              .catch(() => addToast(`Student link: ${url}`, 'info'));
           } else {
-            addToast(`Join link: ${url}`, 'info');
+            addToast(`Student link: ${url}`, 'info');
           }
         }}
         onArchiveMonitor={async (a) => {
@@ -962,10 +1093,38 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             );
           }
         }}
+        onLibraryViewModeChange={(mode) => {
+          updateWidget(widget.id, {
+            config: { ...config, libraryViewMode: mode } as QuizConfig,
+          });
+        }}
       />
       <QuizEditorModal
         isOpen={!!editingQuiz}
         quiz={editingQuiz}
+        folders={editingMeta ? quizFolders : undefined}
+        folderId={
+          editingMeta
+            ? (quizzes.find((q) => q.id === editingMeta.id)?.folderId ?? null)
+            : null
+        }
+        onFolderChange={
+          editingMeta
+            ? async (folderId) => {
+                try {
+                  await moveQuizItem(editingMeta.id, folderId);
+                  addToast('Folder updated.', 'success');
+                } catch (err) {
+                  addToast(
+                    err instanceof Error
+                      ? err.message
+                      : 'Failed to update folder',
+                    'error'
+                  );
+                }
+              }
+            : undefined
+        }
         onClose={() => {
           setEditingQuiz(null);
           setEditingMeta(null);

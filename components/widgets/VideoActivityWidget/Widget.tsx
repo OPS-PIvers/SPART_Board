@@ -23,6 +23,7 @@ import { useAuth } from '@/context/useAuth';
 import { useVideoActivity } from '@/hooks/useVideoActivity';
 import { useVideoActivitySessionTeacher } from '@/hooks/useVideoActivitySession';
 import { useVideoActivityAssignments } from '@/hooks/useVideoActivityAssignments';
+import { useFolders } from '@/hooks/useFolders';
 import { VideoActivityManager } from './components/VideoActivityManager';
 import { Creator } from './components/Creator';
 import { Results } from './components/Results';
@@ -108,6 +109,9 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
   const [editingMeta, setEditingMeta] = useState<VideoActivityMetadata | null>(
     null
   );
+
+  const { folders: videoActivityFolders, moveItem: moveVideoActivityItem } =
+    useFolders(user?.uid, 'video_activity');
 
   // Get global AI generation permission from feature permissions
   const videoActivityPerm = featurePermissions.find(
@@ -306,7 +310,7 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
           }
         }}
         defaultSessionSettings={defaultSessionSettings}
-        onAssign={async (meta, sessionSettings, assignmentName) => {
+        onAssign={async (meta, sessionSettings, assignmentName, classId) => {
           // Use loadActivityData directly to avoid setting loadingActivity
           // which would cause the Manager component to unmount and destroy the modal
           const data = await loadActivityData(meta.driveFileId);
@@ -316,12 +320,27 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
             user.uid,
             [],
             sessionSettings,
-            assignmentName
+            assignmentName,
+            classId ?? undefined
           );
+
+          // Phase 3B: persist per-activity memory of the last ClassLink target
+          // so the next launch of the same activity pre-selects the class the
+          // teacher used last time. Clearing the selection ("No class") also
+          // clears the remembered id so we don't stick on stale values.
+          const prevMap = config.lastClassIdByActivityId ?? {};
+          const nextMap: Record<string, string> = { ...prevMap };
+          if (classId) {
+            nextMap[meta.id] = classId;
+          } else {
+            delete nextMap[meta.id];
+          }
+
           updateWidget(widget.id, {
             config: {
               ...config,
               resultsSessionId: sessionId,
+              lastClassIdByActivityId: nextMap,
             } as VideoActivityConfig,
           });
 
@@ -332,6 +351,7 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
           });
           return sessionId;
         }}
+        lastClassIdByActivityId={config.lastClassIdByActivityId}
         onDelete={async (meta) => {
           try {
             await deleteActivity(meta.id, meta.driveFileId);
@@ -447,12 +467,37 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
             } as VideoActivityConfig,
           });
         }}
+        initialLibraryViewMode={config.libraryViewMode}
+        onLibraryViewModeChange={(mode) => {
+          updateWidget(widget.id, {
+            config: { ...config, libraryViewMode: mode } as VideoActivityConfig,
+          });
+        }}
       />
       <VideoActivityEditorModal
         isOpen={!!editingActivity}
         activity={editingActivity}
         aiEnabled={aiEnabled}
         isAdmin={isAdmin === true}
+        folders={editingMeta ? videoActivityFolders : undefined}
+        folderId={editingMeta?.folderId ?? null}
+        onFolderChange={
+          editingMeta
+            ? async (folderId) => {
+                try {
+                  await moveVideoActivityItem(editingMeta.id, folderId);
+                  addToast('Folder updated.', 'success');
+                } catch (err) {
+                  addToast(
+                    err instanceof Error
+                      ? err.message
+                      : 'Failed to update folder',
+                    'error'
+                  );
+                }
+              }
+            : undefined
+        }
         onClose={() => {
           setEditingActivity(null);
           setEditingMeta(null);

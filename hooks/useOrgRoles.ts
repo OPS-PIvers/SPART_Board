@@ -5,19 +5,39 @@ import {
   doc,
   onSnapshot,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
-import type { RoleRecord } from '@/types/organization';
+import type { CapabilityId, RoleRecord } from '@/types/organization';
+
+// Key-by-key compare so we can't be tripped up by key-ordering differences
+// between a Firestore snapshot and the working state. Both sides are flat
+// CapabilityId→enum maps.
+const permsEqual = (
+  a: RoleRecord['perms'] | undefined,
+  b: RoleRecord['perms'] | undefined
+): boolean => {
+  const left = (a ?? {}) as RoleRecord['perms'];
+  const right = (b ?? {}) as RoleRecord['perms'];
+  const leftKeys = Object.keys(left) as CapabilityId[];
+  if (leftKeys.length !== Object.keys(right).length) return false;
+  for (const key of leftKeys) {
+    if (left[key] !== right[key]) return false;
+  }
+  return true;
+};
 
 /**
  * Subscribes to `/organizations/{orgId}/roles`. Reads allowed for org members
  * + super admins via Firestore rules.
  *
- * Writes: `saveRoles(working)` diffs the working set against live state and
- * upserts / deletes custom roles (system roles are never touched — the rules
- * block updates on `system:true`). `resetRoles()` deletes every custom role
- * (system roles remain as seeded by the migration script).
+ * Writes: `saveRoles(working, { canEditSystemRoles })` diffs the working set
+ * against live state, upserts / deletes custom roles, and — when the caller
+ * is a super admin — patches `perms` on system roles as well. Domain admins
+ * can't touch system roles; the rules still reject those writes.
+ * `resetRoles()` deletes every custom role (system roles remain as seeded by
+ * the migration script).
  */
 export const useOrgRoles = (orgId: string | null) => {
   const { user } = useAuth();
@@ -60,16 +80,18 @@ export const useOrgRoles = (orgId: string | null) => {
     return unsub;
   }, [shouldSubscribe, orgId]);
 
-  const saveRoles = async (workingRoles: RoleRecord[]): Promise<void> => {
+  const saveRoles = async (
+    workingRoles: RoleRecord[],
+    options: { canEditSystemRoles?: boolean } = {}
+  ): Promise<void> => {
     if (!orgId) {
       throw new Error('No organization selected.');
     }
 
     const workingIds = new Set(workingRoles.map((r) => r.id));
-    // Upsert every non-system role from the working set. System roles are
-    // intentionally skipped: rules reject `system:true` updates from clients,
-    // and the UI never mutates them (clone-to-customize creates a new role).
-    const upserts = workingRoles
+    // Custom roles: full setDoc upsert. The seed flag is always false because
+    // the rules reject any client write that tries to flip `system:true`.
+    const customUpserts = workingRoles
       .filter((r) => !r.system)
       .map((r) =>
         setDoc(doc(db, 'organizations', orgId, 'roles', r.id), {
@@ -82,12 +104,31 @@ export const useOrgRoles = (orgId: string | null) => {
         })
       );
 
+    // System roles: only super admins may edit them, and only `perms` is
+    // writable (rules enforce this). Diff against the live snapshot so we
+    // skip no-op writes and avoid touching identity fields.
+    const liveById = new Map(roles.map((r) => [r.id, r]));
+    const systemPatches = options.canEditSystemRoles
+      ? workingRoles
+          .filter((r) => r.system)
+          .filter((r) => {
+            const live = liveById.get(r.id);
+            if (!live) return false;
+            return !permsEqual(live.perms, r.perms);
+          })
+          .map((r) =>
+            updateDoc(doc(db, 'organizations', orgId, 'roles', r.id), {
+              perms: r.perms ?? {},
+            })
+          )
+      : [];
+
     // Delete custom roles that disappeared from the working set.
     const deletions = roles
       .filter((r) => !r.system && !workingIds.has(r.id))
       .map((r) => deleteDoc(doc(db, 'organizations', orgId, 'roles', r.id)));
 
-    await Promise.all([...upserts, ...deletions]);
+    await Promise.all([...customUpserts, ...systemPatches, ...deletions]);
   };
 
   const resetRoles = async (): Promise<void> => {

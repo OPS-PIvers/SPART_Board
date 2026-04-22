@@ -6,7 +6,10 @@ import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
 import { GoogleGenAI, Content } from '@google/genai';
+import { randomUUID } from 'node:crypto';
+import { OAuth2Client } from 'google-auth-library';
 import { sanitizePrompt } from './sanitize';
+import { parseGeminiJson } from './parseGeminiJson';
 
 // Phase 4 — organization invitations + membership write-through.
 // These modules initialize their own `admin.initializeApp()` guarded by
@@ -18,6 +21,10 @@ export {
   claimOrganizationInvite,
 } from './organizationInvites';
 export { organizationMembersSync } from './organizationMembersSync';
+export { organizationMemberCounters } from './organizationMemberCounters';
+export { organizationBuildingCounters } from './organizationBuildingCounters';
+export { resetOrganizationUserPassword } from './organizationResetPassword';
+export { getOrgUserActivity } from './organizationUserActivity';
 
 setGlobalOptions({ region: 'us-central1' });
 
@@ -25,6 +32,10 @@ const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 const CLASSLINK_CLIENT_ID = defineSecret('CLASSLINK_CLIENT_ID');
 const CLASSLINK_CLIENT_SECRET = defineSecret('CLASSLINK_CLIENT_SECRET');
 const CLASSLINK_TENANT_URL = defineSecret('CLASSLINK_TENANT_URL');
+const STUDENT_PSEUDONYM_HMAC_SECRET = defineSecret(
+  'STUDENT_PSEUDONYM_HMAC_SECRET'
+);
+const GOOGLE_OAUTH_CLIENT_ID = defineSecret('GOOGLE_OAUTH_CLIENT_ID');
 
 const ALLOWED_ORIGINS: (string | RegExp)[] = [
   'https://spartboard.web.app',
@@ -349,6 +360,9 @@ export const getClassLinkRosterV1 = onCall(
     const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
 
     try {
+      if (!isSafeEmailForOneRosterFilter(userEmail)) {
+        return { classes: [], studentsByClass: {} };
+      }
       const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
       const userParams = { filter: `email='${userEmail}'` };
 
@@ -644,13 +658,86 @@ export const generateWithAI = onCall(
       > = {
         'mini-app': () => ({
           systemPrompt: `
-          You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request provided within <user_request> tags.
-          Requirements:
-          1. Single File (embedded CSS/JS).
-          2. Use Tailwind CDN.
-          3. Return JSON: { "title": "...", "html": "..." }
-          4. IMPORTANT: If the app involves scoring, completion, or data entry, you MUST include JavaScript that sends results to the parent window using this EXACT format:
-             window.parent.postMessage({ type: 'SPART_MINIAPP_RESULT', payload: { score: number, data: any } }, '*');
+You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request provided within <user_request> tags.
+
+Output requirements:
+1. Single file — all CSS and JS embedded inline. No external scripts except Tailwind CDN.
+2. Use Tailwind CDN (<script src="https://cdn.tailwindcss.com"></script>).
+3. Return JSON only: { "title": "...", "html": "..." }
+
+Submission protocol (MANDATORY — every app must implement this exactly):
+
+A. Render a visible <button data-spart-submit> somewhere obvious (usually near the bottom of the main content). Its label should be meaningful for the activity ("Submit", "Done", "Turn In", etc.). Style it with Tailwind so it looks like a primary action.
+
+B. On load, register a persistent listener for init messages from the parent and show/hide the submit button based on the latest message. The parent may re-send SPART_MINIAPP_INIT at any time (e.g. the teacher flips the Submissions toggle mid-session), so the handler MUST stay registered and re-apply state on every message — do NOT use { once: true } and do NOT remove the listener after the first message:
+
+   window.addEventListener('message', (event) => {
+     if (event.data && event.data.type === 'SPART_MINIAPP_INIT') {
+       const enabled = event.data.payload && event.data.payload.submissionsEnabled === true;
+       document.querySelectorAll('[data-spart-submit]').forEach((el) => {
+         el.style.display = enabled ? '' : 'none';
+       });
+     }
+   });
+
+C. When (and ONLY when) the user clicks the submit button, post the result to the parent. Use event delegation on window with closest('[data-spart-submit]') so the handler survives any DOM re-renders and catches multiple submit buttons:
+
+   window.addEventListener('click', (event) => {
+     const btn = event.target.closest && event.target.closest('[data-spart-submit]');
+     if (!btn) return;
+     window.parent.postMessage({
+       type: 'SPART_MINIAPP_RESULT',
+       payload: { /* whatever data the activity produced — object only, no PII */ }
+     }, '*');
+   });
+
+Do NOT auto-submit on every input, key press, or timer tick. The parent treats each SPART_MINIAPP_RESULT message as a student submission, so fire it exactly once per Submit click. The payload must be a plain object (not a scalar or array).
+
+Worked example (flashcards app with a "Done" button):
+
+<!doctype html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-6 font-sans">
+  <div id="card" class="text-2xl font-bold text-center p-8 bg-white rounded-xl shadow"></div>
+  <div class="mt-4 flex gap-2 justify-center">
+    <button id="flip" class="px-4 py-2 bg-slate-200 rounded">Flip</button>
+    <button id="next" class="px-4 py-2 bg-slate-200 rounded">Next</button>
+  </div>
+  <div class="mt-6 text-center">
+    <button data-spart-submit class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl">Finish</button>
+  </div>
+  <script>
+    const cards = [{ q: '2+2', a: '4' }, { q: '3x3', a: '9' }];
+    let i = 0, showA = false;
+    const el = document.getElementById('card');
+    const render = () => { el.textContent = showA ? cards[i].a : cards[i].q; };
+    document.getElementById('flip').onclick = () => { showA = !showA; render(); };
+    document.getElementById('next').onclick = () => { i = (i+1)%cards.length; showA=false; render(); };
+    render();
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'SPART_MINIAPP_INIT') {
+        const enabled = e.data.payload && e.data.payload.submissionsEnabled === true;
+        document.querySelectorAll('[data-spart-submit]').forEach((b) => {
+          b.style.display = enabled ? '' : 'none';
+        });
+      }
+    });
+
+    window.addEventListener('click', (e) => {
+      const btn = e.target.closest && e.target.closest('[data-spart-submit]');
+      if (!btn) return;
+      window.parent.postMessage({
+        type: 'SPART_MINIAPP_RESULT',
+        payload: { reviewed: cards.length, completedAt: Date.now() }
+      }, '*');
+    });
+  </script>
+</body>
+</html>
         `,
           userPrompt: `User Request: <user_request>${sanitizedUserInput}</user_request>`,
         }),
@@ -898,7 +985,7 @@ export const generateWithAI = onCall(
         return { result: text };
       }
 
-      return JSON.parse(text) as Record<string, unknown>;
+      return parseGeminiJson<Record<string, unknown>>(text);
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
 
@@ -1393,7 +1480,7 @@ Return JSON in this exact format:
       const text = result.text;
       if (!text) throw new Error('Empty response from AI');
 
-      const parsed = JSON.parse(text) as GeneratedVideoActivity;
+      const parsed = parseGeminiJson<GeneratedVideoActivity>(text);
 
       if (
         !parsed.title ||
@@ -1676,7 +1763,7 @@ Return JSON:
       const text = result.text;
       if (!text) throw new Error('Empty response from AI');
 
-      const parsed = JSON.parse(text) as GeneratedVideoActivity;
+      const parsed = parseGeminiJson<GeneratedVideoActivity>(text);
 
       if (
         !parsed.title ||
@@ -1727,6 +1814,12 @@ interface GeneratedGuidedLearning {
   steps: GuidedLearningStep[];
 }
 
+interface GuidedLearningImageInput {
+  base64: string;
+  mimeType: string;
+  caption?: string;
+}
+
 export const generateGuidedLearning = onCall(
   {
     memory: '512MiB',
@@ -1735,9 +1828,11 @@ export const generateGuidedLearning = onCall(
   },
   async (request) => {
     const data = request.data as {
-      imageBase64: string;
-      mimeType: string;
+      images?: GuidedLearningImageInput[];
       prompt?: string;
+      // Legacy single-image shape — accepted for backward compatibility.
+      imageBase64?: string;
+      mimeType?: string;
     };
     // Admin only
     const uid = request.auth?.uid;
@@ -1767,11 +1862,45 @@ export const generateGuidedLearning = onCall(
       );
     }
 
-    const { imageBase64, mimeType, prompt } = data;
-    if (!imageBase64 || !mimeType) {
+    const { prompt } = data;
+    const images: GuidedLearningImageInput[] =
+      Array.isArray(data.images) && data.images.length > 0
+        ? data.images
+        : data.imageBase64 && data.mimeType
+          ? [{ base64: data.imageBase64, mimeType: data.mimeType }]
+          : [];
+
+    if (images.length === 0) {
       throw new HttpsError(
         'invalid-argument',
-        'imageBase64 and mimeType are required.'
+        'At least one image is required.'
+      );
+    }
+
+    const MAX_IMAGES = 10;
+    const MAX_TOTAL_RAW_BYTES = 20 * 1024 * 1024; // 20 MB raw (~27 MB base64)
+    if (images.length > MAX_IMAGES) {
+      throw new HttpsError(
+        'invalid-argument',
+        `Too many images — please limit to ${MAX_IMAGES} per request.`
+      );
+    }
+
+    let totalRawBytes = 0;
+    for (const img of images) {
+      if (!img.base64 || !img.mimeType) {
+        throw new HttpsError(
+          'invalid-argument',
+          'Every image must include base64 data and mimeType.'
+        );
+      }
+      // Base64 decodes to ~0.75 bytes per char (minus padding).
+      totalRawBytes += Math.ceil((img.base64.length * 3) / 4);
+    }
+    if (totalRawBytes > MAX_TOTAL_RAW_BYTES) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Image payload is too large. Please use fewer or smaller images (under 20 MB total).'
       );
     }
 
@@ -1787,8 +1916,10 @@ export const generateGuidedLearning = onCall(
     try {
       const ai = new GoogleGenAI({ apiKey });
 
+      const imageCount = images.length;
+      const maxIndex = imageCount - 1;
       const systemInstruction = `You are an educational content creator helping teachers build interactive guided learning experiences.
-Analyze the provided image and generate a guided learning experience as a JSON object.
+Analyze the provided image(s) and generate a guided learning experience as a JSON object.
 
 Return ONLY valid JSON with this exact structure:
 {
@@ -1801,7 +1932,7 @@ Return ONLY valid JSON with this exact structure:
       "yPct": number (0-100),
       "label": "string",
       "interactionType": "text-popover" | "tooltip" | "pan-zoom" | "spotlight" | "pan-zoom-spotlight" | "question",
-      "imageIndex": number (always 0 for now),
+      "imageIndex": number (0-based index into the provided images, 0..${maxIndex}),
       "hideStepNumber": boolean (optional),
       "showOverlay": "none" | "popover" | "tooltip" | "banner" (for pan-zoom, spotlight, pan-zoom-spotlight),
       "text": "string (for text-popover/tooltip)",
@@ -1821,32 +1952,46 @@ Return ONLY valid JSON with this exact structure:
 }
 
 Guidelines:
-- Create 4-8 meaningful steps that guide learners through the content
-- Use text-popover for key concepts, spotlight to highlight areas, pan-zoom to zoom in on details, pan-zoom-spotlight when both are useful, questions to check understanding
-- This phase supports single-image AI generation only, so set imageIndex to 0 for every step
-- Place hotspots at meaningful locations on the image (xPct/yPct as percentages 0-100)
-- Include at least 1 question step for comprehension checking
-- Make content educational and age-appropriate
-- Set autoAdvanceDuration to 5-15 seconds for non-question steps in guided mode`;
+- You have been given ${imageCount} image${imageCount === 1 ? '' : 's'} (imageIndex ${imageCount === 1 ? '0' : `0..${maxIndex}`}).
+- Each step's imageIndex MUST be the 0-based position of the image it refers to.
+- Distribute steps across the images in a pedagogically meaningful order; do not cluster everything on image 0 unless only one image was provided.
+- Respect any per-image notes the teacher provided (sent as text before each image).
+- Create 4-8 meaningful steps per image that guide learners through the content (scale total step count with image count, cap at ~${Math.min(24, imageCount * 6)}).
+- Use text-popover for key concepts, spotlight to highlight areas, pan-zoom to zoom in on details, pan-zoom-spotlight when both are useful, questions to check understanding.
+- Place hotspots at meaningful locations on the image (xPct/yPct as percentages 0-100, relative to the image they reference).
+- Include at least 1 question step for comprehension checking.
+- Make content educational and age-appropriate.
+- Set autoAdvanceDuration to 5-15 seconds for non-question steps in guided mode.`;
 
-      const userPrompt = prompt
+      const userPromptHeader = prompt
         ? `Additional instructions: ${sanitizePrompt(prompt)}`
-        : 'Analyze this educational image and create an engaging guided learning experience.';
+        : 'Analyze the image(s) below and create an engaging guided learning experience.';
+
+      const parts: {
+        text?: string;
+        inlineData?: { mimeType: string; data: string };
+      }[] = [{ text: userPromptHeader }];
+
+      images.forEach((img, index) => {
+        const caption = img.caption ? sanitizePrompt(img.caption) : '';
+        const header = caption
+          ? `Image ${index} notes: ${caption}`
+          : `Image ${index}:`;
+        parts.push({ text: header });
+        parts.push({
+          inlineData: {
+            mimeType: img.mimeType,
+            data: img.base64,
+          },
+        });
+      });
 
       const response = await ai.models.generateContent({
         model: guidedLearningModel,
         contents: [
           {
             role: 'user',
-            parts: [
-              { text: userPrompt },
-              {
-                inlineData: {
-                  mimeType,
-                  data: imageBase64,
-                },
-              },
-            ],
+            parts,
           },
         ],
         config: {
@@ -1856,7 +2001,7 @@ Guidelines:
       });
 
       const rawText = response.text ?? '';
-      const parsed = JSON.parse(rawText) as GeneratedGuidedLearning;
+      const parsed = parseGeminiJson<GeneratedGuidedLearning>(rawText);
 
       if (
         !parsed.suggestedTitle ||
@@ -1866,10 +2011,16 @@ Guidelines:
         throw new Error('Invalid response structure from AI');
       }
 
-      // Ensure all steps have IDs
+      // Ensure all steps have IDs and imageIndex values fall within range.
       parsed.steps = parsed.steps.map((step, i) => ({
         ...step,
         id: step.id || `step-${i + 1}-${Date.now()}`,
+        imageIndex:
+          typeof step.imageIndex === 'number' &&
+          step.imageIndex >= 0 &&
+          step.imageIndex <= maxIndex
+            ? step.imageIndex
+            : 0,
       }));
 
       return parsed;
@@ -1910,13 +2061,20 @@ export const adminAnalytics = onRequest(
     invoker: 'public',
   },
   async (req, res) => {
-    console.log('[getAdminAnalytics] Function started');
+    // Correlation id for log triage. Emitted on the response (body +
+    // X-Request-Id header) and threaded through every `[getAdminAnalytics]`
+    // log line so a Cloud Logging alert can be pivoted back to the exact
+    // client-visible response.
+    const requestId = randomUUID();
+    res.setHeader('X-Request-Id', requestId);
 
     // 1. Verify caller is authenticated via Bearer token
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
-      console.error('[getAdminAnalytics] Unauthenticated access attempt');
-      res.status(401).json({ error: 'unauthenticated' });
+      console.error('[getAdminAnalytics] Unauthenticated access attempt', {
+        requestId,
+      });
+      res.status(401).json({ error: 'unauthenticated', requestId });
       return;
     }
 
@@ -1925,84 +2083,145 @@ export const adminAnalytics = onRequest(
       const idToken = authHeader.split('Bearer ')[1];
       const decodedToken = await admin.auth().verifyIdToken(idToken);
       if (!decodedToken.email) {
-        res.status(401).json({ error: 'unauthenticated' });
+        res.status(401).json({ error: 'unauthenticated', requestId });
         return;
       }
       email = decodedToken.email.toLowerCase();
     } catch {
-      res.status(401).json({ error: 'unauthenticated' });
+      res.status(401).json({ error: 'unauthenticated', requestId });
+      return;
+    }
+
+    // 1b. Require an orgId in the request body so analytics can be scoped to
+    // a single tenant. The previous behavior listed every Firebase Auth user
+    // globally, which leaked foreign-domain accounts into the calling admin's
+    // analytics view.
+    const rawBody = req.body as { orgId?: unknown } | undefined;
+    const orgId =
+      rawBody && typeof rawBody.orgId === 'string' ? rawBody.orgId.trim() : '';
+    if (!orgId) {
+      res.status(400).json({
+        error: 'invalid-argument',
+        message: 'orgId is required',
+        requestId,
+      });
       return;
     }
 
     const db = admin.firestore();
 
-    // 2. Verify caller is an admin
-    console.log(`[getAdminAnalytics] Verifying admin status for: ${email}`);
-    const adminDoc = await db.collection('admins').doc(email).get();
-    if (!adminDoc.exists) {
-      console.error(
-        `[getAdminAnalytics] Unauthorized access: ${email} is not an admin`
-      );
-      res.status(403).json({ error: 'permission-denied' });
+    // 2. Verify caller is authorized for the requested org. Two paths:
+    //   - Super admin: exists in `/admins/{email}`. May view any org.
+    //   - Org admin: has a member doc at `/organizations/{orgId}/members/{email}`
+    //     whose `roleId` is in the admin-tier set. Mirrors the role gating in
+    //     `assertCallerIsOrgAdmin` (organizationInvites.ts) but also admits
+    //     building_admin, since reading analytics is a lesser privilege than
+    //     inviting members.
+    const ORG_ADMIN_ROLE_IDS = new Set([
+      'super_admin',
+      'domain_admin',
+      'building_admin',
+    ]);
+    const [adminDoc, memberDoc] = await Promise.all([
+      db.collection('admins').doc(email).get(),
+      db.doc(`organizations/${orgId}/members/${email}`).get(),
+    ]);
+    const memberData = memberDoc.exists
+      ? (memberDoc.data() as { roleId?: unknown })
+      : undefined;
+    const memberRoleId =
+      typeof memberData?.roleId === 'string' ? memberData.roleId.trim() : '';
+    const isSuperAdmin = adminDoc.exists;
+    const isOrgAdmin = memberDoc.exists && ORG_ADMIN_ROLE_IDS.has(memberRoleId);
+    if (!isSuperAdmin && !isOrgAdmin) {
+      console.error('[getAdminAnalytics] Unauthorized access', {
+        requestId,
+        email,
+        orgId,
+      });
+      res.status(403).json({ error: 'permission-denied', requestId });
       return;
     }
 
     try {
       const now = Date.now();
-      // 3a. Collect ALL user data from Firebase Auth (authoritative source
-      // for MAU/DAU). This replaces the previous Firestore-only approach
-      // which missed users without a /users/{uid} root doc.
-      console.log('[getAdminAnalytics] Fetching users from Firebase Auth...');
+      // 3a. Load the org's members as the authoritative user roster. This
+      // replaces the previous global `listUsers()` scan, which pulled in every
+      // Firebase Auth account regardless of org and caused foreign-domain
+      // users to show up in a different org's analytics.
+      //
+      // For each member we need auth metadata (lastSignInTime) to compute
+      // engagement. Members without a `uid` (invited but never signed in)
+      // still count toward totals but have zero engagement.
+      interface MemberLite {
+        email: string;
+        uid: string | null;
+        buildingIds: string[];
+      }
+      const members: MemberLite[] = [];
+      const membersSnap = await db
+        .collection(`organizations/${orgId}/members`)
+        .get();
+      for (const doc of membersSnap.docs) {
+        const data = doc.data() as {
+          email?: unknown;
+          uid?: unknown;
+          buildingIds?: unknown;
+        };
+        const memberEmail =
+          typeof data.email === 'string' ? data.email.toLowerCase() : doc.id;
+        const uid = typeof data.uid === 'string' && data.uid ? data.uid : null;
+        const buildingIds = Array.isArray(data.buildingIds)
+          ? data.buildingIds.filter(
+              (id): id is string => typeof id === 'string' && id.length > 0
+            )
+          : [];
+        members.push({ email: memberEmail, uid, buildingIds });
+      }
+
+      // Resolve Firebase Auth metadata for members that have a linked uid.
+      // `getUsers()` tolerates up to 100 identifiers per call and silently
+      // drops uids that no longer exist in Auth, which is the right behavior
+      // for a member doc whose uid was revoked.
       const authUsersMap = new Map<
         string,
         { email: string; lastSignInMs: number }
       >();
-      let authPageToken: string | undefined;
-      do {
-        const listResult = await admin.auth().listUsers(1000, authPageToken);
-        for (const u of listResult.users) {
-          // Skip anonymous auth users (student accounts) — they have no
-          // linked providers and no email, and should not appear in analytics.
-          if (!u.email && u.providerData.length === 0) continue;
-
-          const lastSignIn = u.metadata.lastSignInTime
-            ? new Date(u.metadata.lastSignInTime).getTime()
-            : 0;
-          authUsersMap.set(u.uid, {
-            email: u.email ?? '',
-            lastSignInMs: lastSignIn,
+      const uidsToResolve = members
+        .map((m) => m.uid)
+        .filter((uid): uid is string => uid !== null);
+      for (let i = 0; i < uidsToResolve.length; i += 100) {
+        const chunk = uidsToResolve.slice(i, i + 100).map((uid) => ({ uid }));
+        if (chunk.length === 0) continue;
+        try {
+          const result = await admin.auth().getUsers(chunk);
+          for (const u of result.users) {
+            const lastSignIn = u.metadata.lastSignInTime
+              ? new Date(u.metadata.lastSignInTime).getTime()
+              : 0;
+            authUsersMap.set(u.uid, {
+              email: u.email ?? '',
+              lastSignInMs: lastSignIn,
+            });
+          }
+        } catch (err) {
+          console.warn('[getAdminAnalytics] auth().getUsers() chunk failed', {
+            requestId,
+            orgId,
+            chunkSize: chunk.length,
+            error: err instanceof Error ? err.message : String(err),
           });
         }
-        authPageToken = listResult.pageToken;
-      } while (authPageToken);
+      }
 
-      console.log(`[getAdminAnalytics] Found ${authUsersMap.size} Auth users`);
-
-      // 3b. Batch-read /users/{uid}/userProfile/profile for building assignments
-      // The source of truth for buildings is the profile subcollection, not the
-      // root user doc (which is only populated on recent logins).
-      const buildingsMap = new Map<string, string[]>();
-      const authUids = Array.from(authUsersMap.keys());
-      const PROFILE_BATCH = 500;
-      for (let i = 0; i < authUids.length; i += PROFILE_BATCH) {
-        const batch = authUids.slice(i, i + PROFILE_BATCH);
-        const refs = batch.map((uid) =>
-          db.doc(`users/${uid}/userProfile/profile`)
-        );
-        const snapshots = await db.getAll(...refs);
-        for (const snap of snapshots) {
-          if (!snap.exists) continue;
-          const data = snap.data();
-          if (
-            data &&
-            Array.isArray(data.selectedBuildings) &&
-            data.selectedBuildings.length > 0
-          ) {
-            const uid = snap.ref.parent.parent?.id;
-            if (!uid) continue;
-            buildingsMap.set(uid, data.selectedBuildings.map(String));
-          }
-        }
+      // 3b. Build a uid → member lookup so downstream dashboard/AI filters can
+      // scope to org members without being gated on a successful
+      // `auth().getUsers()` round-trip. `authUsersMap` is only used to join
+      // lastSignIn metadata; an auth lookup failure must not silently drop a
+      // real member's dashboards or AI usage from the totals.
+      const memberUids = new Set<string>();
+      for (const m of members) {
+        if (m.uid) memberUids.add(m.uid);
       }
 
       // 3c. Time constants & helpers (engagement computed after dashboard
@@ -2023,10 +2242,6 @@ export const adminAnalytics = onRequest(
         if (isMonthlyActive) bucket[key].monthly += 1;
         if (isDailyActive) bucket[key].daily += 1;
       };
-
-      console.log(
-        '[getAdminAnalytics] Fetching dashboards via collectionGroup...'
-      );
       // 4. Fetch Dashboards for Widget Stats
       let totalDashboards = 0;
       const totalWidgetCounts: Record<string, number> = {};
@@ -2049,7 +2264,6 @@ export const adminAnalytics = onRequest(
 
       for await (const dashDoc of dashboardsStream) {
         if (!dashDoc.exists) continue;
-        totalDashboards++;
         const dashData = dashDoc.data() as DashboardData;
         const updatedAt =
           typeof dashData.updatedAt === 'number' ? dashData.updatedAt : 0;
@@ -2058,9 +2272,12 @@ export const adminAnalytics = onRequest(
         // Extract owner UID from path: users/{uid}/dashboards/{dashId}
         const ownerUid: string | null = dashDoc.ref.parent.parent?.id ?? null;
 
-        // Skip dashboards owned by anonymous users (not in filtered auth map)
-        if (!ownerUid || !authUsersMap.has(ownerUid)) continue;
+        // Skip dashboards not owned by a member of this org. Use the member
+        // roster (not `authUsersMap`) so a transient `auth().getUsers()`
+        // failure doesn't silently drop real members' dashboards from totals.
+        if (!ownerUid || !memberUids.has(ownerUid)) continue;
 
+        totalDashboards++;
         allDashboardOwnerUids.add(ownerUid);
 
         // Track the most recent edit across all of this user's dashboards
@@ -2100,8 +2317,6 @@ export const adminAnalytics = onRequest(
         }
       }
 
-      console.log(`[getAdminAnalytics] Found ${totalDashboards} dashboards`);
-
       // 4b. Compute engagement using last-edit timestamps (not last-login)
       //     A user is "active" if they edited a dashboard within the window.
       const usersByDomain: Record<string, EngagementCounts> = {};
@@ -2116,11 +2331,18 @@ export const adminAnalytics = onRequest(
         daily: 0,
       };
 
-      for (const [uid, { email: userEmail }] of authUsersMap) {
+      // Iterate the org member roster (not just the auth-resolved subset) so
+      // invited-but-never-signed-in members count toward totals/domain/building
+      // buckets with zero engagement, matching the "totals come from the
+      // member roster; engagement is joined from Auth when available" contract.
+      for (const member of members) {
+        const userEmail = member.email;
         const domain = userEmail.includes('@')
           ? userEmail.split('@')[1]
           : 'unknown';
-        const lastEditMs = lastEditByUser.get(uid) ?? 0;
+        const lastEditMs = member.uid
+          ? (lastEditByUser.get(member.uid) ?? 0)
+          : 0;
         const isMonthlyActive =
           lastEditMs > 0 && now - lastEditMs <= thirtyDaysMs;
         const isDailyActive = lastEditMs > 0 && now - lastEditMs <= oneDayMs;
@@ -2131,7 +2353,7 @@ export const adminAnalytics = onRequest(
 
         increment(usersByDomain, domain, isMonthlyActive, isDailyActive);
 
-        const buildings = buildingsMap.get(uid) ?? [];
+        const buildings = member.buildingIds;
         if (buildings.length === 0) {
           increment(usersByBuilding, 'none', isMonthlyActive, isDailyActive);
           if (!usersByDomainAndBuilding[domain]) {
@@ -2164,26 +2386,26 @@ export const adminAnalytics = onRequest(
         }
       }
 
-      const totalUsers = authUsersMap.size;
-      console.log(
-        `[getAdminAnalytics] Computed engagement for ${totalUsers} users`
-      );
-
-      // 4c. Build per-user detail list for KPI drilldowns
-      const userList = Array.from(authUsersMap.entries()).map(
-        ([uid, { email: userEmail, lastSignInMs }]) => {
-          const lastEditMs = lastEditByUser.get(uid) ?? 0;
-          return {
-            email: userEmail,
-            buildings: buildingsMap.get(uid) ?? [],
-            lastSignInMs,
-            lastEditMs,
-            hasDashboard: allDashboardOwnerUids.has(uid),
-            isMonthlyActive: lastEditMs > 0 && now - lastEditMs <= thirtyDaysMs,
-            isDailyActive: lastEditMs > 0 && now - lastEditMs <= oneDayMs,
-          };
-        }
-      );
+      // 4c. Build per-user detail list for KPI drilldowns. Same rule: iterate
+      // the member roster, join Auth metadata when a uid is present.
+      const userList = members.map((member) => {
+        const authInfo = member.uid ? authUsersMap.get(member.uid) : undefined;
+        const lastSignInMs = authInfo?.lastSignInMs ?? 0;
+        const lastEditMs = member.uid
+          ? (lastEditByUser.get(member.uid) ?? 0)
+          : 0;
+        return {
+          email: member.email,
+          buildings: member.buildingIds,
+          lastSignInMs,
+          lastEditMs,
+          hasDashboard: member.uid
+            ? allDashboardOwnerUids.has(member.uid)
+            : false,
+          isMonthlyActive: lastEditMs > 0 && now - lastEditMs <= thirtyDaysMs,
+          isDailyActive: lastEditMs > 0 && now - lastEditMs <= oneDayMs,
+        };
+      });
 
       // Auth data was already collected in step 3a – no separate scan needed
       const totalRegisteredUsers = authUsersMap.size;
@@ -2219,6 +2441,7 @@ export const adminAnalytics = onRequest(
             console.warn(
               `[getAdminAnalytics] Failed to resolve user emails via auth fallback for ${warningContext}`,
               {
+                requestId,
                 chunkSize: chunk.length,
                 chunkStart: i,
                 totalIdentifiers: identifiers.length,
@@ -2270,10 +2493,7 @@ export const adminAnalytics = onRequest(
             .sort(),
         };
       }
-
-      console.log('[getAdminAnalytics] Fetching AI usage...');
       // 5. Fetch AI Usage
-      let totalAiUsageRecords = 0;
       let totalAiCalls = 0;
       const callsPerUser: Record<string, number> = {};
       const dailyCallCounts: Record<string, number> = {};
@@ -2295,7 +2515,6 @@ export const adminAnalytics = onRequest(
 
       for await (const usageDoc of aiUsageStream) {
         if (!usageDoc.exists) continue;
-        totalAiUsageRecords++;
         const idParts = usageDoc.id.split('_');
         if (idParts.length < 2) continue;
 
@@ -2310,8 +2529,10 @@ export const adminAnalytics = onRequest(
 
         if (!uid || !datePart) continue;
 
-        // Skip AI usage from anonymous users (not in filtered auth map)
-        if (!authUsersMap.has(uid)) continue;
+        // Skip AI usage not attributed to a member of this org. Scope by the
+        // member roster rather than `authUsersMap` so auth lookup failures
+        // don't silently drop members' AI calls from the totals.
+        if (!memberUids.has(uid)) continue;
 
         const usageData = usageDoc.data();
         const count = typeof usageData.count === 'number' ? usageData.count : 0;
@@ -2329,10 +2550,6 @@ export const adminAnalytics = onRequest(
           dailyCallCounts[datePart] = (dailyCallCounts[datePart] ?? 0) + count;
         }
       }
-
-      console.log(
-        `[getAdminAnalytics] Found ${totalAiUsageRecords} AI usage records`
-      );
 
       const uniqueDays = Object.keys(dailyCallCounts).length || 1;
       const avgDailyCalls = Math.round(totalAiCalls / uniqueDays);
@@ -2381,8 +2598,6 @@ export const adminAnalytics = onRequest(
           count,
           email: topUserEmails[uid] ?? `Unknown (${uid})`,
         }));
-
-      console.log('[getAdminAnalytics] Analysis complete, returning results');
       res.json({
         users: {
           total: totalEngagement.total,
@@ -2418,12 +2633,568 @@ export const adminAnalytics = onRequest(
         },
       });
     } catch (err: unknown) {
-      console.error('[getAdminAnalytics] Error fetching analytics:', err);
+      console.error('[getAdminAnalytics] Error fetching analytics', {
+        requestId,
+        orgId,
+        error: err instanceof Error ? err.message : String(err),
+      });
       const errorMessage =
         err instanceof Error
           ? err.message
           : 'An internal error occurred fetching analytics.';
-      res.status(500).json({ error: 'internal', message: errorMessage });
+      res
+        .status(500)
+        .json({ error: 'internal', message: errorMessage, requestId });
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Student identity (ClassLink-via-Google) — PII-free auth flow
+// ---------------------------------------------------------------------------
+//
+// Students launch SpartBoard from their ClassLink LaunchPad tile. Because
+// ClassLink is the district IdP and pushes identity into Google Workspace,
+// the student is already signed in with Google on the Chromebook. We use
+// Google Identity Services (GIS) client-side to obtain an ID token, verify
+// it server-side, then look up the student in ClassLink OneRoster and mint
+// a Firebase custom token whose UID is an HMAC pseudonym of the OneRoster
+// sourcedId. Email / name / sub / sourcedId are never persisted.
+//
+// Intentional design choices:
+//   - GIS + custom token (NOT signInWithPopup + GoogleAuthProvider) so that
+//     the Firebase Auth user record never receives email/displayName/photoURL.
+//   - Per-organization domain gating via existing
+//     /organizations/{orgId}/domains subcollection; a login with a domain
+//     not present (and verified) in any organization is rejected.
+//   - Per-assignment pseudonym = HMAC(SECRET, uid + assignmentId) so the
+//     server never needs the sourcedId after login. Teacher match-back
+//     recomputes it from the OneRoster roster at grading time.
+//   - NO PII logging. All catch blocks log class-of-failure only.
+
+interface OneRosterUserWithRole extends ClassLinkUser {
+  role?: string;
+  roles?: Array<{ role?: string; roleType?: string }>;
+}
+
+const STUDENT_LOGIN_CLASS_IDS_MAX = 20;
+
+function hmacSha256Hex(secret: string, message: string): string {
+  return CryptoJS.HmacSHA256(message, secret).toString(CryptoJS.enc.Hex);
+}
+
+function computeStudentUid(sourcedId: string, hmacSecret: string): string {
+  return hmacSha256Hex(hmacSecret, `sid:${sourcedId}`);
+}
+
+function computeAssignmentPseudonym(
+  uid: string,
+  assignmentId: string,
+  hmacSecret: string
+): string {
+  return hmacSha256Hex(hmacSecret, `asn:${uid}:${assignmentId}`);
+}
+
+function normalizeEmailDomain(email: string): string | null {
+  const at = email.lastIndexOf('@');
+  if (at < 0 || at === email.length - 1) return null;
+  return '@' + email.slice(at + 1).toLowerCase();
+}
+
+/**
+ * Rejects emails that would break (or be injected into) an unquoted
+ * OneRoster `filter=email='...'` string. Real Google-verified school emails
+ * never contain `'` or `\`, so callers short-circuit to the standard
+ * "not in roster" path rather than disclosing the guard's existence.
+ */
+function isSafeEmailForOneRosterFilter(email: string): boolean {
+  return !/['\\]/.test(email);
+}
+
+/**
+ * Looks up the organization that owns the given email domain. Matches against
+ * the existing /organizations/{orgId}/domains/{doc} subcollection, requiring
+ * `status === 'verified'`. Domain values in that collection are stored with a
+ * leading '@' (e.g. '@orono.k12.mn.us'). Returns null if no match.
+ */
+async function resolveOrgIdForDomain(
+  db: admin.firestore.Firestore,
+  domainWithAt: string
+): Promise<string | null> {
+  const snap = await db
+    .collectionGroup('domains')
+    .where('domain', '==', domainWithAt)
+    .where('status', '==', 'verified')
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  const orgRef = snap.docs[0].ref.parent.parent;
+  return orgRef ? orgRef.id : null;
+}
+
+function isOneRosterStudent(user: OneRosterUserWithRole): boolean {
+  if (user.role && user.role.toLowerCase() === 'student') return true;
+  if (Array.isArray(user.roles)) {
+    return user.roles.some((r) => {
+      const v = (r.role ?? r.roleType ?? '').toLowerCase();
+      return v === 'student' || v === 'primary';
+    });
+  }
+  return false;
+}
+
+/**
+ * studentLoginV1
+ *
+ * Input:  { idToken: string }  — Google ID token from GIS on the client.
+ * Output: { customToken, orgId, classCount } — client then calls
+ *         signInWithCustomToken(customToken).
+ *
+ * Failure codes:
+ *   - unauthenticated / invalid-argument: ID token missing or invalid.
+ *   - permission-denied: email domain not registered with any organization.
+ *   - not-found: student email not present in ClassLink OneRoster, or no
+ *                classes enrolled, or account role is not 'student'.
+ *   - internal: ClassLink API unreachable or server misconfigured.
+ */
+export const studentLoginV1 = onCall(
+  {
+    memory: '256MiB',
+    minInstances: 1,
+    secrets: [
+      CLASSLINK_CLIENT_ID,
+      CLASSLINK_CLIENT_SECRET,
+      CLASSLINK_TENANT_URL,
+      STUDENT_PSEUDONYM_HMAC_SECRET,
+      GOOGLE_OAUTH_CLIENT_ID,
+    ],
+    invoker: 'public',
+  },
+  async (request) => {
+    const rawIdToken = (request.data as { idToken?: unknown })?.idToken;
+    const idToken = typeof rawIdToken === 'string' ? rawIdToken : '';
+    if (!idToken) {
+      throw new HttpsError('invalid-argument', 'Missing idToken.');
+    }
+
+    const googleClientId = GOOGLE_OAUTH_CLIENT_ID.value();
+    const hmacSecret = STUDENT_PSEUDONYM_HMAC_SECRET.value();
+    const classlinkClientId = CLASSLINK_CLIENT_ID.value();
+    const classlinkClientSecret = CLASSLINK_CLIENT_SECRET.value();
+    const tenantUrl = CLASSLINK_TENANT_URL.value();
+    if (
+      !googleClientId ||
+      !hmacSecret ||
+      !classlinkClientId ||
+      !classlinkClientSecret ||
+      !tenantUrl
+    ) {
+      console.error(
+        '[studentLoginV1] Missing required server configuration (secrets).'
+      );
+      throw new HttpsError('internal', 'Server configuration missing.');
+    }
+
+    // 1. Verify the Google ID token signature and audience. The library also
+    //    validates `iss`, `exp`, and our expected `aud` in one call.
+    const oauthClient = new OAuth2Client();
+    let email: string;
+    let hd: string | undefined;
+    let emailVerified: boolean;
+    try {
+      const ticket = await oauthClient.verifyIdToken({
+        idToken,
+        audience: googleClientId,
+      });
+      const payload = ticket.getPayload();
+      if (!payload) {
+        throw new Error('no-payload');
+      }
+      email = typeof payload.email === 'string' ? payload.email : '';
+      hd = typeof payload.hd === 'string' ? payload.hd : undefined;
+      emailVerified = payload.email_verified === true;
+    } catch {
+      // Do not log token contents.
+      console.warn('[studentLoginV1] ID token verification failed.');
+      throw new HttpsError('unauthenticated', 'Invalid identity token.');
+    }
+    if (!email || !emailVerified) {
+      throw new HttpsError('unauthenticated', 'Email not verified by Google.');
+    }
+
+    // 2. Organization / domain gate. Prefer the `hd` claim (Workspace-issued),
+    //    but fall back to the email suffix since `hd` is not guaranteed on
+    //    every Workspace configuration.
+    const emailDomain = normalizeEmailDomain(email);
+    if (!emailDomain) {
+      throw new HttpsError('unauthenticated', 'Malformed email.');
+    }
+    const hdDomain = hd ? '@' + hd.toLowerCase() : null;
+
+    const db = admin.firestore();
+    let orgId = hdDomain ? await resolveOrgIdForDomain(db, hdDomain) : null;
+    if (!orgId) {
+      orgId = await resolveOrgIdForDomain(db, emailDomain);
+    }
+    if (!orgId) {
+      // Counter for monitoring alert on misconfiguration / unregistered schools.
+      console.warn('[studentLoginV1] students_rejected_domain');
+      throw new HttpsError(
+        'permission-denied',
+        'This SpartBoard is only available to schools that have signed up.'
+      );
+    }
+
+    // 2.5 Mock-class bypass. Admin-managed `testClasses` docs let us exercise
+    //     the end-to-end student SSO flow without provisioning the student in
+    //     ClassLink/OneRoster. If the email matches at least one testClasses
+    //     doc under this org, we short-circuit and mint a custom token whose
+    //     `classIds` are the testClasses doc ids — no OneRoster call is made.
+    //     Test uids are namespaced (`test:email`) so they never collide with
+    //     real OneRoster `sourcedId`-derived uids.
+    const emailLower = email.toLowerCase();
+    const testClassSnap = await db
+      .collection(`organizations/${orgId}/testClasses`)
+      .where('memberEmails', 'array-contains', emailLower)
+      .limit(STUDENT_LOGIN_CLASS_IDS_MAX)
+      .get();
+    if (!testClassSnap.empty) {
+      // Query is already bounded by `.limit(STUDENT_LOGIN_CLASS_IDS_MAX)` —
+      // no secondary slice needed.
+      const mockClassIds = testClassSnap.docs.map((d) => d.id);
+      // Monitoring counter — surface any prod use of the bypass.
+      console.warn('[studentLoginV1] test_bypass_used', { orgId });
+      const uid = computeStudentUid(`test:${emailLower}`, hmacSecret);
+      try {
+        const customToken = await admin.auth().createCustomToken(uid, {
+          studentRole: true,
+          orgId,
+          classIds: mockClassIds,
+        });
+        return { customToken, orgId, classCount: mockClassIds.length };
+      } catch (err) {
+        console.error(
+          '[studentLoginV1] createCustomToken failed (test bypass):',
+          err
+        );
+        throw new HttpsError('internal', 'Failed to mint auth token.');
+      }
+    }
+
+    // 3. ClassLink OneRoster lookup — fetch the student's sourcedId and
+    //    classes. Held in memory only, never written to Firestore.
+    const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
+    let sourcedId: string;
+    let classIds: string[];
+    try {
+      if (!isSafeEmailForOneRosterFilter(email)) {
+        console.warn('[studentLoginV1] students_not_in_roster');
+        throw new HttpsError(
+          'not-found',
+          'No student record found in ClassLink roster.'
+        );
+      }
+      const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
+      const userParams = { filter: `email='${email}'` };
+      const userHeaders = getOAuthHeaders(
+        usersBaseUrl,
+        userParams,
+        'GET',
+        classlinkClientId,
+        classlinkClientSecret
+      );
+      const userResp = await axios.get<{ users: OneRosterUserWithRole[] }>(
+        usersBaseUrl,
+        { params: userParams, headers: { ...userHeaders } }
+      );
+      const users = userResp.data.users ?? [];
+      const studentUser = users.find(isOneRosterStudent);
+      if (!studentUser) {
+        console.warn('[studentLoginV1] students_not_in_roster');
+        throw new HttpsError(
+          'not-found',
+          'No student record found in ClassLink roster.'
+        );
+      }
+      sourcedId = studentUser.sourcedId;
+
+      const classesUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users/${sourcedId}/classes`;
+      const classesHeaders = getOAuthHeaders(
+        classesUrl,
+        {},
+        'GET',
+        classlinkClientId,
+        classlinkClientSecret
+      );
+      const classesResp = await axios.get<{ classes: ClassLinkClass[] }>(
+        classesUrl,
+        { headers: { ...classesHeaders } }
+      );
+      classIds = (classesResp.data.classes ?? [])
+        .map((c) => c.sourcedId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+        .slice(0, STUDENT_LOGIN_CLASS_IDS_MAX);
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      if (axios.isAxiosError(err)) {
+        console.error(
+          '[studentLoginV1] ClassLink request failed:',
+          err.response?.status
+        );
+      } else {
+        console.error('[studentLoginV1] ClassLink request failed.');
+      }
+      throw new HttpsError('internal', 'Roster service unavailable.');
+    }
+
+    // 4. Compute the stable opaque UID and mint the custom token with
+    //    the classIds claim that gates Firestore reads.
+    const uid = computeStudentUid(sourcedId, hmacSecret);
+
+    let customToken: string;
+    try {
+      customToken = await admin.auth().createCustomToken(uid, {
+        studentRole: true,
+        orgId,
+        classIds,
+      });
+    } catch (err) {
+      console.error('[studentLoginV1] createCustomToken failed:', err);
+      throw new HttpsError('internal', 'Failed to mint auth token.');
+    }
+
+    return { customToken, orgId, classCount: classIds.length };
+  }
+);
+
+/**
+ * getAssignmentPseudonymV1
+ *
+ * Called by the authenticated student client when opening a specific
+ * assignment. Returns the opaque pseudonym to write into the response doc:
+ *
+ *   pseudonym = HMAC_SHA256(HMAC_SECRET, "asn:" + uid + ":" + assignmentId)
+ *
+ * Stable within (uid, assignmentId), unlinkable across assignments, and
+ * unlinkable to a student without both the HMAC secret AND the OneRoster
+ * roster.
+ */
+export const getAssignmentPseudonymV1 = onCall(
+  {
+    memory: '128MiB',
+    secrets: [STUDENT_PSEUDONYM_HMAC_SECRET],
+    invoker: 'public',
+  },
+  (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    if (request.auth.token.studentRole !== true) {
+      throw new HttpsError('permission-denied', 'Student role required.');
+    }
+    const rawAssignmentId = (request.data as { assignmentId?: unknown })
+      ?.assignmentId;
+    const assignmentId =
+      typeof rawAssignmentId === 'string' ? rawAssignmentId : '';
+    if (!assignmentId || assignmentId.length > 200) {
+      throw new HttpsError('invalid-argument', 'Invalid assignmentId.');
+    }
+
+    const hmacSecret = STUDENT_PSEUDONYM_HMAC_SECRET.value();
+    if (!hmacSecret) {
+      throw new HttpsError('internal', 'Server configuration missing.');
+    }
+
+    const pseudonym = computeAssignmentPseudonym(
+      request.auth.uid,
+      assignmentId,
+      hmacSecret
+    );
+    return { pseudonym };
+  }
+);
+
+/**
+ * getPseudonymsForAssignmentV1
+ *
+ * Called by a teacher's client when rendering the grading view for an
+ * assignment. Returns both pseudonyms plus names for every student in the
+ * targeted ClassLink class:
+ *   { sourcedId -> { studentUid, assignmentPseudonym, givenName, familyName } }
+ * so the teacher's client can join Firestore responses (keyed by either the
+ * session-scoped studentUid for quiz/video/guided-learning or the
+ * assignment-scoped pseudonym for mini-app submissions) back to roster
+ * identity and display names. Names never touch Firestore — they stay in
+ * teacher-browser memory for the session. The HMAC secret never leaves the
+ * server.
+ *
+ * Only callable by a teacher who actually teaches the requested class
+ * (ClassLink membership is re-verified on every call).
+ */
+export const getPseudonymsForAssignmentV1 = onCall(
+  {
+    memory: '256MiB',
+    minInstances: 1,
+    secrets: [
+      CLASSLINK_CLIENT_ID,
+      CLASSLINK_CLIENT_SECRET,
+      CLASSLINK_TENANT_URL,
+      STUDENT_PSEUDONYM_HMAC_SECRET,
+    ],
+    invoker: 'public',
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    // Teachers authenticate with standard Firebase Auth (email present on
+    // token). Students never have email on their token, so this also keeps
+    // students out of the teacher-only endpoint.
+    const teacherEmail = request.auth.token.email;
+    if (!teacherEmail || request.auth.token.studentRole === true) {
+      throw new HttpsError('permission-denied', 'Teacher account required.');
+    }
+
+    const data = request.data as {
+      assignmentId?: unknown;
+      classId?: unknown;
+    };
+    const assignmentId =
+      typeof data?.assignmentId === 'string' ? data.assignmentId : '';
+    const classId = typeof data?.classId === 'string' ? data.classId : '';
+    if (!assignmentId || !classId) {
+      throw new HttpsError(
+        'invalid-argument',
+        'assignmentId and classId are required.'
+      );
+    }
+
+    const hmacSecret = STUDENT_PSEUDONYM_HMAC_SECRET.value();
+    const classlinkClientId = CLASSLINK_CLIENT_ID.value();
+    const classlinkClientSecret = CLASSLINK_CLIENT_SECRET.value();
+    const tenantUrl = CLASSLINK_TENANT_URL.value();
+    if (
+      !hmacSecret ||
+      !classlinkClientId ||
+      !classlinkClientSecret ||
+      !tenantUrl
+    ) {
+      throw new HttpsError('internal', 'Server configuration missing.');
+    }
+
+    const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
+
+    // Verify the teacher actually teaches this class before disclosing the
+    // roster pseudonyms. A teacher can only retrieve pseudonyms for their
+    // own classes.
+    try {
+      if (!isSafeEmailForOneRosterFilter(teacherEmail)) {
+        throw new HttpsError(
+          'not-found',
+          'Teacher not found in ClassLink roster.'
+        );
+      }
+      const teacherUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
+      const teacherParams = { filter: `email='${teacherEmail}'` };
+      const teacherHeaders = getOAuthHeaders(
+        teacherUrl,
+        teacherParams,
+        'GET',
+        classlinkClientId,
+        classlinkClientSecret
+      );
+      const teacherResp = await axios.get<{ users: OneRosterUserWithRole[] }>(
+        teacherUrl,
+        { params: teacherParams, headers: { ...teacherHeaders } }
+      );
+      const teacherUser = (teacherResp.data.users ?? [])[0];
+      if (!teacherUser) {
+        throw new HttpsError(
+          'not-found',
+          'Teacher not found in ClassLink roster.'
+        );
+      }
+      const classesUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users/${teacherUser.sourcedId}/classes`;
+      const classesHeaders = getOAuthHeaders(
+        classesUrl,
+        {},
+        'GET',
+        classlinkClientId,
+        classlinkClientSecret
+      );
+      const classesResp = await axios.get<{ classes: ClassLinkClass[] }>(
+        classesUrl,
+        { headers: { ...classesHeaders } }
+      );
+      const teaches = (classesResp.data.classes ?? []).some(
+        (c) => c.sourcedId === classId
+      );
+      if (!teaches) {
+        throw new HttpsError(
+          'permission-denied',
+          'Not a teacher of this class.'
+        );
+      }
+
+      // Now fetch the class's students and compute the pseudonym map.
+      const studentsUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/classes/${classId}/students`;
+      const studentsHeaders = getOAuthHeaders(
+        studentsUrl,
+        {},
+        'GET',
+        classlinkClientId,
+        classlinkClientSecret
+      );
+      const studentsResp = await axios.get<{ users: ClassLinkStudent[] }>(
+        studentsUrl,
+        { headers: { ...studentsHeaders } }
+      );
+      const students = studentsResp.data.users ?? [];
+
+      // Return both pseudonyms so teacher viewers can match whichever one
+      // the response doc is keyed by:
+      //  - studentUid            — HMAC(sourcedId, secret); equals the
+      //                            ClassLink student's Firebase Auth UID.
+      //                            Used by quiz/video-activity/guided-learning
+      //                            response docs that key on auth.currentUser.uid.
+      //  - assignmentPseudonym   — HMAC(studentUid + assignmentId, secret).
+      //                            Used by mini-app submission docs that key
+      //                            on a per-assignment opaque id.
+      const pseudonyms: Record<
+        string,
+        {
+          studentUid: string;
+          assignmentPseudonym: string;
+          givenName: string;
+          familyName: string;
+        }
+      > = {};
+      for (const s of students) {
+        if (!s.sourcedId) continue;
+        const studentUid = computeStudentUid(s.sourcedId, hmacSecret);
+        pseudonyms[s.sourcedId] = {
+          studentUid,
+          assignmentPseudonym: computeAssignmentPseudonym(
+            studentUid,
+            assignmentId,
+            hmacSecret
+          ),
+          givenName: s.givenName ?? '',
+          familyName: s.familyName ?? '',
+        };
+      }
+      return { pseudonyms };
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      if (axios.isAxiosError(err)) {
+        console.error(
+          '[getPseudonymsForAssignmentV1] ClassLink request failed:',
+          err.response?.status
+        );
+      } else {
+        console.error('[getPseudonymsForAssignmentV1] Unexpected failure.');
+      }
+      throw new HttpsError('internal', 'Roster service unavailable.');
     }
   }
 );

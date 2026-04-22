@@ -9,6 +9,22 @@ interface MockDocInput {
   ownerUid?: string;
   /** Optional: when true, simulates an anonymous auth user (no email, no providers) */
   anonymous?: boolean;
+  /**
+   * Optional: when true, the member doc exists (so the user counts toward
+   * totals/domain/building buckets) but carries no `uid` — mirrors a user
+   * who was invited but has never signed in. Engagement (monthly/daily,
+   * lastSignInMs, lastEditMs) is forced to zero for these members.
+   */
+  invited?: boolean;
+  /**
+   * Optional: when true, simulates a signed-in Firebase Auth user who is NOT
+   * a member of the requested org. Their auth account exists (so listUsers /
+   * getUsers still returns them) and their dashboards/AI usage still live
+   * under their uid, but the member doc at
+   * `/organizations/{orgId}/members/{email}` does NOT exist, so they must
+   * be excluded from every analytics metric.
+   */
+  nonMember?: boolean;
 }
 
 const mockFirestoreState = {
@@ -38,7 +54,20 @@ const toAsyncStream = (docs: MockDocInput[]) => ({
   },
 });
 
+interface MockDocRef {
+  path: string;
+}
+
 const mockFirestore = {
+  doc: vi.fn((path: string) => ({
+    path,
+    get: vi.fn(() => Promise.resolve({ exists: false })),
+  })),
+  getAll: vi.fn((...refs: MockDocRef[]) => {
+    return Promise.resolve(
+      refs.map(() => ({ exists: false, data: () => ({}) }))
+    );
+  }),
   collection: vi.fn((name: string) => {
     if (name === 'admins') {
       return {
@@ -47,6 +76,31 @@ const mockFirestore = {
             Promise.resolve({ exists: mockFirestoreState.admins.has(id) })
           ),
         })),
+      };
+    }
+
+    // Members collection for org-scoped analytics. Each `mockFirestoreState.users`
+    // entry represents a member of the org with `id` as their uid, `email` as
+    // their member email, and `buildings` as their admin-assigned buildingIds.
+    if (name.startsWith('organizations/') && name.endsWith('/members')) {
+      return {
+        get: vi.fn(() =>
+          Promise.resolve({
+            docs: mockFirestoreState.users
+              .filter((u) => !u.anonymous && !u.nonMember)
+              .map((u) => ({
+                id: (u.data.email as string | undefined) ?? u.id,
+                data: () => ({
+                  email: u.data.email,
+                  // Invited-but-never-signed-in members have no uid on the
+                  // member doc. Production treats a non-string `uid` as null
+                  // and skips engagement for them.
+                  uid: u.invited ? null : u.id,
+                  buildingIds: u.data.buildings ?? [],
+                }),
+              })),
+          })
+        ),
       };
     }
 
@@ -116,8 +170,12 @@ vi.mock('firebase-admin', () => {
     },
   });
 
+  const apps: unknown[] = [];
   return {
-    initializeApp: vi.fn(),
+    apps,
+    initializeApp: vi.fn(() => {
+      if (apps.length === 0) apps.push({ name: '[DEFAULT]' });
+    }),
     firestore: firestoreFn,
     auth: vi.fn(() => ({
       verifyIdToken: vi.fn().mockResolvedValue({ email: 'admin@school.org' }),
@@ -141,6 +199,11 @@ vi.mock('firebase-admin', () => {
           .map((u) => ({
             uid: u.id,
             email: u.anonymous ? undefined : (u.data.email as string),
+            metadata: {
+              lastSignInTime: u.data.lastLogin
+                ? new Date(u.data.lastLogin as number).toISOString()
+                : undefined,
+            },
           }));
         return Promise.resolve({ users });
       }),
@@ -227,7 +290,7 @@ describe('fetchExternalProxy', () => {
     await expect(
       handler({ url: 'https://example.com/weather' }, { auth: { uid: '123' } })
     ).rejects.toThrow(
-      'Invalid proxy URL. Only https://api.openweathermap.org and https://owc.enterprise.earthnetworks.com are allowed.'
+      'Invalid proxy URL. Only https://api.openweathermap.org, https://owc.enterprise.earthnetworks.com, and https://orono.api.nutrislice.com are allowed.'
     );
   });
 
@@ -242,7 +305,7 @@ describe('fetchExternalProxy', () => {
         { auth: { uid: '123' } }
       )
     ).rejects.toThrow(
-      'Invalid proxy URL. Only https://api.openweathermap.org and https://owc.enterprise.earthnetworks.com are allowed.'
+      'Invalid proxy URL. Only https://api.openweathermap.org, https://owc.enterprise.earthnetworks.com, and https://orono.api.nutrislice.com are allowed.'
     );
   });
 
@@ -463,6 +526,18 @@ describe('adminAnalytics', () => {
         },
       },
     ];
+    mockFirestoreState.dashboards = [
+      {
+        id: 'dash1',
+        ownerUid: 'uid1',
+        data: { updatedAt: now - 1 * 60 * 60 * 1000, widgets: [] },
+      },
+      {
+        id: 'dash2',
+        ownerUid: 'uid2',
+        data: { updatedAt: now - 10 * 24 * 60 * 60 * 1000, widgets: [] },
+      },
+    ];
 
     mockFirestoreState.aiUsage = [
       { id: 'uid1_2026-03-30', data: { count: 10 } },
@@ -489,6 +564,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
 
       (handler as any)(mockReq, mockRes);
@@ -519,7 +595,7 @@ describe('adminAnalytics', () => {
       monthly: 1,
       daily: 0,
     });
-    expect(capturedData.api.totalCalls).toBe(17);
+    expect(capturedData.api.totalCalls).toBe(10);
     /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
   });
 
@@ -529,6 +605,13 @@ describe('adminAnalytics', () => {
         id: 'uid_a',
         data: {
           email: 'known@district.org',
+          lastLogin: Date.now(),
+          buildings: [],
+        },
+      },
+      {
+        id: 'uid_b',
+        data: {
           lastLogin: Date.now(),
           buildings: [],
         },
@@ -559,6 +642,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
 
       (handler as any)(mockReq, mockRes);
@@ -643,6 +727,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
       (adminAnalytics as any)(mockReq, mockRes);
     });
@@ -700,6 +785,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
       (adminAnalytics as any)(mockReq, mockRes);
     });
@@ -782,6 +868,7 @@ describe('adminAnalytics', () => {
           origin: 'http://localhost',
           authorization: 'Bearer mock-token',
         },
+        body: { orgId: 'orono' },
       };
       (adminAnalytics as any)(mockReq, mockRes);
     });
@@ -809,5 +896,316 @@ describe('adminAnalytics', () => {
     // Only teacher's AI usage counted
     expect(capturedData.api.totalCalls).toBe(5);
     /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call */
+  });
+
+  it('excludes signed-in auth users who are not members of the requested org', async () => {
+    // Tenant-isolation contract: membership is determined by the presence of
+    // a member doc at `/organizations/{orgId}/members/{email}`, NOT by the
+    // user's email domain or the existence of a Firebase Auth account. A
+    // signed-in user must not leak into analytics just because they:
+    //   (a) belong to a different org (foreign domain), OR
+    //   (b) share an approved domain with real members but were never invited
+    //       (e.g., signed in via Google SSO, got an auth account, created
+    //       some dashboards, but the admin never added them to the roster).
+    // Locks in the fix for the "foreign-domain users leaking into analytics"
+    // bug (PR #1375) and the related "approved-domain but not invited" case.
+    const now = Date.now();
+    mockFirestoreState.users = [
+      // Real org member.
+      {
+        id: 'uid_member',
+        data: {
+          email: 'member@school.org',
+          lastLogin: now - 2 * 60 * 60 * 1000,
+          buildings: ['north'],
+        },
+      },
+      // Case (a): signed-in auth user from a different org — real email,
+      // real uid, real dashboards, but no member doc for this org.
+      {
+        id: 'uid_foreign',
+        nonMember: true,
+        data: {
+          email: 'foreign@other-district.org',
+          lastLogin: now - 1 * 60 * 60 * 1000,
+          buildings: [],
+        },
+      },
+      // Case (b): signed-in auth user whose email domain MATCHES the real
+      // member's domain (e.g., an approved-domain user who SSO'd in but was
+      // never invited). Must still be excluded — domain match alone doesn't
+      // grant org membership.
+      {
+        id: 'uid_uninvited_same_domain',
+        nonMember: true,
+        data: {
+          email: 'uninvited@school.org',
+          lastLogin: now - 30 * 60 * 1000,
+          buildings: [],
+        },
+      },
+    ];
+
+    mockFirestoreState.dashboards = [
+      {
+        id: 'dash-member',
+        ownerUid: 'uid_member',
+        data: { updatedAt: now, widgets: [{ type: 'clock' }] },
+      },
+      {
+        id: 'dash-foreign',
+        ownerUid: 'uid_foreign',
+        data: {
+          updatedAt: now,
+          widgets: [{ type: 'clock' }, { type: 'timer' }],
+        },
+      },
+      {
+        id: 'dash-uninvited',
+        ownerUid: 'uid_uninvited_same_domain',
+        data: {
+          updatedAt: now,
+          widgets: [{ type: 'stopwatch' }],
+        },
+      },
+    ];
+
+    mockFirestoreState.aiUsage = [
+      { id: 'uid_member_2026-03-30', data: { count: 5 } },
+      { id: 'uid_foreign_2026-03-30', data: { count: 99 } },
+      { id: 'uid_uninvited_same_domain_2026-03-30', data: { count: 42 } },
+    ];
+
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call */
+    const resPromise = new Promise<any>((resolve) => {
+      const mockRes = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn().mockImplementation((data) => {
+          resolve(data);
+          return data;
+        }),
+        setHeader: vi.fn().mockReturnThis(),
+        getHeader: vi.fn().mockReturnValue(''),
+      };
+      const mockReq = {
+        headers: {
+          origin: 'http://localhost',
+          authorization: 'Bearer mock-token',
+        },
+        body: { orgId: 'orono' },
+      };
+      (adminAnalytics as any)(mockReq, mockRes);
+    });
+
+    const capturedData = await resPromise;
+
+    // Only the invited member counts toward totals.
+    expect(capturedData.users.total).toBe(1);
+
+    // Foreign domain must not surface.
+    expect(capturedData.users.domains['other-district.org']).toBeUndefined();
+
+    // Approved-but-uninvited user must not inflate the approved-domain
+    // bucket — the bucket total matches the member roster, not the auth
+    // population that happens to share a domain.
+    expect(capturedData.users.domains['school.org']).toEqual({
+      total: 1,
+      monthly: 1,
+      daily: 1,
+    });
+
+    // Non-member dashboards/AI usage must not leak into totals.
+    expect(capturedData.users.withDashboards).toBe(1);
+    expect(capturedData.dashboards.total).toBe(1);
+    expect(capturedData.api.totalCalls).toBe(5);
+
+    // Non-member widget types must not show up.
+    expect(capturedData.widgets.usersByType.timer).toBeUndefined();
+    expect(capturedData.widgets.usersByType.stopwatch).toBeUndefined();
+    expect(capturedData.widgets.usersByType.clock?.count).toBe(1);
+
+    // Neither non-member may appear in the per-user drilldown.
+    const foreignRow = capturedData.users.userList.find(
+      (u: { email: string }) => u.email === 'foreign@other-district.org'
+    );
+    expect(foreignRow).toBeUndefined();
+    const uninvitedRow = capturedData.users.userList.find(
+      (u: { email: string }) => u.email === 'uninvited@school.org'
+    );
+    expect(uninvitedRow).toBeUndefined();
+    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call */
+  });
+
+  it('counts invited-but-never-signed-in members toward totals with zero engagement', async () => {
+    const now = Date.now();
+    mockFirestoreState.users = [
+      // Active signed-in member with a recent dashboard edit.
+      {
+        id: 'uid_active',
+        data: {
+          email: 'active@district.org',
+          lastLogin: now - 60 * 60 * 1000,
+          buildings: ['north'],
+        },
+      },
+      // Invited member: member doc exists but `uid` is null on the doc,
+      // so there is no Auth metadata to join and no dashboards can be
+      // attributed. Should still count toward total/domain/building.
+      {
+        id: 'uid_invited_unused',
+        data: {
+          email: 'invited@district.org',
+          buildings: ['north'],
+        },
+        invited: true,
+      },
+    ];
+    mockFirestoreState.dashboards = [
+      {
+        id: 'dash-active',
+        ownerUid: 'uid_active',
+        data: {
+          updatedAt: now - 60 * 60 * 1000,
+          widgets: [{ type: 'clock' }],
+        },
+      },
+    ];
+
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call */
+    const resPromise = new Promise<any>((resolve) => {
+      const mockRes = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn().mockImplementation((data) => {
+          resolve(data);
+          return data;
+        }),
+        setHeader: vi.fn().mockReturnThis(),
+        getHeader: vi.fn().mockReturnValue(''),
+      };
+      const mockReq = {
+        headers: {
+          origin: 'http://localhost',
+          authorization: 'Bearer mock-token',
+        },
+        body: { orgId: 'orono' },
+      };
+      (adminAnalytics as any)(mockReq, mockRes);
+    });
+
+    const capturedData = await resPromise;
+
+    // Totals include the invited member.
+    expect(capturedData.users.total).toBe(2);
+    // Only the active member has a recent edit.
+    expect(capturedData.users.monthly).toBe(1);
+    expect(capturedData.users.daily).toBe(1);
+
+    // Domain bucket: both members share the same domain.
+    expect(capturedData.users.domains['district.org']).toEqual({
+      total: 2,
+      monthly: 1,
+      daily: 1,
+    });
+
+    // Building bucket: both members are assigned to 'north'.
+    expect(capturedData.users.buildings.north).toEqual({
+      total: 2,
+      monthly: 1,
+      daily: 1,
+    });
+
+    // Per-user drilldown: the invited member is present with zero engagement.
+    const invitedRow = capturedData.users.userList.find(
+      (u: { email: string }) => u.email === 'invited@district.org'
+    );
+    expect(invitedRow).toBeDefined();
+    expect(invitedRow.lastSignInMs).toBe(0);
+    expect(invitedRow.lastEditMs).toBe(0);
+    expect(invitedRow.hasDashboard).toBe(false);
+    expect(invitedRow.isMonthlyActive).toBe(false);
+    expect(invitedRow.isDailyActive).toBe(false);
+
+    // Only the active member owns a dashboard.
+    expect(capturedData.users.withDashboards).toBe(1);
+    expect(capturedData.dashboards.total).toBe(1);
+    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call */
+  });
+
+  it('returns 400 when orgId is missing from the request body', async () => {
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+    const statusSpy = vi.fn().mockReturnThis();
+    const jsonSpy = vi.fn().mockReturnThis();
+    const setHeaderSpy = vi.fn().mockReturnThis();
+    const mockRes = {
+      status: statusSpy,
+      json: jsonSpy,
+      setHeader: setHeaderSpy,
+      getHeader: vi.fn().mockReturnValue(''),
+    };
+
+    const mockReq = {
+      headers: {
+        origin: 'http://localhost',
+        authorization: 'Bearer mock-token',
+      },
+      body: {},
+    };
+
+    await (adminAnalytics as any)(mockReq, mockRes);
+
+    expect(statusSpy).toHaveBeenCalledWith(400);
+    // The error body and X-Request-Id header must carry the same
+    // correlation id so Cloud Logging alerts can be pivoted back to the
+    // exact client-visible response.
+    const jsonCall = jsonSpy.mock.calls[0]?.[0] as
+      | { error?: string; requestId?: string }
+      | undefined;
+    expect(jsonCall?.error).toBe('invalid-argument');
+    expect(typeof jsonCall?.requestId).toBe('string');
+    expect(jsonCall?.requestId?.length ?? 0).toBeGreaterThan(0);
+    expect(setHeaderSpy).toHaveBeenCalledWith(
+      'X-Request-Id',
+      jsonCall?.requestId
+    );
+    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+  });
+
+  it('returns 403 when caller is neither super admin nor an org admin', async () => {
+    // No /admins entry and no member doc for this caller → denied.
+    mockFirestoreState.admins = new Set<string>();
+
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+    const statusSpy = vi.fn().mockReturnThis();
+    const jsonSpy = vi.fn().mockReturnThis();
+    const setHeaderSpy = vi.fn().mockReturnThis();
+    const mockRes = {
+      status: statusSpy,
+      json: jsonSpy,
+      setHeader: setHeaderSpy,
+      getHeader: vi.fn().mockReturnValue(''),
+    };
+
+    const mockReq = {
+      headers: {
+        origin: 'http://localhost',
+        authorization: 'Bearer mock-token',
+      },
+      body: { orgId: 'orono' },
+    };
+
+    await (adminAnalytics as any)(mockReq, mockRes);
+
+    expect(statusSpy).toHaveBeenCalledWith(403);
+    const jsonCall = jsonSpy.mock.calls[0]?.[0] as
+      | { error?: string; requestId?: string }
+      | undefined;
+    expect(jsonCall?.error).toBe('permission-denied');
+    expect(typeof jsonCall?.requestId).toBe('string');
+    expect(jsonCall?.requestId?.length ?? 0).toBeGreaterThan(0);
+    expect(setHeaderSpy).toHaveBeenCalledWith(
+      'X-Request-Id',
+      jsonCall?.requestId
+    );
+    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
   });
 });

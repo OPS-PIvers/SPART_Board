@@ -27,6 +27,7 @@ import type {
   StudentPageConfig,
   UserRecord,
 } from '@/types/organization';
+import { withDerivedUserCounts } from './lib/buildingUserCounts';
 import { AllOrganizationsView } from './views/AllOrganizationsView';
 import { OverviewView } from './views/OverviewView';
 import { DomainsView } from './views/DomainsView';
@@ -237,6 +238,8 @@ export const OrganizationPanel: React.FC = () => {
     removeMembers,
     inviteMembers,
     bulkInviteMembers,
+    resendInvite,
+    resetPassword,
   } = useOrgMembers(orgScopedOrgId);
   const {
     studentPage,
@@ -317,16 +320,18 @@ export const OrganizationPanel: React.FC = () => {
     }
     run('Archive organization', archiveOrg, 'Organization archived');
   };
+  // Building CRUD is always available to org admins — Firestore rules are the
+  // source of truth for who can write (domain+ admins for create/delete,
+  // building admins for update within their scoped buildingIds). Gating these
+  // behind `org-admin-writes` would hide the kebab actions even from admins
+  // who have the correct role, which is what users reported as "locked".
   const handleAddBuilding = (b: Partial<BuildingRecord>) => {
-    if (!writesEnabled) return comingSoon('Add building');
     run('Add building', () => addBuilding(b), `Added "${b.name ?? ''}"`);
   };
   const handleUpdateBuilding = (id: string, patch: Partial<BuildingRecord>) => {
-    if (!writesEnabled) return comingSoon('Edit building');
     run('Update building', () => updateBuilding(id, patch));
   };
   const handleRemoveBuilding = (id: string) => {
-    if (!writesEnabled) return comingSoon('Archive building');
     run('Remove building', () => removeBuilding(id), 'Building removed');
   };
   const handleAddDomain = (d: Partial<DomainRecord>) => {
@@ -339,7 +344,11 @@ export const OrganizationPanel: React.FC = () => {
   };
   const handleSaveRoles = (working: RoleRecord[]) => {
     if (!writesEnabled) return comingSoon('Save roles');
-    run('Save roles', () => saveRoles(working), 'Roles saved');
+    run(
+      'Save roles',
+      () => saveRoles(working, { canEditSystemRoles: isSuperAdmin }),
+      'Roles saved'
+    );
   };
   const handleResetRoles = () => {
     if (!writesEnabled) return comingSoon('Reset roles');
@@ -470,6 +479,33 @@ export const OrganizationPanel: React.FC = () => {
     run('Update student page', () => updateStudentPage(patch));
   };
 
+  // Re-invite uses the existing `createOrganizationInvites` callable, which
+  // overwrites the prior invitation doc with a fresh token. We auto-copy the
+  // new claim URL like `handleInvite` does, so the admin can paste it.
+  const handleResendInvite = (target: UserRecord) => {
+    if (!writesEnabled) return comingSoon('Resend invite');
+    resendInvite(target.email)
+      .then((response) =>
+        handleInviteSuccess(response.invitations, response.errors)
+      )
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        showToast(`Resend failed: ${msg}`, 'error');
+      });
+  };
+
+  // Password reset goes through a dedicated callable (`resetOrganizationUserPassword`)
+  // that uses the Admin SDK and gates on domain-admin-of-orgId.
+  const handleResetPassword = (target: UserRecord) => {
+    if (!writesEnabled) return comingSoon('Reset password');
+    resetPassword(target.email)
+      .then(() => showToast(`Sent reset email to ${target.email}`, 'success'))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        showToast(`Reset failed: ${msg}`, 'error');
+      });
+  };
+
   // Building-admin scope: restrict strictly to the member doc's buildingIds.
   // A building admin with no assigned buildings sees an empty list — this
   // matches the permissions defined in Firestore. Super admins and domain
@@ -480,6 +516,18 @@ export const OrganizationPanel: React.FC = () => {
     }
     return buildings.map((b) => b.id);
   }, [actorRole, memberBuildingIds, buildings]);
+
+  // Derive per-building user counts from the live members subscription rather
+  // than trusting the denormalized `BuildingRecord.users` counter. The counter
+  // is maintained by `functions/src/organizationMemberCounters.ts` on member
+  // writes, so it drifts whenever that trigger is unavailable (not deployed in
+  // this env, swallowed an exception, or member docs predate the trigger). The
+  // members list is already loaded for the Users tab; folding it here is O(n)
+  // and always matches what the admin sees on the Users tab.
+  const buildingsWithCounts = useMemo(
+    () => withDerivedUserCounts(buildings, users),
+    [buildings, users]
+  );
 
   // Still-loading: for the current section, the relevant hook is flight.
   // We render a lightweight loading state in the main area rather than
@@ -679,7 +727,7 @@ export const OrganizationPanel: React.FC = () => {
               )}
               {effectiveSection === 'buildings' && (
                 <BuildingsView
-                  buildings={buildings}
+                  buildings={buildingsWithCounts}
                   actorRole={actorRole}
                   actorBuildingIds={actorBuildingIds}
                   onAdd={handleAddBuilding}
@@ -692,6 +740,7 @@ export const OrganizationPanel: React.FC = () => {
                   roles={roles}
                   onSave={handleSaveRoles}
                   onReset={handleResetRoles}
+                  isSuperAdmin={isSuperAdmin}
                 />
               )}
               {effectiveSection === 'users' && (
@@ -706,6 +755,8 @@ export const OrganizationPanel: React.FC = () => {
                   onRemove={handleRemoveUsers}
                   onInvite={handleInvite}
                   onBulkInvite={handleBulkInvite}
+                  onResendInvite={handleResendInvite}
+                  onResetPassword={handleResetPassword}
                 />
               )}
               {effectiveSection === 'student' &&

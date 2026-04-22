@@ -16,7 +16,7 @@ import {
   getWidgetGradeLevels,
   ALL_GRADE_LEVELS,
 } from '@/config/widgetGradeLevels';
-import { BUILDINGS } from '@/config/buildings';
+import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import {
   Shield,
   Users,
@@ -53,6 +53,7 @@ import { useDialog } from '@/context/useDialog';
 export const FeaturePermissionsManager: React.FC = () => {
   const { showConfirm } = useDialog();
   const isMobile = useIsMobile();
+  const buildings = useAdminBuildings();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const effectiveViewMode = isMobile ? 'grid' : viewMode;
   const [showFilters, setShowFilters] = useState(false);
@@ -254,9 +255,17 @@ export const FeaturePermissionsManager: React.FC = () => {
       newLevels = [...currentLevels, level];
     }
 
-    // NOTE: If newLevels is empty, the widget will be hidden from all specific grade filters
-    // but will still be visible when the 'All' filter is selected.
-    updatePermission(widgetType, { gradeLevels: newLevels });
+    // If deselecting the last level would leave an empty array, fall back to the
+    // widget's configured default instead. An empty override is read as "no
+    // override" by matchesUserBuilding, so writing [] here would silently reset
+    // to the default anyway — writing the default explicitly keeps the UI state
+    // consistent with the persisted state and mirrors toggleAllGradeLevels.
+    updatePermission(widgetType, {
+      gradeLevels:
+        newLevels.length > 0
+          ? newLevels
+          : [...getWidgetGradeLevels(widgetType)],
+    });
   };
 
   const toggleAllGradeLevels = (widgetType: WidgetType | InternalToolType) => {
@@ -318,7 +327,7 @@ export const FeaturePermissionsManager: React.FC = () => {
       )
         return false;
       if (filterBuilding !== 'all') {
-        const building = BUILDINGS.find((b) => b.id === filterBuilding);
+        const building = buildings.find((b) => b.id === filterBuilding);
         if (building) {
           const currentLevels =
             perm.gradeLevels ?? getWidgetGradeLevels(tool.type);
@@ -328,7 +337,13 @@ export const FeaturePermissionsManager: React.FC = () => {
       }
       return true;
     });
-  }, [permissions, filterEnabled, filterAvailability, filterBuilding]);
+  }, [
+    permissions,
+    filterEnabled,
+    filterAvailability,
+    filterBuilding,
+    buildings,
+  ]);
 
   const btnClass = (active: boolean) =>
     `px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
@@ -376,7 +391,7 @@ export const FeaturePermissionsManager: React.FC = () => {
       >
         All
       </button>
-      {BUILDINGS.map((b) => (
+      {buildings.map((b) => (
         <button
           key={b.id}
           onClick={() => setFilterBuilding(b.id)}

@@ -26,15 +26,18 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { LibraryGridLockContext } from './LibraryGridLockContext';
-import type { FolderDropData } from './folderDropTargets';
+import {
+  folderAwareCollisionDetection,
+  type FolderDropData,
+} from './folderDropTargets';
 
 export interface LibraryDndContextProps {
   /** Ordered list of draggable item ids in the grid. */
@@ -117,13 +120,13 @@ export const LibraryDndContext: React.FC<LibraryDndContextProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={folderAwareCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
       {children}
-      <DragOverlay>
+      <DragOverlay modifiers={[snapCenterToCursor]}>
         {activeId != null && renderOverlay ? (
           <LibraryGridLockContext.Provider value={overlayLockState}>
             {renderOverlay(activeId)}

@@ -38,9 +38,13 @@ import {
   AppSettings,
   DockPosition,
 } from '../types';
-import type { MemberRecord } from '../types/organization';
+import type { MemberRecord, BuildingRecord } from '../types/organization';
 import { AuthContext } from './AuthContextValue';
-import { getBuildingGradeLevels } from '../config/buildings';
+import {
+  buildingRecordToBuilding,
+  canonicalizeBuildingIds,
+  getBuildingGradeLevels,
+} from '../config/buildings';
 import i18n from '../i18n';
 import { stripTransientKeys } from '../utils/widgetConfigPersistence';
 
@@ -234,6 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     isAuthBypass ? 'super_admin' : null
   );
   const [buildingIds, setBuildingIds] = useState<string[]>([]);
+  const [orgBuildings, setOrgBuildings] = useState<BuildingRecord[]>([]);
   // Tracks the latest setSelectedBuildings / setLanguage call to detect and suppress stale writes
   const writeTokenRef = useRef(0);
   const widgetConfigTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -241,6 +246,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const isRefreshingRef = useRef(false);
   // Prevents duplicate root-doc syncs within the same session
   const rootDocSyncedRef = useRef(false);
+  // Prevents duplicate member-doc `lastActive` stamps within the same session
+  const memberLastActiveSyncedRef = useRef(false);
 
   // Keep language state in sync with i18next, including the async startup
   // detection that may resolve after the first render.
@@ -640,6 +647,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [user]);
 
+  // Subscribe to the active org's buildings so grade-level resolution stays
+  // in sync with whatever admins configure in Admin Settings > Organization.
+  useEffect(() => {
+    if (isAuthBypass) return;
+    if (!user || !orgId) {
+      setOrgBuildings([]);
+      return;
+    }
+
+    const unsub = onSnapshot(
+      collection(db, 'organizations', orgId, 'buildings'),
+      (snapshot) => {
+        const items: BuildingRecord[] = snapshot.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as BuildingRecord
+        );
+        setOrgBuildings(items);
+      },
+      (err) => {
+        console.error(
+          `[AuthContext] org buildings snapshot error (${orgId}):`,
+          err
+        );
+      }
+    );
+    return unsub;
+  }, [user, orgId]);
+
   // Load user profile (selectedBuildings) from Firestore when user signs in
   useEffect(() => {
     if (isAuthBypass) return;
@@ -685,7 +719,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               Array.isArray(selectedBuildings) &&
               selectedBuildings.every((id) => typeof id === 'string')
             ) {
-              setSelectedBuildingsState(selectedBuildings);
+              // Normalize legacy long-form IDs (e.g. `orono-high-school`) to
+              // their canonical short forms (`high`) so all downstream
+              // comparisons and lookups against org-defined Firestore
+              // buildings line up. The on-disk value is rewritten to
+              // canonical form by `setSelectedBuildings` on the next save,
+              // and by `scripts/backfill-user-building-ids.js` for batch
+              // migration.
+              setSelectedBuildingsState(
+                canonicalizeBuildingIds(selectedBuildings)
+              );
             } else {
               setSelectedBuildingsState([]);
             }
@@ -797,22 +840,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, [user, profileLoaded, selectedBuildings]);
 
+  // Stamp /organizations/{orgId}/members/{emailLower}.lastActive on sign-in so
+  // the Organization admin panel's "Last active" column reflects real sign-ins
+  // (and not just invitation-claim time, which is the only other write path).
+  // Gated by a self-write branch in firestore.rules that only permits writing
+  // the `lastActive` field to one's own member doc. Fires once per session.
+  useEffect(() => {
+    if (!user || isAuthBypass) return;
+    if (!orgId || !user.email) return;
+    if (memberLastActiveSyncedRef.current) return;
+    memberLastActiveSyncedRef.current = true;
+
+    const emailLower = user.email.toLowerCase();
+    void setDoc(
+      doc(db, 'organizations', orgId, 'members', emailLower),
+      { lastActive: new Date().toISOString() },
+      { merge: true }
+    ).catch((err: unknown) => {
+      console.error('Error stamping member lastActive:', err);
+      memberLastActiveSyncedRef.current = false;
+    });
+  }, [user, orgId]);
+
   const setSelectedBuildings = useCallback(
     async (buildings: string[]) => {
-      setSelectedBuildingsState(buildings);
+      // Canonicalize before persisting so legacy IDs that callers may have
+      // passed through (e.g. from old in-memory state) are normalized on the
+      // way to disk. This makes every save self-healing.
+      const canonical = canonicalizeBuildingIds(buildings);
+      setSelectedBuildingsState(canonical);
       if (!user || isAuthBypass) return;
       // Assign a token so we can detect if a newer call supersedes this one
       const myToken = ++writeTokenRef.current;
       try {
         await setDoc(
           doc(db, 'users', user.uid, 'userProfile', 'profile'),
-          { selectedBuildings: buildings },
+          { selectedBuildings: canonical },
           { merge: true }
         );
-        // Keep root doc buildings in sync for admin analytics
+        // Keep root doc buildings in sync for admin analytics. Use the
+        // canonicalized array so the analytics Cloud Function (which reads
+        // `users/{uid}.buildings` as a fallback) sees aligned IDs.
         void setDoc(
           doc(db, 'users', user.uid),
-          { buildings },
+          { buildings: canonical },
           { merge: true }
         ).catch((err: unknown) =>
           console.error('Error updating root doc buildings:', err)
@@ -958,10 +1029,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [user]
   );
 
-  const userGradeLevels = useMemo<GradeLevel[]>(
-    () => getBuildingGradeLevels(selectedBuildings),
-    [selectedBuildings]
-  );
+  const userGradeLevels = useMemo<GradeLevel[]>(() => {
+    const source =
+      orgBuildings.length > 0
+        ? orgBuildings.map(buildingRecordToBuilding)
+        : undefined;
+    return getBuildingGradeLevels(selectedBuildings, source);
+  }, [selectedBuildings, orgBuildings]);
 
   // Auth state listener
   useEffect(() => {
@@ -990,6 +1064,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setUser(null);
             setGoogleAccessToken(null);
             rootDocSyncedRef.current = false;
+            memberLastActiveSyncedRef.current = false;
             setLoading(false);
             void firebaseSignOut(auth).catch((err: unknown) => {
               console.error(
@@ -1008,6 +1083,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!firebaseUser) {
         setGoogleAccessToken(null);
         rootDocSyncedRef.current = false;
+        memberLastActiveSyncedRef.current = false;
       }
       setLoading(false);
     });
@@ -1271,6 +1347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         orgId,
         roleId,
         buildingIds,
+        orgBuildings,
       }}
     >
       {children}

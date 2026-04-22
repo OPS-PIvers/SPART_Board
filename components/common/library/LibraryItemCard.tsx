@@ -3,9 +3,10 @@
  *
  * Implements `LibraryItemCardProps<TMeta>` from ./types. Wraps dnd-kit's
  * `useSortable` when `sortable !== false && !isDragOverlay`, otherwise renders
- * a static card (used for the floating `DragOverlay`). Card body click routes
- * to `onClick`; drag starts from a dedicated grip handle so body clicks are
- * unambiguous.
+ * a static card (used for the floating `DragOverlay`). The whole card is the
+ * drag activator so the `DragOverlay` clone tracks the cursor naturally;
+ * `PointerSensor`'s 5px activation distance keeps body clicks unambiguous.
+ * The left-edge grip is a visual affordance only.
  *
  * Visual style matches the QuizManager light interior — white surface with
  * slate border, rounded-2xl, brand-blue accents on primary action, and a
@@ -16,10 +17,11 @@
  * hint as the drag-handle tooltip at reduced opacity.
  */
 
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, MoreHorizontal } from 'lucide-react';
+import { Check, GripVertical, MoreHorizontal } from 'lucide-react';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { Z_INDEX } from '@/config/zIndex';
 import { LibraryGridLockContext } from './LibraryGridLockContext';
@@ -55,68 +57,49 @@ const BADGE_TONE_STYLES: Record<
   },
 };
 
-/* ─── Inline action buttons ──────────────────────────────────────────────── */
-
-interface InlineActionButtonProps {
-  action: LibraryMenuAction;
-  compact?: boolean;
-}
-
-const InlineActionButton: React.FC<InlineActionButtonProps> = ({
-  action,
-  compact = false,
-}) => {
-  const Icon = action.icon;
-  const destructive = action.destructive;
-  const base =
-    'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border font-bold uppercase tracking-wider transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
-  const tone = destructive
-    ? 'border-brand-red-primary/20 bg-white/80 text-brand-red-dark hover:bg-brand-red-lighter/30 hover:border-brand-red-primary/40'
-    : 'border-slate-200 bg-white/80 text-slate-700 hover:bg-white hover:border-slate-300';
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!action.disabled) action.onClick();
-      }}
-      disabled={action.disabled}
-      title={action.disabled ? action.disabledReason : action.label}
-      aria-label={action.label}
-      className={`${base} ${tone}`}
-      style={{
-        paddingInline: compact ? '0' : 'min(12px, 2.8cqmin)',
-        paddingBlock: 'min(6px, 1.6cqmin)',
-        fontSize: 'min(11px, 3.6cqmin)',
-        minWidth: compact ? 'min(32px, 9cqmin)' : undefined,
-        height: compact ? 'min(32px, 9cqmin)' : undefined,
-      }}
-    >
-      {Icon && (
-        <Icon
-          style={{
-            width: 'min(14px, 4cqmin)',
-            height: 'min(14px, 4cqmin)',
-          }}
-          className="shrink-0"
-        />
-      )}
-      {!compact && <span className="truncate">{action.label}</span>}
-    </button>
-  );
-};
-
 /* ─── Overflow menu (click-outside aware) ─────────────────────────────────── */
 
 interface OverflowMenuProps {
   actions: LibraryMenuAction[];
 }
 
+const MENU_WIDTH = 176;
+const MENU_GAP = 4;
+
 const OverflowMenu: React.FC<OverflowMenuProps> = ({ actions }) => {
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(
+    null
+  );
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useClickOutside(ref, () => setOpen(false));
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const viewportW =
+      typeof window !== 'undefined' ? window.innerWidth : rect.right;
+    // Right-align menu to the trigger, clamped to viewport.
+    const left = Math.max(
+      8,
+      Math.min(rect.right - MENU_WIDTH, viewportW - MENU_WIDTH - 8)
+    );
+    setMenuPos({ top: rect.bottom + MENU_GAP, left });
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener('resize', close);
+    // Capture phase catches scrolls on any ancestor scroll container.
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [open]);
 
   if (actions.length === 0) return null;
 
@@ -126,9 +109,55 @@ const OverflowMenu: React.FC<OverflowMenuProps> = ({ actions }) => {
     return a.destructive ? 1 : -1;
   });
 
+  const menu =
+    open && menuPos
+      ? createPortal(
+          <div
+            role="menu"
+            data-click-outside-ignore="true"
+            className="min-w-[176px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lg"
+            style={{
+              position: 'fixed',
+              top: menuPos.top,
+              left: menuPos.left,
+              width: MENU_WIDTH,
+              zIndex: Z_INDEX.popover,
+            }}
+          >
+            {ordered.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  role="menuitem"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                    if (!item.disabled) item.onClick();
+                  }}
+                  disabled={item.disabled}
+                  title={item.disabled ? item.disabledReason : undefined}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    item.destructive
+                      ? 'text-brand-red-dark hover:bg-brand-red-lighter/30'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {Icon && <Icon size={14} className="shrink-0" />}
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -151,38 +180,7 @@ const OverflowMenu: React.FC<OverflowMenuProps> = ({ actions }) => {
           }}
         />
       </button>
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-50 mt-1 min-w-[176px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lg"
-        >
-          {ordered.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                role="menuitem"
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                  if (!item.disabled) item.onClick();
-                }}
-                disabled={item.disabled}
-                title={item.disabled ? item.disabledReason : undefined}
-                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                  item.destructive
-                    ? 'text-brand-red-dark hover:bg-brand-red-lighter/30'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                {Icon && <Icon size={14} className="shrink-0" />}
-                <span className="truncate">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {menu}
     </div>
   );
 };
@@ -226,62 +224,34 @@ function CardBody<TMeta>(props: CardBodyProps<TMeta>) {
     dragHandle,
     isDragOverlay,
     isDragging,
+    selectionMode,
+    selected,
+    onSelectionToggle,
   } = props;
 
   const PrimaryIcon = primaryAction.icon;
   const isList = viewMode === 'list';
 
-  // Inline-vs-overflow layout only applies to list-view cards with secondary
-  // actions. Grid-view cards always use the overflow menu, so we skip the
-  // ResizeObserver entirely there (avoids per-card observer overhead in large
-  // libraries).
-  const secondaryCount = secondaryActions?.length ?? 0;
-  const shouldMeasureSecondaryActions = isList && secondaryCount > 0;
-
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [cardWidth, setCardWidth] = useState<number | null>(null);
-  useEffect(() => {
-    if (!shouldMeasureSecondaryActions) return undefined;
-    const el = cardRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) setCardWidth(entry.contentRect.width);
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [shouldMeasureSecondaryActions]);
-
-  // When we've flipped out of the measuring mode (e.g. view mode changed from
-  // list to grid, or secondary actions got removed), ignore the stale
-  // measurement so grid cards reliably fall back to the overflow menu.
-  const effectiveCardWidth = shouldMeasureSecondaryActions ? cardWidth : null;
-
-  // Rough space budget per inline secondary: ~92px with label, ~40px icon-only.
-  // Primary (ASSIGN) plus padding eats ~140px. Inline labels when we have
-  // headroom; otherwise try icon-only; otherwise fall back to overflow menu.
-  const widthForLabels = 160 + secondaryCount * 96;
-  const widthForIconOnly = 160 + secondaryCount * 44;
-  const canShowInlineLabels =
-    effectiveCardWidth != null && effectiveCardWidth >= widthForLabels;
-  const canShowInlineIcons =
-    effectiveCardWidth != null && effectiveCardWidth >= widthForIconOnly;
-  const useOverflowMenu = !canShowInlineLabels && !canShowInlineIcons;
-
   const handleBodyClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Ignore bubbled events from buttons / links / menus inside the card.
     if ((e.target as HTMLElement).closest('button, a, [role="menu"]')) return;
+    if (selectionMode) {
+      onSelectionToggle?.();
+      return;
+    }
     onClick?.();
   };
 
   return (
     <div
-      ref={cardRef}
-      onClick={onClick ? handleBodyClick : undefined}
+      onClick={(onClick ?? selectionMode) ? handleBodyClick : undefined}
       className={[
-        'group relative flex rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-slate-700 shadow-sm transition-shadow hover:shadow-md hover:bg-white/85',
+        'group relative flex rounded-2xl border backdrop-blur-sm text-slate-700 shadow-sm transition-shadow hover:shadow-md',
+        selectionMode && selected
+          ? 'border-brand-blue-primary/60 bg-brand-blue-lighter/30 hover:bg-brand-blue-lighter/40 ring-2 ring-brand-blue-primary/30'
+          : 'border-slate-200/80 bg-white/70 hover:bg-white/85',
         isList ? 'flex-row items-center' : 'flex-col',
-        onClick && 'cursor-pointer',
+        (onClick ?? selectionMode) && 'cursor-pointer',
         isDragging && 'opacity-50',
         isDragOverlay &&
           'pointer-events-none ring-2 ring-brand-blue-primary/30',
@@ -294,8 +264,41 @@ function CardBody<TMeta>(props: CardBodyProps<TMeta>) {
       }}
       aria-hidden={isDragOverlay}
     >
-      {/* Drag handle (left edge) */}
-      {dragHandle}
+      {/* Selection checkbox (left edge, rendered before drag handle) */}
+      {selectionMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectionToggle?.();
+          }}
+          role="checkbox"
+          aria-checked={!!selected}
+          aria-label={selected ? `Deselect ${title}` : `Select ${title}`}
+          className={`flex shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+            selected
+              ? 'border-brand-blue-primary bg-brand-blue-primary text-white'
+              : 'border-slate-300 bg-white hover:border-brand-blue-primary/70'
+          }`}
+          style={{
+            width: 'min(20px, 5.5cqmin)',
+            height: 'min(20px, 5.5cqmin)',
+          }}
+        >
+          {selected && (
+            <Check
+              style={{
+                width: 'min(14px, 4cqmin)',
+                height: 'min(14px, 4cqmin)',
+              }}
+              strokeWidth={3}
+            />
+          )}
+        </button>
+      )}
+
+      {/* Drag handle (left edge) — hidden in selection mode */}
+      {!selectionMode && dragHandle}
 
       {/* Thumbnail */}
       {thumbnail && (
@@ -385,19 +388,7 @@ function CardBody<TMeta>(props: CardBodyProps<TMeta>) {
           {primaryAction.label}
         </button>
         {secondaryActions && secondaryActions.length > 0 && (
-          <>
-            {useOverflowMenu ? (
-              <OverflowMenu actions={secondaryActions} />
-            ) : (
-              secondaryActions.map((action) => (
-                <InlineActionButton
-                  key={action.id}
-                  action={action}
-                  compact={!canShowInlineLabels}
-                />
-              ))
-            )}
-          </>
+          <OverflowMenu actions={secondaryActions} />
         )}
       </div>
     </div>
@@ -409,12 +400,14 @@ function CardBody<TMeta>(props: CardBodyProps<TMeta>) {
 export function LibraryItemCard<TMeta = unknown>(
   props: LibraryItemCardProps<TMeta>
 ) {
-  const { sortable = true, isDragOverlay = false } = props;
+  const { sortable = true, isDragOverlay = false, selectionMode } = props;
   const lockState = useContext(LibraryGridLockContext);
 
   // When used inside the floating DragOverlay, or when sorting is disabled
-  // at either card or grid level, render a static card without useSortable.
-  const canSort = sortable && !isDragOverlay && !lockState.dragDisabled;
+  // at either card or grid level (or the user is in selection mode), render
+  // a static card without useSortable.
+  const canSort =
+    sortable && !isDragOverlay && !lockState.dragDisabled && !selectionMode;
 
   if (!canSort) {
     return <CardBody {...props} />;
@@ -444,26 +437,36 @@ function SortableCard<TMeta>(props: SortableCardProps<TMeta>) {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? Z_INDEX.itemDragging : undefined,
+    touchAction: 'none',
   };
 
+  // Visual affordance only — drag listeners live on the outer sortable node
+  // so the grab point aligns with wherever the user presses on the card.
+  // The PointerSensor's 5px activation distance keeps body clicks from
+  // accidentally starting a drag.
   const dragHandle = (
-    <button
-      type="button"
-      {...attributes}
-      {...listeners}
-      disabled={Boolean(lockedReason)}
+    <div
+      aria-hidden="true"
       title={lockedReason ?? 'Drag to reorder'}
-      aria-label={lockedReason ?? 'Drag to reorder'}
-      className={`flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing touch-none disabled:cursor-not-allowed ${
+      className={`pointer-events-none flex h-8 w-6 shrink-0 items-center justify-center rounded-lg text-slate-300 ${
         lockedReason ? 'opacity-40' : ''
       }`}
     >
       <GripVertical className="h-4 w-4" />
-    </button>
+    </div>
   );
 
+  const accessibleName = lockedReason ?? 'Drag to reorder';
   return (
-    <div ref={setNodeRef} style={style}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      aria-label={accessibleName}
+      aria-disabled={Boolean(lockedReason) || undefined}
+      className={lockedReason ? '' : 'cursor-grab active:cursor-grabbing'}
+    >
       <CardBody {...props} dragHandle={dragHandle} isDragging={isDragging} />
     </div>
   );

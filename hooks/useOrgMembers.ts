@@ -85,17 +85,31 @@ const nameFromEmail = (email: string): string => {
     .trim();
 };
 
-const toUserRecord = (m: MemberRecord, orgId: string): UserRecord => ({
-  id: m.email,
-  orgId,
-  name: m.name ?? nameFromEmail(m.email),
-  email: m.email,
-  role: m.roleId,
-  buildingIds: m.buildingIds ?? [],
-  status: m.status,
-  lastActive: m.lastActive ?? null,
-  invitedAt: m.invitedAt,
-});
+const toUserRecord = (
+  m: MemberRecord,
+  orgId: string,
+  activityMs: number | null | undefined
+): UserRecord => {
+  // Prefer the Firebase Auth metadata signal (fetched via getOrgUserActivity)
+  // over the denormalized member.lastActive — the Auth metadata is populated
+  // on every sign-in for every user, while the member doc is only stamped for
+  // the currently signed-in user via AuthContext.
+  const lastActive =
+    activityMs != null
+      ? new Date(activityMs).toISOString()
+      : (m.lastActive ?? null);
+  return {
+    id: m.email,
+    orgId,
+    name: m.name ?? nameFromEmail(m.email),
+    email: m.email,
+    role: m.roleId,
+    buildingIds: m.buildingIds ?? [],
+    status: m.status,
+    lastActive,
+    invitedAt: m.invitedAt,
+  };
+};
 
 // Translate a `UserRecord` patch from the UI into the underlying
 // `MemberRecord` field names. `role` (UI) ↔ `roleId` (schema); identity
@@ -129,6 +143,12 @@ export const useOrgMembers = (orgId: string | null) => {
   const { user } = useAuth();
   const [members, setMembers] = useState<MemberRecord[]>([]);
   const [error, setError] = useState<Error | null>(null);
+  // Map of emailLower → Auth metadata lastSignInMs (null for invited-never-
+  // signed-in members). Fetched once per org via `getOrgUserActivity` since
+  // Firebase Auth metadata isn't reachable from the client without Admin SDK.
+  const [activityMs, setActivityMs] = useState<Map<string, number | null>>(
+    () => new Map()
+  );
 
   const shouldSubscribe = !isAuthBypass && Boolean(user) && Boolean(orgId);
   const [loading, setLoading] = useState<boolean>(shouldSubscribe);
@@ -138,6 +158,7 @@ export const useOrgMembers = (orgId: string | null) => {
   if (prevKey !== nextKey) {
     setPrevKey(nextKey);
     setLoading(shouldSubscribe);
+    setActivityMs(new Map());
     if (!shouldSubscribe) {
       setMembers([]);
       setError(null);
@@ -166,9 +187,40 @@ export const useOrgMembers = (orgId: string | null) => {
     return unsub;
   }, [shouldSubscribe, orgId]);
 
+  // Fetch Auth-metadata-backed activity once per org. Failures fall back to
+  // the denormalized member.lastActive field (only populated for the current
+  // user today), so a denied or erroring callable still renders "—" for
+  // everyone else rather than blocking the Users tab.
+  useEffect(() => {
+    if (!shouldSubscribe || !orgId) return;
+    let cancelled = false;
+    const callable = httpsCallable<
+      { orgId: string },
+      { activity: { email: string; lastActiveMs: number | null }[] }
+    >(functions, 'getOrgUserActivity');
+    callable({ orgId })
+      .then((result) => {
+        if (cancelled) return;
+        const next = new Map<string, number | null>();
+        for (const entry of result.data.activity) {
+          next.set(entry.email.toLowerCase(), entry.lastActiveMs);
+        }
+        setActivityMs(next);
+      })
+      .catch((err) => {
+        console.error(`[useOrgMembers:${orgId}] getOrgUserActivity:`, err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldSubscribe, orgId]);
+
   const users = useMemo<UserRecord[]>(
-    () => (orgId ? members.map((m) => toUserRecord(m, orgId)) : []),
-    [members, orgId]
+    () =>
+      orgId
+        ? members.map((m) => toUserRecord(m, orgId, activityMs.get(m.email)))
+        : [],
+    [members, orgId, activityMs]
   );
 
   const updateMember = async (
@@ -286,6 +338,57 @@ export const useOrgMembers = (orgId: string | null) => {
     return rewriteClaimUrls(result.data);
   };
 
+  // Re-invites an existing member by re-running the invite callable with the
+  // same role + buildings already on their member doc. The CF mints a fresh
+  // token, overwrites the existing invitation record, and re-sends the email.
+  const resendInvite = async (email: string): Promise<InviteResponse> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    const emailLower = email.toLowerCase();
+    const existing = members.find((m) => m.email === emailLower);
+    if (!existing) {
+      throw new Error(`No member record for ${email}.`);
+    }
+    const callable = httpsCallable<
+      {
+        orgId: string;
+        invitations: BulkInviteIntent[];
+        message?: string;
+      },
+      InviteResponse
+    >(functions, 'createOrganizationInvites');
+    const result = await callable({
+      orgId,
+      invitations: [
+        {
+          email: emailLower,
+          roleId: existing.roleId,
+          buildingIds: existing.buildingIds ?? [],
+        },
+      ],
+    });
+    return rewriteClaimUrls(result.data);
+  };
+
+  // Triggers a password reset email via the `resetOrganizationUserPassword`
+  // callable. The CF uses the Admin SDK to mint a reset link and sends it
+  // through the same mail transport as invites. Auth/membership checks run
+  // server-side; we only need to provide orgId + target email here.
+  const resetPassword = async (
+    email: string
+  ): Promise<{ sent: boolean; email: string }> => {
+    if (!orgId) {
+      throw new Error('No organization selected.');
+    }
+    const callable = httpsCallable<
+      { orgId: string; email: string },
+      { sent: boolean; email: string }
+    >(functions, 'resetOrganizationUserPassword');
+    const result = await callable({ orgId, email: email.toLowerCase() });
+    return result.data;
+  };
+
   return {
     members,
     users,
@@ -296,5 +399,7 @@ export const useOrgMembers = (orgId: string | null) => {
     removeMembers,
     inviteMembers,
     bulkInviteMembers,
+    resendInvite,
+    resetPassword,
   };
 };

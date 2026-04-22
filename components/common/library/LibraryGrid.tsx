@@ -37,6 +37,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import type { LibraryGridProps } from './types';
 import { LibraryGridLockContext } from './LibraryGridLockContext';
 
@@ -135,15 +136,24 @@ export function LibraryGrid<TItem>(
     ? verticalListSortingStrategy
     : rectSortingStrategy;
 
-  const containerClass = isListLayout
-    ? 'flex flex-col gap-3'
-    : 'grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+  const containerClass = isListLayout ? 'flex flex-col gap-3' : 'gap-3';
+  const containerStyle: React.CSSProperties | undefined = isListLayout
+    ? undefined
+    : {
+        display: 'grid',
+        gridTemplateColumns:
+          'repeat(auto-fill, minmax(min(240px, 80cqmin), 1fr))',
+      };
 
   if (useExternalDndContext) {
     return (
       <LibraryGridLockContext.Provider value={lockState}>
         <SortableContext items={ids} strategy={strategy}>
-          <div className={containerClass} data-testid="library-grid">
+          <div
+            className={containerClass}
+            style={containerStyle}
+            data-testid="library-grid"
+          >
             {items.map((item, index) => renderCard(item, index))}
           </div>
         </SortableContext>
@@ -161,11 +171,15 @@ export function LibraryGrid<TItem>(
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={ids} strategy={strategy}>
-          <div className={containerClass} data-testid="library-grid">
+          <div
+            className={containerClass}
+            style={containerStyle}
+            data-testid="library-grid"
+          >
             {items.map((item, index) => renderCard(item, index))}
           </div>
         </SortableContext>
-        <DragOverlay>
+        <DragOverlay modifiers={[snapCenterToCursor]}>
           {activeItem != null ? (
             <LibraryGridLockContext.Provider
               value={{ locked: false, reason: undefined, dragDisabled: true }}
