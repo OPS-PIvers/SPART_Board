@@ -6,6 +6,7 @@ import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
 import { GoogleGenAI, Content } from '@google/genai';
+import { randomUUID } from 'node:crypto';
 import { sanitizePrompt } from './sanitize';
 import { parseGeminiJson } from './parseGeminiJson';
 
@@ -1979,11 +1980,20 @@ export const adminAnalytics = onRequest(
     invoker: 'public',
   },
   async (req, res) => {
+    // Correlation id for log triage. Emitted on the response (body +
+    // X-Request-Id header) and threaded through every `[getAdminAnalytics]`
+    // log line so a Cloud Logging alert can be pivoted back to the exact
+    // client-visible response.
+    const requestId = randomUUID();
+    res.setHeader('X-Request-Id', requestId);
+
     // 1. Verify caller is authenticated via Bearer token
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
-      console.error('[getAdminAnalytics] Unauthenticated access attempt');
-      res.status(401).json({ error: 'unauthenticated' });
+      console.error('[getAdminAnalytics] Unauthenticated access attempt', {
+        requestId,
+      });
+      res.status(401).json({ error: 'unauthenticated', requestId });
       return;
     }
 
@@ -1992,12 +2002,12 @@ export const adminAnalytics = onRequest(
       const idToken = authHeader.split('Bearer ')[1];
       const decodedToken = await admin.auth().verifyIdToken(idToken);
       if (!decodedToken.email) {
-        res.status(401).json({ error: 'unauthenticated' });
+        res.status(401).json({ error: 'unauthenticated', requestId });
         return;
       }
       email = decodedToken.email.toLowerCase();
     } catch {
-      res.status(401).json({ error: 'unauthenticated' });
+      res.status(401).json({ error: 'unauthenticated', requestId });
       return;
     }
 
@@ -2009,9 +2019,11 @@ export const adminAnalytics = onRequest(
     const orgId =
       rawBody && typeof rawBody.orgId === 'string' ? rawBody.orgId.trim() : '';
     if (!orgId) {
-      res
-        .status(400)
-        .json({ error: 'invalid-argument', message: 'orgId is required' });
+      res.status(400).json({
+        error: 'invalid-argument',
+        message: 'orgId is required',
+        requestId,
+      });
       return;
     }
 
@@ -2041,10 +2053,12 @@ export const adminAnalytics = onRequest(
     const isSuperAdmin = adminDoc.exists;
     const isOrgAdmin = memberDoc.exists && ORG_ADMIN_ROLE_IDS.has(memberRoleId);
     if (!isSuperAdmin && !isOrgAdmin) {
-      console.error(
-        `[getAdminAnalytics] Unauthorized access: ${email} is not an admin of ${orgId}`
-      );
-      res.status(403).json({ error: 'permission-denied' });
+      console.error('[getAdminAnalytics] Unauthorized access', {
+        requestId,
+        email,
+        orgId,
+      });
+      res.status(403).json({ error: 'permission-denied', requestId });
       return;
     }
 
@@ -2111,6 +2125,7 @@ export const adminAnalytics = onRequest(
           }
         } catch (err) {
           console.warn('[getAdminAnalytics] auth().getUsers() chunk failed', {
+            requestId,
             orgId,
             chunkSize: chunk.length,
             error: err instanceof Error ? err.message : String(err),
@@ -2345,6 +2360,7 @@ export const adminAnalytics = onRequest(
             console.warn(
               `[getAdminAnalytics] Failed to resolve user emails via auth fallback for ${warningContext}`,
               {
+                requestId,
                 chunkSize: chunk.length,
                 chunkStart: i,
                 totalIdentifiers: identifiers.length,
@@ -2536,12 +2552,18 @@ export const adminAnalytics = onRequest(
         },
       });
     } catch (err: unknown) {
-      console.error('[getAdminAnalytics] Error fetching analytics:', err);
+      console.error('[getAdminAnalytics] Error fetching analytics', {
+        requestId,
+        orgId,
+        error: err instanceof Error ? err.message : String(err),
+      });
       const errorMessage =
         err instanceof Error
           ? err.message
           : 'An internal error occurred fetching analytics.';
-      res.status(500).json({ error: 'internal', message: errorMessage });
+      res
+        .status(500)
+        .json({ error: 'internal', message: errorMessage, requestId });
     }
   }
 );
