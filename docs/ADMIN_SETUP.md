@@ -179,6 +179,47 @@ server-side secret and the client-side Vite variable **must be the same
 client ID** — a mismatch produces audience-failure errors in
 `studentLoginV1`.
 
+### ClassLink OneRoster API credentials
+
+**Secrets:**
+
+- `CLASSLINK_CLIENT_ID`
+- `CLASSLINK_CLIENT_SECRET`
+- `CLASSLINK_TENANT_URL`
+
+These OAuth 1.0a (HMAC-SHA1-signed) credentials let SpartBoard's Cloud
+Functions talk to your district's ClassLink OneRoster API: `studentLoginV1`
+uses them to verify a student's class enrollment at login, and
+`getClassLinkRosterV1` uses them when teachers fetch their roster list.
+Without these, student login throws `internal: ClassLink configuration is
+missing on the server` and teacher roster sync silently returns empty.
+
+**Where to find them:**
+
+1. Log in to your **ClassLink Roster Server** management console.
+2. **Applications** → locate (or have ClassLink provision) the SpartBoard
+   application; copy the **Client ID** and **Client Secret**.
+3. **Tenant URL** is your district's ClassLink OneRoster base host — e.g.
+   `https://<tenantId>.oneroster.classlink.io` (no `/ims/oneroster/v1p1`
+   suffix; the functions append `/ims/oneroster/v1p1/users` and
+   `/ims/oneroster/v1p1/users/{sourcedId}/classes` themselves at
+   `functions/src/index.ts:366` and `:393`). Confirm with ClassLink support
+   if unsure — the wrong base host returns 404 on every call and login
+   silently rejects every student.
+
+**Set:**
+
+```bash
+firebase functions:secrets:set CLASSLINK_CLIENT_ID
+firebase functions:secrets:set CLASSLINK_CLIENT_SECRET
+firebase functions:secrets:set CLASSLINK_TENANT_URL
+```
+
+Consumed by `studentLoginV1` and `getClassLinkRosterV1` in
+`functions/src/index.ts`. Rotation is safe at any time — unlike
+`STUDENT_PSEUDONYM_HMAC_SECRET`, these secrets only authenticate outbound
+API calls and don't derive any persisted IDs.
+
 ### Per-organization domain configuration
 
 Each Organization document in Firestore carries a `domains: string[]` field.
