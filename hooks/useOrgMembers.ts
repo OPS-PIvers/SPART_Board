@@ -371,19 +371,24 @@ export const useOrgMembers = (orgId: string | null) => {
     return rewriteClaimUrls(result.data);
   };
 
-  // Triggers a password reset email via the `resetOrganizationUserPassword`
-  // callable. The CF uses the Admin SDK to mint a reset link and sends it
-  // through the same mail transport as invites. Auth/membership checks run
-  // server-side; we only need to provide orgId + target email here.
+  // Triggers a password reset via the `resetOrganizationUserPassword`
+  // callable. The CF uses the Admin SDK to mint a reset link and (when the
+  // `invite-emails` flag is on) sends it through the same mail transport as
+  // invites. Auth/membership checks run server-side.
+  //
+  // The CF always returns `resetUrl` so the caller can surface it for
+  // copy/paste when `sent === false` (email queue disabled, future failure
+  // path, etc.). Without that, an admin would see no error but the user
+  // would never receive a reset link — silent auth failure.
   const resetPassword = async (
     email: string
-  ): Promise<{ sent: boolean; email: string }> => {
+  ): Promise<{ sent: boolean; email: string; resetUrl: string }> => {
     if (!orgId) {
       throw new Error('No organization selected.');
     }
     const callable = httpsCallable<
       { orgId: string; email: string },
-      { sent: boolean; email: string }
+      { sent: boolean; email: string; resetUrl: string }
     >(functions, 'resetOrganizationUserPassword');
     const result = await callable({ orgId, email: email.toLowerCase() });
     return result.data;

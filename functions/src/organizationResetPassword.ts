@@ -38,8 +38,22 @@ export interface ResetPasswordPayload {
 }
 
 export interface ResetPasswordResponse {
+  /**
+   * True iff the email was successfully queued via the Trigger Email
+   * extension (i.e. global_permissions/invite-emails.enabled is true).
+   * When false, the email was NOT delivered — the caller is responsible
+   * for surfacing `resetUrl` to the admin so they can hand-deliver it
+   * (copy/paste, Slack, etc.). The link is still valid either way.
+   */
   sent: boolean;
   email: string;
+  /**
+   * The Firebase password-reset URL. Always present (it's minted before
+   * the email-queue branch). Sensitive: anyone with this URL can set the
+   * target user's password until it expires (~1 hour). Caller must not
+   * log it or display it outside the org-admin UI.
+   */
+  resetUrl: string;
 }
 
 function parsePayload(data: unknown): ResetPasswordPayload {
@@ -218,6 +232,6 @@ export const resetOrganizationUserPassword = onCall(
       sent = true;
     }
 
-    return { sent, email };
+    return { sent, email, resetUrl };
   }
 );

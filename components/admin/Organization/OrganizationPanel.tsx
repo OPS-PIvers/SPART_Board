@@ -496,10 +496,41 @@ export const OrganizationPanel: React.FC = () => {
 
   // Password reset goes through a dedicated callable (`resetOrganizationUserPassword`)
   // that uses the Admin SDK and gates on domain-admin-of-orgId.
+  //
+  // The CF returns `{ sent, email, resetUrl }`. When `sent === true` the
+  // Trigger Email extension delivered the link; when `sent === false`
+  // (e.g. `global_permissions/invite-emails.enabled` is off) we mirror the
+  // invite `claimUrl` flow: copy the URL to the clipboard and tell the admin
+  // to paste it. NEVER show an unconditional success toast — that's the
+  // silent-auth-failure bug we're fixing here.
   const handleResetPassword = (target: UserRecord) => {
     if (!writesEnabled) return comingSoon('Reset password');
     resetPassword(target.email)
-      .then(() => showToast(`Sent reset email to ${target.email}`, 'success'))
+      .then(async (result) => {
+        if (result.sent) {
+          showToast(`Sent reset email to ${target.email}`, 'success');
+          return;
+        }
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(result.resetUrl);
+            showToast(
+              `Email delivery is off. Reset link copied for ${target.email}. Paste it into your email or chat.`,
+              'success'
+            );
+          } else {
+            showToast(
+              `Email delivery is off. Reset link for ${target.email}: ${result.resetUrl}`,
+              'success'
+            );
+          }
+        } catch {
+          showToast(
+            `Email delivery is off. Reset link for ${target.email}: ${result.resetUrl}`,
+            'success'
+          );
+        }
+      })
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
         showToast(`Reset failed: ${msg}`, 'error');
