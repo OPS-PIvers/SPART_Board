@@ -1,6 +1,5 @@
 import { useContext, useMemo } from 'react';
 import { AuthContext } from '@/context/AuthContextValue';
-import { useOrgBuildings } from '@/hooks/useOrgBuildings';
 import {
   BUILDINGS,
   Building,
@@ -24,19 +23,23 @@ import {
  * The hook intentionally returns the same `Building` shape that
  * `config/buildings.ts` already exports, so existing panels can adopt it by
  * replacing a single `BUILDINGS` reference with a call to this hook.
+ *
+ * Reads from `AuthContext.orgBuildings` (a single AuthProvider-level
+ * `onSnapshot`) rather than opening its own listener, so mounting
+ * `useAdminBuildings` in many admin panels does not multiply Firestore
+ * subscriptions to `/organizations/{orgId}/buildings`.
  */
 export function useAdminBuildings(): Building[] {
   // Use useContext directly rather than useAuth() so the hook still works in
   // test setups (e.g. WidgetBuildingToggle) that render without AuthProvider.
   // If no provider is mounted, fall back to the legacy BUILDINGS seed list.
   const auth = useContext(AuthContext);
-  const orgId = auth?.orgId ?? null;
-  const { buildings, loading } = useOrgBuildings(orgId);
+  const orgBuildings = auth?.orgBuildings;
 
   return useMemo(() => {
-    if (loading || buildings.length === 0) {
+    if (!orgBuildings || orgBuildings.length === 0) {
       return BUILDINGS;
     }
-    return buildings.map(buildingRecordToBuilding);
-  }, [buildings, loading]);
+    return orgBuildings.map(buildingRecordToBuilding);
+  }, [orgBuildings]);
 }
