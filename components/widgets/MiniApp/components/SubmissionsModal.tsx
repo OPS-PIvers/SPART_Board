@@ -19,7 +19,7 @@ import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { X, Loader2, Inbox, ChevronDown, ChevronRight } from 'lucide-react';
 import { db } from '@/config/firebase';
 import {
-  useAssignmentPseudonyms,
+  useAssignmentPseudonymsMulti,
   formatStudentName,
 } from '@/hooks/useAssignmentPseudonyms';
 
@@ -32,19 +32,19 @@ interface SubmissionRow {
 interface SubmissionsModalProps {
   sessionId: string;
   assignmentName: string;
-  classId?: string;
+  classIds?: string[];
   onClose: () => void;
 }
 
 export const SubmissionsModal: React.FC<SubmissionsModalProps> = ({
   sessionId,
   assignmentName,
-  classId,
+  classIds,
   onClose,
 }) => {
-  const { byAssignmentPseudonym } = useAssignmentPseudonyms(
+  const { byAssignmentPseudonym } = useAssignmentPseudonymsMulti(
     sessionId,
-    classId ?? null
+    classIds ?? null
   );
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);

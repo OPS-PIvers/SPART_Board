@@ -42,6 +42,18 @@ service cloud.firestore {
              studentRoleCanAccessClass(sessionClassId);
     }
 
+    // List-aware variant: passes when the caller is not a studentRole user,
+    // when the session has no class targeting (empty list), or when any of
+    // the session's classIds appears in the caller's classIds claim. Used
+    // by mini_app_sessions, which supports multi-class targeting.
+    function passesStudentClassGateList(sessionClassIds) {
+      return !isStudentRoleUser() ||
+             (sessionClassIds is list &&
+              sessionClassIds.size() > 0 &&
+              request.auth.token.classIds is list &&
+              sessionClassIds.hasAny(request.auth.token.classIds));
+    }
+
     // ---- Organization helpers (see docs/organization_wiring_implementation.md) ----
 
     // Super admins are listed on the legacy admin_settings/user_roles doc.
@@ -789,10 +801,12 @@ service cloud.firestore {
     // MiniApp Assignment Sessions — Teacher creates, anonymous students can read
     match /mini_app_sessions/{sessionId} {
       // Any authenticated user (including anonymous) can read session documents.
-      // studentRole (GIS) users additionally must have the session's classId
-      // in their classIds claim.
+      // studentRole (GIS) users additionally must have at least one of the
+      // session's classIds in their classIds claim (or the session must be
+      // untargeted — empty classIds — for shareable-link launches).
       allow read: if request.auth != null &&
-        passesStudentClassGate(resource.data.get('classId', ''));
+        (!isStudentRoleUser() ||
+         passesStudentClassGateList(resource.data.get('classIds', [])));
       // Only authenticated (non-anonymous) teachers can create sessions they own
       allow create: if request.auth != null &&
         request.auth.token.firebase.sign_in_provider != 'anonymous' &&
@@ -815,8 +829,8 @@ service cloud.firestore {
         function maSessionData() {
           return get(/databases/$(database)/documents/mini_app_sessions/$(sessionId)).data;
         }
-        function maSessionClassId() {
-          return maSessionData().get('classId', '');
+        function maSessionClassIds() {
+          return maSessionData().get('classIds', []);
         }
 
         // Session owner (teacher) and admins can read all submissions.
@@ -834,7 +848,8 @@ service cloud.firestore {
         );
 
         // Any authenticated user (anonymous or studentRole) may create or
-        // update their own submission while the session is active.
+        // update their own submission while the session is active and
+        // submissions are enabled.
         // - Anonymous launches must use their auth uid as the doc ID.
         // - studentRole launches use an opaque per-assignment pseudonym;
         //   the class gate blocks cross-class writes and the HMAC secret
@@ -843,7 +858,8 @@ service cloud.firestore {
         // subcollection.
         allow create, update: if request.auth != null &&
           maSessionData().status == 'active' &&
-          passesStudentClassGate(maSessionClassId()) &&
+          maSessionData().get('submissionsEnabled', false) == true &&
+          passesStudentClassGateList(maSessionClassIds()) &&
           (isStudentRoleUser() || submissionId == request.auth.uid) &&
           request.resource.data.keys().hasOnly(['submittedAt', 'payload']) &&
           request.resource.data.submittedAt is int &&

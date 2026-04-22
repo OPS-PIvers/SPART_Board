@@ -1225,23 +1225,20 @@ export interface MiniAppConfig {
   activeApp: MiniAppItem | null;
   /** True when activeApp was created via smart-paste and has not yet been saved to the library */
   activeAppUnsaved?: boolean;
-  collectResults?: boolean; // Toggle switch state
-  googleSheetId?: string; // Extracted Sheet ID
-  googleSheetUrl?: string; // Original pasted URL for UI
   /** Persisted library grid/list toggle. */
   libraryViewMode?: 'grid' | 'list';
   /**
-   * Remembers the last ClassLink classId the teacher selected per app, keyed
-   * by appId. Used to pre-populate the target-class picker on subsequent
-   * assigns so teachers don't have to re-pick the same class each time.
+   * Remembers the last ClassLink class selection the teacher made per app,
+   * keyed by appId. Used to pre-populate the target-class picker on
+   * subsequent assigns so teachers don't have to re-pick the same classes
+   * each time.
    */
-  lastClassIdByAppId?: Record<string, string>;
-}
-
-// Add new Global Config type
-export interface MiniAppGlobalConfig {
-  submissionUrl: string;
-  botEmail: string;
+  lastClassIdsByAppId?: Record<string, string[]>;
+  /**
+   * Remembers the last submissions-enabled choice the teacher made per app,
+   * keyed by appId. Used to pre-populate the toggle on subsequent assigns.
+   */
+  lastSubmissionsEnabledByAppId?: Record<string, boolean>;
 }
 
 /**
@@ -1260,17 +1257,19 @@ export interface MiniAppSession {
   createdAt: number;
   endedAt?: number;
   /**
-   * Optional ClassLink class sourcedId this session is targeted to. Present
-   * when the teacher launched the assignment from the class-targeted
-   * selector; absent for legacy shared-link launches. Used by the student
-   * `/my-assignments` feed to filter assignments by class.
+   * ClassLink class sourcedIds this session is targeted to. Present when the
+   * teacher picked one or more classes in the assign modal; absent (or empty)
+   * for shareable-link-only launches. Used by the student `/my-assignments`
+   * feed (array-contains-any) to surface the session to every enrolled
+   * student across any of the selected classes.
    */
-  classId?: string;
-  // Legacy result-collection fields — kept for rollback insurance, no longer
-  // written by current teacher flow. Submissions now land in the
-  // `submissions/` subcollection. See `MiniAppSubmission` below.
-  submissionUrl?: string;
-  googleSheetId?: string;
+  classIds?: string[];
+  /**
+   * Whether the sandboxed mini-app iframe should show its Submit button and
+   * accept student submissions into the `submissions/` subcollection. Absent
+   * for legacy sessions (treated as `false` — view-only — by the runner).
+   */
+  submissionsEnabled?: boolean;
 }
 
 /**
@@ -3708,12 +3707,12 @@ export interface MiniAppAssignment {
   status: 'active' | 'inactive';
   createdAt: number;
   updatedAt: number;
-  /** Mirrors `MiniAppSession.classId`. Present when assigned via the
-   * class-targeted picker; absent for legacy shared-link launches. */
-  classId?: string;
-  /** Legacy fields kept for rollback insurance — no longer written. */
-  submissionUrl?: string;
-  googleSheetId?: string;
+  /** Mirrors `MiniAppSession.classIds`. Present when assigned via the
+   * class-targeted picker; absent (or empty) for shareable-link launches. */
+  classIds?: string[];
+  /** Mirrors `MiniAppSession.submissionsEnabled`. When true, the runner
+   * reveals the Submit button and persists student submissions. */
+  submissionsEnabled?: boolean;
 }
 
 // === /MiniApp assignments ===
