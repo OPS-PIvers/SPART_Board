@@ -88,6 +88,7 @@ async function extractStudentClaims(
   }
   const rawClassIds: unknown = claims.classIds;
   if (!Array.isArray(rawClassIds)) return null;
+  if (rawClassIds.length === 0) return null;
   if (!rawClassIds.every((c): c is string => typeof c === 'string')) {
     return null;
   }

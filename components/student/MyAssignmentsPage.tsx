@@ -13,6 +13,7 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   ClipboardList,
   GraduationCap,
@@ -22,6 +23,7 @@ import {
   LogOut,
   PlayCircle,
   Puzzle,
+  RefreshCw,
   Sparkles,
 } from 'lucide-react';
 import { db, functions } from '@/config/firebase';
@@ -254,12 +256,7 @@ const KIND_CONFIG: Record<SessionKind, KindConfig> = {
       typeof data.title === 'string' && data.title.length > 0
         ? data.title
         : 'Activity wall',
-    hrefFrom: (sessionId) =>
-      // ActivityWall student app normally expects a `?data=<base64>` payload
-      // that the teacher builds. A class-targeted launch doesn't carry that
-      // payload yet (Phase 3E will wire it). For now we link to the session
-      // route — the student app may show an error until Phase 3E lands.
-      `/activity-wall/${encodeURIComponent(sessionId)}`,
+    hrefFrom: (sessionId) => `/activity-wall/${encodeURIComponent(sessionId)}`,
   },
 };
 
@@ -285,6 +282,10 @@ const MyAssignmentsPage: React.FC = () => {
     Object.fromEntries(SESSION_KINDS.map((k) => [k, []]))
   );
   const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [erroredKinds, setErroredKinds] = useState<Set<SessionKind>>(
+    () => new Set()
+  );
+  const [retryNonce, setRetryNonce] = useState(0);
 
   // Stable subscription identity: we only re-subscribe when classIds actually
   // changes, not on every render.
@@ -297,11 +298,13 @@ const MyAssignmentsPage: React.FC = () => {
     // No classes → no queries (Firestore rejects `in` with []).
     if (classIds.length === 0) {
       setByKind(Object.fromEntries(SESSION_KINDS.map((k) => [k, []])));
+      setErroredKinds(new Set());
       setLoadState('ready');
       return;
     }
 
     setLoadState('loading');
+    setErroredKinds(new Set());
 
     type QueryShape = 'list' | 'single';
     const bucketKey = (kind: SessionKind, shape: QueryShape) =>
@@ -368,6 +371,24 @@ const MyAssignmentsPage: React.FC = () => {
       }
     };
 
+    const clearKindError = (kind: SessionKind) => {
+      setErroredKinds((prev) => {
+        if (!prev.has(kind)) return prev;
+        const next = new Set(prev);
+        next.delete(kind);
+        return next;
+      });
+    };
+
+    const markKindErrored = (kind: SessionKind) => {
+      setErroredKinds((prev) => {
+        if (prev.has(kind)) return prev;
+        const next = new Set(prev);
+        next.add(kind);
+        return next;
+      });
+    };
+
     const handleSnapshot = (
       kind: SessionKind,
       shape: QueryShape,
@@ -379,6 +400,11 @@ const MyAssignmentsPage: React.FC = () => {
         snap.docs.map((d) => docToSummary(kind, config, d))
       );
       emitMerged(kind);
+      // A successful snapshot clears the kind's error flag. If the *other*
+      // shape for this kind is still failing, its own handleError call
+      // will re-set the flag. We bias toward "show the banner only while
+      // something is broken" rather than sticky errors after recovery.
+      clearKindError(kind);
       markSettled(kind, shape);
     };
 
@@ -405,6 +431,7 @@ const MyAssignmentsPage: React.FC = () => {
       );
       buckets.set(bucketKey(kind, shape), []);
       emitMerged(kind);
+      markKindErrored(kind);
       markSettled(kind, shape);
     };
 
@@ -451,9 +478,14 @@ const MyAssignmentsPage: React.FC = () => {
     };
     // `classIds` drives the `in` filter; re-subscribe only when the key
     // changes. `classIdsKey` is derived from `classIds` and gives us a
-    // value-based comparison instead of reference identity.
+    // value-based comparison instead of reference identity. `retryNonce`
+    // bumps to force a fresh subscription cycle from the retry button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classIdsKey]);
+  }, [classIdsKey, retryNonce]);
+
+  const handleRetry = useCallback(() => {
+    setRetryNonce((n) => n + 1);
+  }, []);
 
   // Flatten + sort: newest first, grouped visually by kind order inside a
   // single list. Sort is stable on `createdAt` (desc), then by title to
@@ -502,6 +534,8 @@ const MyAssignmentsPage: React.FC = () => {
             classIds={classIds}
             assignments={assignments}
             pseudonymUid={pseudonymUid}
+            hasErrors={erroredKinds.size > 0}
+            onRetry={handleRetry}
           />
         </main>
 
@@ -549,6 +583,8 @@ interface AssignmentsBodyProps {
   classIds: string[];
   assignments: AssignmentSummary[];
   pseudonymUid: string | null;
+  hasErrors: boolean;
+  onRetry: () => void;
 }
 
 const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
@@ -556,6 +592,8 @@ const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
   classIds,
   assignments,
   pseudonymUid,
+  hasErrors,
+  onRetry,
 }) => {
   if (loadState === 'loading') {
     return (
@@ -577,6 +615,18 @@ const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
     );
   }
 
+  if (assignments.length === 0 && hasErrors) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="We couldn't load your assignments"
+        body="Something went wrong loading your assignments. Refresh and try again."
+        tone="error"
+        action={{ label: 'Try again', onClick: onRetry }}
+      />
+    );
+  }
+
   if (assignments.length === 0) {
     return (
       <EmptyState
@@ -589,15 +639,49 @@ const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
   }
 
   return (
-    <ul className="space-y-3">
-      {assignments.map((a) => (
-        <li key={a.compositeId}>
-          <AssignmentCard assignment={a} pseudonymUid={pseudonymUid} />
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      {hasErrors && <PartialFailureBanner onRetry={onRetry} />}
+      <ul className="space-y-3">
+        {assignments.map((a) => (
+          <li key={a.compositeId}>
+            <AssignmentCard assignment={a} pseudonymUid={pseudonymUid} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
+
+const PartialFailureBanner: React.FC<{ onRetry: () => void }> = ({
+  onRetry,
+}) => (
+  <div
+    role="alert"
+    className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm shadow-sm"
+  >
+    <AlertTriangle
+      className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"
+      strokeWidth={2.25}
+      aria-hidden="true"
+    />
+    <div className="flex-1 min-w-0">
+      <p className="font-semibold text-amber-900">
+        Some assignments couldn&apos;t be loaded.
+      </p>
+      <p className="text-amber-800/90">
+        You&apos;re seeing what we could fetch. Try again to load the rest.
+      </p>
+    </div>
+    <button
+      type="button"
+      onClick={onRetry}
+      className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50 shrink-0"
+    >
+      <RefreshCw className="w-3.5 h-3.5" strokeWidth={2.5} />
+      Try again
+    </button>
+  </div>
+);
 
 // ---------------------------------------------------------------------------
 // Empty state
@@ -608,6 +692,7 @@ interface EmptyStateProps {
   title: string;
   body: string;
   tone: 'soft' | 'error';
+  action?: { label: string; onClick: () => void };
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
@@ -615,6 +700,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   body,
   tone,
+  action,
 }) => {
   const isSoft = tone === 'soft';
   return (
@@ -635,6 +721,16 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         <h3 className="text-base font-bold text-slate-800">{title}</h3>
         <p className="text-sm text-slate-500 leading-relaxed">{body}</p>
       </div>
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-sm font-semibold shadow-sm shadow-brand-blue-primary/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+        >
+          <RefreshCw className="w-4 h-4" strokeWidth={2.25} />
+          {action.label}
+        </button>
+      )}
     </div>
   );
 };
