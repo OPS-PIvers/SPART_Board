@@ -19,8 +19,13 @@ service cloud.firestore {
     // their own classes without affecting any other auth path (teachers,
     // admins, or anonymous PIN students).
 
+    // Uses .get(key, default) rather than direct token.studentRole access.
+    // The rules engine throws "Property studentRole is undefined" when a claim
+    // is absent (e.g. on anon PIN tokens), even behind a `!= null` short-circuit;
+    // .get(...) returns the default instead. Without this guard, every
+    // passesStudentClassGate() callsite denies anon PIN students.
     function isStudentRoleUser() {
-      return request.auth != null && request.auth.token.studentRole == true;
+      return request.auth != null && request.auth.token.get('studentRole', false) == true;
     }
 
     // True iff the caller is a studentRole user AND the given classId is in

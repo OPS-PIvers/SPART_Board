@@ -112,6 +112,20 @@ const asAnonStudent = () =>
     })
     .firestore();
 
+// Real production anonymous Firebase Auth tokens do NOT carry `studentRole`
+// or `classIds` at all — those claims are only minted for ClassLink SSO via
+// studentLoginV1. Prior to the isStudentRoleUser() hardening, any rule that
+// reached this branch threw "Property studentRole is undefined" and denied
+// the write. This context reproduces that token shape verbatim so the test
+// suite locks in the fix.
+const asAnonStudentBareToken = () =>
+  testEnv
+    .authenticatedContext(ANON_UID, {
+      email: '',
+      firebase: { sign_in_provider: 'anonymous' },
+    })
+    .firestore();
+
 const asUnauth = () => testEnv.unauthenticatedContext().firestore();
 
 // ---------------------------------------------------------------------------
@@ -371,6 +385,30 @@ describe('quiz_sessions/responses — student-role gate', () => {
       setDoc(
         doc(
           asAnonStudent(),
+          `quiz_sessions/${SESSION_A}/responses/${ANON_UID}`
+        ),
+        {
+          studentUid: ANON_UID,
+          pin: '5678',
+          joinedAt: 2000,
+          score: null,
+          answers: [],
+          status: 'active',
+          tabSwitchWarnings: 0,
+        }
+      )
+    );
+  });
+
+  // Lock-in for isStudentRoleUser() hardening. Real production anon tokens
+  // omit studentRole entirely; if isStudentRoleUser reverts to a direct
+  // `request.auth.token.studentRole` read, this create denies with
+  // "Property studentRole is undefined on object" and the test reds.
+  it('anonymous PIN student with bare token (no studentRole claim) can still create response', async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(
+          asAnonStudentBareToken(),
           `quiz_sessions/${SESSION_A}/responses/${ANON_UID}`
         ),
         {
