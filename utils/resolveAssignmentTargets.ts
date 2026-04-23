@@ -47,6 +47,53 @@ export interface ResolvedAssignmentTargets {
 }
 
 /**
+ * Core "rosters → session shape" derivation shared by
+ * `resolveAssignmentTargets` (lookup-then-derive) and
+ * `deriveSessionTargetsFromRosters` (already-resolved rosters). Centralizing
+ * the logic guarantees the two paths stay in lock-step on de-duplication
+ * rules and makes the cap on Firestore's `array-contains-any` budget a
+ * single-source-of-truth concern.
+ *
+ * Dedup rationale:
+ * - `classIds`: two rosters can share the same `classlinkClassId` (teacher
+ *   imported the same ClassLink class twice under different local names);
+ *   we'd otherwise waste the Firestore rules' 20-entry budget.
+ * - `students`: a student enrolled in two targeted classes shouldn't appear
+ *   twice in the session student list.
+ * - `periodNames`: two local rosters can share a name; the student app keys
+ *   its post-PIN period picker on the string, so duplicates collide on
+ *   React keys.
+ */
+function deriveTargetsFromRosterList(rosters: ClassRoster[]): {
+  rosterIds: string[];
+  classIds: string[];
+  periodNames: string[];
+  students: Student[];
+} {
+  const classIds = Array.from(
+    new Set(
+      rosters
+        .map((r) => r.classlinkClassId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+  );
+
+  const studentsById = new Map<string, Student>();
+  for (const r of rosters) {
+    for (const s of r.students) {
+      if (!studentsById.has(s.id)) studentsById.set(s.id, s);
+    }
+  }
+
+  return {
+    rosterIds: rosters.map((r) => r.id),
+    classIds,
+    periodNames: Array.from(new Set(rosters.map((r) => r.name))),
+    students: Array.from(studentsById.values()),
+  };
+}
+
+/**
  * Resolve an assignment's class targets against the current rosters list.
  * Never throws — unknown roster IDs or missing legacy fields simply drop
  * through to the next precedence level or to the untargeted result.
@@ -62,37 +109,7 @@ export function resolveAssignmentTargets(
       .map((id) => byId.get(id))
       .filter((r): r is ClassRoster => r !== undefined);
 
-    // De-dupe `classIds` — two rosters can share the same `classlinkClassId`
-    // (e.g., teacher imported the same ClassLink class twice under different
-    // local names) and we'd otherwise waste the Firestore rules' 20-entry
-    // `array-contains-any` budget in the session-read path.
-    const classIds = Array.from(
-      new Set(
-        matched
-          .map((r) => r.classlinkClassId)
-          .filter((id): id is string => typeof id === 'string' && id.length > 0)
-      )
-    );
-
-    // De-dupe students across rosters by ID so a student enrolled in two
-    // targeted classes doesn't double up in the session student list.
-    const studentsById = new Map<string, Student>();
-    for (const r of matched) {
-      for (const s of r.students) {
-        if (!studentsById.has(s.id)) studentsById.set(s.id, s);
-      }
-    }
-
-    // De-dupe periodNames — two local rosters can share a name, and the
-    // student app keys its post-PIN period picker on the period string, so
-    // duplicates collide on React keys.
-    return {
-      rosterIds: matched.map((r) => r.id),
-      classIds,
-      periodNames: Array.from(new Set(matched.map((r) => r.name))),
-      students: Array.from(studentsById.values()),
-      source: 'rosterIds',
-    };
+    return { ...deriveTargetsFromRosterList(matched), source: 'rosterIds' };
   }
 
   // 2. Legacy ClassLink path.
@@ -181,28 +198,5 @@ export function deriveSessionTargetsFromRosters(
   ResolvedAssignmentTargets,
   'rosterIds' | 'classIds' | 'periodNames' | 'students'
 > {
-  // See note in `resolveAssignmentTargets` — dedupe both for correctness and
-  // to stay inside the Firestore `array-contains-any` 20-entry budget.
-  const classIds = Array.from(
-    new Set(
-      rosters
-        .map((r) => r.classlinkClassId)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0)
-    )
-  );
-
-  const studentsById = new Map<string, Student>();
-  for (const r of rosters) {
-    for (const s of r.students) {
-      if (!studentsById.has(s.id)) studentsById.set(s.id, s);
-    }
-  }
-
-  return {
-    rosterIds: rosters.map((r) => r.id),
-    classIds,
-    // De-dupe periodNames — see note in `resolveAssignmentTargets`.
-    periodNames: Array.from(new Set(rosters.map((r) => r.name))),
-    students: Array.from(studentsById.values()),
-  };
+  return deriveTargetsFromRosterList(rosters);
 }

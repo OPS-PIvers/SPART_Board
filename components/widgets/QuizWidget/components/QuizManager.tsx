@@ -57,7 +57,10 @@ import {
   makeEmptyPickerValue,
   type AssignClassPickerValue,
 } from '@/components/common/AssignClassPicker.helpers';
-import { mapLegacyClassIdsToRosterIds } from '@/utils/resolveAssignmentTargets';
+import {
+  mapLegacyClassIdsToRosterIds,
+  resolveAssignmentTargets,
+} from '@/utils/resolveAssignmentTargets';
 import {
   LibraryShell,
   LibraryToolbar,
@@ -116,21 +119,14 @@ interface QuizAssignOptions {
 /**
  * Resolve the effective period-name labels from selected rosters. These
  * labels drive the post-PIN period picker on the student app and the PLC
- * Google Sheet export.
+ * Google Sheet export. Delegates to the shared `resolveAssignmentTargets`
+ * so roster lookup + period-name dedup live in one place.
  */
 function resolveEffectivePeriodNames(
   picker: AssignClassPickerValue,
   rosters: ClassRoster[]
 ): string[] {
-  if (picker.rosterIds.length === 0) return [];
-  const byId = new Map(rosters.map((r) => [r.id, r]));
-  const names = picker.rosterIds
-    .map((id) => byId.get(id))
-    .filter((r): r is ClassRoster => r !== undefined)
-    .map((r) => r.name);
-  // De-dupe — roster names aren't unique, and the student app keys its
-  // post-PIN period picker on the period string.
-  return Array.from(new Set(names));
+  return resolveAssignmentTargets(picker, rosters).periodNames;
 }
 
 function buildDefaultAssignOptions(
