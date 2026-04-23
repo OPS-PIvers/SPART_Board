@@ -31,6 +31,7 @@ import {
   getDocs,
   addDoc,
   collection,
+  deleteDoc,
   doc,
   query,
   where,
@@ -61,19 +62,33 @@ const RULES_PATH = fileURLToPath(
 
 let testEnv: RulesTestEnvironment;
 
+// Token shape note: the Firestore rules engine in the emulator throws
+// "Property X is undefined on object" when a rule expression reads a token
+// claim that isn't present (even behind a `!= null` short-circuit). Real
+// Firebase Auth tokens carry the full claim surface; the emulator test
+// harness does not auto-populate it. We therefore spell out every claim
+// the rules may touch — `email`, `studentRole`, `classIds`, and
+// `firebase.sign_in_provider` — in every context, using empty/false
+// defaults for claims that don't apply to that role. This matches what
+// production Auth tokens look like for real sign-ins.
+
 const asStudentA = () =>
   testEnv
     .authenticatedContext(STUDENT_A_UID, {
+      email: '',
       studentRole: true,
       classIds: [CLASS_A],
+      firebase: { sign_in_provider: 'custom' },
     })
     .firestore();
 
 const asStudentEmpty = () =>
   testEnv
     .authenticatedContext(STUDENT_EMPTY_UID, {
+      email: '',
       studentRole: true,
       classIds: [],
+      firebase: { sign_in_provider: 'custom' },
     })
     .firestore();
 
@@ -81,6 +96,8 @@ const asTeacher = () =>
   testEnv
     .authenticatedContext(TEACHER_UID, {
       email: 'teacher@school.edu',
+      studentRole: false,
+      classIds: [],
       firebase: { sign_in_provider: 'google.com' },
     })
     .firestore();
@@ -88,6 +105,9 @@ const asTeacher = () =>
 const asAnonStudent = () =>
   testEnv
     .authenticatedContext(ANON_UID, {
+      email: '',
+      studentRole: false,
+      classIds: [],
       firebase: { sign_in_provider: 'anonymous' },
     })
     .firestore();
@@ -191,6 +211,7 @@ async function seedSessions(cols: string[], opts: SeedOptions = {}) {
             {
               studentAnonymousId: STUDENT_A_UID,
               sessionId: SESSION_A,
+              startedAt: 1000,
               score: null,
               answers: [],
             }
@@ -282,6 +303,11 @@ describe('quiz_sessions/responses — student-role gate', () => {
   });
 
   it('student in class-A can create response on session-A', async () => {
+    // seedSessions(withResponses) pre-creates a response for STUDENT_A_UID.
+    // Clear it so this test truly exercises the create rule.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), respPath(SESSION_A)));
+    });
     await assertSucceeds(
       setDoc(doc(asStudentA(), respPath(SESSION_A)), {
         ...baseResp(),
@@ -385,6 +411,11 @@ describe('video_activity_sessions/responses — student-role gate', () => {
   });
 
   it('student in class-A can create response on session-A', async () => {
+    // seedSessions(withResponses) pre-creates a response for STUDENT_A_UID.
+    // Clear it so this test truly exercises the create rule.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), respPath(SESSION_A)));
+    });
     await assertSucceeds(
       setDoc(doc(asStudentA(), respPath(SESSION_A)), {
         ...baseResp(),
@@ -459,6 +490,7 @@ describe('guided_learning_sessions/responses — student-role gate', () => {
   const baseResp = (session = SESSION_A) => ({
     studentAnonymousId: STUDENT_A_UID,
     sessionId: session,
+    startedAt: 1000,
     score: null,
     answers: [],
   });
@@ -469,6 +501,12 @@ describe('guided_learning_sessions/responses — student-role gate', () => {
   });
 
   it('student in class-A can create response on session-A', async () => {
+    // seedSessions(withResponses) pre-creates a response for STUDENT_A_UID,
+    // so a bare setDoc would hit the update rule, not create. Clear the
+    // seeded doc first so this test actually exercises the create path.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), respPath(SESSION_A)));
+    });
     await assertSucceeds(
       setDoc(doc(asStudentA(), respPath(SESSION_A)), baseResp())
     );
@@ -596,25 +634,54 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
   const col = 'mini_app_sessions';
   const subPath = (session: string, uid: string) =>
     `${col}/${session}/submissions/${uid}`;
-  const validSub = () => ({
+  // The mini_app submission rule enforces a strict key whitelist:
+  // ['submittedAt', 'studentUid', 'payload']. `studentUid` must equal
+  // request.auth.uid. validSub() takes the submitter uid so the test
+  // parameterizes it correctly.
+  const validSub = (uid: string) => ({
     submittedAt: 1000,
+    studentUid: uid,
     payload: { score: 42, answers: [1, 2, 3] } as Record<string, unknown>,
   });
 
   beforeEach(async () => {
     await testEnv.clearFirestore();
-    await seedSessions([col]);
+    // mini_app_sessions docs require `submissionsEnabled: true` on the
+    // parent session for submissions to be accepted. The generic seed
+    // helper doesn't set that field (it seeds a bare sessionDoc), so we
+    // re-seed here with the mini-app-specific shape.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `${col}/${SESSION_A}`), {
+        teacherUid: TEACHER_UID,
+        classIds: [CLASS_A],
+        status: 'active',
+        submissionsEnabled: true,
+      });
+      await setDoc(doc(db, `${col}/${SESSION_B}`), {
+        teacherUid: TEACHER_UID,
+        classIds: [CLASS_B],
+        status: 'active',
+        submissionsEnabled: true,
+      });
+    });
   });
 
   it('student in class-A can submit to session-A under their own pseudonym', async () => {
     await assertSucceeds(
-      setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), validSub())
+      setDoc(
+        doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)),
+        validSub(STUDENT_A_UID)
+      )
     );
   });
 
   it('student in class-A cannot submit to session-B (wrong class)', async () => {
     await assertFails(
-      setDoc(doc(asStudentA(), subPath(SESSION_B, STUDENT_A_UID)), validSub())
+      setDoc(
+        doc(asStudentA(), subPath(SESSION_B, STUDENT_A_UID)),
+        validSub(STUDENT_A_UID)
+      )
     );
   });
 
@@ -622,14 +689,17 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
     await assertFails(
       setDoc(
         doc(asStudentEmpty(), subPath(SESSION_A, STUDENT_EMPTY_UID)),
-        validSub()
+        validSub(STUDENT_EMPTY_UID)
       )
     );
   });
 
   it('anonymous PIN student can submit under their own auth uid', async () => {
     await assertSucceeds(
-      setDoc(doc(asAnonStudent(), subPath(SESSION_A, ANON_UID)), validSub())
+      setDoc(
+        doc(asAnonStudent(), subPath(SESSION_A, ANON_UID)),
+        validSub(ANON_UID)
+      )
     );
   });
 
@@ -637,21 +707,21 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
     await assertFails(
       setDoc(
         doc(asAnonStudent(), subPath(SESSION_A, 'some-other-uid')),
-        validSub()
+        validSub('some-other-uid')
       )
     );
   });
 
   it('unauthenticated caller cannot submit', async () => {
     await assertFails(
-      setDoc(doc(asUnauth(), subPath(SESSION_A, 'x')), validSub())
+      setDoc(doc(asUnauth(), subPath(SESSION_A, 'x')), validSub('x'))
     );
   });
 
   it('submission with extra keys is rejected', async () => {
     await assertFails(
       setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), {
-        ...validSub(),
+        ...validSub(STUDENT_A_UID),
         sneaky: 'extra-field',
       })
     );
@@ -661,6 +731,7 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
     await assertFails(
       setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), {
         submittedAt: 1000,
+        studentUid: STUDENT_A_UID,
         payload: 'just-a-string',
       })
     );
@@ -670,6 +741,7 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
     await assertFails(
       setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), {
         submittedAt: 'not-a-number',
+        studentUid: STUDENT_A_UID,
         payload: { score: 1 },
       })
     );
@@ -679,12 +751,16 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), `${col}/${SESSION_A}`), {
         teacherUid: TEACHER_UID,
-        classId: CLASS_A,
+        classIds: [CLASS_A],
         status: 'ended',
+        submissionsEnabled: true,
       });
     });
     await assertFails(
-      setDoc(doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)), validSub())
+      setDoc(
+        doc(asStudentA(), subPath(SESSION_A, STUDENT_A_UID)),
+        validSub(STUDENT_A_UID)
+      )
     );
   });
 
@@ -692,11 +768,11 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(
         doc(ctx.firestore(), subPath(SESSION_A, STUDENT_A_UID)),
-        validSub()
+        validSub(STUDENT_A_UID)
       );
       await setDoc(
         doc(ctx.firestore(), subPath(SESSION_A, 'other-uid')),
-        validSub()
+        validSub('other-uid')
       );
     });
     await assertSucceeds(
@@ -711,7 +787,7 @@ describe('mini_app_sessions/submissions — student-role gate', () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(
         doc(ctx.firestore(), subPath(SESSION_A, 'anyone')),
-        validSub()
+        validSub('anyone')
       );
     });
     await assertSucceeds(
