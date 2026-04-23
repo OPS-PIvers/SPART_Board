@@ -57,14 +57,29 @@ export const AssignClassPicker: React.FC<AssignClassPickerProps> = ({
     const next = value.classIds.includes(id)
       ? value.classIds.filter((x) => x !== id)
       : [...value.classIds, id];
-    onChange({ ...value, classIds: next });
+    // Always pin `source` to the list being mutated. Without this, callers
+    // whose `value.source` is stale (e.g., the default `'classlink'` seeded
+    // via `makeEmptyPickerValue` even when only local rosters are available)
+    // would see a mismatched `source` vs. populated list and silently drop
+    // the selection in downstream `source === 'classlink'` branches.
+    onChange({
+      ...value,
+      source: 'classlink',
+      classIds: next,
+      periodNames: [],
+    });
   };
 
   const togglePeriodName = (name: string): void => {
     const next = value.periodNames.includes(name)
       ? value.periodNames.filter((x) => x !== name)
       : [...value.periodNames, name];
-    onChange({ ...value, periodNames: next });
+    onChange({
+      ...value,
+      source: 'local',
+      classIds: [],
+      periodNames: next,
+    });
   };
 
   const selectAll = (): void => {
