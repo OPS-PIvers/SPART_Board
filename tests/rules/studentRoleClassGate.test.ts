@@ -71,6 +71,12 @@ let testEnv: RulesTestEnvironment;
 // `firebase.sign_in_provider` — in every context, using empty/false
 // defaults for claims that don't apply to that role. This matches what
 // production Auth tokens look like for real sign-ins.
+//
+// Intentional exception: `asAnonStudentBareToken` below deliberately omits
+// `email`, `studentRole`, and `classIds` to reproduce the shape of a
+// production Firebase anonymous-auth token verbatim, which carries none of
+// those claims. That lock-in context exists to catch regressions in any
+// rule helper that reads a custom claim via direct dot access.
 
 const asStudentA = () =>
   testEnv
@@ -112,16 +118,18 @@ const asAnonStudent = () =>
     })
     .firestore();
 
-// Real production anonymous Firebase Auth tokens do NOT carry `studentRole`
-// or `classIds` at all — those claims are only minted for ClassLink SSO via
-// studentLoginV1. Prior to the isStudentRoleUser() hardening, any rule that
-// reached this branch threw "Property studentRole is undefined" and denied
-// the write. This context reproduces that token shape verbatim so the test
-// suite locks in the fix.
+// Real production anonymous Firebase Auth tokens do NOT carry `studentRole`,
+// `classIds`, or `email` at all — those claims are only minted for
+// ClassLink SSO via studentLoginV1 (or for Google sign-in via GIS in the
+// case of `email`). Prior to the isStudentRoleUser() hardening, any rule
+// that reached a direct claim access threw "Property X is undefined" and
+// denied the operation. This context reproduces that token shape verbatim
+// — omitting every custom claim — so the test suite locks in the fix and
+// catches regressions on any helper that reads a claim without the safe
+// `.get(key, default)` accessor.
 const asAnonStudentBareToken = () =>
   testEnv
     .authenticatedContext(ANON_UID, {
-      email: '',
       firebase: { sign_in_provider: 'anonymous' },
     })
     .firestore();
@@ -401,26 +409,36 @@ describe('quiz_sessions/responses — student-role gate', () => {
   });
 
   // Lock-in for isStudentRoleUser() hardening. Real production anon tokens
-  // omit studentRole entirely; if isStudentRoleUser reverts to a direct
-  // `request.auth.token.studentRole` read, this create denies with
-  // "Property studentRole is undefined on object" and the test reds.
-  it('anonymous PIN student with bare token (no studentRole claim) can still create response', async () => {
+  // omit studentRole / classIds / email entirely; if any rule helper
+  // reverts to direct dot-access on one of those claims, the rules engine
+  // throws "Property X is undefined" and this test reds.
+  //
+  // Exercises both halves of the quiz-join client sequence:
+  //   1. hooks/useQuizSession.ts:604 does `getDoc(responseRef)` first,
+  //      which traverses the response `allow read` rule at
+  //      firestore.rules:630-633 (includes `isAdmin()` and
+  //      `passesStudentClassGate` as OR branches).
+  //   2. joinQuizSession then calls `setDoc` to create the response,
+  //      which traverses the `allow create` rule at firestore.rules:634-640
+  //      (calls `passesStudentClassGate`).
+  // Both must succeed under a bare anon token for the join to work.
+  it('anonymous PIN student with bare token (no custom claims) can get + create response', async () => {
+    const responseRef = doc(
+      asAnonStudentBareToken(),
+      `quiz_sessions/${SESSION_A}/responses/${ANON_UID}`
+    );
+
+    await assertSucceeds(getDoc(responseRef));
     await assertSucceeds(
-      setDoc(
-        doc(
-          asAnonStudentBareToken(),
-          `quiz_sessions/${SESSION_A}/responses/${ANON_UID}`
-        ),
-        {
-          studentUid: ANON_UID,
-          pin: '5678',
-          joinedAt: 2000,
-          score: null,
-          answers: [],
-          status: 'active',
-          tabSwitchWarnings: 0,
-        }
-      )
+      setDoc(responseRef, {
+        studentUid: ANON_UID,
+        pin: '5678',
+        joinedAt: 2000,
+        score: null,
+        answers: [],
+        status: 'active',
+        tabSwitchWarnings: 0,
+      })
     );
   });
 });
