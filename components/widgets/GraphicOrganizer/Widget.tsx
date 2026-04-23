@@ -286,6 +286,7 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
           initialText={nodes['left']?.text ?? ''}
           onUpdate={handleUpdate}
           className="h-full"
+          style={{ fontSize: 'min(14px, 5.5cqmin)' }}
           placeholder={
             selectedTemplate?.defaultNodes?.leftContent ?? '- Item 1\n- Item 2'
           }
@@ -309,6 +310,7 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
           initialText={nodes['right']?.text ?? ''}
           onUpdate={handleUpdate}
           className="h-full"
+          style={{ fontSize: 'min(14px, 5.5cqmin)' }}
           placeholder={
             selectedTemplate?.defaultNodes?.rightContent ?? '- Item 1\n- Item 2'
           }
