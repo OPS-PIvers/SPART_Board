@@ -249,6 +249,7 @@ export const OrganizationPanel: React.FC = () => {
   const {
     users,
     loading: usersLoadingRaw,
+    activityPartial,
     updateMember,
     bulkUpdateMembers,
     removeMembers,
@@ -817,6 +818,7 @@ export const OrganizationPanel: React.FC = () => {
                   buildings={buildings}
                   actorRole={actorRole}
                   actorBuildingIds={actorBuildingIds}
+                  activityPartial={activityPartial}
                   onUpdate={handleUpdateUser}
                   onBulkUpdate={handleBulkUpdateUsers}
                   onRemove={handleRemoveUsers}
