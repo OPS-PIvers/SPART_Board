@@ -18,6 +18,14 @@ const TEST_PREFIX = 'test:';
  * Returns `null` for test classes (they aren't real ClassLink classes and
  * must not claim `origin: 'classlink'` — they'd otherwise feed garbage
  * sourcedIds into session `classIds[]` and break the student SSO gate).
+ *
+ * NOTE: fields missing from `cls` (e.g., `classCode` cleared upstream) are
+ * omitted rather than set to `deleteField()`, so `updateRoster` at merge
+ * time additively refreshes metadata without wiping previously-stored
+ * values. ClassLink rarely drops these fields in practice; if upstream
+ * ever clears a classCode/subject, the badge tooltip shows stale data
+ * until the teacher re-imports. Acceptable tradeoff vs. an extra
+ * `deleteField()` code path on every merge.
  */
 const buildClassLinkRosterMeta = (
   cls: ClassLinkClass,

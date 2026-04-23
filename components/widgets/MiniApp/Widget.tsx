@@ -392,11 +392,13 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
     setAssignError(null);
     try {
       // Resolve the picker selection against current rosters — dropped IDs
-      // (e.g., rosters deleted after last assignment) are silently filtered.
+      // (deleted) or rosters that failed to load students from Drive
+      // (`loadError`) are silently filtered so we never produce a session
+      // with zero PINs that no student can join.
       const selectedRosters = resolveSelectedRosters(
         assignPickerValue,
         rosters
-      );
+      ).filter((r) => !r.loadError);
       const derived = deriveSessionTargetsFromRosters(selectedRosters);
 
       // NOTE ON GATING ASYMMETRY: `mini_app_sessions` Firestore rules use

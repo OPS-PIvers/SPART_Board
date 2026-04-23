@@ -656,9 +656,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   // ─── Assign confirm handler ───────────────────────────────────────────────
   const handleAssignConfirm = (): void => {
     if (!assignTarget || !selectedMode) return;
-    // Guard against stale rosterIds — rosters can be deleted between the
-    // teacher's last assignment and the current one.
-    const visibleRosterIds = new Set(rosters.map((r) => r.id));
+    // Guard against stale rosterIds — rosters can be deleted or fail to load
+    // (`loadError`) between the teacher's last assignment and the current one.
+    // A roster without students can't produce a joinable session, so treat
+    // `loadError` rosters as unavailable at confirm time in addition to the
+    // picker-side disabled state.
+    const visibleRosterIds = new Set(
+      rosters.filter((r) => !r.loadError).map((r) => r.id)
+    );
     const validRosterIds = assignOptions.picker.rosterIds.filter((id) =>
       visibleRosterIds.has(id)
     );

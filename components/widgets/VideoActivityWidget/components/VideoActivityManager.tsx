@@ -474,9 +474,11 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
       return;
     }
     setAssignError(null);
-    // Guard against stale selections — rosters can be deleted after the
-    // teacher's last assignment. Drop any rosterIds that no longer exist.
-    const visibleRosterIds = new Set(rosters.map((r) => r.id));
+    // Guard against stale rosterIds — rosters can be deleted or fail to
+    // load (`loadError`) after the teacher's last assignment.
+    const visibleRosterIds = new Set(
+      rosters.filter((r) => !r.loadError).map((r) => r.id)
+    );
     const validRosterIds = pickerValue.rosterIds.filter((id) =>
       visibleRosterIds.has(id)
     );

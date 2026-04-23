@@ -335,9 +335,11 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
 
   const handleAssignConfirm = async (): Promise<void> => {
     if (!assignTarget) return;
-    // Guard against stale selections — rosters can be deleted between the
-    // teacher's last assignment and the current one.
-    const visibleRosterIds = new Set(rosters.map((r) => r.id));
+    // Guard against stale rosterIds — rosters can be deleted or fail to
+    // load (`loadError`) after the teacher's last assignment.
+    const visibleRosterIds = new Set(
+      rosters.filter((r) => !r.loadError).map((r) => r.id)
+    );
     const validRosterIds = pickerValue.rosterIds.filter((id) =>
       visibleRosterIds.has(id)
     );

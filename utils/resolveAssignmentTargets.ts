@@ -62,9 +62,17 @@ export function resolveAssignmentTargets(
       .map((id) => byId.get(id))
       .filter((r): r is ClassRoster => r !== undefined);
 
-    const classIds = matched
-      .map((r) => r.classlinkClassId)
-      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    // De-dupe `classIds` — two rosters can share the same `classlinkClassId`
+    // (e.g., teacher imported the same ClassLink class twice under different
+    // local names) and we'd otherwise waste the Firestore rules' 20-entry
+    // `array-contains-any` budget in the session-read path.
+    const classIds = Array.from(
+      new Set(
+        matched
+          .map((r) => r.classlinkClassId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      )
+    );
 
     // De-dupe students across rosters by ID so a student enrolled in two
     // targeted classes doesn't double up in the session student list.
@@ -125,17 +133,29 @@ export function resolveAssignmentTargets(
  * rosters' `classlinkClassId` metadata. Used to seed the picker default for
  * teachers whose configs predate the unified `lastRosterIdsBy*` keys.
  *
+ * Partial matches are returned — if the teacher had three legacy sourcedIds
+ * but only re-imported two of them, the other one is silently dropped rather
+ * than refusing the preselection wholesale (better UX than all-or-nothing).
+ *
+ * Tie-break: if two rosters share the same `classlinkClassId` (teacher
+ * imported the same ClassLink class twice), the first one wins — which is
+ * stable per Firestore's default name-ordered roster stream.
+ *
  * Returns an empty array when the teacher hasn't (re-)imported the ClassLink
- * class — we can't recover a preselection that no longer has a roster.
+ * class at all — we can't recover a preselection that no longer has a roster.
  */
 export function mapLegacyClassIdsToRosterIds(
   legacyClassIds: string[] | undefined,
   rosters: ClassRoster[]
 ): string[] {
   if (!legacyClassIds || legacyClassIds.length === 0) return [];
+  // First-wins: earlier rosters in the array win the mapping. Rosters are
+  // typically streamed name-ordered from Firestore, so this is stable.
   const rosterByClassLinkId = new Map<string, string>();
   for (const r of rosters) {
-    if (r.classlinkClassId) rosterByClassLinkId.set(r.classlinkClassId, r.id);
+    if (r.classlinkClassId && !rosterByClassLinkId.has(r.classlinkClassId)) {
+      rosterByClassLinkId.set(r.classlinkClassId, r.id);
+    }
   }
   const mapped: string[] = [];
   const seen = new Set<string>();
@@ -161,9 +181,15 @@ export function deriveSessionTargetsFromRosters(
   ResolvedAssignmentTargets,
   'rosterIds' | 'classIds' | 'periodNames' | 'students'
 > {
-  const classIds = rosters
-    .map((r) => r.classlinkClassId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+  // See note in `resolveAssignmentTargets` — dedupe both for correctness and
+  // to stay inside the Firestore `array-contains-any` 20-entry budget.
+  const classIds = Array.from(
+    new Set(
+      rosters
+        .map((r) => r.classlinkClassId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+  );
 
   const studentsById = new Map<string, Student>();
   for (const r of rosters) {

@@ -39,7 +39,11 @@ export const AssignClassPicker: React.FC<AssignClassPickerProps> = ({
   };
 
   const selectAll = (): void => {
-    onChange({ rosterIds: rosters.map((r) => r.id) });
+    // Skip rosters whose Drive students failed to load — selecting them
+    // would produce a session with zero PINs that nobody can join.
+    onChange({
+      rosterIds: rosters.filter((r) => !r.loadError).map((r) => r.id),
+    });
   };
 
   const clearAll = (): void => {
@@ -56,11 +60,15 @@ export const AssignClassPicker: React.FC<AssignClassPickerProps> = ({
       }
     >
       <div className="flex items-center gap-2">
-        <Users className="w-4 h-4 text-brand-blue-primary" />
-        <label className="text-sm font-bold text-brand-blue-dark">
+        <Users
+          aria-hidden="true"
+          focusable="false"
+          className="w-4 h-4 text-brand-blue-primary"
+        />
+        <p className="text-sm font-bold text-brand-blue-dark">
           Assign to classes{' '}
           <span className="text-slate-400 font-normal">(optional)</span>
-        </label>
+        </p>
       </div>
 
       {rosters.length === 0 ? (
@@ -128,9 +136,20 @@ const RosterCheckItem: React.FC<{
         .filter(Boolean)
         .join(' · ') || 'Imported from ClassLink'
     : undefined;
+  // Rosters whose Drive students failed to load produce sessions with zero
+  // PINs that no student can join. Disable selection and surface the reason
+  // inline so teachers aren't surprised by a broken assignment later.
+  const disabled = Boolean(roster.loadError);
 
   return (
-    <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1.5 py-1">
+    <label
+      className={`flex items-center gap-2 rounded px-1.5 py-1 ${
+        disabled
+          ? 'cursor-not-allowed opacity-50'
+          : 'cursor-pointer hover:bg-slate-50'
+      }`}
+      title={disabled ? roster.loadError : undefined}
+    >
       <span
         aria-hidden="true"
         className={`flex items-center justify-center w-4 h-4 rounded border transition-colors ${
@@ -145,17 +164,23 @@ const RosterCheckItem: React.FC<{
         type="checkbox"
         className="sr-only"
         checked={checked}
+        disabled={disabled}
         onChange={onToggle}
       />
       <span className="text-sm text-slate-800 flex-1 truncate">
         {roster.name}
       </span>
+      {disabled && (
+        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-red-500">
+          Unavailable
+        </span>
+      )}
       {isClassLink && (
         <span
           className="shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-brand-blue-lighter text-brand-blue-dark border border-brand-blue-light"
           title={badgeTitle}
         >
-          <Link2 className="w-2.5 h-2.5" />
+          <Link2 aria-hidden="true" focusable="false" className="w-2.5 h-2.5" />
           CL
         </span>
       )}

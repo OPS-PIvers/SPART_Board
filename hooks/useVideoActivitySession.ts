@@ -77,12 +77,22 @@ export interface UseVideoActivitySessionTeacherResult {
   /**
    * Create a session for a class and return the sessionId (used as the share link).
    *
-   * `classIds` is the list of ClassLink class `sourcedId`s this session is
-   * targeted at (Phase 5A multi-class). When non-empty, the session doc
-   * stores them on `classIds` (and transitionally mirrors `classIds[0]` to
-   * `classId`). `periodNames` drives the post-PIN class-period picker and
-   * is either the list of chosen local roster names or the ClassLink class
-   * labels (mirroring the teacher's picker source).
+   * Post-unification, `rosterIds` is the canonical input — callers derive
+   * it from the shared `AssignClassPicker` selection. `classIds` and
+   * `periodNames` are denormalised outputs the caller computes via
+   * `deriveSessionTargetsFromRosters(selectedRosters)`:
+   *
+   * - `classIds`: ClassLink `sourcedId`s drawn from the selected rosters'
+   *   `classlinkClassId` metadata. Drives the student SSO gate
+   *   (`passesStudentClassGate` in firestore.rules). `classIds[0]` is also
+   *   mirrored onto the session's legacy `classId` field so pre-Phase-5A
+   *   rules keep working.
+   * - `periodNames`: roster names (de-duped) used for the student app's
+   *   post-PIN period picker.
+   * - `rosterIds`: written onto the session doc for reverse lookup.
+   *
+   * All three are optional and independent for backwards compatibility
+   * with callers that still target the legacy shapes directly.
    */
   createSession: (
     activity: VideoActivityData,
