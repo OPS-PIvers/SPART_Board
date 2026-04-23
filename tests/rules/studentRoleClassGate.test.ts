@@ -405,7 +405,10 @@ describe('quiz_sessions/responses — student-role gate', () => {
     });
     await assertSucceeds(
       setDoc(
-        doc(asStudentA(), `quiz_sessions/${UNTARGETED}/responses/${STUDENT_A_UID}`),
+        doc(
+          asStudentA(),
+          `quiz_sessions/${UNTARGETED}/responses/${STUDENT_A_UID}`
+        ),
         { ...baseResp(), joinedAt: 2000 }
       )
     );
