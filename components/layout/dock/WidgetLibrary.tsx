@@ -241,10 +241,17 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
       );
     }, [buildingAccessibleTools, visibleTools]);
 
+    // "Built-in" qualifier matters because custom widgets render in their
+    // own section above and aren't counted here — without it, the message
+    // reads as a lie whenever there are still custom widgets to add.
+    // Edit mode bypasses the building filter entirely, so wording has to
+    // fork on isEditMode as well.
     const emptyStateMessage =
       buildingAccessibleTools.length === 0
-        ? 'No widgets available for your buildings'
-        : 'All widgets are in your dock';
+        ? isEditMode
+          ? 'No built-in widgets available with your current access'
+          : 'No built-in widgets available for your selected buildings'
+        : 'All built-in widgets are in your dock';
 
     return createPortal(
       <div className="fixed inset-0 z-modal flex items-center justify-center p-4 animate-in fade-in duration-200 pointer-events-none">
