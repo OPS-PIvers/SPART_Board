@@ -512,7 +512,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
             confirmLabel: 'Delete',
           }
         );
-        if (ok) void onDelete(quiz);
+        if (ok) await onDelete(quiz);
       },
     },
   ];
