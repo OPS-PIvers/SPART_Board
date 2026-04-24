@@ -567,6 +567,28 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         tabWarningsEnabled={liveSession?.tabWarningsEnabled ?? true}
         session={liveSession}
         onDeleteResponse={removeStudent}
+        onPlcSheetUrlReplaced={async (newUrl) => {
+          // After QuizResults regenerates a stale PLC sheet (404
+          // recovery), replace the URL on this widget's config so future
+          // exports don't re-trigger the regenerate dance, AND on the
+          // active assignment doc so other consumers (assignment list,
+          // settings modal, copy-to-clipboard menu) see the live URL.
+          updateWidget(widget.id, {
+            config: { ...config, plcSheetUrl: newUrl } as QuizConfig,
+          });
+          if (config.activeAssignmentId) {
+            try {
+              await updateAssignmentSettings(config.activeAssignmentId, {
+                plcSheetUrl: newUrl,
+              });
+            } catch (err) {
+              console.error(
+                '[QuizWidget] Failed to persist regenerated PLC URL on assignment:',
+                err
+              );
+            }
+          }
+        }}
       />
     );
   }
@@ -732,7 +754,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               const cached = await getPlcSharedSheetUrl(plcOptions.plcId);
               if (cached) {
                 resolvedPlcSheetUrl = cached;
-                // Even though invite-accept already runs reconcilation,
+                // Even though invite-accept already runs reconciliation,
                 // it can fail silently (no Drive token at accept time,
                 // accepter wasn't the sheet owner). Re-running on every
                 // PLC assignment costs one Drive list call per assign

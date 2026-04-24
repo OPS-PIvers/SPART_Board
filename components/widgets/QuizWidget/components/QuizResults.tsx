@@ -32,9 +32,11 @@ import {
 import { QuizResponse, QuizData, QuizQuestion, QuizConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { usePlcs } from '@/hooks/usePlcs';
-import { PlcSheetMissingError } from '@/utils/quizDriveService';
+import {
+  PlcSheetMissingError,
+  QuizDriveService,
+} from '@/utils/quizDriveService';
 import { getPlcTeammateEmails } from '@/utils/plc';
-import { QuizDriveService } from '@/utils/quizDriveService';
 import { gradeAnswer, getResponseDocKey } from '@/hooks/useQuizSession';
 import { useDashboard } from '@/context/useDashboard';
 import {
@@ -67,6 +69,13 @@ interface QuizResultsProps {
    * all derived stats/exports will recompute automatically.
    */
   onDeleteResponse?: (responseKey: string) => Promise<void>;
+  /**
+   * Called after the 404 stale-sheet recovery replaces a missing PLC sheet
+   * with a fresh one. Lets the parent widget persist the new URL onto the
+   * widget config and the active assignment doc so future exports don't
+   * keep re-triggering the regenerate flow against the stale URL.
+   */
+  onPlcSheetUrlReplaced?: (newUrl: string) => Promise<void> | void;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
@@ -77,6 +86,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   tabWarningsEnabled,
   session,
   onDeleteResponse,
+  onPlcSheetUrlReplaced,
 }) => {
   const { activeDashboard, updateWidget, addWidget, addToast, rosters } =
     useDashboard();
@@ -283,13 +293,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         );
         const owningPlc = matchingPlcs.length === 1 ? matchingPlcs[0] : null;
         if (exportErr.status === 403) {
-          addToast(
-            owningPlc
-              ? `You don't have access to the ${owningPlc.name} PLC sheet yet — ask the PLC lead to grant you writer access.`
-              : "You don't have access to this PLC sheet — ask the PLC lead to grant you writer access.",
-            'error'
-          );
-          throw exportErr;
+          // Rethrow with the actionable message so the inline export
+          // banner matches the toast — the raw PlcSheetMissingError
+          // message ("Shared PLC sheet is missing or inaccessible.")
+          // would be confusing here since the sheet isn't actually
+          // missing, this user just lacks writer access.
+          const accessDeniedMessage = owningPlc
+            ? `You don't have access to the ${owningPlc.name} PLC sheet yet — ask the PLC lead to grant you writer access.`
+            : "You don't have access to this PLC sheet — ask the PLC lead to grant you writer access.";
+          addToast(accessDeniedMessage, 'error');
+          throw new Error(accessDeniedMessage);
         }
         // 404 → regenerate, but only when we can pin the URL to a single
         // PLC. Multiple matches → ambiguous, single none → we don't know
@@ -303,6 +316,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           memberEmailsToShareWith: getPlcTeammateEmails(owningPlc, user.uid),
         });
         const canonical = await setPlcSharedSheetUrl(owningPlc.id, created.url);
+        // Persist the new canonical URL onto the widget config + active
+        // assignment so the next export doesn't re-trigger the 404 path
+        // against the stale URL still cached on those docs.
+        if (onPlcSheetUrlReplaced) {
+          try {
+            await onPlcSheetUrlReplaced(canonical);
+          } catch (persistErr) {
+            console.error(
+              '[QuizResults] Failed to persist regenerated PLC URL:',
+              persistErr
+            );
+          }
+        }
         url = await svc.exportResultsToSheet(
           quiz.title,
           responses,

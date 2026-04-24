@@ -279,7 +279,11 @@ export const usePlcs = (): UsePlcsResult => {
   // sheet they just created.
   const setPlcSharedSheetUrl = useCallback(
     async (plcId: string, url: string): Promise<string> => {
-      if (!user) return url;
+      // Throw rather than silently no-op + return the input URL —
+      // returning would mislead the caller into thinking the URL was
+      // persisted, and they'd skip the auto-create retry that should
+      // run on next sign-in. Mirrors the pattern in createPlc / leavePlc.
+      if (!user) throw new Error('Not signed in');
       return runTransaction(db, async (tx) => {
         const ref = doc(db, PLCS_COLLECTION, plcId);
         const snap = await tx.get(ref);

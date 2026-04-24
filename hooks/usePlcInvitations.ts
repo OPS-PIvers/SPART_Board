@@ -247,30 +247,41 @@ export const usePlcInvitations = (): UsePlcInvitationsResult => {
         // between send and accept. The rule's `newMembers.size() ==
         // oldMembers.size() + 1` check then refuses the PLC update (arrayUnion
         // becomes a no-op). Close out the invite on its own so the UI stops
-        // showing it as pending.
+        // showing it as pending. Don't `return` — fall through to the
+        // post-accept Drive reconcile below so the (now-confirmed) member
+        // still gets best-effort permission top-up.
         const code = (err as { code?: string } | null)?.code;
         if (code === 'permission-denied') {
           await updateDoc(inviteRef, {
             status: 'accepted',
             respondedAt: Date.now(),
           });
-          return;
+        } else {
+          throw err;
         }
-        throw err;
       }
 
-      // Post-accept: if the PLC already has a shared Google Sheet, best-
-      // effort grant the new member writer access so they can append
-      // submissions immediately. No-op when:
-      //   - the sheet hasn't been created yet (first PLC assignment will
-      //     pick up the new member via memberEmails)
-      //   - the accepter doesn't have a Google OAuth token (rare, but
-      //     sign-in could still be in progress)
-      //   - the accepter isn't the sheet owner (403 on permissions list) —
-      //     the actual owner will reconcile next time they assign
-      // Any failure here is swallowed; membership has already been
-      // persisted, so the invite-accept flow shouldn't regress on a
-      // Drive-side hiccup.
+      // Post-accept: if the PLC already has a shared Google Sheet,
+      // attempt a best-effort permission reconcile. In the common case
+      // the accepter is NOT the sheet owner, so Drive returns 403 on
+      // listing permissions and `reconcilePlcSheetPermissions` short-
+      // circuits to a no-op (`skipped: true`). In rarer cases — e.g. a
+      // Workspace-domain admin whose policy lets them list permissions
+      // on a domain-shared file — this top-up succeeds. The actual
+      // load-bearing reconcile happens on the *owner's* next assign
+      // flow (see `Widget.tsx` cached-URL path).
+      //
+      // Runs after both the transactional happy path and the
+      // permission-denied fallback (where membership was already in
+      // place), so a pre-existing member who completes the invite-
+      // accept handshake still benefits.
+      //
+      // No-ops when: the sheet hasn't been created yet (first PLC
+      // assignment will pick up the new member via memberEmails); the
+      // accepter has no Google OAuth token; or the accepter isn't the
+      // sheet owner (403 on permissions list). Any failure is swallowed
+      // so the invite-accept flow doesn't regress on a Drive-side
+      // hiccup.
       try {
         if (googleAccessToken) {
           const plcSnap = await getDoc(plcRef);
