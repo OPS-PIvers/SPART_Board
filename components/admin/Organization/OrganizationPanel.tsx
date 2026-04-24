@@ -869,16 +869,18 @@ const ManualResetLinkModal: React.FC<{
   link: { email: string; url: string } | null;
   onClose: () => void;
 }> = ({ link, onClose }) => {
-  const [copied, setCopied] = useState(false);
+  type CopyState = 'idle' | 'copied' | 'failed';
+  const [copyState, setCopyState] = useState<CopyState>('idle');
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const urlInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Reset the "Copied!" affordance whenever a fresh link opens. We compare the
+  // Reset the copy-affordance state whenever a fresh link opens. We compare the
   // url in render rather than reaching for useEffect; CLAUDE.md flags effect
   // chains for derived state as the wrong tool here.
   const [lastUrl, setLastUrl] = useState<string | null>(null);
   if (link && link.url !== lastUrl) {
     setLastUrl(link.url);
-    setCopied(false);
+    setCopyState('idle');
   }
   if (!link && lastUrl !== null) {
     setLastUrl(null);
@@ -895,15 +897,29 @@ const ManualResetLinkModal: React.FC<{
     if (!link) return;
     try {
       await navigator.clipboard.writeText(link.url);
-      setCopied(true);
+      setCopyState('copied');
       if (copyTimer.current) clearTimeout(copyTimer.current);
-      copyTimer.current = setTimeout(() => setCopied(false), 2000);
+      copyTimer.current = setTimeout(() => setCopyState('idle'), 2000);
     } catch {
-      // Clipboard may be unavailable (insecure origin, permissions). The link
-      // is still visible in the input for manual selection — no further
-      // recovery needed here.
+      // Clipboard unavailable (insecure origin, permissions denied, or
+      // jsdom). Surface the failure explicitly so the admin doesn't assume
+      // the copy succeeded and send nothing — then pre-select the URL so
+      // they can grab it with Ctrl/Cmd+C manually.
+      setCopyState('failed');
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      urlInputRef.current?.focus();
+      urlInputRef.current?.select();
     }
   };
+
+  const copyLabel =
+    copyState === 'copied'
+      ? 'Copied'
+      : copyState === 'failed'
+        ? 'Retry'
+        : 'Copy';
+  const copyIcon =
+    copyState === 'copied' ? <Check size={14} /> : <Copy size={14} />;
 
   return (
     <LocalModal
@@ -926,6 +942,7 @@ const ManualResetLinkModal: React.FC<{
         </p>
         <div className="flex items-stretch gap-2">
           <input
+            ref={urlInputRef}
             type="text"
             readOnly
             value={link?.url ?? ''}
@@ -933,14 +950,19 @@ const ManualResetLinkModal: React.FC<{
             aria-label="Password reset URL"
             className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-blue-primary/30"
           />
-          <Btn
-            variant="primary"
-            onClick={handleCopy}
-            icon={copied ? <Check size={14} /> : <Copy size={14} />}
-          >
-            {copied ? 'Copied' : 'Copy'}
+          <Btn variant="primary" onClick={handleCopy} icon={copyIcon}>
+            {copyLabel}
           </Btn>
         </div>
+        {copyState === 'failed' && (
+          <p
+            role="alert"
+            className="text-xs text-brand-red-dark bg-brand-red-primary/10 border border-brand-red-primary/20 rounded-lg px-3 py-2"
+          >
+            Couldn&apos;t copy automatically — the link is selected above, press
+            Ctrl/Cmd&nbsp;+&nbsp;C to copy it manually.
+          </p>
+        )}
         <p className="text-xs text-slate-500">
           This link grants access to reset the user&apos;s password. Don&apos;t
           share it in public channels.

@@ -270,6 +270,45 @@ describe('getOrgUserActivity — partial Auth-API failures', () => {
     expect(byEmail.get('b2-0@orono.k12.mn.us')).toBeNull();
   });
 
+  it('returns partial: true with failedBatchCount === batches.length when every batch fails', async () => {
+    // A full Auth outage must NOT look like "every member is idle." If all
+    // batches reject, every `lastActiveMs` stays null — the exact same wire
+    // shape as a healthy roster of never-signed-in invitees. The `partial`
+    // flag is the ONLY signal that separates the two. Pins that invariant:
+    // any regression that short-circuits on `outcomes.every(o => !o.ok)` or
+    // resets `failedBatchCount` on a total-failure path would fail this case.
+    setSingleAdmin(ADMIN_EMAIL, 'super_admin');
+
+    // 250 emails → three batches (100 + 100 + 50).
+    const emails = Array.from(
+      { length: 250 },
+      (_, i) => `user-${i}@orono.k12.mn.us`
+    );
+    memberEmails = emails;
+
+    getUsersImpl = async () => {
+      const err = new Error('Auth backend unavailable') as Error & {
+        code?: string;
+      };
+      err.code = 'auth/internal-error';
+      throw err;
+    };
+
+    const res = await handler({
+      auth: authedCaller(),
+      data: { orgId: 'orono' },
+    });
+
+    const expectedBatches = Math.ceil(emails.length / 100);
+    expect(res.partial).toBe(true);
+    expect(res.failedBatchCount).toBe(expectedBatches);
+    expect(res.activity).toHaveLength(emails.length);
+    expect(res.activity.every((e) => e.lastActiveMs === null)).toBe(true);
+    // failedBatchCount MUST NOT exceed the number of batches — guards against
+    // a future double-count regression in the outcomes loop.
+    expect(res.failedBatchCount).toBeLessThanOrEqual(expectedBatches);
+  });
+
   it('returns partial: false when all batches succeed', async () => {
     setSingleAdmin(ADMIN_EMAIL, 'super_admin');
     memberEmails = ['user-a@orono.k12.mn.us', 'user-b@orono.k12.mn.us'];
