@@ -107,6 +107,24 @@ export const PlcEditModal: React.FC<PlcEditModalProps> = ({
     }
   };
 
+  const handleRevokeInvite = async (
+    invite: Parameters<typeof revokeInvite>[0]
+  ) => {
+    try {
+      await revokeInvite(invite);
+    } catch (err) {
+      console.error('Failed to revoke invite:', err);
+      await showAlert(
+        err instanceof Error
+          ? err.message
+          : t('sidebar.plcs.revokeFailed', {
+              defaultValue: 'Failed to revoke invitation',
+            }),
+        { variant: 'danger' }
+      );
+    }
+  };
+
   const handleRemoveMember = async (uid: string, label: string) => {
     if (!plc) return;
     const confirmed = await showConfirm(
@@ -291,9 +309,7 @@ export const PlcEditModal: React.FC<PlcEditModalProps> = ({
                     {inv.inviteeEmailLower}
                   </div>
                   <button
-                    onClick={() => {
-                      void revokeInvite(inv);
-                    }}
+                    onClick={() => void handleRevokeInvite(inv)}
                     className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     title={t('sidebar.plcs.revokeInvite', {
                       defaultValue: 'Revoke Invitation',

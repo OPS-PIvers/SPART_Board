@@ -600,31 +600,45 @@ service cloud.firestore {
       return plcId + '_' + emailLower;
     }
 
-    function plcInviteExists(plcId, emailLower) {
-      return exists(/databases/$(database)/documents/plc_invitations/$(plcInviteDocId(plcId, emailLower)));
-    }
-
     // True iff the pending update is the caller self-adding to memberUids
     // (i.e. accepting an invitation). Verified against the existence of a
-    // matching deterministic invitation doc.
+    // matching *pending* deterministic invitation doc, AND constrained so
+    // the only membership change is appending the caller — preventing a
+    // malicious invitee from rewriting the whole memberUids array.
     function isAcceptingPlcInvite(plcId) {
-      return request.auth.token.get('email', '') != ''
-        && !(request.auth.uid in resource.data.memberUids)
-        && (request.auth.uid in request.resource.data.memberUids)
+      let emailLower = request.auth.token.get('email', '').lower();
+      let oldMembers = resource.data.memberUids;
+      let newMembers = request.resource.data.memberUids;
+      let oldEmails = resource.data.memberEmails;
+      let newEmails = request.resource.data.memberEmails;
+      return emailLower != ''
+        && !(request.auth.uid in oldMembers)
+        && (request.auth.uid in newMembers)
+        && newMembers.size() == oldMembers.size() + 1
+        && newMembers.toSet().hasAll(oldMembers.toSet())
+        && newEmails.diff(oldEmails).affectedKeys().hasOnly([request.auth.uid])
+        && newEmails.get(request.auth.uid, '') == emailLower
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['memberUids', 'memberEmails', 'updatedAt'])
-        && request.resource.data.memberEmails.get(request.auth.uid, '')
-             == request.auth.token.email.lower()
-        && plcInviteExists(plcId, request.auth.token.email.lower());
+        && get(/databases/$(database)/documents/plc_invitations/$(plcInviteDocId(plcId, emailLower))).data.status == 'pending';
     }
 
     // True iff the pending update is the caller self-removing from
     // memberUids (i.e. leaving the PLC). The lead can't use this path —
     // they must transfer leadership first or delete the PLC outright.
+    // Constrained so the only membership change is dropping the caller —
+    // preventing a leaving member from also evicting other members.
     function isLeavingPlc() {
-      return (request.auth.uid in resource.data.memberUids)
-        && !(request.auth.uid in request.resource.data.memberUids)
+      let oldMembers = resource.data.memberUids;
+      let newMembers = request.resource.data.memberUids;
+      let oldEmails = resource.data.memberEmails;
+      let newEmails = request.resource.data.memberEmails;
+      return (request.auth.uid in oldMembers)
+        && !(request.auth.uid in newMembers)
         && request.auth.uid != resource.data.leadUid
+        && newMembers.size() == oldMembers.size() - 1
+        && oldMembers.toSet().hasAll(newMembers.toSet())
+        && newEmails.diff(oldEmails).affectedKeys().hasOnly([request.auth.uid])
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['memberUids', 'memberEmails', 'updatedAt']);
     }
@@ -640,10 +654,18 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.leadUid
         && request.resource.data.memberUids == [request.auth.uid];
 
-      // Lead can rename, add/remove members, transfer leadership, etc.
-      // Non-leads can only self-add via accepted invite or self-remove (leave).
+      // Lead can rename, add/remove members, etc. — but cannot vacate
+      // leadership via this path (leadUid is immutable here, and the lead
+      // must stay in memberUids). This blocks the lead from sneaking out
+      // through the broad lead-update branch and bypassing the
+      // "transfer leadership before leaving" intent of isLeavingPlc.
+      // Non-leads can only self-add via accepted invite or self-remove.
       allow update: if request.auth != null && (
-        request.auth.uid == resource.data.leadUid
+        (
+          request.auth.uid == resource.data.leadUid
+          && request.resource.data.leadUid == resource.data.leadUid
+          && resource.data.leadUid in request.resource.data.memberUids
+        )
         || isAcceptingPlcInvite(plcId)
         || isLeavingPlc()
       );
@@ -673,11 +695,16 @@ service cloud.firestore {
         && inviteId == plcInviteDocId(request.resource.data.plcId, request.resource.data.inviteeEmailLower);
 
       // Invitee can patch only status + respondedAt to mark accepted/declined.
+      // Status must transition *from* 'pending' *to* a terminal state — this
+      // blocks resurrecting a terminal invite back to 'pending' or setting
+      // it to an arbitrary string.
       // Note: the invitee never deletes the invite — the lead can revoke it,
       // and accepted invites are kept for audit (the sidebar filters to pending).
       allow update: if request.auth != null
         && request.auth.token.get('email', '') != ''
         && resource.data.inviteeEmailLower == request.auth.token.email.lower()
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'declined']
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'respondedAt']);
 
       // Lead can revoke (delete) outstanding invites.

@@ -180,9 +180,14 @@ export interface Plc {
 }
 
 /**
- * An outstanding invitation for a teacher to join a PLC. Top-level keyed by
- * a random id so the invitee can read pending invites by email without being
- * a member of the target PLC yet.
+ * An outstanding invitation for a teacher to join a PLC. Top-level so the
+ * invitee can read pending invites by email without being a member of the
+ * target PLC yet. The doc id is *deterministic* — `<plcId>_<emailLower>`
+ * (see `plcInvitationDocId` in `usePlcInvitations` and `plcInviteDocId` in
+ * `firestore.rules`) — which lets the accept-flow rule verify an outstanding
+ * pending invite via an O(1) `get()` without enumerating the collection.
+ * Re-sending an invite to the same email overwrites the prior record,
+ * re-arming a declined invite.
  *
  * State machine: `pending` → `accepted` (joins PLC) | `declined` (no-op).
  * Terminal states are kept for audit; the invitee panel filters to `pending`.

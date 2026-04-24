@@ -9,9 +9,9 @@ import {
   deleteDoc,
   runTransaction,
 } from 'firebase/firestore';
-import { db, isAuthBypass } from '../config/firebase';
-import { useAuth } from '../context/useAuth';
-import { Plc } from '../types';
+import { db, isAuthBypass } from '@/config/firebase';
+import { useAuth } from '@/context/useAuth';
+import { Plc } from '@/types';
 
 const PLCS_COLLECTION = 'plcs';
 
