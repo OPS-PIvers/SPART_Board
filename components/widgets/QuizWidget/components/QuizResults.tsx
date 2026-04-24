@@ -32,7 +32,7 @@ import {
 import { QuizResponse, QuizData, QuizQuestion, QuizConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { QuizDriveService } from '@/utils/quizDriveService';
-import { gradeAnswer } from '@/hooks/useQuizSession';
+import { gradeAnswer, getResponseDocKey } from '@/hooks/useQuizSession';
 import { useDashboard } from '@/context/useDashboard';
 import {
   buildPinToNameMap,
@@ -888,7 +888,7 @@ const StudentsTab: React.FC<{
             const rosterName = pinToName[r.pin];
             const displayName = classLinkName || rosterName || `PIN ${r.pin}`;
             const isResolved = Boolean(classLinkName || rosterName);
-            const rowKey = r._responseKey ?? r.studentUid;
+            const rowKey = getResponseDocKey(r);
             const canDelete = Boolean(onDeleteResponse);
             const isConfirming = confirmDeleteKey === rowKey;
             const isDeleting = deletingKey === rowKey;

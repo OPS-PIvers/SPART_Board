@@ -28,6 +28,7 @@ import {
   writeBatch,
   increment,
   deleteField,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { signInAnonymously } from 'firebase/auth';
@@ -157,6 +158,58 @@ function computeResponseKey(
   if (!isAnonymous) return authUid;
   const period = classPeriod ?? 'default';
   return `pin-${period}-${pin}`;
+}
+
+/**
+ * Resolve the Firestore doc id for a given response. The snapshot listeners
+ * attach `_responseKey` to every row so teacher-side UI can target the
+ * underlying doc without knowing the keying scheme; legacy rows predating
+ * that field still equate the key with `studentUid`, hence the fallback.
+ */
+export function getResponseDocKey(response: QuizResponse): string {
+  return response._responseKey ?? response.studentUid;
+}
+
+/**
+ * Look up the student's response doc for a session, trying the deterministic
+ * key first and falling back to the legacy auth-uid key for anonymous PIN
+ * joiners whose in-progress doc was written under the old keying scheme.
+ * Returns the resolved key and the snapshot (existent or not) so the caller
+ * can branch on `snap.exists()` without re-fetching.
+ */
+async function findExistingResponseDoc(
+  sessionId: string,
+  authUid: string,
+  isAnonymous: boolean,
+  deterministicKey: string
+): Promise<{ key: string; snap: DocumentSnapshot }> {
+  const deterministicSnap = await getDoc(
+    doc(
+      db,
+      QUIZ_SESSIONS_COLLECTION,
+      sessionId,
+      RESPONSES_COLLECTION,
+      deterministicKey
+    )
+  );
+  if (deterministicSnap.exists()) {
+    return { key: deterministicKey, snap: deterministicSnap };
+  }
+  if (isAnonymous && deterministicKey !== authUid) {
+    const legacySnap = await getDoc(
+      doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        authUid
+      )
+    );
+    if (legacySnap.exists()) {
+      return { key: authUid, snap: legacySnap };
+    }
+  }
+  return { key: deterministicKey, snap: deterministicSnap };
 }
 
 // ─── Teacher hook ─────────────────────────────────────────────────────────────
@@ -648,49 +701,21 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         // Deterministic doc key: stable per-roster-student for PIN auth so
         // the attempt limit can't be bypassed by clearing storage / switching
         // device. studentRole users still key by their auth uid (stable per
-        // user already).
+        // user already). The helper also handles the legacy-key fallback
+        // for anonymous students rejoining pre-deterministic-keying sessions.
         const deterministicKey = computeResponseKey(
           studentUid,
           currentUser.isAnonymous,
           sanitizedPin,
           classPeriod
         );
-
-        // Legacy-key fallback: before deterministic keying, every response
-        // (including anonymous PIN joiners) was keyed by `auth.uid`. If the
-        // student is rejoining an in-progress session that was created under
-        // the old scheme, resume at the legacy key so their in-flight work
-        // isn't lost and the teacher doesn't see a duplicate row. New docs
-        // are always created at the deterministic key.
-        let responseKey = deterministicKey;
-        let existingSnap = await getDoc(
-          doc(
-            db,
-            QUIZ_SESSIONS_COLLECTION,
+        const { key: responseKey, snap: existingSnap } =
+          await findExistingResponseDoc(
             sessionDoc.id,
-            RESPONSES_COLLECTION,
+            studentUid,
+            currentUser.isAnonymous,
             deterministicKey
-          )
-        );
-        if (
-          !existingSnap.exists() &&
-          currentUser.isAnonymous &&
-          deterministicKey !== studentUid
-        ) {
-          const legacySnap = await getDoc(
-            doc(
-              db,
-              QUIZ_SESSIONS_COLLECTION,
-              sessionDoc.id,
-              RESPONSES_COLLECTION,
-              studentUid
-            )
           );
-          if (legacySnap.exists()) {
-            responseKey = studentUid;
-            existingSnap = legacySnap;
-          }
-        }
 
         sessionIdRef.current = sessionDoc.id;
         responseKeyRef.current = responseKey;

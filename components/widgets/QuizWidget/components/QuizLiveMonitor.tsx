@@ -46,7 +46,7 @@ import {
   QuizConfig,
   ClassRoster,
 } from '@/types';
-import { gradeAnswer } from '@/hooks/useQuizSession';
+import { gradeAnswer, getResponseDocKey } from '@/hooks/useQuizSession';
 import {
   buildLiveLeaderboard,
   buildPinToNameMap,
@@ -1310,13 +1310,9 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             onRemove={
                               onRemoveStudent
                                 ? () => {
-                                    // _responseKey is the Firestore doc id
-                                    // populated by the teacher snapshot
-                                    // listener. Legacy docs (old keying
-                                    // scheme) had the key equal studentUid,
-                                    // so the fallback preserves behavior.
-                                    const key = r._responseKey ?? r.studentUid;
-                                    void Promise.resolve(onRemoveStudent(key))
+                                    void Promise.resolve(
+                                      onRemoveStudent(getResponseDocKey(r))
+                                    )
                                       .then(() => setConfirmRemove(null))
                                       .catch(() => undefined);
                                   }
@@ -1692,13 +1688,9 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             onRemove={
                               onRemoveStudent
                                 ? () => {
-                                    // _responseKey is the Firestore doc id
-                                    // populated by the teacher snapshot
-                                    // listener. Legacy docs (old keying
-                                    // scheme) had the key equal studentUid,
-                                    // so the fallback preserves behavior.
-                                    const key = r._responseKey ?? r.studentUid;
-                                    void Promise.resolve(onRemoveStudent(key))
+                                    void Promise.resolve(
+                                      onRemoveStudent(getResponseDocKey(r))
+                                    )
                                       .then(() => setConfirmRemove(null))
                                       .catch(() => undefined);
                                   }
