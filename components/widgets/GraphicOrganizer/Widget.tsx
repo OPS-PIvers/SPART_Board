@@ -129,7 +129,13 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const renderFrayer = () => (
-    <div className="grid grid-cols-2 grid-rows-2 h-full gap-2 p-2 relative">
+    <div
+      className="grid grid-cols-2 grid-rows-2 h-full relative"
+      style={{
+        gap: 'min(8px, 2cqmin)',
+        padding: 'min(8px, 2cqmin)',
+      }}
+    >
       <div
         className="border-2 border-slate-300 rounded relative"
         style={{
