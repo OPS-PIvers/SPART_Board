@@ -623,6 +623,26 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/plc_invitations/$(plcInviteDocId(plcId, emailLower))).data.status == 'pending';
     }
 
+    // True iff the pending update is any current member setting (or
+    // clearing) `sharedSheetUrl` and nothing else. `sharedSheetUrl` is
+    // populated by the first PLC member who creates a Share-with-PLC
+    // assignment — auto-created sheets can't require lead rights, because
+    // a teammate may kick off the first PLC assignment before the lead
+    // does. Constrained so this branch can't be used to smuggle other
+    // field changes (memberUids, leadUid, name, etc.).
+    //
+    // The value may be a string (setting the URL) or null (clearing after
+    // a stale-sheet 404/403, so the next assignment regenerates).
+    function isSettingPlcSharedSheetUrl() {
+      return (request.auth.uid in resource.data.memberUids)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['sharedSheetUrl', 'updatedAt'])
+        && (
+             request.resource.data.sharedSheetUrl is string
+             || request.resource.data.sharedSheetUrl == null
+           );
+    }
+
     // True iff the pending update is the caller self-removing from
     // memberUids (i.e. leaving the PLC). The lead can't use this path —
     // they must transfer leadership first or delete the PLC outright.
@@ -668,6 +688,7 @@ service cloud.firestore {
         )
         || isAcceptingPlcInvite(plcId)
         || isLeavingPlc()
+        || isSettingPlcSharedSheetUrl()
       );
 
       // Only the lead can dissolve the PLC.

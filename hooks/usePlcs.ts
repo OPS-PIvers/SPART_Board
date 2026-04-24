@@ -6,9 +6,11 @@ import {
   onSnapshot,
   doc,
   setDoc,
+  getDoc,
   getDocs,
   writeBatch,
   runTransaction,
+  updateDoc,
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
@@ -32,6 +34,26 @@ interface UsePlcsResult {
   leavePlc: (plcId: string) => Promise<void>;
   /** Lead-only: dissolve the PLC entirely. */
   deletePlc: (plcId: string) => Promise<void>;
+  /**
+   * Any member: persist the auto-created PLC Google Sheet URL on the PLC
+   * doc so teammates reuse it on subsequent assignments. No-ops when the
+   * PLC already has a URL set (first-writer-wins). Rejected by rules if
+   * the caller is not a member.
+   */
+  setPlcSharedSheetUrl: (plcId: string, url: string) => Promise<void>;
+  /**
+   * Any member: clear the cached sheet URL (e.g. after discovering the
+   * sheet was deleted in Drive). The next PLC assignment will create a
+   * fresh sheet.
+   */
+  clearPlcSharedSheetUrl: (plcId: string) => Promise<void>;
+  /**
+   * One-off read of a PLC's sharedSheetUrl. Used at assignment-create
+   * time when we need the current value without waiting for the next
+   * snapshot tick (the snapshot is trustworthy but we want a strong-read
+   * for the "already created?" check to avoid racing two teachers).
+   */
+  getPlcSharedSheetUrl: (plcId: string) => Promise<string | null>;
 }
 
 function parsePlc(id: string, data: Record<string, unknown>): Plc | null {
@@ -48,12 +70,20 @@ function parsePlc(id: string, data: Record<string, unknown>): Plc | null {
   for (const [k, v] of Object.entries(rawEmails)) {
     if (typeof v === 'string') memberEmails[k] = v;
   }
+  // sharedSheetUrl: optional string OR explicit null. Treat any other
+  // shape (including absent) as null so downstream code can rely on the
+  // "absent ⇒ null" equivalence.
+  let sharedSheetUrl: string | null = null;
+  if (typeof data.sharedSheetUrl === 'string') {
+    sharedSheetUrl = data.sharedSheetUrl;
+  }
   return {
     id,
     name: data.name,
     leadUid: data.leadUid,
     memberUids: data.memberUids,
     memberEmails,
+    sharedSheetUrl,
     createdAt: typeof data.createdAt === 'number' ? data.createdAt : 0,
     updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : 0,
   };
@@ -227,6 +257,41 @@ export const usePlcs = (): UsePlcsResult => {
     [user]
   );
 
+  // Any member of the PLC can set sharedSheetUrl when it is currently
+  // null/absent. The rule branch restricts the diff to sharedSheetUrl +
+  // updatedAt so one member can't also mutate memberUids on this path.
+  const setPlcSharedSheetUrl = useCallback(
+    async (plcId: string, url: string) => {
+      if (!user) return;
+      await updateDoc(doc(db, PLCS_COLLECTION, plcId), {
+        sharedSheetUrl: url,
+        updatedAt: Date.now(),
+      });
+    },
+    [user]
+  );
+
+  const clearPlcSharedSheetUrl = useCallback(
+    async (plcId: string) => {
+      if (!user) return;
+      await updateDoc(doc(db, PLCS_COLLECTION, plcId), {
+        sharedSheetUrl: null,
+        updatedAt: Date.now(),
+      });
+    },
+    [user]
+  );
+
+  const getPlcSharedSheetUrl = useCallback(
+    async (plcId: string): Promise<string | null> => {
+      const snap = await getDoc(doc(db, PLCS_COLLECTION, plcId));
+      if (!snap.exists()) return null;
+      const raw = (snap.data() as { sharedSheetUrl?: unknown }).sharedSheetUrl;
+      return typeof raw === 'string' && raw.length > 0 ? raw : null;
+    },
+    []
+  );
+
   return useMemo(
     () => ({
       plcs,
@@ -236,7 +301,21 @@ export const usePlcs = (): UsePlcsResult => {
       removeMember,
       leavePlc,
       deletePlc,
+      setPlcSharedSheetUrl,
+      clearPlcSharedSheetUrl,
+      getPlcSharedSheetUrl,
     }),
-    [plcs, loading, createPlc, renamePlc, removeMember, leavePlc, deletePlc]
+    [
+      plcs,
+      loading,
+      createPlc,
+      renamePlc,
+      removeMember,
+      leavePlc,
+      deletePlc,
+      setPlcSharedSheetUrl,
+      clearPlcSharedSheetUrl,
+      getPlcSharedSheetUrl,
+    ]
   );
 };

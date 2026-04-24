@@ -58,6 +58,34 @@ interface SheetsValueRange {
   values?: string[][];
 }
 
+interface DrivePermission {
+  id: string;
+  type?: string;
+  role?: string;
+  emailAddress?: string;
+}
+
+interface DrivePermissionsListResponse {
+  permissions?: DrivePermission[];
+}
+
+/**
+ * Thrown by `appendToExistingSheet` when the shared PLC sheet is either
+ * missing (404) or the caller has lost access (403). Callers catch this
+ * to clear the cached `sharedSheetUrl` on `plcs/{id}` and regenerate a
+ * fresh sheet before retrying the append, rather than surfacing the
+ * raw API error to students mid-submission.
+ */
+export class PlcSheetMissingError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = 'PlcSheetMissingError';
+  }
+}
+
 export class QuizDriveService {
   private accessToken: string;
 
@@ -673,6 +701,17 @@ export class QuizDriveService {
     if (!checkRes.ok) {
       const err = await checkRes.text();
       console.error('Sheets read error:', err);
+      // 404 = sheet was deleted in Drive. 403 = caller lost access (e.g.
+      // the creator revoked the share, or the sheet's owner transferred
+      // ownership to a domain that refuses external writers). Either way,
+      // signal the caller to clear the cached URL and regenerate rather
+      // than bubbling a raw API failure to a student mid-submission.
+      if (checkRes.status === 404 || checkRes.status === 403) {
+        throw new PlcSheetMissingError(
+          'Shared PLC sheet is missing or inaccessible.',
+          checkRes.status
+        );
+      }
       throw new Error(
         'Failed to access the shared sheet. Check that the URL is correct and the sheet is shared with you.'
       );
@@ -701,12 +740,177 @@ export class QuizDriveService {
     if (!appendRes.ok) {
       const err = await appendRes.text();
       console.error('Sheets append error:', err);
+      if (appendRes.status === 404 || appendRes.status === 403) {
+        throw new PlcSheetMissingError(
+          'Shared PLC sheet is missing or inaccessible.',
+          appendRes.status
+        );
+      }
       throw new Error(
         'Failed to append results to the shared sheet. Check your permissions.'
       );
     }
 
     return `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+  }
+
+  // ─── PLC shared-sheet provisioning ─────────────────────────────────────────
+
+  /**
+   * Create a new Google Sheet owned by the caller for use as a PLC's
+   * shared export destination, and grant `writer` permission to every
+   * email in `memberEmailsToShareWith`. The caller's own email must NOT
+   * appear in the list — they already own the sheet.
+   *
+   * Returns the spreadsheet URL for persisting onto `plcs/{id}.sharedSheetUrl`
+   * and the assignment's `plcSheetUrl`. Permission-grant failures are
+   * logged and swallowed individually so that one teammate with an invalid
+   * email doesn't block the sheet from being created — reconciliation on
+   * invite-accept will retry missing grants.
+   */
+  async createPlcSheetAndShare(args: {
+    plcName: string;
+    memberEmailsToShareWith: string[];
+  }): Promise<{ url: string; spreadsheetId: string }> {
+    const title = `${args.plcName} – PLC Results`;
+    const createRes = await fetch(SHEETS_API_URL, {
+      method: 'POST',
+      headers: this.jsonHeaders,
+      body: JSON.stringify({
+        properties: { title },
+        // Start with a blank Results tab — headers are written on the
+        // first appendToExistingSheet call when dataRows arrive.
+        sheets: [{ properties: { title: 'Results' } }],
+      }),
+    });
+    if (!createRes.ok) {
+      const err = await createRes.text();
+      console.error('PLC sheet create error:', err);
+      if (createRes.status === 401 || createRes.status === 403) {
+        throw new Error(
+          'Google Sheets access is not granted. Sign in again to enable PLC sharing.'
+        );
+      }
+      throw new Error('Failed to create the PLC shared sheet.');
+    }
+    const sheet = (await createRes.json()) as {
+      spreadsheetId: string;
+      spreadsheetUrl: string;
+    };
+
+    // Grant writer permission to every teammate email. Best-effort: we
+    // don't let a single failed grant abort the whole flow, since the
+    // sheet itself is already created and usable by the owner.
+    const unique = new Set(
+      args.memberEmailsToShareWith
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.length > 0 && e.includes('@'))
+    );
+    for (const email of unique) {
+      try {
+        await this.grantSheetWriterPermission(sheet.spreadsheetId, email);
+      } catch (err) {
+        console.error(`Failed to share PLC sheet with ${email}:`, err);
+      }
+    }
+
+    return { url: sheet.spreadsheetUrl, spreadsheetId: sheet.spreadsheetId };
+  }
+
+  /**
+   * Ensure every email in `memberEmailsToShareWith` has writer access on
+   * the PLC sheet. Called from the invite-accept path so a teammate
+   * admitted after the sheet was created still gets access automatically.
+   *
+   * Silent no-op when the caller is not the sheet owner (listing
+   * permissions returns 403) — the actual owner will reconcile next time
+   * they assign something. A 404 is treated the same way; the caller
+   * should clear `plcs/{id}.sharedSheetUrl` if it can be confirmed
+   * elsewhere that the sheet is truly gone.
+   */
+  async reconcilePlcSheetPermissions(args: {
+    sheetUrl: string;
+    memberEmailsToShareWith: string[];
+  }): Promise<{ granted: string[]; skipped: boolean }> {
+    const spreadsheetId = QuizDriveService.extractSheetId(args.sheetUrl);
+    if (!spreadsheetId) return { granted: [], skipped: true };
+
+    const wanted = new Set(
+      args.memberEmailsToShareWith
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.length > 0 && e.includes('@'))
+    );
+    if (wanted.size === 0) return { granted: [], skipped: false };
+
+    // List existing permissions so we only grant what's missing. fields=
+    // restricts the payload to the keys we consume.
+    const listRes = await fetch(
+      `${DRIVE_API_URL}/files/${spreadsheetId}/permissions?fields=permissions(id,type,role,emailAddress)`,
+      { headers: this.authHeaders }
+    );
+    if (!listRes.ok) {
+      // 403 = caller isn't the owner (so can't list permissions); 404 =
+      // sheet gone. Either way we can't do anything here — the actual
+      // owner (or the next assignment create) will reconcile.
+      if (listRes.status === 403 || listRes.status === 404) {
+        return { granted: [], skipped: true };
+      }
+      throw new Error(
+        `Failed to list PLC sheet permissions (${listRes.status})`
+      );
+    }
+    const listData = (await listRes.json()) as DrivePermissionsListResponse;
+    const existing = new Set(
+      (listData.permissions ?? [])
+        .map((p) => (p.emailAddress ?? '').toLowerCase())
+        .filter((e) => e.length > 0)
+    );
+
+    const granted: string[] = [];
+    for (const email of wanted) {
+      if (existing.has(email)) continue;
+      try {
+        await this.grantSheetWriterPermission(spreadsheetId, email);
+        granted.push(email);
+      } catch (err) {
+        console.error(`Failed to grant PLC sheet access to ${email}:`, err);
+      }
+    }
+    return { granted, skipped: false };
+  }
+
+  /**
+   * Low-level helper: grant a single `writer` permission on a Drive file
+   * by email. Extracted so `createPlcSheetAndShare` and
+   * `reconcilePlcSheetPermissions` share one code path.
+   *
+   * `sendNotificationEmail=false` because the sheet URL is surfaced inside
+   * SpartBoard — a separate Drive-generated email would be noise. Drive
+   * rejects the argument silently when the caller lacks the scope, so we
+   * still rely on the response check below to detect failure.
+   */
+  private async grantSheetWriterPermission(
+    spreadsheetId: string,
+    email: string
+  ): Promise<void> {
+    const res = await fetch(
+      `${DRIVE_API_URL}/files/${spreadsheetId}/permissions?sendNotificationEmail=false`,
+      {
+        method: 'POST',
+        headers: this.jsonHeaders,
+        body: JSON.stringify({
+          role: 'writer',
+          type: 'user',
+          emailAddress: email,
+        }),
+      }
+    );
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(
+        `Drive permission grant failed (${res.status}): ${body.slice(0, 200)}`
+      );
+    }
   }
 
   /**

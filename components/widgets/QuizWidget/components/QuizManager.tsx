@@ -59,6 +59,7 @@ import {
   makeEmptyPickerValue,
   type AssignClassPickerValue,
 } from '@/components/common/AssignClassPicker.helpers';
+import { usePlcs } from '@/hooks/usePlcs';
 import {
   mapLegacyClassIdsToRosterIds,
   resolveAssignmentTargets,
@@ -98,6 +99,16 @@ export interface PlcOptions {
   periodName?: string;
   periodNames?: string[];
   plcSheetUrl?: string;
+  /**
+   * Selected PLC whose shared sheet should receive this assignment's
+   * results. When set and `plcMode === true`, the caller (QuizWidget)
+   * resolves `plcSheetUrl` by either reading `plcs/{plcId}.sharedSheetUrl`
+   * or auto-creating a new sheet and caching it back onto the PLC doc.
+   * `undefined` means the teacher is opting into the legacy
+   * manual-paste-URL flow (e.g. they aren't a member of any PLC or
+   * auto-create failed).
+   */
+  plcId?: string;
 }
 
 /* ─── Assign-modal options shape (internal) ───────────────────────────────── */
@@ -116,6 +127,11 @@ interface QuizAssignOptions {
   plcMode: boolean;
   teacherName: string;
   plcSheetUrl: string;
+  /**
+   * Selected PLC id when the teacher is a member of one or more PLCs.
+   * Empty string = no PLC selected (manual-URL fallback).
+   */
+  plcId: string;
   /** Unified roster picker state. */
   picker: AssignClassPickerValue;
 }
@@ -167,6 +183,7 @@ function buildDefaultAssignOptions(
     plcMode: config.plcMode ?? false,
     teacherName: config.teacherName ?? '',
     plcSheetUrl: config.plcSheetUrl ?? '',
+    plcId: '',
     picker:
       rememberedRosters.length > 0
         ? { rosterIds: rememberedRosters }
@@ -692,6 +709,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       periodNames:
         effectivePeriodNames.length > 0 ? effectivePeriodNames : undefined,
       plcSheetUrl: assignOptions.plcSheetUrl || undefined,
+      plcId: assignOptions.plcId || undefined,
     };
     const sessionOptions: QuizSessionOptions = {
       tabWarningsEnabled: assignOptions.tabWarningsEnabled,
@@ -1403,6 +1421,32 @@ const AssignPlcSlot: React.FC<{
     value: QuizAssignOptions[K]
   ) => onChange({ ...options, [key]: value });
 
+  // Teacher's PLC memberships drive the selector below. If the teacher
+  // belongs to zero PLCs, the modal falls back to the manual-URL field so
+  // the feature isn't locked behind joining a PLC first. When they
+  // belong to exactly one PLC, pre-select it so enabling Share-with-PLC is
+  // truly a one-toggle action.
+  const { plcs } = usePlcs();
+
+  // Auto-select the sole PLC so toggling Share-with-PLC doesn't stall on
+  // an empty selector. Uses the "adjust state during render" pattern to
+  // avoid an effect-driven sync loop.
+  const [prevPlcKey, setPrevPlcKey] = useState('');
+  const plcKey = plcs.map((p) => p.id).join(',');
+  if (prevPlcKey !== plcKey) {
+    setPrevPlcKey(plcKey);
+    if (plcs.length === 1 && options.plcId !== plcs[0].id) {
+      onChange({ ...options, plcId: plcs[0].id });
+    } else if (options.plcId && !plcs.some((p) => p.id === options.plcId)) {
+      // Selected PLC disappeared (deleted / member removed) — clear it.
+      onChange({ ...options, plcId: '' });
+    }
+  }
+
+  const selectedPlc = plcs.find((p) => p.id === options.plcId) ?? null;
+  const hasCachedSheet = Boolean(selectedPlc?.sharedSheetUrl);
+  const hasPlcs = plcs.length > 0;
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -1433,6 +1477,38 @@ const AssignPlcSlot: React.FC<{
 
       {options.plcMode && (
         <div className="space-y-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
+          {hasPlcs && (
+            <div>
+              <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                PLC
+              </label>
+              <select
+                value={options.plcId}
+                onChange={(e) => update('plcId', e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Select a PLC…</option>
+                {plcs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {selectedPlc && (
+                <p className="text-xxs text-slate-400 mt-0.5">
+                  {hasCachedSheet
+                    ? 'Using your PLC’s existing Google Sheet — teammates already have access.'
+                    : 'A Google Sheet will be created in your Drive and shared with every teammate automatically.'}
+                </p>
+              )}
+              {!selectedPlc && (
+                <p className="text-xxs text-slate-400 mt-0.5">
+                  Pick a PLC so results land in its shared Google Sheet.
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
               Your Name
@@ -1449,29 +1525,46 @@ const AssignPlcSlot: React.FC<{
             </p>
           </div>
 
-          <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
-              Shared Google Sheet URL
-            </label>
-            <input
-              type="text"
-              value={options.plcSheetUrl}
-              onChange={(e) => update('plcSheetUrl', e.target.value)}
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {plcSheetUrlInvalid && (
-              <div className="flex items-center gap-1 mt-1 text-amber-600">
-                <AlertTriangle className="w-3 h-3" />
-                <span className="text-xxs">
-                  This doesn&apos;t look like a Google Sheets URL
-                </span>
-              </div>
-            )}
-            <p className="text-xxs text-slate-400 mt-0.5">
-              Paste the URL of the Google Sheet shared by your PLC lead
-            </p>
-          </div>
+          {/*
+           * Manual URL fallback: surfaced only when the teacher has NO
+           * PLCs (so they can still paste a URL shared out-of-band) or
+           * they've pasted one already (editing a legacy assignment
+           * created pre-auto-create). Hidden in the normal auto-create
+           * path so PLC members aren't asked to paste what we'll create
+           * for them.
+           */}
+          {(!hasPlcs || options.plcSheetUrl) && (
+            <div>
+              <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                Shared Google Sheet URL{' '}
+                {hasPlcs && (
+                  <span className="font-normal normal-case tracking-normal text-slate-400">
+                    (optional fallback)
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={options.plcSheetUrl}
+                onChange={(e) => update('plcSheetUrl', e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              {plcSheetUrlInvalid && (
+                <div className="flex items-center gap-1 mt-1 text-amber-600">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span className="text-xxs">
+                    This doesn&apos;t look like a Google Sheets URL
+                  </span>
+                </div>
+              )}
+              <p className="text-xxs text-slate-400 mt-0.5">
+                {hasPlcs
+                  ? 'Leave blank to let SpartBoard auto-create and share a sheet for your PLC.'
+                  : 'Paste the URL of the Google Sheet shared by your PLC lead.'}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </>

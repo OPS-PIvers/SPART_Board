@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import { QuizResponse, QuizData, QuizQuestion, QuizConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
+import { usePlcs } from '@/hooks/usePlcs';
+import { PlcSheetMissingError } from '@/utils/quizDriveService';
 import { QuizDriveService } from '@/utils/quizDriveService';
 import { gradeAnswer, getResponseDocKey } from '@/hooks/useQuizSession';
 import { useDashboard } from '@/context/useDashboard';
@@ -77,7 +79,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 }) => {
   const { activeDashboard, updateWidget, addWidget, addToast, rosters } =
     useDashboard();
-  const { googleAccessToken } = useAuth();
+  const { googleAccessToken, user } = useAuth();
+  const { plcs, clearPlcSharedSheetUrl, setPlcSharedSheetUrl } = usePlcs();
   const [exporting, setExporting] = useState(false);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -235,18 +238,68 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     setExportError(null);
     try {
       const svc = new QuizDriveService(googleAccessToken);
-      const url = await svc.exportResultsToSheet(
-        quiz.title,
-        responses,
-        quiz.questions,
-        {
-          pinToName: exportPinToName,
-          teacherName: config.teacherName,
-          periodName: config.periodName,
-          plcMode: config.plcMode,
-          plcSheetUrl: config.plcSheetUrl,
+      const exportOpts = {
+        pinToName: exportPinToName,
+        teacherName: config.teacherName,
+        periodName: config.periodName,
+        plcMode: config.plcMode,
+        plcSheetUrl: config.plcSheetUrl,
+      };
+      let url: string;
+      try {
+        url = await svc.exportResultsToSheet(
+          quiz.title,
+          responses,
+          quiz.questions,
+          exportOpts
+        );
+      } catch (exportErr) {
+        // Stale PLC sheet recovery: the cached URL points at a sheet
+        // that's been deleted (404) or unshared (403). Clear the cached
+        // URL on the owning PLC doc, create a fresh sheet in this
+        // teacher's Drive, share it with teammates, and retry the
+        // append. Only attempt this when we can pin the URL to exactly
+        // one PLC the teacher is a member of — otherwise we don't know
+        // which plcs/{id} to update.
+        if (
+          exportErr instanceof PlcSheetMissingError &&
+          config.plcMode &&
+          config.plcSheetUrl &&
+          user
+        ) {
+          const owningPlc = plcs.find(
+            (p) => p.sharedSheetUrl === config.plcSheetUrl
+          );
+          if (owningPlc) {
+            await clearPlcSharedSheetUrl(owningPlc.id);
+            const teammateEmails = owningPlc.memberUids
+              .filter((uid) => uid !== user.uid)
+              .map((uid) => owningPlc.memberEmails[uid])
+              .filter(
+                (e): e is string => typeof e === 'string' && e.length > 0
+              );
+            const created = await svc.createPlcSheetAndShare({
+              plcName: owningPlc.name,
+              memberEmailsToShareWith: teammateEmails,
+            });
+            await setPlcSharedSheetUrl(owningPlc.id, created.url);
+            url = await svc.exportResultsToSheet(
+              quiz.title,
+              responses,
+              quiz.questions,
+              { ...exportOpts, plcSheetUrl: created.url }
+            );
+            addToast(
+              'The previous PLC sheet was missing — created a fresh one.',
+              'info'
+            );
+          } else {
+            throw exportErr;
+          }
+        } else {
+          throw exportErr;
         }
-      );
+      }
       setExportUrl(url);
       if (config.plcMode) {
         addToast('Results exported to shared PLC sheet', 'success');

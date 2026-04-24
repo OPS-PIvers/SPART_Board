@@ -5,6 +5,7 @@ import {
   where,
   onSnapshot,
   doc,
+  getDoc,
   setDoc,
   deleteDoc,
   runTransaction,
@@ -14,6 +15,7 @@ import {
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { PlcInvitation } from '@/types';
+import { QuizDriveService } from '@/utils/quizDriveService';
 
 const INVITATIONS_COLLECTION = 'plc_invitations';
 const PLCS_COLLECTION = 'plcs';
@@ -102,7 +104,7 @@ function parseInvite(
  * the deterministic doc id and email-normalization logic.
  */
 export const usePlcInvitations = (): UsePlcInvitationsResult => {
-  const { user } = useAuth();
+  const { user, googleAccessToken } = useAuth();
   const [pendingInvites, setPendingInvites] = useState<PlcInvitation[]>([]);
   const [sentInvites, setSentInvites] = useState<PlcInvitation[]>([]);
   const [pendingLoaded, setPendingLoaded] = useState(false);
@@ -255,8 +257,52 @@ export const usePlcInvitations = (): UsePlcInvitationsResult => {
         }
         throw err;
       }
+
+      // Post-accept: if the PLC already has a shared Google Sheet, best-
+      // effort grant the new member writer access so they can append
+      // submissions immediately. No-op when:
+      //   - the sheet hasn't been created yet (first PLC assignment will
+      //     pick up the new member via memberEmails)
+      //   - the accepter doesn't have a Google OAuth token (rare, but
+      //     sign-in could still be in progress)
+      //   - the accepter isn't the sheet owner (403 on permissions list) —
+      //     the actual owner will reconcile next time they assign
+      // Any failure here is swallowed; membership has already been
+      // persisted, so the invite-accept flow shouldn't regress on a
+      // Drive-side hiccup.
+      try {
+        if (googleAccessToken) {
+          const plcSnap = await getDoc(plcRef);
+          if (plcSnap.exists()) {
+            const data = plcSnap.data() as {
+              sharedSheetUrl?: unknown;
+              memberEmails?: Record<string, unknown>;
+            };
+            const sheetUrl =
+              typeof data.sharedSheetUrl === 'string'
+                ? data.sharedSheetUrl
+                : null;
+            if (sheetUrl) {
+              const emails: string[] = [];
+              for (const v of Object.values(data.memberEmails ?? {})) {
+                if (typeof v === 'string' && v.length > 0) emails.push(v);
+              }
+              const service = new QuizDriveService(googleAccessToken);
+              await service.reconcilePlcSheetPermissions({
+                sheetUrl,
+                memberEmailsToShareWith: emails,
+              });
+            }
+          }
+        }
+      } catch (reconcileErr) {
+        console.error(
+          '[usePlcInvitations] PLC sheet reconcile after accept failed:',
+          reconcileErr
+        );
+      }
     },
-    [user, myEmailLower]
+    [user, myEmailLower, googleAccessToken]
   );
 
   const declineInvite = useCallback(
