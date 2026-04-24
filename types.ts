@@ -2790,8 +2790,7 @@ export interface NeedDoPutThenConfig {
   thenItems?: NeedDoPutThenTile[];
   fontFamily?: string;
   fontColor?: string;
-  textSizePreset?: 'small' | 'medium' | 'large' | 'x-large';
-  scaleMultiplier?: number;
+  textSizePreset?: TextSizePreset;
   cardColor?: string;
   cardOpacity?: number;
 }

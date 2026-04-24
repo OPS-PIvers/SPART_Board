@@ -14,10 +14,7 @@ import { TypographySettings } from '@/components/common/TypographySettings';
 import { TextSizePresetSettings } from '@/components/common/TextSizePresetSettings';
 import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
 import { IconPicker } from '@/components/widgets/InstructionalRoutines/IconPicker';
-import {
-  MATERIAL_COLOR_OPTIONS,
-  getContrastingTextColor,
-} from '@/components/widgets/MaterialsWidget/constants';
+import { getContrastingTextColor } from '@/components/widgets/MaterialsWidget/constants';
 import {
   DEFAULT_NEED_ITEMS,
   DEFAULT_PUT_ITEMS,
@@ -162,22 +159,19 @@ const TileEditor: React.FC<TileEditorProps> = ({
                 placeholder="Label"
                 maxLength={80}
               />
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  className="h-7 w-7 rounded-lg border border-slate-200 shadow-sm"
-                  style={{ backgroundColor: item.color, color: textColor }}
-                  title="Pick color"
-                  aria-label="Pick color"
-                />
+              <label
+                className="relative shrink-0 h-7 w-7 rounded-lg border border-slate-200 shadow-sm cursor-pointer focus-within:ring-2 focus-within:ring-brand-blue-primary"
+                style={{ backgroundColor: item.color, color: textColor }}
+                title={`Pick color for ${item.label || 'item'}`}
+              >
                 <input
                   type="color"
                   value={item.color}
                   onChange={(e) => updateItem(idx, { color: e.target.value })}
-                  className="absolute inset-0 h-7 w-7 opacity-0 cursor-pointer"
-                  aria-label="Pick color"
+                  className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+                  aria-label={`Pick color for ${item.label || 'item'}`}
                 />
-              </div>
+              </label>
               <button
                 type="button"
                 onClick={() => removeItem(idx)}
@@ -189,17 +183,6 @@ const TileEditor: React.FC<TileEditorProps> = ({
             </div>
           );
         })}
-      </div>
-
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {MATERIAL_COLOR_OPTIONS.map((color) => (
-          <div
-            key={color}
-            className="w-4 h-4 rounded-full border border-slate-200"
-            style={{ backgroundColor: color }}
-            title={color}
-          />
-        ))}
       </div>
 
       <button
@@ -217,10 +200,15 @@ const TileEditor: React.FC<TileEditorProps> = ({
 
 interface ListEditorProps {
   items: string[];
+  defaults: string[];
   onChange: (items: string[]) => void;
 }
 
-const ListEditor: React.FC<ListEditorProps> = ({ items, onChange }) => {
+const ListEditor: React.FC<ListEditorProps> = ({
+  items,
+  defaults,
+  onChange,
+}) => {
   const updateItem = (index: number, value: string) => {
     const next = items.map((item, i) => (i === index ? value : item));
     onChange(next);
@@ -236,8 +224,24 @@ const ListEditor: React.FC<ListEditorProps> = ({ items, onChange }) => {
     onChange(items.filter((_, i) => i !== index));
   };
 
+  const restoreDefaults = () => {
+    onChange([...defaults]);
+  };
+
   return (
     <div>
+      <div className="flex items-center justify-end mb-2">
+        <button
+          type="button"
+          onClick={restoreDefaults}
+          className="flex items-center gap-1 text-xxs font-bold uppercase tracking-wide text-slate-500 hover:text-brand-blue-primary transition-colors"
+          title="Restore defaults"
+        >
+          <RotateCcw className="w-3 h-3" />
+          Restore
+        </button>
+      </div>
+
       <div className="space-y-2">
         {items.map((text, idx) => (
           <div key={idx} className="flex items-start gap-2">
@@ -318,6 +322,7 @@ export const NeedDoPutThenSettings: React.FC<{ widget: WidgetData }> = ({
       >
         <ListEditor
           items={doItems}
+          defaults={DEFAULT_DO_ITEMS}
           onChange={(items) => update({ doItems: items })}
         />
       </CollapsibleSection>

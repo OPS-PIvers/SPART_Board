@@ -38,9 +38,10 @@ const LUCIDE_ICON_MAP = LucideIcons as unknown as Record<
 const resolveIcon = (iconName?: string): React.ElementType =>
   (iconName ? LUCIDE_ICON_MAP[iconName] : undefined) ?? LucideIcons.Package;
 
-const DRAWER_SIZE_PX = 200;
-const DRAWER_OVERLAP_PX = 22;
-const CORNER_SAFE_PX = 18;
+const DRAWER_SIDE_SIZE = 'min(240px, 60%)';
+const DRAWER_BOTTOM_SIZE = 'min(240px, 65%)';
+const DRAWER_OVERLAP = 'min(28px, 7%)';
+const CORNER_SAFE = 'min(24px, 5.5%)';
 
 type TileOrientation = 'portrait' | 'landscape' | 'auto';
 
@@ -86,8 +87,11 @@ const TileGrid: React.FC<TileGridProps> = ({
             className="opacity-30"
           />
           <span
-            className="mt-2 italic"
-            style={{ fontSize: 'min(12px, 5cqmin)' }}
+            className="italic"
+            style={{
+              marginTop: 'min(8px, 2cqmin)',
+              fontSize: 'min(12px, 5cqmin)',
+            }}
           >
             Flip to add items
           </span>
@@ -197,7 +201,7 @@ const NumberedList: React.FC<NumberedListProps> = ({
               fontStyle: text ? 'normal' : 'italic',
             }}
           >
-            {text || 'User provided text'}
+            {text || `Step ${idx + 1}`}
           </span>
         </li>
       ))}
@@ -253,7 +257,7 @@ const IconHero: React.FC<IconHeroProps> = ({
           fontStyle: item.label ? 'normal' : 'italic',
         }}
       >
-        {item.label || 'User provided text'}
+        {item.label || 'Add a label'}
       </span>
     </div>
   );
@@ -311,14 +315,14 @@ const IconList: React.FC<IconListProps> = ({
             style={{
               flex: 1,
               containerType: 'size',
-              gap: 'min(14px, 8cqh, 6cqw)',
+              gap: 'min(14px, 7cqmin)',
             }}
           >
             <span
               className="rounded-full flex items-center justify-center shrink-0"
               style={{
-                width: `min(${64 * sizeMultiplier}px, ${55 * sizeMultiplier}cqh, ${32 * sizeMultiplier}cqw)`,
-                height: `min(${64 * sizeMultiplier}px, ${55 * sizeMultiplier}cqh, ${32 * sizeMultiplier}cqw)`,
+                width: `min(${64 * sizeMultiplier}px, ${55 * sizeMultiplier}cqmin)`,
+                height: `min(${64 * sizeMultiplier}px, ${55 * sizeMultiplier}cqmin)`,
                 background: item.color,
                 color: iconTextColor,
               }}
@@ -326,21 +330,21 @@ const IconList: React.FC<IconListProps> = ({
               <Icon
                 strokeWidth={2.5}
                 style={{
-                  width: `min(${36 * sizeMultiplier}px, ${32 * sizeMultiplier}cqh, ${18 * sizeMultiplier}cqw)`,
-                  height: `min(${36 * sizeMultiplier}px, ${32 * sizeMultiplier}cqh, ${18 * sizeMultiplier}cqw)`,
+                  width: `min(${36 * sizeMultiplier}px, ${32 * sizeMultiplier}cqmin)`,
+                  height: `min(${36 * sizeMultiplier}px, ${32 * sizeMultiplier}cqmin)`,
                 }}
               />
             </span>
             <span
               className="border-b border-slate-300 flex-1 break-words whitespace-normal leading-snug"
               style={{
-                fontSize: `min(${26 * sizeMultiplier}px, ${26 * sizeMultiplier}cqh, ${11 * sizeMultiplier}cqw)`,
-                paddingBottom: 'min(4px, 2cqh)',
+                fontSize: `min(${26 * sizeMultiplier}px, ${28 * sizeMultiplier}cqmin)`,
+                paddingBottom: 'min(4px, 2cqmin)',
                 color: item.label ? fontColor : '#94a3b8',
                 fontStyle: item.label ? 'normal' : 'italic',
               }}
             >
-              {item.label || 'User provided text'}
+              {item.label || 'Add a label'}
             </span>
           </li>
         );
@@ -386,30 +390,34 @@ const Drawer: React.FC<DrawerProps> = ({
     padding: 'min(10px, 3cqmin)',
   };
 
+  const overlapPlusGap = `calc(${DRAWER_OVERLAP} + 6px)`;
+  const sideOffset = `calc(${DRAWER_OVERLAP} - ${DRAWER_SIDE_SIZE})`;
+  const bottomOffset = `calc(${DRAWER_OVERLAP} - ${DRAWER_BOTTOM_SIZE})`;
+
   if (side === 'left') {
     style.top = -1;
     style.bottom = -1;
-    style.left = -(DRAWER_SIZE_PX - DRAWER_OVERLAP_PX);
-    style.width = DRAWER_SIZE_PX;
-    basePad.paddingTop = CORNER_SAFE_PX;
-    basePad.paddingBottom = CORNER_SAFE_PX;
-    basePad.paddingRight = DRAWER_OVERLAP_PX + 6;
+    style.left = sideOffset;
+    style.width = DRAWER_SIDE_SIZE;
+    basePad.paddingTop = CORNER_SAFE;
+    basePad.paddingBottom = CORNER_SAFE;
+    basePad.paddingRight = overlapPlusGap;
   } else if (side === 'right') {
     style.top = -1;
     style.bottom = -1;
-    style.right = -(DRAWER_SIZE_PX - DRAWER_OVERLAP_PX);
-    style.width = DRAWER_SIZE_PX;
-    basePad.paddingTop = CORNER_SAFE_PX;
-    basePad.paddingBottom = CORNER_SAFE_PX;
-    basePad.paddingLeft = DRAWER_OVERLAP_PX + 6;
+    style.right = sideOffset;
+    style.width = DRAWER_SIDE_SIZE;
+    basePad.paddingTop = CORNER_SAFE;
+    basePad.paddingBottom = CORNER_SAFE;
+    basePad.paddingLeft = overlapPlusGap;
   } else {
     style.left = -1;
     style.right = -1;
-    style.bottom = -(DRAWER_SIZE_PX - DRAWER_OVERLAP_PX);
-    style.height = DRAWER_SIZE_PX;
-    basePad.paddingLeft = CORNER_SAFE_PX;
-    basePad.paddingRight = CORNER_SAFE_PX;
-    basePad.paddingTop = DRAWER_OVERLAP_PX + 6;
+    style.bottom = bottomOffset;
+    style.height = DRAWER_BOTTOM_SIZE;
+    basePad.paddingLeft = CORNER_SAFE;
+    basePad.paddingRight = CORNER_SAFE;
+    basePad.paddingTop = overlapPlusGap;
   }
 
   return (
