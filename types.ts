@@ -1852,6 +1852,17 @@ export interface QuizResponse {
   tabSwitchWarnings?: number;
   /** Which class period the student selected when joining (multi-class support). */
   classPeriod?: string;
+  /**
+   * Number of times this student has completed the quiz under this response
+   * doc. Incremented on the transition `in-progress -> completed` via
+   * `completeQuiz`. Used together with `QuizSession.attemptLimit` to enforce
+   * the attempts cap: a student can re-join (and the doc is reset to
+   * `status: 'joined'`) until `completedAttempts >= attemptLimit`.
+   *
+   * Undefined on legacy docs written before multi-attempt support; the hook
+   * treats missing+`status==='completed'` as a single completed attempt.
+   */
+  completedAttempts?: number;
 }
 
 /** Global admin configuration for the Quiz widget */

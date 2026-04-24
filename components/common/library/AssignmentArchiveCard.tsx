@@ -16,7 +16,13 @@
  * shared `LibraryBadgeTone` convention.
  */
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { MoreHorizontal } from 'lucide-react';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -84,8 +90,10 @@ const OverflowMenu: React.FC<OverflowMenuProps> = ({ actions }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Dismiss on outside click — covers both the trigger wrapper and the
-  // portalled menu, so clicks inside the menu don't close it.
-  useClickOutside(wrapperRef, () => setOpen(false), [menuRef]);
+  // portalled menu, so clicks inside the menu don't close it. Memoized
+  // so `useClickOutside` doesn't re-subscribe DOM listeners every render.
+  const ignoreRefs = useMemo(() => [menuRef], []);
+  useClickOutside(wrapperRef, () => setOpen(false), ignoreRefs);
 
   // Measure trigger position when the menu opens so the portal renders
   // flush under it. `opacity-70` on archive cards creates a stacking

@@ -20,6 +20,7 @@ import type {
   ClassRoster,
 } from '@/types';
 import { Toggle } from '@/components/common/Toggle';
+import { AttemptLimitRow } from './AttemptLimitRow';
 import {
   AssignModal,
   type AssignModeOption,
@@ -396,49 +397,6 @@ const SectionHeader: React.FC<{ label: string }> = ({ label }) => (
   <p className="text-xxs font-bold text-brand-blue-primary/60 uppercase tracking-widest pt-1">
     {label}
   </p>
-);
-
-const ATTEMPT_OPTIONS: { label: string; value: number | null }[] = [
-  { label: '1', value: 1 },
-  { label: '2', value: 2 },
-  { label: '3', value: 3 },
-  { label: 'Unlimited', value: null },
-];
-
-const AttemptLimitRow: React.FC<{
-  value: number | null;
-  onChange: (v: number | null) => void;
-}> = ({ value, onChange }) => (
-  <div>
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-sm font-bold text-brand-blue-dark">
-        Attempts Allowed
-      </span>
-      <div className="inline-flex rounded-lg border border-slate-200 bg-white overflow-hidden">
-        {ATTEMPT_OPTIONS.map((opt) => {
-          const active = value === opt.value;
-          return (
-            <button
-              key={opt.label}
-              type="button"
-              onClick={() => onChange(opt.value)}
-              className={
-                'px-3 py-1.5 text-xs font-bold transition ' +
-                (active
-                  ? 'bg-brand-blue-primary text-white'
-                  : 'text-slate-600 hover:bg-slate-50')
-              }
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-    <p className="text-xxs text-slate-500 mt-0.5">
-      Remove a student from the live monitor to reset their attempt.
-    </p>
-  </div>
 );
 
 const ToggleRow: React.FC<{

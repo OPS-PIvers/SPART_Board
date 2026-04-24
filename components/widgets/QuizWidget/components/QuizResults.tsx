@@ -909,9 +909,24 @@ const StudentsTab: React.FC<{
                     onClick={() => {
                       setDeletingKey(rowKey);
                       setConfirmDeleteKey(null);
-                      void onDeleteResponse?.(rowKey).finally(() => {
+                      const pending = onDeleteResponse?.(rowKey);
+                      if (!pending) {
                         setDeletingKey((k) => (k === rowKey ? null : k));
-                      });
+                        return;
+                      }
+                      void pending
+                        .catch((err: unknown) => {
+                          console.error(
+                            '[QuizResults] failed to delete response',
+                            err
+                          );
+                          window.alert(
+                            `Failed to delete ${displayName}\u2019s submission. Please try again.`
+                          );
+                        })
+                        .finally(() => {
+                          setDeletingKey((k) => (k === rowKey ? null : k));
+                        });
                     }}
                     disabled={isDeleting}
                     className="bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold rounded-lg px-3 py-1"

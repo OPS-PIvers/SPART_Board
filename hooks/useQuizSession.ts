@@ -137,6 +137,29 @@ export class AttemptLimitReachedError extends Error {
 }
 
 /**
+ * Normalize a string for use as a segment inside a Firestore response doc id.
+ *
+ * Roster period names and pins are teacher-defined free text and can contain
+ * `/`, whitespace, or other characters that would either split the doc path
+ * or break the `pin-{period}-{pin}` parse contract enforced by
+ * `firestore.rules`. We collapse everything non-alphanumeric to `_` and
+ * lowercase the result so the encoding is stable across the client and the
+ * rules predicate (`^pin-[a-z0-9_]+-[a-z0-9_]+$`).
+ *
+ * Empty / all-separator inputs fall back to `'default'` rather than producing
+ * a zero-length segment that would collapse the doc path.
+ *
+ * Exported so firestore rules tests can assert the same mapping.
+ */
+export function encodeResponseKeySegment(value: string | undefined): string {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) return 'default';
+  const normalized = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  const stripped = normalized.replace(/^_+|_+$/g, '');
+  return stripped || 'default';
+}
+
+/**
  * Compute the deterministic response-doc key.
  *
  * For studentRole (real SSO) auth, we continue to key by `auth.uid` because
@@ -146,18 +169,17 @@ export class AttemptLimitReachedError extends Error {
  * is stable per-roster-student.
  *
  * Known limitation: two rosters assigned to the same session with overlapping
- * PINs under the same classPeriod would collide on the same doc key. Rosters
- * are normally period-scoped, so this is expected to be rare.
+ * PINs under the same (normalized) classPeriod would collide on the same doc
+ * key. Rosters are normally period-scoped, so this is expected to be rare.
  */
-function computeResponseKey(
+export function computeResponseKey(
   authUid: string,
   isAnonymous: boolean,
   pin: string,
   classPeriod: string | undefined
 ): string {
   if (!isAnonymous) return authUid;
-  const period = classPeriod ?? 'default';
-  return `pin-${period}-${pin}`;
+  return `pin-${encodeResponseKeySegment(classPeriod)}-${encodeResponseKeySegment(pin)}`;
 }
 
 /**
@@ -733,14 +755,39 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           responseKey
         );
 
+        // Attempt-limit enforcement.
+        //   - `attemptLimit == null/undefined` means unlimited (legacy).
+        //   - Limit is compared against `completedAttempts` (counter field).
+        //   - Legacy docs with `status === 'completed'` but no counter are
+        //     treated as 1 completed attempt so pre-upgrade submissions still
+        //     count against the cap.
+        //   - If the student is under the limit, reset the completed doc to
+        //     a fresh 'joined' state so the next join starts a new attempt,
+        //     preserving `completedAttempts` to enforce the cap on future
+        //     submissions.
+        const limit = sessionData.attemptLimit ?? null;
         if (existingSnap.exists()) {
           const existing = existingSnap.data() as QuizResponse;
-          // Attempt-limit enforcement. `attemptLimit == null/undefined` means
-          // unlimited (legacy sessions). A completed doc occupies the slot;
-          // teachers reset by deleting it via removeStudent.
-          const limit = sessionData.attemptLimit ?? null;
-          if (limit !== null && existing.status === 'completed') {
-            throw new AttemptLimitReachedError();
+          if (existing.status === 'completed') {
+            const completed = existing.completedAttempts ?? 1;
+            if (limit !== null && completed >= limit) {
+              throw new AttemptLimitReachedError();
+            }
+            // Under the cap (or unlimited): reset for a new attempt.
+            await updateDoc(responseRef, {
+              status: 'joined',
+              answers: [],
+              score: null,
+              submittedAt: null,
+              ...(classPeriod && existing.classPeriod !== classPeriod
+                ? { classPeriod }
+                : {}),
+            });
+          } else if (classPeriod && existing.classPeriod !== classPeriod) {
+            // Backfill classPeriod on an in-flight response (e.g. student
+            // joined before periods were configured or reloaded after a
+            // change).
+            await updateDoc(responseRef, { classPeriod });
           }
         }
 
@@ -760,16 +807,10 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
             answers: [],
             score: null,
             submittedAt: null,
+            completedAttempts: 0,
             ...(classPeriod ? { classPeriod } : {}),
           };
           await setDoc(responseRef, newResponse);
-        } else if (classPeriod) {
-          // Backfill classPeriod on existing response (e.g. student joined
-          // before periods were configured, or reloaded after a change).
-          const existing = existingSnap.data() as QuizResponse;
-          if (existing.classPeriod !== classPeriod) {
-            await updateDoc(responseRef, { classPeriod });
-          }
         }
 
         setSession(sessionData);
@@ -830,6 +871,8 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
 
     // Score is computed from gradeAnswer() by the teacher/results view,
     // not written by the student, to prevent client-side forgery of the score field.
+    // Increment `completedAttempts` so the attempt-limit check on the next
+    // join can count this submission (and block once the cap is reached).
     await updateDoc(
       doc(
         db,
@@ -838,7 +881,11 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         RESPONSES_COLLECTION,
         responseKey
       ),
-      { status: 'completed', submittedAt: Date.now() }
+      {
+        status: 'completed',
+        submittedAt: Date.now(),
+        completedAttempts: increment(1),
+      }
     );
   }, []);
 
