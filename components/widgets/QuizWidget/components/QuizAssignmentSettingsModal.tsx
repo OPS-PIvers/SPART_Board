@@ -43,6 +43,8 @@ interface SettingsOptions {
   streakBonusEnabled: boolean;
   showPodiumBetweenQuestions: boolean;
   soundEffectsEnabled: boolean;
+  /** null = unlimited; any positive int = hard cap. */
+  attemptLimit: number | null;
   plcMode: boolean;
   teacherName: string;
   selectedPeriodNames: string[];
@@ -61,6 +63,9 @@ function initialOptionsFor(a: QuizAssignment): SettingsOptions {
     streakBonusEnabled: opts.streakBonusEnabled ?? false,
     showPodiumBetweenQuestions: opts.showPodiumBetweenQuestions ?? true,
     soundEffectsEnabled: opts.soundEffectsEnabled ?? false,
+    // Legacy assignments have no attemptLimit — preserve "unlimited" for
+    // those rather than retroactively capping ongoing sessions.
+    attemptLimit: a.attemptLimit ?? null,
     plcMode: a.plcMode ?? false,
     teacherName: a.teacherName ?? '',
     selectedPeriodNames: a.periodNames ?? (a.periodName ? [a.periodName] : []),
@@ -132,6 +137,7 @@ export const QuizAssignmentSettingsModal: React.FC<
       className: options.className.trim(),
       sessionMode: modeLocked ? assignment.sessionMode : sessionMode,
       sessionOptions,
+      attemptLimit: options.attemptLimit,
       plcMode: options.plcMode,
       teacherName: options.teacherName.trim(),
       periodName: options.selectedPeriodNames[0] ?? '',
@@ -179,6 +185,10 @@ export const QuizAssignmentSettingsModal: React.FC<
           )}
 
           <SectionHeader label="Quiz Integrity" />
+          <AttemptLimitRow
+            value={options.attemptLimit}
+            onChange={(v) => setOptions((p) => ({ ...p, attemptLimit: v }))}
+          />
           <ToggleRow
             label="Tab Switch Detection"
             checked={options.tabWarningsEnabled}
@@ -386,6 +396,49 @@ const SectionHeader: React.FC<{ label: string }> = ({ label }) => (
   <p className="text-xxs font-bold text-brand-blue-primary/60 uppercase tracking-widest pt-1">
     {label}
   </p>
+);
+
+const ATTEMPT_OPTIONS: { label: string; value: number | null }[] = [
+  { label: '1', value: 1 },
+  { label: '2', value: 2 },
+  { label: '3', value: 3 },
+  { label: 'Unlimited', value: null },
+];
+
+const AttemptLimitRow: React.FC<{
+  value: number | null;
+  onChange: (v: number | null) => void;
+}> = ({ value, onChange }) => (
+  <div>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm font-bold text-brand-blue-dark">
+        Attempts Allowed
+      </span>
+      <div className="inline-flex rounded-lg border border-slate-200 bg-white overflow-hidden">
+        {ATTEMPT_OPTIONS.map((opt) => {
+          const active = value === opt.value;
+          return (
+            <button
+              key={opt.label}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className={
+                'px-3 py-1.5 text-xs font-bold transition ' +
+                (active
+                  ? 'bg-brand-blue-primary text-white'
+                  : 'text-slate-600 hover:bg-slate-50')
+              }
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+    <p className="text-xxs text-slate-500 mt-0.5">
+      Remove a student from the live monitor to reset their attempt.
+    </p>
+  </div>
 );
 
 const ToggleRow: React.FC<{

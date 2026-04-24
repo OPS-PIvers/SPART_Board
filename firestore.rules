@@ -652,10 +652,15 @@ service cloud.firestore {
       allow update, delete: if request.auth != null &&
         resource.data.teacherUid == request.auth.uid;
 
-      match /responses/{studentUid} {
+      match /responses/{responseKey} {
         // Quiz response records store only a PIN — no student name or email.
-        // Students join using anonymous Firebase Auth; their anonymous UID is
-        // the document key. This satisfies request.auth != null without PII.
+        //
+        // Doc-keying note: {responseKey} is no longer guaranteed to equal the
+        // student's auth uid. For studentRole (SSO) joiners it still does;
+        // for anonymous PIN joiners it is `pin-{classPeriod}-{pin}` so the
+        // attempt limit survives device/storage resets. Ownership checks
+        // therefore compare against the `studentUid` field on the doc, not
+        // against the wildcard key.
         //
         // Teacher ownership is looked up from the parent session doc because
         // the sessionId is no longer the teacher's uid. This adds one get()
@@ -672,11 +677,14 @@ service cloud.firestore {
 
         allow read: if request.auth != null &&
           (request.auth.uid == sessionTeacherUid() ||
-           (request.auth.uid == studentUid && passesStudentClassGateCompat(sessionClassIds(), sessionClassId())) ||
+           (request.auth.uid == resource.data.studentUid && passesStudentClassGateCompat(sessionClassIds(), sessionClassId())) ||
            isAdmin());
+        // Create is only ever invoked when the doc doesn't yet exist
+        // (Firestore semantics), so the deterministic response key naturally
+        // enforces one-doc-per-roster-student. Field-based ownership: the
+        // writer's auth.uid must match the `studentUid` they're writing.
         allow create: if request.auth != null &&
-          request.auth.uid == studentUid &&
-          request.resource.data.studentUid == studentUid &&
+          request.resource.data.studentUid == request.auth.uid &&
           // Students cannot forge a score on creation
           request.resource.data.score == null &&
           // studentRole users must be enrolled in the session's class
@@ -685,11 +693,13 @@ service cloud.firestore {
           // Teacher and admins can update any field
           request.auth.uid == sessionTeacherUid() || isAdmin() ||
           // Students may only update their own response to submit answers.
+          // Ownership is enforced against the `studentUid` field, not the
+          // doc key (which may be pin-derived for anonymous joiners).
           // pin and join metadata are immutable; only answers, status,
           // submittedAt, and tabSwitchWarnings may change.
           // score is never written by students.
           // tabSwitchWarnings may only increase (monotonic) to prevent tampering.
-          (request.auth.uid == studentUid &&
+          (request.auth.uid == resource.data.studentUid &&
            passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
            request.resource.data.studentUid == resource.data.studentUid &&
            request.resource.data.pin == resource.data.pin &&

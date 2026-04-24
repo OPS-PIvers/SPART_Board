@@ -120,6 +120,45 @@ export function gradeAnswer(
   return false;
 }
 
+/**
+ * Thrown by `joinQuizSession` when a student attempts to join a session they've
+ * already completed and the assignment's attempt limit has been reached. The
+ * UI should catch this and render a friendly "ask your teacher" message; the
+ * teacher can reset by removing the student from the live monitor.
+ */
+export class AttemptLimitReachedError extends Error {
+  constructor() {
+    super(
+      "You've already submitted this quiz. Talk to your teacher if you need another attempt."
+    );
+    this.name = 'AttemptLimitReachedError';
+  }
+}
+
+/**
+ * Compute the deterministic response-doc key.
+ *
+ * For studentRole (real SSO) auth, we continue to key by `auth.uid` because
+ * the uid is stable per-user. For anonymous PIN auth the uid rotates every
+ * time the student clears storage or switches device, which would let them
+ * bypass attempt limits — so we derive a key from `pin + classPeriod` that
+ * is stable per-roster-student.
+ *
+ * Known limitation: two rosters assigned to the same session with overlapping
+ * PINs under the same classPeriod would collide on the same doc key. Rosters
+ * are normally period-scoped, so this is expected to be rare.
+ */
+function computeResponseKey(
+  authUid: string,
+  isAnonymous: boolean,
+  pin: string,
+  classPeriod: string | undefined
+): string {
+  if (!isAnonymous) return authUid;
+  const period = classPeriod ?? 'default';
+  return `pin-${period}-${pin}`;
+}
+
 // ─── Teacher hook ─────────────────────────────────────────────────────────────
 
 export interface UseQuizSessionTeacherResult {
@@ -134,8 +173,16 @@ export interface UseQuizSessionTeacherResult {
    * assignment's lifecycle state flipped to `inactive`.
    */
   endQuizSession: () => Promise<void>;
-  /** Remove a student from the live session roster */
-  removeStudent: (studentUid: string) => Promise<void>;
+  /**
+   * Remove a student from the live session roster by deleting their response
+   * doc. `responseKey` is the Firestore doc key (e.g. `pin-{period}-{pin}`
+   * for PIN auth, or the student's auth uid for studentRole auth) — NOT the
+   * `studentUid` field inside the doc. Callers should pass the snapshot
+   * doc.id they're iterating over.
+   *
+   * Deleting the doc also frees the attempt slot so the student can rejoin.
+   */
+  removeStudent: (responseKey: string) => Promise<void>;
   /** Reveal the correct answer for a question (writes to session doc) */
   revealAnswer: (questionId: string, correctAnswer: string) => Promise<void>;
   /** Hide a previously revealed answer (removes from session doc) */
@@ -195,7 +242,16 @@ export const useQuizSessionTeacher = (
     return onSnapshot(
       responsesRef,
       (snap) => {
-        const list = snap.docs.map((d) => d.data() as QuizResponse);
+        // Carry the doc id through as `_responseKey` so the live monitor
+        // can remove/delete by the actual Firestore key rather than the
+        // `studentUid` field, which may differ for PIN-authed joiners.
+        const list = snap.docs.map(
+          (d) =>
+            ({
+              ...(d.data() as QuizResponse),
+              _responseKey: d.id,
+            }) as QuizResponse
+        );
         setResponses(list);
       },
       (err) => console.error('[useQuizSessionTeacher] responses:', err)
@@ -229,14 +285,14 @@ export const useQuizSessionTeacher = (
   }, [sessionId]);
 
   const removeStudent = useCallback(
-    async (studentUid: string) => {
+    async (responseKey: string) => {
       if (!sessionId) return;
       const responseRef = doc(
         db,
         QUIZ_SESSIONS_COLLECTION,
         sessionId,
         RESPONSES_COLLECTION,
-        studentUid
+        responseKey
       );
       await deleteDoc(responseRef);
     },
@@ -436,7 +492,11 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
-  const studentUidRef = useRef<string | null>(null);
+  // The Firestore doc key under /responses. For studentRole auth this equals
+  // the auth uid; for PIN/anonymous auth it is derived from pin+classPeriod
+  // (see computeResponseKey) so an attempt limit survives device/storage
+  // resets. Historically named `studentUidRef`.
+  const responseKeyRef = useRef<string | null>(null);
   // Keep a ref to current answers to avoid stale closure issues
   const myResponseRef = useRef<QuizResponse | null>(null);
   myResponseRef.current = myResponse;
@@ -469,23 +529,28 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     );
   }, [sessionIdState]);
 
-  // My response listener
-  const [studentUidState, setStudentUidState] = useState<string | null>(null);
+  // My response listener — subscribed on the deterministic response-doc key
+  // (not necessarily equal to auth.uid for anonymous PIN users).
+  const [responseKeyState, setResponseKeyState] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!sessionIdState || !studentUidState) return;
+    if (!sessionIdState || !responseKeyState) return;
     return onSnapshot(
       doc(
         db,
         QUIZ_SESSIONS_COLLECTION,
         sessionIdState,
         RESPONSES_COLLECTION,
-        studentUidState
+        responseKeyState
       ),
       (snap) =>
-        setMyResponse(snap.exists() ? (snap.data() as QuizResponse) : null)
+        setMyResponse(
+          snap.exists()
+            ? { ...(snap.data() as QuizResponse), _responseKey: snap.id }
+            : null
+        )
     );
-  }, [sessionIdState, studentUidState]);
+  }, [sessionIdState, responseKeyState]);
 
   const lookupSession = useCallback(
     async (code: string): Promise<{ periodNames: string[] } | null> => {
@@ -580,30 +645,88 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         const sessionDoc = joinable[0];
         const sessionData = sessionDoc.data() as QuizSession;
 
+        // Deterministic doc key: stable per-roster-student for PIN auth so
+        // the attempt limit can't be bypassed by clearing storage / switching
+        // device. studentRole users still key by their auth uid (stable per
+        // user already).
+        const deterministicKey = computeResponseKey(
+          studentUid,
+          currentUser.isAnonymous,
+          sanitizedPin,
+          classPeriod
+        );
+
+        // Legacy-key fallback: before deterministic keying, every response
+        // (including anonymous PIN joiners) was keyed by `auth.uid`. If the
+        // student is rejoining an in-progress session that was created under
+        // the old scheme, resume at the legacy key so their in-flight work
+        // isn't lost and the teacher doesn't see a duplicate row. New docs
+        // are always created at the deterministic key.
+        let responseKey = deterministicKey;
+        let existingSnap = await getDoc(
+          doc(
+            db,
+            QUIZ_SESSIONS_COLLECTION,
+            sessionDoc.id,
+            RESPONSES_COLLECTION,
+            deterministicKey
+          )
+        );
+        if (
+          !existingSnap.exists() &&
+          currentUser.isAnonymous &&
+          deterministicKey !== studentUid
+        ) {
+          const legacySnap = await getDoc(
+            doc(
+              db,
+              QUIZ_SESSIONS_COLLECTION,
+              sessionDoc.id,
+              RESPONSES_COLLECTION,
+              studentUid
+            )
+          );
+          if (legacySnap.exists()) {
+            responseKey = studentUid;
+            existingSnap = legacySnap;
+          }
+        }
+
         sessionIdRef.current = sessionDoc.id;
-        studentUidRef.current = studentUid;
+        responseKeyRef.current = responseKey;
         // Reset warning count before activating snapshot listeners so a
         // late-arriving snapshot from a previous session can't race with
         // the finally-block reset and leave the counter stuck at 0.
         warningCountRef.current = 0;
         setWarningCount(0);
-        setSessionIdState(sessionDoc.id);
-        setStudentUidState(studentUid);
 
         const responseRef = doc(
           db,
           QUIZ_SESSIONS_COLLECTION,
           sessionDoc.id,
           RESPONSES_COLLECTION,
-          studentUid
+          responseKey
         );
 
-        // Use getDoc to check whether the student already has a response
-        // document (e.g. after a page reload), rather than relying on the
-        // in-memory ref which may still be null before the snapshot arrives.
-        const existingSnap = await getDoc(responseRef);
+        if (existingSnap.exists()) {
+          const existing = existingSnap.data() as QuizResponse;
+          // Attempt-limit enforcement. `attemptLimit == null/undefined` means
+          // unlimited (legacy sessions). A completed doc occupies the slot;
+          // teachers reset by deleting it via removeStudent.
+          const limit = sessionData.attemptLimit ?? null;
+          if (limit !== null && existing.status === 'completed') {
+            throw new AttemptLimitReachedError();
+          }
+        }
+
+        setSessionIdState(sessionDoc.id);
+        setResponseKeyState(responseKey);
+
         if (!existingSnap.exists()) {
-          // No PII stored — only the PIN for teacher cross-reference
+          // No PII stored — only the PIN for teacher cross-reference.
+          // `studentUid` field carries the auth uid; the doc key may differ
+          // (for PIN auth it's pin-based), so Firestore rules enforce
+          // ownership against the field, not the key.
           const newResponse: QuizResponse = {
             studentUid,
             pin: sanitizedPin,
@@ -640,8 +763,8 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   const submitAnswer = useCallback(
     async (questionId: string, answer: string, speedBonus?: number) => {
       const sessionId = sessionIdRef.current;
-      const studentUid = studentUidRef.current;
-      if (!sessionId || !studentUid) return;
+      const responseKey = responseKeyRef.current;
+      if (!sessionId || !responseKey) return;
 
       // isCorrect is intentionally not written by the student to prevent
       // client-side forgery. It is computed by the teacher's results view
@@ -667,7 +790,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           QUIZ_SESSIONS_COLLECTION,
           sessionId,
           RESPONSES_COLLECTION,
-          studentUid
+          responseKey
         ),
         { status: 'in-progress', answers: updated }
       );
@@ -677,8 +800,8 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
 
   const completeQuiz = useCallback(async () => {
     const sessionId = sessionIdRef.current;
-    const studentUid = studentUidRef.current;
-    if (!sessionId || !studentUid) return;
+    const responseKey = responseKeyRef.current;
+    if (!sessionId || !responseKey) return;
 
     // Score is computed from gradeAnswer() by the teacher/results view,
     // not written by the student, to prevent client-side forgery of the score field.
@@ -688,7 +811,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         QUIZ_SESSIONS_COLLECTION,
         sessionId,
         RESPONSES_COLLECTION,
-        studentUid
+        responseKey
       ),
       { status: 'completed', submittedAt: Date.now() }
     );
@@ -696,15 +819,15 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
 
   const reportTabSwitch = useCallback(async (): Promise<number> => {
     const sessionId = sessionIdRef.current;
-    const studentUid = studentUidRef.current;
-    if (!sessionId || !studentUid) return 0;
+    const responseKey = responseKeyRef.current;
+    if (!sessionId || !responseKey) return 0;
 
     const responseRef = doc(
       db,
       QUIZ_SESSIONS_COLLECTION,
       sessionId,
       RESPONSES_COLLECTION,
-      studentUid
+      responseKey
     );
 
     // Capture pre-increment count BEFORE Firestore write so the snapshot

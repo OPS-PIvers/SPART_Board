@@ -1774,6 +1774,13 @@ export interface QuizSession {
    * derived from these rosters' `classlinkClassId` metadata.
    */
   rosterIds?: string[];
+
+  /**
+   * Max completed submissions allowed per student (mirrored from the
+   * assignment so student-side code can read it without a second fetch).
+   * `null`/`undefined` = unlimited (legacy sessions).
+   */
+  attemptLimit?: number | null;
 }
 
 export interface QuizResponseAnswer {
@@ -1794,11 +1801,32 @@ export interface QuizResponseAnswer {
 
 export type QuizResponseStatus = 'joined' | 'in-progress' | 'completed';
 
-/** Per-student response document in Firestore (/quiz_sessions/{sessionId}/responses/{anonymousUid}) */
+/**
+ * Per-student response document in Firestore
+ * (/quiz_sessions/{sessionId}/responses/{responseKey}).
+ *
+ * `responseKey` (the Firestore doc id) is deterministic:
+ *   - For studentRole (SSO) auth: equals the student's auth uid.
+ *   - For PIN/anonymous auth: derived from pin + classPeriod so it survives
+ *     storage/device resets, preventing attempt-limit bypass.
+ *
+ * The `studentUid` field below still carries the Firebase auth uid of whoever
+ * wrote the doc — Firestore rules enforce ownership against this field
+ * (not the key), since the key is no longer guaranteed to match the uid.
+ */
 export interface QuizResponse {
   /**
-   * Firebase anonymous auth UID — used as the Firestore document key.
-   * Not PII: ephemeral, not linked to any identity without the Drive roster.
+   * The Firestore doc key under /responses. Populated at read time by the
+   * teacher/student hooks from snapshot.doc.id; never persisted as a field.
+   * Callers should use this (rather than `studentUid`) when deleting a
+   * response, since the key may be pin-derived for anonymous joiners.
+   */
+  _responseKey?: string;
+  /**
+   * Firebase Auth UID of the student who wrote the doc — anonymous for PIN
+   * joiners, the SSO uid for studentRole joiners. Used for ownership checks
+   * in Firestore rules. Historically also served as the doc key; that is no
+   * longer guaranteed for anonymous joiners (see `_responseKey`).
    */
   studentUid: string;
   /**
@@ -1910,6 +1938,14 @@ export interface QuizAssignmentSettings {
   /** Selected class period roster names. Replaces singular periodName. */
   periodNames?: string[];
   plcMemberEmails?: string[];
+  /**
+   * Max completed submissions allowed per student. `null`/`undefined` means
+   * unlimited (legacy). `1` (default for new assignments) means one-and-done.
+   * Enforced at `joinQuizSession` time by checking the student's own existing
+   * response doc; teachers can reset a student's attempt by removing them from
+   * the live monitor, which deletes the response doc.
+   */
+  attemptLimit?: number | null;
 }
 
 /**

@@ -84,6 +84,12 @@ export interface UseQuizAssignmentsResult {
   resumeAssignment: (assignmentId: string) => Promise<void>;
   /** Kills the student URL; preserves responses. assignment='inactive', session='ended'. */
   deactivateAssignment: (assignmentId: string) => Promise<void>;
+  /**
+   * Reopen a previously deactivated (inactive) assignment. Returns it to
+   * 'paused' so the teacher can review state before resuming; they must
+   * explicitly call `resumeAssignment` to start accepting submissions again.
+   */
+  reopenAssignment: (assignmentId: string) => Promise<void>;
   /** Permanently delete assignment + session + all responses. */
   deleteAssignment: (assignmentId: string) => Promise<void>;
   /** Update editable settings (className, PLC fields, session toggles). */
@@ -215,6 +221,7 @@ export const useQuizAssignments = (
         periodName: settings.periodName,
         periodNames: settings.periodNames,
         plcMemberEmails: settings.plcMemberEmails,
+        attemptLimit: settings.attemptLimit ?? null,
         ...(targetRosterIds.length > 0 ? { rosterIds: targetRosterIds } : {}),
       };
 
@@ -264,6 +271,7 @@ export const useQuizAssignments = (
           ? { classIds: targetClassIds, classId: targetClassIds[0] }
           : {}),
         ...(targetRosterIds.length > 0 ? { rosterIds: targetRosterIds } : {}),
+        attemptLimit: settings.attemptLimit ?? null,
       };
 
       const batch = writeBatch(db);
@@ -353,6 +361,15 @@ export const useQuizAssignments = (
     [setStatus]
   );
 
+  const reopenAssignment = useCallback<
+    UseQuizAssignmentsResult['reopenAssignment']
+  >(
+    async (assignmentId) => {
+      await setStatus(assignmentId, 'paused', 'paused');
+    },
+    [setStatus]
+  );
+
   const deleteAssignment = useCallback<
     UseQuizAssignmentsResult['deleteAssignment']
   >(
@@ -404,6 +421,8 @@ export const useQuizAssignments = (
       const sessionPatch: Record<string, unknown> = {};
       if ('periodNames' in patch) sessionPatch.periodNames = patch.periodNames;
       if ('periodName' in patch) sessionPatch.periodName = patch.periodName;
+      if ('attemptLimit' in patch)
+        sessionPatch.attemptLimit = patch.attemptLimit ?? null;
       if (patch.sessionOptions) {
         const o = patch.sessionOptions;
         if (o.tabWarningsEnabled !== undefined)
@@ -535,6 +554,7 @@ export const useQuizAssignments = (
     pauseAssignment,
     resumeAssignment,
     deactivateAssignment,
+    reopenAssignment,
     deleteAssignment,
     updateAssignmentSettings,
     shareAssignment,

@@ -79,7 +79,13 @@ interface QuizLiveMonitorProps {
   config: QuizConfig;
   rosters: ClassRoster[];
   onUpdateConfig: (updates: Partial<QuizConfig>) => void;
-  onRemoveStudent?: (studentUid: string) => Promise<void>;
+  /**
+   * Remove a student by Firestore response-doc key. For PIN/anonymous
+   * joiners the key is `pin-{period}-{pin}`; for studentRole joiners it
+   * equals the auth uid. Pass `response._responseKey` (snapshot doc id),
+   * NOT the `studentUid` field.
+   */
+  onRemoveStudent?: (responseKey: string) => Promise<void>;
   onRevealAnswer?: (questionId: string, correctAnswer: string) => Promise<void>;
   onHideAnswer?: (questionId: string) => Promise<void>;
   /** Navigate back to the manager view without ending the quiz. */
@@ -1304,9 +1310,13 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             onRemove={
                               onRemoveStudent
                                 ? () => {
-                                    void Promise.resolve(
-                                      onRemoveStudent(r.studentUid)
-                                    )
+                                    // _responseKey is the Firestore doc id
+                                    // populated by the teacher snapshot
+                                    // listener. Legacy docs (old keying
+                                    // scheme) had the key equal studentUid,
+                                    // so the fallback preserves behavior.
+                                    const key = r._responseKey ?? r.studentUid;
+                                    void Promise.resolve(onRemoveStudent(key))
                                       .then(() => setConfirmRemove(null))
                                       .catch(() => undefined);
                                   }
@@ -1682,9 +1692,13 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             onRemove={
                               onRemoveStudent
                                 ? () => {
-                                    void Promise.resolve(
-                                      onRemoveStudent(r.studentUid)
-                                    )
+                                    // _responseKey is the Firestore doc id
+                                    // populated by the teacher snapshot
+                                    // listener. Legacy docs (old keying
+                                    // scheme) had the key equal studentUid,
+                                    // so the fallback preserves behavior.
+                                    const key = r._responseKey ?? r.studentUid;
+                                    void Promise.resolve(onRemoveStudent(key))
                                       .then(() => setConfirmRemove(null))
                                       .catch(() => undefined);
                                   }
