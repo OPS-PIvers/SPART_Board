@@ -28,6 +28,7 @@ import { useAuth } from './useAuth';
 import { stripTransientKeys } from '../utils/widgetConfigPersistence';
 import { useFirestore } from '../hooks/useFirestore';
 import { TOOLS } from '../config/tools';
+import { canonicalizeBuildingKeyedRecord } from '@/config/buildings';
 import { WIDGET_DEFAULTS } from '../config/widgetDefaults';
 import {
   migrateLocalStorageToFirestore,
@@ -339,9 +340,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const buildingId = selectedBuildings[0];
 
     (featurePermissions ?? []).forEach((perm) => {
-      const dockDefaults = perm.config?.dockDefaults as
+      const rawDockDefaults = perm.config?.dockDefaults as
         | Record<string, boolean>
         | undefined;
+
+      // Canonicalize stored keys so legacy IDs (`orono-high-school`) still
+      // match the canonical `buildingId` (`high`). Without this, every
+      // teacher would fall through to the `time-tool` fallback below,
+      // because admin-panel writes from before canonicalization landed
+      // are keyed on legacy IDs and `selectedBuildings` is always
+      // canonicalized in AuthContext.
+      const dockDefaults = rawDockDefaults
+        ? canonicalizeBuildingKeyedRecord(rawDockDefaults)
+        : undefined;
 
       const isDefaultForBuilding =
         dockDefaults !== undefined && dockDefaults[buildingId] === true;
@@ -1425,11 +1436,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         return next;
       });
 
+      // Derive add vs remove from `prev` (dockItems) itself, not from the
+      // outer `visibleTools` closure. Reading the closure desyncs the two
+      // stores when React batches a previous setVisibleTools update that
+      // hasn't flushed yet — the library then filters using a visibleTools
+      // that no longer matches dockItems.
       setDockItems((prev) => {
-        const isVisible = visibleTools.includes(type);
+        const exists = prev.some(
+          (item) =>
+            (item.type === 'tool' && item.toolType === type) ||
+            (item.type === 'folder' && item.folder.items.includes(type))
+        );
         let next: DockItem[];
 
-        if (isVisible) {
+        if (exists) {
           // Remove from dockItems (search globally in tools and folders)
           next = prev
             .map((item) => {
@@ -1448,20 +1468,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               (item) => !(item.type === 'tool' && item.toolType === type)
             );
         } else {
-          // Add to dockItems (if not already present)
-          const exists = prev.some(
-            (item) =>
-              (item.type === 'tool' && item.toolType === type) ||
-              (item.type === 'folder' && item.folder.items.includes(type))
-          );
-          next = exists ? prev : [...prev, { type: 'tool', toolType: type }];
+          next = [...prev, { type: 'tool', toolType: type }];
         }
 
         localStorage.setItem('classroom_dock_items', JSON.stringify(next));
         return next;
       });
     },
-    [visibleTools]
+    []
   );
 
   const setAllToolsVisibility = useCallback((visible: boolean) => {
@@ -2055,11 +2069,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!selectedBuildings.length) return {};
       const buildingId = selectedBuildings[0];
       const perm = featurePermissions.find((p) => p.widgetType === type);
-      const raw = (
+      const rawBuildingDefaults = (
         perm?.config as
           | { buildingDefaults?: Record<string, Record<string, unknown>> }
           | undefined
-      )?.buildingDefaults?.[buildingId];
+      )?.buildingDefaults;
+      // Same legacy-key issue as `dockDefaults` above — canonicalize so
+      // `orono-high-school`-keyed entries still resolve for canonical
+      // `buildingId` lookups.
+      const buildingDefaults = rawBuildingDefaults
+        ? canonicalizeBuildingKeyedRecord(rawBuildingDefaults)
+        : undefined;
+      const raw = buildingDefaults?.[buildingId];
       if (!raw) return {};
 
       const out: Record<string, unknown> = {};
