@@ -713,7 +713,7 @@ service cloud.firestore {
           request.resource.data.get('completedAttempts', 0) == 0 &&
           // studentRole users must be enrolled in the session's class
           passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
-          (isStudentRoleAuth()
+          (isStudentRoleUser()
             ? responseKey == request.auth.uid
             : responseKey.matches('^pin-[a-z0-9_]+-[a-z0-9_]+$'));
         allow update: if request.auth != null && (
