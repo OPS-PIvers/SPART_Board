@@ -652,10 +652,15 @@ service cloud.firestore {
       allow update, delete: if request.auth != null &&
         resource.data.teacherUid == request.auth.uid;
 
-      match /responses/{studentUid} {
+      match /responses/{responseKey} {
         // Quiz response records store only a PIN — no student name or email.
-        // Students join using anonymous Firebase Auth; their anonymous UID is
-        // the document key. This satisfies request.auth != null without PII.
+        //
+        // Doc-keying note: {responseKey} is no longer guaranteed to equal the
+        // student's auth uid. For studentRole (SSO) joiners it still does;
+        // for anonymous PIN joiners it is `pin-{classPeriod}-{pin}` so the
+        // attempt limit survives device/storage resets. Ownership checks
+        // therefore compare against the `studentUid` field on the doc, not
+        // against the wildcard key.
         //
         // Teacher ownership is looked up from the parent session doc because
         // the sessionId is no longer the teacher's uid. This adds one get()
@@ -670,35 +675,78 @@ service cloud.firestore {
           return get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data.get('classIds', []);
         }
 
-        allow read: if request.auth != null &&
-          (request.auth.uid == sessionTeacherUid() ||
-           (request.auth.uid == studentUid && passesStudentClassGateCompat(sessionClassIds(), sessionClassId())) ||
-           isAdmin());
+        // Student branch allows `resource == null` so the student-app join
+        // flow can call getDoc() to probe whether a response already exists
+        // before deciding to create or resume — without it the rules engine
+        // throws a Null value error on `resource.data.studentUid`. The
+        // class-gate check is kept as a hard prerequisite so a studentRole
+        // user can't probe responses in a session they're not enrolled in
+        // (anonymous PIN users pass the gate by definition, matching the
+        // legacy "any authenticated joiner can probe" behavior).
+        allow read: if request.auth != null && (
+          request.auth.uid == sessionTeacherUid() ||
+          isAdmin() ||
+          (passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
+           (resource == null || request.auth.uid == resource.data.studentUid))
+        );
+        // Create is only ever invoked when the doc doesn't yet exist
+        // (Firestore semantics), so the deterministic response key naturally
+        // enforces one-doc-per-roster-student. Field-based ownership: the
+        // writer's auth.uid must match the `studentUid` they're writing.
+        //
+        // Key-format constraint: with deterministic keys any authenticated
+        // roster-mate who knows PIN+period could otherwise grief-create a
+        // victim's doc under an arbitrary key. We tighten this by requiring:
+        //   - studentRole (SSO) writers use `responseKey == auth.uid` (the
+        //     same key scheme the client computes for them).
+        //   - Anonymous (PIN) writers use a key matching the shape
+        //     `pin-{encodedPeriod}-{encodedPin}` with `[a-z0-9_]` segments.
+        //     This mirrors `encodeResponseKeySegment()` on the client.
+        // Classmate-on-classmate grief with both parties on the same
+        // PIN+period is not fully preventable here (shared-secret design);
+        // the cross-auth-type paths are now closed.
         allow create: if request.auth != null &&
-          request.auth.uid == studentUid &&
-          request.resource.data.studentUid == studentUid &&
+          request.resource.data.studentUid == request.auth.uid &&
           // Students cannot forge a score on creation
           request.resource.data.score == null &&
+          // Students cannot forge prior completions
+          request.resource.data.get('completedAttempts', 0) == 0 &&
           // studentRole users must be enrolled in the session's class
-          passesStudentClassGateCompat(sessionClassIds(), sessionClassId());
+          passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
+          (isStudentRoleUser()
+            ? responseKey == request.auth.uid
+            : responseKey.matches('^pin-[a-z0-9_]+-[a-z0-9_]+$'));
         allow update: if request.auth != null && (
           // Teacher and admins can update any field
           request.auth.uid == sessionTeacherUid() || isAdmin() ||
-          // Students may only update their own response to submit answers.
-          // pin and join metadata are immutable; only answers, status,
-          // submittedAt, and tabSwitchWarnings may change.
-          // score is never written by students.
-          // tabSwitchWarnings may only increase (monotonic) to prevent tampering.
-          (request.auth.uid == studentUid &&
+          // Students may only update their own response to submit answers
+          // or to re-join under the attempt cap. Ownership is enforced
+          // against the `studentUid` field, not the doc key (which may be
+          // pin-derived for anonymous joiners).
+          //
+          // Mutable fields: answers, status, submittedAt, tabSwitchWarnings,
+          // completedAttempts, classPeriod, score (score is reset to null on
+          // rejoin; students still can't forge a real score — see below).
+          // pin and join metadata are immutable.
+          //
+          // Monotonic fields (prevent rollback tampering): tabSwitchWarnings
+          // and completedAttempts may only stay the same or increase.
+          //
+          // Score guard: students may only ever write null to `score` — this
+          // blocks a forged high score while still allowing the rejoin reset
+          // flow to clear a previously null value to null.
+          (request.auth.uid == resource.data.studentUid &&
            passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
            request.resource.data.studentUid == resource.data.studentUid &&
            request.resource.data.pin == resource.data.pin &&
            request.resource.data.joinedAt == resource.data.joinedAt &&
-           request.resource.data.score == resource.data.score &&
+           request.resource.data.score == null &&
            request.resource.data.diff(resource.data)
-             .changedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings']) &&
+             .changedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings', 'completedAttempts', 'classPeriod', 'score']) &&
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tabSwitchWarnings']) ||
-            request.resource.data.tabSwitchWarnings >= resource.data.get('tabSwitchWarnings', 0)))
+            request.resource.data.tabSwitchWarnings >= resource.data.get('tabSwitchWarnings', 0)) &&
+           (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['completedAttempts']) ||
+            request.resource.data.get('completedAttempts', 0) >= resource.data.get('completedAttempts', 0)))
         );
         allow delete: if request.auth != null &&
           (request.auth.uid == sessionTeacherUid() || isAdmin());
