@@ -58,7 +58,8 @@ export type WidgetType =
   | 'first-5'
   | 'work-symbols'
   | 'blooms-taxonomy'
-  | 'blooms-detail';
+  | 'blooms-detail'
+  | 'need-do-put-then';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -120,6 +121,23 @@ export interface ClassRosterMeta {
    * from prior days are auto-ignored without needing cleanup.
    */
   absent?: { date: string; studentIds: string[] };
+  /** Where the roster originated. Absent on legacy docs → treat as 'local'. */
+  origin?: 'classlink' | 'local';
+  /**
+   * ClassLink class `sourcedId`. Present iff the roster was imported or merged
+   * from a ClassLink class. Drives session `classIds[]` derivation so the
+   * student-side ClassLink SSO gate (firestore.rules `passesStudentClassGate`)
+   * resolves without the assignment layer having to know about ClassLink.
+   */
+  classlinkClassId?: string;
+  /** ClassLink class code (e.g. "MATH-7-P3"); rendered in the picker badge tooltip. */
+  classlinkClassCode?: string;
+  /** ClassLink subject label; used for reconciliation and teacher-visible filters. */
+  classlinkSubject?: string;
+  /** ClassLink tenant/organization ID; required to scope re-sync API calls. */
+  classlinkOrgId?: string;
+  /** Epoch ms of the last ClassLink import or merge for this roster. */
+  classlinkSyncedAt?: number;
 }
 
 /**
@@ -134,20 +152,60 @@ export interface ClassRoster extends ClassRosterMeta {
    * unknown" so the UI can show a retry banner instead of "0 students".
    */
   loadError?: string;
+}
+
+// --- PLC (PROFESSIONAL LEARNING COMMUNITY) TYPES ---
+
+/**
+ * A Professional Learning Community: a small group of teachers who
+ * collaborate on the same assignments and share aggregated student results.
+ *
+ * Stored at the top level (`/plcs/{plcId}`) rather than under a single user
+ * because reads must work for every member, not just the lead.
+ */
+export interface Plc {
+  id: string;
+  name: string;
+  /** UID of the teacher who owns the PLC. Only the lead can rename, invite, remove members, or delete the PLC. */
+  leadUid: string;
+  /** All current members, including the lead. Drives the `array-contains` snapshot query in `usePlcs`. */
+  memberUids: string[];
   /**
-   * Where this roster came from. `'user'` (default, omitted) means it lives in
-   * `/users/{uid}/rosters/` and is editable. `'testClass'` means it's a
-   * synthetic adapter for an admin-managed `/organizations/{orgId}/testClasses/`
-   * doc, surfaced read-only so admins can target it without import.
+   * uid → lowercased email for each current member. Persisted so PR2's
+   * Drive-share step can address members without an extra `/users` lookup
+   * per export. Always written alongside `memberUids`.
    */
-  source?: 'user' | 'testClass';
-  /**
-   * True for rosters that must not be mutated through the normal
-   * add/update/delete paths (e.g., testClass-sourced rosters are managed from
-   * the admin panel instead). UI hides Edit/Delete/Sync affordances; the hook
-   * short-circuits mutations defensively.
-   */
-  readOnly?: boolean;
+  memberEmails: Record<string, string>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * An outstanding invitation for a teacher to join a PLC. Top-level so the
+ * invitee can read pending invites by email without being a member of the
+ * target PLC yet. The doc id is *deterministic* — `<plcId>_<emailLower>`
+ * (see `plcInvitationDocId` in `usePlcInvitations` and `plcInviteDocId` in
+ * `firestore.rules`) — which lets the accept-flow rule verify an outstanding
+ * pending invite via an O(1) `get()` without enumerating the collection.
+ * Re-sending an invite to the same email overwrites the prior record,
+ * re-arming a declined invite.
+ *
+ * State machine: `pending` → `accepted` (joins PLC) | `declined` (no-op).
+ * Terminal states are kept for audit; the invitee panel filters to `pending`.
+ */
+export interface PlcInvitation {
+  id: string;
+  plcId: string;
+  /** Denormalized so the invite UI can render the PLC name without reading `/plcs/{plcId}` (which the invitee can't read until accepted). */
+  plcName: string;
+  /** Lowercased to match `request.auth.token.email.lower()` in Firestore rules. */
+  inviteeEmailLower: string;
+  invitedByUid: string;
+  /** Denormalized inviter display name for the invitee panel. */
+  invitedByName: string;
+  invitedAt: number;
+  status: 'pending' | 'accepted' | 'declined';
+  respondedAt?: number;
 }
 
 // --- LIVE SESSION TYPES ---
@@ -1242,12 +1300,17 @@ export interface MiniAppConfig {
   /** Persisted library grid/list toggle. */
   libraryViewMode?: 'grid' | 'list';
   /**
-   * Remembers the last ClassLink class selection the teacher made per app,
-   * keyed by appId. Used to pre-populate the target-class picker on
-   * subsequent assigns so teachers don't have to re-pick the same classes
-   * each time.
+   * @deprecated Pre-unification memory, written as ClassLink class
+   * `sourcedId`s. Read as a fallback (via `mapLegacyClassIdsToRosterIds`) to
+   * seed the picker only when `lastRosterIdsByAppId` is absent; never written
+   * by new code.
    */
   lastClassIdsByAppId?: Record<string, string[]>;
+  /**
+   * Remembers the last roster selection the teacher made per app, keyed by
+   * appId. Used to pre-populate the picker on subsequent assigns.
+   */
+  lastRosterIdsByAppId?: Record<string, string[]>;
   /**
    * Remembers the last submissions-enabled choice the teacher made per app,
    * keyed by appId. Used to pre-populate the toggle on subsequent assigns.
@@ -1278,6 +1341,12 @@ export interface MiniAppSession {
    * student across any of the selected classes.
    */
   classIds?: string[];
+  /**
+   * Roster IDs backing this session (new unified path). Derived from the
+   * teacher's picker selection; `classIds[]` above is derived from these
+   * rosters' `classlinkClassId` for the SSO gate. Absent on legacy sessions.
+   */
+  rosterIds?: string[];
   /**
    * Whether the sandboxed mini-app iframe should show its Submit button and
    * accept student submissions into the `submissions/` subcollection. Absent
@@ -1737,17 +1806,36 @@ export interface QuizSession {
   /** Selected class period roster names available for students to join. */
   periodNames?: string[];
 
-  // ─── ClassLink target class (Phase 3A) ─────────────────────────────────────
+  // ─── ClassLink target class (Phase 3A, Phase 5A multi-class) ───────────────
   /**
-   * Optional ClassLink class `sourcedId` this session is targeted at. When
-   * present, students who signed in via the ClassLink / Google flow will see
-   * this session on their `/my-assignments` page, and Firestore rules
-   * enforce (via `passesStudentClassGate`) that only students enrolled in
-   * this class can read the session doc. Omit (or leave as an empty string)
-   * to preserve the classic code/PIN-only flow — the gate is a no-op for
-   * non-studentRole users.
+   * @deprecated Phase 5A — retained only for transitional compatibility.
+   * Populated to `classIds[0]` when `classIds` is non-empty so older clients
+   * and pre-migration Firestore rules keep working. Prefer `classIds`.
    */
   classId?: string;
+  /**
+   * Multi-class ClassLink target: the list of ClassLink class `sourcedId`s
+   * this session is targeted at. When non-empty, students who signed in via
+   * the ClassLink / Google flow will see this session on their
+   * `/my-assignments` page, and Firestore rules (via
+   * `passesStudentClassGateList`) enforce that the student has at least one
+   * of these classes in their `classIds` auth-token claim. An empty or
+   * missing list preserves the classic code/PIN-only flow — the gate is a
+   * no-op for non-studentRole users.
+   */
+  classIds?: string[];
+  /**
+   * Roster IDs backing this session (unified targeting). `classIds` above is
+   * derived from these rosters' `classlinkClassId` metadata.
+   */
+  rosterIds?: string[];
+
+  /**
+   * Max completed submissions allowed per student (mirrored from the
+   * assignment so student-side code can read it without a second fetch).
+   * `null`/`undefined` = unlimited (legacy sessions).
+   */
+  attemptLimit?: number | null;
 }
 
 export interface QuizResponseAnswer {
@@ -1768,11 +1856,32 @@ export interface QuizResponseAnswer {
 
 export type QuizResponseStatus = 'joined' | 'in-progress' | 'completed';
 
-/** Per-student response document in Firestore (/quiz_sessions/{sessionId}/responses/{anonymousUid}) */
+/**
+ * Per-student response document in Firestore
+ * (/quiz_sessions/{sessionId}/responses/{responseKey}).
+ *
+ * `responseKey` (the Firestore doc id) is deterministic:
+ *   - For studentRole (SSO) auth: equals the student's auth uid.
+ *   - For PIN/anonymous auth: derived from pin + classPeriod so it survives
+ *     storage/device resets, preventing attempt-limit bypass.
+ *
+ * The `studentUid` field below still carries the Firebase auth uid of whoever
+ * wrote the doc — Firestore rules enforce ownership against this field
+ * (not the key), since the key is no longer guaranteed to match the uid.
+ */
 export interface QuizResponse {
   /**
-   * Firebase anonymous auth UID — used as the Firestore document key.
-   * Not PII: ephemeral, not linked to any identity without the Drive roster.
+   * The Firestore doc key under /responses. Populated at read time by the
+   * teacher/student hooks from snapshot.doc.id; never persisted as a field.
+   * Callers should use this (rather than `studentUid`) when deleting a
+   * response, since the key may be pin-derived for anonymous joiners.
+   */
+  _responseKey?: string;
+  /**
+   * Firebase Auth UID of the student who wrote the doc — anonymous for PIN
+   * joiners, the SSO uid for studentRole joiners. Used for ownership checks
+   * in Firestore rules. Historically also served as the doc key; that is no
+   * longer guaranteed for anonymous joiners (see `_responseKey`).
    */
   studentUid: string;
   /**
@@ -1798,6 +1907,17 @@ export interface QuizResponse {
   tabSwitchWarnings?: number;
   /** Which class period the student selected when joining (multi-class support). */
   classPeriod?: string;
+  /**
+   * Number of times this student has completed the quiz under this response
+   * doc. Incremented on the transition `in-progress -> completed` via
+   * `completeQuiz`. Used together with `QuizSession.attemptLimit` to enforce
+   * the attempts cap: a student can re-join (and the doc is reset to
+   * `status: 'joined'`) until `completedAttempts >= attemptLimit`.
+   *
+   * Undefined on legacy docs written before multi-attempt support; the hook
+   * treats missing+`status==='completed'` as a single completed attempt.
+   */
+  completedAttempts?: number;
 }
 
 /** Global admin configuration for the Quiz widget */
@@ -1841,13 +1961,19 @@ export interface QuizConfig {
   /** Persisted library grid/list toggle. */
   libraryViewMode?: 'grid' | 'list';
   /**
-   * Per-quiz memory of the last ClassLink target class (`sourcedId`) the
-   * teacher picked in the Assign modal. Key is quizId, value is the
-   * ClassLink class sourcedId. Used to pre-select the selector on re-launch
-   * of the same quiz so teachers don't have to re-pick every time.
-   * Undefined means "use the default (No class)".
+   * @deprecated Pre-Phase-5A single-class memory. Read-only fallback now.
    */
   lastClassIdByQuizId?: Record<string, string>;
+  /**
+   * @deprecated Phase 5A ClassLink-sourcedId map. Read-only fallback for
+   * pre-unification configs; new code writes `lastRosterIdsByQuizId`.
+   */
+  lastClassIdsByQuizId?: Record<string, string[]>;
+  /**
+   * Per-quiz memory of the last roster selection in the Assign modal.
+   * Pre-selects the picker on re-launch.
+   */
+  lastRosterIdsByQuizId?: Record<string, string[]>;
 }
 
 // --- QUIZ ASSIGNMENT TYPES ---
@@ -1878,6 +2004,14 @@ export interface QuizAssignmentSettings {
   /** Selected class period roster names. Replaces singular periodName. */
   periodNames?: string[];
   plcMemberEmails?: string[];
+  /**
+   * Max completed submissions allowed per student. `null`/`undefined` means
+   * unlimited (legacy). `1` (default for new assignments) means one-and-done.
+   * Enforced at `joinQuizSession` time by checking the student's own existing
+   * response doc; teachers can reset a student's attempt by removing them from
+   * the live monitor, which deletes the response doc.
+   */
+  attemptLimit?: number | null;
 }
 
 /**
@@ -1898,6 +2032,9 @@ export interface QuizAssignment extends QuizAssignmentSettings {
   status: QuizAssignmentStatus;
   createdAt: number;
   updatedAt: number;
+  /** Unified roster targeting (new post-unification assignments). Legacy
+   *  assignments read via `periodNames` / session `classIds` only. */
+  rosterIds?: string[];
 }
 
 /**
@@ -1977,13 +2114,19 @@ export interface VideoActivityConfig {
   /** Persisted library grid/list toggle. */
   libraryViewMode?: 'grid' | 'list';
   /**
-   * Per-activity memory of the last ClassLink target class (`sourcedId`) the
-   * teacher picked in the Assign modal. Key is activityId, value is the
-   * ClassLink class sourcedId. Used to pre-select the selector on re-launch
-   * of the same activity so teachers don't have to re-pick every time.
-   * Undefined means "use the default (No class)".
+   * @deprecated Pre-Phase-5A single-class memory. Read-only fallback now.
    */
   lastClassIdByActivityId?: Record<string, string>;
+  /**
+   * @deprecated Phase 5A ClassLink-sourcedId map. Read-only fallback for
+   * pre-unification configs; new code writes `lastRosterIdsByActivityId`.
+   */
+  lastClassIdsByActivityId?: Record<string, string[]>;
+  /**
+   * Per-activity memory of the last roster selection in the Assign modal.
+   * Pre-selects the picker on re-launch.
+   */
+  lastRosterIdsByActivityId?: Record<string, string[]>;
 }
 
 export interface VideoActivitySessionSettings {
@@ -2028,13 +2171,31 @@ export interface VideoActivitySession {
   /** Optional Unix timestamp when the session link expires. */
   expiresAt?: number;
   /**
-   * Optional ClassLink class `sourcedId` this session is targeted at. When
-   * set, ClassLink-authenticated students whose token includes this classId
-   * see the session on their `/my-assignments` page, and Firestore rules
-   * (`passesStudentClassGate(vaSessionClassId())`) enforce class-based
-   * access. Undefined preserves the classic code/PIN-only flow.
+   * @deprecated Phase 5A — retained only for transitional compatibility.
+   * Populated to `classIds[0]` when `classIds` is non-empty so older clients
+   * and pre-migration Firestore rules keep working. Prefer `classIds`.
    */
   classId?: string;
+  /**
+   * Multi-class ClassLink target list. ClassLink-authenticated students whose
+   * token `classIds` claim overlaps this list see the session on their
+   * `/my-assignments` page; Firestore rules (`passesStudentClassGateList`)
+   * enforce the class gate. An empty/missing list preserves the classic
+   * PIN-only flow.
+   */
+  classIds?: string[];
+  /**
+   * Optional class-period names (typically local roster names) available for
+   * students to choose from after entering their PIN. When present and > 1,
+   * the student app shows a post-PIN picker and writes the chosen value to
+   * the response's `classPeriod` field. Mirrors the QuizSession pattern.
+   */
+  periodNames?: string[];
+  /**
+   * Roster IDs backing this session (unified targeting). `classIds` above is
+   * derived from these rosters' `classlinkClassId` metadata.
+   */
+  rosterIds?: string[];
 }
 
 /** A single answer submitted by a student for a video activity question. */
@@ -2061,6 +2222,8 @@ export interface VideoActivityResponse {
   answers: VideoActivityAnswer[];
   completedAt: number | null;
   score: number | null;
+  /** Which class period the student selected when joining (multi-class support). */
+  classPeriod?: string;
 }
 
 export interface TalkingToolConfig {
@@ -2638,17 +2801,33 @@ export interface GuidedLearningSession {
   teacherUid: string;
   createdAt: number;
   expiresAt?: number;
-  // ─── ClassLink target class (Phase 3C) ─────────────────────────────────────
+  // ─── ClassLink target class (Phase 3C, Phase 5A multi-class) ───────────────
   /**
-   * Optional ClassLink class `sourcedId` this session is targeted at. When
-   * present, students who signed in via the ClassLink / Google flow will see
-   * this session on their `/my-assignments` page, and Firestore rules
-   * enforce (via `passesStudentClassGate`) that only students enrolled in
-   * this class can read the session doc. Omit (or leave as an empty string)
-   * to preserve the classic join-link flow — the gate is a no-op for
-   * non-studentRole users.
+   * @deprecated Phase 5A — retained only for transitional compatibility.
+   * Populated to `classIds[0]` when `classIds` is non-empty so older clients
+   * and pre-migration Firestore rules keep working. Prefer `classIds`.
    */
   classId?: string;
+  /**
+   * Multi-class ClassLink target list. ClassLink-authenticated students whose
+   * token `classIds` claim overlaps this list see the session on their
+   * `/my-assignments` page; Firestore rules (`passesStudentClassGateList`)
+   * enforce the class gate. An empty/missing list preserves the classic
+   * join-link flow.
+   */
+  classIds?: string[];
+  /**
+   * Optional class-period names (typically local roster names) available for
+   * students to choose from after entering their PIN. When present and > 1,
+   * the student app shows a post-PIN picker and writes the chosen value to
+   * the response's `classPeriod` field. Mirrors the QuizSession pattern.
+   */
+  periodNames?: string[];
+  /**
+   * Roster IDs backing this session (unified targeting). `classIds` above is
+   * derived from these rosters' `classlinkClassId` metadata.
+   */
+  rosterIds?: string[];
 }
 
 /** Per-student response in /guided_learning_sessions/{id}/responses/{studentUid} */
@@ -2664,6 +2843,8 @@ export interface GuidedLearningResponse {
   completedAt: number | null;
   startedAt: number;
   score: number | null;
+  /** Which class period the student selected when joining (multi-class support). */
+  classPeriod?: string;
 }
 
 export interface GuidedLearningGlobalConfig {
@@ -2680,13 +2861,39 @@ export interface GuidedLearningConfig {
   /** Persisted library grid/list toggle. */
   libraryViewMode?: 'grid' | 'list';
   /**
-   * Per-set memory of the last ClassLink target class (`sourcedId`) the
-   * teacher picked in the Assign dialog. Key is the Guided Learning set id,
-   * value is the ClassLink class sourcedId. Used to pre-select the selector
-   * on re-launch of the same set so teachers don't have to re-pick every
-   * time. Undefined means "use the default (No class)".
+   * @deprecated Pre-Phase-5A single-class memory. Read-only fallback now.
    */
   lastClassIdBySetId?: Record<string, string>;
+  /**
+   * @deprecated Phase 5A ClassLink-sourcedId map. Read-only fallback for
+   * pre-unification configs; new code writes `lastRosterIdsBySetId`.
+   */
+  lastClassIdsBySetId?: Record<string, string[]>;
+  /**
+   * Per-set memory of the last roster selection in the Assign dialog.
+   * Pre-selects the picker on re-launch.
+   */
+  lastRosterIdsBySetId?: Record<string, string[]>;
+}
+
+export interface NeedDoPutThenTile {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  checked?: boolean;
+}
+
+export interface NeedDoPutThenConfig {
+  needItems?: NeedDoPutThenTile[];
+  doItems?: string[];
+  putItems?: NeedDoPutThenTile[];
+  thenItems?: NeedDoPutThenTile[];
+  fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
+  cardColor?: string;
+  cardOpacity?: number;
 }
 
 // Union of all widget configs
@@ -2749,7 +2956,8 @@ export type WidgetConfig =
   | ActivityWallConfig
   | WorkSymbolsConfig
   | BloomsTaxonomyConfig
-  | BloomsDetailConfig;
+  | BloomsDetailConfig
+  | NeedDoPutThenConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'url'
@@ -2870,7 +3078,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'url'
                                                                                                                     ? BloomsTaxonomyConfig
                                                                                                                     : T extends 'blooms-detail'
                                                                                                                       ? BloomsDetailConfig
-                                                                                                                      : never;
+                                                                                                                      : T extends 'need-do-put-then'
+                                                                                                                        ? NeedDoPutThenConfig
+                                                                                                                        : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
@@ -3703,6 +3913,10 @@ export interface VideoActivityAssignment extends VideoActivityAssignmentSettings
   status: VideoActivityAssignmentStatus;
   createdAt: number;
   updatedAt: number;
+  /** Unified roster targeting. New (post-unification) assignments write this;
+   *  legacy assignments read via `className` / session.classIds only. See
+   *  `utils/resolveAssignmentTargets.ts`. */
+  rosterIds?: string[];
 }
 
 // === MiniApp assignments ===
@@ -3731,9 +3945,17 @@ export interface MiniAppAssignment {
   status: 'active' | 'inactive';
   createdAt: number;
   updatedAt: number;
-  /** Mirrors `MiniAppSession.classIds`. Present when assigned via the
-   * class-targeted picker; absent (or empty) for shareable-link launches. */
-  classIds?: string[];
+  /** Unified roster targeting. Present on new (post-unification) assignments.
+   *
+   *  The student SSO gate lives on the session doc (`MiniAppSession.classIds`,
+   *  derived at assign time from these rosters' `classlinkClassId`); the
+   *  assignment doc intentionally does NOT mirror `classIds`, matching the
+   *  Quiz / VideoActivity / GuidedLearning assignment shapes.
+   *
+   *  Legacy pre-unification assignments may have no targeting fields at all
+   *  and read their targeting via the paired session doc. See
+   *  `utils/resolveAssignmentTargets.ts`. */
+  rosterIds?: string[];
   /** Mirrors `MiniAppSession.submissionsEnabled`. When true, the runner
    * reveals the Submit button and persists student submissions. */
   submissionsEnabled?: boolean;
@@ -3770,6 +3992,8 @@ export interface GuidedLearningAssignment {
   archivedAt?: number | null;
   /** Optional origin set: 'personal' (Drive) or 'building' (Firestore). */
   source?: 'personal' | 'building';
+  /** Unified roster targeting (new post-unification assignments). */
+  rosterIds?: string[];
 }
 
 // === Library folders (Wave 3) ===

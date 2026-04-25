@@ -3,10 +3,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if user is an admin
+    // Helper function to check if user is an admin.
+    //
+    // Uses `request.auth.token.get('email', '')` rather than direct
+    // `.email` access. The rules engine throws "Property email is
+    // undefined" when the claim is absent (production Firebase anonymous
+    // tokens carry no `email`), even behind a `!= null` guard on
+    // `request.auth`. After the `.get(...) != ''` check succeeds, the
+    // claim is guaranteed to exist, so the subsequent direct `.email`
+    // access below is safe. Matters for `allow update` on quiz responses
+    // (`isAdmin()` sits before the student branch in the OR chain there,
+    // so any throw during isAdmin evaluation could block anon PIN answer
+    // submission depending on CEL semantics).
     function isAdmin() {
       return request.auth != null &&
-             request.auth.token.email != null &&
+             request.auth.token.get('email', '') != '' &&
              exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()));
     }
 
@@ -19,8 +30,13 @@ service cloud.firestore {
     // their own classes without affecting any other auth path (teachers,
     // admins, or anonymous PIN students).
 
+    // Uses .get(key, default) rather than direct token.studentRole access.
+    // The rules engine throws "Property studentRole is undefined" when a claim
+    // is absent (e.g. on anon PIN tokens), even behind a `!= null` short-circuit;
+    // .get(...) returns the default instead. Without this guard, every
+    // passesStudentClassGate() callsite denies anon PIN students.
     function isStudentRoleUser() {
-      return request.auth != null && request.auth.token.studentRole == true;
+      return request.auth != null && request.auth.token.get('studentRole', false) == true;
     }
 
     // True iff the caller is a studentRole user AND the given classId is in
@@ -34,11 +50,20 @@ service cloud.firestore {
              classId in request.auth.token.classIds;
     }
 
-    // Gate helper used inside session rules: "either this caller is NOT a
-    // studentRole user, OR the session's classId is in their classIds claim".
-    // Used on both reads (resource.data) and writes (parent get()).
+    // Gate helper used inside session rules: passes when the caller is NOT a
+    // studentRole user, when the session has no class targeting (empty/missing
+    // classId — treat as "open to any studentRole holder with the PIN"), or
+    // when the session's classId is in their classIds claim.
+    //
+    // The untargeted-open branch mirrors the policy already documented on
+    // passesStudentClassGateList. Without it, a studentRole token (real SSO
+    // student or test-class-bypass super admin) joining a session whose
+    // creator did not pick a ClassLink class is denied — the per-join PIN is
+    // the secret in that path, not class membership.
     function passesStudentClassGate(sessionClassId) {
       return !isStudentRoleUser() ||
+             !(sessionClassId is string) ||
+             sessionClassId.size() == 0 ||
              studentRoleCanAccessClass(sessionClassId);
     }
 
@@ -54,6 +79,21 @@ service cloud.firestore {
              sessionClassIds.size() == 0 ||
              (request.auth.token.classIds is list &&
               sessionClassIds.hasAny(request.auth.token.classIds));
+    }
+
+    // Phase 5A transitional compatibility helper. Sessions created after
+    // Phase 5A write a multi-value `classIds` list; sessions created before
+    // Phase 5A write the single `classId` field. This helper selects the
+    // right gate based on which field is populated on the session doc:
+    //   - if `classIds` is a non-empty list, use `passesStudentClassGateList`
+    //   - otherwise, fall back to the legacy single-class gate
+    // Callers pass `resource.data.get('classIds', [])` and
+    // `resource.data.get('classId', '')` so the field-absent case safely
+    // falls through (empty list / empty string → no-op gate).
+    function passesStudentClassGateCompat(sessionClassIds, sessionClassId) {
+      return sessionClassIds is list && sessionClassIds.size() > 0
+             ? passesStudentClassGateList(sessionClassIds)
+             : passesStudentClassGate(sessionClassId);
     }
 
     // ---- Organization helpers (see docs/organization_wiring_implementation.md) ----
@@ -546,6 +586,138 @@ service cloud.firestore {
         (resource.data.get('originalAuthor', null) == request.auth.uid || isAdmin());
     }
 
+    // ---- PLC (Professional Learning Community) helpers + rules ----
+    //
+    // PLCs are top-level so cross-teacher reads work — every member needs to
+    // read the doc, not just the lead. The lead has full write authority;
+    // non-leads can only self-add (accepting an invite) or self-remove (leaving).
+    //
+    // Invitations use a deterministic doc id `<plcId>_<emailLower>` so the
+    // accept-flow rule can verify an outstanding invite without enumerating.
+    // Resending an invite to the same email overwrites the previous record,
+    // which is the desired behavior (re-arms a declined invite).
+    function plcInviteDocId(plcId, emailLower) {
+      return plcId + '_' + emailLower;
+    }
+
+    // True iff the pending update is the caller self-adding to memberUids
+    // (i.e. accepting an invitation). Verified against the existence of a
+    // matching *pending* deterministic invitation doc, AND constrained so
+    // the only membership change is appending the caller — preventing a
+    // malicious invitee from rewriting the whole memberUids array.
+    function isAcceptingPlcInvite(plcId) {
+      let emailLower = request.auth.token.get('email', '').lower();
+      let oldMembers = resource.data.memberUids;
+      let newMembers = request.resource.data.memberUids;
+      let oldEmails = resource.data.memberEmails;
+      let newEmails = request.resource.data.memberEmails;
+      return emailLower != ''
+        && !(request.auth.uid in oldMembers)
+        && (request.auth.uid in newMembers)
+        && newMembers.size() == oldMembers.size() + 1
+        && newMembers.toSet().hasAll(oldMembers.toSet())
+        && newEmails.diff(oldEmails).affectedKeys().hasOnly([request.auth.uid])
+        && newEmails.get(request.auth.uid, '') == emailLower
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['memberUids', 'memberEmails', 'updatedAt'])
+        && get(/databases/$(database)/documents/plc_invitations/$(plcInviteDocId(plcId, emailLower))).data.status == 'pending';
+    }
+
+    // True iff the pending update is the caller self-removing from
+    // memberUids (i.e. leaving the PLC). The lead can't use this path —
+    // they must transfer leadership first or delete the PLC outright.
+    // Constrained so the only membership change is dropping the caller —
+    // preventing a leaving member from also evicting other members.
+    function isLeavingPlc() {
+      let oldMembers = resource.data.memberUids;
+      let newMembers = request.resource.data.memberUids;
+      let oldEmails = resource.data.memberEmails;
+      let newEmails = request.resource.data.memberEmails;
+      return (request.auth.uid in oldMembers)
+        && !(request.auth.uid in newMembers)
+        && request.auth.uid != resource.data.leadUid
+        && newMembers.size() == oldMembers.size() - 1
+        && oldMembers.toSet().hasAll(newMembers.toSet())
+        && newEmails.diff(oldEmails).affectedKeys().hasOnly([request.auth.uid])
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['memberUids', 'memberEmails', 'updatedAt']);
+    }
+
+    match /plcs/{plcId} {
+      // Members can read; non-members get nothing — keeps PLC names and
+      // member lists scoped to the actual community.
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.memberUids;
+
+      // The creating teacher is the lead and the only initial member.
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.leadUid
+        && request.resource.data.memberUids == [request.auth.uid];
+
+      // Lead can rename, add/remove members, etc. — but cannot vacate
+      // leadership via this path (leadUid is immutable here, and the lead
+      // must stay in memberUids). This blocks the lead from sneaking out
+      // through the broad lead-update branch and bypassing the
+      // "transfer leadership before leaving" intent of isLeavingPlc.
+      // Non-leads can only self-add via accepted invite or self-remove.
+      allow update: if request.auth != null && (
+        (
+          request.auth.uid == resource.data.leadUid
+          && request.resource.data.leadUid == resource.data.leadUid
+          && resource.data.leadUid in request.resource.data.memberUids
+        )
+        || isAcceptingPlcInvite(plcId)
+        || isLeavingPlc()
+      );
+
+      // Only the lead can dissolve the PLC.
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.leadUid;
+    }
+
+    match /plc_invitations/{inviteId} {
+      // Invitee can see their own pending/terminal invites; lead sees the
+      // ones they sent. Both are needed for the sidebar UI to render
+      // "Pending invites" and "Outstanding invitations" panels.
+      allow read: if request.auth != null
+        && request.auth.token.get('email', '') != ''
+        && (
+          resource.data.inviteeEmailLower == request.auth.token.email.lower()
+          || request.auth.uid == resource.data.invitedByUid
+        );
+
+      // Lead of the target PLC creates (or re-creates) the invite. The doc
+      // id is forced to the deterministic format so isAcceptingPlcInvite
+      // can verify by id without a query.
+      allow create, update: if request.auth != null
+        && request.resource.data.invitedByUid == request.auth.uid
+        && get(/databases/$(database)/documents/plcs/$(request.resource.data.plcId)).data.leadUid == request.auth.uid
+        && inviteId == plcInviteDocId(request.resource.data.plcId, request.resource.data.inviteeEmailLower);
+
+      // Invitee can patch only status + respondedAt to mark accepted/declined.
+      // Status must transition *from* 'pending' *to* a terminal state — this
+      // blocks resurrecting a terminal invite back to 'pending' or setting
+      // it to an arbitrary string.
+      // Note: the invitee never deletes the invite — the lead can revoke it,
+      // and accepted invites are kept for audit (the sidebar filters to pending).
+      allow update: if request.auth != null
+        && request.auth.token.get('email', '') != ''
+        && resource.data.inviteeEmailLower == request.auth.token.email.lower()
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'declined']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'respondedAt']);
+
+      // Lead can revoke (delete) outstanding invites. The inviter can also
+      // always delete their own invites — same semantic, plus it lets the
+      // lead clean up any orphans should the parent PLC ever go missing
+      // (the get() below would otherwise fail on a deleted parent).
+      allow delete: if request.auth != null
+        && (
+          request.auth.uid == resource.data.invitedByUid
+          || get(/databases/$(database)/documents/plcs/$(resource.data.plcId)).data.leadUid == request.auth.uid
+        );
+    }
+
     // Sessions - Teacher owns it, Students can join
     match /sessions/{userId} {
       // Only authenticated users (including anonymous) can read sessions
@@ -577,37 +749,34 @@ service cloud.firestore {
     // owns the document and stores their uid on the `teacherUid` field.
     // Multiple concurrent sessions per teacher are allowed.
     match /quiz_sessions/{sessionId} {
-      // Reads are split into `get` (single doc) and `list` (collection query)
-      // because Firestore's rules engine treats them differently:
+      // Reads are intentionally permissive: any authenticated caller can
+      // `get` and `list` session documents. PR #1390 split this into
+      // `get`/`list` and kept a `resource.data`-based studentRole class gate
+      // on `get`, on the theory that `get` rules have `resource.data`
+      // available at evaluation time. Empirically that still denied teacher
+      // single-doc subscriptions after a paused→active transition, breaking
+      // the Start flow; removing the `resource.data` reference unblocks it
+      // without widening enumeration beyond what the list rule already
+      // allows.
       //
-      //   - `get` evaluates per-document at read time. The studentRole class
-      //     gate can safely reference `resource.data` because the engine has
-      //     a concrete document to evaluate against.
-      //   - `list` is statically analyzed BEFORE execution. Any `resource.data`
-      //     reference in the predicate is treated as "unprovable for arbitrary
-      //     docs" and the entire list is denied — even when an earlier OR
-      //     branch (`!isStudentRoleUser()`) would short-circuit at runtime.
-      //     This is the failure mode that broke teacher assignment creation
-      //     for ~2 days; the previous "hoist" fix in #1389 was insufficient
-      //     because the static analyzer does not respect short-circuit OR.
-      //
-      // Splitting the rule lets the `list` predicate stay free of any
-      // `resource.data` reference. The list rule is the broad "any
-      // authenticated caller can enumerate session docs" allowance —
-      // studentRole users need this so MyAssignmentsPage can run its
-      // `where('classId', 'in', myClassIds)` discovery query, and PIN-flow
-      // students need it for code lookups. Per-class gating is still
-      // enforced at the `get` rule (and at write time on responses), so
-      // a studentRole user can list metadata but cannot open the contents
-      // of a session outside their classIds claim.
+      // studentRole (ClassLink-via-Google SSO) class gating is now enforced
+      // exclusively on the response write rules below, which dereference
+      // the parent session's `classId` via a runtime `get()` — a per-write
+      // fetch, not a predicate the analyzer has to reason about ahead of
+      // time. Students can see session metadata by id but cannot submit a
+      // response to a session outside their classIds claim.
       //
       // Restricting enumeration further would require a Cloud Function
-      // proxy; for now we accept that any authenticated user can list
+      // proxy; for now we accept that any authenticated user can read
       // session documents (matches the pre-SSO behavior).
-      allow get: if request.auth != null &&
-        (!isStudentRoleUser() ||
-         passesStudentClassGate(resource.data.get('classId', '')));
-      allow list: if request.auth != null;
+      //
+      // Privacy impact: any authenticated user who knows a sessionId (a
+      // v4 UUID — unguessable in practice) can read `code`, `classId`,
+      // `publicQuestions` (answer-key-stripped by schema — see types.ts
+      // `QuizPublicQuestion`), and `revealedAnswers` (populated only when
+      // the teacher has intentionally broadcast a reveal). No PII fields
+      // live on the session doc itself.
+      allow read: if request.auth != null;
       // Only the teacher (session owner) can create/update/delete the session document.
       // Ownership is carried on the `teacherUid` field (no longer the doc id).
       allow create: if request.auth != null &&
@@ -615,10 +784,15 @@ service cloud.firestore {
       allow update, delete: if request.auth != null &&
         resource.data.teacherUid == request.auth.uid;
 
-      match /responses/{studentUid} {
+      match /responses/{responseKey} {
         // Quiz response records store only a PIN — no student name or email.
-        // Students join using anonymous Firebase Auth; their anonymous UID is
-        // the document key. This satisfies request.auth != null without PII.
+        //
+        // Doc-keying note: {responseKey} is no longer guaranteed to equal the
+        // student's auth uid. For studentRole (SSO) joiners it still does;
+        // for anonymous PIN joiners it is `pin-{classPeriod}-{pin}` so the
+        // attempt limit survives device/storage resets. Ownership checks
+        // therefore compare against the `studentUid` field on the doc, not
+        // against the wildcard key.
         //
         // Teacher ownership is looked up from the parent session doc because
         // the sessionId is no longer the teacher's uid. This adds one get()
@@ -629,36 +803,82 @@ service cloud.firestore {
         function sessionClassId() {
           return get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data.get('classId', '');
         }
+        function sessionClassIds() {
+          return get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data.get('classIds', []);
+        }
 
-        allow read: if request.auth != null &&
-          (request.auth.uid == sessionTeacherUid() ||
-           (request.auth.uid == studentUid && passesStudentClassGate(sessionClassId())) ||
-           isAdmin());
+        // Student branch allows `resource == null` so the student-app join
+        // flow can call getDoc() to probe whether a response already exists
+        // before deciding to create or resume — without it the rules engine
+        // throws a Null value error on `resource.data.studentUid`. The
+        // class-gate check is kept as a hard prerequisite so a studentRole
+        // user can't probe responses in a session they're not enrolled in
+        // (anonymous PIN users pass the gate by definition, matching the
+        // legacy "any authenticated joiner can probe" behavior).
+        allow read: if request.auth != null && (
+          request.auth.uid == sessionTeacherUid() ||
+          isAdmin() ||
+          (passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
+           (resource == null || request.auth.uid == resource.data.studentUid))
+        );
+        // Create is only ever invoked when the doc doesn't yet exist
+        // (Firestore semantics), so the deterministic response key naturally
+        // enforces one-doc-per-roster-student. Field-based ownership: the
+        // writer's auth.uid must match the `studentUid` they're writing.
+        //
+        // Key-format constraint: with deterministic keys any authenticated
+        // roster-mate who knows PIN+period could otherwise grief-create a
+        // victim's doc under an arbitrary key. We tighten this by requiring:
+        //   - studentRole (SSO) writers use `responseKey == auth.uid` (the
+        //     same key scheme the client computes for them).
+        //   - Anonymous (PIN) writers use a key matching the shape
+        //     `pin-{encodedPeriod}-{encodedPin}` with `[a-z0-9_]` segments.
+        //     This mirrors `encodeResponseKeySegment()` on the client.
+        // Classmate-on-classmate grief with both parties on the same
+        // PIN+period is not fully preventable here (shared-secret design);
+        // the cross-auth-type paths are now closed.
         allow create: if request.auth != null &&
-          request.auth.uid == studentUid &&
-          request.resource.data.studentUid == studentUid &&
+          request.resource.data.studentUid == request.auth.uid &&
           // Students cannot forge a score on creation
           request.resource.data.score == null &&
+          // Students cannot forge prior completions
+          request.resource.data.get('completedAttempts', 0) == 0 &&
           // studentRole users must be enrolled in the session's class
-          passesStudentClassGate(sessionClassId());
+          passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
+          (isStudentRoleUser()
+            ? responseKey == request.auth.uid
+            : responseKey.matches('^pin-[a-z0-9_]+-[a-z0-9_]+$'));
         allow update: if request.auth != null && (
           // Teacher and admins can update any field
           request.auth.uid == sessionTeacherUid() || isAdmin() ||
-          // Students may only update their own response to submit answers.
-          // pin and join metadata are immutable; only answers, status,
-          // submittedAt, and tabSwitchWarnings may change.
-          // score is never written by students.
-          // tabSwitchWarnings may only increase (monotonic) to prevent tampering.
-          (request.auth.uid == studentUid &&
-           passesStudentClassGate(sessionClassId()) &&
+          // Students may only update their own response to submit answers
+          // or to re-join under the attempt cap. Ownership is enforced
+          // against the `studentUid` field, not the doc key (which may be
+          // pin-derived for anonymous joiners).
+          //
+          // Mutable fields: answers, status, submittedAt, tabSwitchWarnings,
+          // completedAttempts, classPeriod, score (score is reset to null on
+          // rejoin; students still can't forge a real score — see below).
+          // pin and join metadata are immutable.
+          //
+          // Monotonic fields (prevent rollback tampering): tabSwitchWarnings
+          // and completedAttempts may only stay the same or increase.
+          //
+          // Score guard: students may only ever write null to `score` — this
+          // blocks a forged high score while still allowing the rejoin reset
+          // flow to clear a previously null value to null.
+          (request.auth.uid == resource.data.studentUid &&
+           passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
            request.resource.data.studentUid == resource.data.studentUid &&
            request.resource.data.pin == resource.data.pin &&
            request.resource.data.joinedAt == resource.data.joinedAt &&
-           request.resource.data.score == resource.data.score &&
+           request.resource.data.score == null &&
            request.resource.data.diff(resource.data)
-             .changedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings']) &&
+             .changedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings', 'completedAttempts', 'classPeriod', 'score']) &&
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tabSwitchWarnings']) ||
-            request.resource.data.tabSwitchWarnings >= resource.data.get('tabSwitchWarnings', 0)))
+            request.resource.data.tabSwitchWarnings >= resource.data.get('tabSwitchWarnings', 0)) &&
+           (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['completedAttempts']) ||
+            request.resource.data.get('completedAttempts', 0) >= resource.data.get('completedAttempts', 0)))
         );
         allow delete: if request.auth != null &&
           (request.auth.uid == sessionTeacherUid() || isAdmin());
@@ -739,16 +959,13 @@ service cloud.firestore {
 
     // Video Activity Sessions — Teacher creates, anonymous students can read and submit responses
     match /video_activity_sessions/{sessionId} {
-      // Reads split into `get` + `list`; see quiz_sessions for the rationale
-      // (Firestore static-analyzes `list` predicates and rejects any rule
-      // that touches `resource.data`, even behind a short-circuit OR).
-      // The `list` rule allows any authenticated caller so studentRole users
-      // can run their MyAssignmentsPage class-filtered discovery queries;
-      // per-doc class gating still happens at `get`.
-      allow get: if request.auth != null &&
-        (!isStudentRoleUser() ||
-         passesStudentClassGate(resource.data.get('classId', '')));
-      allow list: if request.auth != null;
+      // Reads are intentionally permissive for any authenticated caller.
+      // See quiz_sessions for the rationale: a `resource.data`-based
+      // studentRole class gate on `get` still denied teacher single-doc
+      // subscriptions after a status transition; the class gate is now
+      // enforced on the response write rules below, which dereference the
+      // parent session's `classId` via a runtime `get()`.
+      allow read: if request.auth != null;
       // Only authenticated (non-anonymous) users can create sessions (teachers)
       allow create: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
       // Teacher owners may rename or end sessions, but not mutate session content.
@@ -780,12 +997,15 @@ service cloud.firestore {
         function vaSessionClassId() {
           return get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.get('classId', '');
         }
+        function vaSessionClassIds() {
+          return get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.get('classIds', []);
+        }
 
         // Teacher can read all responses; students can only read their own (doc ID == auth UID)
         allow read: if request.auth != null && (
           isAdmin() ||
           get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.teacherUid == request.auth.uid ||
-          (studentUid == request.auth.uid && passesStudentClassGate(vaSessionClassId()))
+          (studentUid == request.auth.uid && passesStudentClassGateCompat(vaSessionClassIds(), vaSessionClassId()))
         );
         // Students create their own response; document ID and studentUid field must match their auth UID.
         // studentRole users must also be enrolled in the session's class.
@@ -794,12 +1014,12 @@ service cloud.firestore {
           request.resource.data.studentUid == request.auth.uid &&
           request.resource.data.score == null &&
           request.resource.data.completedAt == null &&
-          passesStudentClassGate(vaSessionClassId());
+          passesStudentClassGateCompat(vaSessionClassIds(), vaSessionClassId());
         // Students can update only their own response to add answers or set completedAt;
         // identity fields and score are immutable from the client; answers array may only grow
         allow update: if request.auth != null &&
           studentUid == request.auth.uid &&
-          passesStudentClassGate(vaSessionClassId()) &&
+          passesStudentClassGateCompat(vaSessionClassIds(), vaSessionClassId()) &&
           request.resource.data.studentUid == resource.data.studentUid &&
           request.resource.data.pin == resource.data.pin &&
           request.resource.data.name == resource.data.name &&
@@ -824,19 +1044,13 @@ service cloud.firestore {
 
     // MiniApp Assignment Sessions — Teacher creates, anonymous students can read
     match /mini_app_sessions/{sessionId} {
-      // Reads split into `get` + `list`; see quiz_sessions for the rationale
-      // (Firestore static-analyzes `list` predicates and rejects any rule
-      // that touches `resource.data`, even behind a short-circuit OR).
-      // The `list` rule allows any authenticated caller so studentRole users
-      // can run their MyAssignmentsPage `array-contains-any` discovery query;
-      // per-doc class gating still happens at `get`.
-      // studentRole (GIS) users additionally must have at least one of the
-      // session's classIds in their classIds claim (or the session must be
-      // untargeted — empty classIds — for shareable-link launches).
-      allow get: if request.auth != null &&
-        (!isStudentRoleUser() ||
-         passesStudentClassGateList(resource.data.get('classIds', [])));
-      allow list: if request.auth != null;
+      // Reads are intentionally permissive for any authenticated caller.
+      // See quiz_sessions for the rationale: a `resource.data`-based
+      // studentRole class gate on `get` still denied teacher single-doc
+      // subscriptions; the class gate is now enforced on the submission
+      // write rules below, which dereference the parent session's
+      // `classIds` via a runtime `get()`.
+      allow read: if request.auth != null;
       // Only authenticated (non-anonymous) teachers can create sessions they own
       allow create: if request.auth != null &&
         request.auth.token.firebase.sign_in_provider != 'anonymous' &&
@@ -928,16 +1142,13 @@ service cloud.firestore {
 
     // Guided Learning Sessions — Teacher creates, authenticated (incl. anonymous) students read and submit
     match /guided_learning_sessions/{sessionId} {
-      // Reads split into `get` + `list`; see quiz_sessions for the rationale
-      // (Firestore static-analyzes `list` predicates and rejects any rule
-      // that touches `resource.data`, even behind a short-circuit OR).
-      // The `list` rule allows any authenticated caller so studentRole users
-      // can run their MyAssignmentsPage class-filtered discovery queries;
-      // per-doc class gating still happens at `get`.
-      allow get: if request.auth != null &&
-        (!isStudentRoleUser() ||
-         passesStudentClassGate(resource.data.get('classId', '')));
-      allow list: if request.auth != null;
+      // Reads are intentionally permissive for any authenticated caller.
+      // See quiz_sessions for the rationale: a `resource.data`-based
+      // studentRole class gate on `get` still denied teacher single-doc
+      // subscriptions; the class gate is now enforced on the response
+      // write rules below, which dereference the parent session's
+      // `classId` via a runtime `get()`.
+      allow read: if request.auth != null;
       // Only authenticated (non-anonymous) teachers can create sessions; they must own it
       allow create: if request.auth != null &&
         request.auth.token.firebase.sign_in_provider != 'anonymous' &&
@@ -954,12 +1165,15 @@ service cloud.firestore {
         function glSessionClassId() {
           return get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.get('classId', '');
         }
+        function glSessionClassIds() {
+          return get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.get('classIds', []);
+        }
 
         // Teacher can read all responses; students can only read their own
         allow read: if request.auth != null && (
           isAdmin() ||
           get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.teacherUid == request.auth.uid ||
-          (studentUid == request.auth.uid && passesStudentClassGate(glSessionClassId()))
+          (studentUid == request.auth.uid && passesStudentClassGateCompat(glSessionClassIds(), glSessionClassId()))
         );
         // Students create their own response; doc ID, studentAnonymousId, and sessionId must match.
         // studentRole users must also be enrolled in the session's class.
@@ -968,12 +1182,12 @@ service cloud.firestore {
           request.resource.data.studentAnonymousId == request.auth.uid &&
           request.resource.data.sessionId == sessionId &&
           request.resource.data.score == null &&
-          passesStudentClassGate(glSessionClassId());
+          passesStudentClassGateCompat(glSessionClassIds(), glSessionClassId());
         // Students can update only their own response to add answers or set completedAt;
         // identity fields and score are immutable from the client
         allow update: if request.auth != null &&
           studentUid == request.auth.uid &&
-          passesStudentClassGate(glSessionClassId()) &&
+          passesStudentClassGateCompat(glSessionClassIds(), glSessionClassId()) &&
           request.resource.data.studentAnonymousId == resource.data.studentAnonymousId &&
           request.resource.data.sessionId == resource.data.sessionId &&
           request.resource.data.startedAt == resource.data.startedAt &&
@@ -992,16 +1206,13 @@ service cloud.firestore {
     // Activity Wall Sessions — Teacher owns it (UID prefix in sessionId), students submit entries
     // sessionId is formatted as {teacherUid}_{activityId}
     match /activity_wall_sessions/{sessionId} {
-      // Reads split into `get` + `list`; see quiz_sessions for the rationale
-      // (Firestore static-analyzes `list` predicates and rejects any rule
-      // that touches `resource.data`, even behind a short-circuit OR).
-      // The `list` rule allows any authenticated caller so studentRole users
-      // can run their MyAssignmentsPage class-filtered discovery queries;
-      // per-doc class gating still happens at `get`.
-      allow get: if request.auth != null &&
-        (!isStudentRoleUser() ||
-         passesStudentClassGate(resource.data.get('classId', '')));
-      allow list: if request.auth != null;
+      // Reads are intentionally permissive for any authenticated caller.
+      // See quiz_sessions for the rationale: a `resource.data`-based
+      // studentRole class gate on `get` still denied teacher single-doc
+      // subscriptions; the class gate is now enforced on the submission
+      // write rules below, which dereference the parent session's
+      // `classId` via a runtime `get()`.
+      allow read: if request.auth != null;
       // Only authenticated non-anonymous teachers/admins can create or update the session document itself.
       allow create, update: if request.auth != null &&
                             request.auth.token.firebase.sign_in_provider != 'anonymous' &&

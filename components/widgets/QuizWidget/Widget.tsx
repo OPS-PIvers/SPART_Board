@@ -32,6 +32,7 @@ import {
 import { QuizLiveMonitor } from './components/QuizLiveMonitor';
 import { Loader2, AlertTriangle, LogIn } from 'lucide-react';
 import { SCOREBOARD_COLORS } from '@/config/scoreboard';
+import { deriveSessionTargetsFromRosters } from '@/utils/resolveAssignmentTargets';
 
 export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addWidget, addToast, rosters, activeDashboard } =
@@ -72,6 +73,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     pauseAssignment,
     resumeAssignment,
     deactivateAssignment,
+    reopenAssignment,
     deleteAssignment,
     updateAssignmentSettings,
     shareAssignment,
@@ -93,6 +95,19 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [loadedQuizData, setLoadedQuizData] = useState<QuizData | null>(null);
   const [loadingQuizData, setLoadingQuizData] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
+
+  // Bump a token whenever the user navigates INTO the results view so the
+  // QuizResults consumer remounts with fresh memos over the current live
+  // `responses` — guarantees aggregate stats recompute after a mid-view
+  // submission delete even if the upstream snapshot state lagged.
+  const [resultsEnterToken, setResultsEnterToken] = useState(0);
+  const [prevView, setPrevView] = useState(config.view);
+  if (config.view !== prevView) {
+    setPrevView(config.view);
+    if (config.view === 'results') {
+      setResultsEnterToken((n) => n + 1);
+    }
+  }
 
   // Editor modal state — ephemeral, not persisted to Firestore.
   const [editingQuiz, setEditingQuiz] = useState<QuizData | null>(null);
@@ -533,6 +548,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     // separately; config.resultsSessionId is reserved for future per-session history.
     return (
       <QuizResults
+        key={`${config.activeAssignmentId ?? 'none'}-${resultsEnterToken}`}
         quiz={loadedQuizData}
         responses={responses}
         config={config}
@@ -542,6 +558,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }}
         tabWarningsEnabled={liveSession?.tabWarningsEnabled ?? true}
         session={liveSession}
+        onDeleteResponse={removeStudent}
       />
     );
   }
@@ -668,10 +685,18 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           mode,
           plcOptions: PlcOptions,
           sessionOptions: QuizSessionOptions,
-          classId: string | null
+          rosterIds: string[],
+          attemptLimit: number | null
         ) => {
           const data = await loadQuiz(meta);
           if (!data) return;
+          // Derive session targets from selected rosters — `classIds` feeds
+          // the student SSO gate via Firestore rules; `rosterIds` is mirrored
+          // onto both assignment and session for reverse lookup.
+          const selectedRosters = rosters.filter((r) =>
+            rosterIds.includes(r.id)
+          );
+          const derived = deriveSessionTargetsFromRosters(selectedRosters);
           try {
             const { id: assignmentId, code } = await createAssignment(
               {
@@ -683,6 +708,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               {
                 sessionMode: mode,
                 sessionOptions,
+                attemptLimit,
                 plcMode: plcOptions.plcMode,
                 teacherName: plcOptions.teacherName,
                 periodName:
@@ -691,16 +717,15 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 plcSheetUrl: plcOptions.plcSheetUrl,
               },
               'paused',
-              classId ?? undefined
+              derived.classIds,
+              derived.rosterIds
             );
-            // Persist the teacher's last-used classId per quiz so re-launching
-            // the same quiz pre-selects the same class. Clearing (picking "No
-            // class") removes the entry rather than writing an empty string
-            // to keep the config map small.
-            const prevMap = config.lastClassIdByQuizId ?? {};
-            const nextMap: Record<string, string> = { ...prevMap };
-            if (classId) {
-              nextMap[meta.id] = classId;
+            // Persist the teacher's last-used rosters per quiz so
+            // re-launching the same quiz pre-selects the same classes.
+            const prevMap = config.lastRosterIdsByQuizId ?? {};
+            const nextMap: Record<string, string[]> = { ...prevMap };
+            if (rosterIds.length > 0) {
+              nextMap[meta.id] = rosterIds;
             } else {
               delete nextMap[meta.id];
             }
@@ -718,7 +743,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   plcOptions.periodNames?.[0] ?? plcOptions.periodName ?? '',
                 periodNames: plcOptions.periodNames ?? [],
                 plcSheetUrl: plcOptions.plcSheetUrl ?? '',
-                lastClassIdByQuizId: nextMap,
+                lastRosterIdsByQuizId: nextMap,
               } as QuizConfig,
             });
             const url = `${window.location.origin}/quiz?code=${code}`;
@@ -1078,6 +1103,20 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           } catch (err) {
             addToast(
               err instanceof Error ? err.message : 'Failed to deactivate',
+              'error'
+            );
+          }
+        }}
+        onArchiveReopen={async (a) => {
+          try {
+            await reopenAssignment(a.id);
+            addToast(
+              'Reopened — click Resume to accept submissions.',
+              'success'
+            );
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to reopen',
               'error'
             );
           }

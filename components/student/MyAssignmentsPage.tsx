@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   collection,
   doc,
@@ -12,12 +6,14 @@ import {
   onSnapshot,
   query,
   where,
+  type Query,
   type QuerySnapshot,
   type DocumentData,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   ClipboardList,
   GraduationCap,
@@ -27,6 +23,7 @@ import {
   LogOut,
   PlayCircle,
   Puzzle,
+  RefreshCw,
   Sparkles,
 } from 'lucide-react';
 import { db, functions } from '@/config/firebase';
@@ -38,8 +35,16 @@ import { useStudentAuth } from '@/context/useStudentAuth';
  *
  * Landing page for a signed-in student. Subscribes to the five session
  * collections (`quiz_sessions`, `video_activity_sessions`,
- * `guided_learning_sessions`, `mini_app_sessions`, `activity_wall_sessions`),
- * filtered by `classId in classIds`, and renders the union as a single list.
+ * `guided_learning_sessions`, `mini_app_sessions`, `activity_wall_sessions`)
+ * and renders the union as a single list.
+ *
+ * Query strategy: quiz / video-activity / guided-learning subscribe to TWO
+ * queries each — one on the Phase 5A `classIds` array (array-contains-any)
+ * and one on the legacy `classId` string (in) — merging by sessionId so
+ * students in *any* class targeted by a multi-class assignment are covered
+ * while legacy single-class sessions still surface. Mini-app is list-only
+ * (its sessions have always been multi-class) and activity-wall is
+ * single-only (has not been migrated to multi-class yet).
  *
  * PII-free: reads only session-level fields (title, status, code, classId).
  * Never reads, logs, or persists email / displayName / sub. The only
@@ -86,14 +91,29 @@ type LoadState = 'loading' | 'ready';
 
 interface KindConfig {
   collectionName: string;
-  /** Firestore status filter, or `null` when the collection has no status field. */
-  statusFilter: { field: 'status'; value: 'active' } | null;
   /**
-   * How this collection stores its class targeting:
+   * When true, subscribe to TWO queries per kind and merge results by
+   * `sessionId` (de-duping any overlap):
+   *   - `list`   — `where('classIds', 'array-contains-any', classIds)` — Phase 5A multi-class
+   *   - `single` — `where('classId', 'in', classIds)`                   — legacy single-class
+   * This is required for quiz/video-activity/guided-learning so that
+   * multi-class assignments (Phase 5A) are discovered for students in
+   * *any* targeted class — not just `classIds[0]` — while legacy
+   * single-class sessions (with no `classIds` array) still surface.
+   *
+   * When false, a single query is issued using `classFilterShape`.
+   */
+  dualQuery: boolean;
+  /** Firestore status filter, or `null` when the collection has no status field. */
+  statusFilter:
+    | { field: 'status'; value: 'active' }
+    | { field: 'status'; valueIn: readonly string[] }
+    | null;
+  /**
+   * Shape used when `dualQuery` is false. Describes how this collection
+   * stores its class targeting:
    *   - `single` — a string `classId` field (queried with `where(..., 'in', classIds)`)
    *   - `list`   — an array `classIds` field (queried with `where(..., 'array-contains-any', classIds)`)
-   * Mini-app sessions are `list` (multi-class targeting); every other kind
-   * is still single-class.
    */
   classFilterShape: 'single' | 'list';
   /** Subcollection where per-student response/submission docs live; null when absent. */
@@ -133,7 +153,11 @@ interface KindConfig {
 const KIND_CONFIG: Record<SessionKind, KindConfig> = {
   quiz: {
     collectionName: 'quiz_sessions',
-    statusFilter: { field: 'status', value: 'active' },
+    dualQuery: true,
+    // Include `waiting` so teacher-paced quizzes (which sit in 'waiting'
+    // after Play but before the teacher advances to Q1) surface on
+    // `/my-assignments` — matching the PIN-flow experience.
+    statusFilter: { field: 'status', valueIn: ['waiting', 'active'] },
     classFilterShape: 'single',
     responseSubcollection: 'responses',
     label: 'Quiz',
@@ -156,6 +180,7 @@ const KIND_CONFIG: Record<SessionKind, KindConfig> = {
   },
   'video-activity': {
     collectionName: 'video_activity_sessions',
+    dualQuery: true,
     statusFilter: { field: 'status', value: 'active' },
     classFilterShape: 'single',
     responseSubcollection: 'responses',
@@ -179,6 +204,7 @@ const KIND_CONFIG: Record<SessionKind, KindConfig> = {
   },
   'guided-learning': {
     collectionName: 'guided_learning_sessions',
+    dualQuery: true,
     statusFilter: null, // No status field; session presence = live.
     classFilterShape: 'single',
     responseSubcollection: 'responses',
@@ -194,6 +220,7 @@ const KIND_CONFIG: Record<SessionKind, KindConfig> = {
   },
   'mini-app': {
     collectionName: 'mini_app_sessions',
+    dualQuery: false,
     statusFilter: { field: 'status', value: 'active' },
     classFilterShape: 'list',
     responseSubcollection: 'submissions',
@@ -214,6 +241,7 @@ const KIND_CONFIG: Record<SessionKind, KindConfig> = {
   },
   'activity-wall': {
     collectionName: 'activity_wall_sessions',
+    dualQuery: false,
     statusFilter: null, // No status field on the session doc.
     classFilterShape: 'single',
     // ActivityWall submissions are a LIST per student (students can post
@@ -228,12 +256,7 @@ const KIND_CONFIG: Record<SessionKind, KindConfig> = {
       typeof data.title === 'string' && data.title.length > 0
         ? data.title
         : 'Activity wall',
-    hrefFrom: (sessionId) =>
-      // ActivityWall student app normally expects a `?data=<base64>` payload
-      // that the teacher builds. A class-targeted launch doesn't carry that
-      // payload yet (Phase 3E will wire it). For now we link to the session
-      // route — the student app may show an error until Phase 3E lands.
-      `/activity-wall/${encodeURIComponent(sessionId)}`,
+    hrefFrom: (sessionId) => `/activity-wall/${encodeURIComponent(sessionId)}`,
   },
 };
 
@@ -259,10 +282,14 @@ const MyAssignmentsPage: React.FC = () => {
     Object.fromEntries(SESSION_KINDS.map((k) => [k, []]))
   );
   const [loadState, setLoadState] = useState<LoadState>('loading');
-
-  // Track which kinds have delivered their first snapshot so we can flip
-  // from `loading` -> `ready` only once every subscription has settled.
-  const settledKindsRef = useRef<Set<SessionKind>>(new Set());
+  // Keyed on `${kind}:${shape}` so dual-query kinds (one list + one single
+  // subscription) track each bucket independently. Keying on `kind` alone
+  // let a succeeding shape clear the error for its still-failing sibling,
+  // which would hide half-missing data behind a "loaded" state.
+  const [erroredBuckets, setErroredBuckets] = useState<Set<string>>(
+    () => new Set()
+  );
+  const [retryNonce, setRetryNonce] = useState(0);
 
   // Stable subscription identity: we only re-subscribe when classIds actually
   // changes, not on every render.
@@ -275,81 +302,181 @@ const MyAssignmentsPage: React.FC = () => {
     // No classes → no queries (Firestore rejects `in` with []).
     if (classIds.length === 0) {
       setByKind(Object.fromEntries(SESSION_KINDS.map((k) => [k, []])));
+      setErroredBuckets(new Set());
       setLoadState('ready');
       return;
     }
 
     setLoadState('loading');
-    settledKindsRef.current = new Set();
+    setErroredBuckets(new Set());
 
-    const unsubs: Array<() => void> = [];
+    type QueryShape = 'list' | 'single';
+    const bucketKey = (kind: SessionKind, shape: QueryShape) =>
+      `${kind}:${shape}`;
 
-    const handleSnapshot = (
-      kind: SessionKind,
-      snap: QuerySnapshot<DocumentData>
-    ) => {
+    // Plan every (kind, shape) subscription up front so we know the total
+    // count and can flip to `ready` exactly when every subscription has
+    // delivered its first snapshot (success OR error).
+    const subs: Array<{ kind: SessionKind; shape: QueryShape }> = [];
+    for (const kind of SESSION_KINDS) {
       const config = KIND_CONFIG[kind];
-      const items: AssignmentSummary[] = snap.docs.map((d) => {
-        const data = d.data();
-        const createdAtRaw: unknown = (data as Record<string, unknown>)
-          .createdAt;
-        return {
-          compositeId: `${kind}:${d.id}`,
-          kind,
-          sessionId: d.id,
-          title: config.titleFrom(data),
-          openHref: config.hrefFrom(d.id, data),
-          createdAt:
-            typeof createdAtRaw === 'number' ? createdAtRaw : undefined,
-        };
-      });
+      if (config.dualQuery) {
+        subs.push({ kind, shape: 'list' }, { kind, shape: 'single' });
+      } else {
+        subs.push({ kind, shape: config.classFilterShape });
+      }
+    }
+    const totalSubscriptions = subs.length;
 
-      setByKind((prev) => ({ ...prev, [kind]: items }));
-      settledKindsRef.current.add(kind);
-      if (settledKindsRef.current.size === SESSION_KINDS.length) {
+    // Per-(kind, shape) result buckets. When a kind has two subscriptions
+    // we merge both buckets by `sessionId` before emitting `byKind`, so a
+    // Phase 5A session whose `classIds[0]` equals one of the student's
+    // classIds (and therefore matches BOTH queries) is counted exactly
+    // once.
+    const buckets = new Map<string, AssignmentSummary[]>();
+    const settled = new Set<string>();
+
+    const docToSummary = (
+      kind: SessionKind,
+      config: KindConfig,
+      d: QuerySnapshot<DocumentData>['docs'][number]
+    ): AssignmentSummary => {
+      const data = d.data();
+      const createdAtRaw: unknown = (data as Record<string, unknown>).createdAt;
+      return {
+        compositeId: `${kind}:${d.id}`,
+        kind,
+        sessionId: d.id,
+        title: config.titleFrom(data),
+        openHref: config.hrefFrom(d.id, data),
+        createdAt: typeof createdAtRaw === 'number' ? createdAtRaw : undefined,
+      };
+    };
+
+    const emitMerged = (kind: SessionKind) => {
+      const listBucket = buckets.get(bucketKey(kind, 'list')) ?? [];
+      const singleBucket = buckets.get(bucketKey(kind, 'single')) ?? [];
+      if (listBucket.length === 0 && singleBucket.length === 0) {
+        setByKind((prev) =>
+          prev[kind] && prev[kind].length === 0 ? prev : { ...prev, [kind]: [] }
+        );
+        return;
+      }
+      const merged = new Map<string, AssignmentSummary>();
+      for (const a of listBucket) merged.set(a.sessionId, a);
+      for (const a of singleBucket) merged.set(a.sessionId, a);
+      setByKind((prev) => ({ ...prev, [kind]: Array.from(merged.values()) }));
+    };
+
+    const markSettled = (kind: SessionKind, shape: QueryShape) => {
+      settled.add(bucketKey(kind, shape));
+      if (settled.size === totalSubscriptions) {
         setLoadState('ready');
       }
     };
 
-    const handleError = (kind: SessionKind, err: unknown) => {
-      // PII safety: never log the error message or data — it may contain
-      // diagnostic data derived from the query. Log only the collection
-      // name and Firestore error code.
+    const clearBucketError = (kind: SessionKind, shape: QueryShape) => {
+      const key = bucketKey(kind, shape);
+      setErroredBuckets((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    };
+
+    const markBucketErrored = (kind: SessionKind, shape: QueryShape) => {
+      const key = bucketKey(kind, shape);
+      setErroredBuckets((prev) => {
+        if (prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+    };
+
+    const handleSnapshot = (
+      kind: SessionKind,
+      shape: QueryShape,
+      snap: QuerySnapshot<DocumentData>
+    ) => {
+      const config = KIND_CONFIG[kind];
+      buckets.set(
+        bucketKey(kind, shape),
+        snap.docs.map((d) => docToSummary(kind, config, d))
+      );
+      emitMerged(kind);
+      // Clear only this bucket's error. Dual-query kinds have a sibling
+      // bucket that may still be failing; its own error flag stays set
+      // independently so the banner reflects "half your data is missing"
+      // instead of "all good" just because the healthy half recovered.
+      clearBucketError(kind, shape);
+      markSettled(kind, shape);
+    };
+
+    const handleError = (
+      kind: SessionKind,
+      shape: QueryShape,
+      err: unknown
+    ) => {
       const code =
         err && typeof err === 'object' && 'code' in err
           ? String((err as { code?: unknown }).code)
           : 'unknown';
-      console.warn(
-        `[MyAssignments] snapshot failed for ${KIND_CONFIG[kind].collectionName}:`,
-        code
+      // Firestore missing-index errors embed a one-click index-creation
+      // URL in `err.message` — invaluable the next time something silently
+      // empties the list. Messages from Firestore do not include any of
+      // the classId values passed into the query, so this remains PII-safe.
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: unknown }).message)
+          : '';
+      console.error(
+        `[MyAssignments] snapshot failed for ${KIND_CONFIG[kind].collectionName} (${shape}) [${code}]:`,
+        message
       );
-      // Mark as settled with an empty list so loading state can progress.
-      setByKind((prev) => ({ ...prev, [kind]: [] }));
-      settledKindsRef.current.add(kind);
-      if (settledKindsRef.current.size === SESSION_KINDS.length) {
-        setLoadState('ready');
-      }
+      buckets.set(bucketKey(kind, shape), []);
+      emitMerged(kind);
+      markBucketErrored(kind, shape);
+      markSettled(kind, shape);
     };
 
-    for (const kind of SESSION_KINDS) {
-      const config = KIND_CONFIG[kind];
+    const buildQuery = (
+      config: KindConfig,
+      shape: QueryShape
+    ): Query<DocumentData> => {
       const col = collection(db, config.collectionName);
       const constraints =
-        config.classFilterShape === 'list'
+        shape === 'list'
           ? [where('classIds', 'array-contains-any', classIds)]
           : [where('classId', 'in', classIds)];
       if (config.statusFilter) {
-        constraints.push(
-          where(config.statusFilter.field, '==', config.statusFilter.value)
-        );
+        if ('valueIn' in config.statusFilter) {
+          constraints.push(
+            where(config.statusFilter.field, 'in', [
+              ...config.statusFilter.valueIn,
+            ])
+          );
+        } else {
+          constraints.push(
+            where(config.statusFilter.field, '==', config.statusFilter.value)
+          );
+        }
       }
-      const q = query(col, ...constraints);
-      const unsub = onSnapshot(
-        q,
-        (snap) => handleSnapshot(kind, snap),
-        (err) => handleError(kind, err)
+      return query(col, ...constraints);
+    };
+
+    const unsubs: Array<() => void> = [];
+    for (const { kind, shape } of subs) {
+      const config = KIND_CONFIG[kind];
+      const q = buildQuery(config, shape);
+      unsubs.push(
+        onSnapshot(
+          q,
+          (snap) => handleSnapshot(kind, shape, snap),
+          (err) => handleError(kind, shape, err)
+        )
       );
-      unsubs.push(unsub);
     }
 
     return () => {
@@ -357,9 +484,14 @@ const MyAssignmentsPage: React.FC = () => {
     };
     // `classIds` drives the `in` filter; re-subscribe only when the key
     // changes. `classIdsKey` is derived from `classIds` and gives us a
-    // value-based comparison instead of reference identity.
+    // value-based comparison instead of reference identity. `retryNonce`
+    // bumps to force a fresh subscription cycle from the retry button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classIdsKey]);
+  }, [classIdsKey, retryNonce]);
+
+  const handleRetry = useCallback(() => {
+    setRetryNonce((n) => n + 1);
+  }, []);
 
   // Flatten + sort: newest first, grouped visually by kind order inside a
   // single list. Sort is stable on `createdAt` (desc), then by title to
@@ -408,6 +540,8 @@ const MyAssignmentsPage: React.FC = () => {
             classIds={classIds}
             assignments={assignments}
             pseudonymUid={pseudonymUid}
+            hasErrors={erroredBuckets.size > 0}
+            onRetry={handleRetry}
           />
         </main>
 
@@ -455,6 +589,8 @@ interface AssignmentsBodyProps {
   classIds: string[];
   assignments: AssignmentSummary[];
   pseudonymUid: string | null;
+  hasErrors: boolean;
+  onRetry: () => void;
 }
 
 const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
@@ -462,6 +598,8 @@ const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
   classIds,
   assignments,
   pseudonymUid,
+  hasErrors,
+  onRetry,
 }) => {
   if (loadState === 'loading') {
     return (
@@ -483,6 +621,18 @@ const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
     );
   }
 
+  if (assignments.length === 0 && hasErrors) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="We couldn't load your assignments"
+        body="Something went wrong loading your assignments. Refresh and try again."
+        tone="error"
+        action={{ label: 'Try again', onClick: onRetry }}
+      />
+    );
+  }
+
   if (assignments.length === 0) {
     return (
       <EmptyState
@@ -495,15 +645,49 @@ const AssignmentsBody: React.FC<AssignmentsBodyProps> = ({
   }
 
   return (
-    <ul className="space-y-3">
-      {assignments.map((a) => (
-        <li key={a.compositeId}>
-          <AssignmentCard assignment={a} pseudonymUid={pseudonymUid} />
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      {hasErrors && <PartialFailureBanner onRetry={onRetry} />}
+      <ul className="space-y-3">
+        {assignments.map((a) => (
+          <li key={a.compositeId}>
+            <AssignmentCard assignment={a} pseudonymUid={pseudonymUid} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
+
+const PartialFailureBanner: React.FC<{ onRetry: () => void }> = ({
+  onRetry,
+}) => (
+  <div
+    role="alert"
+    className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm shadow-sm"
+  >
+    <AlertTriangle
+      className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"
+      strokeWidth={2.25}
+      aria-hidden="true"
+    />
+    <div className="flex-1 min-w-0">
+      <p className="font-semibold text-amber-900">
+        Some assignments couldn&apos;t be loaded.
+      </p>
+      <p className="text-amber-800/90">
+        You&apos;re seeing what we could fetch. Try again to load the rest.
+      </p>
+    </div>
+    <button
+      type="button"
+      onClick={onRetry}
+      className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50 shrink-0"
+    >
+      <RefreshCw className="w-3.5 h-3.5" strokeWidth={2.5} />
+      Try again
+    </button>
+  </div>
+);
 
 // ---------------------------------------------------------------------------
 // Empty state
@@ -514,6 +698,7 @@ interface EmptyStateProps {
   title: string;
   body: string;
   tone: 'soft' | 'error';
+  action?: { label: string; onClick: () => void };
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
@@ -521,6 +706,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   body,
   tone,
+  action,
 }) => {
   const isSoft = tone === 'soft';
   return (
@@ -541,6 +727,16 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         <h3 className="text-base font-bold text-slate-800">{title}</h3>
         <p className="text-sm text-slate-500 leading-relaxed">{body}</p>
       </div>
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-sm font-semibold shadow-sm shadow-brand-blue-primary/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+        >
+          <RefreshCw className="w-4 h-4" strokeWidth={2.25} />
+          {action.label}
+        </button>
+      )}
     </div>
   );
 };

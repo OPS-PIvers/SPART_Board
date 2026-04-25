@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { collection, getDocs } from 'firebase/firestore';
 import { Download, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
-import { ClassLinkClass, ClassRoster, Student } from '@/types';
+import { ClassLinkClass, ClassRoster, ClassRosterMeta, Student } from '@/types';
 import { Modal } from '@/components/common/Modal';
 import { db } from '@/config/firebase';
 import { classLinkService } from '@/utils/classlinkService';
@@ -13,9 +13,41 @@ import { mergeClassLinkStudents } from './mergeClassLinkStudents';
 
 const TEST_PREFIX = 'test:';
 
-// PINs match the synthetic sidebar rosters in `useTestClassRosters.ts` so the
-// same test student uses the same PIN whether they're joining through the
-// sidebar roster or a freshly-imported copy.
+/**
+ * Build the ClassLink provenance metadata to persist on a roster document.
+ * Returns `null` for test classes (they aren't real ClassLink classes and
+ * must not claim `origin: 'classlink'` — they'd otherwise feed garbage
+ * sourcedIds into session `classIds[]` and break the student SSO gate).
+ *
+ * NOTE: fields missing from `cls` (e.g., `classCode` cleared upstream) are
+ * omitted rather than set to `deleteField()`, so `updateRoster` at merge
+ * time additively refreshes metadata without wiping previously-stored
+ * values. ClassLink rarely drops these fields in practice; if upstream
+ * ever clears a classCode/subject, the badge tooltip shows stale data
+ * until the teacher re-imports. Acceptable tradeoff vs. an extra
+ * `deleteField()` code path on every merge.
+ */
+const buildClassLinkRosterMeta = (
+  cls: ClassLinkClass,
+  orgId: string | null | undefined
+): Partial<ClassRosterMeta> | null => {
+  if (cls.sourcedId.startsWith(TEST_PREFIX)) return null;
+  const meta: Partial<ClassRosterMeta> = {
+    origin: 'classlink',
+    classlinkClassId: cls.sourcedId,
+    classlinkSyncedAt: Date.now(),
+  };
+  if (cls.classCode) meta.classlinkClassCode = cls.classCode;
+  if (cls.subject) meta.classlinkSubject = cls.subject;
+  if (orgId) meta.classlinkOrgId = orgId;
+  return meta;
+};
+
+// Materialize test-class member emails into placeholder students. The email
+// local-part becomes the display name and PINs are sequential zero-padded
+// two-digit strings (01, 02, …) so the teacher has something to hand out
+// before editing. The imported roster is a normal user-owned roster and can
+// be renamed, PIN-edited, or deleted afterwards like any ClassLink import.
 const materializeTestClassStudents = (emails: string[]): Student[] =>
   emails.map((email, i) => ({
     id: crypto.randomUUID(),
@@ -176,7 +208,8 @@ export const ClassLinkImportDialog: React.FC<ClassLinkImportDialogProps> = ({
       const subjectPrefix = cls.subject ? `${cls.subject} - ` : '';
       const codeSuffix = cls.classCode ? ` (${cls.classCode})` : '';
       const displayName = `${subjectPrefix}${cls.title}${codeSuffix}`;
-      await addRoster(displayName, students);
+      const rosterMeta = buildClassLinkRosterMeta(cls, orgId);
+      await addRoster(displayName, students, rosterMeta ?? undefined);
       addToast(
         t('toasts.classLink.imported', {
           defaultValue: 'Imported {{name}}',
@@ -220,7 +253,15 @@ export const ClassLinkImportDialog: React.FC<ClassLinkImportDialogProps> = ({
         target.students,
         studentsByClass[cls.sourcedId] ?? []
       );
-      await updateRoster(mode.rosterId, { students: result.students });
+      // Backfill ClassLink provenance on the roster doc itself — rosters
+      // imported before the metadata fields existed (or merged with a new
+      // ClassLink class) still need `classlinkClassId` so the student SSO
+      // gate resolves via session `classIds[]` derivation downstream.
+      const rosterMeta = buildClassLinkRosterMeta(cls, orgId);
+      await updateRoster(mode.rosterId, {
+        students: result.students,
+        ...(rosterMeta ?? {}),
+      });
       if (result.addedCount === 0 && result.matchedCount === 0) {
         addToast(
           t('toasts.classLink.noStudents', {
