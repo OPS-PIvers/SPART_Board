@@ -58,7 +58,7 @@ _Nothing currently in progress._
 - **Detail:** Outer wrapper used `p-4`, empty-state used `gap-2` + `w-8 h-8` on the Wand2 icon, the template grid used `gap-4`, and card titles/descriptions used `text-sm`/`text-xs`. Button cards also carried hardcoded `gap-3 p-4`, inner icon chip `p-3`, inner `IconComponent` `w-8 h-8`, and title `mb-1`. Widget has `skipScaling: true`, so none of this responded to container size.
 - **Resolution:** Converted all hardcoded front-face Tailwind sizing to inline `cqmin` styles:
   - outer wrapper `p-4` → `padding: 'min(16px, 3.5cqmin)'`
-  - empty-state `gap-2` → `gap: 'min(8px, 2cqmin)'`; Wand2 `w-8 h-8` → `width/height: 'min(32px, 8cqmin)'`
+  - empty-state hand-rolled markup replaced with the shared `ScaledEmptyState` component (Wand2 icon, "No starter packs available" title)
   - grid `gap-4` → `gap: 'min(16px, 3cqmin)'`
   - button `gap-3 p-4` → `gap: 'min(12px, 2.5cqmin)'` / `padding: 'min(16px, 3.5cqmin)'`
   - inner icon chip `p-3` → `padding: 'min(12px, 2.5cqmin)'`; inner `IconComponent` `w-8 h-8` → `width/height: 'min(32px, 8cqmin)'` (added `style?: React.CSSProperties` to the LucideIcons cast so the dynamic component accepts inline styles)

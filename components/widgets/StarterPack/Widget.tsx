@@ -5,6 +5,7 @@ import { useStarterPacks } from '@/hooks/useStarterPacks';
 import { WidgetComponentProps, StarterPack } from '@/types';
 import * as LucideIcons from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { playCleanUp, getAudioCtx } from './audioUtils';
 
 export const StarterPackWidget = ({ isStudentView }: WidgetComponentProps) => {
@@ -54,19 +55,10 @@ export const StarterPackWidget = ({ isStudentView }: WidgetComponentProps) => {
           Loading packs...
         </div>
       ) : allPacks.length === 0 ? (
-        <div
-          className="flex flex-col items-center justify-center h-full text-slate-400 text-center"
-          style={{ gap: 'min(8px, 2cqmin)' }}
-        >
-          <LucideIcons.Wand2
-            className="opacity-50"
-            style={{
-              width: 'min(32px, 8cqmin)',
-              height: 'min(32px, 8cqmin)',
-            }}
-          />
-          <p>No starter packs available.</p>
-        </div>
+        <ScaledEmptyState
+          icon={LucideIcons.Wand2}
+          title="No starter packs available"
+        />
       ) : (
         <div className="grid grid-cols-2" style={{ gap: 'min(16px, 3cqmin)' }}>
           {allPacks.map((pack) => {
