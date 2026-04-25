@@ -662,6 +662,26 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
     addToast('Library exported successfully', 'success');
   };
 
+  // Ends a session from the AssignmentsModal and keeps the miniapp_assignments
+  // archive row in sync. If an active assignment row already exists for the
+  // session, endAssignment handles both the row and the session doc. For old
+  // sessions that predate the miniapp_assignments collection (no row exists),
+  // we fall back to ending the session doc directly so the student's
+  // /my-assignments view clears immediately.
+  const handleEndSessionFromModal = useCallback(
+    async (sessionId: string) => {
+      const match = assignments.find(
+        (a) => a.sessionId === sessionId && a.status === 'active'
+      );
+      if (match) {
+        await endAssignment(match.id);
+      } else {
+        await endSession(sessionId);
+      }
+    },
+    [endSession, endAssignment, assignments]
+  );
+
   // Archive / In Progress handlers ─────────────────────────────────────────
   const handleArchiveCopyUrl = useCallback(
     async (assignment: MiniAppAssignment) => {
@@ -910,7 +930,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                 loading={sessionsLoading}
                 onClose={handleCloseAssignments}
                 onRenameSession={renameSession}
-                onEndSession={endSession}
+                onEndSession={handleEndSessionFromModal}
               />
             )}
           </div>
@@ -1021,7 +1041,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                 loading={sessionsLoading}
                 onClose={handleCloseAssignments}
                 onRenameSession={renameSession}
-                onEndSession={endSession}
+                onEndSession={handleEndSessionFromModal}
               />
             )}
           </div>

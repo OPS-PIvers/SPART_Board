@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   Box,
   RefreshCw,
+  Flag,
 } from 'lucide-react';
 import { auth, db, functions } from '@/config/firebase';
 import { MiniAppSession, MiniAppSubmission } from '@/types';
@@ -179,6 +180,9 @@ function getCachedPseudonym(
 const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<SubmissionStatus>({ kind: 'idle' });
+  // Tracks whether the student has submitted anything (via app or "I'm Done")
+  // in this session. Prevents the Done button from reappearing after auto-clear.
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const submissionsEnabled = session.submissionsEnabled === true;
 
   // Handshake: post SPART_MINIAPP_INIT into the iframe once it loads so the
@@ -256,6 +260,7 @@ const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
           submission
         );
         setStatus({ kind: 'saved', at: Date.now() });
+        setHasSubmitted(true);
       } catch (err) {
         console.error('[MiniAppStudentApp] Submission write failed:', err);
         setStatus({ kind: 'error', payload });
@@ -263,6 +268,41 @@ const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
     },
     [session.id, submissionsEnabled, status.kind]
   );
+
+  // Writes a minimal {completed: true} completion marker so the student's
+  // assignment badge in /my-assignments shows "Completed". Works for both
+  // view-only (submissionsEnabled=false) and submission-enabled sessions.
+  // The Firestore rule allows this write regardless of submissionsEnabled.
+  const markDone = useCallback(async () => {
+    if (hasSubmitted || status.kind === 'submitting') return;
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn('[MiniAppStudentApp] No auth user; skipping mark-done.');
+      return;
+    }
+    setStatus({ kind: 'submitting' });
+    try {
+      const tokenResult = await currentUser.getIdTokenResult();
+      const isStudentRole = tokenResult.claims?.studentRole === true;
+      const docId = isStudentRole
+        ? await getCachedPseudonym(session.id, currentUser.uid)
+        : currentUser.uid;
+      const completion: MiniAppSubmission = {
+        submittedAt: Date.now(),
+        studentUid: currentUser.uid,
+        payload: { completed: true },
+      };
+      await setDoc(
+        doc(db, SESSIONS_COLLECTION, session.id, 'submissions', docId),
+        completion
+      );
+      setStatus({ kind: 'saved', at: Date.now() });
+      setHasSubmitted(true);
+    } catch (err) {
+      console.error('[MiniAppStudentApp] Mark-done write failed:', err);
+      setStatus({ kind: 'idle' });
+    }
+  }, [session.id, hasSubmitted, status.kind]);
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -300,6 +340,30 @@ const AppViewer: React.FC<{ session: MiniAppSession }> = ({ session }) => {
         onLoad={handleIframeLoad}
       />
       <SubmissionStatusOverlay status={status} onRetry={submit} />
+      {/* "I'm Done" button — allows students to mark the assignment complete
+          regardless of whether the mini-app itself has a submit button.
+          Hidden once the student has submitted (via app or this button). */}
+      {!hasSubmitted && (
+        <button
+          type="button"
+          onClick={() => void markDone()}
+          disabled={status.kind === 'submitting'}
+          aria-label="Mark this assignment as done"
+          className="fixed bottom-4 right-4 z-20 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/90 text-white text-xs font-semibold hover:bg-slate-700 border border-slate-600/50 shadow-lg backdrop-blur-sm transition-all disabled:opacity-50 select-none"
+        >
+          {status.kind === 'submitting' ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            <>
+              <Flag className="w-3.5 h-3.5 text-emerald-400" />
+              I&apos;m Done
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 };
