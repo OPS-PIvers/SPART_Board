@@ -27,8 +27,12 @@ import { useFolders } from '@/hooks/useFolders';
 import {
   collection,
   doc,
+  getDocs,
+  limit,
+  query,
   setDoc,
   deleteDoc,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -668,18 +672,49 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
   // sessions that predate the miniapp_assignments collection (no row exists),
   // we fall back to ending the session doc directly so the student's
   // /my-assignments view clears immediately.
+  //
+  // The local `assignments` snapshot can be stale (still loading, or the
+  // row was just created and the listener hasn't fired yet). When the
+  // local lookup misses we re-query Firestore by sessionId before falling
+  // back to a bare `endSession`, otherwise the archive row could stay
+  // stuck as `active` even though the session ended.
   const handleEndSessionFromModal = useCallback(
     async (sessionId: string) => {
-      const match = assignments.find(
+      const localMatch = assignments.find(
         (a) => a.sessionId === sessionId && a.status === 'active'
       );
-      if (match) {
-        await endAssignment(match.id);
-      } else {
-        await endSession(sessionId);
+      if (localMatch) {
+        await endAssignment(localMatch.id);
+        return;
       }
+
+      if (user?.uid) {
+        try {
+          const snap = await getDocs(
+            query(
+              collection(db, 'users', user.uid, 'miniapp_assignments'),
+              where('sessionId', '==', sessionId),
+              where('status', '==', 'active'),
+              limit(1)
+            )
+          );
+          const row = snap.docs[0];
+          if (row) {
+            await endAssignment(row.id);
+            return;
+          }
+        } catch (err) {
+          // Fall through to endSession; logging only.
+          console.warn(
+            '[MiniAppWidget] miniapp_assignments lookup failed; ending session directly',
+            err
+          );
+        }
+      }
+
+      await endSession(sessionId);
     },
-    [endSession, endAssignment, assignments]
+    [endSession, endAssignment, assignments, user?.uid]
   );
 
   // Archive / In Progress handlers ─────────────────────────────────────────
