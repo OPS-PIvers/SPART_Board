@@ -34,6 +34,9 @@ import { QuizLiveMonitor } from './components/QuizLiveMonitor';
 import { Loader2, AlertTriangle, LogIn } from 'lucide-react';
 import { SCOREBOARD_COLORS } from '@/config/scoreboard';
 import { deriveSessionTargetsFromRosters } from '@/utils/resolveAssignmentTargets';
+import { usePlcs } from '@/hooks/usePlcs';
+import { QuizDriveService } from '@/utils/quizDriveService';
+import { getPlcTeammateEmails } from '@/utils/plc';
 
 export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addWidget, addToast, rosters, activeDashboard } =
@@ -88,6 +91,11 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     user?.uid,
     'quiz'
   );
+
+  // PLC subscription — needed at the widget level (not just inside the
+  // Assign modal) so we can auto-create + cache the shared sheet URL on
+  // the right `plcs/{id}` doc when Share-with-PLC fires.
+  const { plcs, getPlcSharedSheetUrl, setPlcSharedSheetUrl } = usePlcs();
 
   // Ephemeral modal state for per-assignment settings editing.
   const [editingAssignment, setEditingAssignment] =
@@ -561,6 +569,28 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         tabWarningsEnabled={liveSession?.tabWarningsEnabled ?? true}
         session={liveSession}
         onDeleteResponse={removeStudent}
+        onPlcSheetUrlReplaced={async (newUrl) => {
+          // After QuizResults regenerates a stale PLC sheet (404
+          // recovery), replace the URL on this widget's config so future
+          // exports don't re-trigger the regenerate dance, AND on the
+          // active assignment doc so other consumers (assignment list,
+          // settings modal, copy-to-clipboard menu) see the live URL.
+          updateWidget(widget.id, {
+            config: { ...config, plcSheetUrl: newUrl } as QuizConfig,
+          });
+          if (config.activeAssignmentId) {
+            try {
+              await updateAssignmentSettings(config.activeAssignmentId, {
+                plcSheetUrl: newUrl,
+              });
+            } catch (err) {
+              console.error(
+                '[QuizWidget] Failed to persist regenerated PLC URL on assignment:',
+                err
+              );
+            }
+          }
+        }}
       />
     );
   }
@@ -699,6 +729,83 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             rosterIds.includes(r.id)
           );
           const derived = deriveSessionTargetsFromRosters(selectedRosters);
+
+          // PLC auto-create: when the teacher enabled Share-with-PLC AND
+          // picked a PLC AND didn't paste a manual URL, resolve the shared
+          // sheet URL before writing the assignment. Read the PLC's
+          // cached sharedSheetUrl first (strong get, not the snapshot); if
+          // absent, create a new Sheet under the teacher's Drive and
+          // share it with every teammate, then cache the URL on the PLC
+          // doc so the next assignment in this PLC just reuses it.
+          //
+          // Failures here don't block the assignment — we fall through
+          // to the manual-paste behavior with an empty URL and toast the
+          // teacher so they can recover.
+          let resolvedPlcSheetUrl = plcOptions.plcSheetUrl;
+          if (
+            plcOptions.plcMode &&
+            plcOptions.plcId &&
+            !resolvedPlcSheetUrl &&
+            googleAccessToken
+          ) {
+            const plc = plcs.find((p) => p.id === plcOptions.plcId);
+            try {
+              // Strong read beats the snapshot for the "already created?"
+              // check — two teachers kicking off their first PLC
+              // assignment simultaneously is rare but worth guarding.
+              const cached = await getPlcSharedSheetUrl(plcOptions.plcId);
+              if (cached) {
+                resolvedPlcSheetUrl = cached;
+                // Even though invite-accept already runs reconciliation,
+                // it can fail silently (no Drive token at accept time,
+                // accepter wasn't the sheet owner). Re-running on every
+                // PLC assignment costs one Drive list call per assign
+                // and lets the actual sheet owner top up writer access
+                // for teammates joined since the sheet was created.
+                // Best-effort — failures here don't block the assignment.
+                if (plc && user) {
+                  const driveService = new QuizDriveService(googleAccessToken);
+                  void driveService
+                    .reconcilePlcSheetPermissions({
+                      sheetUrl: cached,
+                      memberEmailsToShareWith: getPlcTeammateEmails(
+                        plc,
+                        user.uid
+                      ),
+                    })
+                    .catch((err: unknown) => {
+                      console.error(
+                        '[QuizWidget] PLC sheet permission reconcile failed:',
+                        err
+                      );
+                    });
+                }
+              } else if (plc && user) {
+                const driveService = new QuizDriveService(googleAccessToken);
+                const created = await driveService.createPlcSheetAndShare({
+                  plcName: plc.name,
+                  memberEmailsToShareWith: getPlcTeammateEmails(plc, user.uid),
+                });
+                // Transactional set-if-empty — if a racing teammate beat
+                // us to the punch, switch to their canonical URL and
+                // accept that our just-created sheet is orphaned in our
+                // Drive (rare race).
+                resolvedPlcSheetUrl = await setPlcSharedSheetUrl(
+                  plcOptions.plcId,
+                  created.url
+                );
+              }
+            } catch (err) {
+              console.error('[QuizWidget] PLC sheet auto-create failed:', err);
+              addToast(
+                err instanceof Error && err.message
+                  ? err.message
+                  : 'Could not create the shared PLC sheet — you can still paste a URL manually.',
+                'error'
+              );
+            }
+          }
+
           try {
             const { id: assignmentId, code } = await createAssignment(
               {
@@ -716,7 +823,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 periodName:
                   plcOptions.periodNames?.[0] ?? plcOptions.periodName,
                 periodNames: plcOptions.periodNames,
-                plcSheetUrl: plcOptions.plcSheetUrl,
+                plcSheetUrl: resolvedPlcSheetUrl,
               },
               'paused',
               derived.classIds,
@@ -744,7 +851,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 periodName:
                   plcOptions.periodNames?.[0] ?? plcOptions.periodName ?? '',
                 periodNames: plcOptions.periodNames ?? [],
-                plcSheetUrl: plcOptions.plcSheetUrl ?? '',
+                plcSheetUrl: resolvedPlcSheetUrl ?? '',
                 lastRosterIdsByQuizId: nextMap,
               } as QuizConfig,
             });

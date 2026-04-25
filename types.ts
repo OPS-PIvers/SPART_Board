@@ -176,6 +176,16 @@ export interface Plc {
    * per export. Always written alongside `memberUids`.
    */
   memberEmails: Record<string, string>;
+  /**
+   * URL of the single Google Sheet that aggregates this PLC's assignment
+   * results. Auto-created the first time any member assigns a quiz with
+   * Share-with-PLC enabled. Subsequent PLC assignments reuse this URL
+   * instead of prompting the teacher to paste one. `null` (or absent) means
+   * "not yet created — the next Share-with-PLC assignment should create it."
+   * Cleared back to `null` if the sheet is later deleted in Drive so the
+   * next assignment regenerates transparently.
+   */
+  sharedSheetUrl?: string | null;
   createdAt: number;
   updatedAt: number;
 }

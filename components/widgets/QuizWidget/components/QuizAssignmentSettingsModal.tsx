@@ -380,7 +380,9 @@ export const QuizAssignmentSettingsModal: React.FC<
                   </div>
                 )}
                 <p className="text-xxs text-slate-400 mt-0.5">
-                  Paste the URL of the Google Sheet shared by your PLC lead
+                  New PLC assignments now auto-create and share this sheet for
+                  you. You can still edit the URL here to point an older
+                  assignment at a different sheet.
                 </p>
               </div>
             </div>

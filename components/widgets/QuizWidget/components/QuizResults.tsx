@@ -31,7 +31,12 @@ import {
 } from 'lucide-react';
 import { QuizResponse, QuizData, QuizQuestion, QuizConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
-import { QuizDriveService } from '@/utils/quizDriveService';
+import { usePlcs } from '@/hooks/usePlcs';
+import {
+  PlcSheetMissingError,
+  QuizDriveService,
+} from '@/utils/quizDriveService';
+import { getPlcTeammateEmails } from '@/utils/plc';
 import { gradeAnswer, getResponseDocKey } from '@/hooks/useQuizSession';
 import { useDashboard } from '@/context/useDashboard';
 import {
@@ -64,6 +69,13 @@ interface QuizResultsProps {
    * all derived stats/exports will recompute automatically.
    */
   onDeleteResponse?: (responseKey: string) => Promise<void>;
+  /**
+   * Called after the 404 stale-sheet recovery replaces a missing PLC sheet
+   * with a fresh one. Lets the parent widget persist the new URL onto the
+   * widget config and the active assignment doc so future exports don't
+   * keep re-triggering the regenerate flow against the stale URL.
+   */
+  onPlcSheetUrlReplaced?: (newUrl: string) => Promise<void> | void;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
@@ -74,10 +86,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   tabWarningsEnabled,
   session,
   onDeleteResponse,
+  onPlcSheetUrlReplaced,
 }) => {
   const { activeDashboard, updateWidget, addWidget, addToast, rosters } =
     useDashboard();
-  const { googleAccessToken } = useAuth();
+  const { googleAccessToken, user } = useAuth();
+  const { plcs, clearPlcSharedSheetUrl, setPlcSharedSheetUrl } = usePlcs();
   const [exporting, setExporting] = useState(false);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -235,18 +249,97 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     setExportError(null);
     try {
       const svc = new QuizDriveService(googleAccessToken);
-      const url = await svc.exportResultsToSheet(
-        quiz.title,
-        responses,
-        quiz.questions,
-        {
-          pinToName: exportPinToName,
-          teacherName: config.teacherName,
-          periodName: config.periodName,
-          plcMode: config.plcMode,
-          plcSheetUrl: config.plcSheetUrl,
+      const exportOpts = {
+        pinToName: exportPinToName,
+        teacherName: config.teacherName,
+        periodName: config.periodName,
+        plcMode: config.plcMode,
+        plcSheetUrl: config.plcSheetUrl,
+      };
+      let url: string;
+      try {
+        url = await svc.exportResultsToSheet(
+          quiz.title,
+          responses,
+          quiz.questions,
+          exportOpts
+        );
+      } catch (exportErr) {
+        // Stale PLC sheet recovery, narrow:
+        //   - 404 = the sheet is gone in Drive. Clear cached URL on the
+        //     owning PLC, create a fresh sheet in this teacher's Drive,
+        //     share with teammates, retry. Safe because no one else has
+        //     a working URL either.
+        //   - 403 = the sheet exists, but THIS teacher lacks access.
+        //     Almost always means they're a member who joined after the
+        //     sheet was created and reconciliation hasn't run / failed.
+        //     Do NOT regenerate — that would orphan the existing sheet
+        //     for every teammate who can still reach it. Instead surface
+        //     a clear "ask the PLC lead for access" toast.
+        if (
+          !(exportErr instanceof PlcSheetMissingError) ||
+          !config.plcMode ||
+          !config.plcSheetUrl ||
+          !user
+        ) {
+          throw exportErr;
         }
-      );
+        // Use filter + require exactly-one match. `find` would silently
+        // pick the first when two PLCs accidentally share the same URL
+        // (legacy manual-paste assignments); we'd rather surface the
+        // original error than touch the wrong plcs/{id}.
+        const matchingPlcs = plcs.filter(
+          (p) => p.sharedSheetUrl === config.plcSheetUrl
+        );
+        const owningPlc = matchingPlcs.length === 1 ? matchingPlcs[0] : null;
+        if (exportErr.status === 403) {
+          // Rethrow with the actionable message so the inline export
+          // banner matches the toast — the raw PlcSheetMissingError
+          // message ("Shared PLC sheet is missing or inaccessible.")
+          // would be confusing here since the sheet isn't actually
+          // missing, this user just lacks writer access.
+          const accessDeniedMessage = owningPlc
+            ? `You don't have access to the ${owningPlc.name} PLC sheet yet — ask the PLC lead to grant you writer access.`
+            : "You don't have access to this PLC sheet — ask the PLC lead to grant you writer access.";
+          addToast(accessDeniedMessage, 'error');
+          throw new Error(accessDeniedMessage);
+        }
+        // 404 → regenerate, but only when we can pin the URL to a single
+        // PLC. Multiple matches → ambiguous, single none → we don't know
+        // which plcs/{id} to update.
+        if (!owningPlc) {
+          throw exportErr;
+        }
+        await clearPlcSharedSheetUrl(owningPlc.id);
+        const created = await svc.createPlcSheetAndShare({
+          plcName: owningPlc.name,
+          memberEmailsToShareWith: getPlcTeammateEmails(owningPlc, user.uid),
+        });
+        const canonical = await setPlcSharedSheetUrl(owningPlc.id, created.url);
+        // Persist the new canonical URL onto the widget config + active
+        // assignment so the next export doesn't re-trigger the 404 path
+        // against the stale URL still cached on those docs.
+        if (onPlcSheetUrlReplaced) {
+          try {
+            await onPlcSheetUrlReplaced(canonical);
+          } catch (persistErr) {
+            console.error(
+              '[QuizResults] Failed to persist regenerated PLC URL:',
+              persistErr
+            );
+          }
+        }
+        url = await svc.exportResultsToSheet(
+          quiz.title,
+          responses,
+          quiz.questions,
+          { ...exportOpts, plcSheetUrl: canonical }
+        );
+        addToast(
+          'The previous PLC sheet was missing — created a fresh one.',
+          'info'
+        );
+      }
       setExportUrl(url);
       if (config.plcMode) {
         addToast('Results exported to shared PLC sheet', 'success');
