@@ -91,6 +91,7 @@ import {
   filterByFolder,
 } from '@/components/common/library/folderFilters';
 import { useFolders } from '@/hooks/useFolders';
+import { useDialog } from '@/context/useDialog';
 
 export interface PlcOptions {
   plcMode: boolean;
@@ -262,10 +263,10 @@ interface QuizManagerProps {
   onArchiveEditSettings?: (assignment: QuizAssignment) => void;
   onArchiveShare?: (assignment: QuizAssignment) => void;
   onArchivePauseResume?: (assignment: QuizAssignment) => void;
-  onArchiveDeactivate?: (assignment: QuizAssignment) => void;
+  onArchiveDeactivate?: (assignment: QuizAssignment) => void | Promise<void>;
   /** Reopen an ended assignment back to a paused state. */
   onArchiveReopen?: (assignment: QuizAssignment) => void;
-  onArchiveDelete?: (assignment: QuizAssignment) => void;
+  onArchiveDelete?: (assignment: QuizAssignment) => void | Promise<void>;
   /** Persist the library grid/list toggle into widget config. */
   onLibraryViewModeChange?: (mode: 'grid' | 'list') => void;
 }
@@ -370,6 +371,8 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   const noop = () => {
     /* action not wired */
   };
+
+  const { showConfirm } = useDialog();
 
   // ─── Assign modal state (2-stage: mode → settings) ────────────────────────
   const [assignTarget, setAssignTarget] = useState<QuizMetadata | null>(null);
@@ -521,11 +524,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       label: 'Delete',
       icon: Trash2,
       destructive: true,
-      onClick: () => {
-        const ok = window.confirm(
-          `Delete "${quiz.title}"? This cannot be undone.`
+      onClick: async () => {
+        const ok = await showConfirm(
+          `Delete "${quiz.title}"? This cannot be undone.`,
+          {
+            title: 'Delete Quiz',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+          }
         );
-        if (ok) void onDelete(quiz);
+        if (ok) await onDelete(quiz);
       },
     },
   ];
@@ -607,11 +615,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         label: 'Make Inactive',
         icon: PowerOff,
         destructive: true,
-        onClick: () => {
-          const ok = window.confirm(
-            'Make assignment inactive? The join URL will stop working. Responses are preserved.'
+        onClick: async () => {
+          const ok = await showConfirm(
+            'Make assignment inactive? The join URL will stop working. Responses are preserved.',
+            {
+              title: 'Make Inactive',
+              variant: 'warning',
+              confirmLabel: 'Make Inactive',
+            }
           );
-          if (ok) (onArchiveDeactivate ?? noop)(a);
+          if (ok) await (onArchiveDeactivate ?? noop)(a);
         },
       });
       secondaries.push({
@@ -619,11 +632,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         label: 'Delete',
         icon: Trash2,
         destructive: true,
-        onClick: () => {
-          const ok = window.confirm(
-            'Delete this assignment and all responses? This cannot be undone.'
+        onClick: async () => {
+          const ok = await showConfirm(
+            'Delete this assignment and all responses? This cannot be undone.',
+            {
+              title: 'Delete Assignment',
+              variant: 'danger',
+              confirmLabel: 'Delete',
+            }
           );
-          if (ok) (onArchiveDelete ?? noop)(a);
+          if (ok) await (onArchiveDelete ?? noop)(a);
         },
       });
       // Filter any item matching the primary label to avoid duplication.
@@ -668,11 +686,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       label: 'Delete',
       icon: Trash2,
       destructive: true,
-      onClick: () => {
-        const ok = window.confirm(
-          'Delete this assignment and all responses? This cannot be undone.'
+      onClick: async () => {
+        const ok = await showConfirm(
+          'Delete this assignment and all responses? This cannot be undone.',
+          {
+            title: 'Delete Assignment',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+          }
         );
-        if (ok) (onArchiveDelete ?? noop)(a);
+        if (ok) await (onArchiveDelete ?? noop)(a);
       },
     });
     return {
@@ -801,8 +824,13 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         // Widget-level handler owns confirmation + summary toasts.
         didAttempt = await onBulkDelete(targets);
       } else {
-        const ok = window.confirm(
-          `Delete ${targets.length} quiz${targets.length === 1 ? '' : 'zes'}? This cannot be undone.`
+        const ok = await showConfirm(
+          `Delete ${targets.length} quiz${targets.length === 1 ? '' : 'zes'}? This cannot be undone.`,
+          {
+            title: 'Delete Quizzes',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+          }
         );
         if (ok) {
           const results = await Promise.allSettled(
@@ -827,7 +855,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     } finally {
       setBulkBusy(false);
     }
-  }, [selection, quizzes, onDelete, onBulkDelete]);
+  }, [selection, quizzes, onDelete, onBulkDelete, showConfirm]);
 
   // ─── Folder sidebar (Library tab only) ────────────────────────────────────
   const folderSidebarSlot =
