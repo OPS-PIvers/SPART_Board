@@ -3,8 +3,8 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
-_Last audited: 2026-04-22_
-_Last action: 2026-04-23_
+_Last audited: 2026-04-24_
+_Last action: 2026-04-25_
 
 ---
 
@@ -60,7 +60,7 @@ _Nothing currently in progress._
 ### MEDIUM GraphicOrganizerWidget has hardcoded padding throughout node layouts (post-text-fix)
 
 - **Detected:** 2026-04-14
-- **Completed:** 2026-04-23
+- **Completed:** 2026-04-25
 - **File:** components/widgets/GraphicOrganizer/Widget.tsx
 - **Detail:** Structural padding and sizing remained hardcoded after the 2026-04-13 text-size fix: `p-4` on Frayer cell divs (×4), `w-32 h-32` on the Frayer center circle, `pb-2 mb-4` / `text-xl` on T-chart headers, plus `p-3`/`p-4`/`p-6` across Venn, KWL, and Cause-Effect layouts. Widget has `skipScaling: true`.
 - **Resolution:** Converted all hardcoded structural Tailwind classes to inline `cqmin` styles across all five layout renderers:
