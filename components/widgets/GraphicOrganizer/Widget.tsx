@@ -503,10 +503,7 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
         gap: 'min(16px, 3cqmin)',
       }}
     >
-      <div
-        className="flex-1 border-2 border-rose-300 rounded-lg shadow-sm h-full flex flex-col"
-        style={{ backgroundColor: cellBg }}
-      >
+      <div className="flex-1 border-2 border-rose-300 rounded-lg shadow-sm h-full flex flex-col">
         <div
           className="bg-rose-100 text-center rounded-t-md border-b-2 border-rose-300 font-bold text-rose-800 uppercase tracking-wider"
           style={{
@@ -549,10 +546,7 @@ export const GraphicOrganizerWidget: React.FC<{ widget: WidgetData }> = ({
         </svg>
       </div>
 
-      <div
-        className="flex-1 border-2 border-emerald-300 rounded-lg shadow-sm h-full flex flex-col"
-        style={{ backgroundColor: cellBg }}
-      >
+      <div className="flex-1 border-2 border-emerald-300 rounded-lg shadow-sm h-full flex flex-col">
         <div
           className="bg-emerald-100 text-center rounded-t-md border-b-2 border-emerald-300 font-bold text-emerald-800 uppercase tracking-wider"
           style={{
