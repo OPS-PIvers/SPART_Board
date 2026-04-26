@@ -1131,8 +1131,7 @@ service cloud.firestore {
         );
 
         // Any authenticated user (anonymous or studentRole) may create or
-        // update their own submission while the session is active and
-        // submissions are enabled.
+        // update their own submission while the session is active.
         // - Every submission must carry a `studentUid` field equal to the
         //   caller's auth.uid so the doc is attributable and the student
         //   can read it back via the rule above.
@@ -1146,16 +1145,29 @@ service cloud.firestore {
         //   authorization and accountability.
         // Payload shape is validated to prevent junk writes bloating the
         // subcollection.
+        //
+        // Two write paths are allowed:
+        //   1. Full submission (submissionsEnabled must be true) — payload
+        //      can be any valid map up to 50 keys.
+        //   2. Completion marker (any active session regardless of
+        //      submissionsEnabled) — payload must be exactly {completed: true}.
+        //      This lets students mark view-only (no submissions) assignments
+        //      as done so the completion badge appears in /my-assignments
+        //      without requiring submissionsEnabled.
         allow create, update: if request.auth != null &&
           maSessionData().status == 'active' &&
-          maSessionData().get('submissionsEnabled', false) == true &&
           passesStudentClassGateList(maSessionClassIds()) &&
           (isStudentRoleUser() || submissionId == request.auth.uid) &&
           request.resource.data.studentUid == request.auth.uid &&
           request.resource.data.keys().hasOnly(['submittedAt', 'studentUid', 'payload']) &&
           request.resource.data.submittedAt is int &&
           request.resource.data.payload is map &&
-          request.resource.data.payload.size() <= 50;
+          request.resource.data.payload.size() <= 50 &&
+          (
+            maSessionData().get('submissionsEnabled', false) == true ||
+            (request.resource.data.payload.keys().hasOnly(['completed']) &&
+             request.resource.data.payload.completed == true)
+          );
 
         // Only the owning teacher or an admin may delete submissions —
         // used when a teacher wipes an assignment.
