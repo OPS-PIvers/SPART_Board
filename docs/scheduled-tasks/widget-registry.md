@@ -3,8 +3,8 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
-_Last audited: 2026-04-25_
-_Last action: never_
+_Last audited: 2026-04-26_
+_Last action: 2026-04-26_
 
 ---
 
@@ -15,13 +15,6 @@ _Nothing currently in progress._
 ---
 
 ## Open
-
-### LOW `sticker` widget bypasses WIDGET_COMPONENTS via WidgetRenderer special-case
-
-- **Detected:** 2026-04-12
-- **File:** components/widgets/WidgetRenderer.tsx:277, components/widgets/WidgetRegistry.ts:468
-- **Detail:** `sticker` is a valid WidgetType in types.ts and has entries in widgetDefaults.ts and WIDGET_SCALING_CONFIG, but is intentionally absent from WIDGET_COMPONENTS and WIDGET_SETTINGS_COMPONENTS. WidgetRenderer handles it via a hard-coded branch (`if (widget.type === 'sticker') return <StickerItemWidget ... />`). This special-casing bypasses the standard registry pattern and is a silent failure point if any other code looks up WIDGET_COMPONENTS['sticker'].
-- **Fix:** Either (a) register StickerItemWidget in WIDGET_COMPONENTS to normalize the pattern, or (b) add a JSDoc comment on the WIDGET_COMPONENTS object explaining the sticker exception so future developers do not accidentally rely on WIDGET_COMPONENTS being exhaustive over all WidgetTypes.
 
 ### LOW `catalyst-instruction`, `catalyst-visual` absent from config/tools.ts
 
@@ -55,4 +48,10 @@ _Nothing currently in progress._
 
 ## Completed
 
-_No completed items yet._
+### LOW `sticker` widget bypasses WIDGET_COMPONENTS via WidgetRenderer special-case
+
+- **Detected:** 2026-04-12
+- **Completed:** 2026-04-26
+- **File:** components/widgets/WidgetRegistry.ts, components/widgets/WidgetRenderer.tsx:271-273
+- **Detail:** `sticker` is a valid WidgetType in types.ts and has entries in widgetDefaults.ts and WIDGET_SCALING_CONFIG, but is intentionally absent from WIDGET_COMPONENTS and WIDGET_SETTINGS_COMPONENTS. WidgetRenderer handles it via a hard-coded branch (`if (widget.type === 'sticker') return <StickerItemWidget ... />`). This special-casing bypasses the standard registry pattern and is a silent failure point if any other code looks up WIDGET_COMPONENTS['sticker'].
+- **Resolution:** Chose option (b) — added a JSDoc block on the `WIDGET_COMPONENTS` export in `components/widgets/WidgetRegistry.ts` documenting that the map is intentionally not exhaustive over all `WidgetType`s. The note specifically calls out `sticker` (handled via the hard-coded branch in `WidgetRenderer.tsx:271-273`), warns against adding a `sticker` entry without also removing the special-case branch, and tells future developers to handle the `undefined` case at call sites. Documentation-only change — no behavioral impact, all 1476 tests still pass; `pnpm type-check`, `pnpm lint --max-warnings 0`, and `pnpm format:check` all clean.
