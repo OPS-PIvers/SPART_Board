@@ -48,6 +48,21 @@ const MiniAppSettings = lazyNamed(
   'MiniAppSettings'
 );
 
+/**
+ * Maps widget types to their lazily-loaded React components.
+ *
+ * Note: This map is intentionally NOT exhaustive over all `WidgetType`s.
+ * Some widget types are handled outside the registry pattern:
+ *
+ * - `sticker`: Handled by a hard-coded branch in `WidgetRenderer.tsx`
+ *   (`if (widget.type === 'sticker') return <StickerItemWidget ... />`).
+ *   `StickerItemWidget` is intentionally absent from this map. Do NOT
+ *   add a `sticker` entry here without also removing the special-case
+ *   branch in WidgetRenderer.
+ *
+ * Do not assume `WIDGET_COMPONENTS[widgetType]` is defined for every
+ * `WidgetType` value — always handle the `undefined` case at call sites.
+ */
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   url: lazyNamed(() => import('./UrlWidget/Widget'), 'UrlWidget'),
   soundboard: lazyNamed(
