@@ -49,6 +49,7 @@ import {
   getEarnedPoints,
   isGamificationActive,
 } from '../utils/quizScoreboard';
+import { resolveResponseDisplayName } from '../utils/resolveDisplayName';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   useAssignmentPseudonyms,
@@ -213,7 +214,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         quiz.questions,
         mode,
         pinToName,
-        session
+        session,
+        byStudentUid
       );
 
       const existingScoreboard = activeDashboard?.widgets.find(
@@ -247,6 +249,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       completed,
       quiz.questions,
       pinToName,
+      byStudentUid,
       session,
       activeDashboard?.widgets,
       updateWidget,
@@ -280,6 +283,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       const svc = new QuizDriveService(googleAccessToken);
       const exportOpts = {
         pinToName: exportPinToName,
+        byStudentUid,
         teacherName: config.teacherName,
         periodName: config.periodName,
         plcMode: config.plcMode,
@@ -1021,11 +1025,18 @@ const StudentsTab: React.FC<{
             const earned = getEarnedPoints(r, questions, session);
             const warnings = r.tabSwitchWarnings ?? 0;
 
+            const displayName = resolveResponseDisplayName(
+              r,
+              pinToName,
+              byStudentUid
+            );
+            // "Resolved" = a real name was found (ClassLink or roster PIN
+            // match), as opposed to the literal `PIN <num>` or `Student`
+            // fallback. Drives the mono-face vs sans-face decision below.
             const classLinkName = formatStudentName(
               byStudentUid.get(r.studentUid)
             );
-            const rosterName = pinToName[r.pin];
-            const displayName = classLinkName || rosterName || `PIN ${r.pin}`;
+            const rosterName = r.pin ? pinToName[r.pin] : undefined;
             const isResolved = Boolean(classLinkName || rosterName);
             const rowKey = getResponseDocKey(r);
             const canDelete = Boolean(onDeleteResponse);

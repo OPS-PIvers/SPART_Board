@@ -553,9 +553,18 @@ export interface UseQuizSessionStudentResult {
    * before the student commits to joining.
    */
   lookupSession: (code: string) => Promise<{ periodNames: string[] } | null>;
+  /**
+   * Join a quiz session.
+   *
+   * `pin` is required for anonymous joiners (the original `/quiz?code=…` and
+   * `/join` flows) and omitted for SSO `studentRole` joiners launched from
+   * `/my-assignments` — their identity is the auth uid carried on the
+   * custom token, so no roster PIN is needed. The hook validates this at
+   * call time: anonymous + missing pin throws "PIN is required".
+   */
   joinQuizSession: (
     code: string,
-    pin: string,
+    pin?: string,
     classPeriod?: string
   ) => Promise<string>;
   submitAnswer: (
@@ -675,7 +684,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   const joinQuizSession = useCallback(
     async (
       code: string,
-      pin: string,
+      pin?: string,
       classPeriod?: string
     ): Promise<string> => {
       setLoading(true);
@@ -687,12 +696,10 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           .toUpperCase();
         if (!normCode) throw new Error('Invalid code');
 
-        // Prevent storage abuse on the PIN field
-        const sanitizedPin = pin.trim().substring(0, 10);
-        if (!sanitizedPin) throw new Error('PIN is required');
-
         // Ensure we have an anonymous Firebase Auth session so Firestore
-        // security rules (request.auth != null) are satisfied.
+        // security rules (request.auth != null) are satisfied. SSO students
+        // arriving from /my-assignments already have a non-anonymous custom-
+        // token user — keep that identity.
         if (!auth.currentUser) {
           await signInAnonymously(auth);
         }
@@ -700,6 +707,14 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         if (!currentUser)
           throw new Error('Anonymous auth failed — no current user.');
         const studentUid = currentUser.uid;
+
+        // PIN is required only for anonymous joiners. SSO `studentRole`
+        // users identify by `auth.uid` (carried in `studentUid` and used as
+        // the response doc key by `computeResponseKey`).
+        const sanitizedPin = (pin ?? '').trim().substring(0, 10);
+        if (currentUser.isAnonymous && !sanitizedPin) {
+          throw new Error('PIN is required');
+        }
 
         const snap = await getDocs(
           query(
@@ -806,19 +821,21 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         setResponseKeyState(responseKey);
 
         if (!existingSnap.exists()) {
-          // No PII stored — only the PIN for teacher cross-reference.
-          // `studentUid` field carries the auth uid; the doc key may differ
-          // (for PIN auth it's pin-based), so Firestore rules enforce
-          // ownership against the field, not the key.
+          // No PII stored. `studentUid` field carries the auth uid; the doc
+          // key may differ (for PIN auth it's pin-based), so Firestore rules
+          // enforce ownership against the field, not the key. The `pin`
+          // field is omitted entirely for SSO `studentRole` joiners — the
+          // teacher's grading view resolves their name from `studentUid`
+          // via `getPseudonymsForAssignmentV1`.
           const newResponse: QuizResponse = {
             studentUid,
-            pin: sanitizedPin,
             joinedAt: Date.now(),
             status: 'joined',
             answers: [],
             score: null,
             submittedAt: null,
             completedAttempts: 0,
+            ...(sanitizedPin ? { pin: sanitizedPin } : {}),
             ...(classPeriod ? { classPeriod } : {}),
           };
           await setDoc(responseRef, newResponse);
