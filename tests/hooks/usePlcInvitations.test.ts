@@ -105,6 +105,12 @@ describe('usePlcInvitations — acceptInvite', () => {
       Object.assign(new Error('denied'), { code: 'permission-denied' })
     );
     (firestore.updateDoc as unknown as Mock).mockResolvedValueOnce(undefined);
+    // Membership verify confirms the user is already in the PLC — the
+    // benign "lead added me manually" path the fallback is designed for.
+    (firestore.getDoc as unknown as Mock).mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ memberUids: ['lead-uid', 'invitee-uid'] }),
+    });
 
     const { result } = renderHook(() => usePlcInvitations());
     await act(async () => {
@@ -118,6 +124,43 @@ describe('usePlcInvitations — acceptInvite', () => {
     );
     expect(patch).toMatchObject({ status: 'accepted' });
     expect(patch).toHaveProperty('respondedAt');
+  });
+
+  it('throws actionable error when fallback membership-verify finds caller is not a member', async () => {
+    // Simulates a future rules regression where the txn permission-denies
+    // but the user is NOT actually in memberUids (i.e. the prior assumption
+    // "lead added them manually" doesn't hold). Without the verify, the
+    // invite would silently mark accepted while the user remains unjoined.
+    (firestore.runTransaction as unknown as Mock).mockRejectedValueOnce(
+      Object.assign(new Error('denied'), { code: 'permission-denied' })
+    );
+    (firestore.updateDoc as unknown as Mock).mockResolvedValueOnce(undefined);
+    (firestore.getDoc as unknown as Mock).mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ memberUids: ['lead-uid'] }), // invitee-uid missing
+    });
+
+    const { result } = renderHook(() => usePlcInvitations());
+    await expect(result.current.acceptInvite(makeInvite())).rejects.toThrow(
+      /membership did not apply/i
+    );
+  });
+
+  it('throws actionable error when fallback membership-verify itself permission-denies', async () => {
+    // The PLC read rule requires membership, so a permission-denied on the
+    // verify read is definitive evidence the caller is not a member.
+    (firestore.runTransaction as unknown as Mock).mockRejectedValueOnce(
+      Object.assign(new Error('denied'), { code: 'permission-denied' })
+    );
+    (firestore.updateDoc as unknown as Mock).mockResolvedValueOnce(undefined);
+    (firestore.getDoc as unknown as Mock).mockRejectedValueOnce(
+      Object.assign(new Error('denied'), { code: 'permission-denied' })
+    );
+
+    const { result } = renderHook(() => usePlcInvitations());
+    await expect(result.current.acceptInvite(makeInvite())).rejects.toThrow(
+      /membership did not apply/i
+    );
   });
 
   it('rethrows non-permission errors from the transaction', async () => {

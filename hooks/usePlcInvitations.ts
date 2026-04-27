@@ -251,13 +251,42 @@ export const usePlcInvitations = (): UsePlcInvitationsResult => {
         // post-accept Drive reconcile below so the (now-confirmed) member
         // still gets best-effort permission top-up.
         const code = (err as { code?: string } | null)?.code;
-        if (code === 'permission-denied') {
-          await updateDoc(inviteRef, {
-            status: 'accepted',
-            respondedAt: Date.now(),
-          });
-        } else {
-          throw err;
+        if (code !== 'permission-denied') throw err;
+        await updateDoc(inviteRef, {
+          status: 'accepted',
+          respondedAt: Date.now(),
+        });
+        // Verify membership actually applied. The `permission-denied` above
+        // is *intended* to mean "you were already added manually" — but it
+        // also fires for any future rules regression that breaks the size-
+        // delta / affectedKeys checks. Without this verify, a user whose
+        // accept silently failed would see the invite marked accepted in the
+        // UI with no indication they aren't actually in the PLC. Read the
+        // PLC and confirm `user.uid` is in `memberUids`; if the read itself
+        // permission-denies (rules require membership to read), that is
+        // also definitive non-membership.
+        try {
+          const confirmSnap = await getDoc(plcRef);
+          const memberUids =
+            confirmSnap.exists() &&
+            Array.isArray(
+              (confirmSnap.data() as { memberUids?: unknown }).memberUids
+            )
+              ? (confirmSnap.data() as { memberUids: string[] }).memberUids
+              : [];
+          if (!memberUids.includes(user.uid)) {
+            throw new Error(
+              'Your invite was marked accepted but membership did not apply. Ask the lead to re-add you.'
+            );
+          }
+        } catch (confirmErr) {
+          const confirmCode = (confirmErr as { code?: string } | null)?.code;
+          if (confirmCode === 'permission-denied') {
+            throw new Error(
+              'Your invite was marked accepted but membership did not apply. Ask the lead to re-add you.'
+            );
+          }
+          throw confirmErr;
         }
       }
 
@@ -279,63 +308,75 @@ export const usePlcInvitations = (): UsePlcInvitationsResult => {
       // No-ops when: the sheet hasn't been created yet (first PLC
       // assignment will pick up the new member via memberEmails); the
       // accepter has no Google OAuth token; or the accepter isn't the
-      // sheet owner (403 on permissions list). Any failure is swallowed
-      // so the invite-accept flow doesn't regress on a Drive-side
-      // hiccup.
-      try {
-        if (googleAccessToken) {
-          const plcSnap = await getDoc(plcRef);
-          if (plcSnap.exists()) {
-            const data = plcSnap.data() as {
-              sharedSheetUrl?: unknown;
-              memberEmails?: Record<string, unknown>;
-              memberUids?: unknown;
-              leadUid?: unknown;
-              name?: unknown;
-              createdAt?: unknown;
-              updatedAt?: unknown;
-            };
-            const sheetUrl =
-              typeof data.sharedSheetUrl === 'string'
-                ? data.sharedSheetUrl
-                : null;
-            if (sheetUrl) {
-              // Reconstruct the minimal Plc shape the helper consumes.
-              // The accept transaction has just committed so the post-
-              // accept doc must include this user in memberEmails.
-              const memberEmails: Record<string, string> = {};
-              for (const [k, v] of Object.entries(data.memberEmails ?? {})) {
-                if (typeof v === 'string') memberEmails[k] = v;
-              }
-              const emails = getPlcMemberEmails({
-                id: invite.plcId,
-                name: typeof data.name === 'string' ? data.name : '',
-                leadUid: typeof data.leadUid === 'string' ? data.leadUid : '',
-                memberUids: Array.isArray(data.memberUids)
-                  ? data.memberUids.filter(
-                      (u): u is string => typeof u === 'string'
-                    )
-                  : [],
-                memberEmails,
-                sharedSheetUrl: sheetUrl,
-                createdAt:
-                  typeof data.createdAt === 'number' ? data.createdAt : 0,
-                updatedAt:
-                  typeof data.updatedAt === 'number' ? data.updatedAt : 0,
-              });
-              const service = new QuizDriveService(googleAccessToken);
+      // sheet owner (403 on permissions list).
+      //
+      // Catch scope is deliberately narrow: only the Drive API call is
+      // swallowed. A failed `getDoc` on the just-accepted PLC indicates
+      // a rules regression (we just wrote the doc) — log loudly and
+      // skip rather than masking. The Firestore parse is pure and
+      // shouldn't throw, but if it does we'd rather see the stack.
+      if (googleAccessToken) {
+        let plcSnap: Awaited<ReturnType<typeof getDoc>> | null = null;
+        try {
+          plcSnap = await getDoc(plcRef);
+        } catch (snapErr) {
+          console.error(
+            '[usePlcInvitations] Failed to read PLC after accept (unexpected — rules regression?):',
+            snapErr
+          );
+        }
+        if (plcSnap?.exists()) {
+          const data = plcSnap.data() as {
+            sharedSheetUrl?: unknown;
+            memberEmails?: Record<string, unknown>;
+            memberUids?: unknown;
+            leadUid?: unknown;
+            name?: unknown;
+            createdAt?: unknown;
+            updatedAt?: unknown;
+          };
+          const sheetUrl =
+            typeof data.sharedSheetUrl === 'string'
+              ? data.sharedSheetUrl
+              : null;
+          if (sheetUrl) {
+            // Reconstruct the minimal Plc shape the helper consumes.
+            // The accept transaction has just committed so the post-
+            // accept doc must include this user in memberEmails.
+            const memberEmails: Record<string, string> = {};
+            for (const [k, v] of Object.entries(data.memberEmails ?? {})) {
+              if (typeof v === 'string') memberEmails[k] = v;
+            }
+            const emails = getPlcMemberEmails({
+              id: invite.plcId,
+              name: typeof data.name === 'string' ? data.name : '',
+              leadUid: typeof data.leadUid === 'string' ? data.leadUid : '',
+              memberUids: Array.isArray(data.memberUids)
+                ? data.memberUids.filter(
+                    (u): u is string => typeof u === 'string'
+                  )
+                : [],
+              memberEmails,
+              sharedSheetUrl: sheetUrl,
+              createdAt:
+                typeof data.createdAt === 'number' ? data.createdAt : 0,
+              updatedAt:
+                typeof data.updatedAt === 'number' ? data.updatedAt : 0,
+            });
+            const service = new QuizDriveService(googleAccessToken);
+            try {
               await service.reconcilePlcSheetPermissions({
                 sheetUrl,
                 memberEmailsToShareWith: emails,
               });
+            } catch (reconcileErr) {
+              console.error(
+                '[usePlcInvitations] PLC sheet reconcile after accept failed:',
+                reconcileErr
+              );
             }
           }
         }
-      } catch (reconcileErr) {
-        console.error(
-          '[usePlcInvitations] PLC sheet reconcile after accept failed:',
-          reconcileErr
-        );
       }
     },
     [user, myEmailLower, googleAccessToken]
