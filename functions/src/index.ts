@@ -3101,90 +3101,140 @@ export const getStudentClassDirectoryV1 = onCall(
       code?: string;
     }
 
-    const lookupOne = async (
-      classId: string
-    ): Promise<DirectoryEntry | null> => {
-      // 1. Real ClassLink roster.
-      const rosterByClasslink = await db
-        .collectionGroup('rosters')
-        .where('classlinkClassId', '==', classId)
-        .limit(1)
-        .get();
-      if (!rosterByClasslink.empty) {
-        const rosterDoc = rosterByClasslink.docs[0];
-        const data = rosterDoc.data();
-        const teacherUid = rosterDoc.ref.parent.parent?.id ?? '';
-        const teacherDisplayName = teacherUid
-          ? await resolveTeacherName(teacherUid)
-          : '';
-        return {
-          classId,
-          name: typeof data.name === 'string' ? data.name : classId,
-          teacherDisplayName,
-          subject:
-            typeof data.classlinkSubject === 'string'
-              ? data.classlinkSubject
-              : undefined,
-          code:
-            typeof data.classlinkClassCode === 'string'
-              ? data.classlinkClassCode
-              : undefined,
-        };
+    // Batch the per-classId collectionGroup queries instead of fanning out
+    // 2-3 queries per id (up to 60 queries for STUDENT_LOGIN_CLASS_IDS_MAX
+    // = 20). Firestore caps `in`-array size at 30; we chunk at 10 to stay
+    // safely under the limit and to fit the typical `STUDENT_LOGIN_CLASS_IDS_MAX`
+    // payload in 2-3 chunks.
+    const FIRESTORE_IN_CHUNK_SIZE = 10;
+    const chunk = <T>(arr: readonly T[], size: number): T[][] => {
+      const chunks: T[][] = [];
+      for (let i = 0; i < arr.length; i += size) {
+        chunks.push(arr.slice(i, i + size));
       }
-
-      // 2. Test-class roster (teacher imported an admin-managed test class).
-      const rosterByTestId = await db
-        .collectionGroup('rosters')
-        .where('testClassId', '==', classId)
-        .limit(1)
-        .get();
-      if (!rosterByTestId.empty) {
-        const rosterDoc = rosterByTestId.docs[0];
-        const data = rosterDoc.data();
-        const teacherUid = rosterDoc.ref.parent.parent?.id ?? '';
-        const teacherDisplayName = teacherUid
-          ? await resolveTeacherName(teacherUid)
-          : '';
-        return {
-          classId,
-          name: typeof data.name === 'string' ? data.name : classId,
-          teacherDisplayName,
-          subject:
-            typeof data.classlinkSubject === 'string'
-              ? data.classlinkSubject
-              : undefined,
-        };
-      }
-
-      // 3. Direct testClasses fallback (no teacher has imported it yet).
-      if (orgId) {
-        try {
-          const testDoc = await db
-            .doc(`organizations/${orgId}/testClasses/${classId}`)
-            .get();
-          if (testDoc.exists) {
-            const data = testDoc.data() ?? {};
-            return {
-              classId,
-              name:
-                typeof data.title === 'string' && data.title.length > 0
-                  ? data.title
-                  : classId,
-              teacherDisplayName: '',
-              subject:
-                typeof data.subject === 'string' ? data.subject : undefined,
-            };
-          }
-        } catch {
-          // Fall through to "not found".
-        }
-      }
-
-      return null;
+      return chunks;
     };
 
-    const settled = await Promise.all(classIds.map(lookupOne));
-    const classes = settled.filter((e): e is DirectoryEntry => e !== null);
+    /**
+     * Run `collectionGroup('rosters').where(field, 'in', chunk)` for every
+     * chunk of `ids`, then index the matching roster docs by their
+     * `field`-value. First match wins on duplicates so the teacher whose
+     * roster Firestore returns first deterministically owns the directory
+     * entry for that class.
+     */
+    const batchLookupByField = async (
+      field: 'classlinkClassId' | 'testClassId',
+      ids: readonly string[]
+    ): Promise<Map<string, FirebaseFirestore.QueryDocumentSnapshot>> => {
+      const out = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+      if (ids.length === 0) return out;
+      const snapshots = await Promise.all(
+        chunk(ids, FIRESTORE_IN_CHUNK_SIZE).map((idChunk) =>
+          db.collectionGroup('rosters').where(field, 'in', idChunk).get()
+        )
+      );
+      for (const snap of snapshots) {
+        for (const doc of snap.docs) {
+          const value: unknown = doc.get(field);
+          if (typeof value === 'string' && !out.has(value)) {
+            out.set(value, doc);
+          }
+        }
+      }
+      return out;
+    };
+
+    const buildEntryFromRoster = async (
+      classId: string,
+      rosterDoc: FirebaseFirestore.QueryDocumentSnapshot,
+      includeCode: boolean
+    ): Promise<DirectoryEntry> => {
+      const data = rosterDoc.data();
+      const teacherUid = rosterDoc.ref.parent.parent?.id ?? '';
+      const teacherDisplayName = teacherUid
+        ? await resolveTeacherName(teacherUid)
+        : '';
+      return {
+        classId,
+        name: typeof data.name === 'string' ? data.name : classId,
+        teacherDisplayName,
+        subject:
+          typeof data.classlinkSubject === 'string'
+            ? data.classlinkSubject
+            : undefined,
+        code:
+          includeCode && typeof data.classlinkClassCode === 'string'
+            ? data.classlinkClassCode
+            : undefined,
+      };
+    };
+
+    // 1 + 2. Batched collectionGroup lookups: classlinkClassId first, then
+    // testClassId for whatever didn't resolve. Two `in` queries per field
+    // chunk replace what was up to 40 separate equality queries.
+    const classlinkMatches = await batchLookupByField(
+      'classlinkClassId',
+      classIds
+    );
+    const unresolvedAfterClasslink = classIds.filter(
+      (id) => !classlinkMatches.has(id)
+    );
+    const testIdMatches = await batchLookupByField(
+      'testClassId',
+      unresolvedAfterClasslink
+    );
+
+    // 3. Direct testClasses doc reads — only for classIds still unresolved
+    // after the two batched roster passes. These are the admin-managed
+    // test classes that no teacher has imported yet.
+    const unresolvedAfterTestId = unresolvedAfterClasslink.filter(
+      (id) => !testIdMatches.has(id)
+    );
+    const testClassDocs = new Map<string, FirebaseFirestore.DocumentSnapshot>();
+    if (orgId && unresolvedAfterTestId.length > 0) {
+      const docs = await Promise.all(
+        unresolvedAfterTestId.map((id) =>
+          db
+            .doc(`organizations/${orgId}/testClasses/${id}`)
+            .get()
+            .catch(() => null)
+        )
+      );
+      for (let i = 0; i < unresolvedAfterTestId.length; i++) {
+        const d = docs[i];
+        if (d && d.exists) testClassDocs.set(unresolvedAfterTestId[i], d);
+      }
+    }
+
+    const entries = await Promise.all(
+      classIds.map(async (classId): Promise<DirectoryEntry | null> => {
+        const fromClasslink = classlinkMatches.get(classId);
+        if (fromClasslink) {
+          return buildEntryFromRoster(classId, fromClasslink, true);
+        }
+        const fromTestId = testIdMatches.get(classId);
+        if (fromTestId) {
+          return buildEntryFromRoster(classId, fromTestId, false);
+        }
+        const fromTestClassDoc = testClassDocs.get(classId);
+        if (fromTestClassDoc) {
+          const data = fromTestClassDoc.data() ?? {};
+          return {
+            classId,
+            name:
+              typeof data.title === 'string' && data.title.length > 0
+                ? data.title
+                : classId,
+            teacherDisplayName: '',
+            subject:
+              typeof data.subject === 'string' ? data.subject : undefined,
+          };
+        }
+        return null;
+      })
+    );
+
+    const classes = entries.filter((e): e is DirectoryEntry => e !== null);
     return { classes };
   }
 );

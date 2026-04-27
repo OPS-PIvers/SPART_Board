@@ -414,8 +414,16 @@ const SlideOutSidebar: React.FC<SlideOutSidebarProps> = ({
     <aside
       aria-label="Class navigation"
       aria-hidden={!open}
+      // `inert` removes the entire subtree from focus order, click events,
+      // and the a11y tree without unmounting it (preserves scroll/state on
+      // toggle). `pointer-events-none` hardens against older browsers that
+      // don't yet honor `inert` (Chromium ≥ 102, Safari ≥ 15.5, Firefox ≥
+      // 112) so an off-screen sidebar can't intercept clicks.
+      {...(open ? {} : { inert: true })}
       className={`fixed bottom-0 left-0 z-20 flex w-[280px] flex-col shadow-xl transition-transform duration-200 ease-out md:shadow-none ${HEADER_OFFSET_CLASSES} ${
-        open ? 'translate-x-0' : '-translate-x-full'
+        open
+          ? 'pointer-events-auto translate-x-0'
+          : 'pointer-events-none -translate-x-full'
       }`}
     >
       {children}

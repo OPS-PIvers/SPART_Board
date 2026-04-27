@@ -274,20 +274,38 @@ export function useStudentAssignments({
     [classIds]
   );
 
+  // Reset bucket / error / load state when the subscription identity
+  // changes — a new claim set or a retry. We use the "adjusting state
+  // while rendering" pattern (https://react.dev/reference/react/useState
+  // #storing-information-from-previous-renders) so the resets don't
+  // become synchronous setStates inside the effect body. Whether the
+  // post-reset state is `ready` (empty/bypass) or `loading` (about to
+  // subscribe) is decided here too.
+  const [resetIdentity, setResetIdentity] = useState<string>(
+    `${classIdsKey}#${retryNonce}`
+  );
+  const currentIdentity = `${classIdsKey}#${retryNonce}`;
+  if (resetIdentity !== currentIdentity) {
+    setResetIdentity(currentIdentity);
+    setByKindChannel({});
+    setErroredBuckets(new Set());
+    setLoadState(
+      isAuthBypass || classIdsKey.length === 0 ? 'ready' : 'loading'
+    );
+  }
+
   useEffect(() => {
     // Bypass mode renders the layout against an empty assignment list so the
-    // page is exercisable in dev without a real Firestore backend. Initial
-    // state already covers this; the effect just skips the subscriptions.
+    // page is exercisable in dev without a real Firestore backend. The
+    // render-time reset above already left state in the correct shape;
+    // the effect just skips the subscriptions.
     if (isAuthBypass) return;
-    if (classIds.length === 0) {
-      setByKindChannel({});
-      setErroredBuckets(new Set());
-      setLoadState('ready');
-      return;
-    }
-
-    setLoadState('loading');
-    setErroredBuckets(new Set());
+    // Reconstitute the classIds list from the value-based key so the effect
+    // can depend on `classIdsKey` alone (and not on `classIds` reference
+    // identity, which would re-subscribe whenever the auth context emits a
+    // fresh array even though the contents didn't change).
+    const ids = classIdsKey ? classIdsKey.split('|').filter(Boolean) : [];
+    if (ids.length === 0) return;
 
     // Plan every (kind, channel, shape, statusValue) subscription up front.
     // Active channel always runs; Ended channel only for kinds that have a
@@ -330,7 +348,7 @@ export function useStudentAssignments({
     const settled = new Set<string>();
 
     // Local copy of the student's classIds for fast intersection.
-    const studentClassIds = new Set(classIds);
+    const studentClassIds = new Set(ids);
 
     const docToSummary = (
       kind: SessionKind,
@@ -411,8 +429,8 @@ export function useStudentAssignments({
       const col = collection(db, config.collectionName);
       const constraints: QueryConstraint[] =
         shape === 'list'
-          ? [where('classIds', 'array-contains-any', [...classIds])]
-          : [where('classId', 'in', [...classIds])];
+          ? [where('classIds', 'array-contains-any', ids)]
+          : [where('classId', 'in', ids)];
       if (statusValue !== null) {
         constraints.push(where('status', '==', statusValue));
       }
@@ -484,7 +502,6 @@ export function useStudentAssignments({
     return () => {
       for (const u of unsubs) u();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classIdsKey, retryNonce]);
 
   const assignments: AssignmentSummary[] = useMemo(() => {
