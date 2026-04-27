@@ -6,6 +6,7 @@ import {
   onSnapshot,
   doc,
   setDoc,
+  getDoc,
   getDocs,
   writeBatch,
   runTransaction,
@@ -32,6 +33,33 @@ interface UsePlcsResult {
   leavePlc: (plcId: string) => Promise<void>;
   /** Lead-only: dissolve the PLC entirely. */
   deletePlc: (plcId: string) => Promise<void>;
+  /**
+   * Any member: persist the auto-created PLC Google Sheet URL on the PLC
+   * doc so teammates reuse it on subsequent assignments. Implemented as a
+   * transactional "set-if-empty" so two members assigning their first
+   * PLC quiz simultaneously can't both stomp `sharedSheetUrl`. The caller
+   * passes the URL of the sheet they just created; the resolved URL the
+   * PLC actually ended up with is returned (so the caller can detect a
+   * race-loss and switch to the canonical URL — their own freshly-
+   * created sheet may be orphaned in their Drive in that case, which is
+   * an acceptable rare-race outcome).
+   *
+   * Rejected by rules if the caller is not a member of the PLC.
+   */
+  setPlcSharedSheetUrl: (plcId: string, url: string) => Promise<string>;
+  /**
+   * Any member: clear the cached sheet URL (e.g. after discovering the
+   * sheet was deleted in Drive). The next PLC assignment will create a
+   * fresh sheet.
+   */
+  clearPlcSharedSheetUrl: (plcId: string) => Promise<void>;
+  /**
+   * One-off read of a PLC's sharedSheetUrl. Used at assignment-create
+   * time when we need the current value without waiting for the next
+   * snapshot tick (the snapshot is trustworthy but we want a strong-read
+   * for the "already created?" check to avoid racing two teachers).
+   */
+  getPlcSharedSheetUrl: (plcId: string) => Promise<string | null>;
 }
 
 function parsePlc(id: string, data: Record<string, unknown>): Plc | null {
@@ -48,12 +76,20 @@ function parsePlc(id: string, data: Record<string, unknown>): Plc | null {
   for (const [k, v] of Object.entries(rawEmails)) {
     if (typeof v === 'string') memberEmails[k] = v;
   }
+  // sharedSheetUrl: optional string OR explicit null. Treat any other
+  // shape (including absent) as null so downstream code can rely on the
+  // "absent ⇒ null" equivalence.
+  let sharedSheetUrl: string | null = null;
+  if (typeof data.sharedSheetUrl === 'string') {
+    sharedSheetUrl = data.sharedSheetUrl;
+  }
   return {
     id,
     name: data.name,
     leadUid: data.leadUid,
     memberUids: data.memberUids,
     memberEmails,
+    sharedSheetUrl,
     createdAt: typeof data.createdAt === 'number' ? data.createdAt : 0,
     updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : 0,
   };
@@ -227,6 +263,93 @@ export const usePlcs = (): UsePlcsResult => {
     [user]
   );
 
+  // Any member of the PLC can set sharedSheetUrl when it is currently
+  // null/absent. The rule branch restricts the diff to sharedSheetUrl +
+  // updatedAt so one member can't also mutate memberUids on this path.
+  //
+  // Transactional set-if-empty: two members concurrently assigning their
+  // first PLC quiz could both call this. Without the transaction, the
+  // last write wins and one teammate's freshly-created sheet would be
+  // pointed at by the URL while the other's becomes a phantom in their
+  // Drive. With the transaction, we read the current value first; if a
+  // racing teammate has already populated `sharedSheetUrl`, we skip our
+  // write and return the existing URL — the caller then uses that
+  // canonical URL (and reconciles permissions for it) instead of the
+  // sheet they just created.
+  const setPlcSharedSheetUrl = useCallback(
+    async (plcId: string, url: string): Promise<string> => {
+      // Throw rather than silently no-op + return the input URL —
+      // returning would mislead the caller into thinking the URL was
+      // persisted, and they'd skip the auto-create retry that should
+      // run on next sign-in. Mirrors the pattern in createPlc / leavePlc.
+      if (!user) throw new Error('Not signed in');
+      return runTransaction(db, async (tx) => {
+        const ref = doc(db, PLCS_COLLECTION, plcId);
+        const snap = await tx.get(ref);
+        if (!snap.exists()) {
+          throw new Error('PLC not found');
+        }
+        const data = snap.data() as { sharedSheetUrl?: unknown };
+        const existing =
+          typeof data.sharedSheetUrl === 'string' && data.sharedSheetUrl
+            ? data.sharedSheetUrl
+            : null;
+        if (existing) {
+          // Race lost — keep the canonical URL, our own sheet becomes
+          // orphaned (rare; acceptable for a true concurrent-create
+          // collision).
+          return existing;
+        }
+        tx.update(ref, {
+          sharedSheetUrl: url,
+          updatedAt: Date.now(),
+        });
+        return url;
+      });
+    },
+    [user]
+  );
+
+  // Idempotent transactional clear: only writes when sharedSheetUrl is
+  // currently a non-empty string. The tightened rule
+  // `isSettingPlcSharedSheetUrl()` requires `sharedSheetUrl` to appear
+  // in `affectedKeys()`, so a redundant null→null write would be
+  // rejected with PERMISSION_DENIED. This guards the 404 recovery
+  // flow against the case where a racing teammate already cleared the
+  // URL between our 404 detection and our own clear call.
+  const clearPlcSharedSheetUrl = useCallback(
+    async (plcId: string) => {
+      if (!user) return;
+      await runTransaction(db, async (tx) => {
+        const ref = doc(db, PLCS_COLLECTION, plcId);
+        const snap = await tx.get(ref);
+        if (!snap.exists()) return;
+        const raw = (snap.data() as { sharedSheetUrl?: unknown })
+          .sharedSheetUrl;
+        const isNonEmptyString = typeof raw === 'string' && raw.length > 0;
+        if (!isNonEmptyString) {
+          // Already null/absent — nothing to clear. Skip the write.
+          return;
+        }
+        tx.update(ref, {
+          sharedSheetUrl: null,
+          updatedAt: Date.now(),
+        });
+      });
+    },
+    [user]
+  );
+
+  const getPlcSharedSheetUrl = useCallback(
+    async (plcId: string): Promise<string | null> => {
+      const snap = await getDoc(doc(db, PLCS_COLLECTION, plcId));
+      if (!snap.exists()) return null;
+      const raw = (snap.data() as { sharedSheetUrl?: unknown }).sharedSheetUrl;
+      return typeof raw === 'string' && raw.length > 0 ? raw : null;
+    },
+    []
+  );
+
   return useMemo(
     () => ({
       plcs,
@@ -236,7 +359,21 @@ export const usePlcs = (): UsePlcsResult => {
       removeMember,
       leavePlc,
       deletePlc,
+      setPlcSharedSheetUrl,
+      clearPlcSharedSheetUrl,
+      getPlcSharedSheetUrl,
     }),
-    [plcs, loading, createPlc, renamePlc, removeMember, leavePlc, deletePlc]
+    [
+      plcs,
+      loading,
+      createPlc,
+      renamePlc,
+      removeMember,
+      leavePlc,
+      deletePlc,
+      setPlcSharedSheetUrl,
+      clearPlcSharedSheetUrl,
+      getPlcSharedSheetUrl,
+    ]
   );
 };

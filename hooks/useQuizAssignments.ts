@@ -22,6 +22,7 @@ import {
   query,
   where,
   orderBy,
+  updateDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -97,6 +98,13 @@ export interface UseQuizAssignmentsResult {
     assignmentId: string,
     patch: Partial<QuizAssignmentSettings>
   ) => Promise<void>;
+  /**
+   * Persist the Drive export URL onto the assignment doc so re-entering
+   * Results after navigating away (which remounts QuizResults and wipes its
+   * local state) shows the "Open Sheet" shortcut instead of reverting to
+   * "Export".
+   */
+  setAssignmentExportUrl: (assignmentId: string, url: string) => Promise<void>;
   /** Publish this assignment as a shareable link. Returns the /share/assignment/{id} URL. */
   shareAssignment: (
     assignmentId: string,
@@ -373,13 +381,17 @@ export const useQuizAssignments = (
   >(
     async (assignmentId) => {
       if (!userId) throw new Error('Not authenticated');
-      // Auto-end advances `currentQuestionIndex` to `totalQuestions` (see the
-      // end-of-quiz branch in useQuizSession.advanceQuestion). If we just
-      // flipped status back to 'paused' here, the next resume would jump to
-      // 'active' and every student would look up `publicQuestions[totalQuestions]`
-      // — undefined — and stall on the loading UI. Clamp the index back into
-      // bounds (last question) so stragglers can finish, and re-arm
-      // `questionPhase` to 'answering'.
+      // A "natural" auto-end (useQuizSession.advanceQuestion end-of-quiz
+      // branch) leaves `currentQuestionIndex == totalQuestions`, which is
+      // out-of-bounds for `publicQuestions`. If we just flipped status back
+      // to 'paused', the next resume would jump to 'active' and every
+      // student would look up `publicQuestions[totalQuestions]` — undefined
+      // — and stall on the loading UI. Reset the index to a sensible resume
+      // point: -1 for teacher-paced sessions (teacher re-advances from the
+      // lobby) and 0 for student-paced sessions (students pick up from the
+      // start). A "manual stop" (deactivateAssignment) doesn't touch
+      // currentQuestionIndex, so we only reset when the index is actually
+      // out-of-bounds.
       const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId);
       const snap = await getDoc(sessionRef);
       const session = snap.data() as QuizSession | undefined;
@@ -400,7 +412,8 @@ export const useQuizAssignments = (
         session.totalQuestions > 0 &&
         session.currentQuestionIndex >= session.totalQuestions
       ) {
-        sessionPatch.currentQuestionIndex = session.totalQuestions - 1;
+        sessionPatch.currentQuestionIndex =
+          session.sessionMode === 'student' ? 0 : -1;
         sessionPatch.questionPhase = 'answering';
       }
       batch.update(sessionRef, sessionPatch);
@@ -490,6 +503,19 @@ export const useQuizAssignments = (
         );
       }
       await batch.commit();
+    },
+    [userId]
+  );
+
+  const setAssignmentExportUrl = useCallback<
+    UseQuizAssignmentsResult['setAssignmentExportUrl']
+  >(
+    async (assignmentId, url) => {
+      if (!userId) throw new Error('Not authenticated');
+      await updateDoc(
+        doc(db, 'users', userId, QUIZ_ASSIGNMENTS_COLLECTION, assignmentId),
+        { exportUrl: url, updatedAt: Date.now() }
+      );
     },
     [userId]
   );
@@ -596,6 +622,7 @@ export const useQuizAssignments = (
     reopenAssignment,
     deleteAssignment,
     updateAssignmentSettings,
+    setAssignmentExportUrl,
     shareAssignment,
     importSharedAssignment,
   };

@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -295,6 +296,7 @@ export const OrganizationPanel: React.FC = () => {
   // snapshots (React DevTools state panel, error-boundary breadcrumbs, future
   // session-replay tooling). Email-as-state is fine — it's not the credential.
   const manualResetUrlRef = useRef<string | null>(null);
+  const getManualResetUrl = useCallback(() => manualResetUrlRef.current, []);
   const [manualResetEmail, setManualResetEmail] = useState<string | null>(null);
   const closeManualResetLink = () => {
     manualResetUrlRef.current = null;
@@ -867,7 +869,7 @@ export const OrganizationPanel: React.FC = () => {
 
       <ManualResetLinkModal
         email={manualResetEmail}
-        getUrl={() => manualResetUrlRef.current}
+        getUrl={getManualResetUrl}
         onClose={closeManualResetLink}
       />
     </div>

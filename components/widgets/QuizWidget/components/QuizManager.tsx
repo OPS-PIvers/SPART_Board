@@ -59,6 +59,7 @@ import {
   makeEmptyPickerValue,
   type AssignClassPickerValue,
 } from '@/components/common/AssignClassPicker.helpers';
+import { usePlcs } from '@/hooks/usePlcs';
 import {
   mapLegacyClassIdsToRosterIds,
   resolveAssignmentTargets,
@@ -90,6 +91,7 @@ import {
   filterByFolder,
 } from '@/components/common/library/folderFilters';
 import { useFolders } from '@/hooks/useFolders';
+import { useDialog } from '@/context/useDialog';
 
 export interface PlcOptions {
   plcMode: boolean;
@@ -98,6 +100,16 @@ export interface PlcOptions {
   periodName?: string;
   periodNames?: string[];
   plcSheetUrl?: string;
+  /**
+   * Selected PLC whose shared sheet should receive this assignment's
+   * results. When set and `plcMode === true`, the caller (QuizWidget)
+   * resolves `plcSheetUrl` by either reading `plcs/{plcId}.sharedSheetUrl`
+   * or auto-creating a new sheet and caching it back onto the PLC doc.
+   * `undefined` means the teacher is opting into the legacy
+   * manual-paste-URL flow (e.g. they aren't a member of any PLC or
+   * auto-create failed).
+   */
+  plcId?: string;
 }
 
 /* ─── Assign-modal options shape (internal) ───────────────────────────────── */
@@ -116,6 +128,11 @@ interface QuizAssignOptions {
   plcMode: boolean;
   teacherName: string;
   plcSheetUrl: string;
+  /**
+   * Selected PLC id when the teacher is a member of one or more PLCs.
+   * Empty string = no PLC selected (manual-URL fallback).
+   */
+  plcId: string;
   /** Unified roster picker state. */
   picker: AssignClassPickerValue;
 }
@@ -167,6 +184,7 @@ function buildDefaultAssignOptions(
     plcMode: config.plcMode ?? false,
     teacherName: config.teacherName ?? '',
     plcSheetUrl: config.plcSheetUrl ?? '',
+    plcId: '',
     picker:
       rememberedRosters.length > 0
         ? { rosterIds: rememberedRosters }
@@ -238,17 +256,17 @@ interface QuizManagerProps {
   assignments?: QuizAssignment[];
   assignmentsLoading?: boolean;
   onArchiveCopyUrl?: (assignment: QuizAssignment) => void;
-  onArchiveMonitor?: (assignment: QuizAssignment) => void;
+  onArchiveMonitor?: (assignment: QuizAssignment) => void | Promise<void>;
   /** Start a paused assignment: resume + navigate to monitor. */
-  onArchiveStart?: (assignment: QuizAssignment) => void;
-  onArchiveResults?: (assignment: QuizAssignment) => void;
+  onArchiveStart?: (assignment: QuizAssignment) => void | Promise<void>;
+  onArchiveResults?: (assignment: QuizAssignment) => void | Promise<void>;
   onArchiveEditSettings?: (assignment: QuizAssignment) => void;
-  onArchiveShare?: (assignment: QuizAssignment) => void;
-  onArchivePauseResume?: (assignment: QuizAssignment) => void;
-  onArchiveDeactivate?: (assignment: QuizAssignment) => void;
+  onArchiveShare?: (assignment: QuizAssignment) => void | Promise<void>;
+  onArchivePauseResume?: (assignment: QuizAssignment) => void | Promise<void>;
+  onArchiveDeactivate?: (assignment: QuizAssignment) => void | Promise<void>;
   /** Reopen an ended assignment back to a paused state. */
-  onArchiveReopen?: (assignment: QuizAssignment) => void;
-  onArchiveDelete?: (assignment: QuizAssignment) => void;
+  onArchiveReopen?: (assignment: QuizAssignment) => void | Promise<void>;
+  onArchiveDelete?: (assignment: QuizAssignment) => void | Promise<void>;
   /** Persist the library grid/list toggle into widget config. */
   onLibraryViewModeChange?: (mode: 'grid' | 'list') => void;
 }
@@ -354,6 +372,8 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     /* action not wired */
   };
 
+  const { showConfirm } = useDialog();
+
   // ─── Assign modal state (2-stage: mode → settings) ────────────────────────
   const [assignTarget, setAssignTarget] = useState<QuizMetadata | null>(null);
   const [selectedMode, setSelectedMode] = useState<QuizSessionMode | null>(
@@ -362,6 +382,10 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   const [assignOptions, setAssignOptions] = useState<QuizAssignOptions>(() =>
     buildDefaultAssignOptions(config, undefined, rosters)
   );
+
+  // Subscribed at the parent so both AssignPlcSlot (UI) and
+  // handleAssignConfirm (effective-id resolution) read the same source.
+  const { plcs } = usePlcs();
 
   // Reset assign form when modal re-opens (adjust-state-while-rendering)
   const [prevAssignTarget, setPrevAssignTarget] = useState<QuizMetadata | null>(
@@ -500,11 +524,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       label: 'Delete',
       icon: Trash2,
       destructive: true,
-      onClick: () => {
-        const ok = window.confirm(
-          `Delete "${quiz.title}"? This cannot be undone.`
+      onClick: async () => {
+        const ok = await showConfirm(
+          `Delete "${quiz.title}"? This cannot be undone.`,
+          {
+            title: 'Delete Quiz',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+          }
         );
-        if (ok) void onDelete(quiz);
+        if (ok) await onDelete(quiz);
       },
     },
   ];
@@ -532,12 +561,12 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         ? {
             label: 'Monitor',
             icon: Monitor,
-            onClick: () => (onArchiveMonitor ?? noop)(a),
+            onClick: () => void (onArchiveMonitor ?? noop)(a),
           }
         : {
             label: 'Start',
             icon: Rocket,
-            onClick: () => (onArchiveStart ?? noop)(a),
+            onClick: () => void (onArchiveStart ?? noop)(a),
           };
 
       secondaries.push({
@@ -552,14 +581,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           id: 'monitor',
           label: 'Monitor',
           icon: Monitor,
-          onClick: () => (onArchiveMonitor ?? noop)(a),
+          onClick: () => void (onArchiveMonitor ?? noop)(a),
         });
       }
       secondaries.push({
         id: 'results',
         label: 'Results',
         icon: BarChart3,
-        onClick: () => (onArchiveResults ?? noop)(a),
+        onClick: () => void (onArchiveResults ?? noop)(a),
       });
       secondaries.push({
         id: 'settings',
@@ -571,14 +600,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         id: 'share',
         label: 'Share',
         icon: Share2,
-        onClick: () => (onArchiveShare ?? noop)(a),
+        onClick: () => void (onArchiveShare ?? noop)(a),
       });
       if (isActive) {
         secondaries.push({
           id: 'pause',
           label: 'Pause',
           icon: Pause,
-          onClick: () => (onArchivePauseResume ?? noop)(a),
+          onClick: () => void (onArchivePauseResume ?? noop)(a),
         });
       }
       secondaries.push({
@@ -586,11 +615,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         label: 'Make Inactive',
         icon: PowerOff,
         destructive: true,
-        onClick: () => {
-          const ok = window.confirm(
-            'Make assignment inactive? The join URL will stop working. Responses are preserved.'
+        onClick: async () => {
+          const ok = await showConfirm(
+            'Make assignment inactive? The join URL will stop working. Responses are preserved.',
+            {
+              title: 'Make Inactive',
+              variant: 'warning',
+              confirmLabel: 'Make Inactive',
+            }
           );
-          if (ok) (onArchiveDeactivate ?? noop)(a);
+          if (ok) await (onArchiveDeactivate ?? noop)(a);
         },
       });
       secondaries.push({
@@ -598,11 +632,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         label: 'Delete',
         icon: Trash2,
         destructive: true,
-        onClick: () => {
-          const ok = window.confirm(
-            'Delete this assignment and all responses? This cannot be undone.'
+        onClick: async () => {
+          const ok = await showConfirm(
+            'Delete this assignment and all responses? This cannot be undone.',
+            {
+              title: 'Delete Assignment',
+              variant: 'danger',
+              confirmLabel: 'Delete',
+            }
           );
-          if (ok) (onArchiveDelete ?? noop)(a);
+          if (ok) await (onArchiveDelete ?? noop)(a);
         },
       });
       // Filter any item matching the primary label to avoid duplication.
@@ -616,13 +655,13 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     const primary = {
       label: 'Results',
       icon: BarChart3,
-      onClick: () => (onArchiveResults ?? noop)(a),
+      onClick: () => void (onArchiveResults ?? noop)(a),
     };
     secondaries.push({
       id: 'monitor',
       label: 'Monitor',
       icon: Monitor,
-      onClick: () => (onArchiveMonitor ?? noop)(a),
+      onClick: () => void (onArchiveMonitor ?? noop)(a),
     });
     secondaries.push({
       id: 'settings',
@@ -634,7 +673,13 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       id: 'share',
       label: 'Share',
       icon: Share2,
-      onClick: () => (onArchiveShare ?? noop)(a),
+      onClick: () => void (onArchiveShare ?? noop)(a),
+    });
+    secondaries.push({
+      id: 'reopen',
+      label: 'Reopen',
+      icon: RefreshCw,
+      onClick: () => void (onArchiveReopen ?? noop)(a),
     });
     secondaries.push({
       id: 'reopen',
@@ -647,11 +692,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       label: 'Delete',
       icon: Trash2,
       destructive: true,
-      onClick: () => {
-        const ok = window.confirm(
-          'Delete this assignment and all responses? This cannot be undone.'
+      onClick: async () => {
+        const ok = await showConfirm(
+          'Delete this assignment and all responses? This cannot be undone.',
+          {
+            title: 'Delete Assignment',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+          }
         );
-        if (ok) (onArchiveDelete ?? noop)(a);
+        if (ok) await (onArchiveDelete ?? noop)(a);
       },
     });
     return {
@@ -685,6 +735,13 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       { rosterIds: validRosterIds },
       rosters
     );
+    // Mirror AssignPlcSlot's effective-id derivation: an explicit choice
+    // wins; otherwise auto-select when there's exactly one PLC. Computed
+    // inline here so a teacher who never touched the dropdown (because
+    // there's only one PLC) still gets that PLC piped through.
+    const explicitPlc = plcs.find((p) => p.id === assignOptions.plcId);
+    const effectivePlcId =
+      explicitPlc?.id ?? (plcs.length === 1 ? plcs[0].id : '');
     const plcOptions: PlcOptions = {
       plcMode: assignOptions.plcMode,
       teacherName: assignOptions.teacherName || undefined,
@@ -692,6 +749,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       periodNames:
         effectivePeriodNames.length > 0 ? effectivePeriodNames : undefined,
       plcSheetUrl: assignOptions.plcSheetUrl || undefined,
+      plcId: effectivePlcId || undefined,
     };
     const sessionOptions: QuizSessionOptions = {
       tabWarningsEnabled: assignOptions.tabWarningsEnabled,
@@ -772,8 +830,13 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         // Widget-level handler owns confirmation + summary toasts.
         didAttempt = await onBulkDelete(targets);
       } else {
-        const ok = window.confirm(
-          `Delete ${targets.length} quiz${targets.length === 1 ? '' : 'zes'}? This cannot be undone.`
+        const ok = await showConfirm(
+          `Delete ${targets.length} quiz${targets.length === 1 ? '' : 'zes'}? This cannot be undone.`,
+          {
+            title: 'Delete Quizzes',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+          }
         );
         if (ok) {
           const results = await Promise.allSettled(
@@ -798,7 +861,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     } finally {
       setBulkBusy(false);
     }
-  }, [selection, quizzes, onDelete, onBulkDelete]);
+  }, [selection, quizzes, onDelete, onBulkDelete, showConfirm]);
 
   // ─── Folder sidebar (Library tab only) ────────────────────────────────────
   const folderSidebarSlot =
@@ -1038,6 +1101,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
             <AssignPlcSlot
               options={assignOptions}
               onChange={setAssignOptions}
+              plcs={plcs}
               plcSheetUrlInvalid={plcSheetUrlInvalid}
               effectivePeriodCount={
                 resolveEffectivePeriodNames(assignOptions.picker, rosters)
@@ -1390,6 +1454,12 @@ const AssignExtraSlot: React.FC<{
 const AssignPlcSlot: React.FC<{
   options: QuizAssignOptions;
   onChange: (next: QuizAssignOptions) => void;
+  /**
+   * Teacher's PLC memberships, threaded down from the parent so the
+   * parent can also derive the effective PLC selection at
+   * handleAssignConfirm time without re-subscribing to the same hook.
+   */
+  plcs: import('@/types').Plc[];
   plcSheetUrlInvalid: boolean;
   /**
    * Number of class periods the picker is contributing (ClassLink class
@@ -1397,11 +1467,34 @@ const AssignPlcSlot: React.FC<{
    * hint without this slot needing to recompute the derivation itself.
    */
   effectivePeriodCount: number;
-}> = ({ options, onChange, plcSheetUrlInvalid, effectivePeriodCount }) => {
+}> = ({
+  options,
+  onChange,
+  plcs,
+  plcSheetUrlInvalid,
+  effectivePeriodCount,
+}) => {
   const update = <K extends keyof QuizAssignOptions>(
     key: K,
     value: QuizAssignOptions[K]
   ) => onChange({ ...options, [key]: value });
+
+  // Compute the effective selection on the fly instead of syncing with
+  // an effect. Two cases:
+  //   1. User has explicitly picked a still-existing PLC → use it
+  //   2. Otherwise → auto-select the sole PLC when there's exactly one,
+  //      else show no selection
+  // A stale options.plcId (PLC was deleted while the modal was open)
+  // collapses to ''; the assign-flow in Widget.tsx already tolerates an
+  // empty plcId, so no separate cleanup is required. Computing this
+  // derived value inline avoids the "calling a parent setter during
+  // render" / "useEffect to sync state across components" antipatterns.
+  const explicitlyChosen = plcs.find((p) => p.id === options.plcId) ?? null;
+  const effectivePlcId =
+    explicitlyChosen?.id ?? (plcs.length === 1 ? plcs[0].id : '');
+  const selectedPlc = explicitlyChosen ?? (plcs.length === 1 ? plcs[0] : null);
+  const hasCachedSheet = Boolean(selectedPlc?.sharedSheetUrl);
+  const hasPlcs = plcs.length > 0;
 
   return (
     <>
@@ -1433,6 +1526,46 @@ const AssignPlcSlot: React.FC<{
 
       {options.plcMode && (
         <div className="space-y-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
+          {hasPlcs && (
+            <div>
+              <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                PLC
+              </label>
+              <select
+                value={effectivePlcId}
+                onChange={(e) => update('plcId', e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {/*
+                 * Only render the empty placeholder when there are 2+ PLCs.
+                 * With exactly one PLC, `effectivePlcId` always derives to
+                 * that PLC's id, so picking "Select a PLC…" would snap right
+                 * back to the auto-selection — the option was unreachable
+                 * UI debt. Teachers in a one-PLC org opt out by toggling
+                 * Share-with-PLC off entirely.
+                 */}
+                {plcs.length > 1 && <option value="">Select a PLC…</option>}
+                {plcs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {selectedPlc && (
+                <p className="text-xxs text-slate-400 mt-0.5">
+                  {hasCachedSheet
+                    ? 'Using your PLC’s existing Google Sheet — teammates already have access.'
+                    : 'A Google Sheet will be created in your Drive and shared with every teammate automatically.'}
+                </p>
+              )}
+              {!selectedPlc && (
+                <p className="text-xxs text-slate-400 mt-0.5">
+                  Pick a PLC so results land in its shared Google Sheet.
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
               Your Name
@@ -1449,29 +1582,46 @@ const AssignPlcSlot: React.FC<{
             </p>
           </div>
 
-          <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
-              Shared Google Sheet URL
-            </label>
-            <input
-              type="text"
-              value={options.plcSheetUrl}
-              onChange={(e) => update('plcSheetUrl', e.target.value)}
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {plcSheetUrlInvalid && (
-              <div className="flex items-center gap-1 mt-1 text-amber-600">
-                <AlertTriangle className="w-3 h-3" />
-                <span className="text-xxs">
-                  This doesn&apos;t look like a Google Sheets URL
-                </span>
-              </div>
-            )}
-            <p className="text-xxs text-slate-400 mt-0.5">
-              Paste the URL of the Google Sheet shared by your PLC lead
-            </p>
-          </div>
+          {/*
+           * Manual URL fallback: surfaced only when the teacher has NO
+           * PLCs (so they can still paste a URL shared out-of-band) or
+           * they've pasted one already (editing a legacy assignment
+           * created pre-auto-create). Hidden in the normal auto-create
+           * path so PLC members aren't asked to paste what we'll create
+           * for them.
+           */}
+          {(!hasPlcs || options.plcSheetUrl) && (
+            <div>
+              <label className="block text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                Shared Google Sheet URL{' '}
+                {hasPlcs && (
+                  <span className="font-normal normal-case tracking-normal text-slate-400">
+                    (optional fallback)
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={options.plcSheetUrl}
+                onChange={(e) => update('plcSheetUrl', e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              {plcSheetUrlInvalid && (
+                <div className="flex items-center gap-1 mt-1 text-amber-600">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span className="text-xxs">
+                    This doesn&apos;t look like a Google Sheets URL
+                  </span>
+                </div>
+              )}
+              <p className="text-xxs text-slate-400 mt-0.5">
+                {hasPlcs
+                  ? 'Leave blank to let SpartBoard auto-create and share a sheet for your PLC.'
+                  : 'Paste the URL of the Google Sheet shared by your PLC lead.'}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </>

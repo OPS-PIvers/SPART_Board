@@ -3,8 +3,8 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
-_Last audited: 2026-04-22_
-_Last action: 2026-04-19_
+_Last audited: 2026-04-27_
+_Last action: 2026-04-25_
 
 ---
 
@@ -22,19 +22,12 @@ _Nothing currently in progress._
 
 ## Open
 
-### MEDIUM GraphicOrganizerWidget has hardcoded padding throughout node layouts (post-text-fix)
+### LOW QuizResults period-filter `<select>` uses hardcoded `text-sm`
 
-- **Detected:** 2026-04-14
-- **File:** components/widgets/GraphicOrganizer/Widget.tsx
-- **Detail:** The previous fix (2026-04-13) converted all hardcoded Tailwind text-size classes to `cqmin`. However, structural padding remains hardcoded: `p-4` on Frayer cell divs (×4), `w-32 h-32` on the Frayer center circle, `pb-2 mb-4` and `text-xl` on T-chart headers, and multiple `p-3`/`p-4`/`p-6` instances in Venn, KWL, and Cause-Effect layouts. Widget has `skipScaling: true`. Fixed padding compresses content proportionally less as the widget grows, creating a poor density experience at large sizes.
-- **Fix:** Convert all `p-4`, `p-3`, `p-6` padding to `style={{ padding: 'min(16px, 3cqmin)' }}` pattern. Convert `w-32 h-32` Frayer center circle to `style={{ width: 'min(128px, 22cqmin)', height: 'min(128px, 22cqmin)' }}`. Replace `text-xl` T-chart header with `style={{ fontSize: 'min(20px, 7cqmin)' }}`.
-
-### MEDIUM StarterPackWidget has hardcoded icon size and spacing in addition to text sizes
-
-- **Detected:** 2026-04-12 (expanded 2026-04-14)
-- **File:** components/widgets/StarterPack/Widget.tsx:48, :54, :55, :59, :96, :100
-- **Detail:** In addition to the previously noted `text-sm`/`text-xs` on card titles (lines 96, 100), the widget also has: `p-4` hardcoded outer wrapper (line 48), `gap-2` on empty state (line 54), `w-8 h-8` on the Wand2 icon (line 55), `gap-4` on the template grid (line 59). Widget has `skipScaling: true`.
-- **Fix:** Replace `text-sm` with `style={{ fontSize: 'min(14px, 5.5cqmin)' }}` and `text-xs` with `style={{ fontSize: 'min(11px, 4cqmin)' }}`. Replace `p-4` with `style={{ padding: 'min(16px, 3.5cqmin)' }}`, `w-8 h-8` Wand2 with `style={{ width: 'min(32px, 8cqmin)', height: 'min(32px, 8cqmin)' }}`, `gap-4` grid with `style={{ gap: 'min(16px, 3cqmin)' }}`.
+- **Detected:** 2026-04-27
+- **File:** components/widgets/QuizWidget/components/QuizResults.tsx:607
+- **Detail:** The period filter `<select>` in the quiz results view uses `text-sm` (hardcoded Tailwind). The QuizWidget has `skipScaling: true`, so this element is inside a CSS container-query context. Introduced by the 2026-04-26 commit `fix(quiz): persist Results export URL on assignment doc (#1419)`.
+- **Fix:** Replace `text-sm` with an inline style: `style={{ fontSize: 'min(14px, 5.5cqmin)' }}`. The surrounding `px-2 py-1` padding on the same element should also be converted: `style={{ padding: 'min(4px, 1.5cqmin) min(8px, 2.5cqmin)' }}`.
 
 ### LOW RevealGridWidget has additional hardcoded spacing beyond `text-xs` labels
 
@@ -60,9 +53,51 @@ _Nothing currently in progress._
   - `Webcam/Widget.tsx:457, :470, :480, :497, :527, :531, :542, :547, :558` — `p-6`, `p-6 mb-4`, `px-4 py-2`, `gap-2`, `p-4` (multiple), `gap-3`, `gap-2` (multiple)
 - **Fix:** For each widget, convert hardcoded spacing and icon-size Tailwind classes to inline `cqmin` equivalents. Example: `gap-2` → `style={{ gap: 'min(8px, 2cqmin)' }}`, `w-8 h-8` → `style={{ width: 'min(32px, 8cqmin)', height: 'min(32px, 8cqmin)' }}`. Prioritize widgets visible in default-size teacher dashboards (DiceWidget, NextUp, SoundWidget) over utility widgets.
 
+### LOW MiniApp internal dialog overlays use hardcoded Tailwind text sizes
+
+- **Detected:** 2026-04-26
+- **File:** components/widgets/MiniApp/Widget.tsx:134, :138, :142, :148, :166, :177, :187, :194, :204, :219, :226, :237, :253, :260, :848, :866, :874
+- **Detail:** The widget has two internal overlay dialogs rendered inside the container-query context: (1) the "Start Live Session" / "Share Link" dialog shown when the user launches a live session (lines 120–260), and (2) the "Save to Library" overlay shown when pasting HTML into the widget (lines 848–880). Both use hardcoded Tailwind classes `text-base`, `text-sm`, `text-xs` on labels, body text, code blocks, and buttons. Widget has `skipScaling: true`. At small widget sizes these overlays will show unscaled text and potentially overflow the widget bounds. The prior 2026-04-14 completion entry "MiniAppWidget uses hardcoded Tailwind text sizes — Resolved outside journal workflow" was inaccurate; these overlay states were not assessed.
+- **Fix:** For both overlay dialogs, replace `text-base` → `style={{ fontSize: 'min(16px, 6cqmin)' }}`, `text-sm` → `style={{ fontSize: 'min(14px, 5.5cqmin)' }}`, `text-xs` → `style={{ fontSize: 'min(11px, 4cqmin)' }}`. Also convert any `w-4 h-4` icon sizes and `gap-2`, `p-3`/`p-5` spacing to `cqmin` equivalents.
+
+### LOW NumberLineWidget hover hint `text-xs` still present — prior completion was inaccurate
+
+- **Detected:** 2026-04-26 (re-flagged; originally detected 2026-04-12, incorrectly closed 2026-04-14)
+- **File:** components/widgets/NumberLine/Widget.tsx:339
+- **Detail:** `className="absolute bottom-2 left-4 text-xs text-slate-400 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"` is still present. The 2026-04-14 completion note "Resolved outside journal workflow. 2026-04-14 audit confirmed widget is clean" was inaccurate — the `text-xs` at line 339 was never removed. The hint is invisible by default (opacity-0) and only visible on hover, so impact is very low, but the pattern is inconsistent for a `skipScaling: true` widget.
+- **Fix:** Replace `text-xs` with `style={{ fontSize: 'min(12px, 6cqmin)' }}` on the hint div and remove the `bottom-2 left-4` Tailwind positional classes, replacing them with equivalent inline styles `style={{ bottom: 'min(8px, 4cqmin)', left: 'min(16px, 8cqmin)' }}`. (cqmin percentages chosen to reach the px caps at the widget's default size of 700×200, where `cqmin = 2px`; this preserves the original Tailwind dimensions at default size and only shrinks if the widget is sized smaller.)
+
 ---
 
 ## Completed
+
+### MEDIUM StarterPackWidget has hardcoded icon size and spacing in addition to text sizes
+
+- **Detected:** 2026-04-12 (expanded 2026-04-14)
+- **Completed:** 2026-04-25
+- **File:** components/widgets/StarterPack/Widget.tsx
+- **Detail:** Outer wrapper used `p-4`, empty-state used `gap-2` + `w-8 h-8` on the Wand2 icon, the template grid used `gap-4`, and card titles/descriptions used `text-sm`/`text-xs`. Button cards also carried hardcoded `gap-3 p-4`, inner icon chip `p-3`, inner `IconComponent` `w-8 h-8`, and title `mb-1`. Widget has `skipScaling: true`, so none of this responded to container size.
+- **Resolution:** Converted all hardcoded front-face Tailwind sizing to inline `cqmin` styles:
+  - outer wrapper `p-4` → `padding: 'min(16px, 3.5cqmin)'`
+  - empty-state hand-rolled markup replaced with the shared `ScaledEmptyState` component (Wand2 icon, "No starter packs available" title)
+  - grid `gap-4` → `gap: 'min(16px, 3cqmin)'`
+  - button `gap-3 p-4` → `gap: 'min(12px, 2.5cqmin)'` / `padding: 'min(16px, 3.5cqmin)'`
+  - inner icon chip `p-3` → `padding: 'min(12px, 2.5cqmin)'`; inner `IconComponent` `w-8 h-8` → `width/height: 'min(32px, 8cqmin)'` (added `style?: React.CSSProperties` to the LucideIcons cast so the dynamic component accepts inline styles)
+  - title `text-sm mb-1` → `fontSize: 'min(14px, 5.5cqmin)'` + `marginBottom: 'min(4px, 1cqmin)'`; description `text-xs` → `fontSize: 'min(11px, 4cqmin)'`.
+
+### MEDIUM GraphicOrganizerWidget has hardcoded padding throughout node layouts (post-text-fix)
+
+- **Detected:** 2026-04-14
+- **Completed:** 2026-04-25
+- **File:** components/widgets/GraphicOrganizer/Widget.tsx
+- **Detail:** Structural padding and sizing remained hardcoded after the 2026-04-13 text-size fix: `p-4` on Frayer cell divs (×4), `w-32 h-32` on the Frayer center circle, `pb-2 mb-4` / `text-xl` on T-chart headers, plus `p-3`/`p-4`/`p-6` across Venn, KWL, and Cause-Effect layouts. Widget has `skipScaling: true`.
+- **Resolution:** Converted all hardcoded structural Tailwind classes to inline `cqmin` styles across all five layout renderers:
+  - Frayer: outer `gap-2 p-2` → inline `min(8px, 1.5cqmin)`; four cell `p-4` → `min(16px, 3cqmin)`; absolute `top-2 left-2` header pins converted to inline `cqmin` values; four `mt-4` EditableNode margins → inline `min(16px, 3cqmin)`; center circle `w-32 h-32 p-4` → `min(128px, 22cqmin)` / `min(16px, 3cqmin)`.
+  - T-chart: container `p-4` and both cell `p-4` → `min(16px, 3cqmin)`; both headers' `pb-2 mb-4 text-xl` → inline `min(20px, 7cqmin)` / `min(8px, 1.5cqmin)` / `min(16px, 3cqmin)`.
+  - Venn: container `p-4` and three column `p-4` → `min(16px, 3cqmin)`; three header `mb-2` → `min(8px, 1.5cqmin)`.
+  - KWL: three header `p-3` → `min(12px, 2.5cqmin)`; three content `p-4` → `min(16px, 3cqmin)`.
+  - Cause-Effect: container `p-6 gap-4` → `min(24px, 4.5cqmin)` / `min(16px, 3cqmin)`; both header `p-2` → `min(8px, 1.5cqmin)`; both content `p-4` → `min(16px, 3cqmin)`; arrow SVG `width/height="48"` → inline `min(48px, 10cqmin)`.
+    All 1423 unit tests pass; `pnpm type-check`, `pnpm lint --max-warnings 0`, and prettier check on the changed file all clean.
 
 ### MEDIUM MathToolsWidget uses `h-32` to cap an empty-state content container
 

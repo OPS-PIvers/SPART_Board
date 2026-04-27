@@ -58,7 +58,8 @@ export type WidgetType =
   | 'first-5'
   | 'work-symbols'
   | 'blooms-taxonomy'
-  | 'blooms-detail';
+  | 'blooms-detail'
+  | 'need-do-put-then';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -175,6 +176,16 @@ export interface Plc {
    * per export. Always written alongside `memberUids`.
    */
   memberEmails: Record<string, string>;
+  /**
+   * URL of the single Google Sheet that aggregates this PLC's assignment
+   * results. Auto-created the first time any member assigns a quiz with
+   * Share-with-PLC enabled. Subsequent PLC assignments reuse this URL
+   * instead of prompting the teacher to paste one. `null` (or absent) means
+   * "not yet created — the next Share-with-PLC assignment should create it."
+   * Cleared back to `null` if the sheet is later deleted in Drive so the
+   * next assignment regenerates transparently.
+   */
+  sharedSheetUrl?: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -2034,6 +2045,14 @@ export interface QuizAssignment extends QuizAssignmentSettings {
   /** Unified roster targeting (new post-unification assignments). Legacy
    *  assignments read via `periodNames` / session `classIds` only. */
   rosterIds?: string[];
+  /**
+   * URL of the Google Sheet produced by the teacher's last Results → Export.
+   * Persisted so re-entering the Results view after navigating away keeps the
+   * "Open Sheet" shortcut instead of reverting to "Export". Export is
+   * idempotent (same title ⇒ same sheet) so a stale URL safely regenerates
+   * the same sheet if re-exported.
+   */
+  exportUrl?: string;
 }
 
 /**
@@ -2875,6 +2894,26 @@ export interface GuidedLearningConfig {
   lastRosterIdsBySetId?: Record<string, string[]>;
 }
 
+export interface NeedDoPutThenTile {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  checked?: boolean;
+}
+
+export interface NeedDoPutThenConfig {
+  needItems?: NeedDoPutThenTile[];
+  doItems?: string[];
+  putItems?: NeedDoPutThenTile[];
+  thenItems?: NeedDoPutThenTile[];
+  fontFamily?: string;
+  fontColor?: string;
+  textSizePreset?: TextSizePreset;
+  cardColor?: string;
+  cardOpacity?: number;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | UrlWidgetConfig
@@ -2935,7 +2974,8 @@ export type WidgetConfig =
   | ActivityWallConfig
   | WorkSymbolsConfig
   | BloomsTaxonomyConfig
-  | BloomsDetailConfig;
+  | BloomsDetailConfig
+  | NeedDoPutThenConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'url'
@@ -3056,7 +3096,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'url'
                                                                                                                     ? BloomsTaxonomyConfig
                                                                                                                     : T extends 'blooms-detail'
                                                                                                                       ? BloomsDetailConfig
-                                                                                                                      : never;
+                                                                                                                      : T extends 'need-do-put-then'
+                                                                                                                        ? NeedDoPutThenConfig
+                                                                                                                        : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

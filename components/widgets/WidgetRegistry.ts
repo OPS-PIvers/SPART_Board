@@ -48,6 +48,21 @@ const MiniAppSettings = lazyNamed(
   'MiniAppSettings'
 );
 
+/**
+ * Maps widget types to their lazily-loaded React components.
+ *
+ * Note: This map is intentionally NOT exhaustive over all `WidgetType`s.
+ * Some widget types are handled outside the registry pattern:
+ *
+ * - `sticker`: Handled by a hard-coded branch in `WidgetRenderer.tsx`
+ *   (`if (widget.type === 'sticker') return <StickerItemWidget ... />`).
+ *   `StickerItemWidget` is intentionally absent from this map. Do NOT
+ *   add a `sticker` entry here without also removing the special-case
+ *   branch in WidgetRenderer.
+ *
+ * Do not assume `WIDGET_COMPONENTS[widgetType]` is defined for every
+ * `WidgetType` value — always handle the `undefined` case at call sites.
+ */
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   url: lazyNamed(() => import('./UrlWidget/Widget'), 'UrlWidget'),
   soundboard: lazyNamed(
@@ -191,6 +206,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   'blooms-detail': lazyNamed(
     () => import('./BloomsTaxonomy/DetailWidget'),
     'BloomsDetailWidget'
+  ),
+  'need-do-put-then': lazyNamed(
+    () => import('./NeedDoPutThen/Widget'),
+    'NeedDoPutThenWidget'
   ),
 };
 
@@ -338,6 +357,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./TalkingTool'),
     'TalkingToolSettings'
   ),
+  'need-do-put-then': lazyNamed(
+    () => import('./NeedDoPutThen/Settings'),
+    'NeedDoPutThenSettings'
+  ),
 };
 
 export const WIDGET_APPEARANCE_COMPONENTS: Partial<
@@ -437,6 +460,10 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
   'work-symbols': lazyNamed(
     () => import('./WorkSymbols/Settings'),
     'WorkSymbolsAppearanceSettings'
+  ),
+  'need-do-put-then': lazyNamed(
+    () => import('./NeedDoPutThen/Settings'),
+    'NeedDoPutThenAppearanceSettings'
   ),
 };
 
@@ -869,6 +896,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   'blooms-detail': {
     baseWidth: 450,
     baseHeight: 300,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  'need-do-put-then': {
+    baseWidth: 340,
+    baseHeight: 320,
     canSpread: true,
     skipScaling: true,
     padding: 0,

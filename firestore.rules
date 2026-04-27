@@ -623,6 +623,45 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/plc_invitations/$(plcInviteDocId(plcId, emailLower))).data.status == 'pending';
     }
 
+    // True iff the pending update is any current member setting (or
+    // clearing) `sharedSheetUrl` and nothing else. `sharedSheetUrl` is
+    // populated by the first PLC member who creates a Share-with-PLC
+    // assignment — auto-created sheets can't require lead rights, because
+    // a teammate may kick off the first PLC assignment before the lead
+    // does. Constrained so this branch can't be used to smuggle other
+    // field changes (memberUids, leadUid, name, etc.).
+    //
+    // Allowed transitions:
+    //   - null/absent → string  (first member sets the URL)
+    //   - string → null         (clear, e.g. after a 404 stale-sheet)
+    //   - string → same string  (idempotent set, e.g. retried write)
+    //
+    // Rejected: string → different string. That would let one member
+    // overwrite another's already-cached PLC sheet URL and orphan the
+    // original sheet for everyone else. The client-side
+    // `setPlcSharedSheetUrl` is also transactional, but we enforce the
+    // invariant in rules too as defense-in-depth.
+    function isSettingPlcSharedSheetUrl() {
+      return (request.auth.uid in resource.data.memberUids)
+        // hasOnly + hasAny: the diff must be exactly the sharedSheetUrl
+        // (and the customary updatedAt bump). hasAny ensures this branch
+        // can't be exercised for an updatedAt-only ping that would let a
+        // member reset the doc's mtime without actually setting the URL.
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['sharedSheetUrl', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['sharedSheetUrl'])
+        && (
+             request.resource.data.sharedSheetUrl is string
+             || request.resource.data.sharedSheetUrl == null
+           )
+        && (
+             resource.data.get('sharedSheetUrl', null) == null
+             || request.resource.data.sharedSheetUrl == null
+             || request.resource.data.sharedSheetUrl == resource.data.sharedSheetUrl
+           );
+    }
+
     // True iff the pending update is the caller self-removing from
     // memberUids (i.e. leaving the PLC). The lead can't use this path —
     // they must transfer leadership first or delete the PLC outright.
@@ -668,6 +707,7 @@ service cloud.firestore {
         )
         || isAcceptingPlcInvite(plcId)
         || isLeavingPlc()
+        || isSettingPlcSharedSheetUrl()
       );
 
       // Only the lead can dissolve the PLC.
@@ -1091,8 +1131,7 @@ service cloud.firestore {
         );
 
         // Any authenticated user (anonymous or studentRole) may create or
-        // update their own submission while the session is active and
-        // submissions are enabled.
+        // update their own submission while the session is active.
         // - Every submission must carry a `studentUid` field equal to the
         //   caller's auth.uid so the doc is attributable and the student
         //   can read it back via the rule above.
@@ -1106,16 +1145,29 @@ service cloud.firestore {
         //   authorization and accountability.
         // Payload shape is validated to prevent junk writes bloating the
         // subcollection.
+        //
+        // Two write paths are allowed:
+        //   1. Full submission (submissionsEnabled must be true) — payload
+        //      can be any valid map up to 50 keys.
+        //   2. Completion marker (any active session regardless of
+        //      submissionsEnabled) — payload must be exactly {completed: true}.
+        //      This lets students mark view-only (no submissions) assignments
+        //      as done so the completion badge appears in /my-assignments
+        //      without requiring submissionsEnabled.
         allow create, update: if request.auth != null &&
           maSessionData().status == 'active' &&
-          maSessionData().get('submissionsEnabled', false) == true &&
           passesStudentClassGateList(maSessionClassIds()) &&
           (isStudentRoleUser() || submissionId == request.auth.uid) &&
           request.resource.data.studentUid == request.auth.uid &&
           request.resource.data.keys().hasOnly(['submittedAt', 'studentUid', 'payload']) &&
           request.resource.data.submittedAt is int &&
           request.resource.data.payload is map &&
-          request.resource.data.payload.size() <= 50;
+          request.resource.data.payload.size() <= 50 &&
+          (
+            maSessionData().get('submissionsEnabled', false) == true ||
+            (request.resource.data.payload.keys().hasOnly(['completed']) &&
+             request.resource.data.payload.completed == true)
+          );
 
         // Only the owning teacher or an admin may delete submissions —
         // used when a teacher wipes an assignment.

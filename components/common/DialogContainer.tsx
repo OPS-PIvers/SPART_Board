@@ -203,6 +203,8 @@ const ConfirmDialog: React.FC<{
   onCancel,
 }) => {
   const cfg = getConfirmVariantConfig(variant);
+  const isDestructive =
+    variant === 'danger' || variant === 'error' || variant === 'warning';
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -210,7 +212,7 @@ const ConfirmDialog: React.FC<{
         e.preventDefault();
         e.stopImmediatePropagation();
         onCancel();
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' && !isDestructive) {
         e.preventDefault();
         e.stopImmediatePropagation();
         onConfirm();
@@ -219,18 +221,19 @@ const ConfirmDialog: React.FC<{
     window.addEventListener('keydown', handler, { capture: true });
     return () =>
       window.removeEventListener('keydown', handler, { capture: true });
-  }, [onConfirm, onCancel]);
+  }, [onConfirm, onCancel, isDestructive]);
 
   return (
     <DialogShell variant={variant} title={title} message={message} isConfirm>
       <button
+        autoFocus={isDestructive}
         onClick={onCancel}
         className="px-5 py-2 rounded-xl text-sm font-semibold transition-colors bg-slate-700 hover:bg-slate-600 text-slate-200"
       >
         {cancelLabel}
       </button>
       <button
-        autoFocus
+        autoFocus={!isDestructive}
         onClick={onConfirm}
         className={`px-5 py-2 rounded-xl text-sm font-semibold transition-colors ${cfg.confirmBg} ${cfg.confirmHover} ${cfg.confirmText}`}
       >
