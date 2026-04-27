@@ -136,7 +136,10 @@ const MyAssignmentsPage: React.FC = () => {
     []
   );
 
-  const todayDate = useMemo(() => formatTodayLong(new Date()), []);
+  // Computed inline rather than memoized — `toLocaleDateString` is cheap
+  // and the empty-deps memo would otherwise stick to the date the page
+  // was first mounted across day transitions.
+  const todayDate = formatTodayLong(new Date());
 
   // Partition assignments according to the rule in the plan. Compute once
   // at the page level and slice per scope (overview vs class) below.

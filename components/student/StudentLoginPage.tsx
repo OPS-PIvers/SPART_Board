@@ -93,7 +93,12 @@ declare global {
 const base64UrlDecode = (input: string): string => {
   const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
   const pad = base64.length % 4 === 0 ? 0 : 4 - (base64.length % 4);
-  return atob(base64 + '='.repeat(pad));
+  // `atob` interprets the decoded bytes as Latin-1, which garbles any
+  // non-ASCII glyph in the JWT payload (accented student names, non-Latin
+  // scripts). Pipe through TextDecoder so the JSON parses as UTF-8.
+  const binary = atob(base64 + '='.repeat(pad));
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 };
 
 const extractFirstNameFromIdToken = (idToken: string): string | null => {

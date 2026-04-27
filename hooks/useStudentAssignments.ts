@@ -228,10 +228,19 @@ interface SubscriptionPlan {
   kind: SessionKind;
   channel: AssignmentChannel;
   shape: 'list' | 'single';
+  /**
+   * Concrete status value for this subscription, or `null` when the kind has
+   * no status filter. Filters with multiple values (e.g., quiz active =
+   * `['waiting', 'active']`) fan out into one plan per value: Firestore
+   * forbids combining `in` with `array-contains-any` (or two `in` clauses)
+   * in the same query, so each subscription must carry at most one
+   * disjunctive constraint.
+   */
+  statusValue: string | null;
 }
 
 const planKey = (p: SubscriptionPlan): string =>
-  `${p.kind}:${p.channel}:${p.shape}`;
+  `${p.kind}:${p.channel}:${p.shape}:${p.statusValue ?? '_'}`;
 
 interface UseStudentAssignmentsResult {
   loadState: LoadState;
@@ -280,20 +289,38 @@ export function useStudentAssignments({
     setLoadState('loading');
     setErroredBuckets(new Set());
 
-    // Plan every (kind, channel, shape) subscription up front. Active
-    // channel always runs; Ended channel only for kinds that have a status
-    // field. Dual-query kinds run BOTH list and single shapes.
+    // Plan every (kind, channel, shape, statusValue) subscription up front.
+    // Active channel always runs; Ended channel only for kinds that have a
+    // status field. Dual-query kinds run BOTH list and single shapes.
+    // Multi-value status filters (e.g., quiz active = waiting+active) fan
+    // out into one plan per status so each query stays inside Firestore's
+    // single-disjunctive-clause limit.
     const subs: SubscriptionPlan[] = [];
     for (const kind of SESSION_KINDS) {
       const config = KIND_CONFIG[kind];
       const channels: AssignmentChannel[] = ['active'];
       if (config.endedFilter !== null) channels.push('ended');
       for (const channel of channels) {
-        if (config.dualQuery) {
-          subs.push({ kind, channel, shape: 'list' });
-          subs.push({ kind, channel, shape: 'single' });
-        } else {
-          subs.push({ kind, channel, shape: config.classFilterShape });
+        const filter =
+          channel === 'active' ? config.activeFilter : config.endedFilter;
+        const statusValues: (string | null)[] =
+          filter === null
+            ? [null]
+            : 'valueIn' in filter
+              ? [...filter.valueIn]
+              : [filter.value];
+        for (const statusValue of statusValues) {
+          if (config.dualQuery) {
+            subs.push({ kind, channel, shape: 'list', statusValue });
+            subs.push({ kind, channel, shape: 'single', statusValue });
+          } else {
+            subs.push({
+              kind,
+              channel,
+              shape: config.classFilterShape,
+              statusValue,
+            });
+          }
         }
       }
     }
@@ -351,13 +378,16 @@ export function useStudentAssignments({
     };
 
     const emit = (kind: SessionKind, channel: AssignmentChannel) => {
-      const listBucket =
-        buckets.get(planKey({ kind, channel, shape: 'list' })) ?? [];
-      const singleBucket =
-        buckets.get(planKey({ kind, channel, shape: 'single' })) ?? [];
+      // Merge across every (shape, statusValue) bucket for this kind+channel.
+      // The status fan-out can produce multiple buckets per channel (e.g.,
+      // quiz active fans out into `waiting` and `active` per shape).
+      const prefix = `${kind}:${channel}:`;
       const merged = new Map<string, AssignmentSummary>();
-      for (const a of listBucket) merged.set(a.sessionId, a);
-      for (const a of singleBucket) merged.set(a.sessionId, a);
+      for (const [key, rows] of buckets) {
+        if (key.startsWith(prefix)) {
+          for (const a of rows) merged.set(a.sessionId, a);
+        }
+      }
       const channelKey = `${kind}:${channel}`;
       setByKindChannel((prev) => ({
         ...prev,
@@ -375,21 +405,16 @@ export function useStudentAssignments({
     const buildQuery = (
       config: KindConfig,
       channel: AssignmentChannel,
-      shape: 'list' | 'single'
+      shape: 'list' | 'single',
+      statusValue: string | null
     ): Query<DocumentData> => {
       const col = collection(db, config.collectionName);
       const constraints: QueryConstraint[] =
         shape === 'list'
           ? [where('classIds', 'array-contains-any', [...classIds])]
           : [where('classId', 'in', [...classIds])];
-      const filter =
-        channel === 'active' ? config.activeFilter : config.endedFilter;
-      if (filter) {
-        if ('valueIn' in filter) {
-          constraints.push(where(filter.field, 'in', [...filter.valueIn]));
-        } else {
-          constraints.push(where(filter.field, '==', filter.value));
-        }
+      if (statusValue !== null) {
+        constraints.push(where('status', '==', statusValue));
       }
       if (channel === 'ended' && config.endedOrderBy) {
         constraints.push(orderBy(config.endedOrderBy, 'desc'));
@@ -428,7 +453,7 @@ export function useStudentAssignments({
           ? String((err as { message?: unknown }).message)
           : '';
       console.error(
-        `[useStudentAssignments] snapshot failed for ${KIND_CONFIG[plan.kind].collectionName} (${plan.channel}/${plan.shape}) [${code}]:`,
+        `[useStudentAssignments] snapshot failed for ${KIND_CONFIG[plan.kind].collectionName} (${plan.channel}/${plan.shape}/${plan.statusValue ?? '_'}) [${code}]:`,
         message
       );
       const key = planKey(plan);
@@ -446,7 +471,7 @@ export function useStudentAssignments({
     const unsubs: Array<() => void> = [];
     for (const plan of subs) {
       const config = KIND_CONFIG[plan.kind];
-      const q = buildQuery(config, plan.channel, plan.shape);
+      const q = buildQuery(config, plan.channel, plan.shape, plan.statusValue);
       unsubs.push(
         onSnapshot(
           q,
