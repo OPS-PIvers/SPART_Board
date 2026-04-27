@@ -97,9 +97,15 @@ export function responseColorIndex(
   paletteLength: number
 ): number {
   if (paletteLength <= 0) return 0;
+  // True modulo: JS `%` keeps the sign of the dividend, so a negative-string
+  // PIN (e.g. "-1") would yield a negative index and indexing into the
+  // palette would return undefined. `((n % m) + m) % m` always lands in
+  // [0, paletteLength). `stableHash` already returns an unsigned integer.
+  const mod = (n: number) =>
+    ((n % paletteLength) + paletteLength) % paletteLength;
   if (response.pin) {
     const numeric = parseInt(response.pin, 10);
-    if (Number.isFinite(numeric)) return numeric % paletteLength;
+    if (Number.isFinite(numeric)) return mod(numeric);
     return stableHash(response.pin) % paletteLength;
   }
   return stableHash(response.studentUid) % paletteLength;
