@@ -16,10 +16,18 @@ export type StudentAuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 /**
  * Minimal auth surface for student-facing protected routes.
  *
- * This context is intentionally PII-free:
+ * This context is intentionally Firestore-PII-free:
  *   - `pseudonymUid` is the opaque pseudonym minted by `studentLoginV1`.
  *   - `orgId` / `classIds` come from the custom claims on that custom token.
- *   - No email, name, photo, or `sub` is ever read, rendered, or persisted.
+ *   - No email, full name, photo, or `sub` is ever read, rendered, or
+ *     persisted to any server we own.
+ *
+ * `firstName` is the one exception, and only as the student's own name in
+ * their own browser tab: read from the Google ID token at login and parked
+ * in tab-scoped `sessionStorage`, never sent to Firestore, never logged,
+ * cleared on `signOut()`. Used purely for the personalized greeting in the
+ * sidebar footer. `null` when unavailable (legacy session, Google declined
+ * to include `given_name`, or the storage read failed).
  */
 export interface StudentAuthValue {
   /** Auth lifecycle status. */
@@ -31,13 +39,21 @@ export interface StudentAuthValue {
   /** ClassLink class sourcedIds the student is enrolled in. Empty when not authenticated. */
   classIds: string[];
   /**
-   * Sign out of Firebase and redirect to `/student/login`.
-   *
-   * Exposed so that UI (e.g. a "Done" button on `/my-assignments`) can end
-   * a session on shared-device carts without depending on the idle timeout.
+   * Student's given/first name from the Google ID token at sign-in. Stored
+   * in sessionStorage, never in Firestore. See class-doc above. `null` when
+   * not available — UI must render a sensible fallback.
+   */
+  firstName: string | null;
+  /**
+   * Sign out of Firebase and redirect to `/student/login`. Also clears the
+   * sessionStorage `firstName` so the next session on a shared device
+   * doesn't inherit the previous student's name.
    */
   signOut: () => Promise<void>;
 }
+
+/** Tab-scoped sessionStorage key for the student's first name. */
+export const STUDENT_FIRST_NAME_KEY = 'sb_student_first_name';
 
 export const StudentAuthContext = createContext<StudentAuthValue | undefined>(
   undefined

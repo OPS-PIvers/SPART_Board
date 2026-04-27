@@ -3016,6 +3016,180 @@ export const getAssignmentPseudonymV1 = onCall(
 );
 
 /**
+ * getStudentClassDirectoryV1
+ *
+ * Returns class metadata (name, teacher display name, subject, code) for the
+ * authenticated student's claim-bound `classIds`. Powers the sidebar on
+ * `/my-assignments` so a student sees "English 9 / Ms. Halverson" instead of
+ * an opaque sourcedId.
+ *
+ * Lookup order per classId:
+ *   1. `collectionGroup('rosters').where('classlinkClassId', '==', classId)` —
+ *      real ClassLink imports. Parent path gives teacher uid.
+ *   2. `collectionGroup('rosters').where('testClassId', '==', classId)` —
+ *      admin-managed test classes a teacher has imported.
+ *   3. `organizations/{orgId}/testClasses/{classId}` — admin-managed test
+ *      class with no teacher import yet (graceful fallback).
+ *
+ * PII: this function never returns student names, emails, or any field from
+ * the per-roster Drive file. Only Firestore-side roster meta (which is
+ * itself PII-free) plus the teacher's own `displayName` from Firebase Auth.
+ * Teacher names are organizational data, not student PII.
+ *
+ * Failure: classIds that match nothing are silently dropped from the
+ * response so the sidebar simply omits them. The page renders a fallback
+ * label client-side rather than treating a missing entry as an error.
+ */
+export const getStudentClassDirectoryV1 = onCall(
+  {
+    memory: '256MiB',
+    invoker: 'public',
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    if (request.auth.token.studentRole !== true) {
+      throw new HttpsError('permission-denied', 'Student role required.');
+    }
+
+    const rawClassIds: unknown = request.auth.token.classIds;
+    if (!Array.isArray(rawClassIds)) {
+      throw new HttpsError('failed-precondition', 'No classes on token.');
+    }
+    const classIds = rawClassIds
+      .filter((c): c is string => typeof c === 'string' && c.length > 0)
+      .slice(0, STUDENT_LOGIN_CLASS_IDS_MAX);
+    if (classIds.length === 0) {
+      return { classes: [] };
+    }
+
+    const orgId =
+      typeof request.auth.token.orgId === 'string'
+        ? request.auth.token.orgId
+        : '';
+
+    const db = admin.firestore();
+
+    // Per-call cache: many classes may share a teacher; one Auth lookup
+    // suffices.
+    const teacherNameCache = new Map<string, string>();
+    const resolveTeacherName = async (teacherUid: string): Promise<string> => {
+      const cached = teacherNameCache.get(teacherUid);
+      if (cached !== undefined) return cached;
+      try {
+        const user = await admin.auth().getUser(teacherUid);
+        const displayName =
+          (typeof user.displayName === 'string' && user.displayName) ||
+          (typeof user.email === 'string' ? user.email.split('@')[0] : '') ||
+          '';
+        teacherNameCache.set(teacherUid, displayName);
+        return displayName;
+      } catch {
+        // Auth lookup can fail for legacy / deleted teacher accounts. Caller
+        // falls back to an empty teacher name; the row still renders.
+        teacherNameCache.set(teacherUid, '');
+        return '';
+      }
+    };
+
+    interface DirectoryEntry {
+      classId: string;
+      name: string;
+      teacherDisplayName: string;
+      subject?: string;
+      code?: string;
+    }
+
+    const lookupOne = async (
+      classId: string
+    ): Promise<DirectoryEntry | null> => {
+      // 1. Real ClassLink roster.
+      const rosterByClasslink = await db
+        .collectionGroup('rosters')
+        .where('classlinkClassId', '==', classId)
+        .limit(1)
+        .get();
+      if (!rosterByClasslink.empty) {
+        const rosterDoc = rosterByClasslink.docs[0];
+        const data = rosterDoc.data();
+        const teacherUid = rosterDoc.ref.parent.parent?.id ?? '';
+        const teacherDisplayName = teacherUid
+          ? await resolveTeacherName(teacherUid)
+          : '';
+        return {
+          classId,
+          name: typeof data.name === 'string' ? data.name : classId,
+          teacherDisplayName,
+          subject:
+            typeof data.classlinkSubject === 'string'
+              ? data.classlinkSubject
+              : undefined,
+          code:
+            typeof data.classlinkClassCode === 'string'
+              ? data.classlinkClassCode
+              : undefined,
+        };
+      }
+
+      // 2. Test-class roster (teacher imported an admin-managed test class).
+      const rosterByTestId = await db
+        .collectionGroup('rosters')
+        .where('testClassId', '==', classId)
+        .limit(1)
+        .get();
+      if (!rosterByTestId.empty) {
+        const rosterDoc = rosterByTestId.docs[0];
+        const data = rosterDoc.data();
+        const teacherUid = rosterDoc.ref.parent.parent?.id ?? '';
+        const teacherDisplayName = teacherUid
+          ? await resolveTeacherName(teacherUid)
+          : '';
+        return {
+          classId,
+          name: typeof data.name === 'string' ? data.name : classId,
+          teacherDisplayName,
+          subject:
+            typeof data.classlinkSubject === 'string'
+              ? data.classlinkSubject
+              : undefined,
+        };
+      }
+
+      // 3. Direct testClasses fallback (no teacher has imported it yet).
+      if (orgId) {
+        try {
+          const testDoc = await db
+            .doc(`organizations/${orgId}/testClasses/${classId}`)
+            .get();
+          if (testDoc.exists) {
+            const data = testDoc.data() ?? {};
+            return {
+              classId,
+              name:
+                typeof data.title === 'string' && data.title.length > 0
+                  ? data.title
+                  : classId,
+              teacherDisplayName: '',
+              subject:
+                typeof data.subject === 'string' ? data.subject : undefined,
+            };
+          }
+        } catch {
+          // Fall through to "not found".
+        }
+      }
+
+      return null;
+    };
+
+    const settled = await Promise.all(classIds.map(lookupOne));
+    const classes = settled.filter((e): e is DirectoryEntry => e !== null);
+    return { classes };
+  }
+);
+
+/**
  * getPseudonymsForAssignmentV1
  *
  * Called by a teacher's client when rendering the grading view for an
