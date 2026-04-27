@@ -245,6 +245,21 @@ export const PlcInviteAcceptance: React.FC = () => {
 
   const myEmailLower = (user?.email ?? '').toLowerCase();
 
+  // Reset load/action state when the signed-in user changes. Without this,
+  // a user who lands on `wrong-account`, signs out via the in-page button,
+  // and signs back in with the correct account is stuck on the wrong-account
+  // card forever — the load effect's `load.kind !== 'idle'` early-return
+  // blocks the refetch even though `user.uid` (and `myEmailLower`) is now
+  // different. Uses the "adjusting state while rendering" pattern so the
+  // next render re-runs the effect from a clean idle state in the same
+  // commit, without an extra render pass from an additional useEffect.
+  const [trackedUid, setTrackedUid] = React.useState(user?.uid);
+  if (user?.uid !== trackedUid) {
+    setTrackedUid(user?.uid);
+    setLoad({ kind: 'idle' });
+    setAction({ kind: 'idle' });
+  }
+
   // Read the invite doc once we have an authenticated user. The rules only
   // allow the invitee (by email) or inviter (by uid) to read it, so we need
   // auth before reading. Bad reads map to friendly error states rather than
