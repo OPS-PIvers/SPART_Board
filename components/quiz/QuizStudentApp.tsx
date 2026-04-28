@@ -651,9 +651,14 @@ const ActiveQuiz: React.FC<{
   const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
   const [speedBonusEarned, setSpeedBonusEarned] = useState<number | null>(null);
   const [streakCount, setStreakCount] = useState(0);
-  // Surfaced when onAnswer or onComplete rejects (offline, perm denied, etc.)
-  // so the student doesn't think their tap silently committed.
-  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Self-paced save errors. `saveError` surfaces a retry banner above the
+  // NEXT/SUBMIT button when `onAnswer`/`onComplete` rejects (offline,
+  // permission-denied, etc.). `advancingRef` is a synchronous re-entry guard
+  // so a tap-storm can't double-fire `handleSubmitAndAdvance` in the window
+  // between calling `setSubmitting(true)` and React committing the render.
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const advancingRef = useRef(false);
 
   // Derived state: reset local UI state on new question or when global alreadyAnswered state arrives
   if (
@@ -670,7 +675,7 @@ const ActiveQuiz: React.FC<{
     setAnswerFeedback(null);
     setRevealedAnswer(null);
     setSpeedBonusEarned(null);
-    setSubmitError(null);
+    setSaveError(null);
     const tl = currentQuestion?.timeLimit ?? 0;
     setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
   }
@@ -695,11 +700,6 @@ const ActiveQuiz: React.FC<{
   const fibAnswerRef = useRef(fibAnswer);
   const draftMcAnswerRef = useRef(draftMcAnswer);
   const onAnswerRef = useRef(onAnswer);
-  // Synchronous re-entry guard for handleSubmitAndAdvance. The setSubmitting
-  // state setter doesn't apply until the next render, so two near-simultaneous
-  // taps (or React 19 transition reordering) could both pass the gate before
-  // the state flips. The ref blocks the second call immediately.
-  const submittingRef = useRef(false);
 
   useEffect(() => {
     currentQuestionRef.current = currentQuestion;
@@ -896,11 +896,17 @@ const ActiveQuiz: React.FC<{
   // on the final question). Skips the per-question feedback banner — teachers
   // who want feedback should run the quiz in teacher-paced mode and reveal
   // answers manually.
+  //
+  // `advancingRef` is the synchronous re-entry guard (the `submitting` state
+  // alone has a window between setSubmitting(true) and React committing).
+  // On rejection we surface a retry banner via `saveError` instead of letting
+  // the failure vanish into the console; the student's selection is still
+  // intact (we never reset it on error) so the same tap retries.
   const handleSubmitAndAdvance = async (answer: string) => {
-    if (submittingRef.current || submitted) return;
-    submittingRef.current = true;
+    if (advancingRef.current || submitting || submitted) return;
+    advancingRef.current = true;
     setSubmitting(true);
-    setSubmitError(null);
+    setSaveError(null);
     try {
       let computedSpeedBonus: number | undefined;
       if (session.speedBonusEnabled && currentQuestion.timeLimit > 0) {
@@ -914,13 +920,12 @@ const ActiveQuiz: React.FC<{
       try {
         await onAnswer(currentQuestion.id, answer, computedSpeedBonus);
       } catch (err) {
-        // Answer write rejected (offline, perm denied, etc.). Without this
-        // catch the rejection vanishes into a void-promise console error and
-        // the student silently keeps their selection.
-        console.error('[QuizStudentApp] onAnswer failed:', err);
-        setSubmitError(
-          "Couldn't save your answer. Check your connection and try again."
+        console.error(
+          '[QuizStudentApp] onAnswer failed for question',
+          currentQuestion.id,
+          err
         );
+        setSaveError("Couldn't save your answer. Tap to try again.");
         return;
       }
 
@@ -932,23 +937,17 @@ const ActiveQuiz: React.FC<{
           try {
             await onComplete();
           } catch (err) {
-            // Answer is saved but the completion flip failed. Roll the UI
-            // back so the SUBMIT button reappears for the student to retry,
-            // otherwise they'd see "Quiz complete!" while their doc stays
-            // in_progress on the teacher's monitor.
             console.error('[QuizStudentApp] onComplete failed:', err);
             setSubmitted(false);
-            setSubmitError(
-              "Couldn't finish submitting. Check your connection and tap SUBMIT again."
-            );
+            setSaveError("Couldn't submit your quiz. Tap to try again.");
           }
         }
       } else {
         setLocalIndex(localIndex + 1);
       }
     } finally {
-      submittingRef.current = false;
       setSubmitting(false);
+      advancingRef.current = false;
     }
   };
 
@@ -1034,16 +1033,6 @@ const ActiveQuiz: React.FC<{
           {currentQuestion.text}
         </h2>
 
-        {submitError && (
-          <div
-            role="alert"
-            className="mb-6 p-4 bg-red-500/15 border border-red-500/40 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2"
-          >
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-            <p className="text-red-200 text-sm font-medium">{submitError}</p>
-          </div>
-        )}
-
         {/* Answer area */}
         {currentQuestion.type === 'MC' && (
           <div className="space-y-3 flex-1">
@@ -1074,29 +1063,34 @@ const ActiveQuiz: React.FC<{
               );
             })}
 
-            <div className="animate-in fade-in slide-in-from-bottom-2">
+            <div className="animate-in fade-in slide-in-from-bottom-2 space-y-3">
               {isStudentPaced ? (
                 !submitted ? (
-                  <button
-                    onClick={() =>
-                      draftMcAnswer &&
-                      void handleSubmitAndAdvance(draftMcAnswer)
-                    }
-                    disabled={!draftMcAnswer || submitting}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
-                  >
-                    {submitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : currentIndex >= session.totalQuestions - 1 ? (
-                      <>
-                        SUBMIT <CheckCircle2 className="w-5 h-5" />
-                      </>
-                    ) : (
-                      <>
-                        NEXT <ArrowRight className="w-5 h-5" />
-                      </>
-                    )}
-                  </button>
+                  <>
+                    {saveError && <SaveErrorBanner message={saveError} />}
+                    <button
+                      onClick={() =>
+                        draftMcAnswer &&
+                        void handleSubmitAndAdvance(draftMcAnswer)
+                      }
+                      disabled={!draftMcAnswer || submitting}
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : currentIndex >= session.totalQuestions - 1 ? (
+                        <>
+                          {saveError ? 'Retry Submit' : 'SUBMIT'}{' '}
+                          <CheckCircle2 className="w-5 h-5" />
+                        </>
+                      ) : (
+                        <>
+                          {saveError ? 'Retry' : 'NEXT'}{' '}
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </button>
+                  </>
                 ) : currentIndex < session.totalQuestions - 1 ? (
                   // Timeout-auto-submit fallback: timer expired, give student
                   // a way to advance.
@@ -1171,29 +1165,34 @@ const ActiveQuiz: React.FC<{
                 }
               }}
             />
-            <div className="animate-in fade-in slide-in-from-bottom-2">
+            <div className="animate-in fade-in slide-in-from-bottom-2 space-y-3">
               {isStudentPaced ? (
                 !submitted ? (
-                  <button
-                    onClick={() =>
-                      fibAnswer.trim() &&
-                      void handleSubmitAndAdvance(fibAnswer.trim())
-                    }
-                    disabled={!fibAnswer.trim() || submitting}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
-                  >
-                    {submitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : currentIndex >= session.totalQuestions - 1 ? (
-                      <>
-                        SUBMIT <CheckCircle2 className="w-5 h-5" />
-                      </>
-                    ) : (
-                      <>
-                        NEXT <ArrowRight className="w-5 h-5" />
-                      </>
-                    )}
-                  </button>
+                  <>
+                    {saveError && <SaveErrorBanner message={saveError} />}
+                    <button
+                      onClick={() =>
+                        fibAnswer.trim() &&
+                        void handleSubmitAndAdvance(fibAnswer.trim())
+                      }
+                      disabled={!fibAnswer.trim() || submitting}
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : currentIndex >= session.totalQuestions - 1 ? (
+                        <>
+                          {saveError ? 'Retry Submit' : 'SUBMIT'}{' '}
+                          <CheckCircle2 className="w-5 h-5" />
+                        </>
+                      ) : (
+                        <>
+                          {saveError ? 'Retry' : 'NEXT'}{' '}
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </button>
+                  </>
                 ) : currentIndex < session.totalQuestions - 1 ? (
                   <button
                     onClick={handleNext}
@@ -1258,6 +1257,7 @@ const ActiveQuiz: React.FC<{
             isStudentPaced={isStudentPaced}
             isLastQuestion={currentIndex >= session.totalQuestions - 1}
             onNext={handleNext}
+            saveError={saveError}
           />
         )}
       </div>
@@ -1276,6 +1276,7 @@ const StructuredQuestionInput: React.FC<{
   isStudentPaced: boolean;
   isLastQuestion: boolean;
   onNext: () => void;
+  saveError?: string | null;
 }> = ({
   question,
   submitted,
@@ -1285,6 +1286,7 @@ const StructuredQuestionInput: React.FC<{
   isStudentPaced,
   isLastQuestion,
   onNext,
+  saveError,
 }) => {
   const isMatching = question.type === 'Matching';
 
@@ -1426,6 +1428,9 @@ const StructuredQuestionInput: React.FC<{
             </div>
           )}
 
+          {isStudentPaced && saveError && (
+            <SaveErrorBanner message={saveError} />
+          )}
           <button
             onClick={handleSubmitStructured}
             disabled={!canSubmit || submitting}
@@ -1440,11 +1445,13 @@ const StructuredQuestionInput: React.FC<{
             ) : isStudentPaced ? (
               isLastQuestion ? (
                 <>
-                  SUBMIT <CheckCircle2 className="w-5 h-5" />
+                  {saveError ? 'Retry Submit' : 'SUBMIT'}{' '}
+                  <CheckCircle2 className="w-5 h-5" />
                 </>
               ) : (
                 <>
-                  NEXT <ArrowRight className="w-5 h-5" />
+                  {saveError ? 'Retry' : 'NEXT'}{' '}
+                  <ArrowRight className="w-5 h-5" />
                 </>
               )
             ) : (
@@ -1475,6 +1482,18 @@ const StructuredQuestionInput: React.FC<{
     </div>
   );
 };
+
+// ─── Save-error banner (self-paced retry affordance) ────────────────────────
+
+const SaveErrorBanner: React.FC<{ message: string }> = ({ message }) => (
+  <div
+    role="alert"
+    className="p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-sm flex items-center gap-2"
+  >
+    <AlertCircle className="w-4 h-4 shrink-0" />
+    <span>{message}</span>
+  </div>
+);
 
 // ─── Answer feedback banner ──────────────────────────────────────────────────
 

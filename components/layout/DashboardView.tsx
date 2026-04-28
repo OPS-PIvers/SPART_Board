@@ -238,11 +238,11 @@ export const DashboardView: React.FC = () => {
   // shows live and paused assignments (Archive only shows inactive ones).
   useEffect(() => {
     if (!pendingAssignmentShareId || !user) return;
-    // Wait for the /plcs listener to hydrate before deciding membership.
-    // Otherwise a deep-link import that fires before the snapshot arrives
-    // sees an empty plcs array, the predicate returns false, and a
-    // legitimate PLC member gets demoted to non-member with the "you're
-    // not a member" toast — even though they are.
+    // Wait for /plcs to hydrate before evaluating membership. Without this
+    // gate, a deep-link import that fires before the listener populates
+    // `plcs` sees `[]`, the `isPlcMember` predicate returns false, and a
+    // legitimate member is silently demoted to non-member. Once
+    // plcsLoading flips to false the effect re-runs with the real list.
     if (plcsLoading) return;
     // Clear synchronously BEFORE awaiting — see the quiz-share effect above
     // for the triple-import race rationale.
@@ -260,30 +260,34 @@ export const DashboardView: React.FC = () => {
       async (saved) => {
         await deleteQuiz(saved.id, saved.driveFileId);
       },
-      // Membership predicate: when the share carries a plcId, preserve
-      // PLC linkage iff the importer is a current member of that PLC.
-      (plcId) =>
-        !!user &&
-        plcs.some((p) => p.id === plcId && p.memberUids.includes(user.uid)),
-      // Non-member nudge: import still succeeds (the quiz is usable),
-      // but PLC sheet wiring is stripped — surface a CTA toast that
-      // opens the Sidebar's PLCs panel so the teacher can join the PLC
-      // or set up their own.
-      ({ plcName }) => {
-        addToast(
-          `This is a PLC quiz assignment for "${plcName}". You're not a member, so your results will export to your own sheet.`,
-          'info',
-          {
-            label: 'PLC Settings',
-            onClick: () => {
-              window.dispatchEvent(
-                new CustomEvent('open-sidebar', {
-                  detail: { section: 'plcs' },
-                })
-              );
-            },
-          }
-        );
+      // PLC handling: bundled isMember + onNonMember so the contract
+      // "PLC handling is opt-in as a unit" is visible at the call site.
+      {
+        // Membership predicate: when the share carries plc.id, preserve
+        // PLC linkage iff the importer is a current member of that PLC.
+        isMember: (plcId) =>
+          !!user &&
+          plcs.some((p) => p.id === plcId && p.memberUids.includes(user.uid)),
+        // Non-member nudge: import still succeeds (the quiz is usable),
+        // but PLC sheet wiring is stripped — surface a CTA toast that
+        // opens the Sidebar's PLCs panel so the teacher can join the PLC
+        // or set up their own.
+        onNonMember: ({ plcName }) => {
+          addToast(
+            `This is a PLC quiz assignment for "${plcName}". You're not a member, so your results will export to your own sheet.`,
+            'info',
+            {
+              label: 'PLC Settings',
+              onClick: () => {
+                window.dispatchEvent(
+                  new CustomEvent('open-sidebar', {
+                    detail: { section: 'plcs' },
+                  })
+                );
+              },
+            }
+          );
+        },
       }
     )
       .then((newAssignmentId) => {

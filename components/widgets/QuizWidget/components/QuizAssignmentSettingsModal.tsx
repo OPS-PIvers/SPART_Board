@@ -76,10 +76,10 @@ function initialOptionsFor(a: QuizAssignment): SettingsOptions {
     // Legacy assignments have no attemptLimit — preserve "unlimited" for
     // those rather than retroactively capping ongoing sessions.
     attemptLimit: a.attemptLimit ?? null,
-    plcMode: a.plcMode ?? false,
+    plcMode: !!a.plc,
     teacherName: a.teacherName ?? '',
     selectedPeriodNames: a.periodNames ?? (a.periodName ? [a.periodName] : []),
-    plcSheetUrl: a.plcSheetUrl ?? '',
+    plcSheetUrl: a.plc?.sheetUrl ?? '',
   };
 }
 
@@ -124,7 +124,7 @@ export const QuizAssignmentSettingsModal: React.FC<
   // URL is already attached (legacy assignments / explicit overrides),
   // because new PLC assignments auto-create and share a sheet.
   const [showSheetUrl, setShowSheetUrl] = useState(
-    Boolean(assignment.plcSheetUrl)
+    Boolean(assignment.plc?.sheetUrl)
   );
 
   const plcSheetUrlInvalid =
@@ -150,16 +150,37 @@ export const QuizAssignmentSettingsModal: React.FC<
     // Intentionally pass empty strings (not undefined) so that clearing a
     // field actually writes '' to Firestore. Using `|| undefined` would cause
     // updateDoc to skip the field and leave the previous value in place.
+    //
+    // PLC linkage rebuild rules: when the toggle is on, carry the current
+    // linkage's id/name/memberEmails through and overlay the (possibly
+    // edited) sheet URL. When off, write `undefined` to clear the linkage
+    // entirely. The current `assignment.plc` is the safe carrier — it was
+    // either set at create time (Widget.tsx → createAssignment) or by a
+    // prior save through this modal.
+    const trimmedSheetUrl = options.plcSheetUrl.trim();
+    const plcPatch: QuizAssignmentSettings['plc'] = options.plcMode
+      ? assignment.plc
+        ? { ...assignment.plc, sheetUrl: trimmedSheetUrl }
+        : // No prior linkage to inherit from. Write a degraded-shape
+          // placeholder; the read mapper will strip it on next load
+          // since `id` and `name` are empty. The teacher should rerun
+          // assignment-create to get a real linkage.
+          {
+            id: '',
+            name: '',
+            sheetUrl: trimmedSheetUrl,
+            memberEmails: [],
+          }
+      : undefined;
     const patch: Partial<QuizAssignmentSettings> = {
       className: options.className.trim(),
       sessionMode: modeLocked ? assignment.sessionMode : sessionMode,
       sessionOptions,
       attemptLimit: options.attemptLimit,
-      plcMode: options.plcMode,
+      plc: plcPatch,
       teacherName: options.teacherName.trim(),
       periodName: options.selectedPeriodNames[0] ?? '',
       periodNames: options.selectedPeriodNames,
-      plcSheetUrl: options.plcSheetUrl.trim(),
     };
     try {
       await onSave(patch);

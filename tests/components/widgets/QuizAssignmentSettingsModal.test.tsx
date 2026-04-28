@@ -19,8 +19,14 @@ function makePlcAssignment(
     updatedAt: 1,
     sessionMode: 'teacher',
     sessionOptions: {},
-    plcMode: true,
-    plcSheetUrl: '',
+    // Mirror the new PlcLinkage sub-object shape — `plcMode` is now derived
+    // as `!!assignment.plc`, and the sheet URL lives on `plc.sheetUrl`.
+    plc: {
+      id: 'plc-1',
+      name: 'Test PLC',
+      sheetUrl: '',
+      memberEmails: [],
+    },
     teacherName: '',
     periodNames: [],
     ...overrides,
@@ -32,7 +38,7 @@ describe('QuizAssignmentSettingsModal — sheet URL disclosure', () => {
     vi.clearAllMocks();
   });
 
-  it('starts collapsed when the assignment has no plcSheetUrl', () => {
+  it('starts collapsed when the assignment has no plc.sheetUrl', () => {
     render(
       <QuizAssignmentSettingsModal
         assignment={makePlcAssignment()}
@@ -49,11 +55,16 @@ describe('QuizAssignmentSettingsModal — sheet URL disclosure', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('starts expanded when the assignment already has a plcSheetUrl (legacy)', () => {
+  it('starts expanded when the assignment already has a plc.sheetUrl (legacy)', () => {
     render(
       <QuizAssignmentSettingsModal
         assignment={makePlcAssignment({
-          plcSheetUrl: 'https://docs.google.com/spreadsheets/d/legacy-sheet-id',
+          plc: {
+            id: 'plc-1',
+            name: 'Test PLC',
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/legacy-sheet-id',
+            memberEmails: [],
+          },
         })}
         rosters={[] as ClassRoster[]}
         onSave={vi.fn()}
@@ -68,7 +79,7 @@ describe('QuizAssignmentSettingsModal — sheet URL disclosure', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('clicking "Hide" clears plcSheetUrl in the saved patch (destructive disclosure)', async () => {
+  it('clicking "Hide" clears plc.sheetUrl in the saved patch (destructive disclosure)', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(
       <QuizAssignmentSettingsModal
@@ -77,7 +88,12 @@ describe('QuizAssignmentSettingsModal — sheet URL disclosure', () => {
           // the modeLocked path keeps everything else editable —
           // 'paused' still allows save here since the modal's
           // confirm gate is permissive.
-          plcSheetUrl: 'https://docs.google.com/spreadsheets/d/legacy-sheet-id',
+          plc: {
+            id: 'plc-1',
+            name: 'Test PLC',
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/legacy-sheet-id',
+            memberEmails: ['a@example.com'],
+          },
         })}
         rosters={[] as ClassRoster[]}
         onSave={onSave}
@@ -88,6 +104,15 @@ describe('QuizAssignmentSettingsModal — sheet URL disclosure', () => {
     // Save (the modal's confirm button label is just "Save").
     fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
-    expect(onSave.mock.calls[0][0]).toMatchObject({ plcSheetUrl: '' });
+    // PLC mode stays on; the linkage is preserved with sheetUrl cleared
+    // (membership/id/name still come from the original linkage).
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      plc: {
+        id: 'plc-1',
+        name: 'Test PLC',
+        sheetUrl: '',
+        memberEmails: ['a@example.com'],
+      },
+    });
   });
 });

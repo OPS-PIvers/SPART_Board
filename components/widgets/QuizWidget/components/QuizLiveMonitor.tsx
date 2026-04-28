@@ -46,7 +46,11 @@ import {
   QuizConfig,
   ClassRoster,
 } from '@/types';
-import { gradeAnswer, getResponseDocKey } from '@/hooks/useQuizSession';
+import {
+  gradeAnswer,
+  getResponseDocKey,
+  type ResponseDocKey,
+} from '@/hooks/useQuizSession';
 import {
   buildLiveLeaderboard,
   buildPinToNameMap,
@@ -329,7 +333,9 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   // New state for Phase 1 & 2 features
   const [showAnswerColors, setShowAnswerColors] = useState(false);
   const [showTabWarnings, setShowTabWarnings] = useState(true);
-  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<ResponseDocKey | null>(
+    null
+  );
   const [soundMuted, setSoundMuted] = useState(false);
   const [expandedStat, setExpandedStat] = useState<
     'joined' | 'active' | 'finished' | null
