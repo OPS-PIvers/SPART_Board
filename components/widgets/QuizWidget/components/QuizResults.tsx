@@ -346,10 +346,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     );
     const owningPlc = matchingPlcs.length === 1 ? matchingPlcs[0] : null;
     if (exportErr.status === 403) {
+      // Don't toast here — both `handleExport` and `handleUpdateSheet` catch
+      // and toast `err.message`, so toasting from inside the helper produced
+      // duplicate toasts (Copilot review on PR #1442). The thrown Error
+      // carries the actionable message so the call-site toast stays clear.
       const accessDeniedMessage = owningPlc
         ? `You don't have access to the ${owningPlc.name} PLC sheet yet — ask the PLC lead to grant you writer access.`
         : "You don't have access to this PLC sheet — ask the PLC lead to grant you writer access.";
-      addToast(accessDeniedMessage, 'error');
       throw new Error(accessDeniedMessage);
     }
     if (!owningPlc) {
@@ -462,7 +465,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         addToast('Results exported to shared PLC sheet', 'success');
       }
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : 'Export failed');
+      const msg = err instanceof Error ? err.message : 'Export failed';
+      setExportError(msg);
+      addToast(msg, 'error');
     } finally {
       setExporting(false);
     }

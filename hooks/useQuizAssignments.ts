@@ -220,25 +220,46 @@ const LEGACY_PLC_KEYS = [
   'plcName',
   'plcMemberEmails',
 ] as const;
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+// Validate an inbound `plc` sub-object before trusting it. A partial or
+// malformed shape would otherwise propagate downstream where consumers
+// assume "present-and-complete." Returns a fresh object (no aliasing) or
+// `undefined` to drop the linkage.
+function getValidPlcLinkage(
+  plc: PlcLinkage | undefined
+): PlcLinkage | undefined {
+  if (!plc) return undefined;
+  const { id, name, sheetUrl, memberEmails } = plc;
+  const ok =
+    isNonEmptyString(id) &&
+    isNonEmptyString(name) &&
+    isNonEmptyString(sheetUrl) &&
+    Array.isArray(memberEmails) &&
+    memberEmails.every((e) => isNonEmptyString(e));
+  if (!ok) return undefined;
+  return { id, name, sheetUrl, memberEmails: [...memberEmails] };
+}
+
 function migrateLegacyAssignmentShape<T extends LegacyPlcShape>(
   data: T
 ): Omit<T, (typeof LEGACY_PLC_KEYS)[number]> & { plc?: PlcLinkage } {
-  // Already migrated: leave the doc alone but still strip any stale legacy
-  // fields the writer may have left in place.
-  if (data.plc) {
-    const cleaned = { ...data };
-    for (const key of LEGACY_PLC_KEYS) delete cleaned[key];
-    return cleaned;
-  }
-
-  const { plcMode, plcSheetUrl, plcId, plcName, plcMemberEmails } = data;
-  const completeLegacy =
-    plcMode === true && !!plcSheetUrl && !!plcId && !!plcName;
-
   const cleaned = { ...data };
   for (const key of LEGACY_PLC_KEYS) delete cleaned[key];
 
-  if (completeLegacy) {
+  // Already migrated (or partially-bad nested shape): trust the nested
+  // object only if it passes structural validation; otherwise drop it
+  // (downgrades to non-PLC mode rather than silently propagating a
+  // broken state).
+  if (data.plc) {
+    const valid = getValidPlcLinkage(data.plc);
+    return valid ? { ...cleaned, plc: valid } : cleaned;
+  }
+
+  const { plcMode, plcSheetUrl, plcId, plcName, plcMemberEmails } = data;
+  if (plcMode === true && !!plcSheetUrl && !!plcId && !!plcName) {
     return {
       ...cleaned,
       plc: {

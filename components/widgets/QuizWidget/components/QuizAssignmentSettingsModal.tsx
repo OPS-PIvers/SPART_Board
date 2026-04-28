@@ -157,21 +157,17 @@ export const QuizAssignmentSettingsModal: React.FC<
     // entirely. The current `assignment.plc` is the safe carrier — it was
     // either set at create time (Widget.tsx → createAssignment) or by a
     // prior save through this modal.
+    // Only patch `plc` when we have a real existing linkage to overlay onto.
+    // Toggling PLC mode on without an `assignment.plc` record would persist
+    // a placeholder with empty `id`/`name`, which downstream code treats as
+    // a valid PLC linkage — that breaks sharing/membership checks and sheet
+    // export. The teacher should re-run assignment-create to acquire a real
+    // linkage. (Copilot review on PR #1442.)
     const trimmedSheetUrl = options.plcSheetUrl.trim();
-    const plcPatch: QuizAssignmentSettings['plc'] = options.plcMode
-      ? assignment.plc
+    const plcPatch: QuizAssignmentSettings['plc'] =
+      options.plcMode && assignment.plc
         ? { ...assignment.plc, sheetUrl: trimmedSheetUrl }
-        : // No prior linkage to inherit from. Write a degraded-shape
-          // placeholder; the read mapper will strip it on next load
-          // since `id` and `name` are empty. The teacher should rerun
-          // assignment-create to get a real linkage.
-          {
-            id: '',
-            name: '',
-            sheetUrl: trimmedSheetUrl,
-            memberEmails: [],
-          }
-      : undefined;
+        : undefined;
     const patch: Partial<QuizAssignmentSettings> = {
       className: options.className.trim(),
       sessionMode: modeLocked ? assignment.sessionMode : sessionMode,
