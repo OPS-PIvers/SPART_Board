@@ -97,6 +97,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     updateAssignmentSettings,
     setAssignmentRosters,
     setAssignmentExportUrl,
+    setAssignmentExportedResponseIds,
     shareAssignment,
   } = useQuizAssignments(user?.uid);
 
@@ -664,6 +665,14 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             ? (url) => setAssignmentExportUrl(activeAssignmentId, url)
             : undefined
         }
+        initialExportedResponseIds={
+          activeAssignment?.exportedResponseIds ?? null
+        }
+        onExportedResponseIdsSaved={
+          activeAssignmentId
+            ? (ids) => setAssignmentExportedResponseIds(activeAssignmentId, ids)
+            : undefined
+        }
       />
     );
   }
@@ -890,6 +899,15 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             }
           }
 
+          // Snapshot the PLC name onto the assignment doc so a downstream
+          // share carries it through to the importer — the importer can't
+          // read /plcs/{plcId} directly (rules block non-members) so the
+          // name has to ride on the share doc itself for the non-member
+          // toast to be informative.
+          const resolvedPlcName = plcOptions.plcMode
+            ? plcs.find((p) => p.id === plcOptions.plcId)?.name
+            : undefined;
+
           try {
             const { id: assignmentId, code } = await createAssignment(
               {
@@ -908,6 +926,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   plcOptions.periodNames?.[0] ?? plcOptions.periodName,
                 periodNames: plcOptions.periodNames,
                 plcSheetUrl: resolvedPlcSheetUrl,
+                plcId: plcOptions.plcMode ? plcOptions.plcId : undefined,
+                plcName: resolvedPlcName,
               },
               'paused',
               derived.classIds,

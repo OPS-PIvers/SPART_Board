@@ -28,6 +28,7 @@ import {
   User,
   Hash,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import { QuizResponse, QuizData, QuizQuestion, QuizConfig } from '@/types';
 import { useAuth } from '@/context/useAuth';
@@ -86,6 +87,18 @@ interface QuizResultsProps {
    * recompute aggregate stats) and full tab reloads.
    */
   onExportUrlSaved?: (url: string) => Promise<void> | void;
+  /**
+   * Response keys ALREADY exported to the linked sheet, read from the
+   * assignment doc. Used by the UPDATE SHEET button to determine which
+   * responses still need to be appended.
+   */
+  initialExportedResponseIds?: string[] | null;
+  /**
+   * Persist the latest set of exported response keys back to the assignment
+   * doc so re-entering Results doesn't re-export rows that were already
+   * appended.
+   */
+  onExportedResponseIdsSaved?: (ids: string[]) => Promise<void> | void;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
@@ -99,6 +112,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   onPlcSheetUrlReplaced,
   initialExportUrl,
   onExportUrlSaved,
+  initialExportedResponseIds,
+  onExportedResponseIdsSaved,
 }) => {
   const { activeDashboard, updateWidget, addWidget, addToast, rosters } =
     useDashboard();
@@ -121,6 +136,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     setLastInitialExportUrl(initialExportUrl);
     setExportUrl(initialExportUrl ?? null);
   }
+  const [exportedResponseIds, setExportedResponseIds] = useState<string[]>(
+    initialExportedResponseIds ?? []
+  );
+  const [lastInitialExportedResponseIds, setLastInitialExportedResponseIds] =
+    useState<string[] | null | undefined>(initialExportedResponseIds);
+  if (initialExportedResponseIds !== lastInitialExportedResponseIds) {
+    setLastInitialExportedResponseIds(initialExportedResponseIds);
+    setExportedResponseIds(initialExportedResponseIds ?? []);
+  }
+  const [updatingSheet, setUpdatingSheet] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     'overview' | 'questions' | 'students'
@@ -372,6 +397,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         );
       }
       setExportUrl(url);
+      // Snapshot every response key we just exported so the UPDATE SHEET
+      // button can later append only the rows that come in afterwards.
+      const exportedIds = responses.map((r) => getResponseDocKey(r));
+      setExportedResponseIds(exportedIds);
       if (onExportUrlSaved) {
         // Fire-and-forget: the sheet already exists and the local button is
         // wired up for this session, so we don't want to keep `exporting`
@@ -386,6 +415,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           );
         });
       }
+      if (onExportedResponseIdsSaved) {
+        void Promise.resolve(onExportedResponseIdsSaved(exportedIds)).catch(
+          (err: unknown) => {
+            console.warn(
+              '[QuizResults] failed to persist exportedResponseIds to assignment doc',
+              err
+            );
+          }
+        );
+      }
       if (config.plcMode) {
         addToast('Results exported to shared PLC sheet', 'success');
       }
@@ -393,6 +432,68 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       setExportError(err instanceof Error ? err.message : 'Export failed');
     } finally {
       setExporting(false);
+    }
+  };
+
+  const newResponsesToAppend = useMemo(() => {
+    if (!exportUrl) return [];
+    const exportedSet = new Set(exportedResponseIds);
+    return responses.filter((r) => !exportedSet.has(getResponseDocKey(r)));
+  }, [exportUrl, exportedResponseIds, responses]);
+
+  const handleUpdateSheet = async () => {
+    if (!exportUrl || newResponsesToAppend.length === 0) return;
+    if (!googleAccessToken) {
+      setExportError(
+        'Google access token not available. Please sign in again.'
+      );
+      return;
+    }
+    setUpdatingSheet(true);
+    setExportError(null);
+    try {
+      const svc = new QuizDriveService(googleAccessToken);
+      // Reuse the PLC-mode append path: it builds the same headers + rows
+      // as the original export and uses appendToExistingSheet under the
+      // hood. Works whether the original export was solo or PLC — both
+      // produce a sheet whose first tab accepts row appends.
+      await svc.exportResultsToSheet(
+        quiz.title,
+        newResponsesToAppend,
+        quiz.questions,
+        {
+          pinToName: exportPinToName,
+          byStudentUid,
+          teacherName: config.teacherName,
+          periodName: config.periodName,
+          plcMode: true,
+          plcSheetUrl: exportUrl,
+        }
+      );
+      const allIds = responses.map((r) => getResponseDocKey(r));
+      setExportedResponseIds(allIds);
+      if (onExportedResponseIdsSaved) {
+        void Promise.resolve(onExportedResponseIdsSaved(allIds)).catch(
+          (err: unknown) => {
+            console.warn(
+              '[QuizResults] failed to persist exportedResponseIds after update',
+              err
+            );
+          }
+        );
+      }
+      addToast(
+        `Added ${newResponsesToAppend.length} new response${
+          newResponsesToAppend.length === 1 ? '' : 's'
+        } to the sheet.`,
+        'success'
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Update failed';
+      setExportError(msg);
+      addToast(msg, 'error');
+    } finally {
+      setUpdatingSheet(false);
     }
   };
 
@@ -513,25 +614,69 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           </div>
         )}
         {exportUrl ? (
-          <a
-            href={exportUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
-            style={{
-              gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
-              fontSize: 'min(11px, 3.5cqmin)',
-            }}
-          >
-            <ExternalLink
+          <>
+            <a
+              href={exportUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
               style={{
-                width: 'min(14px, 4cqmin)',
-                height: 'min(14px, 4cqmin)',
+                gap: 'min(6px, 1.5cqmin)',
+                padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+                fontSize: 'min(11px, 3.5cqmin)',
               }}
-            />
-            OPEN SHEET
-          </a>
+            >
+              <ExternalLink
+                style={{
+                  width: 'min(14px, 4cqmin)',
+                  height: 'min(14px, 4cqmin)',
+                }}
+              />
+              OPEN SHEET
+            </a>
+            <button
+              onClick={() => void handleUpdateSheet()}
+              disabled={updatingSheet || newResponsesToAppend.length === 0}
+              title={
+                newResponsesToAppend.length === 0
+                  ? 'Sheet is up to date'
+                  : `Add ${newResponsesToAppend.length} new response${
+                      newResponsesToAppend.length === 1 ? '' : 's'
+                    } to the sheet`
+              }
+              className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark disabled:bg-brand-gray-lighter disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
+              style={{
+                gap: 'min(6px, 1.5cqmin)',
+                padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+                fontSize: 'min(11px, 3.5cqmin)',
+              }}
+            >
+              {updatingSheet ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw
+                  style={{
+                    width: 'min(14px, 4cqmin)',
+                    height: 'min(14px, 4cqmin)',
+                  }}
+                />
+              )}
+              UPDATE SHEET
+              {newResponsesToAppend.length > 0 && (
+                <span
+                  className="ml-1 inline-flex items-center justify-center bg-white/25 rounded-full font-black"
+                  style={{
+                    minWidth: 'min(18px, 5cqmin)',
+                    height: 'min(18px, 5cqmin)',
+                    padding: '0 min(6px, 1.5cqmin)',
+                    fontSize: 'min(10px, 3cqmin)',
+                  }}
+                >
+                  {newResponsesToAppend.length}
+                </span>
+              )}
+            </button>
+          </>
         ) : (
           <button
             onClick={() => void handleExport()}

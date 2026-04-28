@@ -2038,6 +2038,19 @@ export interface QuizAssignmentSettings {
   /** PLC mode: export results to a shared Google Sheet */
   plcMode?: boolean;
   plcSheetUrl?: string;
+  /**
+   * Id of the PLC this assignment is shared with. Persisted so a shared
+   * assignment doc can carry it through to the importer, who uses it to
+   * decide whether to preserve the PLC linkage (member) or strip it and
+   * surface a "you're not in this PLC" prompt (non-member).
+   */
+  plcId?: string;
+  /**
+   * Display name of the PLC at the time of assignment creation. Snapshotted
+   * onto the share doc so the non-member toast can name the PLC even though
+   * the importer can't read the live `/plcs/{plcId}` doc (rules block it).
+   */
+  plcName?: string;
   teacherName?: string;
   /** @deprecated Use periodNames instead. Kept for backwards compat. */
   periodName?: string;
@@ -2083,6 +2096,13 @@ export interface QuizAssignment extends QuizAssignmentSettings {
    * the same sheet if re-exported.
    */
   exportUrl?: string;
+  /**
+   * Response keys (`getResponseDocKey`) that have already been written to
+   * the linked sheet. Powers the "Update Sheet" affordance: the next update
+   * appends only the responses NOT in this set, so re-exporting after more
+   * students finish doesn't duplicate already-exported rows.
+   */
+  exportedResponseIds?: string[];
 }
 
 /**

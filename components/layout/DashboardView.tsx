@@ -13,6 +13,7 @@ import { useAuth } from '@/context/useAuth';
 import { useLiveSession } from '@/hooks/useLiveSession';
 import { useQuiz } from '@/hooks/useQuiz';
 import { useQuizAssignments } from '@/hooks/useQuizAssignments';
+import { usePlcs } from '@/hooks/usePlcs';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
@@ -160,6 +161,7 @@ export const DashboardView: React.FC = () => {
 
   const { importSharedQuiz, saveQuiz, deleteQuiz } = useQuiz(user?.uid);
   const { importSharedAssignment } = useQuizAssignments(user?.uid);
+  const { plcs } = usePlcs();
 
   // Helper: open (or create) a Quiz widget and set its managerTab.
   // Used by pending-share effects to surface the imported content to the user.
@@ -251,6 +253,31 @@ export const DashboardView: React.FC = () => {
       // quiz in their library and a generic "import failed" toast.
       async (saved) => {
         await deleteQuiz(saved.id, saved.driveFileId);
+      },
+      // Membership predicate: when the share carries a plcId, preserve
+      // PLC linkage iff the importer is a current member of that PLC.
+      (plcId) =>
+        !!user &&
+        plcs.some((p) => p.id === plcId && p.memberUids.includes(user.uid)),
+      // Non-member nudge: import still succeeds (the quiz is usable),
+      // but PLC sheet wiring is stripped — surface a CTA toast that
+      // opens the Sidebar's PLCs panel so the teacher can join the PLC
+      // or set up their own.
+      ({ plcName }) => {
+        addToast(
+          `This is a PLC quiz assignment for "${plcName}". You're not a member, so your results will export to your own sheet.`,
+          'info',
+          {
+            label: 'PLC Settings',
+            onClick: () => {
+              window.dispatchEvent(
+                new CustomEvent('open-sidebar', {
+                  detail: { section: 'plcs' },
+                })
+              );
+            },
+          }
+        );
       }
     )
       .then((newAssignmentId) => {
@@ -286,6 +313,7 @@ export const DashboardView: React.FC = () => {
     clearPendingAssignmentShare,
     openQuizWidgetToTab,
     setPendingAssignmentSetup,
+    plcs,
   ]);
 
   const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 });

@@ -883,6 +883,39 @@ const ActiveQuiz: React.FC<{
     }
   };
 
+  // Self-paced unified action: persist the answer, then advance (or complete
+  // on the final question). Skips the per-question feedback banner — teachers
+  // who want feedback should run the quiz in teacher-paced mode and reveal
+  // answers manually.
+  const handleSubmitAndAdvance = async (answer: string) => {
+    if (submitting || submitted) return;
+    setSubmitting(true);
+    try {
+      let computedSpeedBonus: number | undefined;
+      if (session.speedBonusEnabled && currentQuestion.timeLimit > 0) {
+        const remaining = Math.max(0, timeLeft ?? 0);
+        const bonusPct = Math.round(
+          (remaining / currentQuestion.timeLimit) * 50
+        );
+        if (bonusPct > 0) computedSpeedBonus = bonusPct;
+      }
+      await onAnswer(currentQuestion.id, answer, computedSpeedBonus);
+
+      const isLast = currentIndex >= session.totalQuestions - 1;
+      if (isLast) {
+        setSelectedAnswer(answer);
+        setSubmitted(true);
+        if (myResponse?.status !== 'completed') {
+          await onComplete();
+        }
+      } else {
+        setLocalIndex(localIndex + 1);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const progress = ((currentIndex + 1) / session.totalQuestions) * 100;
 
   // Choices are pre-shuffled in publicQuestions by the teacher side
@@ -996,7 +1029,46 @@ const ActiveQuiz: React.FC<{
             })}
 
             <div className="animate-in fade-in slide-in-from-bottom-2">
-              {!submitted ? (
+              {isStudentPaced ? (
+                !submitted ? (
+                  <button
+                    onClick={() =>
+                      draftMcAnswer &&
+                      void handleSubmitAndAdvance(draftMcAnswer)
+                    }
+                    disabled={!draftMcAnswer || submitting}
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : currentIndex >= session.totalQuestions - 1 ? (
+                      <>
+                        SUBMIT <CheckCircle2 className="w-5 h-5" />
+                      </>
+                    ) : (
+                      <>
+                        NEXT <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                ) : currentIndex < session.totalQuestions - 1 ? (
+                  // Timeout-auto-submit fallback: timer expired, give student
+                  // a way to advance.
+                  <button
+                    onClick={handleNext}
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                  >
+                    NEXT QUESTION <ArrowRight className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <p className="text-emerald-300 text-sm font-bold">
+                      Quiz complete!
+                    </p>
+                  </div>
+                )
+              ) : !submitted ? (
                 <button
                   onClick={() =>
                     draftMcAnswer && void handleSubmit(draftMcAnswer)
@@ -1019,24 +1091,14 @@ const ActiveQuiz: React.FC<{
                     streakCount={streakCount}
                     streakEnabled={session.streakBonusEnabled}
                   />
-                  {isStudentPaced &&
-                  currentIndex < session.totalQuestions - 1 ? (
-                    <button
-                      onClick={handleNext}
-                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
-                    >
-                      NEXT QUESTION <ArrowRight className="w-5 h-5" />
-                    </button>
-                  ) : (
-                    <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                      <p className="text-emerald-300 text-sm font-bold">
-                        {currentIndex < session.totalQuestions - 1
-                          ? 'Waiting for teacher…'
-                          : 'Quiz complete!'}
-                      </p>
-                    </div>
-                  )}
+                  <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <p className="text-emerald-300 text-sm font-bold">
+                      {currentIndex < session.totalQuestions - 1
+                        ? 'Waiting for teacher…'
+                        : 'Quiz complete!'}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1052,15 +1114,56 @@ const ActiveQuiz: React.FC<{
               disabled={submitted}
               placeholder="Type your answer…"
               className="w-full px-5 py-4 bg-slate-800 border-2 border-slate-700 rounded-2xl text-white text-sm focus:outline-none focus:ring-0 focus:border-violet-500 disabled:opacity-50"
-              onKeyDown={(e) =>
-                e.key === 'Enter' &&
-                fibAnswer.trim() &&
-                !submitted &&
-                void handleSubmit(fibAnswer.trim())
-              }
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                const trimmed = fibAnswer.trim();
+                if (!trimmed || submitted) return;
+                if (isStudentPaced) {
+                  void handleSubmitAndAdvance(trimmed);
+                } else {
+                  void handleSubmit(trimmed);
+                }
+              }}
             />
             <div className="animate-in fade-in slide-in-from-bottom-2">
-              {!submitted ? (
+              {isStudentPaced ? (
+                !submitted ? (
+                  <button
+                    onClick={() =>
+                      fibAnswer.trim() &&
+                      void handleSubmitAndAdvance(fibAnswer.trim())
+                    }
+                    disabled={!fibAnswer.trim() || submitting}
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : currentIndex >= session.totalQuestions - 1 ? (
+                      <>
+                        SUBMIT <CheckCircle2 className="w-5 h-5" />
+                      </>
+                    ) : (
+                      <>
+                        NEXT <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                ) : currentIndex < session.totalQuestions - 1 ? (
+                  <button
+                    onClick={handleNext}
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                  >
+                    NEXT QUESTION <ArrowRight className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <p className="text-emerald-300 text-sm font-bold">
+                      Quiz complete!
+                    </p>
+                  </div>
+                )
+              ) : !submitted ? (
                 <button
                   onClick={() =>
                     fibAnswer.trim() && void handleSubmit(fibAnswer.trim())
@@ -1083,24 +1186,14 @@ const ActiveQuiz: React.FC<{
                     streakCount={streakCount}
                     streakEnabled={session.streakBonusEnabled}
                   />
-                  {isStudentPaced &&
-                  currentIndex < session.totalQuestions - 1 ? (
-                    <button
-                      onClick={handleNext}
-                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
-                    >
-                      NEXT QUESTION <ArrowRight className="w-5 h-5" />
-                    </button>
-                  ) : (
-                    <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                      <p className="text-emerald-300 text-sm font-bold">
-                        {currentIndex < session.totalQuestions - 1
-                          ? 'Waiting for teacher…'
-                          : 'Quiz complete!'}
-                      </p>
-                    </div>
-                  )}
+                  <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <p className="text-emerald-300 text-sm font-bold">
+                      {currentIndex < session.totalQuestions - 1
+                        ? 'Waiting for teacher…'
+                        : 'Quiz complete!'}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1114,6 +1207,7 @@ const ActiveQuiz: React.FC<{
             question={currentQuestion}
             submitted={submitted}
             onSubmit={(answer) => void handleSubmit(answer)}
+            onSubmitAndAdvance={(answer) => void handleSubmitAndAdvance(answer)}
             submitting={submitting}
             isStudentPaced={isStudentPaced}
             isLastQuestion={currentIndex >= session.totalQuestions - 1}
@@ -1131,6 +1225,7 @@ const StructuredQuestionInput: React.FC<{
   question: QuizPublicQuestion;
   submitted: boolean;
   onSubmit: (answer: string) => void;
+  onSubmitAndAdvance: (answer: string) => void;
   submitting: boolean;
   isStudentPaced: boolean;
   isLastQuestion: boolean;
@@ -1139,6 +1234,7 @@ const StructuredQuestionInput: React.FC<{
   question,
   submitted,
   onSubmit,
+  onSubmitAndAdvance,
   submitting,
   isStudentPaced,
   isLastQuestion,
@@ -1164,16 +1260,21 @@ const StructuredQuestionInput: React.FC<{
     ? Object.values(matchings).every((v: string) => !!v)
     : order.length > 0 && order.length === leftItems.length;
 
-  const handleSubmitStructured = () => {
-    let answer: string;
+  const buildAnswer = (): string => {
     if (isMatching) {
-      answer = leftItems
+      return leftItems
         .map((l: string) => `${l}:${matchings[l] || ''}`)
         .join('|');
-    } else {
-      answer = order.join('|');
     }
-    onSubmit(answer);
+    return order.join('|');
+  };
+
+  const handleSubmitStructured = () => {
+    if (isStudentPaced) {
+      onSubmitAndAdvance(buildAnswer());
+    } else {
+      onSubmit(buildAnswer());
+    }
   };
 
   // ─── Drag and Drop Handlers ────────────────────────────────────────────────
@@ -1282,10 +1383,24 @@ const StructuredQuestionInput: React.FC<{
           <button
             onClick={handleSubmitStructured}
             disabled={!canSubmit || submitting}
-            className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors"
+            className={`w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all ${
+              isStudentPaced
+                ? 'bg-emerald-600 hover:bg-emerald-500 font-black shadow-lg active:scale-95'
+                : 'bg-violet-600 hover:bg-violet-500'
+            }`}
           >
             {submitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isStudentPaced ? (
+              isLastQuestion ? (
+                <>
+                  SUBMIT <CheckCircle2 className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  NEXT <ArrowRight className="w-5 h-5" />
+                </>
+              )
             ) : (
               'Submit Answer'
             )}
@@ -1294,6 +1409,7 @@ const StructuredQuestionInput: React.FC<{
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-2">
           {isStudentPaced && !isLastQuestion ? (
+            // Timeout-auto-submit fallback for self-paced.
             <button
               onClick={onNext}
               className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"

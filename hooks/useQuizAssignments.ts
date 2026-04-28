@@ -124,6 +124,16 @@ export interface UseQuizAssignmentsResult {
    * "Export".
    */
   setAssignmentExportUrl: (assignmentId: string, url: string) => Promise<void>;
+  /**
+   * Persist the set of response keys that have been written to the linked
+   * sheet. Powers the "Update Sheet" affordance in QuizResults — the next
+   * incremental append filters out responses already in this list so we
+   * don't duplicate already-exported rows.
+   */
+  setAssignmentExportedResponseIds: (
+    assignmentId: string,
+    responseIds: string[]
+  ) => Promise<void>;
   /** Publish this assignment as a shareable link. Returns the /share/assignment/{id} URL. */
   shareAssignment: (
     assignmentId: string,
@@ -145,7 +155,21 @@ export interface UseQuizAssignmentsResult {
   importSharedAssignment: (
     shareId: string,
     saveQuiz: (quiz: QuizData) => Promise<{ id: string; driveFileId: string }>,
-    rollbackQuiz?: (saved: { id: string; driveFileId: string }) => Promise<void>
+    rollbackQuiz?: (saved: {
+      id: string;
+      driveFileId: string;
+    }) => Promise<void>,
+    /**
+     * Optional membership predicate: given the originating PLC's id, returns
+     * true iff the importer is currently a member. When the share doc carries
+     * `plcId` and the predicate returns true, PLC linkage (mode, sheet URL,
+     * member emails, plcId) is preserved on the imported doc so the importer's
+     * exports route to the same shared sheet. Otherwise PLC fields are
+     * stripped (current behaviour) and `onNonMemberPlc` is invoked so the
+     * caller can surface a "not in this PLC" toast.
+     */
+    isPlcMember?: (plcId: string) => boolean,
+    onNonMemberPlc?: (info: { plcId: string; plcName: string }) => void
   ) => Promise<string>;
 }
 
@@ -253,6 +277,8 @@ export const useQuizAssignments = (
         sessionOptions: settings.sessionOptions,
         plcMode: settings.plcMode,
         plcSheetUrl: settings.plcSheetUrl,
+        plcId: settings.plcId,
+        plcName: settings.plcName,
         teacherName: settings.teacherName,
         periodName: settings.periodName,
         periodNames: settings.periodNames,
@@ -601,6 +627,19 @@ export const useQuizAssignments = (
     [userId]
   );
 
+  const setAssignmentExportedResponseIds = useCallback<
+    UseQuizAssignmentsResult['setAssignmentExportedResponseIds']
+  >(
+    async (assignmentId, responseIds) => {
+      if (!userId) throw new Error('Not authenticated');
+      await updateDoc(
+        doc(db, 'users', userId, QUIZ_ASSIGNMENTS_COLLECTION, assignmentId),
+        { exportedResponseIds: responseIds, updatedAt: Date.now() }
+      );
+    },
+    [userId]
+  );
+
   const shareAssignment = useCallback<
     UseQuizAssignmentsResult['shareAssignment']
   >(
@@ -623,6 +662,8 @@ export const useQuizAssignments = (
           sessionOptions: assignment.sessionOptions,
           plcMode: assignment.plcMode,
           plcSheetUrl: assignment.plcSheetUrl,
+          plcId: assignment.plcId,
+          plcName: assignment.plcName,
           teacherName: assignment.teacherName,
           periodName: assignment.periodName,
           periodNames: assignment.periodNames,
@@ -643,7 +684,7 @@ export const useQuizAssignments = (
   const importSharedAssignment = useCallback<
     UseQuizAssignmentsResult['importSharedAssignment']
   >(
-    async (shareId, saveQuiz, rollbackQuiz) => {
+    async (shareId, saveQuiz, rollbackQuiz, isPlcMember, onNonMemberPlc) => {
       if (!userId) throw new Error('Not authenticated');
 
       const snap = await getDoc(
@@ -690,16 +731,57 @@ export const useQuizAssignments = (
       //     keeping plcSheetUrl/plcMemberEmails repopulation tied to
       //     the importer's own PLC selection rather than the
       //     originator's.
-      const importedSettings = {
-        ...shared.assignmentSettings,
-        className: undefined,
-        teacherName: undefined,
-        periodName: undefined,
-        periodNames: undefined,
-        plcMode: undefined,
-        plcSheetUrl: undefined,
-        plcMemberEmails: undefined,
-      };
+      //
+      // EXCEPTION: when the share carries a `plcId` and the importer is
+      // a member of that PLC (per `isPlcMember`), preserve the PLC linkage
+      // so their exports route to the same shared sheet that all PLC peers
+      // use. The sheet was already shared with every member at creation
+      // time (Widget.tsx → createPlcSheetAndShare).
+      const sharedPlcId = shared.assignmentSettings.plcId;
+      const sharedPlcName = shared.assignmentSettings.plcName;
+      const importerIsPlcMember =
+        !!sharedPlcId && !!isPlcMember && isPlcMember(sharedPlcId);
+
+      const importedSettings = importerIsPlcMember
+        ? {
+            ...shared.assignmentSettings,
+            className: undefined,
+            teacherName: undefined,
+            periodName: undefined,
+            periodNames: undefined,
+            // Preserve plcMode, plcSheetUrl, plcMemberEmails, plcId, plcName.
+          }
+        : {
+            ...shared.assignmentSettings,
+            className: undefined,
+            teacherName: undefined,
+            periodName: undefined,
+            periodNames: undefined,
+            plcMode: undefined,
+            plcSheetUrl: undefined,
+            plcMemberEmails: undefined,
+            plcId: undefined,
+            plcName: undefined,
+          };
+
+      // Surface the non-member case to the caller so it can prompt the
+      // importer to join the PLC (or set up their own) — fire-and-forget,
+      // doesn't gate the import itself since the quiz is still usable.
+      if (
+        sharedPlcId &&
+        sharedPlcName &&
+        !importerIsPlcMember &&
+        onNonMemberPlc
+      ) {
+        try {
+          onNonMemberPlc({ plcId: sharedPlcId, plcName: sharedPlcName });
+        } catch (cbErr) {
+          console.error(
+            '[importSharedAssignment] onNonMemberPlc threw:',
+            cbErr
+          );
+        }
+      }
       // Intentionally omit classIds/rosterIds: the shared doc's targeting
       // refers to rosters in the ORIGINATOR's account and would be dangling
       // refs here. The importer retargets on first launch via AssignClassPicker,
@@ -756,6 +838,7 @@ export const useQuizAssignments = (
     updateAssignmentSettings,
     setAssignmentRosters,
     setAssignmentExportUrl,
+    setAssignmentExportedResponseIds,
     shareAssignment,
     importSharedAssignment,
   };
