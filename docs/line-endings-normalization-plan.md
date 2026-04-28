@@ -160,6 +160,7 @@ Immediately after PR 2 merges:
   `git add --renormalize .` alone only fixes the index, not the files on disk — `git rm --cached -r .` followed by `git reset --hard` is what actually rewrites the working-tree files to LF. Only run this in a worktree with no uncommitted changes.
 
 - Any branch with in-progress work: `git rebase main` — conflicts should be line-ending-only. Resolve each conflicted file with `git checkout --theirs -- <file>` and then follow with the same `git rm --cached -r . && git reset --hard` once the rebase completes.
+  - **Note on `--theirs` semantics:** during `git rebase`, `--ours`/`--theirs` are **reversed** relative to `git merge`. In a rebase, `--ours` refers to the base you're rebasing **onto** (`main`, already LF), and `--theirs` refers to the commit being **replayed** (your branch, possibly CRLF). `--theirs` is correct here because the subsequent `git rm --cached -r . && git reset --hard` re-normalizes everything to LF; do not swap to `--ours`, which would silently discard any actual content changes in your branch commit if a "conflict" turns out to be more than line endings.
 - Inform teammates (or your other machines) to run the same refresh or re-clone.
 - Optionally in each clone: `git config --local core.autocrlf input` so future checkouts don't reintroduce CRLF if `.gitattributes` ever loses a rule.
 
