@@ -695,30 +695,13 @@ const ActiveQuiz: React.FC<{
       )?.answer ?? null)
     : null;
 
-  // Derived state: full reset on question change, narrow update on alreadyAnswered flips.
-  //
-  // The two branches exist because their triggers race for SSO students:
-  // their response doc is keyed by `auth.uid`, so the `myResponse` listener
-  // fires from the local optimistic write before `setLocalIndex` advances.
-  // If we naively re-ran the full reset on every `alreadyAnswered` flip, the
-  // active submit-and-advance flow would briefly land in `submitted=true` on
-  // the still-current question, swapping the button to the auto-submit
-  // "NEXT QUESTION" fallback and forcing a second click. The narrow branch
-  // skips the `submitted` update while a submit is in flight; legacy hydration
-  // (page reload mid-quiz) still works because that path is never mid-flight.
-  if (currentQuestion?.id !== prevQuestionId) {
-    setPrevQuestionId(currentQuestion?.id);
-    setPrevAlreadyAnswered(alreadyAnswered);
-    setSubmitted(alreadyAnswered);
-    setAutoSubmitTriggeredFor(null);
-    setAnswerFeedback(null);
-    setRevealedAnswer(null);
-    setSpeedBonusEarned(null);
-    setSaveError(null);
-    // Hydrate the answer controls from any saved answer so a back-navigated
-    // question (self-paced) shows the student's prior choice. For MC we set
-    // `draftMcAnswer` (not `selectedAnswer`) so the existing draft styling
-    // highlights it and the NEXT button is enabled immediately.
+  // Hydrate the answer controls from any saved answer so a previously-
+  // answered question shows the student's prior choice. For MC we set
+  // `draftMcAnswer` (not `selectedAnswer`) so the existing draft styling
+  // highlights it and the NEXT button is enabled immediately. Inline so we
+  // can call it from both the question-change branch (back-nav) and the
+  // alreadyAnswered branch (page reload while answers are mid-load).
+  const hydrateAnswerControls = (): void => {
     if (alreadyAnswered && savedAnswerForCurrent !== null) {
       setSelectedAnswer(savedAnswerForCurrent);
       setDraftMcAnswer(
@@ -732,12 +715,38 @@ const ActiveQuiz: React.FC<{
       setDraftMcAnswer(null);
       setFibAnswer('');
     }
+  };
+
+  // Derived state: full reset on question change, narrow update on alreadyAnswered flips.
+  //
+  // The two branches exist because their triggers race for SSO students:
+  // their response doc is keyed by `auth.uid`, so the `myResponse` listener
+  // fires from the local optimistic write before `setLocalIndex` advances.
+  // If we naively re-ran the full reset on every `alreadyAnswered` flip, the
+  // active submit-and-advance flow would briefly land in `submitted=true` on
+  // the still-current question, swapping the button to the auto-submit
+  // "NEXT QUESTION" fallback and forcing a second click. The narrow branch
+  // skips the `submitted`/hydration updates while a submit is in flight;
+  // when not in flight, we *do* hydrate so a page refresh mid-quiz (where
+  // `myResponse` arrives after the initial mount) still highlights the
+  // student's prior answer instead of leaving NEXT disabled.
+  if (currentQuestion?.id !== prevQuestionId) {
+    setPrevQuestionId(currentQuestion?.id);
+    setPrevAlreadyAnswered(alreadyAnswered);
+    setSubmitted(alreadyAnswered);
+    setAutoSubmitTriggeredFor(null);
+    setAnswerFeedback(null);
+    setRevealedAnswer(null);
+    setSpeedBonusEarned(null);
+    setSaveError(null);
+    hydrateAnswerControls();
     const tl = currentQuestion?.timeLimit ?? 0;
     setTimeLeft(tl > 0 && !alreadyAnswered ? tl : null);
   } else if (alreadyAnswered !== prevAlreadyAnswered) {
     setPrevAlreadyAnswered(alreadyAnswered);
     if (!submitting && !advancingRef.current) {
       setSubmitted(alreadyAnswered);
+      hydrateAnswerControls();
     }
   }
 

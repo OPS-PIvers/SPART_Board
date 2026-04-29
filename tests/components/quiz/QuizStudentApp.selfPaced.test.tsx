@@ -344,6 +344,41 @@ describe('QuizStudentApp — self-paced flow', () => {
     expect(mockSubmitAnswer).toHaveBeenLastCalledWith('q1', '5', undefined);
   });
 
+  it('hydrates the saved answer when myResponse arrives after the initial mount (page refresh mid-quiz)', async () => {
+    // Simulate a refresh: ActiveQuiz mounts before `myResponse` has loaded
+    // (so `alreadyAnswered=false` on first render and `prevQuestionId` is
+    // initialized to the current question id). Then the listener fires and
+    // populates a saved answer for the question we're sitting on. The
+    // alreadyAnswered branch must hydrate the local controls — otherwise
+    // the student sees the question with no option highlighted and NEXT
+    // disabled, stuck until they reselect.
+    hookState.myResponse = buildResponse({ answers: [] });
+    render(<QuizStudentApp />);
+
+    expect(await screen.findByText(/What is 2 \+ 2/i)).toBeInTheDocument();
+    // No option highlighted yet — myResponse hasn't arrived.
+    expect(screen.getByRole('button', { name: '4' }).className).not.toContain(
+      'border-violet-500'
+    );
+
+    // Listener fires with a prior answer for q1.
+    act(() => {
+      appendAnswer('q1', '4');
+      triggerRefresh();
+    });
+
+    // Saved answer is now highlighted in the editable draft style.
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '4' }).className).toContain(
+        'border-violet-500'
+      );
+    });
+
+    // And NEXT is enabled (a single click advances — no reselect required).
+    const nextBtn = screen.getByRole('button', { name: /^NEXT/i });
+    expect(nextBtn).not.toBeDisabled();
+  });
+
   it('shows the timeout fallback "NEXT QUESTION" button when the timer expires without an answer', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
