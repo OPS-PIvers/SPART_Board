@@ -158,6 +158,20 @@ function makePinKey(classPeriod: string, pin: string): string {
 }
 
 /**
+ * Module-scoped dedupe for the legacy-fallback ambiguity warn in
+ * `resolvePinName`. Without this, a live monitor with many anonymous PIN
+ * joiners on a session that pre-dates per-period scoping would emit the
+ * warn on every render — hundreds per minute. Cleared between tests via
+ * the exported `__resetPinNameWarnDedupe`.
+ */
+const warnedAmbiguities = new Set<string>();
+
+/** Reset the ambiguity-warn dedupe state. Test-only. */
+export function __resetPinNameWarnDedupe(): void {
+  warnedAmbiguities.clear();
+}
+
+/**
  * Look up the roster name for a `(classPeriod, pin)` pair.
  *
  * Resolution order:
@@ -213,11 +227,19 @@ export function resolvePinName(
     }
   }
   if (seen.size > 1) {
-    console.warn(
-      `[resolvePinName] Ambiguous PIN ${pin} matched ${seen.size} rosters with no classPeriod; returning first match. Candidates: ${Array.from(
-        seen
-      ).join(', ')}`
-    );
+    // Dedupe by `(pin, sorted-candidates)` so a live monitor with N legacy
+    // PIN-only joiners that all hit the same collision warns once, not
+    // once per render × per response. The set survives the JS context;
+    // tests that need fresh warns should call `__resetPinNameWarnDedupe`.
+    const dedupeKey = `${pin}:${Array.from(seen).sort().join('|')}`;
+    if (!warnedAmbiguities.has(dedupeKey)) {
+      warnedAmbiguities.add(dedupeKey);
+      console.warn(
+        `[resolvePinName] Ambiguous PIN ${pin} matched ${seen.size} rosters with no classPeriod; returning first match. Candidates: ${Array.from(
+          seen
+        ).join(', ')}`
+      );
+    }
   }
   if (firstHit) return firstHit;
 

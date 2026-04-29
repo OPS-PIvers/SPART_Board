@@ -767,17 +767,23 @@ export class QuizDriveService {
     }
 
     const checkData = (await checkRes.json()) as {
-      values?: string[][];
+      values?: (string | null | undefined)[][];
     };
     const existingHeaderRow = checkData.values?.[0] ?? [];
-    const sheetIsEmpty = existingHeaderRow.length === 0;
+
+    // Trim trailing empties — the Sheets API can pad with `''`, `null`, or
+    // `undefined` depending on how a cell was last cleared. Treat all three
+    // as "no value here" so a sheet whose last column was deleted in the
+    // UI doesn't trigger a false-positive schema mismatch.
+    const trimmed: string[] = existingHeaderRow.map((c) => c ?? '');
+    while (trimmed.length > 0 && trimmed[trimmed.length - 1] === '') {
+      trimmed.pop();
+    }
+    // After trimming, an effectively-empty header row (`[]` or `['']`)
+    // means the sheet was never written. Append cleanly with our headers.
+    const sheetIsEmpty = trimmed.length === 0;
 
     if (!sheetIsEmpty) {
-      // Trim trailing empty cells the API sometimes pads in.
-      const trimmed = [...existingHeaderRow];
-      while (trimmed.length > 0 && trimmed[trimmed.length - 1] === '') {
-        trimmed.pop();
-      }
       const matches =
         trimmed.length === headers.length &&
         trimmed.every((cell, i) => cell === headers[i]);

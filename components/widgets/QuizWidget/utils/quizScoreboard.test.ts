@@ -32,6 +32,7 @@ import {
   buildScoreboardTeams,
   buildLiveLeaderboard,
   resolvePinName,
+  __resetPinNameWarnDedupe,
 } from './quizScoreboard';
 import type {
   QuizResponse,
@@ -542,6 +543,7 @@ describe('quizScoreboard', () => {
     });
 
     it('warns when the legacy suffix scan finds multiple distinct candidates', () => {
+      __resetPinNameWarnDedupe();
       const rosters = [
         makeRoster('Period 1', [
           { firstName: 'Alice', lastName: 'Smith', pin: '01' },
@@ -560,6 +562,32 @@ describe('quizScoreboard', () => {
         expect(warnSpy).toHaveBeenCalledWith(
           expect.stringContaining('Ambiguous PIN 01')
         );
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    it('dedupes the ambiguity warn so live-monitor renders do not flood', () => {
+      __resetPinNameWarnDedupe();
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+        makeRoster('Period 2', [
+          { firstName: 'Bob', lastName: 'Jones', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToNameMap(rosters, ['Period 1', 'Period 2']);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {
+        /* suppress */
+      });
+      try {
+        // Five lookups for the same ambiguous (pin, candidates) pair —
+        // simulates one render pass over five anonymous PIN joiners.
+        for (let i = 0; i < 5; i++) {
+          resolvePinName(map, undefined, '01');
+        }
+        expect(warnSpy).toHaveBeenCalledTimes(1);
       } finally {
         warnSpy.mockRestore();
       }

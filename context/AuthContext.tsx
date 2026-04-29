@@ -1148,6 +1148,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (myToken === writeTokenRef.current) {
           console.error('Error saving account preferences:', error);
         }
+        // Rethrow so callers that DO care about the failure (e.g. the
+        // QuizLiveMonitor toggles, which catch this and toast) can react.
+        // Pre-existing fire-and-forget callers are unaffected — an unhandled
+        // rejection on those is fine because the inner console.error has
+        // already logged the failure.
+        throw error;
       }
     },
     [user]
