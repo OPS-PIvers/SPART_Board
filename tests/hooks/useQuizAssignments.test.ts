@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -15,8 +16,14 @@ import type {
   SharedQuizAssignment,
 } from '@/types';
 
+// `deleteField()` returns a Firestore sentinel; the production code stores
+// the sentinel in the patch object and Firestore SDK interprets it on the
+// wire. For tests we use a unique branded marker so assertions can verify
+// the sentinel landed in the right field without depending on the real SDK.
+const DELETE_FIELD_SENTINEL = Symbol('test:deleteField()');
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
+  deleteField: vi.fn(() => DELETE_FIELD_SENTINEL),
   doc: vi.fn(),
   getDoc: vi.fn(),
   getDocs: vi.fn(),
@@ -33,6 +40,7 @@ vi.mock('@/config/firebase', () => ({
 }));
 
 const mockCollection = collection as Mock;
+const mockDeleteField = deleteField as Mock;
 const mockDoc = doc as Mock;
 const mockGetDoc = getDoc as Mock;
 const mockOnSnapshot = onSnapshot as Mock;
@@ -648,5 +656,88 @@ describe('useQuizAssignments - setAssignmentRosters', () => {
       periodName: '',
       rosterIds: [],
     });
+  });
+});
+
+describe('useQuizAssignments - updateAssignmentSettings', () => {
+  const batchUpdate = vi.fn();
+  const batchCommit = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDoc.mockImplementation((_db: unknown, ...segs: string[]) =>
+      segs.join('/')
+    );
+    mockCollection.mockReturnValue('coll-ref');
+    mockOnSnapshot.mockReturnValue(() => undefined);
+    batchUpdate.mockReset();
+    batchCommit.mockReset().mockResolvedValue(undefined);
+    mockWriteBatch.mockReturnValue({
+      update: batchUpdate,
+      commit: batchCommit,
+    });
+  });
+
+  function findAssignmentPatch(): Record<string, unknown> {
+    const call = batchUpdate.mock.calls.find(
+      ([ref]) =>
+        typeof ref === 'string' &&
+        ref.startsWith(`users/${TEACHER_UID}/quiz_assignments/`)
+    );
+    if (!call) throw new Error('expected batch.update on assignment doc');
+    return call[1] as Record<string, unknown>;
+  }
+
+  it('translates explicit-undefined plc into deleteField() so toggle-OFF actually clears the linkage', async () => {
+    // Firestore is initialized with `ignoreUndefinedProperties: true`, so a
+    // raw `{ plc: undefined }` patch would be silently dropped on the wire
+    // and the existing `plc` field would stay on the doc. The hook must
+    // translate explicit-undefined into the deleteField() sentinel.
+    const { result } = renderHook(() => useQuizAssignments(TEACHER_UID));
+
+    await act(async () => {
+      await result.current.updateAssignmentSettings(ASSIGNMENT_ID, {
+        plc: undefined,
+      });
+    });
+
+    const patch = findAssignmentPatch();
+    expect(patch.plc).toBe(DELETE_FIELD_SENTINEL);
+    expect(mockDeleteField).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes a real plc patch through unchanged (no deleteField translation)', async () => {
+    const { result } = renderHook(() => useQuizAssignments(TEACHER_UID));
+    const linkage = {
+      id: 'plc-1',
+      name: 'Test PLC',
+      sheetUrl: 'https://docs.google.com/spreadsheets/d/sheet-id',
+      memberEmails: ['a@example.com'],
+    };
+
+    await act(async () => {
+      await result.current.updateAssignmentSettings(ASSIGNMENT_ID, {
+        plc: linkage,
+      });
+    });
+
+    const patch = findAssignmentPatch();
+    expect(patch.plc).toEqual(linkage);
+    // No clear-intent, so the deleteField sentinel was never minted.
+    expect(mockDeleteField).not.toHaveBeenCalled();
+  });
+
+  it('does not translate to deleteField() when the plc key is absent from the patch (only explicit-undefined triggers clear)', async () => {
+    const { result } = renderHook(() => useQuizAssignments(TEACHER_UID));
+
+    await act(async () => {
+      await result.current.updateAssignmentSettings(ASSIGNMENT_ID, {
+        className: 'Period 3',
+      });
+    });
+
+    const patch = findAssignmentPatch();
+    expect(patch).not.toHaveProperty('plc');
+    expect(mockDeleteField).not.toHaveBeenCalled();
   });
 });
