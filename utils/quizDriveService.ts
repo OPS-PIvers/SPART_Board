@@ -925,6 +925,17 @@ export class QuizDriveService {
       }
     );
     if (!writeRes.ok) {
+      // Mirror the clear-step's 404/403 handling: if the sheet was
+      // deleted or access revoked between clear and write, the caller
+      // needs `PlcSheetMissingError` to fall through to the
+      // create-fresh-sheet recovery path. Bubbling a generic Error here
+      // would strand the teacher with an unrecoverable state.
+      if (writeRes.status === 404 || writeRes.status === 403) {
+        throw new PlcSheetMissingError(
+          'Shared PLC sheet is missing or inaccessible.',
+          writeRes.status
+        );
+      }
       const err = await writeRes.text();
       console.error('PLC sheet rewrite error:', err);
       throw new Error('Failed to rewrite the shared PLC sheet.');

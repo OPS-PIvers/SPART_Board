@@ -135,34 +135,26 @@ export const PlcTab: React.FC<PlcTabProps> = ({
   googleAccessToken,
   questions,
 }) => {
-  const [rows, setRows] = useState<PlcSheetRow[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(!!googleAccessToken);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  // Bumped on Retry; combined with the URL into the fetch identity below
-  // so manual retries re-run the effect.
+  // Bumped on Retry; combined with the URL into the fetch identity below.
   const [reloadToken, setReloadToken] = useState(0);
-
-  // Adjust state during render when the fetch identity changes (URL change,
-  // token change, or Retry click). This resets rows/loading/error in the
-  // same commit as the prop change instead of through a useEffect →
-  // setState round-trip, satisfying react-hooks/set-state-in-effect.
   const fetchKey = `${plcSheetUrl}::${googleAccessToken ?? ''}::${reloadToken}`;
-  const [lastFetchKey, setLastFetchKey] = useState(fetchKey);
-  if (fetchKey !== lastFetchKey) {
-    setLastFetchKey(fetchKey);
-    setRows(null);
-    setFetchError(null);
-    setLoading(!!googleAccessToken);
-  }
 
-  // Render-derived: a missing OAuth token is a synchronous "we can't
-  // fetch" condition, not effect-driven state. Surfacing it inline keeps
-  // the auth-prompt visible from mount.
-  const error = !googleAccessToken
-    ? 'Sign in with Google to load PLC results.'
-    : fetchError;
+  // Single state object with the fetch key embedded, so we can detect
+  // stale data at render time without setState-during-render. When
+  // `fetchState.key !== fetchKey`, the effect hasn't completed for the
+  // current identity yet — render the loading state synchronously and
+  // ignore the stale rows/error in the stored value.
+  const [fetchState, setFetchState] = useState<{
+    key: string;
+    rows: PlcSheetRow[] | null;
+    error: string | null;
+    settled: boolean;
+  }>({ key: fetchKey, rows: null, error: null, settled: false });
 
   useEffect(() => {
+    // No token = nothing to fetch. Render derives the auth-prompt error
+    // and `loading=false` from the missing token directly, so we don't
+    // need to write any state here.
     if (!googleAccessToken) return;
     let cancelled = false;
     const svc = new QuizDriveService(googleAccessToken);
@@ -170,8 +162,12 @@ export const PlcTab: React.FC<PlcTabProps> = ({
       .readPlcSheet(plcSheetUrl)
       .then((res) => {
         if (cancelled) return;
-        setRows(res.rows);
-        setLoading(false);
+        setFetchState({
+          key: fetchKey,
+          rows: res.rows,
+          error: null,
+          settled: true,
+        });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -179,13 +175,32 @@ export const PlcTab: React.FC<PlcTabProps> = ({
           err instanceof Error
             ? err.message
             : 'Could not load PLC results from the shared sheet.';
-        setFetchError(message);
-        setLoading(false);
+        setFetchState({
+          key: fetchKey,
+          rows: null,
+          error: message,
+          settled: true,
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [plcSheetUrl, googleAccessToken, reloadToken]);
+  }, [plcSheetUrl, googleAccessToken, reloadToken, fetchKey]);
+
+  // Display state is derived synchronously from `fetchKey` vs the
+  // settled state's key. Stale storage from the previous identity is
+  // ignored until the effect catches up — no setState during render.
+  const isFresh = fetchState.key === fetchKey && fetchState.settled;
+  const loading = !!googleAccessToken && !isFresh;
+  const rows = isFresh ? fetchState.rows : null;
+  const fetchError = isFresh ? fetchState.error : null;
+
+  // A missing OAuth token is a synchronous "we can't fetch" condition,
+  // not effect-driven state — surface it inline so the auth-prompt
+  // renders from mount.
+  const error = !googleAccessToken
+    ? 'Sign in with Google to load PLC results.'
+    : fetchError;
 
   const data = useMemo(
     () => (rows ? aggregate(rows, questions) : null),
@@ -213,10 +228,21 @@ export const PlcTab: React.FC<PlcTabProps> = ({
   }
 
   if (error) {
+    const iconSize = {
+      width: 'min(20px, 5cqmin)',
+      height: 'min(20px, 5cqmin)',
+    };
+    const ctaIconSize = {
+      width: 'min(12px, 3cqmin)',
+      height: 'min(12px, 3cqmin)',
+    };
     return (
       <div className="bg-white border border-brand-red-primary/20 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-brand-red-primary flex-shrink-0 mt-0.5" />
+          <AlertCircle
+            className="text-brand-red-primary flex-shrink-0 mt-0.5"
+            style={iconSize}
+          />
           <div className="flex-1">
             <p
               className="font-black text-brand-blue-dark uppercase tracking-widest mb-1"
@@ -236,7 +262,7 @@ export const PlcTab: React.FC<PlcTabProps> = ({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-blue-primary text-white font-bold rounded-lg hover:bg-brand-blue-dark transition-colors"
                 style={{ fontSize: 'min(12px, 3.5cqmin)' }}
               >
-                <RefreshCw className="w-3 h-3" />
+                <RefreshCw style={ctaIconSize} />
                 Retry
               </button>
               <a
@@ -247,7 +273,7 @@ export const PlcTab: React.FC<PlcTabProps> = ({
                 style={{ fontSize: 'min(12px, 3.5cqmin)' }}
               >
                 Open sheet
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink style={ctaIconSize} />
               </a>
             </div>
           </div>
