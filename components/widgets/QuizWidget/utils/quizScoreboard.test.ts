@@ -451,8 +451,9 @@ describe('quizScoreboard', () => {
       ];
       const map = buildPinToNameMap(rosters, ['Period 1']);
       expect(resolvePinName(map, 'Period 1', '02')).toBe('Bob Jones');
-      // The empty-PIN student isn't reachable
-      expect(Object.values(map)).not.toContain('Alice Smith');
+      // The empty-PIN student is not reachable from any path. Exhaustive
+      // assertion: Alice's name appears nowhere in the resulting map.
+      expect(Object.values(map)).toEqual(['Bob Jones', 'Bob Jones']);
     });
 
     it('handles students with only first name', () => {
@@ -488,6 +489,43 @@ describe('quizScoreboard', () => {
       expect(resolvePinName(map, 'Period 2', '1')).toBe('Alice2 Smith2');
     });
 
+    it('period-scoped tier short-circuits before any fallback', () => {
+      // Defensive: if a future refactor reorders the fallback ladder so
+      // the suffix scan runs before the period-scoped lookup, this test
+      // would catch it. Period 1's Alice must win even though Period 2
+      // also has someone at PIN 01.
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+        makeRoster('Period 2', [
+          { firstName: 'Bob', lastName: 'Jones', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToNameMap(rosters, ['Period 1', 'Period 2']);
+      expect(resolvePinName(map, 'Period 1', '01')).toBe('Alice Smith');
+      expect(resolvePinName(map, 'Period 1', '1')).toBe('Alice Smith');
+    });
+
+    it('returns undefined when classPeriod is provided but does not match any roster', () => {
+      // Wrong-period responses (typo, deleted roster, drift between
+      // periodNames and rosters) used to silently fall through to the
+      // legacy suffix scan and resolve to whichever student happens to
+      // share the PIN. The fix returns `undefined` so the UI renders
+      // `PIN <n>` and the mismatch is visible.
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+        makeRoster('Period 2', [
+          { firstName: 'Bob', lastName: 'Jones', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToNameMap(rosters, ['Period 1', 'Period 2']);
+      expect(resolvePinName(map, 'Period 9', '01')).toBeUndefined();
+      expect(resolvePinName(map, 'Nonexistent', '1')).toBeUndefined();
+    });
+
     it('falls back to suffix scan when classPeriod is missing (legacy path)', () => {
       // SSO joiners and pre-period-scoping responses may have no
       // `classPeriod`. Behave like the old "first match wins" lookup so
@@ -501,6 +539,30 @@ describe('quizScoreboard', () => {
       expect(resolvePinName(map, undefined, '01')).toBe('Alice Smith');
       expect(resolvePinName(map, '', '01')).toBe('Alice Smith');
       expect(resolvePinName(map, null, '1')).toBe('Alice Smith');
+    });
+
+    it('warns when the legacy suffix scan finds multiple distinct candidates', () => {
+      const rosters = [
+        makeRoster('Period 1', [
+          { firstName: 'Alice', lastName: 'Smith', pin: '01' },
+        ]),
+        makeRoster('Period 2', [
+          { firstName: 'Bob', lastName: 'Jones', pin: '01' },
+        ]),
+      ];
+      const map = buildPinToNameMap(rosters, ['Period 1', 'Period 2']);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {
+        /* suppress expected warning */
+      });
+      try {
+        const result = resolvePinName(map, undefined, '01');
+        expect(['Alice Smith', 'Bob Jones']).toContain(result);
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Ambiguous PIN 01')
+        );
+      } finally {
+        warnSpy.mockRestore();
+      }
     });
 
     it('returns undefined for unknown PINs', () => {

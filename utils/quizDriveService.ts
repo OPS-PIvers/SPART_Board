@@ -88,6 +88,26 @@ export class PlcSheetMissingError extends Error {
   }
 }
 
+/**
+ * Thrown by `appendToExistingSheet` when the existing sheet's header row
+ * does not match the headers the current code produces. This prevents
+ * silently appending column-shifted rows underneath an old-schema header
+ * (the most likely cause: a sheet created before the "Period" column was
+ * dropped). Carries the `existingHeaders` and `expectedHeaders` so the
+ * caller can render a precise message telling the teacher to recreate
+ * the sheet.
+ */
+export class PlcSheetSchemaMismatchError extends Error {
+  constructor(
+    message: string,
+    public readonly existingHeaders: string[],
+    public readonly expectedHeaders: string[]
+  ) {
+    super(message);
+    this.name = 'PlcSheetSchemaMismatchError';
+  }
+}
+
 export class QuizDriveService {
   private accessToken: string;
 
@@ -716,9 +736,14 @@ export class QuizDriveService {
 
     const encodedTitle = encodeURIComponent(sheetTitle);
 
-    // Check if sheet already has content by reading A1
+    // Read row 1 (header row) to (a) detect whether the sheet is empty and
+    // (b) if not, validate that its existing schema matches what we're
+    // about to append. Without this guard, dropping or reordering a column
+    // in the export would silently shift every subsequent column on PLC
+    // sheets created with an older schema — wrong student names, wrong
+    // PINs, wrong answers — with no API error.
     const checkRes = await fetch(
-      `${SHEETS_API_URL}/${spreadsheetId}/values/${encodedTitle}!A1`,
+      `${SHEETS_API_URL}/${spreadsheetId}/values/${encodedTitle}!1:1`,
       { headers: this.authHeaders }
     );
 
@@ -744,7 +769,27 @@ export class QuizDriveService {
     const checkData = (await checkRes.json()) as {
       values?: string[][];
     };
-    const sheetIsEmpty = !checkData.values || checkData.values.length === 0;
+    const existingHeaderRow = checkData.values?.[0] ?? [];
+    const sheetIsEmpty = existingHeaderRow.length === 0;
+
+    if (!sheetIsEmpty) {
+      // Trim trailing empty cells the API sometimes pads in.
+      const trimmed = [...existingHeaderRow];
+      while (trimmed.length > 0 && trimmed[trimmed.length - 1] === '') {
+        trimmed.pop();
+      }
+      const matches =
+        trimmed.length === headers.length &&
+        trimmed.every((cell, i) => cell === headers[i]);
+      if (!matches) {
+        throw new PlcSheetSchemaMismatchError(
+          "This PLC sheet was created with an older schema and can't be appended to safely. " +
+            'Ask the PLC lead to recreate the shared sheet (the next export will create a fresh one).',
+          trimmed,
+          headers
+        );
+      }
+    }
 
     // Build rows to append: include headers if sheet is empty
     const rowsToAppend = sheetIsEmpty ? [headers, ...dataRows] : dataRows;

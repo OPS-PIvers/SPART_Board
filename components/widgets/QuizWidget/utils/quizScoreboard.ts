@@ -143,9 +143,13 @@ export function getScoreSuffix(session?: QuizScoringSession): string {
  * Composite-key separator used by `buildPinToNameMap` /
  * `buildPinToExportNameMap`. Map keys are `${classPeriod}${PIN_KEY_SEP}${pin}`
  * so that the same PIN in two different rosters resolves to two different
- * students. The separator is U+0001 (Start of Heading), which can't appear in
- * a roster name or a PIN — both are user-typed strings, but no editable text
- * field accepts control characters.
+ * students. U+0001 (Start of Heading) is highly unlikely to appear in a
+ * roster name or a PIN — PINs are zero-padded numerics, and roster name
+ * inputs in the SPART Board UIs don't surface control characters. Treat
+ * the separator as a soft guarantee, not a hard input invariant; if a
+ * pathological roster name ever embeds U+0001 the worst outcome is a
+ * lookup miss (resolved as `PIN <n>`), which is the visible-failure mode
+ * we already prefer.
  */
 const PIN_KEY_SEP = '';
 
@@ -156,12 +160,20 @@ function makePinKey(classPeriod: string, pin: string): string {
 /**
  * Look up the roster name for a `(classPeriod, pin)` pair.
  *
- * Tries the period-scoped key first (correct path). Falls back to a suffix
- * scan over the whole map when `classPeriod` is missing — preserves legacy
- * behavior for SSO joiners and any older response docs that predate
- * per-period scoping. Returns `undefined` when nothing matches.
+ * Resolution order:
+ *   1. Period-scoped composite key — the correct path. When `classPeriod`
+ *      is provided we ONLY trust this tier; a miss returns `undefined`
+ *      so the caller renders `PIN <n>` rather than risk a wrong-period
+ *      collision via suffix scan.
+ *   2. Composite-key suffix scan — only when `classPeriod` is missing
+ *      (legacy SSO and pre-period-scoping responses). When more than
+ *      one distinct candidate matches the same PIN the function still
+ *      returns the first hit (preserves pre-PR behavior) but emits a
+ *      `console.warn` so observability picks up the ambiguity.
+ *   3. Bare-PIN flat lookup — for older callers and tests that build
+ *      maps without composite keys. Also gated on missing `classPeriod`.
  *
- * Both zero-padded (`"01"`) and stripped (`"1"`) forms are accepted.
+ * Both zero-padded (`"01"`) and stripped (`"1"`) PIN forms are accepted.
  */
 export function resolvePinName(
   map: Record<string, string>,
@@ -177,19 +189,39 @@ export function resolvePinName(
       const hit = map[makePinKey(classPeriod, v)];
       if (hit) return hit;
     }
+    // classPeriod was provided but nothing matched. Don't fall through to
+    // the legacy suffix scan: a wrong-period response (typo, deleted
+    // roster, drift between periodNames and rosters) would otherwise
+    // resolve to whichever student happens to share the PIN in any
+    // roster, attributing the wrong name confidently. Returning
+    // undefined surfaces the mismatch as `PIN <n>` in the UI.
+    return undefined;
   }
 
-  // No-classPeriod / no-match fallback. Scan composite keys for a matching
-  // PIN suffix (legacy SSO + pre-period-scoping responses).
+  // Tier 2 — legacy / SSO path with no classPeriod. Detect ambiguity so
+  // observability can flag PIN collisions across rosters.
+  const seen = new Set<string>();
+  let firstHit: string | undefined;
   for (const v of variants) {
     const suffix = `${PIN_KEY_SEP}${v}`;
     for (const k in map) {
-      if (k.endsWith(suffix)) return map[k];
+      if (k.endsWith(suffix)) {
+        const name = map[k];
+        firstHit ??= name;
+        seen.add(name);
+      }
     }
   }
+  if (seen.size > 1) {
+    console.warn(
+      `[resolvePinName] Ambiguous PIN ${pin} matched ${seen.size} rosters with no classPeriod; returning first match. Candidates: ${Array.from(
+        seen
+      ).join(', ')}`
+    );
+  }
+  if (firstHit) return firstHit;
 
-  // Final fallback: maps built by hand (e.g., older callers, tests) may key
-  // directly on the bare PIN with no period prefix. Honor those too.
+  // Tier 3 — bare-PIN map (hand-built, older callers, tests).
   for (const v of variants) {
     const hit = map[v];
     if (hit) return hit;

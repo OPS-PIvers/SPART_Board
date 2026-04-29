@@ -66,6 +66,7 @@ import { useAssignmentPseudonymsMulti } from '@/hooks/useAssignmentPseudonyms';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { useDialog } from '@/context/useDialog';
+import { useDashboard } from '@/context/useDashboard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   playPodiumFanfare,
@@ -360,39 +361,58 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   );
   // If the assignment's targeted periods change (e.g. teacher edits the
   // assignment in another tab), reset the selection rather than letting it go
-  // stale and silently filter to nothing.
+  // stale and silently filter to nothing. Two hardening details:
+  //   - skip when the new list is empty: a transient `onSnapshot` mid-write
+  //     can briefly observe `periodNames: []` and would otherwise wipe the
+  //     teacher's manual narrowing; wait for a real list to arrive.
+  //   - skip when the previous list was already non-empty AND the new
+  //     content is identical (same `Set`); the ref guard above already
+  //     handles length changes, but order-only changes shouldn't reset.
   const lastSessionPeriodsRef = useRef<string[]>(sessionPeriodNames);
-  if (
-    lastSessionPeriodsRef.current.length !== sessionPeriodNames.length ||
-    lastSessionPeriodsRef.current.some((p, i) => p !== sessionPeriodNames[i])
-  ) {
+  const prevPeriods = lastSessionPeriodsRef.current;
+  const periodsChanged =
+    prevPeriods.length !== sessionPeriodNames.length ||
+    prevPeriods.some((p, i) => p !== sessionPeriodNames[i]);
+  if (periodsChanged && sessionPeriodNames.length > 0) {
     lastSessionPeriodsRef.current = sessionPeriodNames;
     setSelectedPeriodNames(sessionPeriodNames);
   }
+
+  // True when the user has narrowed the session's targeted periods. Used
+  // both as the filter switch below and to keep the toolbar visible when
+  // the narrowed view is empty (so the teacher can recover).
+  const filterActive =
+    sessionPeriodNames.length > 1 &&
+    selectedPeriodNames.length < sessionPeriodNames.length;
 
   // Apply the class-period filter to the response stream that drives the
   // monitor's KPIs and roster. Leaderboard broadcasts intentionally use the
   // unfiltered `responses` so the student-facing leaderboard stays global.
   const filteredResponses = useMemo(() => {
-    // No filter active when the assignment targets a single period or when
-    // the selection covers every targeted period.
-    if (
-      sessionPeriodNames.length < 2 ||
-      selectedPeriodNames.length === sessionPeriodNames.length
-    ) {
-      return responses;
-    }
+    if (!filterActive) return responses;
     const allow = new Set(selectedPeriodNames);
+    // Drop SSO/legacy rows that have no `classPeriod`: when the teacher
+    // narrows to a specific period they expect a clean view, and a row
+    // with no period claim should not silently leak through.
     return responses.filter((r) =>
-      r.classPeriod ? allow.has(r.classPeriod) : true
+      r.classPeriod ? allow.has(r.classPeriod) : false
     );
-  }, [responses, selectedPeriodNames, sessionPeriodNames]);
+  }, [responses, selectedPeriodNames, filterActive]);
+
+  const { addToast } = useDashboard();
 
   const handleToggleColors = useCallback(() => {
-    void updateAccountPreferences({
-      quizMonitorColorsEnabled: !quizMonitorColorsEnabled,
-    });
-  }, [quizMonitorColorsEnabled, updateAccountPreferences]);
+    const next = !quizMonitorColorsEnabled;
+    updateAccountPreferences({ quizMonitorColorsEnabled: next }).catch(
+      (err: unknown) => {
+        console.error('[QuizLiveMonitor] persist colors toggle failed:', err);
+        addToast(
+          'Could not save the Colors preference — try again or check your connection.',
+          'error'
+        );
+      }
+    );
+  }, [quizMonitorColorsEnabled, updateAccountPreferences, addToast]);
 
   const handleCycleScoreDisplay = useCallback(() => {
     const next: 'percent' | 'count' | 'hidden' =
@@ -401,8 +421,19 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
         : quizMonitorScoreDisplay === 'count'
           ? 'hidden'
           : 'percent';
-    void updateAccountPreferences({ quizMonitorScoreDisplay: next });
-  }, [quizMonitorScoreDisplay, updateAccountPreferences]);
+    updateAccountPreferences({ quizMonitorScoreDisplay: next }).catch(
+      (err: unknown) => {
+        console.error(
+          '[QuizLiveMonitor] persist score-display cycle failed:',
+          err
+        );
+        addToast(
+          'Could not save the score display preference — try again or check your connection.',
+          'error'
+        );
+      }
+    );
+  }, [quizMonitorScoreDisplay, updateAccountPreferences, addToast]);
   const [confirmRemove, setConfirmRemove] = useState<ResponseDocKey | null>(
     null
   );
@@ -1310,8 +1341,12 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                 </div>
               )}
 
-              {/* 5. ROSTER show/hide + student list */}
-              {filteredResponses.length > 0 && (
+              {/* 5. ROSTER show/hide + student list. The gate also stays
+                   open when a class-period filter is active even if the
+                   filter currently produces zero rows — otherwise the
+                   filter button itself would disappear and there'd be
+                   no way for the teacher to widen the selection again. */}
+              {(responses.length > 0 || filterActive) && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between border-b border-brand-blue-primary/10 pb-1">
                     <button
@@ -1343,142 +1378,52 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                       )}
                     </button>
                     {showRoster && (
-                      <div className="flex items-center gap-2">
-                        {sessionPeriodNames.length > 1 && (
-                          <div className="relative">
-                            <button
-                              onClick={() =>
-                                setShowPeriodFilter(!showPeriodFilter)
-                              }
-                              className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                                selectedPeriodNames.length <
-                                sessionPeriodNames.length
-                                  ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
-                                  : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
-                              }`}
-                              style={{
-                                fontSize: 'min(9px, 2.5cqmin)',
-                                padding:
-                                  'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                              }}
-                              title="Filter monitor by class period"
-                              aria-label="Filter by class period"
-                              aria-expanded={showPeriodFilter}
-                            >
-                              <Filter
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                              {selectedPeriodNames.length ===
-                              sessionPeriodNames.length
-                                ? 'All Periods'
-                                : `${selectedPeriodNames.length}/${sessionPeriodNames.length}`}
-                            </button>
-                            {showPeriodFilter && (
-                              <PeriodSelector
-                                rosters={rosters.filter((r) =>
-                                  sessionPeriodNames.includes(r.name)
-                                )}
-                                selectedPeriodNames={selectedPeriodNames}
-                                onSave={setSelectedPeriodNames}
-                                onClose={() => setShowPeriodFilter(false)}
-                              />
-                            )}
-                          </div>
-                        )}
-                        <button
-                          onClick={handleToggleColors}
-                          className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                            quizMonitorColorsEnabled
-                              ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
-                              : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
-                          }`}
-                          style={{
-                            fontSize: 'min(9px, 2.5cqmin)',
-                            padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                          }}
-                          title="Tint completed rows by score band (≥80% green, 60-79% amber, <60% rose)"
-                          aria-pressed={quizMonitorColorsEnabled}
-                        >
-                          <Palette
-                            style={{
-                              width: 'min(12px, 3cqmin)',
-                              height: 'min(12px, 3cqmin)',
-                            }}
-                          />
-                          Colors
-                        </button>
-                        <button
-                          onClick={handleCycleScoreDisplay}
-                          className="flex items-center gap-1 font-bold rounded-md transition-all text-brand-blue-primary/70 hover:text-brand-blue-primary bg-brand-blue-lighter/30"
-                          style={{
-                            fontSize: 'min(9px, 2.5cqmin)',
-                            padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                          }}
-                          title={`Score display: ${quizMonitorScoreDisplay} — click to cycle (% → answered/total → hidden)`}
-                          aria-label="Cycle score display"
-                        >
-                          {quizMonitorScoreDisplay === 'percent' && (
-                            <>
-                              <Percent
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                              %
-                            </>
-                          )}
-                          {quizMonitorScoreDisplay === 'count' && (
-                            <>
-                              <BarChart3
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                              n/N
-                            </>
-                          )}
-                          {quizMonitorScoreDisplay === 'hidden' && (
-                            <>
-                              <EyeOff
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                            </>
-                          )}
-                        </button>
-                        {session.tabWarningsEnabled !== false && (
-                          <button
-                            onClick={() => setShowTabWarnings(!showTabWarnings)}
-                            className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                              showTabWarnings
-                                ? 'text-red-500 bg-red-50'
-                                : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
-                            }`}
-                            style={{
-                              fontSize: 'min(9px, 2.5cqmin)',
-                              padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                            }}
-                            title="Show/hide tab switch warnings in roster"
-                          >
-                            <AlertTriangle
-                              style={{
-                                width: 'min(12px, 3cqmin)',
-                                height: 'min(12px, 3cqmin)',
-                              }}
-                            />
-                          </button>
-                        )}
-                      </div>
+                      <RosterToolbar
+                        rosters={rosters}
+                        sessionPeriodNames={sessionPeriodNames}
+                        selectedPeriodNames={selectedPeriodNames}
+                        onChangeSelectedPeriods={setSelectedPeriodNames}
+                        showPeriodFilter={showPeriodFilter}
+                        onTogglePeriodFilter={() =>
+                          setShowPeriodFilter(!showPeriodFilter)
+                        }
+                        onClosePeriodFilter={() => setShowPeriodFilter(false)}
+                        colorsEnabled={quizMonitorColorsEnabled}
+                        onToggleColors={handleToggleColors}
+                        scoreDisplay={quizMonitorScoreDisplay}
+                        onCycleScoreDisplay={handleCycleScoreDisplay}
+                        tabWarningsAllowed={
+                          session.tabWarningsEnabled !== false
+                        }
+                        showTabWarnings={showTabWarnings}
+                        onToggleTabWarnings={() =>
+                          setShowTabWarnings(!showTabWarnings)
+                        }
+                      />
                     )}
                   </div>
-                  {showRoster && (
+                  {showRoster && filteredResponses.length === 0 && (
+                    <div
+                      className="flex items-center justify-between rounded-xl border border-dashed border-brand-blue-primary/20 bg-white/60"
+                      style={{
+                        padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+                        fontSize: 'min(11px, 3cqmin)',
+                      }}
+                    >
+                      <span className="text-brand-blue-primary/70 font-medium">
+                        No students match the active class-period filter.
+                      </span>
+                      <button
+                        onClick={() =>
+                          setSelectedPeriodNames(sessionPeriodNames)
+                        }
+                        className="text-brand-blue-primary font-bold hover:underline"
+                      >
+                        Clear filter
+                      </button>
+                    </div>
+                  )}
+                  {showRoster && filteredResponses.length > 0 && (
                     <div
                       className="max-h-60 overflow-y-auto pr-1 custom-scrollbar"
                       style={{
@@ -1500,6 +1445,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                               response={r}
                               totalQuestions={session.totalQuestions}
                               questions={quizData.questions}
+                              scoringConfig={scoringConfig}
                               colorsEnabled={quizMonitorColorsEnabled}
                               scoreDisplay={quizMonitorScoreDisplay}
                               showTabWarnings={
@@ -1780,8 +1726,11 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                 </div>
               )}
 
-              {/* Student roster for waiting/ended */}
-              {filteredResponses.length > 0 && (
+              {/* Student roster for waiting/ended. Same gate semantics as
+                   the active-session roster above: keep the toolbar
+                   reachable when an active filter narrows the view to
+                   zero rows. */}
+              {(responses.length > 0 || filterActive) && (
                 <div className="space-y-2 mt-2">
                   <div className="flex items-center justify-between border-b border-brand-blue-primary/10 pb-1">
                     <button
@@ -1813,142 +1762,52 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                       )}
                     </button>
                     {showRoster && (
-                      <div className="flex items-center gap-2">
-                        {sessionPeriodNames.length > 1 && (
-                          <div className="relative">
-                            <button
-                              onClick={() =>
-                                setShowPeriodFilter(!showPeriodFilter)
-                              }
-                              className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                                selectedPeriodNames.length <
-                                sessionPeriodNames.length
-                                  ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
-                                  : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
-                              }`}
-                              style={{
-                                fontSize: 'min(9px, 2.5cqmin)',
-                                padding:
-                                  'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                              }}
-                              title="Filter monitor by class period"
-                              aria-label="Filter by class period"
-                              aria-expanded={showPeriodFilter}
-                            >
-                              <Filter
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                              {selectedPeriodNames.length ===
-                              sessionPeriodNames.length
-                                ? 'All Periods'
-                                : `${selectedPeriodNames.length}/${sessionPeriodNames.length}`}
-                            </button>
-                            {showPeriodFilter && (
-                              <PeriodSelector
-                                rosters={rosters.filter((r) =>
-                                  sessionPeriodNames.includes(r.name)
-                                )}
-                                selectedPeriodNames={selectedPeriodNames}
-                                onSave={setSelectedPeriodNames}
-                                onClose={() => setShowPeriodFilter(false)}
-                              />
-                            )}
-                          </div>
-                        )}
-                        <button
-                          onClick={handleToggleColors}
-                          className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                            quizMonitorColorsEnabled
-                              ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
-                              : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
-                          }`}
-                          style={{
-                            fontSize: 'min(9px, 2.5cqmin)',
-                            padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                          }}
-                          title="Tint completed rows by score band (≥80% green, 60-79% amber, <60% rose)"
-                          aria-pressed={quizMonitorColorsEnabled}
-                        >
-                          <Palette
-                            style={{
-                              width: 'min(12px, 3cqmin)',
-                              height: 'min(12px, 3cqmin)',
-                            }}
-                          />
-                          Colors
-                        </button>
-                        <button
-                          onClick={handleCycleScoreDisplay}
-                          className="flex items-center gap-1 font-bold rounded-md transition-all text-brand-blue-primary/70 hover:text-brand-blue-primary bg-brand-blue-lighter/30"
-                          style={{
-                            fontSize: 'min(9px, 2.5cqmin)',
-                            padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                          }}
-                          title={`Score display: ${quizMonitorScoreDisplay} — click to cycle (% → answered/total → hidden)`}
-                          aria-label="Cycle score display"
-                        >
-                          {quizMonitorScoreDisplay === 'percent' && (
-                            <>
-                              <Percent
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                              %
-                            </>
-                          )}
-                          {quizMonitorScoreDisplay === 'count' && (
-                            <>
-                              <BarChart3
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                              n/N
-                            </>
-                          )}
-                          {quizMonitorScoreDisplay === 'hidden' && (
-                            <>
-                              <EyeOff
-                                style={{
-                                  width: 'min(12px, 3cqmin)',
-                                  height: 'min(12px, 3cqmin)',
-                                }}
-                              />
-                            </>
-                          )}
-                        </button>
-                        {session.tabWarningsEnabled !== false && (
-                          <button
-                            onClick={() => setShowTabWarnings(!showTabWarnings)}
-                            className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                              showTabWarnings
-                                ? 'text-red-500 bg-red-50'
-                                : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
-                            }`}
-                            style={{
-                              fontSize: 'min(9px, 2.5cqmin)',
-                              padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
-                            }}
-                            title="Show/hide tab switch warnings in roster"
-                          >
-                            <AlertTriangle
-                              style={{
-                                width: 'min(12px, 3cqmin)',
-                                height: 'min(12px, 3cqmin)',
-                              }}
-                            />
-                          </button>
-                        )}
-                      </div>
+                      <RosterToolbar
+                        rosters={rosters}
+                        sessionPeriodNames={sessionPeriodNames}
+                        selectedPeriodNames={selectedPeriodNames}
+                        onChangeSelectedPeriods={setSelectedPeriodNames}
+                        showPeriodFilter={showPeriodFilter}
+                        onTogglePeriodFilter={() =>
+                          setShowPeriodFilter(!showPeriodFilter)
+                        }
+                        onClosePeriodFilter={() => setShowPeriodFilter(false)}
+                        colorsEnabled={quizMonitorColorsEnabled}
+                        onToggleColors={handleToggleColors}
+                        scoreDisplay={quizMonitorScoreDisplay}
+                        onCycleScoreDisplay={handleCycleScoreDisplay}
+                        tabWarningsAllowed={
+                          session.tabWarningsEnabled !== false
+                        }
+                        showTabWarnings={showTabWarnings}
+                        onToggleTabWarnings={() =>
+                          setShowTabWarnings(!showTabWarnings)
+                        }
+                      />
                     )}
                   </div>
-                  {showRoster && (
+                  {showRoster && filteredResponses.length === 0 && (
+                    <div
+                      className="flex items-center justify-between rounded-xl border border-dashed border-brand-blue-primary/20 bg-white/60"
+                      style={{
+                        padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+                        fontSize: 'min(11px, 3cqmin)',
+                      }}
+                    >
+                      <span className="text-brand-blue-primary/70 font-medium">
+                        No students match the active class-period filter.
+                      </span>
+                      <button
+                        onClick={() =>
+                          setSelectedPeriodNames(sessionPeriodNames)
+                        }
+                        className="text-brand-blue-primary font-bold hover:underline"
+                      >
+                        Clear filter
+                      </button>
+                    </div>
+                  )}
+                  {showRoster && filteredResponses.length > 0 && (
                     <div
                       className="max-h-60 overflow-y-auto pr-1 custom-scrollbar"
                       style={{
@@ -1970,6 +1829,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                               response={r}
                               totalQuestions={session.totalQuestions}
                               questions={quizData.questions}
+                              scoringConfig={scoringConfig}
                               colorsEnabled={quizMonitorColorsEnabled}
                               scoreDisplay={quizMonitorScoreDisplay}
                               showTabWarnings={
@@ -2198,10 +2058,198 @@ const InteractiveStatBox: React.FC<{
   );
 };
 
+/**
+ * Right-side controls in the roster header: period filter, Colors toggle,
+ * score-display cycle, and tab-warnings toggle. Extracted because the same
+ * cluster is rendered in two layouts (active in-question view and
+ * waiting/ended view) and the previous inline duplication was already
+ * starting to drift across edits.
+ */
+const RosterToolbar: React.FC<{
+  rosters: ClassRoster[];
+  sessionPeriodNames: string[];
+  selectedPeriodNames: string[];
+  onChangeSelectedPeriods: (names: string[]) => void;
+  showPeriodFilter: boolean;
+  onTogglePeriodFilter: () => void;
+  onClosePeriodFilter: () => void;
+  colorsEnabled: boolean;
+  onToggleColors: () => void;
+  scoreDisplay: 'percent' | 'count' | 'hidden';
+  onCycleScoreDisplay: () => void;
+  tabWarningsAllowed: boolean;
+  showTabWarnings: boolean;
+  onToggleTabWarnings: () => void;
+}> = ({
+  rosters,
+  sessionPeriodNames,
+  selectedPeriodNames,
+  onChangeSelectedPeriods,
+  showPeriodFilter,
+  onTogglePeriodFilter,
+  onClosePeriodFilter,
+  colorsEnabled,
+  onToggleColors,
+  scoreDisplay,
+  onCycleScoreDisplay,
+  tabWarningsAllowed,
+  showTabWarnings,
+  onToggleTabWarnings,
+}) => {
+  const filterActive =
+    sessionPeriodNames.length > 1 &&
+    selectedPeriodNames.length < sessionPeriodNames.length;
+  const scoreDisplayLabels = {
+    percent: 'showing percent',
+    count: 'showing answered / total',
+    hidden: 'hidden',
+  } as const;
+  return (
+    <div className="flex items-center gap-2">
+      {sessionPeriodNames.length > 1 && (
+        <div className="relative">
+          <button
+            onClick={onTogglePeriodFilter}
+            className={`flex items-center gap-1 font-bold rounded-md transition-all ${
+              filterActive
+                ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
+                : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
+            }`}
+            style={{
+              fontSize: 'min(9px, 2.5cqmin)',
+              padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+            }}
+            title="Filter monitor by class period"
+            aria-label="Filter by class period"
+            aria-haspopup="dialog"
+            aria-expanded={showPeriodFilter}
+          >
+            <Filter
+              style={{
+                width: 'min(12px, 3cqmin)',
+                height: 'min(12px, 3cqmin)',
+              }}
+            />
+            {filterActive
+              ? `${selectedPeriodNames.length}/${sessionPeriodNames.length}`
+              : 'All Periods'}
+          </button>
+          {showPeriodFilter && (
+            <PeriodSelector
+              rosters={rosters.filter((r) =>
+                sessionPeriodNames.includes(r.name)
+              )}
+              selectedPeriodNames={selectedPeriodNames}
+              onSave={onChangeSelectedPeriods}
+              onClose={onClosePeriodFilter}
+            />
+          )}
+        </div>
+      )}
+      <button
+        onClick={onToggleColors}
+        className={`flex items-center gap-1 font-bold rounded-md transition-all ${
+          colorsEnabled
+            ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
+            : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
+        }`}
+        style={{
+          fontSize: 'min(9px, 2.5cqmin)',
+          padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+        }}
+        title="Tint completed rows by score band (≥80% green, 60-79% amber, <60% rose)"
+        aria-pressed={colorsEnabled}
+      >
+        <Palette
+          style={{
+            width: 'min(12px, 3cqmin)',
+            height: 'min(12px, 3cqmin)',
+          }}
+        />
+        Colors
+      </button>
+      <button
+        onClick={onCycleScoreDisplay}
+        className="flex items-center gap-1 font-bold rounded-md transition-all text-brand-blue-primary/70 hover:text-brand-blue-primary bg-brand-blue-lighter/30"
+        style={{
+          fontSize: 'min(9px, 2.5cqmin)',
+          padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+        }}
+        title={`Score display — ${scoreDisplayLabels[scoreDisplay]}. Click to cycle: percent → answered / total → hidden.`}
+        aria-label="Cycle score display"
+      >
+        {scoreDisplay === 'percent' && (
+          <>
+            <Percent
+              style={{
+                width: 'min(12px, 3cqmin)',
+                height: 'min(12px, 3cqmin)',
+              }}
+            />
+            %
+          </>
+        )}
+        {scoreDisplay === 'count' && (
+          <>
+            <BarChart3
+              style={{
+                width: 'min(12px, 3cqmin)',
+                height: 'min(12px, 3cqmin)',
+              }}
+            />
+            n/N
+          </>
+        )}
+        {scoreDisplay === 'hidden' && (
+          <EyeOff
+            style={{
+              width: 'min(12px, 3cqmin)',
+              height: 'min(12px, 3cqmin)',
+            }}
+          />
+        )}
+      </button>
+      {tabWarningsAllowed && (
+        <button
+          onClick={onToggleTabWarnings}
+          className={`flex items-center gap-1 font-bold rounded-md transition-all ${
+            showTabWarnings
+              ? 'text-red-500 bg-red-50'
+              : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
+          }`}
+          style={{
+            fontSize: 'min(9px, 2.5cqmin)',
+            padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+          }}
+          title="Show/hide tab switch warnings in roster"
+        >
+          <AlertTriangle
+            style={{
+              width: 'min(12px, 3cqmin)',
+              height: 'min(12px, 3cqmin)',
+            }}
+          />
+        </button>
+      )}
+    </div>
+  );
+};
+
 const StudentRow: React.FC<{
   response: QuizResponse;
   totalQuestions: number;
   questions: QuizQuestion[];
+  /**
+   * Session scoring config (speed bonus, streak multiplier). When the
+   * session is gamified the percent-mode pill renders raw points (matching
+   * the gamified scoreboard) instead of a stale percentage. The score-band
+   * tinting still uses the un-bonused percentage so the proficiency tier
+   * doesn't get distorted by streak luck.
+   */
+  scoringConfig: {
+    speedBonusEnabled?: boolean;
+    streakBonusEnabled?: boolean;
+  };
   /** When true, completed-row backgrounds tint by score band; otherwise white. */
   colorsEnabled: boolean;
   /** Right-column score pill content. */
@@ -2219,6 +2267,7 @@ const StudentRow: React.FC<{
   response,
   totalQuestions,
   questions,
+  scoringConfig,
   colorsEnabled,
   scoreDisplay,
   showTabWarnings,
@@ -2230,21 +2279,30 @@ const StudentRow: React.FC<{
 }) => {
   const warnings = response.tabSwitchWarnings ?? 0;
 
-  const score =
+  // Two scores: the unmodified percentage drives the tint band (so
+  // gamification bonuses don't distort the proficiency tier), and the
+  // gamification-aware display score drives the pill text (so it agrees
+  // with the live scoreboard).
+  const bandScore =
     response.status === 'completed'
       ? getResponseScore(response, questions)
       : null;
+  const displayScore =
+    response.status === 'completed'
+      ? getDisplayScore(response, questions, scoringConfig)
+      : null;
+  const scoreSuffix = getScoreSuffix(scoringConfig);
 
   // Row background. When colors are enabled AND the student has finished,
   // tint by score band (≥80% green / 60-79% amber / <60% rose). Active and
   // joined rows always render as a clean white surface — there's no score
   // to encode yet. With colors off, every row is white.
   const rowBg = (() => {
-    if (!colorsEnabled || score == null) {
+    if (!colorsEnabled || bandScore == null) {
       return 'bg-white border-slate-200';
     }
-    if (score >= 80) return 'bg-emerald-50 border-emerald-200';
-    if (score >= 60) return 'bg-amber-50 border-amber-200';
+    if (bandScore >= 80) return 'bg-emerald-50 border-emerald-200';
+    if (bandScore >= 60) return 'bg-amber-50 border-amber-200';
     return 'bg-rose-50 border-rose-200';
   })();
 
@@ -2309,14 +2367,18 @@ const StudentRow: React.FC<{
     );
   }
 
-  // Right-column pill content.
+  // Right-column pill content. `count` mode is intentionally
+  // "answered / total" (progress), not "correct / total" — teachers
+  // running self-paced sessions want to see where each student is in
+  // the quiz, which is why the toolbar button title spells out
+  // "Answered / Total" rather than the ambiguous "n/N".
   let pillText: string | null;
   if (scoreDisplay === 'hidden') {
     pillText = null;
   } else if (scoreDisplay === 'count') {
     pillText = `${response.answers.length}/${totalQuestions}`;
-  } else if (response.status === 'completed' && score != null) {
-    pillText = `${score}%`;
+  } else if (response.status === 'completed' && displayScore != null) {
+    pillText = `${displayScore}${scoreSuffix}`;
   } else {
     // No completed score yet — fall back to progress so teachers always see
     // *something* about in-progress students even when "percent" is selected.

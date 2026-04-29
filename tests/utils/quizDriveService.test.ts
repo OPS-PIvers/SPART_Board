@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   QuizDriveService,
   PlcSheetMissingError,
+  PlcSheetSchemaMismatchError,
 } from '@/utils/quizDriveService';
+import type { QuizQuestion, QuizResponse } from '@/types';
 
 /**
  * Mock helper: enqueues `fetch` responses in order so the tests can
@@ -353,5 +355,245 @@ describe('QuizDriveService appendToExistingSheet error surfacing', () => {
       })
     ).rejects.toBeInstanceOf(PlcSheetMissingError);
     errSpy.mockRestore();
+  });
+});
+
+// ─── Helpers for column-shape and PLC schema-guard tests ──────────────────
+
+function makeQuestion(id: string, points = 1): QuizQuestion {
+  return {
+    id,
+    text: `Question ${id}`,
+    type: 'MC',
+    correctAnswer: 'A',
+    incorrectAnswers: ['B', 'C'],
+    timeLimit: 0,
+    points,
+  };
+}
+
+function makeResponse(overrides: Partial<QuizResponse>): QuizResponse {
+  return {
+    studentUid: overrides.pin ?? overrides.studentUid ?? 'uid',
+    pin: overrides.pin,
+    classPeriod: overrides.classPeriod,
+    joinedAt: 0,
+    status: overrides.status ?? 'completed',
+    answers: overrides.answers ?? [
+      { questionId: 'q1', answer: 'A', answeredAt: 0 },
+    ],
+    submittedAt: overrides.submittedAt ?? 0,
+    tabSwitchWarnings: overrides.tabSwitchWarnings ?? 0,
+    score: overrides.score ?? null,
+    ...overrides,
+  };
+}
+
+describe('QuizDriveService.exportResultsToSheet — column shape', () => {
+  let service: QuizDriveService;
+  beforeEach(() => {
+    service = new QuizDriveService('test-token');
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('writes the post-PR header schema with no "Period" column', async () => {
+    const fetchSpy = queueFetchResponses([
+      {
+        json: () =>
+          Promise.resolve({
+            spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/abc',
+          }),
+      },
+    ]);
+
+    await service.exportResultsToSheet(
+      'Title',
+      [
+        makeResponse({ pin: '01', classPeriod: 'P1' }),
+        makeResponse({ pin: '02', classPeriod: 'P2' }),
+      ],
+      [makeQuestion('q1')]
+    );
+
+    const calls = (fetchSpy as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls as Array<[string, RequestInit]>;
+    const body = parseBody(calls[0][1]);
+    const sheets = body.sheets as Array<{
+      data: Array<{
+        rowData: Array<{
+          values: Array<{ userEnteredValue: { stringValue: string } }>;
+        }>;
+      }>;
+    }>;
+    const header = sheets[0].data[0].rowData[0].values.map(
+      (v) => v.userEnteredValue.stringValue
+    );
+
+    // Strict ordering: any change here flags a column-shape regression.
+    expect(header.slice(0, 11)).toEqual([
+      'Timestamp',
+      'Teacher',
+      'Class Period',
+      'Student',
+      'PIN',
+      'Status',
+      'Score (%)',
+      'Points Earned',
+      'Max Points',
+      'Warnings',
+      'Submitted At',
+    ]);
+    // No legacy "Period" column anywhere.
+    expect(header).not.toContain('Period');
+  });
+
+  it('sorts data rows by Student column at index 3 (post-Period-removal)', async () => {
+    const fetchSpy = queueFetchResponses([
+      {
+        json: () =>
+          Promise.resolve({
+            spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/abc',
+          }),
+      },
+    ]);
+
+    await service.exportResultsToSheet(
+      'Title',
+      [
+        makeResponse({ pin: '01', classPeriod: 'P1' }),
+        makeResponse({ pin: '02', classPeriod: 'P1' }),
+      ],
+      [makeQuestion('q1')],
+      {
+        // Names are looked up by classPeriod. Use the period-scoped key
+        // shape `${period}${pin}` (matches `buildPinToNameMap`).
+        pinToName: {
+          ['P1' + String.fromCharCode(0x01) + '01']: 'Zeta, Alex',
+          ['P1' + String.fromCharCode(0x01) + '02']: 'Alpha, Sam',
+        },
+      }
+    );
+
+    const calls = (fetchSpy as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls as Array<[string, RequestInit]>;
+    const body = parseBody(calls[0][1]);
+    const sheets = body.sheets as Array<{
+      data: Array<{
+        rowData: Array<{
+          values: Array<{ userEnteredValue: { stringValue: string } }>;
+        }>;
+      }>;
+    }>;
+    const allRows = sheets[0].data[0].rowData.map((row) =>
+      row.values.map((v) => v.userEnteredValue.stringValue)
+    );
+    // Header + 2 data rows + question-analysis stats block
+    const dataRows = [allRows[1], allRows[2]];
+    // Sorted by Student (index 3): Alpha, Sam comes before Zeta, Alex.
+    expect(dataRows[0][3]).toBe('Alpha, Sam');
+    expect(dataRows[1][3]).toBe('Zeta, Alex');
+  });
+
+  it('throws PlcSheetSchemaMismatchError when appending to an old-schema PLC sheet', async () => {
+    queueFetchResponses([
+      // Tab metadata
+      {
+        json: () =>
+          Promise.resolve({
+            sheets: [{ properties: { title: 'Results' } }],
+          }),
+      },
+      // Row-1 read returns the OLD 13-column header that includes "Period"
+      {
+        json: () =>
+          Promise.resolve({
+            values: [
+              [
+                'Timestamp',
+                'Teacher',
+                'Period',
+                'Class Period',
+                'Student',
+                'PIN',
+                'Status',
+                'Score (%)',
+                'Points Earned',
+                'Max Points',
+                'Warnings',
+                'Submitted At',
+                'Q1 (1pt): Question q1',
+              ],
+            ],
+          }),
+      },
+    ]);
+
+    await expect(
+      service.exportResultsToSheet(
+        'Q',
+        [makeResponse({ pin: '01' })],
+        [makeQuestion('q1')],
+        {
+          plcMode: true,
+          plcSheetUrl: 'https://docs.google.com/spreadsheets/d/old-schema/edit',
+        }
+      )
+    ).rejects.toBeInstanceOf(PlcSheetSchemaMismatchError);
+  });
+
+  it('appends cleanly when the existing PLC sheet header matches the current schema', async () => {
+    const fetchSpy = queueFetchResponses([
+      // Tab metadata
+      {
+        json: () =>
+          Promise.resolve({
+            sheets: [{ properties: { title: 'Results' } }],
+          }),
+      },
+      // Row-1 read returns the matching 12-column header
+      {
+        json: () =>
+          Promise.resolve({
+            values: [
+              [
+                'Timestamp',
+                'Teacher',
+                'Class Period',
+                'Student',
+                'PIN',
+                'Status',
+                'Score (%)',
+                'Points Earned',
+                'Max Points',
+                'Warnings',
+                'Submitted At',
+                'Q1 (1pt): Question q1',
+              ],
+            ],
+          }),
+      },
+      // Append succeeds
+      { json: () => Promise.resolve({}) },
+    ]);
+
+    await expect(
+      service.exportResultsToSheet(
+        'Q',
+        [makeResponse({ pin: '01', classPeriod: 'P1' })],
+        [makeQuestion('q1')],
+        {
+          plcMode: true,
+          plcSheetUrl: 'https://docs.google.com/spreadsheets/d/ok/edit',
+        }
+      )
+    ).resolves.toBe('https://docs.google.com/spreadsheets/d/ok');
+
+    // Last fetch call is the append; verify it ran (i.e. we didn't throw early).
+    const calls = (fetchSpy as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls;
+    expect(calls.length).toBe(3);
   });
 });
