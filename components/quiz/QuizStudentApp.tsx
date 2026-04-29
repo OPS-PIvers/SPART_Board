@@ -12,8 +12,11 @@
  * Flow (SSO `studentRole` from /my-assignments):
  *  1. Student is already signed in via custom token (claims.studentRole).
  *  2. Code is in the URL; PIN is unnecessary — identity = `auth.uid`.
- *  3. We auto-join on mount (still showing the period picker for
- *     multi-period sessions) and proceed straight to the waiting room.
+ *  3. We auto-join on mount, bypassing both the PIN form and the period
+ *     picker. SSO students are already linked to a class period via their
+ *     classId, so classPeriod is irrelevant for the join — the response
+ *     doc is keyed by `auth.uid` and the teacher's monitor view resolves
+ *     the period from the classId via the roster.
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
