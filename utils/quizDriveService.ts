@@ -594,10 +594,22 @@ export class QuizDriveService {
   }
 
   /**
-   * Clear-and-rewrite a PLC sheet with all responses. Used by the
-   * Re-export Sheet button when there's no append-delta — gives the
-   * teacher a way to force a clean rebuild without abandoning the
-   * canonical sheet URL.
+   * Clear-and-rewrite a PLC sheet with the owner teacher's responses,
+   * preserving every peer teacher's rows in their original cell format.
+   * Used by the Re-export Sheet button when there's no append-delta —
+   * lets the owner force a clean rebuild of THEIR contribution to the
+   * sheet without destroying peers' data.
+   *
+   * The owner reconciliation: rows whose Teacher column matches the
+   * `teacherName` option (after the same trim/fallback rules as
+   * `buildResultsSheetData`) are dropped from the sheet and re-emitted
+   * from `responses`. All other rows are preserved verbatim.
+   *
+   * Why this matters: client-side `responses` is the current teacher's
+   * Firestore session only — PLC peers' responses live in their own
+   * `quiz_sessions/{sessionId}` documents and are not visible here. A
+   * naïve rebuild that wrote only the local responses would silently
+   * destroy every peer's data.
    */
   async regeneratePlcSheet(
     sheetUrl: string,
@@ -609,12 +621,53 @@ export class QuizDriveService {
       teacherName?: string;
     }
   ): Promise<string> {
+    const ownerName =
+      (options?.teacherName?.trim() ? options.teacherName.trim() : null) ??
+      'Unknown Teacher';
+
+    // Read the existing sheet so peer rows can be preserved. If the
+    // read fails (404/403), `readPlcSheet` throws PlcSheetMissingError
+    // and the caller falls through to the create-fresh-sheet recovery.
+    const { rows: existingRows } = await this.readPlcSheet(sheetUrl);
+
+    // Convert peer PlcSheetRows back to the same string[] cell shape
+    // that `buildResultsSheetData` produces. Identity columns first, then
+    // the per-question correctness cells (preserved verbatim — number of
+    // question columns may differ from the current quiz definition if a
+    // teacher has since edited the quiz; we preserve the historical
+    // shape rather than reshape it). Owner rows (Teacher matches
+    // `ownerName`) are dropped here and re-emitted below from local
+    // responses.
+    const preservedPeerRows: string[][] = existingRows
+      .filter((r) => r.teacher !== ownerName)
+      .map((r) => [
+        r.timestamp,
+        r.teacher,
+        r.classPeriod,
+        r.student,
+        r.pin,
+        r.status,
+        r.scorePercent,
+        r.pointsEarned,
+        r.maxPoints,
+        r.warnings,
+        r.submittedAt,
+        ...r.questionAnswers,
+      ]);
+
     const { headers, dataRows } = this.buildResultsSheetData(
       responses,
       questions,
       options
     );
-    return this.clearAndRewritePlcSheet(sheetUrl, headers, dataRows);
+
+    // Combine and re-sort by Student column (index 3) so the union has
+    // the same ordering invariant as a fresh export.
+    const allRows = [...preservedPeerRows, ...dataRows].sort((a, b) =>
+      (a[3] ?? '').localeCompare(b[3] ?? '')
+    );
+
+    return this.clearAndRewritePlcSheet(sheetUrl, headers, allRows);
   }
 
   /**
