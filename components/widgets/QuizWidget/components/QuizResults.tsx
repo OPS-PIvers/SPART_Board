@@ -410,7 +410,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         pinToName: exportPinToName,
         byStudentUid,
         teacherName: config.teacherName,
-        periodName: config.periodName,
         plcMode: config.plcMode,
         // Prefer the active assignment's `plc.sheetUrl` (per-assignment
         // model). Fall back to `config.plcSheetUrl` for legacy assignments
@@ -532,7 +531,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         pinToName: exportPinToName,
         byStudentUid,
         teacherName: config.teacherName,
-        periodName: config.periodName,
         plcMode: true,
         plcSheetUrl: exportUrl,
       };

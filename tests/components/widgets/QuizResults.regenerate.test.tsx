@@ -124,7 +124,6 @@ function makePlcConfig(): QuizConfig {
     view: 'results',
     plcMode: true,
     teacherName: 'Teacher A',
-    periodName: 'Period 1',
   } as unknown as QuizConfig;
 }
 
