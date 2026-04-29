@@ -3,7 +3,7 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: weekly — Monday_
-_Last audited: 2026-04-22_
+_Last audited: 2026-04-29_
 _Last action: 2026-04-27_
 
 ---
@@ -34,33 +34,34 @@ _Nothing currently in progress._
 - **File:** hooks/ directory
 - **Fix:** Next priority: cover `useQuizSession`'s auto-progress effect (drive both `onSnapshot` callbacks so the responses-listener-driven advance fires), then expand `useLiveSession` to cover teacher-mode actions (`startSession`, `updateSessionConfig`, `endSession`, `toggleFreezeStudent`, `toggleGlobalFreeze`). Use Vitest with mock Firebase adapters. See `tests/hooks/useLiveSession.test.ts` and the `useQuizSessionTeacher` block in `tests/hooks/useQuizSession.test.ts` as reference patterns.
 
-### MEDIUM utils/ coverage — 28 of 41 utility files have no tests
+### MEDIUM utils/ coverage — 20 of 45 utility files have no tests
 
 - **Detected:** 2026-04-13
-- **Progress (2026-04-22):** Count improved from 31 untested (2026-04-20) to 28. Since last audit, `ai.ts`, `ai_security.ts`, and `classlinkService.ts` gained test files. Currently 13 utils are tested. Still untested high-priority utilities:
-  - `googleDriveService.ts` — Google Drive dashboard sync service
+- **Progress (2026-04-29):** Count improved from 28 untested/41 files (2026-04-22) to 20 untested/45 files. Since last audit, `googleDriveService.ts`, `quizDriveService.ts`, `security.ts`, `widgetHelpers.ts`, and `urlHelpers.ts` gained test files. 4 new util files were added since last audit (`plc.ts`, `testClassAccess.ts`, `widgetDragFlag.ts`, `styles.ts`, `first5.ts`, `periodCompat.ts`) and currently have no tests. Still untested:
+  - `backgrounds.ts` — background format detection and CSS generation (pure)
+  - `slug.ts` — URL slug generation (pure, easy to test)
   - `googleCalendarService.ts` — Google Calendar API integration
   - `guidedLearningDriveService.ts` — guided learning material sync from Drive
   - `imageProcessing.ts` — image manipulation (resize, crop, compress)
   - `pexelsService.ts` — Pexels stock image API integration
   - `quizAudio.ts` — quiz audio generation utilities
-  - `quizDriveService.ts` — quiz import/export via Google Drive
   - `soundboardConfig.ts` — sound configuration parser
-  - `security.ts` — XSS prevention and input sanitization (pure, no deps, high value)
-  - `slug.ts` — URL slug generation (pure, easy to test)
-  - `backgrounds.ts` — background format detection and CSS generation (pure)
-  - `urlHelpers.ts` — URL parsing and manipulation (pure)
-  - `widgetHelpers.ts` — widget layout and config default helpers (pure)
+  - `plc.ts` — PLC (Professional Learning Community) utilities (new)
+  - `testClassAccess.ts` — test class access controls (new)
+  - `widgetDragFlag.ts` — widget drag state (new)
+  - `styles.ts` — style utilities (new)
+  - `first5.ts` — First5 widget utilities (new)
+  - `periodCompat.ts` — period compatibility utilities (new)
 - **File:** utils/ directory
-- **Fix:** Start with pure utilities with no external dependencies (security.ts, slug.ts, backgrounds.ts, urlHelpers.ts, widgetHelpers.ts) — all are testable without mocking. Then add service wrappers (googleDriveService, pexelsService) using vi.mock() for fetch/API calls.
+- **Fix:** Next priority is `backgrounds.ts` and `slug.ts` (pure, no deps). Then `plc.ts` and `testClassAccess.ts` (new business logic, high value). Use vi.mock() for service wrappers.
 
-### LOW widget test coverage — most of 58 widgets have no component tests
+### LOW widget test coverage — significant improvement, ~26 widgets remain untested
 
 - **Detected:** 2026-04-13
-- **Progress (2026-04-22):** Confirmed 7 test files exist (up from 6 last audit). Total widget count is now 58 (blooms-detail added). ~51 widgets remain untested.
+- **Progress (2026-04-29):** Test file count has grown dramatically to 61 widget test files (was 7 on 2026-04-22). New coverage includes ActivityWall, Breathing, Catalyst, Checklist, Classes, ClockWidget, Countdown, DiceWidget, DrawingWidget, Embed, ExpectationsWidget, GraphicOrganizer, GuidedLearning, InstructionalRoutines, LunchCount, MaterialsWidget, MiniApp, NumberLine, PdfWidget, PollWidget, QRWidget, RecessGear, Schedule, Scoreboard, SeatingChart, SmartNotebook, SoundWidget, SoundboardWidget, TalkingTool, TextWidget, TimeTool, TrafficLightWidget, UrlWidget, VideoActivityWidget, Weather, and math-tools/random/stickers sub-components. Approximately 26 widgets still have no component-level test file.
 - **File:** components/widgets/ directory
-- **Detail:** Only 7 test files exist for widget components. The vast majority (51+) have no automated tests. This means regressions in widget rendering, config persistence, and settings panels go undetected.
-- **Fix:** Focus first on high-complexity widgets: PollWidget (live session sync), QuizWidget, RevealGridWidget, ChecklistWidget. Use React Testing Library with Vitest. Mock useDashboard() and useAuth() hooks.
+- **Detail:** Widgets with no test coverage include: BloomsTaxonomy, Calendar, CarRiderPro, ConceptWeb, CustomWidget (main), First5, HotspotImage, MathToolInstance, MusicWidget, NeedDoPutThen, NextUp, Onboarding, RevealGrid, SpecialistSchedule, StarterPack, SyntaxFramer, WorkSymbols and several sub-components.
+- **Fix:** Focus on RevealGrid (has significant CSS scaling debt), NeedDoPutThen, WorkSymbols, and ConceptWeb. These widgets have config logic worth regression-testing. Use React Testing Library with Vitest. Mock useDashboard() and useAuth() hooks.
 
 ---
 
