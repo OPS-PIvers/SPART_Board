@@ -362,6 +362,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     await clearPlcSharedSheetUrl(owningPlc.id);
     const created = await svc.createPlcSheetAndShare({
       plcName: owningPlc.name,
+      quizTitle: quiz.title,
       memberEmailsToShareWith: getPlcTeammateEmails(owningPlc, user.uid),
     });
     const canonical = await setPlcSharedSheetUrl(owningPlc.id, created.url);
