@@ -3318,6 +3318,18 @@ export interface UserProfile {
   remoteControlEnabled?: boolean;
   /** Where the dock is anchored on screen (account-level) */
   dockPosition?: DockPosition;
+  /**
+   * Quiz live-monitor row tinting toggle. When `true` (default), rows are
+   * tinted by score band for completed students; when `false`, rows render
+   * white. Per-teacher account-level preference.
+   */
+  quizMonitorColorsEnabled?: boolean;
+  /**
+   * Quiz live-monitor right-column display. `percent` = score percentage
+   * (default), `count` = "answered/total" progress, `hidden` = blank.
+   * Per-teacher account-level preference.
+   */
+  quizMonitorScoreDisplay?: 'percent' | 'count' | 'hidden';
 }
 
 export interface SharedGroup {

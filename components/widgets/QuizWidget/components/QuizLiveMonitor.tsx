@@ -32,6 +32,8 @@ import {
   Volume2,
   VolumeX,
   Palette,
+  Percent,
+  Filter,
   Medal,
   Pause,
   Play,
@@ -55,6 +57,7 @@ import {
   buildLiveLeaderboard,
   buildPinToNameMap,
   getDisplayScore,
+  getResponseScore,
   getScoreSuffix,
   isGamificationActive,
 } from '../utils/quizScoreboard';
@@ -68,6 +71,7 @@ import {
   playPodiumFanfare,
   playQuizCompleteCelebration,
 } from '@/utils/quizAudio';
+import { PeriodSelector } from '@/components/common/library/PeriodSelector';
 
 interface QuizLiveMonitorProps {
   session: QuizSession;
@@ -271,7 +275,12 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   onBack,
 }) => {
   const { showConfirm } = useDialog();
-  const { orgId } = useAuth();
+  const {
+    orgId,
+    quizMonitorColorsEnabled,
+    quizMonitorScoreDisplay,
+    updateAccountPreferences,
+  } = useAuth();
   const pinToName = useMemo(
     () =>
       buildPinToNameMap(
@@ -331,8 +340,69 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   const showScoreboardControl = isGamifiedSession || isLiveScoreboardActive;
 
   // New state for Phase 1 & 2 features
-  const [showAnswerColors, setShowAnswerColors] = useState(false);
   const [showTabWarnings, setShowTabWarnings] = useState(true);
+  const [showPeriodFilter, setShowPeriodFilter] = useState(false);
+
+  // Periods this assignment was launched against, deduped while preserving
+  // order. Drives the class-period filter UI: hidden when there's only a
+  // single targeted period (no filtering value), shown otherwise.
+  const sessionPeriodNames = useMemo(() => {
+    const list = session.periodNames ?? [];
+    return Array.from(new Set(list.filter((p) => typeof p === 'string' && p)));
+  }, [session.periodNames]);
+
+  // Selected periods for the live monitor view. Default = all targeted periods
+  // so a fresh open shows the same data the teacher is used to. Local state —
+  // resets between sessions, which is the right default for a transient
+  // monitor filter (teachers usually want to start with everyone visible).
+  const [selectedPeriodNames, setSelectedPeriodNames] = useState<string[]>(
+    () => sessionPeriodNames
+  );
+  // If the assignment's targeted periods change (e.g. teacher edits the
+  // assignment in another tab), reset the selection rather than letting it go
+  // stale and silently filter to nothing.
+  const lastSessionPeriodsRef = useRef<string[]>(sessionPeriodNames);
+  if (
+    lastSessionPeriodsRef.current.length !== sessionPeriodNames.length ||
+    lastSessionPeriodsRef.current.some((p, i) => p !== sessionPeriodNames[i])
+  ) {
+    lastSessionPeriodsRef.current = sessionPeriodNames;
+    setSelectedPeriodNames(sessionPeriodNames);
+  }
+
+  // Apply the class-period filter to the response stream that drives the
+  // monitor's KPIs and roster. Leaderboard broadcasts intentionally use the
+  // unfiltered `responses` so the student-facing leaderboard stays global.
+  const filteredResponses = useMemo(() => {
+    // No filter active when the assignment targets a single period or when
+    // the selection covers every targeted period.
+    if (
+      sessionPeriodNames.length < 2 ||
+      selectedPeriodNames.length === sessionPeriodNames.length
+    ) {
+      return responses;
+    }
+    const allow = new Set(selectedPeriodNames);
+    return responses.filter((r) =>
+      r.classPeriod ? allow.has(r.classPeriod) : true
+    );
+  }, [responses, selectedPeriodNames, sessionPeriodNames]);
+
+  const handleToggleColors = useCallback(() => {
+    void updateAccountPreferences({
+      quizMonitorColorsEnabled: !quizMonitorColorsEnabled,
+    });
+  }, [quizMonitorColorsEnabled, updateAccountPreferences]);
+
+  const handleCycleScoreDisplay = useCallback(() => {
+    const next: 'percent' | 'count' | 'hidden' =
+      quizMonitorScoreDisplay === 'percent'
+        ? 'count'
+        : quizMonitorScoreDisplay === 'count'
+          ? 'hidden'
+          : 'percent';
+    void updateAccountPreferences({ quizMonitorScoreDisplay: next });
+  }, [quizMonitorScoreDisplay, updateAccountPreferences]);
   const [confirmRemove, setConfirmRemove] = useState<ResponseDocKey | null>(
     null
   );
@@ -542,7 +612,10 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
       : undefined;
 
   // ⚡ Bolt: Optimize multiple array iterations inside the render loop
-  // Instead of 4 separate .filter() passes, calculate all stats in one O(N) loop
+  // Instead of 4 separate .filter() passes, calculate all stats in one O(N) loop.
+  // Iterates `filteredResponses` so the KPI counts and roster lists honor the
+  // active class-period filter; the live leaderboard broadcast above stays on
+  // the unfiltered `responses` so students see the full session leaderboard.
   const { answered, completed, inProgress, joined, studentsByStatus } =
     React.useMemo(() => {
       let _answered = 0;
@@ -555,7 +628,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
         finished: StatBoxStudent[];
       } = { joined: [], active: [], finished: [] };
 
-      for (const r of responses) {
+      for (const r of filteredResponses) {
         if (currentQ && r.answers.some((a) => a.questionId === currentQ.id)) {
           _answered++;
         }
@@ -586,7 +659,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
         joined: _joined,
         studentsByStatus: byStatus,
       };
-    }, [responses, currentQ, pinToName, byStudentUid]);
+    }, [filteredResponses, currentQ, pinToName, byStudentUid]);
 
   const modeIcon =
     session.sessionMode === 'auto' ? (
@@ -791,9 +864,9 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                       marginTop: 'min(4px, 1cqmin)',
                     }}
                   >
-                    {completed} of {responses.length} finished
-                    {responses.length > 0 &&
-                      ` (${Math.round((completed / responses.length) * 100)}%)`}
+                    {completed} of {filteredResponses.length} finished
+                    {filteredResponses.length > 0 &&
+                      ` (${Math.round((completed / filteredResponses.length) * 100)}%)`}
                   </p>
                 </div>
               ) : (
@@ -979,7 +1052,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                     >
                       <span>Answered</span>
                       <span>
-                        {answered} / {responses.length}
+                        {answered} / {filteredResponses.length}
                       </span>
                     </div>
                     <div
@@ -989,7 +1062,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                       <div
                         className="h-full bg-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                         style={{
-                          width: `${responses.length > 0 ? (answered / responses.length) * 100 : 0}%`,
+                          width: `${filteredResponses.length > 0 ? (answered / filteredResponses.length) * 100 : 0}%`,
                         }}
                       />
                     </div>
@@ -1238,7 +1311,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               )}
 
               {/* 5. ROSTER show/hide + student list */}
-              {responses.length > 0 && (
+              {filteredResponses.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between border-b border-brand-blue-primary/10 pb-1">
                     <button
@@ -1249,7 +1322,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                         className="text-brand-blue-primary/60 font-black uppercase tracking-widest"
                         style={{ fontSize: 'min(10px, 3cqmin)' }}
                       >
-                        Roster · {responses.length}
+                        Roster · {filteredResponses.length}
                       </span>
                       {showRoster ? (
                         <EyeOff
@@ -1271,10 +1344,54 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                     </button>
                     {showRoster && (
                       <div className="flex items-center gap-2">
+                        {sessionPeriodNames.length > 1 && (
+                          <div className="relative">
+                            <button
+                              onClick={() =>
+                                setShowPeriodFilter(!showPeriodFilter)
+                              }
+                              className={`flex items-center gap-1 font-bold rounded-md transition-all ${
+                                selectedPeriodNames.length <
+                                sessionPeriodNames.length
+                                  ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
+                                  : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
+                              }`}
+                              style={{
+                                fontSize: 'min(9px, 2.5cqmin)',
+                                padding:
+                                  'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+                              }}
+                              title="Filter monitor by class period"
+                              aria-label="Filter by class period"
+                              aria-expanded={showPeriodFilter}
+                            >
+                              <Filter
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                              {selectedPeriodNames.length ===
+                              sessionPeriodNames.length
+                                ? 'All Periods'
+                                : `${selectedPeriodNames.length}/${sessionPeriodNames.length}`}
+                            </button>
+                            {showPeriodFilter && (
+                              <PeriodSelector
+                                rosters={rosters.filter((r) =>
+                                  sessionPeriodNames.includes(r.name)
+                                )}
+                                selectedPeriodNames={selectedPeriodNames}
+                                onSave={setSelectedPeriodNames}
+                                onClose={() => setShowPeriodFilter(false)}
+                              />
+                            )}
+                          </div>
+                        )}
                         <button
-                          onClick={() => setShowAnswerColors(!showAnswerColors)}
+                          onClick={handleToggleColors}
                           className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                            showAnswerColors
+                            quizMonitorColorsEnabled
                               ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
                               : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
                           }`}
@@ -1282,7 +1399,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             fontSize: 'min(9px, 2.5cqmin)',
                             padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
                           }}
-                          title="Color-code answers for current question"
+                          title="Tint completed rows by score band (≥80% green, 60-79% amber, <60% rose)"
+                          aria-pressed={quizMonitorColorsEnabled}
                         >
                           <Palette
                             style={{
@@ -1291,6 +1409,49 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             }}
                           />
                           Colors
+                        </button>
+                        <button
+                          onClick={handleCycleScoreDisplay}
+                          className="flex items-center gap-1 font-bold rounded-md transition-all text-brand-blue-primary/70 hover:text-brand-blue-primary bg-brand-blue-lighter/30"
+                          style={{
+                            fontSize: 'min(9px, 2.5cqmin)',
+                            padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+                          }}
+                          title={`Score display: ${quizMonitorScoreDisplay} — click to cycle (% → answered/total → hidden)`}
+                          aria-label="Cycle score display"
+                        >
+                          {quizMonitorScoreDisplay === 'percent' && (
+                            <>
+                              <Percent
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                              %
+                            </>
+                          )}
+                          {quizMonitorScoreDisplay === 'count' && (
+                            <>
+                              <BarChart3
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                              n/N
+                            </>
+                          )}
+                          {quizMonitorScoreDisplay === 'hidden' && (
+                            <>
+                              <EyeOff
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                            </>
+                          )}
                         </button>
                         {session.tabWarningsEnabled !== false && (
                           <button
@@ -1326,7 +1487,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                         flexDirection: 'column',
                       }}
                     >
-                      {responses
+                      {filteredResponses
                         .slice()
                         .sort((a, b) =>
                           (a.pin ?? '').localeCompare(b.pin ?? '')
@@ -1339,8 +1500,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                               response={r}
                               totalQuestions={session.totalQuestions}
                               questions={quizData.questions}
-                              currentQuestion={currentQ}
-                              showAnswerColors={showAnswerColors}
+                              colorsEnabled={quizMonitorColorsEnabled}
+                              scoreDisplay={quizMonitorScoreDisplay}
                               showTabWarnings={
                                 showTabWarnings &&
                                 session.tabWarningsEnabled !== false
@@ -1620,7 +1781,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               )}
 
               {/* Student roster for waiting/ended */}
-              {responses.length > 0 && (
+              {filteredResponses.length > 0 && (
                 <div className="space-y-2 mt-2">
                   <div className="flex items-center justify-between border-b border-brand-blue-primary/10 pb-1">
                     <button
@@ -1631,7 +1792,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                         className="text-brand-blue-primary/60 font-black uppercase tracking-widest"
                         style={{ fontSize: 'min(10px, 3cqmin)' }}
                       >
-                        Roster · {responses.length}
+                        Roster · {filteredResponses.length}
                       </span>
                       {showRoster ? (
                         <EyeOff
@@ -1653,10 +1814,54 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                     </button>
                     {showRoster && (
                       <div className="flex items-center gap-2">
+                        {sessionPeriodNames.length > 1 && (
+                          <div className="relative">
+                            <button
+                              onClick={() =>
+                                setShowPeriodFilter(!showPeriodFilter)
+                              }
+                              className={`flex items-center gap-1 font-bold rounded-md transition-all ${
+                                selectedPeriodNames.length <
+                                sessionPeriodNames.length
+                                  ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
+                                  : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
+                              }`}
+                              style={{
+                                fontSize: 'min(9px, 2.5cqmin)',
+                                padding:
+                                  'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+                              }}
+                              title="Filter monitor by class period"
+                              aria-label="Filter by class period"
+                              aria-expanded={showPeriodFilter}
+                            >
+                              <Filter
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                              {selectedPeriodNames.length ===
+                              sessionPeriodNames.length
+                                ? 'All Periods'
+                                : `${selectedPeriodNames.length}/${sessionPeriodNames.length}`}
+                            </button>
+                            {showPeriodFilter && (
+                              <PeriodSelector
+                                rosters={rosters.filter((r) =>
+                                  sessionPeriodNames.includes(r.name)
+                                )}
+                                selectedPeriodNames={selectedPeriodNames}
+                                onSave={setSelectedPeriodNames}
+                                onClose={() => setShowPeriodFilter(false)}
+                              />
+                            )}
+                          </div>
+                        )}
                         <button
-                          onClick={() => setShowAnswerColors(!showAnswerColors)}
+                          onClick={handleToggleColors}
                           className={`flex items-center gap-1 font-bold rounded-md transition-all ${
-                            showAnswerColors
+                            quizMonitorColorsEnabled
                               ? 'text-brand-blue-primary bg-brand-blue-lighter/50'
                               : 'text-brand-blue-primary/40 hover:text-brand-blue-primary/60'
                           }`}
@@ -1664,7 +1869,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             fontSize: 'min(9px, 2.5cqmin)',
                             padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
                           }}
-                          title="Color-code answers for current question"
+                          title="Tint completed rows by score band (≥80% green, 60-79% amber, <60% rose)"
+                          aria-pressed={quizMonitorColorsEnabled}
                         >
                           <Palette
                             style={{
@@ -1673,6 +1879,49 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                             }}
                           />
                           Colors
+                        </button>
+                        <button
+                          onClick={handleCycleScoreDisplay}
+                          className="flex items-center gap-1 font-bold rounded-md transition-all text-brand-blue-primary/70 hover:text-brand-blue-primary bg-brand-blue-lighter/30"
+                          style={{
+                            fontSize: 'min(9px, 2.5cqmin)',
+                            padding: 'min(3px, 0.7cqmin) min(6px, 1.5cqmin)',
+                          }}
+                          title={`Score display: ${quizMonitorScoreDisplay} — click to cycle (% → answered/total → hidden)`}
+                          aria-label="Cycle score display"
+                        >
+                          {quizMonitorScoreDisplay === 'percent' && (
+                            <>
+                              <Percent
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                              %
+                            </>
+                          )}
+                          {quizMonitorScoreDisplay === 'count' && (
+                            <>
+                              <BarChart3
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                              n/N
+                            </>
+                          )}
+                          {quizMonitorScoreDisplay === 'hidden' && (
+                            <>
+                              <EyeOff
+                                style={{
+                                  width: 'min(12px, 3cqmin)',
+                                  height: 'min(12px, 3cqmin)',
+                                }}
+                              />
+                            </>
+                          )}
                         </button>
                         {session.tabWarningsEnabled !== false && (
                           <button
@@ -1708,7 +1957,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                         flexDirection: 'column',
                       }}
                     >
-                      {responses
+                      {filteredResponses
                         .slice()
                         .sort((a, b) =>
                           (a.pin ?? '').localeCompare(b.pin ?? '')
@@ -1721,8 +1970,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                               response={r}
                               totalQuestions={session.totalQuestions}
                               questions={quizData.questions}
-                              currentQuestion={currentQ}
-                              showAnswerColors={showAnswerColors}
+                              colorsEnabled={quizMonitorColorsEnabled}
+                              scoreDisplay={quizMonitorScoreDisplay}
                               showTabWarnings={
                                 showTabWarnings &&
                                 session.tabWarningsEnabled !== false
@@ -1953,8 +2202,10 @@ const StudentRow: React.FC<{
   response: QuizResponse;
   totalQuestions: number;
   questions: QuizQuestion[];
-  currentQuestion?: QuizQuestion;
-  showAnswerColors: boolean;
+  /** When true, completed-row backgrounds tint by score band; otherwise white. */
+  colorsEnabled: boolean;
+  /** Right-column score pill content. */
+  scoreDisplay: 'percent' | 'count' | 'hidden';
   showTabWarnings: boolean;
   confirmRemove: boolean;
   onConfirmRemoveToggle: () => void;
@@ -1968,8 +2219,8 @@ const StudentRow: React.FC<{
   response,
   totalQuestions,
   questions,
-  currentQuestion,
-  showAnswerColors,
+  colorsEnabled,
+  scoreDisplay,
   showTabWarnings,
   confirmRemove,
   onConfirmRemoveToggle,
@@ -1979,44 +2230,39 @@ const StudentRow: React.FC<{
 }) => {
   const warnings = response.tabSwitchWarnings ?? 0;
 
-  const correctCount = response.answers.filter((a) => {
-    const q = questions.find((qn) => qn.id === a.questionId);
-    return q ? gradeAnswer(q, a.answer) : false;
-  }).length;
+  const score =
+    response.status === 'completed'
+      ? getResponseScore(response, questions)
+      : null;
 
-  // Answer color for current question
-  let answerColorDot = 'bg-brand-gray-light'; // not answered yet
-  if (showAnswerColors && currentQuestion) {
-    const ans = response.answers.find(
-      (a) => a.questionId === currentQuestion.id
-    );
-    if (ans) {
-      answerColorDot = gradeAnswer(currentQuestion, ans.answer)
-        ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
-        : 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.4)]';
-    } else {
-      answerColorDot = 'bg-amber-400';
+  // Row background. When colors are enabled AND the student has finished,
+  // tint by score band (≥80% green / 60-79% amber / <60% rose). Active and
+  // joined rows always render as a clean white surface — there's no score
+  // to encode yet. With colors off, every row is white.
+  const rowBg = (() => {
+    if (!colorsEnabled || score == null) {
+      return 'bg-white border-slate-200';
     }
-  } else {
-    // Status-based coloring
-    const statusDots = {
-      completed: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]',
-      'in-progress': 'bg-amber-500',
-      joined: 'bg-brand-gray-light',
-    };
-    answerColorDot = statusDots[response.status];
-  }
+    if (score >= 80) return 'bg-emerald-50 border-emerald-200';
+    if (score >= 60) return 'bg-amber-50 border-amber-200';
+    return 'bg-rose-50 border-rose-200';
+  })();
 
-  const statusBg = {
-    completed: 'bg-emerald-50 border-emerald-100',
-    'in-progress': 'bg-amber-50/50 border-amber-100',
-    joined: 'bg-white border-brand-blue-primary/5',
-  };
-  const statusText = {
-    completed: 'text-emerald-700 font-black',
-    'in-progress': 'text-amber-700 font-bold',
-    joined: 'text-brand-gray-primary font-medium',
-  };
+  // Status icon mirrors the KPI cards above (Joined → Users, Active → Clock,
+  // Finished → CheckCircle2). Renders in a neutral slate so the row band
+  // carries the semantic color.
+  const StatusIcon =
+    response.status === 'completed'
+      ? CheckCircle2
+      : response.status === 'in-progress'
+        ? Clock
+        : Users;
+  const statusIconColor =
+    response.status === 'completed'
+      ? 'text-emerald-600'
+      : response.status === 'in-progress'
+        ? 'text-amber-600'
+        : 'text-slate-400';
 
   const displayName = resolveResponseDisplayName(
     response,
@@ -2063,17 +2309,47 @@ const StudentRow: React.FC<{
     );
   }
 
+  // Right-column pill content.
+  let pillText: string | null;
+  if (scoreDisplay === 'hidden') {
+    pillText = null;
+  } else if (scoreDisplay === 'count') {
+    pillText = `${response.answers.length}/${totalQuestions}`;
+  } else if (response.status === 'completed' && score != null) {
+    pillText = `${score}%`;
+  } else {
+    // No completed score yet — fall back to progress so teachers always see
+    // *something* about in-progress students even when "percent" is selected.
+    pillText = `${response.answers.length}/${totalQuestions}`;
+  }
+  const pillTextClass =
+    response.status === 'completed'
+      ? 'text-emerald-700 font-black'
+      : response.status === 'in-progress'
+        ? 'text-amber-700 font-bold'
+        : 'text-brand-gray-primary font-medium';
+
   return (
     <div
-      className={`flex items-center rounded-xl border transition-all group/row ${statusBg[response.status]}`}
+      className={`flex items-center rounded-xl border transition-all group/row ${rowBg}`}
       style={{
         gap: 'min(8px, 2cqmin)',
         padding: 'min(8px, 2cqmin)',
       }}
     >
-      <div
-        className={`rounded-full shrink-0 ${answerColorDot}`}
-        style={{ width: 'min(8px, 2cqmin)', height: 'min(8px, 2cqmin)' }}
+      <StatusIcon
+        className={`shrink-0 ${statusIconColor}`}
+        style={{
+          width: 'min(14px, 3.5cqmin)',
+          height: 'min(14px, 3.5cqmin)',
+        }}
+        aria-label={
+          response.status === 'completed'
+            ? 'Finished'
+            : response.status === 'in-progress'
+              ? 'Active'
+              : 'Joined'
+        }
       />
       <span
         className="flex-1 flex items-center gap-1.5 text-brand-blue-dark font-bold truncate"
@@ -2108,14 +2384,14 @@ const StudentRow: React.FC<{
           </span>
         )}
       </span>
-      <span
-        className={`px-1.5 py-0.5 rounded-md bg-white/60 border border-white/80 ${statusText[response.status]}`}
-        style={{ fontSize: 'min(11px, 3cqmin)' }}
-      >
-        {response.status === 'completed'
-          ? `${Math.round((correctCount / Math.max(totalQuestions, 1)) * 100)}%`
-          : `${response.answers.length}/${totalQuestions}`}
-      </span>
+      {pillText !== null && (
+        <span
+          className={`px-1.5 py-0.5 rounded-md bg-white/60 border border-white/80 ${pillTextClass}`}
+          style={{ fontSize: 'min(11px, 3cqmin)' }}
+        >
+          {pillText}
+        </span>
+      )}
       {/* Remove button */}
       {onRemove && (
         <button

@@ -140,10 +140,69 @@ export function getScoreSuffix(session?: QuizScoringSession): string {
 }
 
 /**
- * Build a PIN → student full-name lookup from matching rosters.
- * Accepts an array of period names to support multi-class assignments.
- * Stores both canonical (zero-padded) and stripped PIN forms. First roster
- * wins for a given PIN when multiple rosters overlap.
+ * Composite-key separator used by `buildPinToNameMap` /
+ * `buildPinToExportNameMap`. Map keys are `${classPeriod}${PIN_KEY_SEP}${pin}`
+ * so that the same PIN in two different rosters resolves to two different
+ * students. The separator is U+0001 (Start of Heading), which can't appear in
+ * a roster name or a PIN — both are user-typed strings, but no editable text
+ * field accepts control characters.
+ */
+const PIN_KEY_SEP = '';
+
+function makePinKey(classPeriod: string, pin: string): string {
+  return `${classPeriod}${PIN_KEY_SEP}${pin}`;
+}
+
+/**
+ * Look up the roster name for a `(classPeriod, pin)` pair.
+ *
+ * Tries the period-scoped key first (correct path). Falls back to a suffix
+ * scan over the whole map when `classPeriod` is missing — preserves legacy
+ * behavior for SSO joiners and any older response docs that predate
+ * per-period scoping. Returns `undefined` when nothing matches.
+ *
+ * Both zero-padded (`"01"`) and stripped (`"1"`) forms are accepted.
+ */
+export function resolvePinName(
+  map: Record<string, string>,
+  classPeriod: string | null | undefined,
+  pin: string | null | undefined
+): string | undefined {
+  if (!pin) return undefined;
+  const stripped = pin.replace(/^0+/, '');
+  const variants = stripped && stripped !== pin ? [pin, stripped] : [pin];
+
+  if (classPeriod) {
+    for (const v of variants) {
+      const hit = map[makePinKey(classPeriod, v)];
+      if (hit) return hit;
+    }
+  }
+
+  // No-classPeriod / no-match fallback. Scan composite keys for a matching
+  // PIN suffix (legacy SSO + pre-period-scoping responses).
+  for (const v of variants) {
+    const suffix = `${PIN_KEY_SEP}${v}`;
+    for (const k in map) {
+      if (k.endsWith(suffix)) return map[k];
+    }
+  }
+
+  // Final fallback: maps built by hand (e.g., older callers, tests) may key
+  // directly on the bare PIN with no period prefix. Honor those too.
+  for (const v of variants) {
+    const hit = map[v];
+    if (hit) return hit;
+  }
+
+  return undefined;
+}
+
+/**
+ * Build a (classPeriod, PIN) → student full-name lookup from matching
+ * rosters. Accepts an array of period names to support multi-class
+ * assignments. Keys are composite (see `PIN_KEY_SEP`); always look up via
+ * `resolvePinName`, never index the map directly.
  */
 export function buildPinToNameMap(
   rosters: ClassRoster[],
@@ -157,10 +216,10 @@ export function buildPinToNameMap(
     for (const s of roster.students) {
       if (s.pin && (s.firstName || s.lastName)) {
         const name = [s.firstName, s.lastName].filter(Boolean).join(' ');
-        if (!(s.pin in map)) map[s.pin] = name;
+        map[makePinKey(pName, s.pin)] = name;
         const stripped = s.pin.replace(/^0+/, '');
-        if (stripped && stripped !== s.pin && !(stripped in map)) {
-          map[stripped] = name;
+        if (stripped && stripped !== s.pin) {
+          map[makePinKey(pName, stripped)] = name;
         }
       }
     }
@@ -169,9 +228,10 @@ export function buildPinToNameMap(
 }
 
 /**
- * Build a PIN → student name lookup formatted for spreadsheet export:
- * "Last, First" when both names exist, just first or last name alone otherwise.
- * Accepts an array of period names to support multi-class assignments.
+ * Build a (classPeriod, PIN) → student name lookup formatted for spreadsheet
+ * export: "Last, First" when both names exist, just first or last name alone
+ * otherwise. Keys are composite (see `PIN_KEY_SEP`); always look up via
+ * `resolvePinName`.
  */
 export function buildPinToExportNameMap(
   rosters: ClassRoster[],
@@ -188,10 +248,10 @@ export function buildPinToExportNameMap(
           s.lastName && s.firstName
             ? `${s.lastName}, ${s.firstName}`
             : s.lastName || s.firstName;
-        if (!(s.pin in map)) map[s.pin] = name;
+        map[makePinKey(pName, s.pin)] = name;
         const stripped = s.pin.replace(/^0+/, '');
-        if (stripped && stripped !== s.pin && !(stripped in map)) {
-          map[stripped] = name;
+        if (stripped && stripped !== s.pin) {
+          map[makePinKey(pName, stripped)] = name;
         }
       }
     }

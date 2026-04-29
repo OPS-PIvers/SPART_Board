@@ -18,6 +18,7 @@ import {
 import { gradeAnswer } from '../hooks/useQuizSession';
 import { APP_NAME } from '../config/constants';
 import { authError } from './driveAuthErrors';
+import { resolvePinName } from '../components/widgets/QuizWidget/utils/quizScoreboard';
 
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
@@ -474,7 +475,6 @@ export class QuizDriveService {
        */
       byStudentUid?: Map<string, { givenName: string; familyName: string }>;
       teacherName?: string;
-      periodName?: string;
       plcMode?: boolean;
       plcSheetUrl?: string;
     }
@@ -484,9 +484,6 @@ export class QuizDriveService {
     const teacherName =
       (options?.teacherName?.trim() ? options.teacherName.trim() : null) ??
       'Unknown Teacher';
-    const periodName =
-      (options?.periodName?.trim() ? options.periodName.trim() : null) ??
-      'Unknown Period';
     const timestamp = new Date().toISOString();
 
     const resolveStudent = (r: QuizResponse): string => {
@@ -498,18 +495,25 @@ export class QuizDriveService {
         if (full) return full;
       }
       if (r.pin) {
-        return pinToName[r.pin] ?? `Student (PIN: ${r.pin})`;
+        // Disambiguate by classPeriod: the same PIN in two rosters belongs
+        // to two different students, so we must scope the lookup.
+        const name = resolvePinName(pinToName, r.classPeriod, r.pin);
+        return name ?? `Student (PIN: ${r.pin})`;
       }
       return 'Student';
     };
 
     const maxPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
 
-    // Build header row — question columns show point value
+    // Build header row — question columns show point value.
+    // "Class Period" is the period the student selected at join time
+    // (`response.classPeriod`); the older static "Period" column was
+    // dropped in 2026-04-29 because it was just the assignment's primary
+    // period repeated on every row, which is misleading for anonymous
+    // joiners spanning multiple sections.
     const headers = [
       'Timestamp',
       'Teacher',
-      'Period',
       'Class Period',
       'Student',
       'PIN',
@@ -549,7 +553,6 @@ export class QuizDriveService {
       return [
         timestamp,
         teacherName,
-        periodName,
         r.classPeriod ?? '',
         resolveStudent(r),
         // PIN column is left blank for SSO students (no roster PIN); their
@@ -565,8 +568,8 @@ export class QuizDriveService {
       ];
     });
 
-    // Sort rows by student name (column index 4) for consistent export order
-    dataRows.sort((a, b) => a[4].localeCompare(b[4]));
+    // Sort rows by student name (column index 3) for consistent export order
+    dataRows.sort((a, b) => a[3].localeCompare(b[3]));
 
     // PLC mode: append to existing shared sheet
     if (options?.plcMode) {
