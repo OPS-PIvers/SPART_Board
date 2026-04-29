@@ -110,8 +110,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   );
 
   // PLC subscription — needed at the widget level (not just inside the
-  // Assign modal) so we can auto-create + cache the shared sheet URL on
-  // the right `plcs/{id}` doc when Share-with-PLC fires.
+  // Assign modal) so the assign flow can resolve the selected PLC and its
+  // members when creating a fresh per-assignment sheet via Share-with-PLC.
   const { plcs } = usePlcs();
 
   // Ephemeral modal state for per-assignment settings editing.
@@ -664,6 +664,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           }
         }}
         initialExportUrl={activeAssignment?.exportUrl ?? null}
+        plcSheetUrl={activeAssignment?.plc?.sheetUrl ?? null}
         onExportUrlSaved={
           activeAssignmentId
             ? (url) => setAssignmentExportUrl(activeAssignmentId, url)

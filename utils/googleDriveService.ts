@@ -136,7 +136,9 @@ export class GoogleDriveService {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
+        // 403 with no Drive scope == revoked token / scope-downgrade,
+        // which is functionally an auth failure from the teacher's POV.
         throw authError('Google Drive access expired. Please sign in again.');
       }
       throw new Error(

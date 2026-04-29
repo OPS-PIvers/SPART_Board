@@ -71,12 +71,20 @@ export const setDriveAuthErrorHandler = (
  * Inspect any caught/thrown value. If it looks like a Drive auth failure,
  * fire the toast (subject to the de-dupe latch). Returns `true` iff the
  * input was classified as an auth error.
+ *
+ * The latch is set only AFTER a successful dispatch. If no handler is
+ * registered yet (e.g. an early Drive call before `DashboardProvider`'s
+ * effect runs), we leave the latch open so the next report — once a
+ * handler exists — actually surfaces a toast. This avoids the race where
+ * a pre-handler error would otherwise silence every subsequent toast in
+ * the same stale-token episode.
  */
 export const reportDriveAuthError = (err: unknown): boolean => {
   if (!isDriveAuthError(err)) return false;
   if (driveAuthErrorLatched) return true;
+  if (!driveAuthErrorHandler) return true;
+  driveAuthErrorHandler();
   driveAuthErrorLatched = true;
-  driveAuthErrorHandler?.();
   return true;
 };
 
@@ -100,6 +108,10 @@ export const authError = (message: string): Error => {
  * the same current token; resetting unconditionally would clear the latch
  * each time a consumer mounted, defeating the de-dupe. Comparing against
  * `lastSeenToken` makes the reset fire exactly once per real token rotation.
+ *
+ * Sign-out (`token === null`) also resets the latch so a subsequent sign-in
+ * with the same cached token (rare but possible: re-entering an unexpired
+ * session) re-arms the toast for that session's first stale episode.
  */
 export const onDriveTokenChange = (token: string | null): void => {
   if (token && token !== lastSeenToken) {
@@ -107,6 +119,7 @@ export const onDriveTokenChange = (token: string | null): void => {
     driveAuthErrorLatched = false;
   } else if (!token) {
     lastSeenToken = null;
+    driveAuthErrorLatched = false;
   }
 };
 
