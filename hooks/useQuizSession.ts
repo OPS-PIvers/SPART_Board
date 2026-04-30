@@ -1103,7 +1103,43 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         setSession(sessionData);
         return sessionDoc.id;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to join quiz';
+        // Translate Firestore `permission-denied` into a student-friendly
+        // message. The raw FirebaseError says "Missing or insufficient
+        // permissions" which reads to a student like the page is broken
+        // rather than "you can't do this" — so the click feels silent.
+        //
+        // Anonymous joiners hit permission-denied in one realistic shape:
+        // the deterministic-key collision path where another anon UID
+        // already wrote a response at the same `pin-{period}-{pin}` key.
+        // The class gate doesn't apply to anon (anon tokens lack the
+        // studentRole claim, so passesStudentClassGate short-circuits to
+        // true), so this is the only common cause.
+        //
+        // Non-anonymous joiners (custom-token studentRole users from
+        // /my-assignments) hit permission-denied when the session targets
+        // a class their `classIds` claim doesn't include — the response
+        // create rule's class gate denies. Surface that as an enrollment
+        // hint so the student knows to ping the teacher rather than think
+        // the link is broken.
+        //
+        // Other failures (network, code-not-found, attempt-limit) keep
+        // their existing messages — `AttemptLimitReachedError` already
+        // ships a friendly "ask your teacher" message of its own.
+        let msg: string;
+        if (
+          getErrorCode(err) === 'permission-denied' &&
+          auth.currentUser?.isAnonymous
+        ) {
+          msg =
+            "Looks like that PIN has already joined this quiz. Ask your teacher to clear it for you, or double-check that you've selected the right class period.";
+        } else if (getErrorCode(err) === 'permission-denied') {
+          msg =
+            "You can't join this quiz. Ask your teacher to make sure you're enrolled in the right class.";
+        } else if (err instanceof Error) {
+          msg = err.message;
+        } else {
+          msg = 'Failed to join quiz';
+        }
         setError(msg);
         throw err;
       } finally {
