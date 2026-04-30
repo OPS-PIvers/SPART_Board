@@ -933,7 +933,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               },
               'paused',
               derived.classIds,
-              derived.rosterIds
+              derived.rosterIds,
+              derived.classPeriodByClassId
             );
             // Persist the teacher's last-used rosters per quiz so
             // re-launching the same quiz pre-selects the same classes.
