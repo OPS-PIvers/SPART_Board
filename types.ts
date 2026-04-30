@@ -1866,6 +1866,16 @@ export interface QuizSession {
    * derived from these rosters' `classlinkClassId` metadata.
    */
   rosterIds?: string[];
+  /**
+   * Map from each targeted classId (`classlinkClassId` or `testClassId`) to
+   * its corresponding roster name (= period name). SSO students read this
+   * at join time to write `classPeriod` directly onto their response doc,
+   * matching the snapshot-at-write-time semantics of the anonymous PIN
+   * flow. Empty/missing for legacy sessions and for sessions with no
+   * SSO-eligible rosters — those fall back to teacher-side roster
+   * enrichment in `QuizResults`.
+   */
+  classPeriodByClassId?: Record<string, string>;
 
   /**
    * Max completed submissions allowed per student (mirrored from the

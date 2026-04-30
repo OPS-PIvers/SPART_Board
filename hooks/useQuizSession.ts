@@ -1010,6 +1010,15 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         //   - the intersection has multiple matches (ambiguous — leave
         //     unset so the teacher can identify and fix the targeting).
         let resolvedClassId: string | undefined;
+        // Period name resolved from `sessionData.classPeriodByClassId`. Lets
+        // SSO students write `classPeriod` directly onto their response —
+        // matching the snapshot-at-write-time semantics anonymous PIN
+        // joiners already have, and removing the dependency on the
+        // teacher-side roster lookup at results-render time. Stays
+        // undefined for legacy sessions (map missing) and for malformed
+        // map shapes (Firestore type drift); the teacher-side enrichment
+        // in QuizResults remains as the legacy fallback.
+        let resolvedPeriodName: string | undefined;
         if (!currentUser.isAnonymous && !classPeriod) {
           try {
             const tokenResult = await currentUser.getIdTokenResult();
@@ -1030,6 +1039,14 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
               );
               if (matches.length === 1) {
                 resolvedClassId = matches[0];
+                const periodFromSession =
+                  sessionData.classPeriodByClassId?.[resolvedClassId];
+                if (
+                  typeof periodFromSession === 'string' &&
+                  periodFromSession.length > 0
+                ) {
+                  resolvedPeriodName = periodFromSession;
+                }
               }
             }
           } catch (claimErr) {
@@ -1051,6 +1068,12 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           // field is omitted entirely for SSO `studentRole` joiners — the
           // teacher's grading view resolves their name from `studentUid`
           // via `getPseudonymsForAssignmentV1`.
+          // Anonymous picker arg wins over SSO snapshot when both exist
+          // (defensive — the SSO branch above gates on `!classPeriod`, so
+          // they shouldn't both be set in practice). Both paths land on
+          // the same `classPeriod` field so all downstream surfaces (period
+          // dropdown, export sheet) read uniformly.
+          const finalClassPeriod = classPeriod ?? resolvedPeriodName;
           const newResponse: QuizResponse = {
             studentUid,
             joinedAt: Date.now(),
@@ -1060,7 +1083,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
             submittedAt: null,
             completedAttempts: 0,
             ...(sanitizedPin ? { pin: sanitizedPin } : {}),
-            ...(classPeriod ? { classPeriod } : {}),
+            ...(finalClassPeriod ? { classPeriod: finalClassPeriod } : {}),
             ...(resolvedClassId ? { classId: resolvedClassId } : {}),
           };
           await setDoc(responseRef, newResponse).catch((err: unknown) =>
@@ -1070,7 +1093,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
               studentUid,
               isAnonymous: currentUser.isAnonymous,
               hasPin: !!sanitizedPin,
-              hasClassPeriod: !!classPeriod,
+              hasClassPeriod: !!finalClassPeriod,
               hasResolvedClassId: !!resolvedClassId,
               sessionClassIds: Array.isArray(sessionData.classIds)
                 ? sessionData.classIds
@@ -1080,22 +1103,34 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
               sessionStatus: sessionData.status,
             })
           );
-        } else if (resolvedClassId) {
-          // Backfill classId on an existing SSO response that joined before
-          // this code shipped, so the period filter and sheet column are
+        } else if (resolvedClassId || resolvedPeriodName) {
+          // Backfill classId and/or classPeriod on an existing SSO response
+          // that joined before this code shipped (or before the teacher
+          // retargeted), so the period filter and sheet column are
           // self-healing on rejoin without a separate migration.
           const existing = existingSnap.data() as QuizResponse;
-          if (existing.classId !== resolvedClassId) {
-            await updateDoc(responseRef, { classId: resolvedClassId }).catch(
-              (err: unknown) =>
-                logQuizJoinFirestoreError('update-backfill-classid', err, {
-                  sessionId: sessionDoc.id,
-                  responseKey,
-                  studentUid,
-                  existingClassId: existing.classId,
-                  resolvedClassId,
-                  isAnonymous: currentUser.isAnonymous,
-                })
+          const patch: Partial<QuizResponse> = {};
+          if (resolvedClassId && existing.classId !== resolvedClassId) {
+            patch.classId = resolvedClassId;
+          }
+          if (
+            resolvedPeriodName &&
+            existing.classPeriod !== resolvedPeriodName
+          ) {
+            patch.classPeriod = resolvedPeriodName;
+          }
+          if (Object.keys(patch).length > 0) {
+            await updateDoc(responseRef, patch).catch((err: unknown) =>
+              logQuizJoinFirestoreError('update-backfill-sso-targeting', err, {
+                sessionId: sessionDoc.id,
+                responseKey,
+                studentUid,
+                existingClassId: existing.classId,
+                existingClassPeriod: existing.classPeriod,
+                resolvedClassId,
+                resolvedPeriodName,
+                isAnonymous: currentUser.isAnonymous,
+              })
             );
           }
         }

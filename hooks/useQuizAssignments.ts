@@ -81,7 +81,15 @@ export interface UseQuizAssignmentsResult {
     settings: QuizAssignmentSettings,
     initialStatus?: QuizAssignmentStatus,
     classIds?: string[],
-    rosterIds?: string[]
+    rosterIds?: string[],
+    /**
+     * Map from each targeted classId to its corresponding roster name
+     * (= period name). Written onto the session doc so SSO joiners can
+     * snapshot `classPeriod` on their response without resolving the
+     * teacher's roster doc. Derived alongside `classIds`/`rosterIds` via
+     * `deriveSessionTargetsFromRosters`.
+     */
+    classPeriodByClassId?: Record<string, string>
   ) => Promise<{ id: string; code: string }>;
   /** Set both assignment.status and session.status to 'paused'. */
   pauseAssignment: (assignmentId: string) => Promise<void>;
@@ -369,12 +377,20 @@ export const useQuizAssignments = (
   const createAssignment = useCallback<
     UseQuizAssignmentsResult['createAssignment']
   >(
-    async (quiz, settings, initialStatus = 'active', classIds, rosterIds) => {
+    async (
+      quiz,
+      settings,
+      initialStatus = 'active',
+      classIds,
+      rosterIds,
+      classPeriodByClassId
+    ) => {
       if (!userId) throw new Error('Not authenticated');
       const targetClassIds = classIds ?? [];
       const targetRosterIds = (rosterIds ?? []).filter(
         (id): id is string => typeof id === 'string' && id.length > 0
       );
+      const targetClassPeriodByClassId = classPeriodByClassId ?? {};
 
       const assignmentId = crypto.randomUUID();
       const code = await allocateJoinCode();
@@ -449,6 +465,12 @@ export const useQuizAssignments = (
           ? { classIds: targetClassIds, classId: targetClassIds[0] }
           : {}),
         ...(targetRosterIds.length > 0 ? { rosterIds: targetRosterIds } : {}),
+        // SSO classPeriod snapshot: lets students write `classPeriod`
+        // directly on their response at join time without a roster lookup.
+        // Omit when empty so the session doc stays as small as possible.
+        ...(Object.keys(targetClassPeriodByClassId).length > 0
+          ? { classPeriodByClassId: targetClassPeriodByClassId }
+          : {}),
         attemptLimit: settings.attemptLimit ?? null,
       };
 
@@ -726,11 +748,15 @@ export const useQuizAssignments = (
       // to classId for the legacy single-class gate — same dual-write
       // the "Phase 5A: multi-class ClassLink targeting" branch in
       // createAssignment uses at create time.
+      // Always overwrite `classPeriodByClassId` (even with `{}`) so a
+      // retarget that drops every SSO-eligible roster clears the stale
+      // prior map rather than leaving it lingering.
       const sessionPatch: Record<string, unknown> = {
         rosterIds: cleanedRosterIds,
         classIds: cleanedClassIds,
         classId: cleanedClassIds[0] ?? '',
         periodNames: cleanedPeriodNames,
+        classPeriodByClassId: targets.classPeriodByClassId,
       };
 
       const batch = writeBatch(db);

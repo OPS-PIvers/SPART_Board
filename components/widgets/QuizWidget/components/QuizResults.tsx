@@ -194,12 +194,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     return () => document.removeEventListener('keydown', handleKey);
   }, [showScoreboardPrompt]);
 
-  // Map classlinkClassId / testClassId → roster name (= period name) so we
-  // can resolve a class period for SSO students who joined via a custom-token
-  // claim and never went through the period picker. The student-side
-  // `joinQuizSession` writes their `classId` claim onto the response doc;
-  // this is the teacher-side reverse map. Anonymous PIN joiners write
-  // `classPeriod` directly and bypass this entirely.
+  // Legacy fallback: map classlinkClassId / testClassId → roster name
+  // (= period name) so we can resolve a class period for SSO responses
+  // that lack `classPeriod` directly. New responses already carry
+  // `classPeriod` because `joinQuizSession` reads it off
+  // `session.classPeriodByClassId` at SSO join time and writes it
+  // alongside `classId`. This map only rescues IN-FLIGHT responses that
+  // joined before that fix shipped — and then only when the teacher's
+  // rosters still resolve.
   const classIdToPeriodName = useMemo(() => {
     const map = new Map<string, string>();
     for (const roster of rosters) {

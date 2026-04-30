@@ -957,6 +957,242 @@ describe('useQuizSessionStudent — joinQuizSession', () => {
     expect(writtenResponse.classPeriod).toBe('Period 1');
     expect(writtenResponse).not.toHaveProperty('classId');
   });
+
+  it('snapshots classPeriod from session.classPeriodByClassId when the SSO claim resolves unambiguously', async () => {
+    // The new fix: when the session carries a classId→periodName map and
+    // the student's claim resolves to a single classId, write `classPeriod`
+    // directly onto the response so the teacher's results page doesn't
+    // depend on roster-side enrichment to populate the period dropdown
+    // and the export sheet's Class Period column.
+    (
+      auth as unknown as {
+        currentUser: {
+          uid: string;
+          isAnonymous: boolean;
+          getIdTokenResult: () => Promise<{
+            claims: { classIds?: unknown };
+          }>;
+        } | null;
+      }
+    ).currentUser = {
+      uid: 'sso-uid-snapshot-1',
+      isAnonymous: false,
+      getIdTokenResult: () =>
+        Promise.resolve({ claims: { classIds: ['classlink-A'] } }),
+    };
+
+    (
+      firestore.getDocs as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      empty: false,
+      docs: [
+        buildSessionDoc('s1', {
+          status: 'waiting',
+          classIds: ['classlink-A'],
+          classPeriodByClassId: { 'classlink-A': 'Period 3' },
+        }),
+      ],
+    });
+    (
+      firestore.getDoc as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({ exists: () => false });
+    const setDocMock = firestore.setDoc as unknown as ReturnType<typeof vi.fn>;
+    setDocMock.mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useQuizSessionStudent());
+    await act(async () => {
+      await result.current.joinQuizSession('ABC123');
+    });
+
+    expect(setDocMock).toHaveBeenCalledTimes(1);
+    const writtenResponse = setDocMock.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    expect(writtenResponse.classId).toBe('classlink-A');
+    expect(writtenResponse.classPeriod).toBe('Period 3');
+  });
+
+  it('omits classPeriod when the session lacks a classPeriodByClassId entry for the resolved classId', async () => {
+    // Legacy session (created before the snapshot field shipped, or
+    // retargeted via a path that didn't populate the map): we still
+    // resolve and write classId, but classPeriod stays unset and the
+    // teacher-side roster enrichment in QuizResults remains the path
+    // that populates it for downstream surfaces.
+    (
+      auth as unknown as {
+        currentUser: {
+          uid: string;
+          isAnonymous: boolean;
+          getIdTokenResult: () => Promise<{
+            claims: { classIds?: unknown };
+          }>;
+        } | null;
+      }
+    ).currentUser = {
+      uid: 'sso-uid-legacy-1',
+      isAnonymous: false,
+      getIdTokenResult: () =>
+        Promise.resolve({ claims: { classIds: ['classlink-A'] } }),
+    };
+
+    (
+      firestore.getDocs as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      empty: false,
+      docs: [
+        buildSessionDoc('s1', {
+          status: 'waiting',
+          classIds: ['classlink-A'],
+          // No classPeriodByClassId — legacy session.
+        }),
+      ],
+    });
+    (
+      firestore.getDoc as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({ exists: () => false });
+    const setDocMock = firestore.setDoc as unknown as ReturnType<typeof vi.fn>;
+    setDocMock.mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useQuizSessionStudent());
+    await act(async () => {
+      await result.current.joinQuizSession('ABC123');
+    });
+
+    const writtenResponse = setDocMock.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    expect(writtenResponse.classId).toBe('classlink-A');
+    expect(writtenResponse).not.toHaveProperty('classPeriod');
+  });
+
+  it('backfills both classId and classPeriod in a single update on SSO rejoin', async () => {
+    // Existing in-flight response (joined before the fix) lacks both
+    // fields; on rejoin we write a single combined patch so the period
+    // dropdown and export self-heal without a separate migration.
+    (
+      auth as unknown as {
+        currentUser: {
+          uid: string;
+          isAnonymous: boolean;
+          getIdTokenResult: () => Promise<{
+            claims: { classIds?: unknown };
+          }>;
+        } | null;
+      }
+    ).currentUser = {
+      uid: 'sso-uid-backfill-1',
+      isAnonymous: false,
+      getIdTokenResult: () =>
+        Promise.resolve({ claims: { classIds: ['classlink-A'] } }),
+    };
+
+    (
+      firestore.getDocs as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      empty: false,
+      docs: [
+        buildSessionDoc('s1', {
+          status: 'waiting',
+          classIds: ['classlink-A'],
+          classPeriodByClassId: { 'classlink-A': 'Period 3' },
+        }),
+      ],
+    });
+    (
+      firestore.getDoc as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      exists: () => true,
+      // Legacy in-flight response: 'in-progress' status keeps us off the
+      // attempt-limit reset branch and into the targeted-backfill branch.
+      data: () => ({
+        studentUid: 'sso-uid-backfill-1',
+        status: 'in-progress',
+        answers: [],
+        score: null,
+        submittedAt: null,
+        completedAttempts: 0,
+        joinedAt: 0,
+      }),
+    });
+    const updateDocMock = firestore.updateDoc as unknown as ReturnType<
+      typeof vi.fn
+    >;
+    updateDocMock.mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useQuizSessionStudent());
+    await act(async () => {
+      await result.current.joinQuizSession('ABC123');
+    });
+
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+    expect(updateDocMock.mock.calls[0][1]).toEqual({
+      classId: 'classlink-A',
+      classPeriod: 'Period 3',
+    });
+  });
+
+  it('skips the backfill update when the existing SSO response already has both fields current', async () => {
+    // Idempotent rejoin: response already carries the resolved classId
+    // and matching classPeriod. Patch is empty, so updateDoc is not
+    // called — guards against an extra Firestore write per rejoin.
+    (
+      auth as unknown as {
+        currentUser: {
+          uid: string;
+          isAnonymous: boolean;
+          getIdTokenResult: () => Promise<{
+            claims: { classIds?: unknown };
+          }>;
+        } | null;
+      }
+    ).currentUser = {
+      uid: 'sso-uid-noop-1',
+      isAnonymous: false,
+      getIdTokenResult: () =>
+        Promise.resolve({ claims: { classIds: ['classlink-A'] } }),
+    };
+
+    (
+      firestore.getDocs as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      empty: false,
+      docs: [
+        buildSessionDoc('s1', {
+          status: 'waiting',
+          classIds: ['classlink-A'],
+          classPeriodByClassId: { 'classlink-A': 'Period 3' },
+        }),
+      ],
+    });
+    (
+      firestore.getDoc as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({
+        studentUid: 'sso-uid-noop-1',
+        status: 'in-progress',
+        answers: [],
+        score: null,
+        submittedAt: null,
+        completedAttempts: 0,
+        joinedAt: 0,
+        classId: 'classlink-A',
+        classPeriod: 'Period 3',
+      }),
+    });
+    const updateDocMock = firestore.updateDoc as unknown as ReturnType<
+      typeof vi.fn
+    >;
+
+    const { result } = renderHook(() => useQuizSessionStudent());
+    await act(async () => {
+      await result.current.joinQuizSession('ABC123');
+    });
+
+    expect(updateDocMock).not.toHaveBeenCalled();
+  });
 });
 
 // ─── Teacher hook ─────────────────────────────────────────────────────────────
