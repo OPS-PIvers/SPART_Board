@@ -241,76 +241,85 @@ const QuizJoinFlow: React.FC<{ isStudentRole: boolean }> = ({
   // any class periods. SSO joiners skip this and join via the auto-join effect.
   if (periodStep && !joined) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-sm">
-          <div className="flex items-center justify-center mb-8">
-            <ClipboardList className="w-5 h-5 text-violet-400 mr-2" />
-            <span className="text-sm text-slate-300 font-semibold">
-              Student Quiz
-            </span>
-          </div>
-
-          <h1 className="text-2xl font-black text-white mb-2 text-center">
-            Select Your Class
-          </h1>
-          <p className="text-slate-400 text-sm text-center mb-6">
-            Which class period are you in?
-          </p>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
+      // Outer wrapper owns the scroll: body has `overflow: hidden` globally
+      // (index.css), so a `min-h-screen` child can't trigger document scroll
+      // when the period list is taller than the viewport. We give the outer
+      // an explicit viewport height + `overflow-y-auto`, then let the inner
+      // grow past 100% via `min-h-full` — content centers when it fits and
+      // the outer scrolls when it doesn't (e.g. teacher with 8+ periods on
+      // a phone-sized viewport).
+      <div className="h-screen overflow-y-auto bg-slate-900">
+        <div className="min-h-full flex flex-col items-center justify-center p-6">
+          <div className="w-full max-w-sm">
+            <div className="flex items-center justify-center mb-8">
+              <ClipboardList className="w-5 h-5 text-violet-400 mr-2" />
+              <span className="text-sm text-slate-300 font-semibold">
+                Student Quiz
+              </span>
             </div>
-          )}
 
-          <div className="space-y-2 mb-6">
-            {periodStep.map((period) => (
-              <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                className={`w-full px-4 py-4 rounded-xl text-lg font-bold transition-all ${
-                  selectedPeriod === period
-                    ? 'bg-violet-600 text-white ring-2 ring-violet-400'
-                    : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                {period}
-              </button>
-            ))}
-          </div>
+            <h1 className="text-2xl font-black text-white mb-2 text-center">
+              Select Your Class
+            </h1>
+            <p className="text-slate-400 text-sm text-center mb-6">
+              Which class period are you in?
+            </p>
 
-          <button
-            onClick={() => {
-              // joinQuizSession re-throws after populating `error` state for
-              // the UI. Catch here so the rejection isn't an unhandled
-              // promise — `void` would only silence the linter, not handle
-              // the rejection.
-              handlePeriodConfirm().catch((err: unknown) => {
-                console.warn('[QuizStudentApp] Period confirm failed:', err);
-              });
-            }}
-            disabled={loading || !selectedPeriod}
-            className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-lg rounded-xl flex items-center justify-center gap-2 transition-colors"
-          >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                Continue <ArrowRight className="w-5 h-5" />
-              </>
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
             )}
-          </button>
 
-          <button
-            onClick={() => {
-              setPeriodStep(null);
-              setSelectedPeriod(null);
-            }}
-            className="w-full mt-3 py-2 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors"
-          >
-            Go Back
-          </button>
+            <div className="space-y-2 mb-6">
+              {periodStep.map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setSelectedPeriod(period)}
+                  className={`w-full px-4 py-4 rounded-xl text-lg font-bold transition-all ${
+                    selectedPeriod === period
+                      ? 'bg-violet-600 text-white ring-2 ring-violet-400'
+                      : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                // joinQuizSession re-throws after populating `error` state for
+                // the UI. Catch here so the rejection isn't an unhandled
+                // promise — `void` would only silence the linter, not handle
+                // the rejection.
+                handlePeriodConfirm().catch((err: unknown) => {
+                  console.warn('[QuizStudentApp] Period confirm failed:', err);
+                });
+              }}
+              disabled={loading || !selectedPeriod}
+              className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-lg rounded-xl flex items-center justify-center gap-2 transition-colors"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Continue <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                setPeriodStep(null);
+                setSelectedPeriod(null);
+              }}
+              className="w-full mt-3 py-2 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
     );
