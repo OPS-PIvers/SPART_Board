@@ -27,6 +27,7 @@ import { useFolders } from '@/hooks/useFolders';
 import { VideoActivityManager } from './components/VideoActivityManager';
 import { Creator } from './components/Creator';
 import { Results } from './components/Results';
+import { VideoActivityLiveMonitor } from './components/VideoActivityLiveMonitor';
 import { VideoActivityEditorModal } from './components/VideoActivityEditorModal';
 import { Loader2, AlertTriangle, LogIn } from 'lucide-react';
 import { deriveSessionTargetsFromRosters } from '@/utils/resolveAssignmentTargets';
@@ -87,6 +88,7 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
   const {
     createSession,
     responses,
+    liveSession,
     subscribeToSession,
     unsubscribeFromSession,
   } = useVideoActivitySessionTeacher();
@@ -267,6 +269,76 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
       <Results
         session={selectedSession}
         responses={responses}
+        onBack={() => {
+          unsubscribeFromSession();
+          setSelectedSession(null);
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              view: 'manager',
+              resultsSessionId: null,
+            } as VideoActivityConfig,
+          });
+        }}
+      />
+    );
+  }
+
+  if (view === 'monitor' && selectedSession) {
+    // Prefer the live snapshot when it's caught up to the assignment we
+    // opened the monitor for; otherwise fall back to the initial fetch so
+    // the view never flashes empty between subscribe and first snapshot.
+    const sessionForMonitor =
+      liveSession && liveSession.id === selectedSession.id
+        ? liveSession
+        : selectedSession;
+    return (
+      <VideoActivityLiveMonitor
+        session={sessionForMonitor}
+        responses={responses}
+        onEnd={async () => {
+          try {
+            await deactivateAssignment(selectedSession.id);
+            addToast('Assignment ended.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to end assignment',
+              'error'
+            );
+            return;
+          }
+          unsubscribeFromSession();
+          setSelectedSession(null);
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              view: 'manager',
+              resultsSessionId: null,
+            } as VideoActivityConfig,
+          });
+        }}
+        onPause={async () => {
+          try {
+            await pauseAssignment(selectedSession.id);
+            addToast('Assignment paused.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to pause',
+              'error'
+            );
+          }
+        }}
+        onResume={async () => {
+          try {
+            await resumeAssignment(selectedSession.id);
+            addToast('Assignment resumed.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to resume',
+              'error'
+            );
+          }
+        }}
         onBack={() => {
           unsubscribeFromSession();
           setSelectedSession(null);
@@ -471,6 +543,44 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
             config: {
               ...config,
               view: 'results',
+              selectedActivityId: assignment.activityId,
+              selectedActivityTitle: assignment.activityTitle,
+              resultsSessionId: assignment.id,
+            } as VideoActivityConfig,
+          });
+        }}
+        onArchiveMonitor={async (assignment) => {
+          // Same hydrate-then-subscribe pattern as the Results CTA: get the
+          // full session doc up-front so the monitor has the question set
+          // to grade against, and start the live listeners before flipping
+          // the view so we don't render empty between mount and snapshot.
+          subscribeToSession(assignment.id);
+          try {
+            const snap = await getDoc(
+              doc(db, 'video_activity_sessions', assignment.id)
+            );
+            if (snap.exists()) {
+              setSelectedSession(snap.data() as VideoActivitySession);
+            } else {
+              addToast(
+                'Session data no longer available — cannot open monitor.',
+                'error'
+              );
+              return;
+            }
+          } catch (err) {
+            addToast(
+              err instanceof Error
+                ? err.message
+                : 'Failed to open assignment monitor',
+              'error'
+            );
+            return;
+          }
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              view: 'monitor',
               selectedActivityId: assignment.activityId,
               selectedActivityTitle: assignment.activityTitle,
               resultsSessionId: assignment.id,

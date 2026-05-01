@@ -29,6 +29,7 @@ import {
   FileUp,
   Link2,
   Loader2,
+  Monitor,
   PlayCircle,
   Plus,
   Trash2,
@@ -133,6 +134,11 @@ export interface VideoActivityManagerProps {
   onArchiveDeactivate?: (assignment: VideoActivityAssignment) => Promise<void>;
   onArchiveDelete?: (assignment: VideoActivityAssignment) => Promise<void>;
   onArchiveResults?: (assignment: VideoActivityAssignment) => void;
+  /**
+   * Open the live teacher monitor for an active assignment. Surfaced as the
+   * In Progress tab's primary CTA when wired; mirrors the Quiz manager.
+   */
+  onArchiveMonitor?: (assignment: VideoActivityAssignment) => void;
 
   /** Persisted library grid/list toggle (from widget config). */
   initialLibraryViewMode?: 'grid' | 'list';
@@ -234,6 +240,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
   onArchiveDeactivate,
   onArchiveDelete,
   onArchiveResults,
+  onArchiveMonitor,
   initialLibraryViewMode,
   onLibraryViewModeChange,
   rosters,
@@ -685,13 +692,18 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
             mode
           );
 
-          // Primary action: for active assignments, the headline CTA copies
-          // the join link (the label matches the handler — previously "Open"
-          // which was misleading since no new view was opened). For archived
-          // assignments, the primary action opens Results.
+          // Primary action: for active (live) assignments the headline CTA
+          // is Monitor when wired — that's the live teacher view of student
+          // progress. Falls back to "Copy link" for paused assignments
+          // (Monitor would show a paused screen) and for callers that don't
+          // wire `onArchiveMonitor`. Archive mode still opens Results.
+          const isLiveActive =
+            mode === 'active' && assignment.status === 'active';
           const primaryAction =
             mode === 'active'
-              ? { label: 'Copy link', icon: Copy }
+              ? isLiveActive && onArchiveMonitor
+                ? { label: 'Monitor', icon: Monitor }
+                : { label: 'Copy link', icon: Copy }
               : { label: 'Results', icon: BarChart3 };
 
           return (
@@ -713,8 +725,12 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
                 label: primaryAction.label,
                 icon: primaryAction.icon,
                 onClick: () => {
-                  if (mode === 'active' && onArchiveCopyUrl) {
-                    onArchiveCopyUrl(assignment);
+                  if (mode === 'active') {
+                    if (isLiveActive && onArchiveMonitor) {
+                      onArchiveMonitor(assignment);
+                    } else if (onArchiveCopyUrl) {
+                      onArchiveCopyUrl(assignment);
+                    }
                   } else if (onArchiveResults) {
                     onArchiveResults(assignment);
                   }
