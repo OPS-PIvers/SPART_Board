@@ -2233,7 +2233,7 @@ export interface VideoActivityMetadata {
   folderId?: string | null;
 }
 
-export type VideoActivityView = 'manager' | 'create' | 'results';
+export type VideoActivityView = 'manager' | 'create' | 'results' | 'monitor';
 
 /** Widget configuration for the video activity widget (teacher side). */
 export interface VideoActivityConfig {
