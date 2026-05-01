@@ -1,6 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LunchCountConfig, LunchMenuDay, WidgetData } from '@/types';
+import {
+  LunchCountConfig,
+  LunchMenuDay,
+  LunchMenuItem,
+  WidgetData,
+} from '@/types';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/config/firebase';
 import { toLunchCountSchoolSite } from '@/config/buildings';
@@ -14,6 +19,7 @@ interface UseNutrisliceProps {
 
 interface NutrisliceFood {
   name?: string;
+  image_url?: string;
 }
 
 interface NutrisliceMenuItem {
@@ -31,6 +37,45 @@ interface NutrisliceDay {
 interface NutrisliceWeek {
   days?: NutrisliceDay[];
 }
+
+const ALT_MEAL_SECTION_PATTERNS = [
+  'bento',
+  'alternative',
+  'alt',
+  'pb-jammin',
+  'pb jammin',
+];
+
+const isAltMealSectionName = (name: string | undefined): boolean => {
+  if (!name) return false;
+  const lower = name.toLowerCase();
+  return ALT_MEAL_SECTION_PATTERNS.some((p) => lower.includes(p));
+};
+
+const itemDisplayName = (item: NutrisliceMenuItem): string =>
+  item.food?.name ?? item.text ?? '';
+
+const toMenuItem = (
+  item: NutrisliceMenuItem,
+  fallbackName: string
+): LunchMenuItem => ({
+  name: itemDisplayName(item) || fallbackName,
+  imageUrl: item.food?.image_url,
+});
+
+/**
+ * Returns true if a previously cached menu uses the legacy string shape
+ * (pre-sides/images). Such configs need to be re-fetched once so the new
+ * fields are populated.
+ */
+const isLegacyCachedMenu = (
+  cachedMenu: LunchCountConfig['cachedMenu']
+): boolean => {
+  if (!cachedMenu) return false;
+  const legacyHotLunch = (cachedMenu as unknown as { hotLunch?: unknown })
+    .hotLunch;
+  return typeof legacyHotLunch === 'string';
+};
 
 export const useNutrislice = ({
   widgetId,
@@ -83,8 +128,12 @@ export const useNutrislice = ({
       const apiUrl = `https://orono.api.nutrislice.com/menu/api/weeks/school/${schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
       const data = await fetchWithFallback(apiUrl);
 
-      let hotLunch = t('widgets.lunchCount.noHotLunch');
-      let bentoBox = t('widgets.lunchCount.noBentoBox');
+      const noHotLunch = t('widgets.lunchCount.noHotLunch');
+      const noBentoBox = t('widgets.lunchCount.noBentoBox');
+
+      let hotLunch: LunchMenuItem = { name: noHotLunch };
+      const hotLunchSides: LunchMenuItem[] = [];
+      let bentoBox: LunchMenuItem = { name: noBentoBox };
 
       if (data && data.days) {
         const todayStr = now.toISOString().split('T')[0];
@@ -93,37 +142,78 @@ export const useNutrislice = ({
         if (dayData && dayData.menu_items) {
           const items = dayData.menu_items;
 
-          // Hot Lunch: Map to the first item in the "Entrees" section
-          const entree = items.find(
-            (i) =>
-              !i.is_section_title &&
-              (i.section_name?.toLowerCase().includes('entree') ??
-                i.section_name?.toLowerCase().includes('main'))
-          );
-          if (entree) hotLunch = entree.food?.name ?? entree.text ?? hotLunch;
+          // Walk items in menu order, tracking the running section name from
+          // is_section_title rows. This lets us classify each food item by its
+          // current section without trusting only its own section_name field.
+          let currentSection: string | undefined;
+          let entreeIndex = -1;
+          let bentoIndex = -1;
+          const sectionForIndex: (string | undefined)[] = [];
 
-          // Bento Box: Map to any item in Entrees or Sides that contains "Bento"
-          const bento = items.find(
-            (i) =>
-              (i.food?.name?.toLowerCase().includes('bento') ??
-                i.text?.toLowerCase().includes('bento')) &&
-              !i.is_section_title
-          );
-          if (bento) bentoBox = bento.food?.name ?? bento.text ?? bentoBox;
+          items.forEach((item, idx) => {
+            if (item.is_section_title) {
+              currentSection = item.section_name ?? item.text ?? currentSection;
+              sectionForIndex[idx] = currentSection;
+              return;
+            }
+            sectionForIndex[idx] = item.section_name ?? currentSection;
 
-          // Fallback for Hot Lunch if no section matched
-          if (hotLunch === 'No Hot Lunch Listed' && items.length > 0) {
-            const firstFood = items.find(
-              (i) => !i.is_section_title && (i.food?.name ?? i.text)
+            const sectionName =
+              item.section_name?.toLowerCase() ??
+              currentSection?.toLowerCase() ??
+              '';
+            const itemName = itemDisplayName(item).toLowerCase();
+
+            if (
+              entreeIndex === -1 &&
+              (sectionName.includes('entree') || sectionName.includes('main'))
+            ) {
+              entreeIndex = idx;
+            }
+
+            if (bentoIndex === -1 && itemName.includes('bento')) {
+              bentoIndex = idx;
+            }
+          });
+
+          // Fallback: if no entree section matched, use the first non-title
+          // food item.
+          if (entreeIndex === -1) {
+            entreeIndex = items.findIndex(
+              (i) => !i.is_section_title && itemDisplayName(i)
             );
-            if (firstFood)
-              hotLunch = firstFood.food?.name ?? firstFood.text ?? hotLunch;
+          }
+
+          if (entreeIndex >= 0) {
+            hotLunch = toMenuItem(items[entreeIndex], noHotLunch);
+
+            // Sides: every non-title item after the entree, in menu order,
+            // until we hit (a) the bento item or (b) an alt-meal section.
+            for (let idx = entreeIndex + 1; idx < items.length; idx++) {
+              const item = items[idx];
+              if (item.is_section_title) {
+                if (isAltMealSectionName(item.section_name ?? item.text)) {
+                  break;
+                }
+                continue;
+              }
+              if (idx === bentoIndex) break;
+              if (isAltMealSectionName(sectionForIndex[idx])) break;
+              const name = itemDisplayName(item);
+              if (!name) continue;
+              hotLunchSides.push(toMenuItem(item, name));
+            }
+          }
+
+          if (bentoIndex >= 0) {
+            bentoBox = toMenuItem(items[bentoIndex], noBentoBox);
           }
         }
       }
 
       const newMenu: LunchMenuDay = {
         hotLunch,
+        hotLunchSides,
         bentoBox,
         date: now.toISOString(),
       };
@@ -153,6 +243,8 @@ export const useNutrislice = ({
     }
   }, [widgetId, updateWidget, addToast, isSyncing, t]);
 
+  const hasLegacyShape = isLegacyCachedMenu(config.cachedMenu);
+
   useEffect(() => {
     if (isSyncing) return;
 
@@ -164,11 +256,12 @@ export const useNutrislice = ({
     const isSyncedToday =
       lastSyncDate && lastSyncDate.toDateString() === today.toDateString();
 
-    // Only try to sync if we haven't already synced (or attempted to) today
-    if (!isSyncedToday) {
+    // Re-fetch if either we haven't synced today, or the cached payload still
+    // uses the pre-images legacy string shape.
+    if (!isSyncedToday || hasLegacyShape) {
       void fetchNutrislice();
     }
-  }, [fetchNutrislice, config.lastSyncDate, isSyncing]);
+  }, [fetchNutrislice, config.lastSyncDate, isSyncing, hasLegacyShape]);
 
   return { isSyncing, fetchNutrislice };
 };

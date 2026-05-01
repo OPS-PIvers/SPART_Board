@@ -1221,9 +1221,17 @@ export interface CalendarConfig {
   cardOpacity?: number;
 }
 
+export interface LunchMenuItem {
+  name: string;
+  /** Nutrislice CDN URL for the food's photo. Undefined when the menu entry has no image. */
+  imageUrl?: string;
+}
+
 export interface LunchMenuDay {
-  hotLunch: string;
-  bentoBox: string;
+  hotLunch: LunchMenuItem;
+  /** Items served alongside the entree, in the order Nutrislice lists them, up to (but excluding) the bento alternative. */
+  hotLunchSides: LunchMenuItem[];
+  bentoBox: LunchMenuItem;
   date: string; // ISO String
 }
 

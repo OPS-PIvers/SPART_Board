@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DndContext,
@@ -19,11 +19,13 @@ import {
   WidgetData,
   LunchCountConfig,
   LunchCountGlobalConfig,
+  LunchMenuItem,
   DEFAULT_GLOBAL_STYLE,
 } from '@/types';
 import { Button } from '@/components/common/Button';
 import { ActiveClassChip } from '@/components/common/ActiveClassChip';
-import { RefreshCw, Undo2, CheckCircle2, Box, Users } from 'lucide-react';
+import { Modal } from '@/components/common/Modal';
+import { RefreshCw, Undo2, CheckCircle2, Box, Users, X } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
 import { useNutrislice } from './useNutrislice';
 import { DraggableStudent } from './components/DraggableStudent';
@@ -32,6 +34,8 @@ import { beginWidgetDrag, endWidgetDrag } from '@/utils/widgetDragFlag';
 
 import { WidgetLayout } from '../WidgetLayout';
 import { hexToRgba } from '@/utils/styles';
+
+const PEEK_AUTO_DISMISS_MS = 4000;
 
 /**
  * Format a grade value into the spreadsheet label used in column B.
@@ -122,6 +126,98 @@ function getCentralTimestamp(): string {
   }
 }
 
+interface MenuItemBlockProps {
+  item: LunchMenuItem | undefined | null;
+  sides?: LunchMenuItem[];
+  onPeekItem: (item: LunchMenuItem) => void;
+  nameTextClass: string;
+  sidesTextClass: string;
+  fallback: string;
+}
+
+/**
+ * Renders the food header inside an elementary drop zone: optional thumbnail,
+ * bold main name, and a dot-separated sides line. Each thumbnail and named side
+ * is tappable to open a transient image overlay.
+ */
+const MenuItemBlock: React.FC<MenuItemBlockProps> = ({
+  item,
+  sides = [],
+  onPeekItem,
+  nameTextClass,
+  sidesTextClass,
+  fallback,
+}) => {
+  const name = item?.name ?? fallback;
+  const imageUrl = item?.imageUrl;
+
+  return (
+    <div
+      className="flex items-start"
+      style={{ gap: 'min(8px, 2cqmin)', marginBottom: 'min(10px, 2cqmin)' }}
+    >
+      {imageUrl ? (
+        <button
+          type="button"
+          onClick={() => item && onPeekItem(item)}
+          className="shrink-0 rounded-lg overflow-hidden bg-white/40 border border-white/60 shadow-sm transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+          style={{
+            width: 'min(40px, 14cqmin)',
+            height: 'min(40px, 14cqmin)',
+          }}
+          aria-label={`Show photo of ${name}`}
+        >
+          <img
+            src={imageUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </button>
+      ) : null}
+      <div className="flex-1 min-w-0">
+        <div
+          className={`font-black ${nameTextClass} leading-tight line-clamp-2`}
+          style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+        >
+          {name}
+        </div>
+        {sides.length > 0 ? (
+          <div
+            className={`font-medium ${sidesTextClass} opacity-70 leading-tight line-clamp-2`}
+            style={{
+              fontSize: 'min(10px, 3.5cqmin)',
+              marginTop: 'min(2px, 0.5cqmin)',
+            }}
+          >
+            {sides.map((s, i) => (
+              <React.Fragment key={`${s.name}-${i}`}>
+                {i > 0 ? (
+                  <span aria-hidden="true" style={{ margin: '0 0.4em' }}>
+                    ·
+                  </span>
+                ) : null}
+                {s.imageUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => onPeekItem(s)}
+                    className="hover:underline focus:outline-none focus:underline cursor-pointer"
+                    aria-label={`Show photo of ${s.name}`}
+                  >
+                    {s.name}
+                  </button>
+                ) : (
+                  <span>{s.name}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -157,6 +253,24 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [peekedItem, setPeekedItem] = useState<LunchMenuItem | null>(null);
+
+  // Auto-dismiss the food-image peek after a short timeout. Outside-click and
+  // Esc are handled by the underlying Modal. The peek is local state only —
+  // never written to widget.config, so nothing persists in Firestore or Drive.
+  useEffect(() => {
+    if (!peekedItem) return undefined;
+    const timer = window.setTimeout(
+      () => setPeekedItem(null),
+      PEEK_AUTO_DISMISS_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [peekedItem]);
+
+  const peekItem = useCallback((item: LunchMenuItem | undefined | null) => {
+    if (!item?.imageUrl) return;
+    setPeekedItem(item);
+  }, []);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -360,7 +474,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   ) {
     const hotLunchItem = config.isManualMode
       ? config.manualHotLunch || t('widgets.lunchCount.noHotLunch')
-      : (cachedMenu?.hotLunch ?? t('common.loading'));
+      : (cachedMenu?.hotLunch?.name ?? t('common.loading'));
 
     const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
     const fontClass =
@@ -634,15 +748,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     className="text-brand-red-primary opacity-40 group-hover:scale-110 transition-transform"
                   />
                 </div>
-                <div
-                  style={{
-                    fontSize: 'min(11px, 4cqmin)',
-                    marginBottom: 'min(10px, 2cqmin)',
-                  }}
-                  className="font-bold text-brand-red-dark leading-tight line-clamp-2 italic opacity-60"
-                >
-                  {cachedMenu?.hotLunch ?? 'Loading menu...'}
-                </div>
+                <MenuItemBlock
+                  item={cachedMenu?.hotLunch}
+                  sides={cachedMenu?.hotLunchSides ?? []}
+                  onPeekItem={peekItem}
+                  nameTextClass="text-brand-red-dark"
+                  sidesTextClass="text-brand-red-dark"
+                  fallback="Loading menu..."
+                />
                 <div
                   className="flex-1 flex flex-wrap content-start overflow-y-auto custom-scrollbar"
                   style={{
@@ -699,15 +812,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     className="text-emerald-400 group-hover:scale-110 transition-transform"
                   />
                 </div>
-                <div
-                  style={{
-                    fontSize: 'min(11px, 4cqmin)',
-                    marginBottom: 'min(10px, 2cqmin)',
-                  }}
-                  className="font-bold text-emerald-800 leading-tight line-clamp-2 italic opacity-60"
-                >
-                  {cachedMenu?.bentoBox ?? 'Loading menu...'}
-                </div>
+                <MenuItemBlock
+                  item={cachedMenu?.bentoBox}
+                  onPeekItem={peekItem}
+                  nameTextClass="text-emerald-800"
+                  sidesTextClass="text-emerald-800"
+                  fallback="Loading menu..."
+                />
                 <div
                   className="flex-1 flex flex-wrap content-start overflow-y-auto custom-scrollbar"
                   style={{
@@ -866,8 +977,8 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           staffName: formatTeacherName(user?.displayName ?? 'Unknown Staff'),
           hotLunch: stats.hotLunch,
           bentoBox: stats.bentoBox,
-          hotLunchName: cachedMenu?.hotLunch ?? 'Hot Lunch',
-          bentoBoxName: cachedMenu?.bentoBox ?? 'Bento Box',
+          hotLunchName: cachedMenu?.hotLunch?.name ?? 'Hot Lunch',
+          bentoBoxName: cachedMenu?.bentoBox?.name ?? 'Bento Box',
           schoolSite,
           lunchTime: formatLunchTime(lunchTimeHour, lunchTimeMinute),
           gradeLabel: formatGradeLabel(gradeLevel),
@@ -881,6 +992,36 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         }}
         isSubmitting={isSubmitting}
       />
+      <Modal
+        isOpen={!!peekedItem}
+        onClose={() => setPeekedItem(null)}
+        variant="bare"
+        maxWidth="max-w-sm"
+        ariaLabel={peekedItem ? `Photo of ${peekedItem.name}` : undefined}
+      >
+        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-200">
+          <button
+            type="button"
+            onClick={() => setPeekedItem(null)}
+            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-md focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+            aria-label="Close photo"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          {peekedItem?.imageUrl ? (
+            <img
+              src={peekedItem.imageUrl}
+              alt={peekedItem.name}
+              className="w-full aspect-square object-cover"
+            />
+          ) : null}
+          <div className="p-4 bg-white">
+            <p className="text-base font-black text-slate-900 text-center leading-tight">
+              {peekedItem?.name}
+            </p>
+          </div>
+        </div>
+      </Modal>
       <DragOverlay
         dropAnimation={dropAnimation}
         modifiers={[snapCenterToCursor]}
