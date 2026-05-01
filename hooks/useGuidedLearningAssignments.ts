@@ -25,6 +25,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { invalidateSessionViewCount } from './useSessionViewCount';
 import type {
   AssignmentMode,
   GuidedLearningAssignment,
@@ -176,7 +177,16 @@ export const useGuidedLearningAssignments = (
 
   const unarchiveAssignment = useCallback<
     UseGuidedLearningAssignmentsResult['unarchiveAssignment']
-  >((assignmentId) => setStatus(assignmentId, 'active'), [setStatus]);
+  >(
+    async (assignmentId) => {
+      await setStatus(assignmentId, 'active');
+      // Drop any cached view count so the Shared row re-issues the
+      // aggregation query on next mount; the cache is module-scoped and
+      // would otherwise hold the pre-archive count forever.
+      invalidateSessionViewCount('guided_learning_sessions', assignmentId);
+    },
+    [setStatus]
+  );
 
   const deleteAssignment = useCallback<
     UseGuidedLearningAssignmentsResult['deleteAssignment']

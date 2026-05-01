@@ -27,6 +27,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { invalidateSessionViewCount } from './useSessionViewCount';
 import type {
   AssignmentMode,
   PlcLinkage,
@@ -650,6 +651,10 @@ export const useQuizAssignments = (
       }
       batch.update(sessionRef, sessionPatch);
       await batch.commit();
+      // Drop any cached view count so the Shared row re-issues the
+      // aggregation query on next mount; submissions-mode reopens get the
+      // call too (no-op against a missing key).
+      invalidateSessionViewCount('quiz_sessions', assignmentId);
     },
     [userId]
   );

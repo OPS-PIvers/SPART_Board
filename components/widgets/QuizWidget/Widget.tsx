@@ -45,6 +45,27 @@ import { usePlcs } from '@/hooks/usePlcs';
 import { QuizDriveService } from '@/utils/quizDriveService';
 import { getPlcMemberEmails, getPlcTeammateEmails } from '@/utils/plc';
 
+/**
+ * Session-options shape used when minting a view-only Quiz share. Typed as
+ * `Required<QuizSessionOptions>` so adding a new field to QuizSessionOptions
+ * fails type-check here until a deliberate value is chosen — the previous
+ * inline literal silently let new optional fields default to undefined.
+ *
+ * View-only shares disable every per-attempt feature (no leaderboard, no
+ * tab warnings, no bonuses, no result reveal) — none of them have meaning
+ * when there are no submissions to score or compare.
+ */
+const VIEW_ONLY_SESSION_OPTIONS: Required<QuizSessionOptions> = {
+  tabWarningsEnabled: false,
+  showResultToStudent: false,
+  showCorrectAnswerToStudent: false,
+  showCorrectOnBoard: false,
+  speedBonusEnabled: false,
+  streakBonusEnabled: false,
+  showPodiumBetweenQuestions: false,
+  soundEffectsEnabled: false,
+};
+
 export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     updateWidget,
@@ -1067,6 +1088,35 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             addToast(`Share link: ${url}`, 'info');
           }
         }}
+        onCreateViewOnlyShare={async (meta) => {
+          // View-only Quiz share — bypasses the AssignModal/picker/PLC flow
+          // entirely. Creates a minimal assignment with view-only mode so
+          // students can browse questions but can't submit; returns the
+          // student-facing URL for ViewOnlyShareModal to display.
+          const data = await loadQuiz(meta);
+          if (!data) {
+            throw new Error('Failed to load quiz data');
+          }
+          const { code } = await createAssignment(
+            {
+              id: meta.id,
+              title: meta.title,
+              driveFileId: meta.driveFileId,
+              questions: data.questions,
+            },
+            {
+              sessionMode: 'teacher',
+              sessionOptions: VIEW_ONLY_SESSION_OPTIONS,
+              attemptLimit: null,
+            },
+            'paused',
+            [],
+            [],
+            {},
+            'view-only'
+          );
+          return `${window.location.origin}/quiz?code=${encodeURIComponent(code)}`;
+        }}
         onDelete={async (meta) => {
           // Block deletion when active/paused assignments reference the quiz,
           // since the monitor + results views need the answer key from the
@@ -1377,26 +1427,46 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           }
         }}
         onArchiveDeactivate={async (a) => {
+          // Branch the success / failure copy on the assignment's frozen
+          // mode — view-only shares haven't collected anything to "preserve"
+          // and "Assignment" is the wrong noun for a tracked link.
+          const isViewOnlyAssignment = a.mode === 'view-only';
           try {
             await deactivateAssignment(a.id);
-            addToast('Assignment deactivated. Responses preserved.', 'success');
+            addToast(
+              isViewOnlyAssignment
+                ? 'Share ended.'
+                : 'Assignment deactivated. Responses preserved.',
+              'success'
+            );
           } catch (err) {
             addToast(
-              err instanceof Error ? err.message : 'Failed to deactivate',
+              err instanceof Error
+                ? err.message
+                : isViewOnlyAssignment
+                  ? 'Failed to end share'
+                  : 'Failed to deactivate',
               'error'
             );
           }
         }}
         onArchiveReopen={async (a) => {
+          const isViewOnlyAssignment = a.mode === 'view-only';
           try {
             await reopenAssignment(a.id);
             addToast(
-              'Reopened — click Resume to accept submissions.',
+              isViewOnlyAssignment
+                ? 'Share reactivated.'
+                : 'Reopened — click Resume to accept submissions.',
               'success'
             );
           } catch (err) {
             addToast(
-              err instanceof Error ? err.message : 'Failed to reopen',
+              err instanceof Error
+                ? err.message
+                : isViewOnlyAssignment
+                  ? 'Failed to reactivate share'
+                  : 'Failed to reopen',
               'error'
             );
           }

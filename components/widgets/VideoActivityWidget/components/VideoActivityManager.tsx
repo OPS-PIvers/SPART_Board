@@ -32,6 +32,7 @@ import {
   Monitor,
   PlayCircle,
   Plus,
+  RotateCcw,
   Trash2,
 } from 'lucide-react';
 import { LibraryShell } from '@/components/common/library/LibraryShell';
@@ -39,7 +40,10 @@ import { LibraryToolbar } from '@/components/common/library/LibraryToolbar';
 import { LibraryGrid } from '@/components/common/library/LibraryGrid';
 import { LibraryItemCard } from '@/components/common/library/LibraryItemCard';
 import { AssignModal } from '@/components/common/library/AssignModal';
+import { ViewOnlyShareModal } from '@/components/common/library/ViewOnlyShareModal';
 import { AssignmentArchiveCard } from '@/components/common/library/AssignmentArchiveCard';
+import { ViewCountBadge } from '@/components/common/library/ViewCountBadge';
+import { useSessionViewCount } from '@/hooks/useSessionViewCount';
 import { FolderSidebar } from '@/components/common/library/FolderSidebar';
 import { FolderPickerPopover } from '@/components/common/library/FolderPickerPopover';
 import { buildMoveToFolderAction } from '@/components/common/library/folderMenuAction';
@@ -133,6 +137,12 @@ export interface VideoActivityManagerProps {
   onArchiveCopyUrl?: (assignment: VideoActivityAssignment) => void;
   onArchivePauseResume?: (assignment: VideoActivityAssignment) => Promise<void>;
   onArchiveDeactivate?: (assignment: VideoActivityAssignment) => Promise<void>;
+  /**
+   * Re-open a previously deactivated view-only share. Required for the
+   * archive-tab "Reactivate" action to render; omit if the parent doesn't
+   * implement reactivation.
+   */
+  onArchiveReactivate?: (assignment: VideoActivityAssignment) => Promise<void>;
   onArchiveDelete?: (assignment: VideoActivityAssignment) => Promise<void>;
   onArchiveResults?: (assignment: VideoActivityAssignment) => void;
   /**
@@ -223,15 +233,114 @@ function statusToBadge(
         dot: true,
       };
     case 'paused':
-      return { label: 'Paused', tone: 'warn', dot: true };
+      // View-only shares don't expose pause/resume — keeping the active
+      // badge label consistent ("Shared") prevents a "Paused" chip from
+      // implying the link is dead.
+      return isViewOnly
+        ? { label: 'Shared', tone: 'success', dot: true }
+        : { label: 'Paused', tone: 'warn', dot: true };
     case 'inactive':
     default:
       return {
-        label: isViewOnly ? 'Ended share' : 'Ended',
+        // Single-word "Closed" reads cleaner and is consistent across
+        // widgets; cf. MiniAppManager.statusBadge / QuizManager.resolveStatus.
+        label: isViewOnly ? 'Closed' : 'Ended',
         tone: 'neutral',
       };
   }
 }
+
+/* ─── Archive row wrapper (per-row hooks for view-count fetch) ────────────── */
+
+interface VideoActivityArchiveRowProps {
+  assignment: VideoActivityAssignment;
+  mode: 'active' | 'archive';
+  secondaryActions: LibraryMenuAction[];
+  onArchiveCopyUrl?: (assignment: VideoActivityAssignment) => void;
+  onArchiveMonitor?: (
+    assignment: VideoActivityAssignment
+  ) => void | Promise<void>;
+  onArchiveResults?: (assignment: VideoActivityAssignment) => void;
+}
+
+/**
+ * Per-row hook host for view-count fetch. Owns the primary-action selection
+ * and the meta-line layout for both Active and Archive tabs across
+ * submissions and view-only modes.
+ */
+const VideoActivityArchiveRow: React.FC<VideoActivityArchiveRowProps> = ({
+  assignment,
+  mode,
+  secondaryActions,
+  onArchiveCopyUrl,
+  onArchiveMonitor,
+  onArchiveResults,
+}) => {
+  const assignmentIsViewOnly = assignment.mode === 'view-only';
+  const status = statusToBadge(assignment.status, assignmentIsViewOnly);
+
+  // Primary action priority:
+  //   - View-only + active: Copy link (the link is the entire UX).
+  //   - View-only + archive: omit — link is dead, Reactivate lives in kebab.
+  //   - Submissions + active+live: Monitor when wired.
+  //   - Submissions + active+paused or no monitor wired: Copy link.
+  //   - Submissions + archive: Results.
+  const isLiveActive = mode === 'active' && assignment.status === 'active';
+  const primaryAction: { label: string; icon: typeof Copy } | null =
+    assignmentIsViewOnly
+      ? mode === 'active'
+        ? { label: 'Copy link', icon: Copy }
+        : null
+      : mode === 'active'
+        ? isLiveActive && onArchiveMonitor
+          ? { label: 'Monitor', icon: Monitor }
+          : { label: 'Copy link', icon: Copy }
+        : { label: 'Results', icon: BarChart3 };
+
+  const { count } = useSessionViewCount(
+    'video_activity_sessions',
+    assignment.id,
+    assignmentIsViewOnly
+  );
+
+  return (
+    <AssignmentArchiveCard<VideoActivityAssignment>
+      assignment={assignment}
+      mode={mode}
+      status={status}
+      title={assignment.className ?? assignment.activityTitle}
+      subtitle={assignment.className ? assignment.activityTitle : undefined}
+      meta={
+        <>
+          <span>{new Date(assignment.updatedAt).toLocaleDateString()}</span>
+          {assignmentIsViewOnly && <ViewCountBadge count={count} />}
+        </>
+      }
+      primaryAction={
+        primaryAction
+          ? {
+              label: primaryAction.label,
+              icon: primaryAction.icon,
+              onClick: () => {
+                if (assignmentIsViewOnly) {
+                  if (onArchiveCopyUrl) onArchiveCopyUrl(assignment);
+                } else if (mode === 'active') {
+                  if (isLiveActive && onArchiveMonitor) {
+                    void onArchiveMonitor(assignment);
+                  } else if (onArchiveCopyUrl) {
+                    onArchiveCopyUrl(assignment);
+                  }
+                } else if (onArchiveResults) {
+                  onArchiveResults(assignment);
+                }
+              },
+            }
+          : undefined
+      }
+      secondaryActions={secondaryActions}
+    />
+  );
+};
 
 /* ─── Main component ──────────────────────────────────────────────────────── */
 
@@ -253,6 +362,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
   onArchiveCopyUrl,
   onArchivePauseResume,
   onArchiveDeactivate,
+  onArchiveReactivate,
   onArchiveDelete,
   onArchiveResults,
   onArchiveMonitor,
@@ -268,9 +378,23 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
   const primaryActionLabel = isViewOnly ? 'Share' : 'Assign';
   const [tab, setTab] = useState<LibraryTab>('library');
 
-  // Assign modal state
+  // Assign modal state (submissions mode)
   const [assignTarget, setAssignTarget] =
     useState<VideoActivityMetadata | null>(null);
+
+  // View-only Share modal state — bypasses the AssignModal entirely
+  // because class targeting has no functional effect on view-only sessions
+  // (rules don't gate views by class; sessions are filtered out of
+  // /my-assignments anyway).
+  const [viewOnlyShareTarget, setViewOnlyShareTarget] =
+    useState<VideoActivityMetadata | null>(null);
+  const [viewOnlyShareLink, setViewOnlyShareLink] = useState<string | null>(
+    null
+  );
+  const [viewOnlyShareError, setViewOnlyShareError] = useState<string | null>(
+    null
+  );
+  const [isCreatingViewOnlyShare, setIsCreatingViewOnlyShare] = useState(false);
   const [assignOptions, setAssignOptions] =
     useState<VideoActivitySessionSettings>(defaultSessionSettings);
   const [assignmentName, setAssignmentName] = useState<string>('');
@@ -523,6 +647,41 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
     }
   };
 
+  // View-only share confirm: mints the session via the same `onAssign`
+  // callback the parent already wires for submissions, with default settings
+  // and an auto-generated share name. The session/assignment docs carry
+  // the org-wide view-only mode (the parent reads `assignmentMode` via
+  // useAuth), so the rules block submissions and the URL serves as a
+  // read-only share link.
+  const handleConfirmViewOnlyShare = async (): Promise<void> => {
+    if (!viewOnlyShareTarget) return;
+    setIsCreatingViewOnlyShare(true);
+    setViewOnlyShareError(null);
+    try {
+      const sessionId = await onAssign(
+        viewOnlyShareTarget,
+        defaultSessionSettings,
+        buildDefaultAssignmentName(viewOnlyShareTarget.title),
+        []
+      );
+      setViewOnlyShareLink(
+        `${window.location.origin}/activity/${encodeURIComponent(sessionId)}`
+      );
+    } catch (err) {
+      setViewOnlyShareError(
+        err instanceof Error ? err.message : 'Failed to create share link.'
+      );
+    } finally {
+      setIsCreatingViewOnlyShare(false);
+    }
+  };
+
+  const closeViewOnlyShareModal = () => {
+    setViewOnlyShareTarget(null);
+    setViewOnlyShareLink(null);
+    setViewOnlyShareError(null);
+  };
+
   /* ─── Loading state ───────────────────────────────────────────────────── */
 
   if (loading) {
@@ -652,7 +811,16 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
               primaryAction={{
                 label: primaryActionLabel,
                 icon: Link2,
-                onClick: () => setAssignTarget(activity),
+                onClick: () => {
+                  if (isViewOnly) {
+                    // View-only: skip the AssignModal/picker flow entirely.
+                    setViewOnlyShareTarget(activity);
+                    setViewOnlyShareLink(null);
+                    setViewOnlyShareError(null);
+                  } else {
+                    setAssignTarget(activity);
+                  }
+                },
               }}
               secondaryActions={secondaryActions}
               onClick={() => onEdit(activity)}
@@ -703,72 +871,17 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
 
     return (
       <div className="flex flex-col gap-2">
-        {list.map((assignment) => {
-          // Per-assignment mode is frozen at creation. View-only shares have
-          // no responses to surface — relabel the status badge and collapse
-          // the archive primary to "Copy link" instead of "Results".
-          const assignmentIsViewOnly = assignment.mode === 'view-only';
-          const status = statusToBadge(assignment.status, assignmentIsViewOnly);
-          const secondaryActions = buildAssignmentSecondaryActions(
-            assignment,
-            mode
-          );
-
-          // Primary action priority:
-          //   - View-only shares: always Copy link (Monitor would have nothing
-          //     to monitor; Results doesn't exist for view-only).
-          //   - Submissions, active+live: Monitor when wired (the live teacher
-          //     view of student progress).
-          //   - Submissions, active+paused or no monitor wired: Copy link
-          //     (Monitor would show a paused screen).
-          //   - Submissions, archive: Results.
-          const isLiveActive =
-            mode === 'active' && assignment.status === 'active';
-          const primaryAction = assignmentIsViewOnly
-            ? { label: 'Copy link', icon: Copy }
-            : mode === 'active'
-              ? isLiveActive && onArchiveMonitor
-                ? { label: 'Monitor', icon: Monitor }
-                : { label: 'Copy link', icon: Copy }
-              : { label: 'Results', icon: BarChart3 };
-
-          return (
-            <AssignmentArchiveCard<VideoActivityAssignment>
-              key={assignment.id}
-              assignment={assignment}
-              mode={mode}
-              status={status}
-              title={assignment.className ?? assignment.activityTitle}
-              subtitle={
-                assignment.className ? assignment.activityTitle : undefined
-              }
-              meta={
-                <span>
-                  {new Date(assignment.updatedAt).toLocaleDateString()}
-                </span>
-              }
-              primaryAction={{
-                label: primaryAction.label,
-                icon: primaryAction.icon,
-                onClick: () => {
-                  // Mirror the priority used to pick the label above.
-                  if (assignmentIsViewOnly) {
-                    if (onArchiveCopyUrl) onArchiveCopyUrl(assignment);
-                  } else if (mode === 'active') {
-                    if (isLiveActive && onArchiveMonitor) {
-                      void onArchiveMonitor(assignment);
-                    } else if (onArchiveCopyUrl) {
-                      onArchiveCopyUrl(assignment);
-                    }
-                  } else if (onArchiveResults) {
-                    onArchiveResults(assignment);
-                  }
-                },
-              }}
-              secondaryActions={secondaryActions}
-            />
-          );
-        })}
+        {list.map((assignment) => (
+          <VideoActivityArchiveRow
+            key={assignment.id}
+            assignment={assignment}
+            mode={mode}
+            secondaryActions={buildAssignmentSecondaryActions(assignment, mode)}
+            onArchiveCopyUrl={onArchiveCopyUrl}
+            onArchiveMonitor={onArchiveMonitor}
+            onArchiveResults={onArchiveResults}
+          />
+        ))}
       </div>
     );
   };
@@ -787,7 +900,12 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
     const assignmentIsViewOnly = assignment.mode === 'view-only';
 
     if (mode === 'active') {
-      if (onArchiveCopyUrl) {
+      // Submissions cards keep "Copy link" in the kebab as a stable
+      // secondary surface (the primary may be Monitor/Start/Results
+      // depending on state). View-only Shared cards already pin "Copy
+      // link" as the primary action — duplicating it in the kebab is just
+      // visual noise.
+      if (onArchiveCopyUrl && !assignmentIsViewOnly) {
         actions.push({
           id: 'copy-url',
           label: 'Copy link',
@@ -817,6 +935,23 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
           },
         });
       }
+    }
+
+    // Reactivate is view-only-only, archive-only — flips status back to
+    // active so the URL works again. Cf. MiniAppManager.assignmentSecondary.
+    if (
+      mode === 'archive' &&
+      assignmentIsViewOnly &&
+      onArchiveReactivate !== undefined
+    ) {
+      actions.push({
+        id: 'reactivate',
+        label: 'Reactivate',
+        icon: RotateCcw,
+        onClick: () => {
+          void onArchiveReactivate(assignment);
+        },
+      });
     }
 
     // View-only shares have no responses to surface.
@@ -1008,7 +1143,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
         />
       )}
 
-      {assignTarget && (
+      {assignTarget && !isViewOnly && (
         <AssignModal<VideoActivitySessionSettings>
           isOpen={true}
           onClose={() => setAssignTarget(null)}
@@ -1070,6 +1205,17 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
               </div>
             </div>
           }
+        />
+      )}
+
+      {viewOnlyShareTarget && (
+        <ViewOnlyShareModal
+          itemTitle={viewOnlyShareTarget.title}
+          isCreating={isCreatingViewOnlyShare}
+          createdLink={viewOnlyShareLink}
+          error={viewOnlyShareError}
+          onConfirm={() => void handleConfirmViewOnlyShare()}
+          onClose={closeViewOnlyShareModal}
         />
       )}
     </>

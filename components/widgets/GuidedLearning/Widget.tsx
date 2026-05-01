@@ -10,13 +10,14 @@ import {
 } from '@/types';
 import { db } from '@/config/firebase';
 import { useDashboard } from '@/context/useDashboard';
+import { useDialog } from '@/context/useDialog';
 import { useAuth } from '@/context/useAuth';
 import { useGuidedLearning } from '@/hooks/useGuidedLearning';
 import { useGuidedLearningSessionTeacher } from '@/hooks/useGuidedLearningSession';
 import { useGuidedLearningAssignments } from '@/hooks/useGuidedLearningAssignments';
 import { useFolders } from '@/hooks/useFolders';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
-import { AssignModal } from '@/components/common/library';
+import { AssignModal, ViewOnlyShareModal } from '@/components/common/library';
 import { AssignClassPicker } from '@/components/common/AssignClassPicker';
 import {
   makeEmptyPickerValue,
@@ -54,6 +55,7 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, rosters } = useDashboard();
+  const { showConfirm } = useDialog();
   const { user, isAdmin, getAssignmentMode } = useAuth();
   const assignmentMode: AssignmentMode = getAssignmentMode('guidedLearning');
   const isViewOnly = assignmentMode === 'view-only';
@@ -245,17 +247,25 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   // Actually create the session + matching assignment doc. Shared between
-  // the classic direct-assign path (no ClassLink/rosters) and the picker
-  // dialog confirm path. `classIds` is the selected ClassLink sourcedId
-  // list; `periodNames` is the list of post-PIN period labels (empty when
-  // the teacher targeted nothing).
+  // the classic direct-assign path (no ClassLink/rosters), the picker
+  // dialog confirm path, and the view-only Share confirm path. `classIds`
+  // is the selected ClassLink sourcedId list; `periodNames` is the list of
+  // post-PIN period labels (empty when the teacher targeted nothing).
+  //
+  // When `silent` is true, the function returns the URL without writing to
+  // the clipboard or showing a toast — the caller is responsible for the
+  // post-creation UI (used by the view-only Share modal which displays the
+  // link inline). Throws on failure so callers can surface their own error
+  // path; non-silent callers swallow + toast.
   const performAssign = useCallback(
     async (
       data: GuidedLearningSet,
       source: 'personal' | 'building',
       originSetId: string,
-      rosterIds: string[]
-    ) => {
+      rosterIds: string[],
+      options?: { silent?: boolean }
+    ): Promise<string | null> => {
+      const silent = options?.silent === true;
       try {
         const selectedRosters = rosters.filter((r) => rosterIds.includes(r.id));
         const derived = deriveSessionTargetsFromRosters(selectedRosters);
@@ -299,17 +309,26 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
             lastRosterIdsBySetId: nextMap,
           } as GuidedLearningConfig,
         });
-        await navigator.clipboard.writeText(url);
-        addToast(
-          isViewOnly
-            ? 'Share link copied to clipboard!'
-            : 'Assignment link copied to clipboard!',
-          'success'
-        );
+        if (!silent) {
+          await navigator.clipboard.writeText(url);
+          addToast(
+            isViewOnly
+              ? 'Share link copied to clipboard!'
+              : 'Assignment link copied to clipboard!',
+            'success'
+          );
+        }
+        return url;
       } catch (err) {
+        if (silent) {
+          // Re-throw so the view-only modal's own catch path can render
+          // the inline error.
+          throw err;
+        }
         const msg =
           err instanceof Error ? err.message : 'Failed to create session';
         addToast(msg, 'error');
+        return null;
       }
     },
     [
@@ -325,6 +344,22 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
     ]
   );
 
+  // ─── View-only Share modal state ────────────────────────────────────────
+  // View-only "shares" deliberately bypass the AssignModal/picker flow
+  // because class targeting has no functional effect on view-only sessions
+  // (Firestore rules don't gate views by class; sessions are filtered out
+  // of /my-assignments anyway). The teacher gets a single confirmation
+  // modal with a description + Create Share Link button.
+  const [viewOnlyShareTarget, setViewOnlyShareTarget] =
+    useState<AssignDialogTarget | null>(null);
+  const [viewOnlyShareLink, setViewOnlyShareLink] = useState<string | null>(
+    null
+  );
+  const [viewOnlyShareError, setViewOnlyShareError] = useState<string | null>(
+    null
+  );
+  const [isCreatingViewOnlyShare, setIsCreatingViewOnlyShare] = useState(false);
+
   const handleAssign = async (
     setId: string,
     driveFileId?: string,
@@ -335,6 +370,14 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
     const source: 'personal' | 'building' = buildingSet
       ? 'building'
       : 'personal';
+    // View-only flows skip the picker entirely — open the simplified Share
+    // modal instead.
+    if (isViewOnly) {
+      setViewOnlyShareTarget({ set: data, source, originSetId: setId });
+      setViewOnlyShareLink(null);
+      setViewOnlyShareError(null);
+      return;
+    }
     // If the teacher has no rosters at all, skip the dialog entirely and
     // preserve the classic join-link flow.
     if (rosters.length === 0) {
@@ -343,6 +386,31 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
     }
     // Otherwise open the dialog so they can optionally pick rosters.
     setAssignTarget({ set: data, source, originSetId: setId });
+  };
+
+  const handleConfirmViewOnlyShare = async (): Promise<void> => {
+    if (!viewOnlyShareTarget) return;
+    setIsCreatingViewOnlyShare(true);
+    setViewOnlyShareError(null);
+    try {
+      const { set, source, originSetId } = viewOnlyShareTarget;
+      const url = await performAssign(set, source, originSetId, [], {
+        silent: true,
+      });
+      if (url) setViewOnlyShareLink(url);
+    } catch (err) {
+      setViewOnlyShareError(
+        err instanceof Error ? err.message : 'Failed to create share link.'
+      );
+    } finally {
+      setIsCreatingViewOnlyShare(false);
+    }
+  };
+
+  const closeViewOnlyShareModal = () => {
+    setViewOnlyShareTarget(null);
+    setViewOnlyShareLink(null);
+    setViewOnlyShareError(null);
   };
 
   const handleAssignConfirm = async (): Promise<void> => {
@@ -418,11 +486,34 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
   const handleAssignmentArchive = async (
     assignment: GuidedLearningAssignment
   ) => {
+    // Branch the toast on the assignment's frozen mode — view-only shares
+    // aren't "archived" in the assignment-with-results sense; ending the
+    // share is the user-facing action.
+    const isViewOnlyAssignment = assignment.assignmentMode === 'view-only';
+    const ok = await showConfirm(
+      isViewOnlyAssignment
+        ? `End "${assignment.setTitle}"? The link will stop working.`
+        : `Archive "${assignment.setTitle}"? Students will no longer be able to submit.`,
+      {
+        title: isViewOnlyAssignment ? 'End share' : 'Archive Assignment',
+        variant: 'danger',
+        confirmLabel: isViewOnlyAssignment ? 'End' : 'Archive',
+      }
+    );
+    if (!ok) return;
     try {
       await archiveAssignment(assignment.id);
-      addToast('Assignment archived.', 'success');
+      addToast(
+        isViewOnlyAssignment ? 'Share ended.' : 'Assignment archived.',
+        'success'
+      );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to archive';
+      const msg =
+        err instanceof Error
+          ? err.message
+          : isViewOnlyAssignment
+            ? 'Failed to end share'
+            : 'Failed to archive';
       addToast(msg, 'error');
     }
   };
@@ -430,11 +521,22 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
   const handleAssignmentUnarchive = async (
     assignment: GuidedLearningAssignment
   ) => {
+    const isViewOnlyAssignment = assignment.assignmentMode === 'view-only';
     try {
       await unarchiveAssignment(assignment.id);
-      addToast('Moved back to In Progress.', 'success');
+      addToast(
+        isViewOnlyAssignment
+          ? 'Share reactivated.'
+          : 'Moved back to In Progress.',
+        'success'
+      );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to move';
+      const msg =
+        err instanceof Error
+          ? err.message
+          : isViewOnlyAssignment
+            ? 'Failed to reactivate share'
+            : 'Failed to move';
       addToast(msg, 'error');
     }
   };
@@ -709,7 +811,18 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
             />
           }
           onAssign={() => handleAssignConfirm()}
-          confirmLabel={isViewOnly ? 'Share' : 'Assign'}
+          confirmLabel="Assign"
+        />
+      )}
+
+      {viewOnlyShareTarget && (
+        <ViewOnlyShareModal
+          itemTitle={viewOnlyShareTarget.set.title || 'Untitled set'}
+          isCreating={isCreatingViewOnlyShare}
+          createdLink={viewOnlyShareLink}
+          error={viewOnlyShareError}
+          onConfirm={() => void handleConfirmViewOnlyShare()}
+          onClose={closeViewOnlyShareModal}
         />
       )}
     </>
