@@ -135,6 +135,21 @@ const GLOBAL_FEATURES: {
 ];
 
 /**
+ * Features whose missing-permission default is `'admin'` instead of the
+ * usual `'public'`. Both `getPermission` (the editor's persisted-or-default
+ * resolver) and `filteredFeatures` (the toolbar filter's fallback) read
+ * from this set so the fallback rule is defined once. Any divergence
+ * between the two would silently mis-categorize a feature in the access-
+ * level filter when no permission doc exists yet.
+ *
+ * Keep this aligned with the runtime-side defaults in `AuthContext` —
+ * `canSeeShareTracking` likewise treats a missing 'share-link-tracking'
+ * record as admin-only.
+ */
+const ADMIN_ONLY_DEFAULT_FEATURES: ReadonlySet<GlobalFeature> =
+  new Set<GlobalFeature>(['embed-mini-app', 'share-link-tracking']);
+
+/**
  * Widgets surfaced in the Assignment Modes admin section. All four widgets
  * with student-facing assignment flows are listed; flipping any of them to
  * View only swaps the teacher Assign button to Share, hides the In Progress
@@ -502,15 +517,7 @@ export const GlobalPermissionsManager: React.FC = () => {
   }, [loadPermissions]);
 
   const getPermission = (featureId: GlobalFeature): GlobalFeaturePermission => {
-    // Features that default to admin-only when no permission doc exists.
-    // Keep this list aligned with the runtime-side defaults — e.g.
-    // `canSeeShareTracking` in AuthContext also treats a missing
-    // 'share-link-tracking' record as admin-only.
-    const ADMIN_ONLY_DEFAULT: GlobalFeature[] = [
-      'embed-mini-app',
-      'share-link-tracking',
-    ];
-    const defaultAccessLevel: AccessLevel = ADMIN_ONLY_DEFAULT.includes(
+    const defaultAccessLevel: AccessLevel = ADMIN_ONLY_DEFAULT_FEATURES.has(
       featureId
     )
       ? 'admin'
@@ -646,7 +653,7 @@ export const GlobalPermissionsManager: React.FC = () => {
     return sorted.filter((feature) => {
       const perm = permissions.get(feature.id) ?? {
         featureId: feature.id,
-        accessLevel: (feature.id === 'embed-mini-app'
+        accessLevel: (ADMIN_ONLY_DEFAULT_FEATURES.has(feature.id)
           ? 'admin'
           : 'public') as AccessLevel,
         betaUsers: [] as string[],
