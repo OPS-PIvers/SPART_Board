@@ -1750,6 +1750,20 @@ export interface QuizMetadata {
    * Refers to a folder id in `/users/{userId}/quiz_folders/{folderId}`.
    */
   folderId?: string | null;
+  /**
+   * If present, this quiz is part of a synchronized group at
+   * `/synced_quizzes/{syncGroupId}` shared with one or more PLC peers.
+   * Edits made by any participant publish to the canonical doc and bump its
+   * `version`. Library cards show a "Sync available" pill when
+   * `lastSyncedVersion < group.version`.
+   */
+  syncGroupId?: string;
+  /**
+   * The `version` of `/synced_quizzes/{syncGroupId}` that this local Drive
+   * file was last reconciled with. Used as a stale-detector against the
+   * canonical doc's live `version`. Always set together with `syncGroupId`.
+   */
+  lastSyncedVersion?: number;
 }
 
 export type QuizSessionStatus = 'waiting' | 'active' | 'paused' | 'ended';
@@ -2007,6 +2021,15 @@ export interface QuizResponse {
    * treats missing+`status==='completed'` as a single completed attempt.
    */
   completedAttempts?: number;
+  /**
+   * The assignment's `syncedVersion` at the moment this response was
+   * created OR last touched before a sync rebuilt the session questions.
+   * Set to the assignment's pre-sync `syncedVersion` when
+   * `syncAssignmentToLatest` runs against a session with existing
+   * responses, so the results UI can flag rows as "Answered before
+   * v{N+1} update." Absent on responses written outside synced mode.
+   */
+  preSyncVersion?: number;
 }
 
 /** Global admin configuration for the Quiz widget */
@@ -2196,9 +2219,75 @@ export interface QuizAssignment extends QuizAssignmentSettings {
    * time.
    */
   exportedResponseIds?: string[];
+  /**
+   * If present, this assignment was created from a synced library quiz at
+   * `/synced_quizzes/{syncGroupId}`. The session's `publicQuestions[]` was
+   * frozen at session-create time from the group's content at version
+   * `syncedVersion`. When the canonical group's `version > syncedVersion`,
+   * the assignment card surfaces a "Sync" button that rebuilds the session's
+   * questions from the latest canonical content.
+   *
+   * Mirrored from the source quiz's `syncGroupId` at assignment-create time
+   * rather than re-derived on read so a later quiz un-sync (detach) can't
+   * silently strip the linkage from in-flight assignments.
+   */
+  syncGroupId?: string;
+  /**
+   * The synced-group `version` reflected in this assignment's session
+   * `publicQuestions[]`. Used to render the per-assignment sync badge:
+   * `group.version > syncedVersion` → stale.
+   */
+  syncedVersion?: number;
   /** Frozen at creation from the org-wide `assignment-modes` admin setting.
    *  Mirrors QuizSession.mode. Absent on pre-feature assignments. */
   mode?: AssignmentMode;
+}
+
+/**
+ * Synchronized canonical quiz shared by multiple PLC peers, stored at
+ * `/synced_quizzes/{groupId}`.
+ *
+ * This is the source-of-truth for synced-mode shares. Each peer's local
+ * `quiz_metadata` carries `syncGroupId` referencing this doc; the Drive-
+ * resident JSON acts as an editing canvas + cached replica. When any peer
+ * saves an edit, the editor runs a Firestore transaction that increments
+ * `version`, writes the new `questions` + `title`, and stamps `updatedBy`.
+ * Other peers' `onSnapshot` listeners fire and the library card surfaces a
+ * "Sync available" pill.
+ *
+ * Last-write-wins on content; the transaction's monotonic `version`
+ * increment serializes concurrent saves. Participants are added/removed via
+ * the `joinSyncedQuizGroup` / `leaveSyncedQuizGroup` Cloud Functions so
+ * Firestore rules can keep client writes scoped to existing participants.
+ */
+export interface SyncedQuizGroup {
+  /** Group id (Firestore doc id). */
+  id: string;
+  /**
+   * Monotonically increasing version. Bumped inside a Firestore transaction
+   * on every content write so peers can detect divergence without diffing
+   * questions. Initial value is `1` at create time.
+   */
+  version: number;
+  title: string;
+  questions: QuizQuestion[];
+  /**
+   * Roster of participating teachers. Keyed by Firebase Auth uid → metadata.
+   * Modified only by the Cloud Function paths so the rules-side write check
+   * can be a simple `auth.uid in resource.data.participants` predicate.
+   */
+  participants: Record<string, { joinedAt: number }>;
+  /**
+   * Optional PLC linkage. Populated when the originating share was generated
+   * from a PLC-mode assignment. Reserved for downstream PLC notification
+   * routing (so stale-content alerts can be scoped to the right PLC inbox);
+   * no behavior consumes this field today.
+   */
+  plcId?: string;
+  createdAt: number;
+  updatedAt: number;
+  /** Auth uid of whoever last published an edit (for participant attribution). */
+  updatedBy: string;
 }
 
 /**
@@ -2219,6 +2308,16 @@ export interface SharedQuizAssignment {
   /** Original author's UID. */
   originalAuthor: string;
   sharedAt: number;
+  /**
+   * If present, this share offers a "Sync" import option that joins the
+   * importer to the named synced group. The inlined `questions[]` above is
+   * still the source of truth for "Make a copy" imports and as a bootstrap
+   * snapshot for the synced importer's initial Drive write.
+   *
+   * Absent on legacy share docs and on shares explicitly published as
+   * copy-only — the import-mode picker only appears when this is set.
+   */
+  syncGroupId?: string;
 }
 
 // --- VIDEO ACTIVITY TYPES ---

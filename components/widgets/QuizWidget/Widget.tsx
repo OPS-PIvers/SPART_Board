@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   WidgetData,
   QuizConfig,
@@ -9,13 +15,14 @@ import {
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { useDialog } from '@/context/useDialog';
-import { useQuiz } from '@/hooks/useQuiz';
+import { useQuiz, SyncedQuizVersionConflictError } from '@/hooks/useQuiz';
 import {
   useQuizSessionTeacher,
   type QuizSessionOptions,
 } from '@/hooks/useQuizSession';
 import { useQuizAssignments } from '@/hooks/useQuizAssignments';
 import { useFolders } from '@/hooks/useFolders';
+import { useSyncedQuizGroupsByIds } from '@/hooks/useSyncedQuizGroups';
 import { QuizManager, PlcOptions } from './components/QuizManager';
 import { ImportWizard } from '@/components/common/library/importer';
 import { createQuizImportAdapter } from './adapters/quizImportAdapter';
@@ -92,6 +99,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     importFromCSV,
     createQuizTemplate,
     shareQuiz,
+    pullSyncedQuiz,
+    detachSyncedQuiz,
     isDriveConnected,
   } = useQuiz(user?.uid);
 
@@ -121,6 +130,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setAssignmentExportUrl,
     setAssignmentExportedResponseIds,
     shareAssignment,
+    syncAssignmentToLatest,
   } = useQuizAssignments(user?.uid);
 
   // Folders are managed by QuizManager separately; this duplicate binding is
@@ -135,6 +145,24 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // Assign modal) so the assign flow can resolve the selected PLC and its
   // members when creating a fresh per-assignment sheet via Share-with-PLC.
   const { plcs } = usePlcs();
+
+  // Synced-group subscriptions — collect every distinct `syncGroupId`
+  // referenced by the local user's quizzes or assignments, subscribe to
+  // each `/synced_quizzes/{groupId}` doc, and pass the resulting map down
+  // to QuizManager for stale-detection rendering. Recomputed only when
+  // the underlying ids change so the listener set is stable across
+  // unrelated metadata churn.
+  const syncGroupIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const q of quizzes) {
+      if (q.syncGroupId) ids.add(q.syncGroupId);
+    }
+    for (const a of assignments) {
+      if (a.syncGroupId) ids.add(a.syncGroupId);
+    }
+    return Array.from(ids);
+  }, [quizzes, assignments]);
+  const { groups: syncedGroups } = useSyncedQuizGroupsByIds(syncGroupIds);
 
   // Ephemeral modal state for per-assignment settings editing.
   const [editingAssignment, setEditingAssignment] =
@@ -1010,6 +1038,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               derived.classIds,
               derived.rosterIds,
               derived.classPeriodByClassId,
+              undefined,
               quizAssignmentMode
             );
             // Persist the teacher's last-used rosters per quiz so
@@ -1113,6 +1142,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             [],
             [],
             {},
+            undefined,
             'view-only'
           );
           return `${window.location.origin}/quiz?code=${encodeURIComponent(code)}`;
@@ -1487,6 +1517,50 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             config: { ...config, libraryViewMode: mode } as QuizConfig,
           });
         }}
+        syncedGroups={syncedGroups}
+        onPullSyncedQuiz={async (quiz) => {
+          try {
+            await pullSyncedQuiz(quiz);
+            addToast('Quiz updated to latest version.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error
+                ? err.message
+                : 'Failed to pull synced quiz.',
+              'error'
+            );
+          }
+        }}
+        onDetachSyncedQuiz={async (quiz) => {
+          try {
+            await detachSyncedQuiz(quiz);
+            addToast('Stopped syncing.', 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to stop syncing.',
+              'error'
+            );
+          }
+        }}
+        onSyncAssignment={async (a) => {
+          try {
+            const result = await syncAssignmentToLatest(a.id);
+            if (!result.updated) {
+              addToast('Assignment is already at the latest version.', 'info');
+              return;
+            }
+            const tagSummary =
+              result.taggedResponseCount > 0
+                ? ` ${result.taggedResponseCount} prior response${result.taggedResponseCount === 1 ? '' : 's'} tagged.`
+                : '';
+            addToast(`Assignment synced.${tagSummary}`, 'success');
+          } catch (err) {
+            addToast(
+              err instanceof Error ? err.message : 'Failed to sync assignment.',
+              'error'
+            );
+          }
+        }}
       />
       <QuizEditorModal
         isOpen={!!editingQuiz}
@@ -1520,7 +1594,41 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }}
         onSave={async (updated) => {
           const isNew = !editingMeta;
-          await saveQuiz(updated, editingMeta?.driveFileId);
+          try {
+            await saveQuiz(updated, editingMeta?.driveFileId);
+          } catch (err) {
+            if (err instanceof SyncedQuizVersionConflictError) {
+              // A peer published a newer version of this synced quiz
+              // between when the editor opened and Save was clicked. The
+              // earlier behavior was to keep the editor open and tell the
+              // teacher to "pull and re-apply" — but the pull affordance
+              // (library-card pill) is unreachable while the modal is
+              // open, leaving the user stuck. Better UX: auto-pull the
+              // canonical content into the local Drive replica and close
+              // the editor with a clear, actionable toast. The teacher's
+              // unsaved edits ARE lost, but the system reaches a
+              // coherent state and they can re-open against the fresh
+              // canonical to re-apply.
+              if (editingMeta) {
+                try {
+                  await pullSyncedQuiz(editingMeta);
+                } catch (pullErr) {
+                  console.error(
+                    '[QuizWidget] auto-pull after sync-conflict failed:',
+                    pullErr
+                  );
+                }
+              }
+              setEditingQuiz(null);
+              setEditingMeta(null);
+              addToast(
+                'Another teacher published an update to this quiz. We pulled their changes; your unsaved edits were not saved. Reopen the quiz to re-apply.',
+                'warning'
+              );
+              return;
+            }
+            throw err;
+          }
           setLoadedQuizData(updated);
           addToast(isNew ? 'Quiz created!' : 'Quiz saved!', 'success');
         }}
