@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RotateCw } from 'lucide-react';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { attemptChunkReload, isChunkLoadError } from '@/utils/chunkLoadError';
 
 interface LazyChunkErrorBoundaryProps {
@@ -8,33 +9,54 @@ interface LazyChunkErrorBoundaryProps {
 
 interface LazyChunkErrorBoundaryState {
   error: Error | null;
+  reloadInFlight: boolean;
 }
+
+const RETRY_BUTTON_CLASS =
+  'rounded-md bg-slate-700/80 font-medium text-white transition hover:bg-slate-600';
+const RETRY_BUTTON_STYLE: React.CSSProperties = {
+  fontSize: 'min(12px, 4cqmin)',
+  padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+};
 
 /**
  * Catches errors thrown by a Suspended descendant — most importantly, the
  * dynamic-import failures that occur when a widget chunk no longer exists
  * after a redeploy. A stale-chunk error triggers a one-shot full-page reload
- * (guarded by sessionStorage so we never loop). Any other error renders a
- * scoped "widget failed to render" tile with a Retry button so a single bad
- * widget can't blank the entire dashboard.
+ * (guarded by sessionStorage so we never loop); when the guard suppresses the
+ * reload (or the error is unrelated), the boundary renders a scoped retry
+ * tile so a single bad widget can't blank the entire dashboard.
  */
 export class LazyChunkErrorBoundary extends React.Component<
   LazyChunkErrorBoundaryProps,
   LazyChunkErrorBoundaryState
 > {
-  override state: LazyChunkErrorBoundaryState = { error: null };
+  override state: LazyChunkErrorBoundaryState = {
+    error: null,
+    reloadInFlight: false,
+  };
 
-  static getDerivedStateFromError(error: Error): LazyChunkErrorBoundaryState {
+  static getDerivedStateFromError(
+    error: Error
+  ): Partial<LazyChunkErrorBoundaryState> {
     return { error };
   }
 
   override componentDidCatch(error: Error, info: React.ErrorInfo) {
     if (isChunkLoadError(error)) {
-      console.warn(
-        '[LazyChunkErrorBoundary] Chunk load failed — attempting reload',
-        error.message
-      );
-      attemptChunkReload();
+      const reloaded = attemptChunkReload();
+      if (reloaded) {
+        console.warn(
+          '[LazyChunkErrorBoundary] Chunk load failed — reloading',
+          error.message
+        );
+        this.setState({ reloadInFlight: true });
+      } else {
+        console.warn(
+          '[LazyChunkErrorBoundary] Chunk load failed and reload already attempted this session — showing retry UI',
+          error.message
+        );
+      }
       return;
     }
     console.error(
@@ -45,44 +67,41 @@ export class LazyChunkErrorBoundary extends React.Component<
   }
 
   handleRetry = () => {
-    this.setState({ error: null });
+    this.setState({ error: null, reloadInFlight: false });
   };
 
   override render() {
-    const { error } = this.state;
+    const { error, reloadInFlight } = this.state;
     if (!error) return this.props.children;
 
-    if (isChunkLoadError(error)) {
+    if (reloadInFlight) {
       return (
-        <div className="flex h-full w-full items-center justify-center p-4 text-center text-slate-300">
-          <div
-            className="flex flex-col items-center gap-2"
-            style={{ fontSize: 'min(13px, 4cqmin)' }}
-          >
-            <RotateCw className="h-5 w-5 animate-spin text-slate-400" />
-            <span>Updating to the latest version…</span>
-          </div>
-        </div>
+        <ScaledEmptyState
+          icon={RotateCw}
+          title="Updating…"
+          subtitle="Loading the latest version."
+          iconClassName="text-slate-400 animate-spin"
+        />
       );
     }
 
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center">
-        <AlertTriangle className="h-6 w-6 text-amber-400" />
-        <div
-          className="font-semibold text-slate-200"
-          style={{ fontSize: 'min(14px, 4.5cqmin)' }}
-        >
-          Widget failed to load
-        </div>
-        <button
-          type="button"
-          onClick={this.handleRetry}
-          className="rounded-md bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-600"
-        >
-          Retry
-        </button>
-      </div>
+      <ScaledEmptyState
+        icon={AlertTriangle}
+        title="Widget failed to load"
+        subtitle="Refresh the page to try again."
+        iconClassName="text-amber-400"
+        action={
+          <button
+            type="button"
+            onClick={this.handleRetry}
+            className={RETRY_BUTTON_CLASS}
+            style={RETRY_BUTTON_STYLE}
+          >
+            Retry
+          </button>
+        }
+      />
     );
   }
 }
