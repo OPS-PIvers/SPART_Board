@@ -23,14 +23,14 @@ import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
 import { GroupBoundingBox } from '@/components/common/GroupBoundingBox';
 import { AnnouncementOverlay } from '@/components/announcements/AnnouncementOverlay';
 import { CheatSheetModal } from '@/components/common/CheatSheetModal';
-import { BoardZoomControl } from './BoardZoomControl';
+import { BoardActionsFab } from './BoardActionsFab';
+import { clampZoom } from '@/utils/zoomMapping';
 import {
   AlertCircle,
   CheckCircle2,
   Info,
   AlertTriangle,
   Loader2,
-  HelpCircle,
   LayoutGrid,
   Music,
 } from 'lucide-react';
@@ -496,7 +496,7 @@ export const DashboardView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only on id change
   }, [activeDashboard?.id]);
 
-  const { canAccessFeature, dockPosition } = useAuth();
+  const { canAccessFeature } = useAuth();
 
   const {
     session,
@@ -640,9 +640,12 @@ export const DashboardView: React.FC = () => {
           // Disabled when the gesture starts on a widget to avoid interfering
           // with widget interactions.
           if (gestureFingerCount.current === 1 && zoom > 1 && !widgetEl) {
+            const rect = dashboardRef.current?.getBoundingClientRect();
+            const maxX = rect ? ((zoom - 1) * rect.width) / 2 : Infinity;
+            const maxY = rect ? ((zoom - 1) * rect.height) / 2 : Infinity;
             setPanOffset((prev) => ({
-              x: prev.x + dx,
-              y: prev.y + dy,
+              x: Math.min(maxX, Math.max(-maxX, prev.x + dx)),
+              y: Math.min(maxY, Math.max(-maxY, prev.y + dy)),
             }));
             window.dispatchEvent(new CustomEvent('board-pan'));
           }
@@ -742,7 +745,7 @@ export const DashboardView: React.FC = () => {
         const WHEEL_ZOOM_STEP = 0.1;
         const next =
           event.deltaY < 0 ? zoom + WHEEL_ZOOM_STEP : zoom - WHEEL_ZOOM_STEP;
-        setZoom(Math.min(5, Math.max(1, next)));
+        setZoom(clampZoom(next));
       },
     },
     {
@@ -830,9 +833,26 @@ export const DashboardView: React.FC = () => {
     }
   }, [currentIndex]);
 
-  // Reset panOffset during render when zoom is 1 to avoid useEffect and extra re-renders
-  if (zoom === 1 && (panOffset.x !== 0 || panOffset.y !== 0)) {
-    setPanOffset({ x: 0, y: 0 });
+  // Re-clamp panOffset during render when zoom changes. At zoom <= 1 the
+  // dashboard fits inside the viewport so the offset must collapse to (0, 0);
+  // at zoom > 1 we re-clamp to the new (smaller) max if the user just zoomed
+  // out — otherwise the previous offset could leave the widget surface
+  // dragged off-center.
+  if (zoom <= 1) {
+    if (panOffset.x !== 0 || panOffset.y !== 0) {
+      setPanOffset({ x: 0, y: 0 });
+    }
+  } else {
+    const rect = dashboardRef.current?.getBoundingClientRect();
+    if (rect) {
+      const maxX = ((zoom - 1) * rect.width) / 2;
+      const maxY = ((zoom - 1) * rect.height) / 2;
+      const clampedX = Math.min(maxX, Math.max(-maxX, panOffset.x));
+      const clampedY = Math.min(maxY, Math.max(-maxY, panOffset.y));
+      if (clampedX !== panOffset.x || clampedY !== panOffset.y) {
+        setPanOffset({ x: clampedX, y: clampedY });
+      }
+    }
   }
 
   // Keyboard Navigation
@@ -1167,10 +1187,9 @@ export const DashboardView: React.FC = () => {
     // YouTube backgrounds are rendered via an iframe — skip CSS background
     if (youTubeVideoId) return {};
 
-    const styles: React.CSSProperties = {
-      transform: `scale(${zoom})`,
-      transformOrigin: 'center center',
-    };
+    // The background lives outside the pan/zoom transform now (see render
+    // tree below), so it needs no transform of its own.
+    const styles: React.CSSProperties = {};
 
     // Custom user-created colors/gradients (custom: prefix)
     if (isCustomBackground(bg)) {
@@ -1188,7 +1207,7 @@ export const DashboardView: React.FC = () => {
       });
     }
     return styles;
-  }, [activeDashboard, youTubeVideoId, zoom]);
+  }, [activeDashboard, youTubeVideoId]);
 
   const backgroundClasses = useMemo(() => {
     if (!activeDashboard) return '';
@@ -1271,14 +1290,14 @@ export const DashboardView: React.FC = () => {
         }
       }}
     >
-      {/* ZOOMABLE SURFACE: Contains background and widgets */}
+      {/* BACKGROUND LAYER: Always covers the viewport at full size, regardless
+          of zoom or pan. Decoupling the background from the transform below
+          guarantees no white edge ever shows when panning a zoomed board, and
+          that color/pattern/image backgrounds still fill the viewport at
+          sub-100% zoom. */}
       <div
-        className={`absolute inset-0 transition-transform duration-300 ease-out ${backgroundClasses}`}
-        style={{
-          ...backgroundStyles,
-          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
-          transformOrigin: 'center center',
-        }}
+        className={`absolute inset-0 ${backgroundClasses}`}
+        style={backgroundStyles}
       >
         {/* Ambient YouTube Video Layer */}
         {youTubeVideoId && (
@@ -1295,7 +1314,16 @@ export const DashboardView: React.FC = () => {
 
         {/* Background Overlay for Depth */}
         <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+      </div>
 
+      {/* ZOOMABLE WIDGET SURFACE: Only widgets get pan/zoom. */}
+      <div
+        className="absolute inset-0 transition-transform duration-300 ease-out"
+        style={{
+          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
+          transformOrigin: 'center center',
+        }}
+      >
         {/* Empty Board Hint */}
         {activeDashboard.widgets.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-10">
@@ -1422,7 +1450,7 @@ export const DashboardView: React.FC = () => {
       <AnnotationOverlay />
       <ToastContainer />
       <AnnouncementOverlay />
-      <BoardZoomControl />
+      <BoardActionsFab onOpenCheatSheet={() => setIsCheatSheetOpen(true)} />
 
       {/* Spotlight Dimming Overlay */}
       {activeDashboard.settings?.spotlightWidgetId &&
@@ -1476,37 +1504,6 @@ export const DashboardView: React.FC = () => {
           </div>
         </button>
       )}
-
-      {/* Cheat Sheet Help Button.
-          Stacking on the left side (when the dock occupies the right edge):
-          each FAB slot is 32px tall + ~8px gap ≈ 2.5rem. Slot 0 = bottom-6,
-          slot 1 = bottom-16, slot 2 = bottom-[6.5rem]. */}
-      {(() => {
-        const boardNavVisible = dashboards.length > 1;
-        const musicVisible = !!youTubeVideoId;
-        const onLeftSide = dockPosition === 'right';
-        const leftStackSlot =
-          (boardNavVisible ? 1 : 0) + (musicVisible ? 1 : 0);
-        const leftSideBottom =
-          leftStackSlot >= 2
-            ? 'bottom-[6.5rem]'
-            : leftStackSlot === 1
-              ? 'bottom-16'
-              : 'bottom-6';
-        const positionClass = onLeftSide
-          ? `left-4 ${leftSideBottom}`
-          : 'right-4 bottom-6';
-        return (
-          <button
-            onClick={() => setIsCheatSheetOpen(true)}
-            title={`${t('widgets.cheatSheet.title')} (Ctrl+/)`}
-            className={`fixed z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm ${positionClass}`}
-            aria-label={t('widgets.cheatSheet.title')}
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
-        );
-      })()}
 
       <CheatSheetModal
         isOpen={isCheatSheetOpen}
