@@ -97,16 +97,16 @@ const StudentExperience: React.FC<{ anonymousUid: string }> = ({
 
   // View tracking — log each pageview of a view-only Share link as an
   // immutable doc in the session's `views/` subcollection. Best-effort and
-  // fire-and-forget. Runs once per session load (gated by isViewOnly).
+  // fire-and-forget. `anonymousUid` is the reactive auth signal threaded
+  // down from the parent, so this re-runs once anon sign-in resolves.
   useEffect(() => {
-    if (!isViewOnly || !sessionId) return;
-    if (!auth.currentUser) return;
+    if (!isViewOnly || !sessionId || !anonymousUid) return;
     void addDoc(collection(db, GL_SESSIONS_COLLECTION, sessionId, 'views'), {
       viewedAt: serverTimestamp(),
     }).catch((err) => {
       console.warn('[GuidedLearningStudentApp] View log failed:', err);
     });
-  }, [isViewOnly, sessionId]);
+  }, [isViewOnly, sessionId, anonymousUid]);
 
   const [pin, setPin] = useState('');
   const [started, setStarted] = useState(false);

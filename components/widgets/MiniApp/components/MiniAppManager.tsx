@@ -683,16 +683,28 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
     assignment: MiniAppAssignment,
     mode: 'active' | 'archive'
   ): AssignmentStatusBadge {
+    // Per-assignment mode is frozen at creation. View-only entries get
+    // share-flavored labels so teachers can distinguish them at a glance
+    // even when the org-wide admin toggle is later flipped back.
+    const isViewOnly = assignment.mode === 'view-only';
     if (mode === 'archive') {
-      return { label: 'Ended', tone: 'neutral' };
+      return {
+        label: isViewOnly ? 'Ended share' : 'Ended',
+        tone: 'neutral',
+      };
     }
-    return { label: 'Live', tone: 'success', dot: true };
+    return {
+      label: isViewOnly ? 'Shared' : 'Live',
+      tone: 'success',
+      dot: true,
+    };
   }
 
   function assignmentSecondary(
     assignment: MiniAppAssignment,
     mode: 'active' | 'archive'
   ): LibraryMenuAction[] {
+    const isViewOnly = assignment.mode === 'view-only';
     const actions: LibraryMenuAction[] = [];
     actions.push({
       id: 'copy-url',
@@ -711,7 +723,7 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
     if (mode === 'active') {
       actions.push({
         id: 'end',
-        label: 'End assignment',
+        label: isViewOnly ? 'End share' : 'End assignment',
         icon: Box,
         onClick: () => onArchiveEnd(assignment),
       });

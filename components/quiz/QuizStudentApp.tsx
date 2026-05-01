@@ -40,7 +40,7 @@ import {
   X as XIcon,
   Check,
 } from 'lucide-react';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
 import { useQuizSessionStudent, normalizeAnswer } from '@/hooks/useQuizSession';
@@ -223,18 +223,29 @@ const QuizJoinFlow: React.FC<{ isStudentRole: boolean }> = ({
 
   const isViewOnly = session?.mode === 'view-only';
 
+  // Reactive auth uid — `auth.currentUser` is a non-reactive ref, so without
+  // this subscription the view-log effect below wouldn't re-run if anonymous
+  // sign-in resolves after the session loads. The parent component gates
+  // rendering on `authReady`, so in practice this is a defensive belt — but
+  // the effect's dep array now correctly reflects what it depends on.
+  const [authedUid, setAuthedUid] = useState<string | null>(
+    auth.currentUser?.uid ?? null
+  );
+  useEffect(() => {
+    return onAuthStateChanged(auth, (user) => setAuthedUid(user?.uid ?? null));
+  }, []);
+
   // View tracking — log each pageview of a view-only Share link as an
   // immutable doc in the session's `views/` subcollection. Best-effort and
   // fire-and-forget; the Firestore rule accepts a single `viewedAt` field.
   useEffect(() => {
-    if (!isViewOnly || !session?.id) return;
-    if (!auth.currentUser) return;
+    if (!isViewOnly || !session?.id || !authedUid) return;
     void addDoc(collection(db, 'quiz_sessions', session.id, 'views'), {
       viewedAt: serverTimestamp(),
     }).catch((err) => {
       console.warn('[QuizStudentApp] View log failed:', err);
     });
-  }, [isViewOnly, session?.id]);
+  }, [isViewOnly, session?.id, authedUid]);
 
   const handleAnswer = useCallback(
     async (questionId: string, answer: string, speedBonus?: number) => {

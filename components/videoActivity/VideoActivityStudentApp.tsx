@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import {
   PlayCircle,
   Loader2,
@@ -90,19 +90,28 @@ const JoinAndPlay: React.FC = () => {
 
   const isViewOnly = session?.mode === 'view-only';
 
+  // Reactive auth uid — see QuizStudentApp for the rationale. Tracks the
+  // current Firebase Auth uid so the view-log effect re-runs once anon
+  // sign-in resolves rather than reading a stale `auth.currentUser` ref.
+  const [authedUid, setAuthedUid] = useState<string | null>(
+    auth.currentUser?.uid ?? null
+  );
+  useEffect(() => {
+    return onAuthStateChanged(auth, (user) => setAuthedUid(user?.uid ?? null));
+  }, []);
+
   // View tracking — log each pageview of a view-only Share link as an
   // immutable doc in the session's `views/` subcollection. Best-effort and
   // fire-and-forget.
   useEffect(() => {
-    if (!isViewOnly || !session?.id) return;
-    if (!auth.currentUser) return;
+    if (!isViewOnly || !session?.id || !authedUid) return;
     void addDoc(
       collection(db, 'video_activity_sessions', session.id, 'views'),
       { viewedAt: serverTimestamp() }
     ).catch((err) => {
       console.warn('[VideoActivityStudentApp] View log failed:', err);
     });
-  }, [isViewOnly, session?.id]);
+  }, [isViewOnly, session?.id, authedUid]);
 
   // Multi-period selection step — shown when the session has more than one
   // class-period name configured, so students pick their period before the

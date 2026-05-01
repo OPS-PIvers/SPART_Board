@@ -212,16 +212,24 @@ const ACTIVITY_GET_ID = (a: VideoActivityMetadata): string => a.id;
 /* ─── Assignment status → badge mapping ───────────────────────────────────── */
 
 function statusToBadge(
-  status: VideoActivityAssignmentStatus
+  status: VideoActivityAssignmentStatus,
+  isViewOnly = false
 ): AssignmentStatusBadge {
   switch (status) {
     case 'active':
-      return { label: 'Live', tone: 'success', dot: true };
+      return {
+        label: isViewOnly ? 'Shared' : 'Live',
+        tone: 'success',
+        dot: true,
+      };
     case 'paused':
       return { label: 'Paused', tone: 'warn', dot: true };
     case 'inactive':
     default:
-      return { label: 'Ended', tone: 'neutral' };
+      return {
+        label: isViewOnly ? 'Ended share' : 'Ended',
+        tone: 'neutral',
+      };
   }
 }
 
@@ -696,21 +704,29 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
     return (
       <div className="flex flex-col gap-2">
         {list.map((assignment) => {
-          const status = statusToBadge(assignment.status);
+          // Per-assignment mode is frozen at creation. View-only shares have
+          // no responses to surface — relabel the status badge and collapse
+          // the archive primary to "Copy link" instead of "Results".
+          const assignmentIsViewOnly = assignment.mode === 'view-only';
+          const status = statusToBadge(assignment.status, assignmentIsViewOnly);
           const secondaryActions = buildAssignmentSecondaryActions(
             assignment,
             mode
           );
 
-          // Primary action: for active (live) assignments the headline CTA
-          // is Monitor when wired — that's the live teacher view of student
-          // progress. Falls back to "Copy link" for paused assignments
-          // (Monitor would show a paused screen) and for callers that don't
-          // wire `onArchiveMonitor`. Archive mode still opens Results.
+          // Primary action priority:
+          //   - View-only shares: always Copy link (Monitor would have nothing
+          //     to monitor; Results doesn't exist for view-only).
+          //   - Submissions, active+live: Monitor when wired (the live teacher
+          //     view of student progress).
+          //   - Submissions, active+paused or no monitor wired: Copy link
+          //     (Monitor would show a paused screen).
+          //   - Submissions, archive: Results.
           const isLiveActive =
             mode === 'active' && assignment.status === 'active';
-          const primaryAction =
-            mode === 'active'
+          const primaryAction = assignmentIsViewOnly
+            ? { label: 'Copy link', icon: Copy }
+            : mode === 'active'
               ? isLiveActive && onArchiveMonitor
                 ? { label: 'Monitor', icon: Monitor }
                 : { label: 'Copy link', icon: Copy }
@@ -735,7 +751,10 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
                 label: primaryAction.label,
                 icon: primaryAction.icon,
                 onClick: () => {
-                  if (mode === 'active') {
+                  // Mirror the priority used to pick the label above.
+                  if (assignmentIsViewOnly) {
+                    if (onArchiveCopyUrl) onArchiveCopyUrl(assignment);
+                  } else if (mode === 'active') {
                     if (isLiveActive && onArchiveMonitor) {
                       void onArchiveMonitor(assignment);
                     } else if (onArchiveCopyUrl) {
@@ -765,6 +784,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
   ): LibraryMenuAction[] {
     const actions: LibraryMenuAction[] = [];
     const isPaused = assignment.status === 'paused';
+    const assignmentIsViewOnly = assignment.mode === 'view-only';
 
     if (mode === 'active') {
       if (onArchiveCopyUrl) {
@@ -775,7 +795,9 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
           onClick: () => onArchiveCopyUrl(assignment),
         });
       }
-      if (onArchivePauseResume) {
+      // Pause/Resume is meaningful only for submission assignments — view-only
+      // shares are either live or ended, with no "paused while collecting" state.
+      if (onArchivePauseResume && !assignmentIsViewOnly) {
         actions.push({
           id: 'pause-resume',
           label: isPaused ? 'Resume' : 'Pause',
@@ -788,7 +810,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
       if (onArchiveDeactivate) {
         actions.push({
           id: 'deactivate',
-          label: 'End assignment',
+          label: assignmentIsViewOnly ? 'End share' : 'End assignment',
           icon: Ban,
           onClick: () => {
             void onArchiveDeactivate(assignment);
@@ -797,7 +819,8 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
       }
     }
 
-    if (onArchiveResults) {
+    // View-only shares have no responses to surface.
+    if (onArchiveResults && !assignmentIsViewOnly) {
       actions.push({
         id: 'results',
         label: 'Results',

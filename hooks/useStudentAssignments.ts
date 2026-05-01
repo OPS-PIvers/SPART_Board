@@ -449,11 +449,25 @@ export function useStudentAssignments({
       const key = planKey(plan);
       // View-only sessions never appear in the student's My Assignments list:
       // they're shared links, not assignments. Pre-feature sessions don't
-      // carry a `mode` field and pass through unchanged.
+      // carry an assignment-mode field and pass through unchanged.
+      //
+      // Field-naming asymmetry: Quiz / Video Activity / Mini App store the
+      // mode under `mode`. Guided Learning uses `assignmentMode` because GL's
+      // session already has a `mode` field for play-mode (structured / guided
+      // / explore). Both fields are checked so GL view-only sessions are
+      // also filtered.
       buckets.set(
         key,
         snap.docs
-          .filter((d) => (d.data() as { mode?: unknown }).mode !== 'view-only')
+          .filter((d) => {
+            const data = d.data() as {
+              mode?: unknown;
+              assignmentMode?: unknown;
+            };
+            return (
+              data.mode !== 'view-only' && data.assignmentMode !== 'view-only'
+            );
+          })
           .map((d) => docToSummary(plan.kind, plan.channel, config, d))
       );
       emit(plan.kind, plan.channel);
