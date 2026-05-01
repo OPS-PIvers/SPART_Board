@@ -37,6 +37,8 @@ import {
   UserRolesConfig,
   AppSettings,
   DockPosition,
+  AssignmentMode,
+  AssignmentWidgetKey,
 } from '../types';
 import type { MemberRecord, BuildingRecord } from '../types/organization';
 import { AuthContext } from './AuthContextValue';
@@ -47,6 +49,7 @@ import {
 } from '../config/buildings';
 import i18n from '../i18n';
 import { stripTransientKeys } from '../utils/widgetConfigPersistence';
+import { parseAssignmentModesConfig } from '../utils/assignmentModesConfig';
 import {
   canWriteLastActive,
   stampLastActive,
@@ -1407,6 +1410,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [user, globalPermissions, isAdmin, isBetaUser]
   );
 
+  const getAssignmentMode = useCallback(
+    (widget: AssignmentWidgetKey): AssignmentMode => {
+      const permission = globalPermissions.find(
+        (p) => p.featureId === 'assignment-modes'
+      );
+      // parseAssignmentModesConfig is the trust boundary: it drops unknown
+      // widget keys and warns + drops unrecognized mode values, returning a
+      // clean AssignmentModesConfig. The cast is gone; defaulting to
+      // 'submissions' here keeps the legacy-fallthrough behavior.
+      const config = parseAssignmentModesConfig(permission?.config);
+      return config[widget] ?? 'submissions';
+    },
+    [globalPermissions]
+  );
+
   const signInWithGoogle = async () => {
     if (isAuthBypass) {
       console.warn('Bypassing Google Sign In');
@@ -1494,6 +1512,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         updateAppSettings,
         canAccessWidget,
         canAccessFeature,
+        getAssignmentMode,
         signInWithGoogle,
         signOut,
         selectedBuildings,

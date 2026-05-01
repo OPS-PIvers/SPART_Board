@@ -37,6 +37,7 @@ import {
   Pause,
   PowerOff,
   RefreshCw,
+  RotateCcw,
   Calendar,
   Radio,
   Inbox,
@@ -47,6 +48,7 @@ import {
   CloudOff,
 } from 'lucide-react';
 import {
+  AssignmentMode,
   QuizMetadata,
   QuizSessionMode,
   QuizConfig,
@@ -73,8 +75,10 @@ import {
   LibraryGrid,
   LibraryItemCard,
   AssignModal,
+  ViewOnlyShareModal,
   CollapsibleSection,
   AssignmentArchiveCard,
+  ViewCountBadge,
   FolderSidebar,
   FolderPickerPopover,
   LibraryDndContext,
@@ -95,6 +99,7 @@ import {
   filterByFolder,
 } from '@/components/common/library/folderFilters';
 import { useFolders } from '@/hooks/useFolders';
+import { useSessionViewCount } from '@/hooks/useSessionViewCount';
 import { useDialog } from '@/context/useDialog';
 
 export interface PlcOptions {
@@ -249,6 +254,16 @@ interface QuizManagerProps {
     /** Max completed submissions per student; null = unlimited. */
     attemptLimit: number | null
   ) => void;
+  /**
+   * View-only Share callback — invoked when the org-wide assignment mode
+   * for Quiz is `'view-only'` and the teacher clicks the Share button.
+   * Bypasses the AssignModal entirely (no mode picker, no PLC, no
+   * settings, no class targeting — none of which apply to view-only
+   * shares). Should mint a session/assignment with view-only mode and
+   * return the student-facing URL for the modal to display. Required
+   * when `assignmentMode` is `'view-only'`; otherwise unused.
+   */
+  onCreateViewOnlyShare?: (quiz: QuizMetadata) => Promise<string>;
   onResults: (quiz: QuizMetadata) => void;
   onDelete: (quiz: QuizMetadata) => void | Promise<void>;
   /**
@@ -315,13 +330,26 @@ interface QuizManagerProps {
    * useQuizAssignments.syncAssignmentToLatest.
    */
   onSyncAssignment?: (a: QuizAssignment) => void | Promise<void>;
+  /** Org-wide assignment mode. Drives Assign-vs-Share button labels and the
+   *  In-Progress-vs-Shared tab label. Defaults to `'submissions'`. */
+  assignmentMode?: AssignmentMode;
 }
 
 /* ─── Status resolver for archive cards ───────────────────────────────────── */
 
 function resolveStatus(
-  status: QuizAssignment['status']
+  status: QuizAssignment['status'],
+  isViewOnly: boolean
 ): AssignmentStatusBadge {
+  // View-only shares get share-flavored labels so the active/archive UI
+  // doesn't pretend submissions are happening when they aren't. "Closed"
+  // is the cross-widget archive label (cf. MiniAppManager.statusBadge).
+  if (isViewOnly) {
+    if (status === 'inactive') {
+      return { label: 'Closed', tone: 'neutral' };
+    }
+    return { label: 'Shared', tone: 'success', dot: true };
+  }
   if (status === 'active') {
     return { label: 'Live', tone: 'success', dot: true };
   }
@@ -418,7 +446,11 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onPullSyncedQuiz,
   onDetachSyncedQuiz,
   onSyncAssignment,
+  assignmentMode = 'submissions',
+  onCreateViewOnlyShare,
 }) => {
+  const isViewOnly = assignmentMode === 'view-only';
+  const primaryActionLabel = isViewOnly ? 'Share' : 'Assign';
   const noop = () => {
     /* action not wired */
   };
@@ -427,6 +459,54 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
 
   // ─── Assign modal state (2-stage: mode → settings) ────────────────────────
   const [assignTarget, setAssignTarget] = useState<QuizMetadata | null>(null);
+
+  // ─── View-only Share modal state ──────────────────────────────────────────
+  // Bypasses the AssignModal entirely — class targeting, PLC, mode picker,
+  // and per-assignment settings are all meaningless for view-only shares.
+  const [viewOnlyShareTarget, setViewOnlyShareTarget] =
+    useState<QuizMetadata | null>(null);
+  const [viewOnlyShareLink, setViewOnlyShareLink] = useState<string | null>(
+    null
+  );
+  const [viewOnlyShareError, setViewOnlyShareError] = useState<string | null>(
+    null
+  );
+  const [isCreatingViewOnlyShare, setIsCreatingViewOnlyShare] = useState(false);
+
+  const openShareOrAssign = useCallback(
+    (quiz: QuizMetadata) => {
+      if (isViewOnly) {
+        setViewOnlyShareTarget(quiz);
+        setViewOnlyShareLink(null);
+        setViewOnlyShareError(null);
+      } else {
+        setAssignTarget(quiz);
+      }
+    },
+    [isViewOnly]
+  );
+
+  const handleConfirmViewOnlyShare = useCallback(async () => {
+    if (!viewOnlyShareTarget || !onCreateViewOnlyShare) return;
+    setIsCreatingViewOnlyShare(true);
+    setViewOnlyShareError(null);
+    try {
+      const url = await onCreateViewOnlyShare(viewOnlyShareTarget);
+      setViewOnlyShareLink(url);
+    } catch (err) {
+      setViewOnlyShareError(
+        err instanceof Error ? err.message : 'Failed to create share link.'
+      );
+    } finally {
+      setIsCreatingViewOnlyShare(false);
+    }
+  }, [viewOnlyShareTarget, onCreateViewOnlyShare]);
+
+  const closeViewOnlyShareModal = useCallback(() => {
+    setViewOnlyShareTarget(null);
+    setViewOnlyShareLink(null);
+    setViewOnlyShareError(null);
+  }, []);
   const [selectedMode, setSelectedMode] = useState<QuizSessionMode | null>(
     null
   );
@@ -665,13 +745,86 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
       label: string;
       icon: React.ComponentType<{ size?: number; className?: string }>;
       onClick: () => void;
-    };
+    } | null;
     secondaries: LibraryMenuAction[];
   } => {
     const isActive = a.status === 'active';
     const urlLive = a.status !== 'inactive';
+    // Per-assignment mode is frozen at creation. View-only shares have no
+    // monitor / results to surface — collapse the action list accordingly.
+    const assignmentIsViewOnly = a.mode === 'view-only';
 
     const secondaries: LibraryMenuAction[] = [];
+
+    if (assignmentIsViewOnly) {
+      // For archived (urlLive === false) view-only shares we keep the
+      // "Reactivate" affordance as a kebab item rather than a primary
+      // action — the card otherwise has no headline action, which matches
+      // the "no Copy on dead link" rule (cf. F2 in the rollout plan).
+      const primary = urlLive
+        ? {
+            label: 'Copy link',
+            icon: Link2,
+            onClick: () => (onArchiveCopyUrl ?? noop)(a),
+          }
+        : null;
+      if (urlLive) {
+        secondaries.push({
+          id: 'deactivate',
+          label: 'End share',
+          icon: PowerOff,
+          destructive: true,
+          // Confirm before tearing down the URL — accidental dismissal
+          // shouldn't kill a tracked link silently. Copy is view-only
+          // flavored (no submissions to preserve, no roster to retire).
+          onClick: async () => {
+            const ok = await showConfirm(
+              `End "${a.quizTitle}"? The link will stop working.`,
+              {
+                title: 'End share',
+                variant: 'danger',
+                confirmLabel: 'End',
+              }
+            );
+            if (ok) await (onArchiveDeactivate ?? noop)(a);
+          },
+        });
+      }
+      // Archived view-only share: surface "Reactivate" as a kebab item
+      // (lifts the URL out of the dead state). Cf. F3 in the rollout plan;
+      // mirrors VideoActivityManager.buildAssignmentSecondaryActions.
+      if (!urlLive && onArchiveReopen) {
+        secondaries.push({
+          id: 'reactivate',
+          label: 'Reactivate',
+          icon: RotateCcw,
+          onClick: () => void onArchiveReopen(a),
+        });
+      }
+      secondaries.push({
+        id: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        destructive: true,
+        onClick: async () => {
+          const ok = await showConfirm(
+            'Delete this share permanently? The link will stop working.',
+            {
+              title: 'Delete Share',
+              variant: 'danger',
+              confirmLabel: 'Delete',
+            }
+          );
+          if (ok) await (onArchiveDelete ?? noop)(a);
+        },
+      });
+      return {
+        primary,
+        secondaries: primary
+          ? secondaries.filter((m) => m.label !== primary.label)
+          : secondaries,
+      };
+    }
 
     if (mode === 'active') {
       // Primary: Monitor (active) or Start (paused)
@@ -1114,9 +1267,9 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           </span>
         }
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Play,
-          onClick: () => setAssignTarget(quiz),
+          onClick: () => openShareOrAssign(quiz),
         }}
         secondaryActions={buildQuizSecondaryActions(quiz)}
         viewMode="list"
@@ -1138,6 +1291,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         active: activeAssignments.length,
         archive: inactiveAssignments.length,
       }}
+      tabLabels={isViewOnly ? { active: 'Shared' } : undefined}
       primaryAction={primaryAction}
       secondaryActions={secondaryActions}
       toolbarSlot={toolbar}
@@ -1147,7 +1301,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         <LibraryTabContent
           error={error}
           orderedItems={reorder.orderedItems}
-          onAssignClick={(q) => setAssignTarget(q)}
+          onAssignClick={(q) => openShareOrAssign(q)}
           buildSecondaryActions={buildQuizSecondaryActions}
           buildBadges={buildQuizBadges}
           onEdit={onEdit}
@@ -1163,6 +1317,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           folders={folderState.folders}
           onBulkMove={handleBulkMove}
           onBulkDelete={handleBulkDelete}
+          primaryActionLabel={primaryActionLabel}
         />
       )}
 
@@ -1173,8 +1328,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           mode="active"
           buildActions={buildArchiveActions}
           syncedGroups={syncedGroups}
-          emptyTitle="No quizzes in progress"
-          emptySub="Assign a quiz from the Library tab to get started. Active and paused assignments appear here."
+          emptyTitle={
+            isViewOnly ? 'No active shares' : 'No quizzes in progress'
+          }
+          emptySub={
+            isViewOnly
+              ? 'Share a quiz from the Library tab to create a viewable link for students.'
+              : 'Assign a quiz from the Library tab to get started. Active and paused assignments appear here.'
+          }
         />
       )}
 
@@ -1185,8 +1346,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           mode="archive"
           buildActions={buildArchiveActions}
           syncedGroups={syncedGroups}
-          emptyTitle="No archived assignments"
-          emptySub="Ended assignments are moved here so you can review results and share them."
+          emptyTitle={
+            isViewOnly ? 'No archived shares' : 'No archived assignments'
+          }
+          emptySub={
+            isViewOnly
+              ? 'Ended share links will appear here.'
+              : 'Ended assignments are moved here so you can review results and share them.'
+          }
         />
       )}
     </LibraryShell>
@@ -1219,7 +1386,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         />
       )}
 
-      {assignTarget && (
+      {assignTarget && !isViewOnly && (
         <AssignModal<QuizAssignOptions>
           isOpen={!!assignTarget}
           onClose={() => {
@@ -1255,6 +1422,17 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           confirmLabel="Assign"
           confirmDisabled={!selectedMode}
           confirmDisabledReason="Choose a session mode first."
+        />
+      )}
+
+      {viewOnlyShareTarget && (
+        <ViewOnlyShareModal
+          itemTitle={viewOnlyShareTarget.title}
+          isCreating={isCreatingViewOnlyShare}
+          createdLink={viewOnlyShareLink}
+          error={viewOnlyShareError}
+          onConfirm={() => void handleConfirmViewOnlyShare()}
+          onClose={closeViewOnlyShareModal}
         />
       )}
     </>
@@ -1293,6 +1471,7 @@ const LibraryTabContent: React.FC<{
   folders: import('@/types').LibraryFolder[];
   onBulkMove: (folderId: string | null) => Promise<void>;
   onBulkDelete: () => void | Promise<void>;
+  primaryActionLabel: string;
 }> = ({
   error,
   orderedItems,
@@ -1312,6 +1491,7 @@ const LibraryTabContent: React.FC<{
   folders,
   onBulkMove,
   onBulkDelete,
+  primaryActionLabel,
 }) => {
   const emptyState =
     totalCount === 0 ? (
@@ -1395,7 +1575,7 @@ const LibraryTabContent: React.FC<{
               </span>
             }
             primaryAction={{
-              label: 'Assign',
+              label: primaryActionLabel,
               icon: Play,
               onClick: () => onAssignClick(quiz),
             }}
@@ -1425,11 +1605,16 @@ const AssignmentsList: React.FC<{
     a: QuizAssignment,
     mode: 'active' | 'archive'
   ) => {
+    /**
+     * `null` when the card has no headline action — view-only archive cards
+     * surface "Reactivate" via the kebab and intentionally omit the primary
+     * to avoid a Copy-link button on a dead URL (cf. F2 in the rollout plan).
+     */
     primary: {
       label: string;
       icon: React.ComponentType<{ size?: number; className?: string }>;
       onClick: () => void;
-    };
+    } | null;
     secondaries: LibraryMenuAction[];
   };
   /**
@@ -1471,96 +1656,172 @@ const AssignmentsList: React.FC<{
 
   return (
     <div className="flex flex-col gap-2">
-      {assignments.map((a) => {
-        const { primary, secondaries } = buildActions(a, mode);
-        const status = resolveStatus(a.status);
-        const periods = a.periodNames ?? (a.periodName ? [a.periodName] : []);
-        const urlLive = a.status !== 'inactive';
-        const noPeriods = periods.length === 0 && mode === 'active';
-        const periodLabel =
-          periods.length === 1
-            ? periods[0]
-            : periods.length > 0
-              ? `${periods.length} classes`
-              : null;
-        // Synced indicator: present iff this assignment was imported (or
-        // shared) under sync mode AND the canonical group has been
-        // observed by the parent's listener. Collapses to "Synced" when
-        // versions match, or "Sync available" (warn) when canonical
-        // outpaces the assignment's snapshotted version.
-        const syncBadge: { label: string; tone: 'info' | 'warn' } | null =
-          a.syncGroupId
-            ? (() => {
-                const group = syncedGroups?.get(a.syncGroupId);
-                if (!group) {
-                  return { label: 'Synced', tone: 'info' };
-                }
-                if (group.version > (a.syncedVersion ?? 0)) {
-                  return { label: 'Sync available', tone: 'warn' };
-                }
-                return { label: 'Synced', tone: 'info' };
-              })()
-            : null;
+      {assignments.map((a) => (
+        <QuizArchiveRow
+          key={a.id}
+          assignment={a}
+          mode={mode}
+          buildActions={buildActions}
+          syncedGroups={syncedGroups}
+        />
+      ))}
+    </div>
+  );
+};
 
-        return (
-          <AssignmentArchiveCard<QuizAssignment>
-            key={a.id}
-            assignment={a}
-            mode={mode}
-            status={status}
-            title={a.quizTitle}
-            subtitle={a.className?.trim() ? a.className : undefined}
-            meta={
-              <>
-                <span className="inline-flex items-center gap-0.5">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(a.createdAt).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-                {urlLive && (
-                  <span className="font-mono tracking-wider">{a.code}</span>
-                )}
-                {noPeriods ? (
-                  <span className="font-semibold text-amber-600 truncate max-w-[120px]">
-                    No classes
-                  </span>
-                ) : periodLabel != null ? (
-                  <span className="font-semibold truncate max-w-[120px]">
-                    {periodLabel}
-                  </span>
-                ) : null}
-                {status.tone === 'success' && (
-                  <span className="inline-flex items-center">
-                    <Radio className="w-3 h-3" />
-                  </span>
-                )}
-                {syncBadge && (
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                      syncBadge.tone === 'warn'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}
-                  >
-                    <Cloud className="w-2.5 h-2.5" />
-                    {syncBadge.label}
-                  </span>
-                )}
-              </>
-            }
-            primaryAction={{
+/* ─── Archive row wrapper (per-row hooks for view-count fetch) ────────────── */
+
+interface QuizArchiveRowProps {
+  assignment: QuizAssignment;
+  mode: 'active' | 'archive';
+  buildActions: (
+    a: QuizAssignment,
+    mode: 'active' | 'archive'
+  ) => {
+    primary: {
+      label: string;
+      icon: React.ComponentType<{ size?: number; className?: string }>;
+      onClick: () => void;
+    } | null;
+    secondaries: LibraryMenuAction[];
+  };
+  /**
+   * Synced-group state used to label assignment cards as "Synced" / "Sync
+   * available" in the meta line. Optional — undefined collapses to the
+   * legacy "no sync indicator" rendering.
+   */
+  syncedGroups?: Map<string, SyncedQuizGroup>;
+}
+
+/**
+ * Per-row hook host. View-only quizzes annotate the meta line with a view
+ * count fetched from the session's `views/` subcollection on mount; synced
+ * assignments get a "Synced" / "Sync available" pill driven by the
+ * canonical group's version vs. the assignment's snapshotted version.
+ */
+const QuizArchiveRow: React.FC<QuizArchiveRowProps> = ({
+  assignment: a,
+  mode,
+  buildActions,
+  syncedGroups,
+}) => {
+  const assignmentIsViewOnly = a.mode === 'view-only';
+  const { primary, secondaries } = buildActions(a, mode);
+  const status = resolveStatus(a.status, assignmentIsViewOnly);
+  const periods = a.periodNames ?? (a.periodName ? [a.periodName] : []);
+  const urlLive = a.status !== 'inactive';
+  const noPeriods = periods.length === 0 && mode === 'active';
+  const periodLabel =
+    periods.length === 1
+      ? periods[0]
+      : periods.length > 0
+        ? `${periods.length} classes`
+        : null;
+
+  const { count } = useSessionViewCount(
+    'quiz_sessions',
+    // Quiz assignment id is also the underlying session id (1:1 — see the
+    // QuizAssignment type's "Assignment UUID — also the sessionId" note).
+    a.id,
+    assignmentIsViewOnly
+  );
+
+  // Synced indicator: present iff this assignment was imported (or shared)
+  // under sync mode AND the canonical group has been observed by the
+  // parent's listener. Collapses to "Synced" when versions match, or
+  // "Sync available" (warn) when canonical outpaces the assignment's
+  // snapshotted version. Hidden on view-only shares — sync semantics
+  // apply to submission-mode assignments only.
+  const syncBadge: { label: string; tone: 'info' | 'warn' } | null =
+    !assignmentIsViewOnly && a.syncGroupId
+      ? (() => {
+          const group = syncedGroups?.get(a.syncGroupId);
+          if (!group) {
+            return { label: 'Synced', tone: 'info' };
+          }
+          if (group.version > (a.syncedVersion ?? 0)) {
+            return { label: 'Sync available', tone: 'warn' };
+          }
+          return { label: 'Synced', tone: 'info' };
+        })()
+      : null;
+
+  // Meta line composes per-mode. View-only shares show date + view count
+  // only — the join code, class targeting, and live-radio dot all relate to
+  // submissions plumbing that doesn't apply. Submissions show the full row.
+  const dateChip = (
+    <span className="inline-flex items-center gap-0.5">
+      <Calendar className="w-3 h-3" />
+      {new Date(a.createdAt).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })}
+    </span>
+  );
+
+  let meta: React.ReactNode;
+  if (assignmentIsViewOnly) {
+    meta = (
+      <>
+        {dateChip}
+        <ViewCountBadge count={count} />
+      </>
+    );
+  } else {
+    meta = (
+      <>
+        {dateChip}
+        {urlLive && <span className="font-mono tracking-wider">{a.code}</span>}
+        {noPeriods ? (
+          <span className="font-semibold text-amber-600 truncate max-w-[120px]">
+            No classes
+          </span>
+        ) : periodLabel != null ? (
+          <span className="font-semibold truncate max-w-[120px]">
+            {periodLabel}
+          </span>
+        ) : null}
+        {status.tone === 'success' && (
+          <span className="inline-flex items-center">
+            <Radio className="w-3 h-3" />
+          </span>
+        )}
+        {syncBadge && (
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              syncBadge.tone === 'warn'
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-blue-100 text-blue-700'
+            }`}
+          >
+            <Cloud className="w-2.5 h-2.5" />
+            {syncBadge.label}
+          </span>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <AssignmentArchiveCard<QuizAssignment>
+      assignment={a}
+      mode={mode}
+      status={status}
+      title={a.quizTitle}
+      subtitle={a.className?.trim() ? a.className : undefined}
+      meta={meta}
+      primaryAction={
+        primary
+          ? {
               label: primary.label,
               icon: primary.icon,
               onClick: primary.onClick,
-            }}
-            secondaryActions={secondaries}
-          />
-        );
-      })}
-    </div>
+            }
+          : undefined
+      }
+      secondaryActions={secondaries}
+    />
   );
 };
 

@@ -1221,9 +1221,17 @@ export interface CalendarConfig {
   cardOpacity?: number;
 }
 
+export interface LunchMenuItem {
+  name: string;
+  /** Nutrislice CDN URL for the food's photo. Undefined when the menu entry has no image. */
+  imageUrl?: string;
+}
+
 export interface LunchMenuDay {
-  hotLunch: string;
-  bentoBox: string;
+  hotLunch: LunchMenuItem;
+  /** Items served alongside the entree, in the order Nutrislice lists them, up to (but excluding) the bento alternative. */
+  hotLunchSides: LunchMenuItem[];
+  bentoBox: LunchMenuItem;
   date: string; // ISO String
 }
 
@@ -1342,8 +1350,11 @@ export interface MiniAppConfig {
    */
   lastRosterIdsByAppId?: Record<string, string[]>;
   /**
-   * Remembers the last submissions-enabled choice the teacher made per app,
-   * keyed by appId. Used to pre-populate the toggle on subsequent assigns.
+   * @deprecated The per-assignment Submissions toggle was removed when
+   * `assignment-modes` shipped — Mini App's submission behavior is now
+   * driven by the org-wide admin setting (see `getAssignmentMode`). New
+   * code never writes this field; preserved on the type only for legacy
+   * configs that may still carry it. Will be removed in a future major.
    */
   lastSubmissionsEnabledByAppId?: Record<string, boolean>;
 }
@@ -1383,6 +1394,13 @@ export interface MiniAppSession {
    * for legacy sessions (treated as `false` — view-only — by the runner).
    */
   submissionsEnabled?: boolean;
+  /**
+   * Frozen at creation from the org-wide `assignment-modes` admin setting.
+   * Determines whether students see a tracked Share link (`'view-only'`) or
+   * the full assignment experience (`'submissions'`). Absent on pre-feature
+   * sessions; consumers must default to `'submissions'`.
+   */
+  mode?: AssignmentMode;
 }
 
 /**
@@ -1897,6 +1915,14 @@ export interface QuizSession {
    * `null`/`undefined` = unlimited (legacy sessions).
    */
   attemptLimit?: number | null;
+
+  /**
+   * Frozen at creation from the org-wide `assignment-modes` admin setting.
+   * Determines whether students see a tracked Share link (`'view-only'`) or
+   * the full live-quiz experience (`'submissions'`). Absent on pre-feature
+   * sessions; consumers must default to `'submissions'`.
+   */
+  mode?: AssignmentMode;
 }
 
 export interface QuizResponseAnswer {
@@ -2212,6 +2238,9 @@ export interface QuizAssignment extends QuizAssignmentSettings {
    * `group.version > syncedVersion` → stale.
    */
   syncedVersion?: number;
+  /** Frozen at creation from the org-wide `assignment-modes` admin setting.
+   *  Mirrors QuizSession.mode. Absent on pre-feature assignments. */
+  mode?: AssignmentMode;
 }
 
 /**
@@ -2339,7 +2368,7 @@ export interface VideoActivityMetadata {
   folderId?: string | null;
 }
 
-export type VideoActivityView = 'manager' | 'create' | 'results';
+export type VideoActivityView = 'manager' | 'create' | 'results' | 'monitor';
 
 /** Widget configuration for the video activity widget (teacher side). */
 export interface VideoActivityConfig {
@@ -2437,6 +2466,13 @@ export interface VideoActivitySession {
    * derived from these rosters' `classlinkClassId` metadata.
    */
   rosterIds?: string[];
+  /**
+   * Frozen at creation from the org-wide `assignment-modes` admin setting.
+   * Determines whether students see a tracked Share link (`'view-only'`) or
+   * the full assignment experience (`'submissions'`). Absent on pre-feature
+   * sessions; consumers must default to `'submissions'`.
+   */
+  mode?: AssignmentMode;
 }
 
 /** A single answer submitted by a student for a video activity question. */
@@ -3069,6 +3105,18 @@ export interface GuidedLearningSession {
    * derived from these rosters' `classlinkClassId` metadata.
    */
   rosterIds?: string[];
+  /**
+   * Frozen at creation from the org-wide `assignment-modes` admin setting.
+   * Determines whether students see a tracked Share link (`'view-only'`) or
+   * the full assignment experience (`'submissions'`). Absent on pre-feature
+   * sessions; consumers must default to `'submissions'`.
+   *
+   * NOTE: The GL session's own `mode` field is already in use (play-mode
+   * — structured / guided / explore), so the assignment mode lives under
+   * `assignmentMode` here. The other three widgets (Quiz, Video Activity,
+   * Mini App) store it as `mode`.
+   */
+  assignmentMode?: AssignmentMode;
 }
 
 /** Per-student response in /guided_learning_sessions/{id}/responses/{studentUid} */
@@ -3612,7 +3660,8 @@ export type GlobalFeature =
   | 'embed-mini-app'
   | 'video-activity-audio-transcription'
   | 'ai-file-context'
-  | 'org-admin-writes';
+  | 'org-admin-writes'
+  | 'assignment-modes';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
@@ -3621,6 +3670,29 @@ export interface GlobalFeaturePermission {
   enabled: boolean;
   config?: Record<string, unknown>;
 }
+
+/**
+ * Assignment mode for student-facing widgets that can either collect submissions
+ * or be shared as view-only experiences. Set org-wide by an admin via Global
+ * Settings; frozen onto each assignment/session at creation time so flipping
+ * the admin toggle never alters the behavior of in-flight assignments.
+ */
+export type AssignmentMode = 'submissions' | 'view-only';
+
+/** Widgets whose assignment behavior is controlled by AssignmentModesConfig. */
+export type AssignmentWidgetKey =
+  | 'quiz'
+  | 'videoActivity'
+  | 'miniApp'
+  | 'guidedLearning';
+
+/**
+ * Stored as the `config` of the `assignment-modes` GlobalFeaturePermission doc.
+ * Missing keys default to `'submissions'` (preserves pre-feature behavior).
+ */
+export type AssignmentModesConfig = Partial<
+  Record<AssignmentWidgetKey, AssignmentMode>
+>;
 
 export interface AppSettings {
   geminiDailyLimit: number;
@@ -4271,6 +4343,9 @@ export interface VideoActivityAssignment extends VideoActivityAssignmentSettings
    *  legacy assignments read via `className` / session.classIds only. See
    *  `utils/resolveAssignmentTargets.ts`. */
   rosterIds?: string[];
+  /** Frozen at creation from the org-wide `assignment-modes` admin setting.
+   *  Mirrors VideoActivitySession.mode. Absent on pre-feature assignments. */
+  mode?: AssignmentMode;
 }
 
 // === MiniApp assignments ===
@@ -4313,6 +4388,9 @@ export interface MiniAppAssignment {
   /** Mirrors `MiniAppSession.submissionsEnabled`. When true, the runner
    * reveals the Submit button and persists student submissions. */
   submissionsEnabled?: boolean;
+  /** Mirrors `MiniAppSession.mode`. Frozen at creation from the admin
+   *  `assignment-modes` setting. Absent on pre-feature assignments. */
+  mode?: AssignmentMode;
 }
 
 // === /MiniApp assignments ===
@@ -4348,6 +4426,10 @@ export interface GuidedLearningAssignment {
   source?: 'personal' | 'building';
   /** Unified roster targeting (new post-unification assignments). */
   rosterIds?: string[];
+  /** Frozen at creation from the org-wide `assignment-modes` admin setting.
+   *  Stored under `assignmentMode` (not `mode`) to avoid colliding with the
+   *  GL session's existing play-mode field. Absent on pre-feature assignments. */
+  assignmentMode?: AssignmentMode;
 }
 
 // === Library folders (Wave 3) ===
