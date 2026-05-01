@@ -125,6 +125,13 @@ const GLOBAL_FEATURES: {
     description:
       'Allow attaching Google Drive files as context when generating with AI.',
   },
+  {
+    id: 'share-link-tracking',
+    label: 'Share-link View Tracking',
+    icon: Eye,
+    description:
+      'Show "N views" on view-only Share cards in the Quiz, Video Activity, Mini App, and Guided Learning archives. Each visible card fires a Firestore aggregation query when the dashboard tab regains focus — keep this Admin-only unless you specifically want every teacher to see open counts.',
+  },
 ];
 
 /**
@@ -495,8 +502,19 @@ export const GlobalPermissionsManager: React.FC = () => {
   }, [loadPermissions]);
 
   const getPermission = (featureId: GlobalFeature): GlobalFeaturePermission => {
-    const defaultAccessLevel: AccessLevel =
-      featureId === 'embed-mini-app' ? 'admin' : 'public';
+    // Features that default to admin-only when no permission doc exists.
+    // Keep this list aligned with the runtime-side defaults — e.g.
+    // `canSeeShareTracking` in AuthContext also treats a missing
+    // 'share-link-tracking' record as admin-only.
+    const ADMIN_ONLY_DEFAULT: GlobalFeature[] = [
+      'embed-mini-app',
+      'share-link-tracking',
+    ];
+    const defaultAccessLevel: AccessLevel = ADMIN_ONLY_DEFAULT.includes(
+      featureId
+    )
+      ? 'admin'
+      : 'public';
 
     // Set smart default limits
     let defaultLimit = 20;

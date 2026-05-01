@@ -37,6 +37,7 @@ const mockAuthContext = (
   canAccessWidget: () => true,
   canAccessFeature: () => true,
   getAssignmentMode: () => 'submissions',
+  canSeeShareTracking: () => false,
   signInWithGoogle: async () => {
     /* mock */
   },

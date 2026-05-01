@@ -1425,6 +1425,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [globalPermissions]
   );
 
+  const canSeeShareTracking = useCallback((): boolean => {
+    if (isAuthBypass) return true;
+    if (!user) return false;
+
+    const permission = globalPermissions.find(
+      (p) => p.featureId === 'share-link-tracking'
+    );
+
+    // Admin-only default when no record exists. This is the OPPOSITE of
+    // canAccessFeature's default — view-count display fires one Firestore
+    // aggregation per visible card on every dashboard tab-focus, so we'd
+    // rather not surface it without explicit admin opt-in. The missing-
+    // doc default protects unseed deployments from accidental read bloat.
+    if (!permission) return isAdmin === true;
+    if (!permission.enabled) return false;
+    if (isAdmin) return true;
+
+    switch (permission.accessLevel) {
+      case 'admin':
+        return false;
+      case 'beta':
+        return isBetaUser(permission.betaUsers, user.email);
+      case 'public':
+        return true;
+      default:
+        return false;
+    }
+  }, [user, globalPermissions, isAdmin, isBetaUser]);
+
   const signInWithGoogle = async () => {
     if (isAuthBypass) {
       console.warn('Bypassing Google Sign In');
@@ -1513,6 +1542,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         canAccessWidget,
         canAccessFeature,
         getAssignmentMode,
+        canSeeShareTracking,
         signInWithGoogle,
         signOut,
         selectedBuildings,
