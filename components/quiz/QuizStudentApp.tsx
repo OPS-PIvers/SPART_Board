@@ -41,7 +41,8 @@ import {
   Check,
 } from 'lucide-react';
 import { signInAnonymously } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/config/firebase';
 import { useQuizSessionStudent, normalizeAnswer } from '@/hooks/useQuizSession';
 import { shuffleQuestionForStudent } from '@/utils/quizShuffle';
 import { QuizSession, QuizPublicQuestion } from '@/types';
@@ -220,16 +221,36 @@ const QuizJoinFlow: React.FC<{ isStudentRole: boolean }> = ({
     void run();
   }, [isStudentRole, urlCode, joined, joinQuizSession]);
 
+  const isViewOnly = session?.mode === 'view-only';
+
+  // View tracking — log each pageview of a view-only Share link as an
+  // immutable doc in the session's `views/` subcollection. Best-effort and
+  // fire-and-forget; the Firestore rule accepts a single `viewedAt` field.
+  useEffect(() => {
+    if (!isViewOnly || !session?.id) return;
+    if (!auth.currentUser) return;
+    void addDoc(collection(db, 'quiz_sessions', session.id, 'views'), {
+      viewedAt: serverTimestamp(),
+    }).catch((err) => {
+      console.warn('[QuizStudentApp] View log failed:', err);
+    });
+  }, [isViewOnly, session?.id]);
+
   const handleAnswer = useCallback(
     async (questionId: string, answer: string, speedBonus?: number) => {
+      // View-only shares never persist responses — the Firestore rule
+      // rejects the write defense-in-depth, but skip it client-side too so
+      // the console stays clean.
+      if (isViewOnly) return;
       await submitAnswer(questionId, answer, speedBonus);
     },
-    [submitAnswer]
+    [submitAnswer, isViewOnly]
   );
 
   const handleComplete = useCallback(async () => {
+    if (isViewOnly) return;
     await completeQuiz();
-  }, [completeQuiz]);
+  }, [completeQuiz, isViewOnly]);
 
   // Auto-join only works when a code AND a pin are both known. Since pin comes
   // from a form field there's no auto-join on URL code alone — the student

@@ -71,7 +71,9 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
     isAdmin,
     canAccessFeature,
     featurePermissions,
+    getAssignmentMode,
   } = useAuth();
+  const vaAssignmentMode = getAssignmentMode('videoActivity');
   const config = widget.config as VideoActivityConfig;
 
   const {
@@ -408,6 +410,7 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
     <>
       <VideoActivityManager
         userId={user?.uid}
+        assignmentMode={vaAssignmentMode}
         activities={activities}
         loading={loading}
         error={error}
@@ -452,7 +455,8 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
             assignmentName,
             derived.classIds,
             derived.periodNames,
-            derived.rosterIds
+            derived.rosterIds,
+            vaAssignmentMode
           );
 
           // Persist per-activity memory of the last roster selection so
@@ -474,9 +478,14 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
           });
 
           const url = `${window.location.origin}/activity/${encodeURIComponent(sessionId)}`;
+          const isViewOnly = vaAssignmentMode === 'view-only';
           await copyUrlToClipboard(url, addToast, {
-            successMessage: 'Assignment link copied to clipboard!',
-            errorMessage: 'Assignment created, but link could not be copied.',
+            successMessage: isViewOnly
+              ? 'Share link copied to clipboard!'
+              : 'Assignment link copied to clipboard!',
+            errorMessage: isViewOnly
+              ? 'Share link created, but it could not be copied.'
+              : 'Assignment created, but link could not be copied.',
           });
           return sessionId;
         }}

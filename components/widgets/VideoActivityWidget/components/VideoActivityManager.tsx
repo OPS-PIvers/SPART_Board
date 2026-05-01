@@ -63,6 +63,7 @@ import type {
   LibraryTab,
 } from '@/components/common/library/types';
 import type {
+  AssignmentMode,
   ClassRoster,
   VideoActivityAssignment,
   VideoActivityAssignmentStatus,
@@ -151,6 +152,10 @@ export interface VideoActivityManagerProps {
   // backwards compatibility with existing Widget.tsx wiring; new work should
   // prefer the assignment archive instead.
   onSessionResults?: (session: VideoActivitySession) => void;
+
+  /** Org-wide assignment mode. Drives Assign-vs-Share button labels and the
+   *  In-Progress-vs-Shared tab label. Defaults to `'submissions'`. */
+  assignmentMode?: AssignmentMode;
 }
 
 /* ─── Library hook option constants (module-level for referential stability) ─
@@ -249,7 +254,10 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
   lastRosterIdsByActivityId,
   lastClassIdsByActivityId,
   lastClassIdByActivityId,
+  assignmentMode = 'submissions',
 }) => {
+  const isViewOnly = assignmentMode === 'view-only';
+  const primaryActionLabel = isViewOnly ? 'Share' : 'Assign';
   const [tab, setTab] = useState<LibraryTab>('library');
 
   // Assign modal state
@@ -634,7 +642,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
               }
               badges={activityBadges(activity)}
               primaryAction={{
-                label: 'Assign',
+                label: primaryActionLabel,
                 icon: Link2,
                 onClick: () => setAssignTarget(activity),
               }}
@@ -908,7 +916,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
         }
         badges={activityBadges(activity)}
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Link2,
           onClick: () => setAssignTarget(activity),
         }}
@@ -926,6 +934,7 @@ export const VideoActivityManager: React.FC<VideoActivityManagerProps> = ({
       tab={tab}
       onTabChange={setTab}
       counts={tabCounts}
+      tabLabels={isViewOnly ? { active: 'Shared' } : undefined}
       primaryAction={{
         label: 'New',
         icon: Plus,

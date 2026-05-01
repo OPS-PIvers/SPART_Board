@@ -45,6 +45,7 @@ import {
   CheckSquare,
 } from 'lucide-react';
 import {
+  AssignmentMode,
   QuizMetadata,
   QuizSessionMode,
   QuizConfig,
@@ -287,6 +288,10 @@ interface QuizManagerProps {
    * through from Widget.tsx → useAuth().user.displayName.
    */
   defaultTeacherName?: string;
+
+  /** Org-wide assignment mode. Drives Assign-vs-Share button labels and the
+   *  In-Progress-vs-Shared tab label. Defaults to `'submissions'`. */
+  assignmentMode?: AssignmentMode;
 }
 
 /* ─── Status resolver for archive cards ───────────────────────────────────── */
@@ -386,7 +391,10 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onArchiveDelete,
   onLibraryViewModeChange,
   defaultTeacherName,
+  assignmentMode = 'submissions',
 }) => {
+  const isViewOnly = assignmentMode === 'view-only';
+  const primaryActionLabel = isViewOnly ? 'Share' : 'Assign';
   const noop = () => {
     /* action not wired */
   };
@@ -576,8 +584,55 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   } => {
     const isActive = a.status === 'active';
     const urlLive = a.status !== 'inactive';
+    // Per-assignment mode is frozen at creation. View-only shares have no
+    // monitor / results to surface — collapse the action list accordingly.
+    const assignmentIsViewOnly = a.mode === 'view-only';
 
     const secondaries: LibraryMenuAction[] = [];
+
+    if (assignmentIsViewOnly) {
+      const primary = urlLive
+        ? {
+            label: 'Copy link',
+            icon: Link2,
+            onClick: () => (onArchiveCopyUrl ?? noop)(a),
+          }
+        : {
+            label: 'Reopen',
+            icon: Rocket,
+            onClick: () => void (onArchiveReopen ?? noop)(a),
+          };
+      if (urlLive) {
+        secondaries.push({
+          id: 'deactivate',
+          label: 'End share',
+          icon: PowerOff,
+          destructive: true,
+          onClick: () => void (onArchiveDeactivate ?? noop)(a),
+        });
+      }
+      secondaries.push({
+        id: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        destructive: true,
+        onClick: async () => {
+          const ok = await showConfirm(
+            'Delete this share permanently? The link will stop working.',
+            {
+              title: 'Delete Share',
+              variant: 'danger',
+              confirmLabel: 'Delete',
+            }
+          );
+          if (ok) await (onArchiveDelete ?? noop)(a);
+        },
+      });
+      return {
+        primary,
+        secondaries: secondaries.filter((m) => m.label !== primary.label),
+      };
+    }
 
     if (mode === 'active') {
       // Primary: Monitor (active) or Start (paused)
@@ -993,7 +1048,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           </span>
         }
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Play,
           onClick: () => setAssignTarget(quiz),
         }}
@@ -1017,6 +1072,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         active: activeAssignments.length,
         archive: inactiveAssignments.length,
       }}
+      tabLabels={isViewOnly ? { active: 'Shared' } : undefined}
       primaryAction={primaryAction}
       secondaryActions={secondaryActions}
       toolbarSlot={toolbar}
@@ -1041,6 +1097,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           folders={folderState.folders}
           onBulkMove={handleBulkMove}
           onBulkDelete={handleBulkDelete}
+          primaryActionLabel={primaryActionLabel}
         />
       )}
 
@@ -1050,8 +1107,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           loading={assignmentsLoading}
           mode="active"
           buildActions={buildArchiveActions}
-          emptyTitle="No quizzes in progress"
-          emptySub="Assign a quiz from the Library tab to get started. Active and paused assignments appear here."
+          emptyTitle={
+            isViewOnly ? 'No active shares' : 'No quizzes in progress'
+          }
+          emptySub={
+            isViewOnly
+              ? 'Share a quiz from the Library tab to create a viewable link for students.'
+              : 'Assign a quiz from the Library tab to get started. Active and paused assignments appear here.'
+          }
         />
       )}
 
@@ -1061,8 +1124,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           loading={assignmentsLoading}
           mode="archive"
           buildActions={buildArchiveActions}
-          emptyTitle="No archived assignments"
-          emptySub="Ended assignments are moved here so you can review results and share them."
+          emptyTitle={
+            isViewOnly ? 'No archived shares' : 'No archived assignments'
+          }
+          emptySub={
+            isViewOnly
+              ? 'Ended share links will appear here.'
+              : 'Ended assignments are moved here so you can review results and share them.'
+          }
         />
       )}
     </LibraryShell>
@@ -1162,6 +1231,7 @@ const LibraryTabContent: React.FC<{
   folders: import('@/types').LibraryFolder[];
   onBulkMove: (folderId: string | null) => Promise<void>;
   onBulkDelete: () => void | Promise<void>;
+  primaryActionLabel: string;
 }> = ({
   error,
   orderedItems,
@@ -1180,6 +1250,7 @@ const LibraryTabContent: React.FC<{
   folders,
   onBulkMove,
   onBulkDelete,
+  primaryActionLabel,
 }) => {
   const emptyState =
     totalCount === 0 ? (
@@ -1263,7 +1334,7 @@ const LibraryTabContent: React.FC<{
               </span>
             }
             primaryAction={{
-              label: 'Assign',
+              label: primaryActionLabel,
               icon: Play,
               onClick: () => onAssignClick(quiz),
             }}

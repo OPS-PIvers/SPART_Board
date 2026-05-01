@@ -1890,6 +1890,14 @@ export interface QuizSession {
    * `null`/`undefined` = unlimited (legacy sessions).
    */
   attemptLimit?: number | null;
+
+  /**
+   * Frozen at creation from the org-wide `assignment-modes` admin setting.
+   * Determines whether students see a tracked Share link (`'view-only'`) or
+   * the full live-quiz experience (`'submissions'`). Absent on pre-feature
+   * sessions; consumers must default to `'submissions'`.
+   */
+  mode?: AssignmentMode;
 }
 
 export interface QuizResponseAnswer {
@@ -2177,6 +2185,9 @@ export interface QuizAssignment extends QuizAssignmentSettings {
    * time.
    */
   exportedResponseIds?: string[];
+  /** Frozen at creation from the org-wide `assignment-modes` admin setting.
+   *  Mirrors QuizSession.mode. Absent on pre-feature assignments. */
+  mode?: AssignmentMode;
 }
 
 /**
@@ -2338,6 +2349,13 @@ export interface VideoActivitySession {
    * derived from these rosters' `classlinkClassId` metadata.
    */
   rosterIds?: string[];
+  /**
+   * Frozen at creation from the org-wide `assignment-modes` admin setting.
+   * Determines whether students see a tracked Share link (`'view-only'`) or
+   * the full assignment experience (`'submissions'`). Absent on pre-feature
+   * sessions; consumers must default to `'submissions'`.
+   */
+  mode?: AssignmentMode;
 }
 
 /** A single answer submitted by a student for a video activity question. */
@@ -4208,6 +4226,9 @@ export interface VideoActivityAssignment extends VideoActivityAssignmentSettings
    *  legacy assignments read via `className` / session.classIds only. See
    *  `utils/resolveAssignmentTargets.ts`. */
   rosterIds?: string[];
+  /** Frozen at creation from the org-wide `assignment-modes` admin setting.
+   *  Mirrors VideoActivitySession.mode. Absent on pre-feature assignments. */
+  mode?: AssignmentMode;
 }
 
 // === MiniApp assignments ===

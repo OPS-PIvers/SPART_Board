@@ -26,6 +26,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '@/config/firebase';
 import {
+  AssignmentMode,
   VideoActivitySession,
   VideoActivityResponse,
   VideoActivityData,
@@ -102,7 +103,10 @@ export interface UseVideoActivitySessionTeacherResult {
     assignmentName?: string,
     classIds?: string[],
     periodNames?: string[],
-    rosterIds?: string[]
+    rosterIds?: string[],
+    /** Org-wide assignment mode frozen onto the session. Defaults to
+     *  `'submissions'`. */
+    mode?: AssignmentMode
   ) => Promise<string>;
   /** Sessions created by the current teacher for the selected activity. */
   sessions: VideoActivitySession[];
@@ -155,7 +159,8 @@ export const useVideoActivitySessionTeacher =
         assignmentName?: string,
         classIds: string[] = [],
         periodNames: string[] = [],
-        rosterIds: string[] = []
+        rosterIds: string[] = [],
+        mode: AssignmentMode = 'submissions'
       ): Promise<string> => {
         const sessionId = crypto.randomUUID();
         const trimmedAssignmentName = assignmentName?.trim();
@@ -187,6 +192,7 @@ export const useVideoActivitySessionTeacher =
           ...(classIds.length > 0 ? { classIds, classId: classIds[0] } : {}),
           ...(periodNames.length > 0 ? { periodNames } : {}),
           ...(rosterIds.length > 0 ? { rosterIds } : {}),
+          mode,
         };
 
         await setDoc(doc(db, SESSIONS_COLLECTION, sessionId), session);

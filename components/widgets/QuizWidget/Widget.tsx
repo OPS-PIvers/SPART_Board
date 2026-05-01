@@ -55,7 +55,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     pendingAssignmentSetupId,
     clearPendingAssignmentSetup,
   } = useDashboard();
-  const { user, googleAccessToken, orgId } = useAuth();
+  const { user, googleAccessToken, orgId, getAssignmentMode } = useAuth();
+  const quizAssignmentMode = getAssignmentMode('quiz');
   const { showConfirm } = useDialog();
   const config = widget.config as QuizConfig;
 
@@ -683,6 +684,42 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   if (view === 'monitor' && liveSession) {
+    // View-only assignments never collect responses — show a notice instead
+    // of the live monitor. The mode is frozen at creation, so any session
+    // that arrives here as view-only stays that way for its entire life.
+    if (liveSession.mode === 'view-only') {
+      return (
+        <div
+          className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-300 gap-3"
+          style={{ gap: 'min(12px, 3cqmin)' }}
+        >
+          <p className="text-sm font-bold text-white">
+            View-only share — no submissions to monitor
+          </p>
+          <p className="text-xs text-slate-400 max-w-md">
+            Students opened this share as a view-only link, so there are no
+            responses to live-monitor. URL open counts appear in the Shared
+            archive.
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  view: 'manager',
+                  managerTab: 'active',
+                } as QuizConfig,
+              })
+            }
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-brand-blue-primary hover:bg-brand-blue-dark text-white px-3 py-2 text-xs font-bold shadow-sm transition-colors"
+          >
+            Back to library
+          </button>
+        </div>
+      );
+    }
+
     if (!loadedQuizData) {
       return (
         <div
@@ -772,6 +809,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <QuizManager
         userId={user?.uid}
         defaultTeacherName={user?.displayName ?? undefined}
+        assignmentMode={quizAssignmentMode}
         quizzes={quizzes}
         loading={quizzesLoading}
         error={quizzesError ?? dataError}
@@ -934,7 +972,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               'paused',
               derived.classIds,
               derived.rosterIds,
-              derived.classPeriodByClassId
+              derived.classPeriodByClassId,
+              quizAssignmentMode
             );
             // Persist the teacher's last-used rosters per quiz so
             // re-launching the same quiz pre-selects the same classes.

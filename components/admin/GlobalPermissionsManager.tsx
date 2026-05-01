@@ -40,6 +40,8 @@ import {
   Boxes,
   Send,
   Eye,
+  ListChecks,
+  PlayCircle,
 } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
 import { useStorage } from '@/hooks/useStorage';
@@ -126,9 +128,10 @@ const GLOBAL_FEATURES: {
 ];
 
 /**
- * Widgets surfaced in the Assignment Modes admin section. Stage 1 ships only
- * Mini App + Guided Learning; Quiz + Video Activity are added once their
- * per-widget wiring lands (Stage 3 of the rollout).
+ * Widgets surfaced in the Assignment Modes admin section. All four widgets
+ * with student-facing assignment flows are listed; flipping any of them to
+ * View only swaps the teacher Assign button to Share, hides the In Progress
+ * tab in favor of Shared, blocks submissions, and starts logging URL views.
  */
 const ASSIGNMENT_WIDGETS: {
   key: AssignmentWidgetKey;
@@ -136,6 +139,20 @@ const ASSIGNMENT_WIDGETS: {
   description: string;
   Icon: React.ElementType;
 }[] = [
+  {
+    key: 'quiz',
+    label: 'Quiz',
+    description:
+      'Submissions: live monitor + response tracking. View only: students see the quiz as a read-through with no answer collection.',
+    Icon: ListChecks,
+  },
+  {
+    key: 'videoActivity',
+    label: 'Video Activity',
+    description:
+      'Submissions: responses and completion are tracked. View only: each Share link plays the video with the questions visible but unanswerable.',
+    Icon: PlayCircle,
+  },
   {
     key: 'miniApp',
     label: 'Mini Apps',

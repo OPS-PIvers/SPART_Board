@@ -20,7 +20,8 @@ import {
   ClipboardList,
   Trophy,
 } from 'lucide-react';
-import { auth } from '@/config/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/config/firebase';
 import { useVideoActivitySessionStudent } from '@/hooks/useVideoActivitySession';
 import { VideoActivityQuestion } from '@/types';
 import { VideoPlayer } from './VideoPlayer';
@@ -86,6 +87,22 @@ const JoinAndPlay: React.FC = () => {
     submitAnswer,
     completeActivity,
   } = useVideoActivitySessionStudent();
+
+  const isViewOnly = session?.mode === 'view-only';
+
+  // View tracking — log each pageview of a view-only Share link as an
+  // immutable doc in the session's `views/` subcollection. Best-effort and
+  // fire-and-forget.
+  useEffect(() => {
+    if (!isViewOnly || !session?.id) return;
+    if (!auth.currentUser) return;
+    void addDoc(
+      collection(db, 'video_activity_sessions', session.id, 'views'),
+      { viewedAt: serverTimestamp() }
+    ).catch((err) => {
+      console.warn('[VideoActivityStudentApp] View log failed:', err);
+    });
+  }, [isViewOnly, session?.id]);
 
   // Multi-period selection step — shown when the session has more than one
   // class-period name configured, so students pick their period before the
@@ -159,7 +176,12 @@ const JoinAndPlay: React.FC = () => {
         return;
       }
 
-      await submitAnswer(activeQuestion.id, answer);
+      // View-only shares never persist responses — the Firestore rule
+      // rejects the write defense-in-depth, but skip it client-side too so
+      // the console stays clean.
+      if (!isViewOnly) {
+        await submitAnswer(activeQuestion.id, answer);
+      }
       setActiveQuestion(null);
     },
     [
@@ -167,13 +189,15 @@ const JoinAndPlay: React.FC = () => {
       session?.settings?.requireCorrectAnswer,
       sortedQuestions,
       submitAnswer,
+      isViewOnly,
     ]
   );
 
   const handleVideoEnd = useCallback(async () => {
     setVideoEnded(true);
+    if (isViewOnly) return;
     await completeActivity();
-  }, [completeActivity]);
+  }, [completeActivity, isViewOnly]);
 
   // ── Invalid / missing session ID ──────────────────────────────────────────
 
