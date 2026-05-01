@@ -25,6 +25,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { invalidateSessionViewCount } from './useSessionViewCount';
 import type {
   AssignmentMode,
   VideoActivityAssignment,
@@ -299,6 +300,10 @@ export const useVideoActivityAssignments = (
   >(
     async (assignmentId) => {
       await setStatus(assignmentId, 'active', 'active');
+      // Drop any cached view count so the Shared row re-issues the
+      // aggregation query on next mount; the cache is module-scoped and
+      // would otherwise hold the pre-Closed count forever.
+      invalidateSessionViewCount('video_activity_sessions', assignmentId);
     },
     [setStatus]
   );

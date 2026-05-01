@@ -10,10 +10,11 @@
  * session itself.
  *
  * Cost shape: one Firestore aggregation query (`getCountFromServer`) per
- * mounted card when `enabled === true`, gated behind a module-level cache
- * keyed by `${collectionName}:${sessionId}`. Re-renders re-use the cached
- * count; teachers can refresh by re-opening the tab (Library tabs unmount
- * and remount the cards).
+ * `(collection, sessionId)` pair, gated behind a module-level cache.
+ * Subsequent mounts of the same session — including remount-after-unmount —
+ * reuse the cached count. Teachers can force a refetch by calling
+ * `invalidateSessionViewCount` (wired into the reactivate / reopen
+ * callbacks so the count refreshes after a Closed share is brought back).
  *
  * The hook is intentionally read-once: the user's stated need is "see how
  * many times the URL was opened" — a snapshot suffices and a live listener
@@ -42,6 +43,20 @@ const cache = new Map<string, CacheEntry>();
 
 function cacheKey(collectionName: ViewTrackingCollection, sessionId: string) {
   return `${collectionName}:${sessionId}`;
+}
+
+/**
+ * Drop the cached view count for a session so the next mount of
+ * `useSessionViewCount` re-issues the aggregation query. Wire this into
+ * status-change callbacks (Reactivate, Reopen, etc.) where the count is
+ * expected to grow again after the call — without it, teachers would see
+ * the pre-Closed count forever even as new students hit the link.
+ */
+export function invalidateSessionViewCount(
+  collectionName: ViewTrackingCollection,
+  sessionId: string
+): void {
+  cache.delete(cacheKey(collectionName, sessionId));
 }
 
 export interface UseSessionViewCountResult {
@@ -75,38 +90,45 @@ export function useSessionViewCount(
   useEffect(() => {
     if (!key) return;
 
+    // Early-return on EITHER a resolved count OR an in-flight promise. The
+    // promise check is what makes the coalescing actually work under React
+    // 18 StrictMode (and any concurrent mount): without it, two effects
+    // racing through `cache.get(key)` before either has set `promise` would
+    // each call `getCountFromServer`, doubling Firestore reads in dev.
     const cached = cache.get(key);
-    // Cache hit: nothing to do — the component already reads the resolved
-    // count during render.
     if (cached?.count != null) return;
+    if (cached?.promise) {
+      // Coalesce: hitch a ride on the in-flight promise so this consumer
+      // re-renders when it resolves, but don't fire a second query.
+      let cancelled = false;
+      void cached.promise.then(() => {
+        if (!cancelled) setRevision((r) => r + 1);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // Cache miss + no in-flight: claim the slot synchronously by writing
+    // the promise BEFORE awaiting, so a concurrent mount sees it.
+    const inFlight: Promise<number> = getCountFromServer(
+      collection(db, collectionName, sessionId as string, 'views')
+    ).then(
+      (snap) => snap.data().count,
+      (err: unknown) => {
+        // Surface the failure to the caller as `count: 0` rather than
+        // null — a zero-state UI ("0 views") is a fine soft-fail and
+        // avoids broadcasting an empty cell. Logged for debugging.
+        console.warn('[useSessionViewCount] count query failed', err);
+        return 0;
+      }
+    );
+    cache.set(key, { count: null, promise: inFlight });
 
     let cancelled = false;
-
-    // Coalesce concurrent mounts of the same sessionId onto a single query.
-    const inFlight: Promise<number> =
-      cached?.promise ??
-      getCountFromServer(
-        collection(db, collectionName, sessionId as string, 'views')
-      ).then(
-        (snap) => snap.data().count,
-        (err: unknown) => {
-          // Surface the failure to the caller as `count: 0` rather than
-          // null — a zero-state UI ("0 views") is a fine soft-fail and
-          // avoids broadcasting an empty cell. Logged for debugging.
-          console.warn('[useSessionViewCount] count query failed', err);
-          return 0;
-        }
-      );
-    cache.set(key, { count: cached?.count ?? null, promise: inFlight });
-
     void inFlight.then((n) => {
       cache.set(key, { count: n, promise: null });
-      if (!cancelled) {
-        // Bump the revision so this consumer re-renders and reads the
-        // fresh cache entry. Other mounted consumers re-render through
-        // their own effect cleanup; React's render is idempotent.
-        setRevision((r) => r + 1);
-      }
+      if (!cancelled) setRevision((r) => r + 1);
     });
 
     return () => {

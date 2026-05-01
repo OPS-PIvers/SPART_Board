@@ -27,6 +27,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { invalidateSessionViewCount } from './useSessionViewCount';
 import type { AssignmentMode, MiniAppAssignment, MiniAppItem } from '@/types';
 
 const ASSIGNMENTS_COLLECTION = 'miniapp_assignments';
@@ -254,6 +255,11 @@ export const useMiniAppAssignments = (
             err
           );
         }
+        // Drop any cached view count so the Shared row re-issues the
+        // aggregation query on next mount — students opening the link
+        // post-reactivate will be missed otherwise (the cache is keyed
+        // by sessionId and module-scoped, so it survives unmount).
+        invalidateSessionViewCount('mini_app_sessions', assignment.sessionId);
       }
     },
     [userId, assignments]

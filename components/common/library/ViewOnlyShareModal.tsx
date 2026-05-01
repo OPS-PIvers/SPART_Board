@@ -19,7 +19,7 @@
  * AssignModal in submissions mode.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Loader2,
   Link2,
@@ -55,12 +55,22 @@ export const ViewOnlyShareModal: React.FC<ViewOnlyShareModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
 
+  // Reset the "Copied!" affordance back to "Copy Link" 2s after a successful
+  // copy. Owning the timer in an effect (rather than a bare setTimeout from
+  // inside handleCopy) means React cleans it up if the modal unmounts before
+  // the 2s elapses — no setState-on-unmounted-component warning, no leaked
+  // pending timer.
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(id);
+  }, [copied]);
+
   const handleCopy = useCallback(async () => {
     if (!createdLink) return;
     try {
       await navigator.clipboard.writeText(createdLink);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard API can reject in non-secure contexts or when permission
       // is denied. Swallow — the link is still visible to manually copy.
@@ -144,10 +154,7 @@ export const ViewOnlyShareModal: React.FC<ViewOnlyShareModalProps> = ({
                 <p className="font-bold text-brand-blue-dark text-base truncate px-2">
                   {itemTitle}
                 </p>
-                <p
-                  className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1"
-                  style={{ fontSize: 'clamp(10px, 3cqmin, 12px)' }}
-                >
+                <p className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1 text-xs">
                   Create Share Link
                 </p>
               </div>

@@ -794,13 +794,13 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
         icon: ArchiveIcon,
         onClick: () => onAssignmentArchive(a),
       });
-    } else {
+    } else if (!isViewOnly) {
+      // Submissions archive: keep "Move to In Progress" as a kebab item.
+      // View-only archive surfaces Reactivate as a visible iconAction
+      // instead (see below) — including it in the kebab would duplicate.
       secondary.push({
         id: 'unarchive',
-        // For view-only shares "Move to In Progress" is the wrong frame —
-        // there's no progress to track; surface as "Reactivate" matching
-        // the other widgets' archive-tab affordance.
-        label: isViewOnly ? 'Reactivate' : 'Move to In Progress',
+        label: 'Move to In Progress',
         icon: RotateCcw,
         onClick: () => onAssignmentUnarchive(a),
       });
@@ -816,7 +816,8 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
 
     // Primary action policy:
     //   - View-only + active: Copy link (Shared tab — link is the entire UX).
-    //   - View-only + archive: omit (link is dead; Reactivate lives in kebab).
+    //   - View-only + archive: no primary; the visible iconAction is
+    //     "Reactivate" — Copy would be misleading on a dead URL.
     //   - Submissions (active or archive): View Results.
     const assignmentIsViewOnly = isViewOnly;
     const primaryAction = assignmentIsViewOnly
@@ -833,6 +834,23 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
           onClick: () => onAssignmentOpenResults(a),
         };
 
+    // Compact icon-only action surfaced left of the (possibly absent)
+    // primary button. Used for the view-only archive Reactivate affordance
+    // so the row has a visible CTA instead of collapsing to the kebab
+    // (the badge is the only other anchor on archived rows).
+    const iconActions =
+      assignmentIsViewOnly && mode === 'archive'
+        ? [
+            {
+              id: 'reactivate',
+              label: 'Reactivate share',
+              icon: RotateCcw,
+              tone: 'primary' as const,
+              onClick: () => onAssignmentUnarchive(a),
+            },
+          ]
+        : undefined;
+
     return (
       <LibraryItemCard<GuidedLearningAssignment>
         key={a.id}
@@ -841,6 +859,7 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
         subtitle={subtitle}
         badges={badges}
         primaryAction={primaryAction}
+        iconActions={iconActions}
         secondaryActions={secondary}
         sortable={false}
         viewMode="list"
