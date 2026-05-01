@@ -600,11 +600,23 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
                   });
                 if (resultsAssignment?.assignmentMode === 'view-only') {
                   return (
-                    <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-3">
-                      <p className="text-sm font-bold text-slate-700">
+                    <div
+                      className="flex flex-col items-center justify-center h-full text-center"
+                      style={{
+                        gap: 'min(12px, 3cqmin)',
+                        padding: 'min(32px, 7cqmin)',
+                      }}
+                    >
+                      <p
+                        className="font-bold text-slate-700"
+                        style={{ fontSize: 'min(14px, 5cqmin)' }}
+                      >
                         View-only share — no responses collected
                       </p>
-                      <p className="text-xs text-slate-500 max-w-md">
+                      <p
+                        className="text-slate-500 max-w-md"
+                        style={{ fontSize: 'min(12px, 4cqmin)' }}
+                      >
                         Students opened this share as a view-only link, so there
                         are no submissions to display. URL open counts appear in
                         the Shared archive.
@@ -612,7 +624,14 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
                       <button
                         type="button"
                         onClick={closeResults}
-                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-brand-blue-primary hover:bg-brand-blue-dark text-white px-3 py-2 text-xs font-bold shadow-sm transition-colors"
+                        className="inline-flex items-center rounded-lg bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold shadow-sm transition-colors"
+                        style={{
+                          marginTop: 'min(8px, 2cqmin)',
+                          gap: 'min(6px, 1.5cqmin)',
+                          paddingInline: 'min(12px, 3cqmin)',
+                          paddingBlock: 'min(8px, 2cqmin)',
+                          fontSize: 'min(12px, 4cqmin)',
+                        }}
                       >
                         Back to library
                       </button>

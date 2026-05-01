@@ -955,6 +955,10 @@ service cloud.firestore {
       // server timestamp; the teacher's "Shared" archive aggregates the
       // count via getCountFromServer(). Refresh-inflation is accepted —
       // the metric is "URL opens", not "unique viewers".
+      //
+      // The create rule requires the parent session to exist AND be in
+      // view-only mode, so an authenticated user can't spam view docs
+      // under arbitrary or non-view-only session IDs to inflate metrics.
       match /views/{viewId} {
         allow read: if request.auth != null && (
           isAdmin() ||
@@ -962,7 +966,9 @@ service cloud.firestore {
         );
         allow create: if request.auth != null &&
           request.resource.data.keys().hasOnly(['viewedAt']) &&
-          request.resource.data.viewedAt is timestamp;
+          request.resource.data.viewedAt is timestamp &&
+          exists(/databases/$(database)/documents/quiz_sessions/$(sessionId)) &&
+          get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data.get('mode', 'submissions') == 'view-only';
         allow update, delete: if false;
       }
     }
@@ -1130,6 +1136,7 @@ service cloud.firestore {
       }
 
       // View tracking for view-only Share links (see quiz_sessions/views).
+      // Create requires the parent session to exist AND be in view-only mode.
       match /views/{viewId} {
         allow read: if request.auth != null && (
           isAdmin() ||
@@ -1137,7 +1144,9 @@ service cloud.firestore {
         );
         allow create: if request.auth != null &&
           request.resource.data.keys().hasOnly(['viewedAt']) &&
-          request.resource.data.viewedAt is timestamp;
+          request.resource.data.viewedAt is timestamp &&
+          exists(/databases/$(database)/documents/video_activity_sessions/$(sessionId)) &&
+          get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.get('mode', 'submissions') == 'view-only';
         allow update, delete: if false;
       }
     }
@@ -1246,6 +1255,7 @@ service cloud.firestore {
       }
 
       // View tracking for view-only Share links (see quiz_sessions/views).
+      // Create requires the parent session to exist AND be in view-only mode.
       match /views/{viewId} {
         allow read: if request.auth != null && (
           isAdmin() ||
@@ -1253,7 +1263,9 @@ service cloud.firestore {
         );
         allow create: if request.auth != null &&
           request.resource.data.keys().hasOnly(['viewedAt']) &&
-          request.resource.data.viewedAt is timestamp;
+          request.resource.data.viewedAt is timestamp &&
+          exists(/databases/$(database)/documents/mini_app_sessions/$(sessionId)) &&
+          get(/databases/$(database)/documents/mini_app_sessions/$(sessionId)).data.get('mode', 'submissions') == 'view-only';
         allow update, delete: if false;
       }
     }
@@ -1344,6 +1356,10 @@ service cloud.firestore {
       }
 
       // View tracking for view-only Share links (see quiz_sessions/views).
+      // Create requires the parent session to exist AND be in view-only mode.
+      // GL stores assignment mode under `assignmentMode` (not `mode`) — the
+      // session's `mode` field is reserved for play-mode (structured / guided
+      // / explore). See types.ts and the response create rule above.
       match /views/{viewId} {
         allow read: if request.auth != null && (
           isAdmin() ||
@@ -1351,7 +1367,9 @@ service cloud.firestore {
         );
         allow create: if request.auth != null &&
           request.resource.data.keys().hasOnly(['viewedAt']) &&
-          request.resource.data.viewedAt is timestamp;
+          request.resource.data.viewedAt is timestamp &&
+          exists(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)) &&
+          get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.get('assignmentMode', 'submissions') == 'view-only';
         allow update, delete: if false;
       }
     }

@@ -690,13 +690,22 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (liveSession.mode === 'view-only') {
       return (
         <div
-          className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-300 gap-3"
-          style={{ gap: 'min(12px, 3cqmin)' }}
+          className="flex flex-col items-center justify-center h-full text-center text-slate-300"
+          style={{
+            gap: 'min(12px, 3cqmin)',
+            padding: 'min(32px, 7cqmin)',
+          }}
         >
-          <p className="text-sm font-bold text-white">
+          <p
+            className="font-bold text-white"
+            style={{ fontSize: 'min(14px, 5cqmin)' }}
+          >
             View-only share — no submissions to monitor
           </p>
-          <p className="text-xs text-slate-400 max-w-md">
+          <p
+            className="text-slate-400 max-w-md"
+            style={{ fontSize: 'min(12px, 4cqmin)' }}
+          >
             Students opened this share as a view-only link, so there are no
             responses to live-monitor. URL open counts appear in the Shared
             archive.
@@ -712,7 +721,14 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 } as QuizConfig,
               })
             }
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-brand-blue-primary hover:bg-brand-blue-dark text-white px-3 py-2 text-xs font-bold shadow-sm transition-colors"
+            className="inline-flex items-center rounded-lg bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold shadow-sm transition-colors"
+            style={{
+              marginTop: 'min(8px, 2cqmin)',
+              gap: 'min(6px, 1.5cqmin)',
+              paddingInline: 'min(12px, 3cqmin)',
+              paddingBlock: 'min(8px, 2cqmin)',
+              fontSize: 'min(12px, 4cqmin)',
+            }}
           >
             Back to library
           </button>
