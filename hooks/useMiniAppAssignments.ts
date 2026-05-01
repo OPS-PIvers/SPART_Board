@@ -27,7 +27,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import type { MiniAppAssignment, MiniAppItem } from '@/types';
+import type { AssignmentMode, MiniAppAssignment, MiniAppItem } from '@/types';
 
 const ASSIGNMENTS_COLLECTION = 'miniapp_assignments';
 const SESSIONS_COLLECTION = 'mini_app_sessions';
@@ -41,9 +41,10 @@ export interface CreateMiniAppAssignmentInput {
    *  in the Library shell can key off the assignment list without a
    *  session-doc join. */
   rosterIds?: string[];
-  /** Whether submissions are enabled for this assignment. Mirrors
-   *  MiniAppSession.submissionsEnabled. */
-  submissionsEnabled?: boolean;
+  /** Frozen at creation from the org-wide `assignment-modes` admin setting.
+   *  Mirrors MiniAppSession.mode. The `submissionsEnabled` field on the
+   *  assignment doc is derived from this — callers don't pass it directly. */
+  mode?: AssignmentMode;
 }
 
 export interface UseMiniAppAssignmentsResult {
@@ -126,6 +127,7 @@ export const useMiniAppAssignments = (
       // needs targeting metadata that teacher-side code actually reads back,
       // and no caller reads `assignment.classIds`. Matches the Quiz/VA/GL
       // shape (their assignment docs also store `rosterIds` only).
+      const mode: AssignmentMode = input.mode ?? 'submissions';
       const assignment: MiniAppAssignment = {
         id: assignmentId,
         sessionId: input.sessionId,
@@ -140,7 +142,9 @@ export const useMiniAppAssignments = (
         createdAt: now,
         updatedAt: now,
         ...(cleanedRosterIds.length > 0 ? { rosterIds: cleanedRosterIds } : {}),
-        submissionsEnabled: input.submissionsEnabled === true,
+        // Derived from `mode` so the two fields can never diverge.
+        submissionsEnabled: mode === 'submissions',
+        mode,
       };
 
       await setDoc(

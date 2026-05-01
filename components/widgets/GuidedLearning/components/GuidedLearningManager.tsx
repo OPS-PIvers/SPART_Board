@@ -37,6 +37,7 @@ import {
   CheckSquare,
 } from 'lucide-react';
 import type {
+  AssignmentMode,
   GuidedLearningAssignment,
   GuidedLearningSet,
   GuidedLearningSetMetadata,
@@ -160,6 +161,10 @@ export interface GuidedLearningManagerProps {
   initialLibraryViewMode?: 'grid' | 'list';
   /** Persist the library grid/list toggle into widget config. */
   onLibraryViewModeChange?: (mode: 'grid' | 'list') => void;
+
+  /** Org-wide assignment mode. Drives Assign-vs-Share button labels and the
+   *  In-Progress-vs-Shared tab label. Defaults to `'submissions'`. */
+  assignmentMode?: AssignmentMode;
 }
 
 /* ─── Sort / filter config ────────────────────────────────────────────────── */
@@ -296,7 +301,10 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
   onAssignmentDelete,
   initialLibraryViewMode,
   onLibraryViewModeChange,
+  assignmentMode = 'submissions',
 }) => {
+  const isViewOnly = assignmentMode === 'view-only';
+  const primaryActionLabel = isViewOnly ? 'Share' : 'Assign';
   const [tab, setTab] = React.useState<LibraryTab>('library');
 
   // ─── Bulk selection (Step 8) ────────────────────────────────────────────
@@ -669,7 +677,7 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
         thumbnail={thumbnail}
         badges={badges}
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Link2,
           onClick: () => onAssign(rawId, entry.driveFileId, entry.buildingSet),
         }}
@@ -701,10 +709,25 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
     // (App.tsx routes the student app on pathname.startsWith('/guided-learning/')).
     const studentLink = `${window.location.origin}/guided-learning/${a.sessionId}`;
 
+    // Per-assignment mode is frozen at creation. View-only entries get
+    // share-flavored labels so teachers can distinguish them at a glance,
+    // matching the badge shape Quiz / VA / Mini App use.
+    const isViewOnly = a.assignmentMode === 'view-only';
     const badges: LibraryBadge[] =
       mode === 'active'
-        ? [{ label: 'Live', tone: 'success', dot: true }]
-        : [{ label: 'Archived', tone: 'neutral' }];
+        ? [
+            {
+              label: isViewOnly ? 'Shared' : 'Live',
+              tone: 'success',
+              dot: true,
+            },
+          ]
+        : [
+            {
+              label: isViewOnly ? 'Ended share' : 'Archived',
+              tone: 'neutral',
+            },
+          ];
 
     if (a.source === 'building') {
       badges.push({ label: 'Building', tone: 'warn' });
@@ -758,6 +781,11 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
       onClick: () => onAssignmentDelete(a),
     });
 
+    // Per-assignment mode is frozen at creation. View-only shares have no
+    // results to surface — swap the primary action accordingly. The status
+    // badge above already encodes the mode (Shared / Ended share).
+    const assignmentIsViewOnly = isViewOnly;
+
     return (
       <LibraryItemCard<GuidedLearningAssignment>
         key={a.id}
@@ -765,15 +793,25 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
         title={a.setTitle}
         subtitle={subtitle}
         badges={badges}
-        primaryAction={{
-          label: 'View Results',
-          icon: BarChart2,
-          onClick: () => onAssignmentOpenResults(a),
-        }}
+        primaryAction={
+          assignmentIsViewOnly
+            ? {
+                label: 'Copy link',
+                icon: Copy,
+                onClick: () => onAssignmentCopyLink(a),
+              }
+            : {
+                label: 'View Results',
+                icon: BarChart2,
+                onClick: () => onAssignmentOpenResults(a),
+              }
+        }
         secondaryActions={secondary}
         sortable={false}
         viewMode="list"
-        onClick={() => onAssignmentOpenResults(a)}
+        onClick={
+          assignmentIsViewOnly ? undefined : () => onAssignmentOpenResults(a)
+        }
       />
     );
   };
@@ -927,7 +965,7 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
         thumbnail={thumbnail}
         badges={[{ label: MODE_LABELS[entry.mode], tone: 'info' }]}
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Link2,
           onClick: () => undefined,
         }}
@@ -951,6 +989,7 @@ export const GuidedLearningManager: React.FC<GuidedLearningManagerProps> = ({
         active: activeAssignments.length,
         archive: archivedAssignments.length,
       }}
+      tabLabels={isViewOnly ? { active: 'Shared' } : undefined}
       primaryAction={tab === 'library' ? primaryAction : undefined}
       secondaryActions={tab === 'library' ? secondaryActions : undefined}
       filterSidebarSlot={folderSidebarSlot}

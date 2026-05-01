@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { doc, writeBatch } from 'firebase/firestore';
 import {
+  AssignmentMode,
   WidgetData,
   GuidedLearningConfig,
   GuidedLearningSet,
@@ -53,7 +54,9 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, rosters } = useDashboard();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, getAssignmentMode } = useAuth();
+  const assignmentMode: AssignmentMode = getAssignmentMode('guidedLearning');
+  const isViewOnly = assignmentMode === 'view-only';
   const rawConfig = widget.config as GuidedLearningConfig;
   // Normalize legacy 'editor' view — the inline editor is removed; use the modal instead
   const config = useMemo<GuidedLearningConfig>(
@@ -260,7 +263,8 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
           data,
           derived.classIds,
           derived.periodNames,
-          derived.rosterIds
+          derived.rosterIds,
+          assignmentMode
         );
         const sessionId = url.split('/').pop() ?? '';
         setRecentSessionIds((prev) => ({
@@ -275,6 +279,7 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
               setTitle: data.title,
               source,
               rosterIds: derived.rosterIds,
+              assignmentMode,
             });
           } catch (err) {
             console.warn('[GuidedLearning] Failed to record assignment:', err);
@@ -295,7 +300,12 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
           } as GuidedLearningConfig,
         });
         await navigator.clipboard.writeText(url);
-        addToast('Assignment link copied to clipboard!', 'success');
+        addToast(
+          isViewOnly
+            ? 'Share link copied to clipboard!'
+            : 'Assignment link copied to clipboard!',
+          'success'
+        );
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : 'Failed to create session';
@@ -310,6 +320,8 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
       config,
       updateWidget,
       widget.id,
+      assignmentMode,
+      isViewOnly,
     ]
   );
 
@@ -559,6 +571,7 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
                     } as GuidedLearningConfig,
                   });
                 }}
+                assignmentMode={assignmentMode}
               />
             )}
 
@@ -572,21 +585,67 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
 
             {config.view === 'results' &&
               config.resultsSessionId &&
-              activeSet && (
-                <GuidedLearningResults
-                  set={activeSet}
-                  sessionId={config.resultsSessionId}
-                  onClose={() =>
-                    updateWidget(widget.id, {
-                      config: {
-                        ...config,
-                        view: 'library',
-                        resultsSessionId: null,
-                      } as GuidedLearningConfig,
-                    })
-                  }
-                />
-              )}
+              activeSet &&
+              (() => {
+                const resultsAssignment = assignments.find(
+                  (a) => a.sessionId === config.resultsSessionId
+                );
+                const closeResults = () =>
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      view: 'library',
+                      resultsSessionId: null,
+                    } as GuidedLearningConfig,
+                  });
+                if (resultsAssignment?.assignmentMode === 'view-only') {
+                  return (
+                    <div
+                      className="flex flex-col items-center justify-center h-full text-center"
+                      style={{
+                        gap: 'min(12px, 3cqmin)',
+                        padding: 'min(32px, 7cqmin)',
+                      }}
+                    >
+                      <p
+                        className="font-bold text-slate-700"
+                        style={{ fontSize: 'min(14px, 5cqmin)' }}
+                      >
+                        View-only share — no responses collected
+                      </p>
+                      <p
+                        className="text-slate-500 max-w-md"
+                        style={{ fontSize: 'min(12px, 4cqmin)' }}
+                      >
+                        Students opened this share as a view-only link, so there
+                        are no submissions to display. URL open counts appear in
+                        the Shared archive.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={closeResults}
+                        className="inline-flex items-center rounded-lg bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold shadow-sm transition-colors"
+                        style={{
+                          marginTop: 'min(8px, 2cqmin)',
+                          gap: 'min(6px, 1.5cqmin)',
+                          paddingInline: 'min(12px, 3cqmin)',
+                          paddingBlock: 'min(8px, 2cqmin)',
+                          fontSize: 'min(12px, 4cqmin)',
+                        }}
+                      >
+                        Back to library
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <GuidedLearningResults
+                    set={activeSet}
+                    sessionId={config.resultsSessionId}
+                    onClose={closeResults}
+                  />
+                );
+              })()}
 
             {showAIGen && (
               <GuidedLearningAIGenerator
@@ -650,7 +709,7 @@ export const GuidedLearningWidget: React.FC<{ widget: WidgetData }> = ({
             />
           }
           onAssign={() => handleAssignConfirm()}
-          confirmLabel="Assign"
+          confirmLabel={isViewOnly ? 'Share' : 'Assign'}
         />
       )}
     </>

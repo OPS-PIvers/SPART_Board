@@ -10,6 +10,8 @@ import {
   UserRolesConfig,
   AppSettings,
   DockPosition,
+  AssignmentMode,
+  AssignmentWidgetKey,
 } from '../types';
 import type { BuildingRecord } from '../types/organization';
 
@@ -25,6 +27,12 @@ export interface AuthContextType {
   updateAppSettings: (updates: Partial<AppSettings>) => Promise<void>;
   canAccessWidget: (widgetType: WidgetType) => boolean;
   canAccessFeature: (featureId: GlobalFeature) => boolean;
+  /**
+   * The org-wide assignment mode for a student-facing widget. Reads from the
+   * `assignment-modes` GlobalFeaturePermission doc; defaults to `'submissions'`
+   * when no record exists or the widget key is missing from `config`.
+   */
+  getAssignmentMode: (widget: AssignmentWidgetKey) => AssignmentMode;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   /** Building IDs the user has selected in General Settings */

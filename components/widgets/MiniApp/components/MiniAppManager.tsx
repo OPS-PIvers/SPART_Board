@@ -45,6 +45,7 @@ import {
   CheckSquare,
 } from 'lucide-react';
 import type {
+  AssignmentMode,
   MiniAppItem,
   GlobalMiniAppItem,
   MiniAppAssignment,
@@ -125,6 +126,10 @@ export interface MiniAppManagerProps {
   initialLibraryViewMode?: 'grid' | 'list';
   /** Persist the library grid/list toggle into widget config. */
   onLibraryViewModeChange?: (mode: 'grid' | 'list') => void;
+
+  /** Org-wide assignment mode. Drives Assign-vs-Share button labels and the
+   *  In-Progress-vs-Shared tab label. Defaults to `'submissions'`. */
+  assignmentMode?: AssignmentMode;
 }
 
 /* ─── Constants ───────────────────────────────────────────────────────────── */
@@ -234,7 +239,10 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
   onArchiveOpenApp,
   initialLibraryViewMode,
   onLibraryViewModeChange,
+  assignmentMode = 'submissions',
 }) => {
+  const isViewOnly = assignmentMode === 'view-only';
+  const primaryActionLabel = isViewOnly ? 'Share' : 'Assign';
   /* ── Assignment buckets ─────────────────────────────────────────────── */
   const activeAssignments = useMemo(
     () => assignments.filter((a) => a.status === 'active'),
@@ -535,7 +543,7 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
           </div>
         }
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Link2,
           onClick: () => onAssign(app),
         }}
@@ -591,7 +599,7 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
           </div>
         }
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Link2,
           onClick: () => onAssign(app),
         }}
@@ -646,10 +654,12 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
   const activeEmpty = (
     <div className="flex flex-col items-center justify-center gap-2 text-center py-10 text-slate-400">
       <p className="text-sm font-black uppercase tracking-widest text-slate-500">
-        No active assignments
+        {isViewOnly ? 'No active shares' : 'No active assignments'}
       </p>
       <p className="text-xs font-medium text-slate-400">
-        Assign a mini-app to create a live link for students.
+        {isViewOnly
+          ? 'Share a mini-app to create a viewable link for students.'
+          : 'Assign a mini-app to create a live link for students.'}
       </p>
     </div>
   );
@@ -657,10 +667,12 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
   const archiveEmpty = (
     <div className="flex flex-col items-center justify-center gap-2 text-center py-10 text-slate-400">
       <p className="text-sm font-black uppercase tracking-widest text-slate-500">
-        No archived assignments
+        {isViewOnly ? 'No archived shares' : 'No archived assignments'}
       </p>
       <p className="text-xs font-medium text-slate-400">
-        Ended assignments will appear here.
+        {isViewOnly
+          ? 'Ended share links will appear here.'
+          : 'Ended assignments will appear here.'}
       </p>
     </div>
   );
@@ -671,16 +683,28 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
     assignment: MiniAppAssignment,
     mode: 'active' | 'archive'
   ): AssignmentStatusBadge {
+    // Per-assignment mode is frozen at creation. View-only entries get
+    // share-flavored labels so teachers can distinguish them at a glance
+    // even when the org-wide admin toggle is later flipped back.
+    const isViewOnly = assignment.mode === 'view-only';
     if (mode === 'archive') {
-      return { label: 'Ended', tone: 'neutral' };
+      return {
+        label: isViewOnly ? 'Ended share' : 'Ended',
+        tone: 'neutral',
+      };
     }
-    return { label: 'Live', tone: 'success', dot: true };
+    return {
+      label: isViewOnly ? 'Shared' : 'Live',
+      tone: 'success',
+      dot: true,
+    };
   }
 
   function assignmentSecondary(
     assignment: MiniAppAssignment,
     mode: 'active' | 'archive'
   ): LibraryMenuAction[] {
+    const isViewOnly = assignment.mode === 'view-only';
     const actions: LibraryMenuAction[] = [];
     actions.push({
       id: 'copy-url',
@@ -699,7 +723,7 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
     if (mode === 'active') {
       actions.push({
         id: 'end',
-        label: 'End assignment',
+        label: isViewOnly ? 'End share' : 'End assignment',
         icon: Box,
         onClick: () => onArchiveEnd(assignment),
       });
@@ -856,7 +880,7 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
           </div>
         }
         primaryAction={{
-          label: 'Assign',
+          label: primaryActionLabel,
           icon: Link2,
           onClick: () => undefined,
         }}
@@ -922,6 +946,7 @@ export const MiniAppManager: React.FC<MiniAppManagerProps> = ({
         active: activeAssignments.length,
         archive: archivedAssignments.length,
       }}
+      tabLabels={isViewOnly ? { active: 'Shared' } : undefined}
       primaryAction={primaryAction}
       secondaryActions={secondaryActions}
       filterSidebarSlot={folderSidebarSlot}

@@ -26,6 +26,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type {
+  AssignmentMode,
   VideoActivityAssignment,
   VideoActivityAssignmentSettings,
   VideoActivityAssignmentStatus,
@@ -69,7 +70,10 @@ export interface UseVideoActivityAssignmentsResult {
     initialStatus?: VideoActivityAssignmentStatus,
     classIds?: string[],
     periodNames?: string[],
-    rosterIds?: string[]
+    rosterIds?: string[],
+    /** Org-wide assignment mode frozen onto the assignment + session.
+     *  Defaults to `'submissions'` (preserves pre-feature behavior). */
+    mode?: AssignmentMode
   ) => Promise<{ id: string }>;
   /** Set both assignment.status and session.status to 'paused' (assignment) / 'ended' (session). */
   pauseAssignment: (assignmentId: string) => Promise<void>;
@@ -143,7 +147,8 @@ export const useVideoActivityAssignments = (
       initialStatus = 'active',
       classIds,
       periodNames,
-      rosterIds
+      rosterIds,
+      mode = 'submissions'
     ) => {
       if (!userId) throw new Error('Not authenticated');
       const targetClassIds = classIds ?? [];
@@ -164,6 +169,7 @@ export const useVideoActivityAssignments = (
         className: settings.className,
         sessionSettings: settings.sessionSettings,
         ...(targetRosterIds.length > 0 ? { rosterIds: targetRosterIds } : {}),
+        mode,
       };
 
       // Session's status is binary — if the assignment is paused or inactive,
@@ -196,6 +202,7 @@ export const useVideoActivityAssignments = (
           ? { periodNames: targetPeriodNames }
           : {}),
         ...(targetRosterIds.length > 0 ? { rosterIds: targetRosterIds } : {}),
+        mode,
       };
 
       const batch = writeBatch(db);
