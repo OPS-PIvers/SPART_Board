@@ -12,7 +12,11 @@ import {
 import { useAuth } from '@/context/useAuth';
 import { useLiveSession } from '@/hooks/useLiveSession';
 import { useQuiz } from '@/hooks/useQuiz';
-import { useQuizAssignments } from '@/hooks/useQuizAssignments';
+import {
+  useQuizAssignments,
+  type SharedAssignmentImportMode,
+} from '@/hooks/useQuizAssignments';
+import { QuizAssignmentImportModeModal } from '@/components/widgets/QuizWidget/components/QuizAssignmentImportModeModal';
 import { usePlcs } from '@/hooks/usePlcs';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
@@ -159,9 +163,24 @@ export const DashboardView: React.FC = () => {
     annotationActive,
   } = useDashboard();
 
-  const { importSharedQuiz, saveQuiz, deleteQuiz } = useQuiz(user?.uid);
-  const { importSharedAssignment } = useQuizAssignments(user?.uid);
+  const { importSharedQuiz, saveQuiz, deleteQuiz, attachSyncLinkage } = useQuiz(
+    user?.uid
+  );
+  const { importSharedAssignment, peekSharedAssignment } = useQuizAssignments(
+    user?.uid
+  );
   const { plcs, loading: plcsLoading } = usePlcs();
+
+  // Mode picker state — populated when a synced share is detected; null
+  // means no picker is open. We hold the shareId + a snapshot of the
+  // share doc here so the modal can render the title/originator
+  // immediately without re-fetching, and so the actual import only fires
+  // after the user picks a mode.
+  const [importModePrompt, setImportModePrompt] = React.useState<{
+    shareId: string;
+    title: string;
+    originalAuthor: string;
+  } | null>(null);
 
   // Helper: open (or create) a Quiz widget and set its managerTab.
   // Used by pending-share effects to surface the imported content to the user.
@@ -232,7 +251,106 @@ export const DashboardView: React.FC = () => {
     openQuizWidgetToTab,
   ]);
 
+  // Stable callback: imports a shared assignment with the chosen mode and
+  // surfaces success/failure toasts. Invoked from two places:
+  //   1) The pending-share effect, after a non-synced share is detected
+  //      (mode silently defaults to 'copy').
+  //   2) The QuizAssignmentImportModeModal, after the teacher picks
+  //      Sync vs Copy.
+  // Defined outside the effect so both paths share identical orchestration.
+  const runAssignmentImport = React.useCallback(
+    (shareId: string, mode: SharedAssignmentImportMode) => {
+      if (!user) return;
+      void importSharedAssignment(
+        shareId,
+        async (quiz) => {
+          const meta = await saveQuiz(quiz);
+          return { id: meta.id, driveFileId: meta.driveFileId };
+        },
+        // Roll back the just-copied quiz if assignment creation fails
+        // mid-flight — otherwise the importer is left with a phantom
+        // quiz in their library and a generic "import failed" toast.
+        async (saved) => {
+          await deleteQuiz(saved.id, saved.driveFileId);
+        },
+        // PLC handling: bundled isMember + onNonMember so the contract
+        // "PLC handling is opt-in as a unit" is visible at the call site.
+        {
+          isMember: (plcId) =>
+            !!user &&
+            plcs.some((p) => p.id === plcId && p.memberUids.includes(user.uid)),
+          onNonMember: ({ plcName }) => {
+            addToast(
+              `This is a PLC quiz assignment for "${plcName}". You're not a member, so your results will export to your own sheet.`,
+              'info',
+              {
+                label: 'PLC Settings',
+                onClick: () => {
+                  window.dispatchEvent(
+                    new CustomEvent('open-sidebar', {
+                      detail: { section: 'plcs' },
+                    })
+                  );
+                },
+              }
+            );
+          },
+        },
+        {
+          mode,
+          attachSyncLinkage,
+        }
+      )
+        .then((newAssignmentId) => {
+          addToast(
+            mode === 'sync'
+              ? 'Synced assignment imported!'
+              : 'Shared assignment imported!',
+            'success'
+          );
+          openQuizWidgetToTab('active');
+          // Prompt the importer to pick rosters/periods for the new
+          // assignment instead of leaving it paused with no targeting.
+          setPendingAssignmentSetup(newAssignmentId);
+        })
+        .catch((err: unknown) => {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : typeof err === 'string'
+                ? err
+                : '';
+          addToast(
+            msg
+              ? `Failed to import shared assignment: ${msg}`
+              : 'Failed to import shared assignment.',
+            'error'
+          );
+        });
+    },
+    [
+      user,
+      importSharedAssignment,
+      saveQuiz,
+      deleteQuiz,
+      attachSyncLinkage,
+      addToast,
+      openQuizWidgetToTab,
+      setPendingAssignmentSetup,
+      plcs,
+    ]
+  );
+
   // Handle pending shared assignment import from URL/paste.
+  //
+  // Two-step flow:
+  //   1. Peek at the share doc to detect synced-mode capability.
+  //   2a. If syncGroupId is present → open QuizAssignmentImportModeModal
+  //       and let the teacher pick Sync or Copy. The modal's onPick
+  //       handler triggers runAssignmentImport with the chosen mode.
+  //   2b. If syncGroupId is absent (legacy share) → run the legacy
+  //       copy-mode import directly, no UI prompt.
+  //
   // Imports copy the quiz into the user's library and create a paused
   // assignment, then surface the Quiz widget to the Active tab — which
   // shows live and paused assignments (Archive only shows inactive ones).
@@ -248,56 +366,18 @@ export const DashboardView: React.FC = () => {
     // for the triple-import race rationale.
     const shareId = pendingAssignmentShareId;
     clearPendingAssignmentShare();
-    void importSharedAssignment(
-      shareId,
-      async (quiz) => {
-        const meta = await saveQuiz(quiz);
-        return { id: meta.id, driveFileId: meta.driveFileId };
-      },
-      // Roll back the just-copied quiz if assignment creation fails
-      // mid-flight — otherwise the importer is left with a phantom
-      // quiz in their library and a generic "import failed" toast.
-      async (saved) => {
-        await deleteQuiz(saved.id, saved.driveFileId);
-      },
-      // PLC handling: bundled isMember + onNonMember so the contract
-      // "PLC handling is opt-in as a unit" is visible at the call site.
-      {
-        // Membership predicate: when the share carries plc.id, preserve
-        // PLC linkage iff the importer is a current member of that PLC.
-        isMember: (plcId) =>
-          !!user &&
-          plcs.some((p) => p.id === plcId && p.memberUids.includes(user.uid)),
-        // Non-member nudge: import still succeeds (the quiz is usable),
-        // but PLC sheet wiring is stripped — surface a CTA toast that
-        // opens the Sidebar's PLCs panel so the teacher can join the PLC
-        // or set up their own.
-        onNonMember: ({ plcName }) => {
-          addToast(
-            `This is a PLC quiz assignment for "${plcName}". You're not a member, so your results will export to your own sheet.`,
-            'info',
-            {
-              label: 'PLC Settings',
-              onClick: () => {
-                window.dispatchEvent(
-                  new CustomEvent('open-sidebar', {
-                    detail: { section: 'plcs' },
-                  })
-                );
-              },
-            }
-          );
-        },
-      }
-    )
-      .then((newAssignmentId) => {
-        addToast('Shared assignment imported!', 'success');
-        openQuizWidgetToTab('active');
-        // Prompt the importer to pick rosters/periods for the new
-        // assignment instead of leaving it paused with no targeting.
-        // The QuizWidget reads this and opens
-        // QuizAssignmentImportSetupModal.
-        setPendingAssignmentSetup(newAssignmentId);
+    void peekSharedAssignment(shareId)
+      .then((preview) => {
+        if (preview.syncGroupId) {
+          // Defer the import to the modal's onPick handler.
+          setImportModePrompt({
+            shareId,
+            title: preview.title,
+            originalAuthor: preview.originalAuthor,
+          });
+          return;
+        }
+        runAssignmentImport(shareId, 'copy');
       })
       .catch((err: unknown) => {
         const msg =
@@ -316,14 +396,10 @@ export const DashboardView: React.FC = () => {
   }, [
     pendingAssignmentShareId,
     user,
-    importSharedAssignment,
-    saveQuiz,
-    deleteQuiz,
+    peekSharedAssignment,
+    runAssignmentImport,
     addToast,
     clearPendingAssignmentShare,
-    openQuizWidgetToTab,
-    setPendingAssignmentSetup,
-    plcs,
     plcsLoading,
   ]);
 
@@ -1422,6 +1498,18 @@ export const DashboardView: React.FC = () => {
       <ToastContainer />
       <AnnouncementOverlay />
       <BoardZoomControl />
+
+      {importModePrompt && (
+        <QuizAssignmentImportModeModal
+          quizTitle={importModePrompt.title}
+          onPick={(mode) => {
+            const { shareId } = importModePrompt;
+            setImportModePrompt(null);
+            runAssignmentImport(shareId, mode);
+          }}
+          onClose={() => setImportModePrompt(null)}
+        />
+      )}
 
       {/* Spotlight Dimming Overlay */}
       {activeDashboard.settings?.spotlightWidgetId &&

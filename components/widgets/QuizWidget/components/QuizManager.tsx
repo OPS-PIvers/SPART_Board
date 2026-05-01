@@ -43,6 +43,8 @@ import {
   Loader2,
   AlertCircle,
   CheckSquare,
+  Cloud,
+  CloudOff,
 } from 'lucide-react';
 import {
   QuizMetadata,
@@ -50,6 +52,7 @@ import {
   QuizConfig,
   ClassRoster,
   QuizAssignment,
+  SyncedQuizGroup,
 } from '@/types';
 import { type QuizSessionOptions } from '@/hooks/useQuizSession';
 import { AttemptLimitRow } from './AttemptLimitRow';
@@ -287,6 +290,31 @@ interface QuizManagerProps {
    * through from Widget.tsx → useAuth().user.displayName.
    */
   defaultTeacherName?: string;
+  /**
+   * Live snapshot of `/synced_quizzes/{groupId}` docs the local user
+   * participates in. Drives the "Synced" / "Sync available" pills on
+   * library cards and the "Sync" button on assignment cards. The
+   * absence of an entry for a quiz's `syncGroupId` (e.g. while the
+   * subscription is hydrating) renders as "synced but version
+   * unknown" — the badges hide, the actions stay disabled.
+   */
+  syncedGroups?: Map<string, SyncedQuizGroup>;
+  /**
+   * Pull the canonical content for a synced quiz into the local Drive
+   * replica. Wired from Widget.tsx → useQuiz.pullSyncedQuiz.
+   */
+  onPullSyncedQuiz?: (quiz: QuizMetadata) => void | Promise<void>;
+  /**
+   * Detach a quiz from its synced group ("Stop syncing"). Wired from
+   * Widget.tsx → useQuiz.detachSyncedQuiz.
+   */
+  onDetachSyncedQuiz?: (quiz: QuizMetadata) => void | Promise<void>;
+  /**
+   * Rebuild a synced assignment's session questions from the latest
+   * canonical content. Wired from Widget.tsx →
+   * useQuizAssignments.syncAssignmentToLatest.
+   */
+  onSyncAssignment?: (a: QuizAssignment) => void | Promise<void>;
 }
 
 /* ─── Status resolver for archive cards ───────────────────────────────────── */
@@ -386,6 +414,10 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onArchiveDelete,
   onLibraryViewModeChange,
   defaultTeacherName,
+  syncedGroups,
+  onPullSyncedQuiz,
+  onDetachSyncedQuiz,
+  onSyncAssignment,
 }) => {
   const noop = () => {
     /* action not wired */
@@ -512,38 +544,80 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   );
 
   // ─── Build per-quiz card actions ──────────────────────────────────────────
+  // Sync availability: a quiz is "stale" when its `lastSyncedVersion`
+  // trails the canonical `/synced_quizzes/{groupId}.version`. We surface
+  // a "Sync available" action only when both sides are populated;
+  // hydration races (group hasn't subscribed yet) collapse to "no
+  // action shown" rather than an enabled-but-broken button.
   const buildQuizSecondaryActions = (
     quiz: QuizMetadata
-  ): LibraryMenuAction[] => [
-    {
-      id: 'preview',
-      label: 'Preview',
-      icon: Eye,
-      onClick: () => onPreview(quiz),
-    },
-    {
-      id: 'edit',
-      label: 'Edit',
-      icon: Edit2,
-      onClick: () => onEdit(quiz),
-    },
-    {
-      id: 'stats',
-      label: 'Stats',
-      icon: BarChart3,
-      onClick: () => onResults(quiz),
-    },
-    {
-      id: 'share',
-      label: 'Share',
-      icon: Link2,
-      onClick: () => onShare(quiz),
-    },
-    buildMoveToFolderAction({
-      onOpenPicker: () => setFolderPickerTarget(quiz),
-      disabled: !userId,
-    }),
-    {
+  ): LibraryMenuAction[] => {
+    const group = quiz.syncGroupId
+      ? syncedGroups?.get(quiz.syncGroupId)
+      : undefined;
+    const isStale =
+      !!group &&
+      typeof quiz.lastSyncedVersion === 'number' &&
+      group.version > quiz.lastSyncedVersion;
+    const actions: LibraryMenuAction[] = [
+      {
+        id: 'preview',
+        label: 'Preview',
+        icon: Eye,
+        onClick: () => onPreview(quiz),
+      },
+      {
+        id: 'edit',
+        label: 'Edit',
+        icon: Edit2,
+        onClick: () => onEdit(quiz),
+      },
+      {
+        id: 'stats',
+        label: 'Stats',
+        icon: BarChart3,
+        onClick: () => onResults(quiz),
+      },
+      {
+        id: 'share',
+        label: 'Share',
+        icon: Link2,
+        onClick: () => onShare(quiz),
+      },
+    ];
+    if (isStale && onPullSyncedQuiz) {
+      actions.push({
+        id: 'sync-now',
+        label: 'Sync available',
+        icon: RefreshCw,
+        onClick: () => void onPullSyncedQuiz(quiz),
+      });
+    }
+    if (quiz.syncGroupId && onDetachSyncedQuiz) {
+      actions.push({
+        id: 'stop-syncing',
+        label: 'Stop syncing',
+        icon: CloudOff,
+        onClick: async () => {
+          const ok = await showConfirm(
+            `Stop syncing "${quiz.title}"? Your local copy will remain, but you won't see future changes from the synced group.`,
+            {
+              title: 'Stop Syncing',
+              variant: 'warning',
+              confirmLabel: 'Stop Syncing',
+            }
+          );
+          if (ok) await onDetachSyncedQuiz(quiz);
+        },
+      });
+    }
+    actions.push(
+      buildMoveToFolderAction({
+        onOpenPicker: () => setFolderPickerTarget(quiz),
+        disabled: !userId,
+      })
+    );
+    actions.push({
       id: 'delete',
       label: 'Delete',
       icon: Trash2,
@@ -559,8 +633,28 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         );
         if (ok) await onDelete(quiz);
       },
-    },
-  ];
+    });
+    return actions;
+  };
+
+  /**
+   * Compute the badge list for a quiz library card. Reflects the synced-
+   * group state — "Synced" (info tone) when the quiz participates in a
+   * group, upgraded to "Sync available" (warn tone) when canonical
+   * `version` exceeds local `lastSyncedVersion`.
+   */
+  const buildQuizBadges = (quiz: QuizMetadata) => {
+    if (!quiz.syncGroupId) return [];
+    const group = syncedGroups?.get(quiz.syncGroupId);
+    if (
+      group &&
+      typeof quiz.lastSyncedVersion === 'number' &&
+      group.version > quiz.lastSyncedVersion
+    ) {
+      return [{ label: 'Sync available', tone: 'warn' as const, dot: true }];
+    }
+    return [{ label: 'Synced', tone: 'info' as const }];
+  };
 
   // ─── Build archive-card actions ───────────────────────────────────────────
   const buildArchiveActions = (
@@ -626,6 +720,33 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
         icon: Share2,
         onClick: () => void (onArchiveShare ?? noop)(a),
       });
+      // Sync now: only when this assignment is part of a synced group
+      // AND the canonical doc has a newer version than the session
+      // currently reflects. Includes a confirm because the rebuild
+      // overwrites `session.publicQuestions` mid-stream.
+      if (a.syncGroupId && onSyncAssignment) {
+        const group = syncedGroups?.get(a.syncGroupId);
+        const assignmentStale =
+          !!group && group.version > (a.syncedVersion ?? 0);
+        if (assignmentStale) {
+          secondaries.push({
+            id: 'sync-assignment',
+            label: 'Sync now',
+            icon: Cloud,
+            onClick: async () => {
+              const ok = await showConfirm(
+                `Update this assignment to the latest version of "${a.quizTitle}"? Existing students' answers stay; rows answered before the update will be tagged in results.`,
+                {
+                  title: 'Sync Assignment',
+                  variant: 'warning',
+                  confirmLabel: 'Sync',
+                }
+              );
+              if (ok) await onSyncAssignment(a);
+            },
+          });
+        }
+      }
       if (isActive) {
         secondaries.push({
           id: 'pause',
@@ -1028,6 +1149,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           orderedItems={reorder.orderedItems}
           onAssignClick={(q) => setAssignTarget(q)}
           buildSecondaryActions={buildQuizSecondaryActions}
+          buildBadges={buildQuizBadges}
           onEdit={onEdit}
           onImport={onImport}
           totalCount={quizzes.length}
@@ -1050,6 +1172,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           loading={assignmentsLoading}
           mode="active"
           buildActions={buildArchiveActions}
+          syncedGroups={syncedGroups}
           emptyTitle="No quizzes in progress"
           emptySub="Assign a quiz from the Library tab to get started. Active and paused assignments appear here."
         />
@@ -1061,6 +1184,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           loading={assignmentsLoading}
           mode="archive"
           buildActions={buildArchiveActions}
+          syncedGroups={syncedGroups}
           emptyTitle="No archived assignments"
           emptySub="Ended assignments are moved here so you can review results and share them."
         />
@@ -1144,6 +1268,13 @@ const LibraryTabContent: React.FC<{
   orderedItems: QuizMetadata[];
   onAssignClick: (quiz: QuizMetadata) => void;
   buildSecondaryActions: (quiz: QuizMetadata) => LibraryMenuAction[];
+  /**
+   * Resolves the badge list for a single quiz card. Surfaces the
+   * "Synced" / "Sync available" pills produced by the parent.
+   */
+  buildBadges?: (
+    quiz: QuizMetadata
+  ) => { label: string; tone: LibraryBadgeTone; dot?: boolean }[];
   onEdit: (quiz: QuizMetadata) => void;
   onImport: () => void;
   totalCount: number;
@@ -1167,6 +1298,7 @@ const LibraryTabContent: React.FC<{
   orderedItems,
   onAssignClick,
   buildSecondaryActions,
+  buildBadges,
   onEdit,
   onImport,
   totalCount,
@@ -1268,6 +1400,7 @@ const LibraryTabContent: React.FC<{
               onClick: () => onAssignClick(quiz),
             }}
             secondaryActions={buildSecondaryActions(quiz)}
+            badges={buildBadges?.(quiz)}
             onClick={() => onEdit(quiz)}
             viewMode={viewMode}
             sortable={enableCardDrag}
@@ -1299,9 +1432,23 @@ const AssignmentsList: React.FC<{
     };
     secondaries: LibraryMenuAction[];
   };
+  /**
+   * Synced-group state used to label assignment cards as "Synced" / "Sync
+   * available" in the meta line. Optional — undefined collapses to the
+   * legacy "no sync indicator" rendering.
+   */
+  syncedGroups?: Map<string, SyncedQuizGroup>;
   emptyTitle: string;
   emptySub: string;
-}> = ({ assignments, loading, mode, buildActions, emptyTitle, emptySub }) => {
+}> = ({
+  assignments,
+  loading,
+  mode,
+  buildActions,
+  syncedGroups,
+  emptyTitle,
+  emptySub,
+}) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 text-brand-blue-primary/60 gap-3 py-10">
@@ -1336,6 +1483,24 @@ const AssignmentsList: React.FC<{
             : periods.length > 0
               ? `${periods.length} classes`
               : null;
+        // Synced indicator: present iff this assignment was imported (or
+        // shared) under sync mode AND the canonical group has been
+        // observed by the parent's listener. Collapses to "Synced" when
+        // versions match, or "Sync available" (warn) when canonical
+        // outpaces the assignment's snapshotted version.
+        const syncBadge: { label: string; tone: 'info' | 'warn' } | null =
+          a.syncGroupId
+            ? (() => {
+                const group = syncedGroups?.get(a.syncGroupId);
+                if (!group) {
+                  return { label: 'Synced', tone: 'info' };
+                }
+                if (group.version > (a.syncedVersion ?? 0)) {
+                  return { label: 'Sync available', tone: 'warn' };
+                }
+                return { label: 'Synced', tone: 'info' };
+              })()
+            : null;
 
         return (
           <AssignmentArchiveCard<QuizAssignment>
@@ -1370,6 +1535,18 @@ const AssignmentsList: React.FC<{
                 {status.tone === 'success' && (
                   <span className="inline-flex items-center">
                     <Radio className="w-3 h-3" />
+                  </span>
+                )}
+                {syncBadge && (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      syncBadge.tone === 'warn'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-blue-100 text-blue-700'
+                    }`}
+                  >
+                    <Cloud className="w-2.5 h-2.5" />
+                    {syncBadge.label}
                   </span>
                 )}
               </>

@@ -33,6 +33,7 @@ import type {
   QuizAssignmentSettings,
   QuizAssignmentStatus,
   QuizData,
+  QuizMetadata,
   QuizQuestion,
   QuizSession,
   SharedQuizAssignment,
@@ -44,6 +45,14 @@ import {
   toPublicQuestion,
   type ResponseDocKey,
 } from './useQuizSession';
+import {
+  callJoinSyncedQuizGroup,
+  createSyncedQuizGroup,
+  pullSyncedQuizContent,
+} from './useSyncedQuizGroups';
+
+/** Import-mode picker result for shared-assignment paste flows. */
+export type SharedAssignmentImportMode = 'sync' | 'copy';
 
 const QUIZ_ASSIGNMENTS_COLLECTION = 'quiz_assignments';
 const SHARED_ASSIGNMENTS_COLLECTION = 'shared_assignments';
@@ -89,7 +98,15 @@ export interface UseQuizAssignmentsResult {
      * teacher's roster doc. Derived alongside `classIds`/`rosterIds` via
      * `deriveSessionTargetsFromRosters`.
      */
-    classPeriodByClassId?: Record<string, string>
+    classPeriodByClassId?: Record<string, string>,
+    /**
+     * Optional synced-group linkage. When provided, both the assignment
+     * doc (`syncGroupId` + `syncedVersion`) and the session doc carry the
+     * link, so the per-assignment "Sync" button can detect divergence
+     * against the canonical `/synced_quizzes/{groupId}` doc. Set by
+     * `importSharedAssignment` when the importer chooses Sync mode.
+     */
+    syncedFrom?: { syncGroupId: string; syncedVersion: number }
   ) => Promise<{ id: string; code: string }>;
   /** Set both assignment.status and session.status to 'paused'. */
   pauseAssignment: (assignmentId: string) => Promise<void>;
@@ -156,6 +173,17 @@ export interface UseQuizAssignmentsResult {
     quizData: QuizData
   ) => Promise<string>;
   /**
+   * Peek at a `/shared_assignments/{shareId}` doc without importing. Used
+   * by the import flow to decide whether to surface the Sync/Copy mode
+   * picker (when `syncGroupId` is present) or fall straight through to a
+   * legacy copy import. Read-only — does not mutate any state.
+   */
+  peekSharedAssignment: (shareId: string) => Promise<{
+    title: string;
+    originalAuthor: string;
+    syncGroupId?: string;
+  }>;
+  /**
    * Import a shared assignment. Delegates quiz copy to the injected saveQuiz
    * (from useQuiz.ts) and creates a new paused assignment under the importer's
    * collection. Returns the new assignmentId.
@@ -192,8 +220,47 @@ export interface UseQuizAssignmentsResult {
     plcHandling?: {
       isMember: (plcId: string) => boolean;
       onNonMember: (info: { plcId: string; plcName: string }) => void;
+    },
+    /**
+     * Import mode chosen by the user in the picker modal. Default `'copy'`
+     * preserves legacy behavior for callers not yet wired through the new
+     * picker. `'sync'` joins the importer to the synced group named on the
+     * share doc; if the share doesn't carry a `syncGroupId`, the call
+     * silently degrades to `'copy'` (the picker shouldn't have offered
+     * sync in that case anyway).
+     *
+     * `attachSyncLinkage` is required for `'sync'` mode — it patches the
+     * importer's freshly-saved local quiz metadata with the sync linkage
+     * after `saveQuiz` writes the unsynced shape. Threaded as a callback
+     * (rather than inlining the Firestore write here) so this hook stays
+     * decoupled from `useQuiz`'s persistence layout.
+     */
+    options?: {
+      mode?: SharedAssignmentImportMode;
+      attachSyncLinkage?: (
+        quizId: string,
+        linkage: { syncGroupId: string; lastSyncedVersion: number }
+      ) => Promise<void>;
     }
   ) => Promise<string>;
+  /**
+   * Rebuild a synced assignment's session questions from the latest
+   * canonical content. Sets `assignment.syncedVersion` to match the
+   * canonical doc's `version`, replaces `session.publicQuestions[]`, and
+   * tags any pre-existing responses with `preSyncVersion` so the results
+   * UI can flag rows as "answered before vN+1 update."
+   *
+   * No-op if the assignment isn't synced (no `syncGroupId`) or already
+   * matches the canonical version.
+   */
+  syncAssignmentToLatest: (assignmentId: string) => Promise<{
+    /** True iff the rebuild actually ran (false = already at latest). */
+    updated: boolean;
+    /** Canonical version after the sync. */
+    version: number;
+    /** How many existing responses were tagged with `preSyncVersion`. */
+    taggedResponseCount: number;
+  }>;
 }
 
 /**
@@ -407,7 +474,8 @@ export const useQuizAssignments = (
       initialStatus = 'active',
       classIds,
       rosterIds,
-      classPeriodByClassId
+      classPeriodByClassId,
+      syncedFrom
     ) => {
       if (!userId) throw new Error('Not authenticated');
       // Defensive sanitization at the hook boundary: drop empty/non-string
@@ -450,6 +518,18 @@ export const useQuizAssignments = (
         periodNames: settings.periodNames,
         attemptLimit: settings.attemptLimit ?? null,
         ...(targetRosterIds.length > 0 ? { rosterIds: targetRosterIds } : {}),
+        // Synced linkage: present iff the assignment was created from a
+        // synced library quiz (set by importSharedAssignment in sync mode,
+        // or by createAssignment when the source quiz already participates
+        // in a group). The session doc carries the same fields so the
+        // monitor + results views can detect divergence without reading
+        // back the assignment doc.
+        ...(syncedFrom
+          ? {
+              syncGroupId: syncedFrom.syncGroupId,
+              syncedVersion: syncedFrom.syncedVersion,
+            }
+          : {}),
       };
 
       const mode = settings.sessionMode;
@@ -843,6 +923,21 @@ export const useQuizAssignments = (
     [userId]
   );
 
+  const peekSharedAssignment = useCallback<
+    UseQuizAssignmentsResult['peekSharedAssignment']
+  >(async (shareId) => {
+    const snap = await getDoc(doc(db, SHARED_ASSIGNMENTS_COLLECTION, shareId));
+    if (!snap.exists()) {
+      throw new Error('Shared assignment not found.');
+    }
+    const data = snap.data() as SharedQuizAssignment;
+    return {
+      title: data.title,
+      originalAuthor: data.originalAuthor,
+      ...(data.syncGroupId ? { syncGroupId: data.syncGroupId } : {}),
+    };
+  }, []);
+
   const shareAssignment = useCallback<
     UseQuizAssignmentsResult['shareAssignment']
   >(
@@ -855,6 +950,54 @@ export const useQuizAssignments = (
       const assignment = migrateLegacyAssignmentShape(
         snap.data() as QuizAssignment & LegacyPlcShape
       ) as QuizAssignment;
+
+      // Sync-mode plumbing: every share now carries a `syncGroupId` so the
+      // importer's mode picker can offer "Synced" as an option. If the
+      // source quiz is already part of a group (because the sharer
+      // imported it as Synced themselves, or shared it once before), reuse
+      // that group id — keeps the canonical participants list intact and
+      // avoids fragmenting peer groups across re-shares of the same quiz.
+      // Otherwise we promote the source quiz to a synced quiz: create a
+      // brand-new group with the sharer as the sole participant, then
+      // patch the local quiz_metadata so the editor's saveQuiz can
+      // publish future edits to peers.
+      const quizMetaRef = doc(
+        db,
+        'users',
+        userId,
+        'quizzes', // QUIZZES_COLLECTION in useQuiz.ts
+        assignment.quizId
+      );
+      const quizMetaSnap = await getDoc(quizMetaRef);
+      const existingQuizMeta = quizMetaSnap.exists()
+        ? (quizMetaSnap.data() as QuizMetadata)
+        : null;
+      let syncGroupId = existingQuizMeta?.syncGroupId;
+      if (!syncGroupId) {
+        syncGroupId = crypto.randomUUID();
+        await createSyncedQuizGroup({
+          groupId: syncGroupId,
+          uid: userId,
+          title: quizData.title,
+          questions: quizData.questions,
+          // Plumb the PLC id through so the Part 2 notification system can
+          // route stale-content alerts to the right inbox. Not consumed in
+          // Part 1A.
+          ...(assignment.plc?.id ? { plcId: assignment.plc.id } : {}),
+        });
+        // Patch the local quiz metadata in place. We cannot use the
+        // canonical saveQuiz path here because it would re-publish the
+        // questions (and the canonical was just seeded with the same
+        // content — that would be a wasted version bump and a fresh
+        // listener fan-out). Direct merge keeps the linkage tight to the
+        // create-and-attach gesture.
+        if (existingQuizMeta) {
+          await updateDoc(quizMetaRef, {
+            syncGroupId,
+            lastSyncedVersion: 1,
+          });
+        }
+      }
 
       const payload: Omit<SharedQuizAssignment, 'id'> = {
         title: quizData.title,
@@ -872,6 +1015,7 @@ export const useQuizAssignments = (
         },
         originalAuthor: userId,
         sharedAt: Date.now(),
+        syncGroupId,
       };
       const ref = await addDoc(
         collection(db, SHARED_ASSIGNMENTS_COLLECTION),
@@ -885,7 +1029,7 @@ export const useQuizAssignments = (
   const importSharedAssignment = useCallback<
     UseQuizAssignmentsResult['importSharedAssignment']
   >(
-    async (shareId, saveQuiz, rollbackQuiz, plcHandling) => {
+    async (shareId, saveQuiz, rollbackQuiz, plcHandling, options) => {
       if (!userId) throw new Error('Not authenticated');
 
       const snap = await getDoc(
@@ -906,15 +1050,85 @@ export const useQuizAssignments = (
       };
 
       // 1. Copy the quiz into the importer's library.
+      //
+      // Synced-mode resolution: if the importer chose 'sync' AND the share
+      // doc carries a `syncGroupId`, we'll join the canonical group below
+      // and use ITS content as the seed for the local Drive copy (rather
+      // than the inlined `shared.questions`, which may be stale relative
+      // to the canonical doc when a peer published while the URL was
+      // sitting in someone's clipboard). The mode silently degrades to
+      // 'copy' when the share has no `syncGroupId` — defensive handling
+      // for clients that pass mode='sync' against a legacy share doc.
+      const requestedMode: SharedAssignmentImportMode = options?.mode ?? 'copy';
+      const effectiveMode: SharedAssignmentImportMode =
+        requestedMode === 'sync' && shared.syncGroupId ? 'sync' : 'copy';
+
+      let initialQuestions = shared.questions;
+      let initialTitle = shared.title;
+      let canonicalVersion: number | undefined = undefined;
+      if (effectiveMode === 'sync' && shared.syncGroupId) {
+        try {
+          const canonical = await pullSyncedQuizContent(shared.syncGroupId);
+          initialTitle = canonical.title;
+          initialQuestions = canonical.questions;
+          canonicalVersion = canonical.version;
+        } catch (err) {
+          console.warn(
+            `[importSharedAssignment] Failed to read synced canonical for ${shared.syncGroupId}; falling back to inlined snapshot:`,
+            err
+          );
+          // Fall through to using shared.questions; we still try to join
+          // the group below so the importer doesn't lose sync semantics
+          // just because a single read flickered.
+        }
+      }
+
       const now = Date.now();
       const newQuiz: QuizData = {
         id: crypto.randomUUID(),
-        title: shared.title,
-        questions: shared.questions,
+        title: initialTitle,
+        questions: initialQuestions,
         createdAt: now,
         updatedAt: now,
       };
       const savedMeta = await saveQuiz(newQuiz);
+
+      // 1a. If syncing, join the canonical group + patch local metadata
+      // BEFORE creating the assignment so the assignment's `syncGroupId` /
+      // `syncedVersion` fields land in their canonical first-write state.
+      // A failure here rolls back the quiz copy to avoid stranding the
+      // importer with an orphan synced-but-not-joined library entry.
+      let assignmentSyncedFrom:
+        | { syncGroupId: string; syncedVersion: number }
+        | undefined = undefined;
+      if (effectiveMode === 'sync' && shared.syncGroupId) {
+        try {
+          const joinResult = await callJoinSyncedQuizGroup(shareId);
+          const liveVersion = canonicalVersion ?? joinResult.version;
+          if (options?.attachSyncLinkage) {
+            await options.attachSyncLinkage(savedMeta.id, {
+              syncGroupId: joinResult.groupId,
+              lastSyncedVersion: liveVersion,
+            });
+          }
+          assignmentSyncedFrom = {
+            syncGroupId: joinResult.groupId,
+            syncedVersion: liveVersion,
+          };
+        } catch (err) {
+          if (rollbackQuiz) {
+            try {
+              await rollbackQuiz(savedMeta);
+            } catch (rollbackErr) {
+              console.error(
+                `[importSharedAssignment] Failed to roll back quiz ${savedMeta.id} after sync-join error:`,
+                rollbackErr
+              );
+            }
+          }
+          throw err;
+        }
+      }
 
       // 2. Create a Paused assignment with the shared settings.
       // Clear all originator-scoped fields so the importer starts fresh
@@ -992,7 +1206,11 @@ export const useQuizAssignments = (
             questions: newQuiz.questions,
           },
           importedSettings,
-          'paused'
+          'paused',
+          undefined,
+          undefined,
+          undefined,
+          assignmentSyncedFrom
         );
       } catch (err) {
         if (rollbackQuiz) {
@@ -1015,6 +1233,99 @@ export const useQuizAssignments = (
     [userId, createAssignment]
   );
 
+  const syncAssignmentToLatest = useCallback<
+    UseQuizAssignmentsResult['syncAssignmentToLatest']
+  >(
+    async (assignmentId) => {
+      if (!userId) throw new Error('Not authenticated');
+      const assignmentRef = doc(
+        db,
+        'users',
+        userId,
+        QUIZ_ASSIGNMENTS_COLLECTION,
+        assignmentId
+      );
+      const assignmentSnap = await getDoc(assignmentRef);
+      if (!assignmentSnap.exists()) {
+        throw new Error('Assignment not found.');
+      }
+      const assignment = migrateLegacyAssignmentShape(
+        assignmentSnap.data() as QuizAssignment & LegacyPlcShape
+      ) as QuizAssignment;
+      if (!assignment.syncGroupId) {
+        // Not a synced assignment — nothing to do. Returning a no-op result
+        // (rather than throwing) lets callers wire the action without
+        // having to gate on `assignment.syncGroupId` ahead of every call.
+        return { updated: false, version: 0, taggedResponseCount: 0 };
+      }
+
+      const canonical = await pullSyncedQuizContent(assignment.syncGroupId);
+      const previousSyncedVersion = assignment.syncedVersion ?? 0;
+      if (canonical.version <= previousSyncedVersion) {
+        return {
+          updated: false,
+          version: canonical.version,
+          taggedResponseCount: 0,
+        };
+      }
+
+      // Build the student-safe publicQuestions array from the canonical
+      // content. This MUST match the shuffle/strip logic used at session
+      // create time (toPublicQuestion) so the student-side rendering path
+      // doesn't have to special-case post-sync state.
+      const publicQuestions = canonical.questions.map(toPublicQuestion);
+
+      // Tag any pre-existing responses with the OLD `syncedVersion` so the
+      // results UI can render "Answered before v{N+1} update" chips. We do
+      // this in the same batch as the assignment + session writes so a
+      // crash mid-flight can't leave a session at v2 with un-tagged
+      // responses still pointing at v1 questions.
+      const responsesSnap = await getDocs(
+        collection(
+          db,
+          QUIZ_SESSIONS_COLLECTION,
+          assignmentId,
+          RESPONSES_COLLECTION
+        )
+      );
+      const batch = writeBatch(db);
+      const now = Date.now();
+      batch.update(assignmentRef, {
+        syncedVersion: canonical.version,
+        quizTitle: canonical.title,
+        updatedAt: now,
+      });
+      batch.update(doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId), {
+        publicQuestions,
+        totalQuestions: canonical.questions.length,
+        quizTitle: canonical.title,
+      });
+      let taggedResponseCount = 0;
+      responsesSnap.docs.forEach((d) => {
+        // Skip responses that were already tagged at this OR a more recent
+        // version — re-running the sync against the same canonical version
+        // shouldn't keep re-stamping `preSyncVersion`.
+        const r = d.data() as { preSyncVersion?: number };
+        if (
+          typeof r.preSyncVersion === 'number' &&
+          r.preSyncVersion >= previousSyncedVersion
+        ) {
+          return;
+        }
+        batch.update(d.ref, { preSyncVersion: previousSyncedVersion });
+        taggedResponseCount += 1;
+      });
+      await batch.commit();
+
+      return {
+        updated: true,
+        version: canonical.version,
+        taggedResponseCount,
+      };
+    },
+    [userId]
+  );
+
   return {
     assignments,
     loading,
@@ -1030,6 +1341,8 @@ export const useQuizAssignments = (
     setAssignmentExportUrl,
     setAssignmentExportedResponseIds,
     shareAssignment,
+    peekSharedAssignment,
     importSharedAssignment,
+    syncAssignmentToLatest,
   };
 };
