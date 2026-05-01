@@ -3,7 +3,7 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
-_Last audited: 2026-04-30_
+_Last audited: 2026-05-01_
 _Last action: 2026-04-26_
 
 ---
@@ -36,6 +36,13 @@ _Nothing currently in progress._
 - **File:** components/widgets/WidgetRegistry.ts
 - **Detail:** `stickers` (StickerBook) has entries in `WIDGET_COMPONENTS`, `WIDGET_APPEARANCE_COMPONENTS`, `WIDGET_SCALING_CONFIG`, `widgetDefaults.ts`, `widgetGradeLevels.ts`, and `tools.ts`, but is absent from `WIDGET_SETTINGS_COMPONENTS`. `stickers/StickerBookSettings.tsx` exports `StickerBookAppearanceSettings` (wired into appearance panel), but there is no flip-panel settings component registered. As a result flipping the stickers widget shows no settings tab — only the appearance tab. May be intentional if stickers has no non-appearance settings, but is undocumented.
 - **Fix:** Either (a) confirm this is intentional and add a JSDoc comment in `WIDGET_SETTINGS_COMPONENTS` noting stickers has appearance-only settings, or (b) create a `StickerBookSettings` component and register it if any non-appearance settings (e.g. lock/reset) are desired.
+
+### LOW `blooms-detail` absent from `config/tools.ts`
+
+- **Detected:** 2026-05-01
+- **File:** config/tools.ts, types.ts
+- **Detail:** `blooms-detail` is in the WidgetType union, registered in `WIDGET_COMPONENTS`, `WIDGET_SCALING_CONFIG`, `widgetDefaults.ts`, and `widgetGradeLevels.ts`, but is absent from `config/tools.ts`. As a programmatically-spawned companion widget (opened by the `blooms-taxonomy` widget), this is likely intentional — but it is not documented anywhere in the file. The two existing LOW items about `catalyst-instruction`/`catalyst-visual` and `mathTool`/`onboarding`/`custom-widget` propose a comment block documenting intentionally excluded types; `blooms-detail` should be included in that block.
+- **Fix:** When addressing the "Add a comment block documenting which WidgetTypes are intentionally excluded" fix in the items above, also add `blooms-detail` to the list with the note that it is a read-only companion widget spawned by `blooms-taxonomy`.
 
 ### LOW `blooms-detail` missing from `WIDGET_SETTINGS_COMPONENTS`
 
