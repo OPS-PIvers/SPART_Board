@@ -14,6 +14,12 @@
     "upload": "Hochladen",
     "clearAll": "Alles löschen"
   },
+  "boardNav": {
+    "previous": "Vorherige Tafel",
+    "next": "Nächste Tafel",
+    "selectBoard": "Tafel auswählen",
+    "boardList": "Alle Tafeln"
+  },
   "sidebar": {
     "header": {
       "classroomManager": "SpartBoard",
@@ -321,7 +327,7 @@
     },
     "dashboard": {
       "emptyBoardHint": "Ziehen Sie Werkzeuge aus dem Dock unten, um zu beginnen",
-      "switchBoardsHint": "Tafelwechsel über die Tafelauswahl in der oberen Symbolleiste"
+      "switchBoardsHint": "Verwenden Sie die Tafelnavigation unten links, um zwischen Tafeln zu wechseln"
     }
   }
 }

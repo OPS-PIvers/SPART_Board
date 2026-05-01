@@ -14,6 +14,12 @@
     "upload": "Subir",
     "clearAll": "Borrar Todo"
   },
+  "boardNav": {
+    "previous": "Tablero anterior",
+    "next": "Tablero siguiente",
+    "selectBoard": "Seleccionar tablero",
+    "boardList": "Todos los tableros"
+  },
   "sidebar": {
     "header": {
       "classroomManager": "SpartBoard",
@@ -440,7 +446,7 @@
     },
     "dashboard": {
       "emptyBoardHint": "Arrastra herramientas desde el Dock para empezar",
-      "switchBoardsHint": "Usa el selector de tableros en la barra de herramientas superior"
+      "switchBoardsHint": "Usa los controles de navegación en la parte inferior izquierda para cambiar de tablero"
     }
   }
 }

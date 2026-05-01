@@ -17,6 +17,12 @@
     "error": "Error",
     "clearAll": "Clear All"
   },
+  "boardNav": {
+    "previous": "Previous board",
+    "next": "Next board",
+    "selectBoard": "Select board",
+    "boardList": "All boards"
+  },
   "sidebar": {
     "header": {
       "classroomManager": "SpartBoard",
@@ -562,7 +568,7 @@
     },
     "dashboard": {
       "emptyBoardHint": "Drag tools from the Dock below to start",
-      "switchBoardsHint": "Use the board switcher in the top toolbar to switch boards"
+      "switchBoardsHint": "Use the board navigation controls in the bottom-left to switch boards"
     }
   },
   "admin": {
