@@ -136,7 +136,10 @@ export const useNutrislice = ({
       let bentoBox: LunchMenuItem = { name: noBentoBox };
 
       if (data && data.days) {
-        const todayStr = now.toISOString().split('T')[0];
+        // Match against the same local-time date used to build the request
+        // URL. toISOString() is UTC, which can be a day ahead of the local
+        // date in the evening and would miss the menu entry.
+        const todayStr = `${year}-${month}-${day}`;
         const dayData = data.days.find((d) => d.date === todayStr);
 
         if (dayData && dayData.menu_items) {

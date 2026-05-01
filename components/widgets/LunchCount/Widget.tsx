@@ -996,17 +996,34 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         isOpen={!!peekedItem}
         onClose={() => setPeekedItem(null)}
         variant="bare"
-        maxWidth="max-w-sm"
+        maxWidth="max-w-[min(60vmin,560px)]"
         ariaLabel={peekedItem ? `Photo of ${peekedItem.name}` : undefined}
       >
-        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-200">
+        {/* The peek overlay renders into document.body via portal, outside any
+            container query context — cqmin would resolve to 0 here. We use
+            vmin instead so the photo scales legibly on classroom projectors
+            while still looking right on a teacher's laptop. */}
+        <div
+          className="relative bg-white shadow-2xl overflow-hidden border border-slate-200 motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-200"
+          style={{ borderRadius: 'min(28px, 3vmin)' }}
+        >
           <button
             type="button"
             onClick={() => setPeekedItem(null)}
-            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-md focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+            className="absolute z-10 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-md focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+            style={{
+              top: 'min(12px, 1.5vmin)',
+              right: 'min(12px, 1.5vmin)',
+              padding: 'min(8px, 1vmin)',
+            }}
             aria-label="Close photo"
           >
-            <X className="w-5 h-5" />
+            <X
+              style={{
+                width: 'min(20px, 2.5vmin)',
+                height: 'min(20px, 2.5vmin)',
+              }}
+            />
           </button>
           {peekedItem?.imageUrl ? (
             <img
@@ -1015,8 +1032,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               className="w-full aspect-square object-cover"
             />
           ) : null}
-          <div className="p-4 bg-white">
-            <p className="text-base font-black text-slate-900 text-center leading-tight">
+          <div className="bg-white" style={{ padding: 'min(20px, 2.5vmin)' }}>
+            <p
+              className="font-black text-slate-900 text-center leading-tight"
+              style={{ fontSize: 'min(24px, 3vmin)' }}
+            >
               {peekedItem?.name}
             </p>
           </div>
