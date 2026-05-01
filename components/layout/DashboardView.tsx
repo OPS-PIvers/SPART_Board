@@ -24,7 +24,7 @@ import { GroupBoundingBox } from '@/components/common/GroupBoundingBox';
 import { AnnouncementOverlay } from '@/components/announcements/AnnouncementOverlay';
 import { CheatSheetModal } from '@/components/common/CheatSheetModal';
 import { BoardActionsFab } from './BoardActionsFab';
-import { clampZoom } from '@/utils/zoomMapping';
+import { clampZoom, ZOOM_DEFAULT } from '@/utils/zoomMapping';
 import {
   clampPan,
   clampWidgetToWorld,
@@ -351,7 +351,7 @@ export const DashboardView: React.FC = () => {
   // it fires — not whatever zoom was bound when the frame was scheduled.
   // Without this, a wheel-zoom-out mid-drag could clamp against the previous
   // (larger) bound for one frame before the render-body re-clamp catches it.
-  const zoomRef = React.useRef(0);
+  const zoomRef = React.useRef(ZOOM_DEFAULT);
   React.useEffect(
     () => () => {
       if (panFrameRef.current !== null) {

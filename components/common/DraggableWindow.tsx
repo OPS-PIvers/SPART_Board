@@ -1101,6 +1101,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         const clamped = clampWidgetToWorld(newX, newY, newW, newH, vw, vh);
+        // West/north resize past a world boundary: clampWidgetToWorld pulls
+        // newX/newY back inside, but the unmodified width/height would then
+        // push the *opposite* edge outward (e.g. dragging the west handle
+        // west past minX would silently move the east edge east). Shrink
+        // the dimension by the same amount the top-left was pulled so the
+        // anchored edge stays put.
+        if (direction.includes('w')) newW -= clamped.x - newX;
+        if (direction.includes('n')) newH -= clamped.y - newY;
         newX = clamped.x;
         newY = clamped.y;
         const wb = getWorldBounds(vw, vh);
