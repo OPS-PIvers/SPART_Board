@@ -18,18 +18,24 @@ import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { AnnotationOverlay } from './AnnotationOverlay';
+import { BoardNavFab } from './BoardNavFab';
 import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
 import { GroupBoundingBox } from '@/components/common/GroupBoundingBox';
 import { AnnouncementOverlay } from '@/components/announcements/AnnouncementOverlay';
 import { CheatSheetModal } from '@/components/common/CheatSheetModal';
-import { BoardZoomControl } from './BoardZoomControl';
+import { BoardActionsFab } from './BoardActionsFab';
+import { clampZoom, ZOOM_DEFAULT } from '@/utils/zoomMapping';
+import {
+  clampPan,
+  clampWidgetToWorld,
+  computeCursorAnchoredPan,
+} from '@/utils/zoomPanMath';
 import {
   AlertCircle,
   CheckCircle2,
   Info,
   AlertTriangle,
   Loader2,
-  HelpCircle,
   LayoutGrid,
   Music,
 } from 'lucide-react';
@@ -334,6 +340,66 @@ export const DashboardView: React.FC = () => {
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent('board-pan'));
   }, [panOffset]);
+
+  // Explicit "reset to canonical view" actions (FAB reset button, 100% preset)
+  // dispatch this event so we snap pan to center alongside their setZoom(1).
+  // Wheel zoom that incidentally crosses through z=1 does NOT fire this — the
+  // cursor anchor must be preserved across the zoom = 1 boundary.
+  React.useEffect(() => {
+    const onCameraReset = () => setPanOffset({ x: 0, y: 0 });
+    window.addEventListener('camera-reset', onCameraReset);
+    return () => window.removeEventListener('camera-reset', onCameraReset);
+  }, []);
+
+  // Coalesce pan deltas into one update per animation frame: pointer events
+  // can fire faster than the display refresh rate, and applying every delta
+  // synchronously triggers React reconciliation per event. We accumulate the
+  // deltas in a ref and flush once per rAF.
+  const pendingPanRef = React.useRef({ dx: 0, dy: 0 });
+  const panFrameRef = React.useRef<number | null>(null);
+  // Mirror zoom on a ref so the rAF flush below uses the *current* zoom when
+  // it fires — not whatever zoom was bound when the frame was scheduled.
+  // Without this, a wheel-zoom-out mid-drag could clamp against the previous
+  // (larger) bound for one frame before the render-body re-clamp catches it.
+  const zoomRef = React.useRef(ZOOM_DEFAULT);
+  React.useEffect(
+    () => () => {
+      if (panFrameRef.current !== null) {
+        cancelAnimationFrame(panFrameRef.current);
+        panFrameRef.current = null;
+      }
+    },
+    []
+  );
+
+  // Re-clamp panOffset when the viewport shrinks — without this, an offset
+  // that was inside the bound at the previous viewport size would leave the
+  // widget surface dragged off-center after a window resize. Render-only
+  // clamping doesn't catch this because no React state changes on resize.
+  // rAF-throttled to match the resize listener pattern at lines ~414-427.
+  React.useEffect(() => {
+    let rafId: number | null = null;
+    const onResize = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        setPanOffset((prev) => {
+          const next = clampPan(
+            prev,
+            zoomRef.current,
+            window.innerWidth,
+            window.innerHeight
+          );
+          return next.x === prev.x && next.y === prev.y ? prev : next;
+        });
+      });
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, []);
   const { uploadAndRegisterPdf } = useStorage();
 
   const [isCheatSheetOpen, setIsCheatSheetOpen] = React.useState(false);
@@ -381,26 +447,19 @@ export const DashboardView: React.FC = () => {
   updateWidgetRef.current = updateWidget;
 
   // Stable callback — reads fresh values via refs, never recreated.
+  // Pulls every widget into the world rectangle (the area visible at
+  // ZOOM_MIN). Maximized widgets render at viewport size on the fly and
+  // shouldn't be repositioned, so they're skipped.
   const rescueWidgets = React.useCallback(() => {
     const widgets = rescueWidgetsRef.current;
     if (!widgets) return;
-    const MIN_VISIBLE = 80;
-    const TITLE_BAR = 40;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    widgets.forEach(({ id, x, y, w }) => {
-      // Small widgets (w <= MIN_VISIBLE) must be fully on-screen; the general
-      // formula would produce a positive lower-bound that incorrectly shifts them.
-      let newX: number;
-      if (w <= MIN_VISIBLE) {
-        const maxX = Math.max(0, vw - w);
-        newX = Math.max(0, Math.min(x, maxX));
-      } else {
-        newX = Math.max(-(w - MIN_VISIBLE), Math.min(x, vw - MIN_VISIBLE));
-      }
-      const newY = Math.max(0, Math.min(y, vh - TITLE_BAR));
-      if (newX !== x || newY !== y) {
-        updateWidgetRef.current(id, { x: newX, y: newY });
+    widgets.forEach(({ id, x, y, w, h, maximized }) => {
+      if (maximized) return;
+      const c = clampWidgetToWorld(x, y, w, h, vw, vh);
+      if (c.x !== x || c.y !== y) {
+        updateWidgetRef.current(id, { x: c.x, y: c.y });
       }
     });
   }, []); // stable: reads refs, never needs to re-register
@@ -495,7 +554,7 @@ export const DashboardView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only on id change
   }, [activeDashboard?.id]);
 
-  const { canAccessFeature, dockPosition } = useAuth();
+  const { canAccessFeature } = useAuth();
 
   const {
     session,
@@ -638,12 +697,30 @@ export const DashboardView: React.FC = () => {
           // 1-finger drag on empty background while zoomed → pan.
           // Disabled when the gesture starts on a widget to avoid interfering
           // with widget interactions.
-          if (gestureFingerCount.current === 1 && zoom > 1 && !widgetEl) {
-            setPanOffset((prev) => ({
-              x: prev.x + dx,
-              y: prev.y + dy,
-            }));
-            window.dispatchEvent(new CustomEvent('board-pan'));
+          if (gestureFingerCount.current === 1 && zoom !== 1 && !widgetEl) {
+            // Accumulate the delta and schedule a single flush per animation
+            // frame. Window dimensions match the dashboard root (h-screen
+            // w-screen) without forcing a synchronous layout read.
+            pendingPanRef.current.dx += dx;
+            pendingPanRef.current.dy += dy;
+            panFrameRef.current ??= requestAnimationFrame(() => {
+              panFrameRef.current = null;
+              const { dx: pdx, dy: pdy } = pendingPanRef.current;
+              pendingPanRef.current = { dx: 0, dy: 0 };
+              if (pdx === 0 && pdy === 0) return;
+              // Read zoom from the ref so the bound matches the *current*
+              // zoom, not whatever was captured when this frame scheduled.
+              // clampPan returns range [0, 0] at zoom = 1 (collapsing pan to
+              // center) and widens symmetrically as zoom moves either way.
+              setPanOffset((prev) =>
+                clampPan(
+                  { x: prev.x + pdx, y: prev.y + pdy },
+                  zoomRef.current,
+                  window.innerWidth,
+                  window.innerHeight
+                )
+              );
+            });
           }
           return;
         }
@@ -721,10 +798,11 @@ export const DashboardView: React.FC = () => {
           // Single touch (not a mouse drag): left-edge swipe → open sidebar.
           // Gated to peakFingers === 1 so a desktop mouse drag near the left
           // edge (peakFingers = 0) never accidentally opens the sidebar.
-          // Also disabled while zoomed to avoid conflict with 1-finger pan.
+          // Restricted to zoom === 1 so the sidebar swipe never collides
+          // with the 1-finger pan gesture (which is enabled at zoom !== 1).
           if (widgetEl) return;
           if (
-            zoom <= 1 &&
+            zoom === 1 &&
             swipeX > 0 &&
             dirX > 0 &&
             initialX < SIDEBAR_EDGE_SWIPE_WIDTH_PX
@@ -741,7 +819,24 @@ export const DashboardView: React.FC = () => {
         const WHEEL_ZOOM_STEP = 0.1;
         const next =
           event.deltaY < 0 ? zoom + WHEEL_ZOOM_STEP : zoom - WHEEL_ZOOM_STEP;
-        setZoom(Math.min(5, Math.max(1, next)));
+        const nextZoom = clampZoom(next);
+        // Bail when the zoom hits its cap — no jitter, no spurious pan delta.
+        if (nextZoom === zoom) return;
+        // Anchor the wrapper-coordinate under the cursor so a corner widget
+        // grows under the cursor instead of sliding toward viewport center.
+        const nextPan = computeCursorAnchoredPan(
+          { x: event.clientX, y: event.clientY },
+          zoom,
+          panOffset,
+          nextZoom,
+          window.innerWidth,
+          window.innerHeight
+        );
+        // React batches both setState calls inside this event handler, so
+        // zoom + pan flush together — no intermediate frame with a mismatched
+        // pair.
+        setZoom(nextZoom);
+        setPanOffset(nextPan);
       },
     },
     {
@@ -829,9 +924,26 @@ export const DashboardView: React.FC = () => {
     }
   }, [currentIndex]);
 
-  // Reset panOffset during render when zoom is 1 to avoid useEffect and extra re-renders
-  if (zoom === 1 && (panOffset.x !== 0 || panOffset.y !== 0)) {
-    setPanOffset({ x: 0, y: 0 });
+  // Mirror the latest zoom on a ref so the rAF-deferred pan flush above
+  // sees the current value when it fires (not the value captured when the
+  // frame was scheduled).
+  zoomRef.current = zoom;
+
+  // Re-clamp panOffset during render when zoom changes. clampPan returns
+  // range [0, 0] at zoom = 1 (snap-to-center), and the symmetric range
+  // around |zoom − 1| means a zoom-in or zoom-out can shrink the allowed
+  // offset and require pulling pan back inside. Use window.innerWidth/
+  // innerHeight rather than the dashboard ref's getBoundingClientRect() —
+  // the root is h-screen w-screen so the values match, and avoiding a
+  // layout read in the render body prevents synchronous reflow.
+  const clampedPan = clampPan(
+    panOffset,
+    zoom,
+    window.innerWidth,
+    window.innerHeight
+  );
+  if (clampedPan.x !== panOffset.x || clampedPan.y !== panOffset.y) {
+    setPanOffset(clampedPan);
   }
 
   // Keyboard Navigation
@@ -1166,10 +1278,9 @@ export const DashboardView: React.FC = () => {
     // YouTube backgrounds are rendered via an iframe — skip CSS background
     if (youTubeVideoId) return {};
 
-    const styles: React.CSSProperties = {
-      transform: `scale(${zoom})`,
-      transformOrigin: 'center center',
-    };
+    // The background lives outside the pan/zoom transform now (see render
+    // tree below), so it needs no transform of its own.
+    const styles: React.CSSProperties = {};
 
     // Custom user-created colors/gradients (custom: prefix)
     if (isCustomBackground(bg)) {
@@ -1187,7 +1298,7 @@ export const DashboardView: React.FC = () => {
       });
     }
     return styles;
-  }, [activeDashboard, youTubeVideoId, zoom]);
+  }, [activeDashboard, youTubeVideoId]);
 
   const backgroundClasses = useMemo(() => {
     if (!activeDashboard) return '';
@@ -1270,14 +1381,14 @@ export const DashboardView: React.FC = () => {
         }
       }}
     >
-      {/* ZOOMABLE SURFACE: Contains background and widgets */}
+      {/* BACKGROUND LAYER: Always covers the viewport at full size, regardless
+          of zoom or pan. Decoupling the background from the transform below
+          guarantees no white edge ever shows when panning a zoomed board, and
+          that color/pattern/image backgrounds still fill the viewport at
+          sub-100% zoom. */}
       <div
-        className={`absolute inset-0 transition-transform duration-300 ease-out ${backgroundClasses}`}
-        style={{
-          ...backgroundStyles,
-          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
-          transformOrigin: 'center center',
-        }}
+        className={`absolute inset-0 ${backgroundClasses}`}
+        style={backgroundStyles}
       >
         {/* Ambient YouTube Video Layer */}
         {youTubeVideoId && (
@@ -1294,7 +1405,16 @@ export const DashboardView: React.FC = () => {
 
         {/* Background Overlay for Depth */}
         <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+      </div>
 
+      {/* ZOOMABLE WIDGET SURFACE: Only widgets get pan/zoom. */}
+      <div
+        className="absolute inset-0 transition-transform duration-300 ease-out"
+        style={{
+          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
+          transformOrigin: 'center center',
+        }}
+      >
         {/* Empty Board Hint */}
         {activeDashboard.widgets.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-10">
@@ -1421,7 +1541,7 @@ export const DashboardView: React.FC = () => {
       <AnnotationOverlay />
       <ToastContainer />
       <AnnouncementOverlay />
-      <BoardZoomControl />
+      <BoardActionsFab onOpenCheatSheet={() => setIsCheatSheetOpen(true)} />
 
       {/* Spotlight Dimming Overlay */}
       {activeDashboard.settings?.spotlightWidgetId &&
@@ -1433,6 +1553,9 @@ export const DashboardView: React.FC = () => {
           />,
           document.body
         )}
+
+      {/* Board Navigation FAB cluster (bottom-left) */}
+      <BoardNavFab />
 
       {/* Background YouTube Mute Toggle */}
       {youTubeVideoId && (
@@ -1446,8 +1569,8 @@ export const DashboardView: React.FC = () => {
               ? 'Enable background video sound'
               : 'Mute background video'
           }
-          className={`fixed bottom-6 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm ${
-            dockPosition === 'left' ? 'right-14' : 'left-4'
+          className={`fixed left-4 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm ${
+            dashboards.length > 1 ? 'bottom-16' : 'bottom-6'
           }`}
           aria-label="Toggle background video sound"
         >
@@ -1472,18 +1595,6 @@ export const DashboardView: React.FC = () => {
           </div>
         </button>
       )}
-
-      {/* Cheat Sheet Help Button */}
-      <button
-        onClick={() => setIsCheatSheetOpen(true)}
-        title={`${t('widgets.cheatSheet.title')} (Ctrl+/)`}
-        className={`fixed bottom-6 z-dock w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/60 hover:text-white/90 flex items-center justify-center transition-colors backdrop-blur-sm ${
-          dockPosition === 'right' ? 'left-14' : 'right-4'
-        }`}
-        aria-label={t('widgets.cheatSheet.title')}
-      >
-        <HelpCircle className="w-4 h-4" />
-      </button>
 
       <CheatSheetModal
         isOpen={isCheatSheetOpen}

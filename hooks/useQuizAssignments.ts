@@ -27,7 +27,9 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { invalidateSessionViewCount } from './useSessionViewCount';
 import type {
+  AssignmentMode,
   PlcLinkage,
   QuizAssignment,
   QuizAssignmentSettings,
@@ -89,7 +91,10 @@ export interface UseQuizAssignmentsResult {
      * teacher's roster doc. Derived alongside `classIds`/`rosterIds` via
      * `deriveSessionTargetsFromRosters`.
      */
-    classPeriodByClassId?: Record<string, string>
+    classPeriodByClassId?: Record<string, string>,
+    /** Org-wide assignment mode frozen onto the assignment + session.
+     *  Defaults to `'submissions'` (preserves pre-feature behavior). */
+    mode?: AssignmentMode
   ) => Promise<{ id: string; code: string }>;
   /** Set both assignment.status and session.status to 'paused'. */
   pauseAssignment: (assignmentId: string) => Promise<void>;
@@ -407,7 +412,8 @@ export const useQuizAssignments = (
       initialStatus = 'active',
       classIds,
       rosterIds,
-      classPeriodByClassId
+      classPeriodByClassId,
+      assignmentMode = 'submissions'
     ) => {
       if (!userId) throw new Error('Not authenticated');
       // Defensive sanitization at the hook boundary: drop empty/non-string
@@ -450,6 +456,7 @@ export const useQuizAssignments = (
         periodNames: settings.periodNames,
         attemptLimit: settings.attemptLimit ?? null,
         ...(targetRosterIds.length > 0 ? { rosterIds: targetRosterIds } : {}),
+        mode: assignmentMode,
       };
 
       const mode = settings.sessionMode;
@@ -505,6 +512,7 @@ export const useQuizAssignments = (
           ? { classPeriodByClassId: targetClassPeriodByClassId }
           : {}),
         attemptLimit: settings.attemptLimit ?? null,
+        mode: assignmentMode,
       };
 
       const batch = writeBatch(db);
@@ -643,6 +651,10 @@ export const useQuizAssignments = (
       }
       batch.update(sessionRef, sessionPatch);
       await batch.commit();
+      // Drop any cached view count so the Shared row re-issues the
+      // aggregation query on next mount; submissions-mode reopens get the
+      // call too (no-op against a missing key).
+      invalidateSessionViewCount('quiz_sessions', assignmentId);
     },
     [userId]
   );

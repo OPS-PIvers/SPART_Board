@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDialog } from '@/context/useDialog';
 import {
@@ -10,7 +10,6 @@ import {
   Paintbrush,
   SquareSquare,
   ChevronRight,
-  Star,
   Maximize,
   Minimize,
   ArrowLeft,
@@ -105,7 +104,6 @@ export const Sidebar: React.FC = () => {
     dashboards,
     activeDashboard,
     isSaving,
-    loadDashboard,
     clearAllWidgets,
     setGlobalStyle,
     addToast,
@@ -169,56 +167,11 @@ export const Sidebar: React.FC = () => {
     };
   }, []);
 
-  const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-
-  const checkScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } =
-        scrollContainerRef.current;
-      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
-    }
-  };
-
-  useEffect(() => {
-    if (isBoardSwitcherExpanded) {
-      // Small delay to allow transition to finish
-      const timer = setTimeout(checkScroll, 500);
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-    return undefined;
-  }, [isBoardSwitcherExpanded, dashboards]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (
-        isBoardSwitcherExpanded &&
-        toolbarRef.current &&
-        !toolbarRef.current.contains(event.target as Node)
-      ) {
-        setIsBoardSwitcherExpanded(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isBoardSwitcherExpanded]);
-
   const [showAdminSettings, setShowAdminSettings] = useState(false);
 
   return (
     <>
       <GlassCard
-        ref={toolbarRef}
         globalStyle={activeDashboard?.globalStyle}
         data-screenshot="exclude"
         className="fixed z-dock flex items-center gap-2 p-2 rounded-full"
@@ -283,73 +236,6 @@ export const Sidebar: React.FC = () => {
           variant="brand-danger-ghost"
           size="md"
         />
-
-        <IconButton
-          onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
-          icon={<ChevronRight className="w-5 h-5" />}
-          label={
-            isBoardSwitcherExpanded
-              ? t('sidebar.header.hideBoards')
-              : t('sidebar.header.switchBoards')
-          }
-          variant={isBoardSwitcherExpanded ? 'primary' : 'brand-ghost'}
-          size="md"
-          className={`[&>svg]:transition-transform [&>svg]:duration-500 ${
-            isBoardSwitcherExpanded ? '[&>svg]:rotate-180' : '[&>svg]:rotate-0'
-          }`}
-        />
-
-        {/* Board Switcher Sliding Toggle Bar */}
-        <div
-          className={`overflow-hidden transition-[max-width,opacity] duration-500 ease-in-out flex items-center gap-1 ${
-            isBoardSwitcherExpanded
-              ? 'max-w-[80vw] ml-2 opacity-100'
-              : 'max-w-0 ml-0 opacity-0'
-          }`}
-        >
-          <div className="h-6 w-px bg-slate-200 mx-1 flex-shrink-0" />
-          <div className="relative flex items-center min-w-0">
-            <div
-              ref={scrollContainerRef}
-              onScroll={checkScroll}
-              className="flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 backdrop-blur-sm overflow-x-auto no-scrollbar scroll-smooth"
-            >
-              <div className="flex gap-1">
-                {dashboards.map((db) => (
-                  <button
-                    key={db.id}
-                    onClick={() => {
-                      loadDashboard(db.id);
-                    }}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-[color,background-color,box-shadow] flex items-center gap-2 whitespace-nowrap ${
-                      activeDashboard?.id === db.id
-                        ? 'bg-brand-blue-primary text-white shadow-md'
-                        : 'text-slate-500 hover:bg-slate-200/50'
-                    }`}
-                  >
-                    {db.isDefault && (
-                      <Star
-                        className={`w-3 h-3 ${
-                          activeDashboard?.id === db.id
-                            ? 'fill-white text-white'
-                            : 'fill-amber-400 text-amber-400'
-                        }`}
-                      />
-                    )}
-                    {db.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {canScrollRight && (
-              <div className="absolute right-0 top-0 bottom-0 flex items-center pr-1 pointer-events-none">
-                <div className="bg-gradient-to-l from-slate-100 to-transparent w-8 h-full rounded-r-full flex items-center justify-end">
-                  <ChevronRight className="w-3 h-3 text-slate-400 animate-pulse mr-1" />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </GlassCard>
 
       {showAdminSettings && (
