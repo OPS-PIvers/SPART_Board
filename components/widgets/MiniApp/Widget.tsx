@@ -1007,13 +1007,24 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
               createPortal(
                 (() => {
                   // Smart flip: render above the widget when there isn't room
-                  // below (within ~64px of viewport bottom — generous to cover
-                  // 1-2 row toolbar wrapping on narrow widgets).
+                  // below. The toolbar is single-row (no flex-wrap) — labels
+                  // are dropped instead of wrapping when the widget gets
+                  // narrow, so 48px is a tight upper bound.
                   const TOOLBAR_GAP = 8;
                   const ESTIMATED_TOOLBAR_HEIGHT = 48;
                   const flipAbove =
                     widgetRect.bottom + ESTIMATED_TOOLBAR_HEIGHT + TOOLBAR_GAP >
                     window.innerHeight;
+                  // Show button labels only when the widget is wide enough
+                  // to fit them. The toolbar's width tracks the widget
+                  // (`width: widgetRect.width`), so gating on viewport-based
+                  // `sm:` would let labels render-then-overflow on a narrow
+                  // widget on a wide screen. 480px clears all five labeled
+                  // buttons (Assign / Assignments / QR Share / Save as Widget
+                  // / Library) at h-8 text-xs without horizontal clipping;
+                  // narrower widgets fall back to icons-only.
+                  const showLabels = widgetRect.width >= 480;
+                  const labelClass = showLabels ? 'inline' : 'hidden';
                   return (
                     <div
                       data-settings-exclude
@@ -1048,7 +1059,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                               title="Assign (copy student link)"
                             >
                               <Link2 className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Assign</span>
+                              <span className={labelClass}>Assign</span>
                             </button>
                             <button
                               onClick={() => handleOpenAssignments(activeApp)}
@@ -1056,9 +1067,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                               title="View assignments"
                             >
                               <BarChart3 className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">
-                                Assignments
-                              </span>
+                              <span className={labelClass}>Assignments</span>
                             </button>
                             <div className="w-px h-5 bg-slate-200/80 mx-0.5" />
                           </>
@@ -1084,7 +1093,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                               title="Save to library"
                             >
                               <Save className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Save</span>
+                              <span className={labelClass}>Save</span>
                             </button>
                           </>
                         )}
@@ -1099,7 +1108,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                           ) : (
                             <QrCode className="w-3.5 h-3.5" />
                           )}
-                          <span className="hidden sm:inline">QR Share</span>
+                          <span className={labelClass}>QR Share</span>
                         </button>
                         {!config.activeAppUnsaved && user && (
                           <button
@@ -1108,9 +1117,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                             title="Save as widget — pin this mini app to your dock"
                           >
                             <Bookmark className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">
-                              Save as Widget
-                            </span>
+                            <span className={labelClass}>Save as Widget</span>
                           </button>
                         )}
                         <button
@@ -1119,7 +1126,7 @@ export const MiniAppWidget: React.FC<WidgetComponentProps> = ({
                           title="Back to library"
                         >
                           <LayoutGrid className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Library</span>
+                          <span className={labelClass}>Library</span>
                         </button>
                       </div>
                     </div>
