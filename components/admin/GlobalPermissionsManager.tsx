@@ -125,7 +125,29 @@ const GLOBAL_FEATURES: {
     description:
       'Allow attaching Google Drive files as context when generating with AI.',
   },
+  {
+    id: 'share-link-tracking',
+    label: 'Share-link View Tracking',
+    icon: Eye,
+    description:
+      'Show "N views" on view-only Share cards in the Quiz, Video Activity, Mini App, and Guided Learning archives. Each visible card fires a Firestore aggregation query when the dashboard tab regains focus — keep this Admin-only unless you specifically want every teacher to see open counts.',
+  },
 ];
+
+/**
+ * Features whose missing-permission default is `'admin'` instead of the
+ * usual `'public'`. Both `getPermission` (the editor's persisted-or-default
+ * resolver) and `filteredFeatures` (the toolbar filter's fallback) read
+ * from this set so the fallback rule is defined once. Any divergence
+ * between the two would silently mis-categorize a feature in the access-
+ * level filter when no permission doc exists yet.
+ *
+ * Keep this aligned with the runtime-side defaults in `AuthContext` —
+ * `canSeeShareTracking` likewise treats a missing 'share-link-tracking'
+ * record as admin-only.
+ */
+const ADMIN_ONLY_DEFAULT_FEATURES: ReadonlySet<GlobalFeature> =
+  new Set<GlobalFeature>(['embed-mini-app', 'share-link-tracking']);
 
 /**
  * Widgets surfaced in the Assignment Modes admin section. All four widgets
@@ -495,8 +517,11 @@ export const GlobalPermissionsManager: React.FC = () => {
   }, [loadPermissions]);
 
   const getPermission = (featureId: GlobalFeature): GlobalFeaturePermission => {
-    const defaultAccessLevel: AccessLevel =
-      featureId === 'embed-mini-app' ? 'admin' : 'public';
+    const defaultAccessLevel: AccessLevel = ADMIN_ONLY_DEFAULT_FEATURES.has(
+      featureId
+    )
+      ? 'admin'
+      : 'public';
 
     // Set smart default limits
     let defaultLimit = 20;
@@ -628,7 +653,7 @@ export const GlobalPermissionsManager: React.FC = () => {
     return sorted.filter((feature) => {
       const perm = permissions.get(feature.id) ?? {
         featureId: feature.id,
-        accessLevel: (feature.id === 'embed-mini-app'
+        accessLevel: (ADMIN_ONLY_DEFAULT_FEATURES.has(feature.id)
           ? 'admin'
           : 'public') as AccessLevel,
         betaUsers: [] as string[],

@@ -48,6 +48,7 @@ import { LibraryGrid } from '@/components/common/library/LibraryGrid';
 import { LibraryItemCard } from '@/components/common/library/LibraryItemCard';
 import { ViewCountBadge } from '@/components/common/library/ViewCountBadge';
 import { useSessionViewCount } from '@/hooks/useSessionViewCount';
+import { useAuth } from '@/context/useAuth';
 import { FolderSidebar } from '@/components/common/library/FolderSidebar';
 import { FolderPickerPopover } from '@/components/common/library/FolderPickerPopover';
 import { buildMoveToFolderAction } from '@/components/common/library/folderMenuAction';
@@ -278,13 +279,20 @@ const formatDate = (ms: number): string =>
 /**
  * Per-row hook host that renders the view-count chip inline as part of the
  * subtitle line for view-only Shared / Closed cards.
+ *
+ * Gated by `canSeeShareTracking()` (admin-only by default — see
+ * `share-link-tracking` global permission). Non-admin users skip the
+ * Firestore aggregation entirely; the subtitle stays date-only.
  */
 const ViewCountSubtitle: React.FC<{ sessionId: string }> = ({ sessionId }) => {
+  const { canSeeShareTracking } = useAuth();
+  const trackingEnabled = canSeeShareTracking();
   const { count } = useSessionViewCount(
     'guided_learning_sessions',
     sessionId,
-    true
+    trackingEnabled
   );
+  if (!trackingEnabled) return null;
   return <ViewCountBadge count={count} />;
 };
 

@@ -1383,6 +1383,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [user, featurePermissions, isAdmin, isBetaUser]
   );
 
+  /**
+   * Resolves an existing permission record + auth state to a boolean access
+   * decision. Callers handle the missing-permission case themselves before
+   * delegating here, since that's where the two global-permission checks
+   * deliberately diverge — `canAccessFeature` defaults to public, while
+   * `canSeeShareTracking` defaults to admin-only. Once a record exists, the
+   * enabled-flag → admin-bypass → access-level decision tree is identical,
+   * so keep it in one place to avoid future drift.
+   */
+  const resolvePermissionAccess = useCallback(
+    (
+      permission: GlobalFeaturePermission,
+      userEmail: string | null
+    ): boolean => {
+      if (!permission.enabled) return false;
+      if (isAdmin) return true;
+      switch (permission.accessLevel) {
+        case 'admin':
+          return false;
+        case 'beta':
+          return isBetaUser(permission.betaUsers, userEmail);
+        case 'public':
+          return true;
+        default:
+          return false;
+      }
+    },
+    [isAdmin, isBetaUser]
+  );
+
   const canAccessFeature = useCallback(
     (featureId: GlobalFeature): boolean => {
       if (isAuthBypass) return true;
@@ -1392,22 +1422,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         (p) => p.featureId === featureId
       );
 
+      // Public default for missing record — see resolvePermissionAccess docs.
       if (!permission) return true;
-      if (!permission.enabled) return false;
-      if (isAdmin) return true;
-
-      switch (permission.accessLevel) {
-        case 'admin':
-          return false;
-        case 'beta':
-          return isBetaUser(permission.betaUsers, user.email);
-        case 'public':
-          return true;
-        default:
-          return false;
-      }
+      return resolvePermissionAccess(permission, user.email);
     },
-    [user, globalPermissions, isAdmin, isBetaUser]
+    [user, globalPermissions, resolvePermissionAccess]
   );
 
   const getAssignmentMode = useCallback(
@@ -1424,6 +1443,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [globalPermissions]
   );
+
+  const canSeeShareTracking = useCallback((): boolean => {
+    if (isAuthBypass) return true;
+    if (!user) return false;
+
+    const permission = globalPermissions.find(
+      (p) => p.featureId === 'share-link-tracking'
+    );
+
+    // Admin-only default when no record exists. This is the OPPOSITE of
+    // canAccessFeature's default — view-count display fires one Firestore
+    // aggregation per visible card on every dashboard tab-focus, so we'd
+    // rather not surface it without explicit admin opt-in. The missing-
+    // doc default protects unseed deployments from accidental read bloat.
+    if (!permission) return isAdmin === true;
+    return resolvePermissionAccess(permission, user.email);
+  }, [user, globalPermissions, isAdmin, resolvePermissionAccess]);
 
   const signInWithGoogle = async () => {
     if (isAuthBypass) {
@@ -1513,6 +1549,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         canAccessWidget,
         canAccessFeature,
         getAssignmentMode,
+        canSeeShareTracking,
         signInWithGoogle,
         signOut,
         selectedBuildings,

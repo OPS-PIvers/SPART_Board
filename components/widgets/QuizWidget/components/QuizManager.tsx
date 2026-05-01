@@ -100,6 +100,7 @@ import {
 } from '@/components/common/library/folderFilters';
 import { useFolders } from '@/hooks/useFolders';
 import { useSessionViewCount } from '@/hooks/useSessionViewCount';
+import { useAuth } from '@/context/useAuth';
 import { useDialog } from '@/context/useDialog';
 
 export interface PlcOptions {
@@ -1729,12 +1730,17 @@ const QuizArchiveRow: React.FC<QuizArchiveRowProps> = ({
         ? `${periods.length} classes`
         : null;
 
+  // Admin-only by default — view-count display fires one Firestore
+  // aggregation per visible card per dashboard tab-focus, gated behind the
+  // `share-link-tracking` global permission.
+  const { canSeeShareTracking } = useAuth();
+  const trackingEnabled = canSeeShareTracking();
   const { count } = useSessionViewCount(
     'quiz_sessions',
     // Quiz assignment id is also the underlying session id (1:1 — see the
     // QuizAssignment type's "Assignment UUID — also the sessionId" note).
     a.id,
-    assignmentIsViewOnly
+    assignmentIsViewOnly && trackingEnabled
   );
 
   // Synced indicator: present iff this assignment was imported (or shared)
@@ -1776,7 +1782,7 @@ const QuizArchiveRow: React.FC<QuizArchiveRowProps> = ({
     meta = (
       <>
         {dateChip}
-        <ViewCountBadge count={count} />
+        {trackingEnabled && <ViewCountBadge count={count} />}
       </>
     );
   } else {

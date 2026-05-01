@@ -3654,7 +3654,8 @@ export type GlobalFeature =
   | 'video-activity-audio-transcription'
   | 'ai-file-context'
   | 'org-admin-writes'
-  | 'assignment-modes';
+  | 'assignment-modes'
+  | 'share-link-tracking';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;

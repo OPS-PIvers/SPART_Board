@@ -58,6 +58,7 @@ import { LibraryItemCard } from '@/components/common/library/LibraryItemCard';
 import { AssignmentArchiveCard } from '@/components/common/library/AssignmentArchiveCard';
 import { ViewCountBadge } from '@/components/common/library/ViewCountBadge';
 import { useSessionViewCount } from '@/hooks/useSessionViewCount';
+import { useAuth } from '@/context/useAuth';
 import { FolderSidebar } from '@/components/common/library/FolderSidebar';
 import { FolderPickerPopover } from '@/components/common/library/FolderPickerPopover';
 import { buildMoveToFolderAction } from '@/components/common/library/folderMenuAction';
@@ -232,10 +233,16 @@ const MiniAppArchiveRow: React.FC<{
   secondaryActions: LibraryMenuAction[];
 }> = ({ assignment, mode, status, primaryAction, secondaryActions }) => {
   const isViewOnly = assignment.mode === 'view-only';
+  // Admin-only by default — view-count display fires one Firestore
+  // aggregation per visible card on every dashboard tab-focus, so we gate
+  // it behind the `share-link-tracking` global permission. Non-admins
+  // pass `enabled: false` to the hook → no Firestore read at all.
+  const { canSeeShareTracking } = useAuth();
+  const trackingEnabled = canSeeShareTracking();
   const { count } = useSessionViewCount(
     'mini_app_sessions',
     assignment.sessionId,
-    isViewOnly
+    isViewOnly && trackingEnabled
   );
   return (
     <AssignmentArchiveCard<MiniAppAssignment>
@@ -244,7 +251,11 @@ const MiniAppArchiveRow: React.FC<{
       status={status}
       title={assignment.assignmentName}
       subtitle={assignment.appTitle}
-      meta={isViewOnly ? <ViewCountBadge count={count} /> : undefined}
+      meta={
+        isViewOnly && trackingEnabled ? (
+          <ViewCountBadge count={count} />
+        ) : undefined
+      }
       primaryAction={primaryAction}
       secondaryActions={secondaryActions}
     />

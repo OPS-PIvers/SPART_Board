@@ -44,6 +44,7 @@ import { ViewOnlyShareModal } from '@/components/common/library/ViewOnlyShareMod
 import { AssignmentArchiveCard } from '@/components/common/library/AssignmentArchiveCard';
 import { ViewCountBadge } from '@/components/common/library/ViewCountBadge';
 import { useSessionViewCount } from '@/hooks/useSessionViewCount';
+import { useAuth } from '@/context/useAuth';
 import { FolderSidebar } from '@/components/common/library/FolderSidebar';
 import { FolderPickerPopover } from '@/components/common/library/FolderPickerPopover';
 import { buildMoveToFolderAction } from '@/components/common/library/folderMenuAction';
@@ -297,10 +298,15 @@ const VideoActivityArchiveRow: React.FC<VideoActivityArchiveRowProps> = ({
           : { label: 'Copy link', icon: Copy }
         : { label: 'Results', icon: BarChart3 };
 
+  // Admin-only by default — view-count display fires one Firestore
+  // aggregation per visible card per dashboard tab-focus, gated behind the
+  // `share-link-tracking` global permission.
+  const { canSeeShareTracking } = useAuth();
+  const trackingEnabled = canSeeShareTracking();
   const { count } = useSessionViewCount(
     'video_activity_sessions',
     assignment.id,
-    assignmentIsViewOnly
+    assignmentIsViewOnly && trackingEnabled
   );
 
   return (
@@ -313,7 +319,9 @@ const VideoActivityArchiveRow: React.FC<VideoActivityArchiveRowProps> = ({
       meta={
         <>
           <span>{new Date(assignment.updatedAt).toLocaleDateString()}</span>
-          {assignmentIsViewOnly && <ViewCountBadge count={count} />}
+          {assignmentIsViewOnly && trackingEnabled && (
+            <ViewCountBadge count={count} />
+          )}
         </>
       }
       primaryAction={

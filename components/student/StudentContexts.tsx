@@ -25,6 +25,8 @@ const mockAuth: AuthContextType = {
   // Student view doesn't render assignment-creation UI; the default keeps
   // any consumers that read this returning the safe pre-feature default.
   getAssignmentMode: () => 'submissions',
+  // Student view never shows view-count badges; admin-only default.
+  canSeeShareTracking: () => false,
   signInWithGoogle: async () => {
     // No-op
   },
