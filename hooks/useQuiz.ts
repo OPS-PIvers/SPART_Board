@@ -170,9 +170,9 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
       const drive = getDriveService();
       const updatedQuiz: QuizData = { ...quiz, updatedAt: Date.now() };
 
-      // Read the existing metadata BEFORE the Drive write so we know
-      // whether this quiz is part of a synced group and what version we're
-      // publishing on top of. The canonical doc's transaction asserts
+      // Read the existing metadata so we know whether this quiz is part
+      // of a synced group and what version we're publishing on top of.
+      // The canonical doc's transaction asserts
       // `current.version === expectedVersion` — if a peer published in the
       // window between the editor opening and Save being clicked, we throw
       // SyncedQuizVersionConflictError so the editor can offer a pull.
@@ -184,11 +184,14 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
       const syncGroupId = existingMeta?.syncGroupId;
       const expectedSyncVersion = existingMeta?.lastSyncedVersion;
 
-      const driveFileId = await drive.saveQuiz(
-        updatedQuiz,
-        existingDriveFileId
-      );
-
+      // Order matters: publish to the canonical synced doc BEFORE writing
+      // the Drive replica. If publish throws (peer beat us, network blip),
+      // we want the local Drive file unchanged so the editor stays
+      // recoverable — the teacher can pull the latest, re-apply, retry.
+      // Once publish succeeds the version invariant guarantees no peer
+      // can land between us and the Drive write; a Drive failure after
+      // a successful publish leaves the canonical ahead of the local
+      // replica, and the next "Sync available" pull reconciles it.
       let nextSyncedVersion: number | undefined = undefined;
       if (syncGroupId && typeof expectedSyncVersion === 'number') {
         const result = await publishSyncedQuiz(syncGroupId, {
@@ -199,6 +202,11 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
         });
         nextSyncedVersion = result.version;
       }
+
+      const driveFileId = await drive.saveQuiz(
+        updatedQuiz,
+        existingDriveFileId
+      );
 
       const metadata: QuizMetadata = {
         id: quiz.id,

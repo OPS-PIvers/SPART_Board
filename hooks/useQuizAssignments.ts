@@ -981,10 +981,19 @@ export const useQuizAssignments = (
         assignment.quizId
       );
       const quizMetaSnap = await getDoc(quizMetaRef);
-      const existingQuizMeta = quizMetaSnap.exists()
-        ? (quizMetaSnap.data() as QuizMetadata)
-        : null;
-      let syncGroupId = existingQuizMeta?.syncGroupId;
+      if (!quizMetaSnap.exists()) {
+        // Defensive fail-fast: shareAssignment expects the source quiz
+        // to live in the local library. Without the metadata doc we'd
+        // either have to skip the sync-linkage patch (leaving the local
+        // user's library unsynced even though canonical exists — exactly
+        // the divergence the picker is supposed to prevent) or invent a
+        // synthetic metadata write. Erroring is the only sound outcome.
+        throw new Error(
+          'Source quiz is missing from your library — cannot share.'
+        );
+      }
+      const existingQuizMeta = quizMetaSnap.data() as QuizMetadata;
+      let syncGroupId = existingQuizMeta.syncGroupId;
       if (!syncGroupId) {
         syncGroupId = crypto.randomUUID();
         await createSyncedQuizGroup({
@@ -1003,12 +1012,10 @@ export const useQuizAssignments = (
         // content — that would be a wasted version bump and a fresh
         // listener fan-out). Direct merge keeps the linkage tight to the
         // create-and-attach gesture.
-        if (existingQuizMeta) {
-          await updateDoc(quizMetaRef, {
-            syncGroupId,
-            lastSyncedVersion: 1,
-          });
-        }
+        await updateDoc(quizMetaRef, {
+          syncGroupId,
+          lastSyncedVersion: 1,
+        });
       }
 
       const payload: Omit<SharedQuizAssignment, 'id'> = {
@@ -1287,11 +1294,18 @@ export const useQuizAssignments = (
       // doesn't have to special-case post-sync state.
       const publicQuestions = canonical.questions.map(toPublicQuestion);
 
-      // Tag any pre-existing responses with the OLD `syncedVersion` so the
-      // results UI can render "Answered before v{N+1} update" chips. We do
-      // this in the same batch as the assignment + session writes so a
-      // crash mid-flight can't leave a session at v2 with un-tagged
-      // responses still pointing at v1 questions.
+      // Tag any pre-existing responses with the OLD `syncedVersion` so
+      // the results UI can render "Answered before v{N+1} update" chips.
+      //
+      // The first batch ALWAYS contains the assignment + session writes
+      // so a crash before any responses are tagged still leaves the
+      // session at the new version (the worst-case is some responses
+      // missing their pre-sync chip — recoverable by re-running). We
+      // chunk additional response tags into separate batches because
+      // Firestore caps a single batch at 500 writes; a PLC-shared
+      // assignment with hundreds of submissions across all peer
+      // teachers could otherwise blow the limit and reject the entire
+      // sync.
       const responsesSnap = await getDocs(
         collection(
           db,
@@ -1300,39 +1314,71 @@ export const useQuizAssignments = (
           RESPONSES_COLLECTION
         )
       );
-      const batch = writeBatch(db);
       const now = Date.now();
-      batch.update(assignmentRef, {
+      // Filter to only the responses that actually need tagging — saves
+      // writes and avoids re-stamping `preSyncVersion` on responses that
+      // already carry an equal-or-newer tag (idempotent re-sync).
+      const responsesToTag = responsesSnap.docs.filter((d) => {
+        const r = d.data() as { preSyncVersion?: number };
+        return !(
+          typeof r.preSyncVersion === 'number' &&
+          r.preSyncVersion >= previousSyncedVersion
+        );
+      });
+
+      // Batch budget: leave headroom under the 500-write cap so an
+      // off-by-one (or a future field added to the assignment/session
+      // writes) doesn't push the first batch over the edge.
+      const MAX_BATCH_WRITES = 400;
+
+      // First batch: assignment + session writes plus as many response
+      // tags as fit. Committing this first means partial progress is
+      // safe: even if the second/third batch fails, the session is on
+      // the new version and a subsequent call will pick up the rest of
+      // the responses (the filter above skips already-tagged ones).
+      const firstBatch = writeBatch(db);
+      firstBatch.update(assignmentRef, {
         syncedVersion: canonical.version,
         quizTitle: canonical.title,
         updatedAt: now,
       });
-      batch.update(doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId), {
+      firstBatch.update(doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId), {
         publicQuestions,
         totalQuestions: canonical.questions.length,
         quizTitle: canonical.title,
       });
-      let taggedResponseCount = 0;
-      responsesSnap.docs.forEach((d) => {
-        // Skip responses that were already tagged at this OR a more recent
-        // version — re-running the sync against the same canonical version
-        // shouldn't keep re-stamping `preSyncVersion`.
-        const r = d.data() as { preSyncVersion?: number };
-        if (
-          typeof r.preSyncVersion === 'number' &&
-          r.preSyncVersion >= previousSyncedVersion
-        ) {
-          return;
+      // 2 writes already used (assignment + session); fill the rest.
+      const firstChunkSize = Math.min(
+        responsesToTag.length,
+        MAX_BATCH_WRITES - 2
+      );
+      for (let i = 0; i < firstChunkSize; i++) {
+        firstBatch.update(responsesToTag[i].ref, {
+          preSyncVersion: previousSyncedVersion,
+        });
+      }
+      await firstBatch.commit();
+
+      // Subsequent chunks for any remaining responses.
+      for (
+        let cursor = firstChunkSize;
+        cursor < responsesToTag.length;
+        cursor += MAX_BATCH_WRITES
+      ) {
+        const chunk = responsesToTag.slice(cursor, cursor + MAX_BATCH_WRITES);
+        const chunkBatch = writeBatch(db);
+        for (const d of chunk) {
+          chunkBatch.update(d.ref, {
+            preSyncVersion: previousSyncedVersion,
+          });
         }
-        batch.update(d.ref, { preSyncVersion: previousSyncedVersion });
-        taggedResponseCount += 1;
-      });
-      await batch.commit();
+        await chunkBatch.commit();
+      }
 
       return {
         updated: true,
         version: canonical.version,
-        taggedResponseCount,
+        taggedResponseCount: responsesToTag.length,
       };
     },
     [userId]

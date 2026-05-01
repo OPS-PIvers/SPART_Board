@@ -100,9 +100,12 @@ export function useSyncedQuizGroupsByIds(
 
   // Adjust state during render when the id set changes — React's
   // sanctioned alternative to calling setState synchronously inside an
-  // effect body. Empty → clear the map and exit loading. Non-empty →
-  // re-enter loading; the effect below replays the listeners and the
-  // onSnapshot callbacks resolve the loading flag.
+  // effect body. On every transition we prune the map down to entries
+  // whose ids are still in scope so a teacher who detaches from a
+  // synced group doesn't keep seeing the stale entry drive UI badges
+  // long after the listener was torn down. Empty → clear and exit
+  // loading. Non-empty → keep matching entries, re-enter loading until
+  // each new id's listener resolves.
   const [prevIdsKey, setPrevIdsKey] = useState(idsKey);
   if (prevIdsKey !== idsKey) {
     setPrevIdsKey(idsKey);
@@ -110,6 +113,22 @@ export function useSyncedQuizGroupsByIds(
       setGroups((prev) => (prev.size === 0 ? prev : new Map()));
       setLoading(false);
     } else {
+      const liveIds = new Set(idsKey.split(','));
+      setGroups((prev) => {
+        let mutated = false;
+        const next = new Map<string, SyncedQuizGroup>();
+        for (const [groupId, group] of prev) {
+          if (liveIds.has(groupId)) {
+            next.set(groupId, group);
+          } else {
+            mutated = true;
+          }
+        }
+        // No-op when nothing was removed AND nothing was added — return
+        // the previous map by reference so consumers don't re-render.
+        if (!mutated && next.size === prev.size) return prev;
+        return next;
+      });
       setLoading(true);
     }
   }
@@ -252,18 +271,17 @@ export async function publishSyncedQuiz(
     }
     const nextVersion = current.version + 1;
     const now = Date.now();
-    const nextParticipants = {
-      ...current.participants,
-      [input.uid]: {
-        ...current.participants[input.uid],
-        lastEditedAt: now,
-      },
-    };
+    // Note: we deliberately DO NOT touch `participants` from this client
+    // path. The Firestore rule on /synced_quizzes/{groupId} requires
+    // `request.resource.data.participants == resource.data.participants`
+    // on update so the rule can keep the membership write-gate simple
+    // (Cloud Functions are the only writer for `participants`). Any
+    // per-user attribution like `lastEditedAt` would need to land via a
+    // server function — kept out of Part 1A.
     tx.update(ref, {
       version: nextVersion,
       title: input.title,
       questions: input.questions,
-      participants: nextParticipants,
       updatedAt: now,
       updatedBy: input.uid,
     });

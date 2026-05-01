@@ -618,7 +618,13 @@ service cloud.firestore {
     // member additions still require the function path.
     match /synced_quizzes/{groupId} {
       allow get: if request.auth != null;
-      allow list: if request.auth != null;
+      // Listing is closed: any authenticated user knowing only the
+      // collection name could otherwise enumerate every synced quiz
+      // (questions included), defeating the unguessable-id assumption
+      // that gates `get`. Clients always know the specific groupId via
+      // either their own `quiz_metadata` doc or a pasted share URL, so
+      // `get` is sufficient.
+      allow list: if false;
 
       allow create: if request.auth != null
         && request.resource.data.id == groupId
