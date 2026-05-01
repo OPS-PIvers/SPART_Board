@@ -37,6 +37,9 @@ import {
   UserRolesConfig,
   AppSettings,
   DockPosition,
+  AssignmentMode,
+  AssignmentModesConfig,
+  AssignmentWidgetKey,
 } from '../types';
 import type { MemberRecord, BuildingRecord } from '../types/organization';
 import { AuthContext } from './AuthContextValue';
@@ -1407,6 +1410,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [user, globalPermissions, isAdmin, isBetaUser]
   );
 
+  const getAssignmentMode = useCallback(
+    (widget: AssignmentWidgetKey): AssignmentMode => {
+      const permission = globalPermissions.find(
+        (p) => p.featureId === 'assignment-modes'
+      );
+      const config = permission?.config as AssignmentModesConfig | undefined;
+      const mode = config?.[widget];
+      return mode === 'view-only' ? 'view-only' : 'submissions';
+    },
+    [globalPermissions]
+  );
+
   const signInWithGoogle = async () => {
     if (isAuthBypass) {
       console.warn('Bypassing Google Sign In');
@@ -1494,6 +1509,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         updateAppSettings,
         canAccessWidget,
         canAccessFeature,
+        getAssignmentMode,
         signInWithGoogle,
         signOut,
         selectedBuildings,

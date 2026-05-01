@@ -8,7 +8,14 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { AccessLevel, GlobalFeature, GlobalFeaturePermission } from '@/types';
+import {
+  AccessLevel,
+  AssignmentMode,
+  AssignmentModesConfig,
+  AssignmentWidgetKey,
+  GlobalFeature,
+  GlobalFeaturePermission,
+} from '@/types';
 import {
   Shield,
   Users,
@@ -29,6 +36,10 @@ import {
   Filter,
   ChevronDown,
   FileUp,
+  BookOpen,
+  Boxes,
+  Send,
+  Eye,
 } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
 import { useStorage } from '@/hooks/useStorage';
@@ -111,6 +122,33 @@ const GLOBAL_FEATURES: {
     icon: FileUp,
     description:
       'Allow attaching Google Drive files as context when generating with AI.',
+  },
+];
+
+/**
+ * Widgets surfaced in the Assignment Modes admin section. Stage 1 ships only
+ * Mini App + Guided Learning; Quiz + Video Activity are added once their
+ * per-widget wiring lands (Stage 3 of the rollout).
+ */
+const ASSIGNMENT_WIDGETS: {
+  key: AssignmentWidgetKey;
+  label: string;
+  description: string;
+  Icon: React.ElementType;
+}[] = [
+  {
+    key: 'miniApp',
+    label: 'Mini Apps',
+    description:
+      'Submissions: students can submit answers from the app. View only: each Share link is just a viewable URL.',
+    Icon: Boxes,
+  },
+  {
+    key: 'guidedLearning',
+    label: 'Guided Learning',
+    description:
+      'Submissions: responses and scores are collected. View only: students walk through the lesson with no grading or roster tracking.',
+    Icon: BookOpen,
   },
 ];
 
@@ -702,6 +740,118 @@ export const GlobalPermissionsManager: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Assignment Modes */}
+      {(() => {
+        const assignmentPermission = getPermission('assignment-modes');
+        const config =
+          (assignmentPermission.config as AssignmentModesConfig | undefined) ??
+          {};
+        const isSavingAssignment = saving.has('assignment-modes');
+        const hasUnsaved = unsavedChanges.has('assignment-modes');
+
+        const setMode = (widget: AssignmentWidgetKey, mode: AssignmentMode) => {
+          updatePermission('assignment-modes', {
+            accessLevel: 'public',
+            enabled: true,
+            config: { ...config, [widget]: mode },
+          });
+        };
+
+        return (
+          <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 mb-6 hover:border-brand-blue-light transition-all text-left">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-brand-blue-lighter p-3 rounded-xl text-brand-blue-primary">
+                <ClipboardCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 text-lg">
+                  Assignment Modes
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Choose whether each student-facing widget collects submissions
+                  or only generates view-only share links. Mode is locked at
+                  assignment creation, so flipping a toggle only affects new
+                  assignments.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {ASSIGNMENT_WIDGETS.map(({ key, label, description, Icon }) => {
+                const currentMode: AssignmentMode =
+                  config[key] === 'view-only' ? 'view-only' : 'submissions';
+
+                return (
+                  <div
+                    key={key}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <Icon className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-slate-800">
+                          {label}
+                        </div>
+                        <div className="text-xs text-slate-500 leading-snug">
+                          {description}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex bg-white border border-slate-200 rounded-lg p-0.5 shrink-0 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setMode(key, 'submissions')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          currentMode === 'submissions'
+                            ? 'bg-brand-blue-primary text-white shadow-sm'
+                            : 'text-slate-600 hover:text-slate-800'
+                        }`}
+                        aria-pressed={currentMode === 'submissions'}
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        Submissions
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMode(key, 'view-only')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          currentMode === 'view-only'
+                            ? 'bg-brand-blue-primary text-white shadow-sm'
+                            : 'text-slate-600 hover:text-slate-800'
+                        }`}
+                        aria-pressed={currentMode === 'view-only'}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        View only
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => savePermission('assignment-modes')}
+              disabled={isSavingAssignment || !hasUnsaved}
+              className={`mt-4 w-full py-3 rounded-xl transition-all flex items-center justify-center gap-2 font-bold text-sm shadow-md disabled:opacity-50 ${
+                hasUnsaved
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                  : 'bg-brand-blue-primary hover:bg-brand-blue-dark text-white'
+              }`}
+            >
+              {isSavingAssignment ? (
+                'Saving...'
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  {hasUnsaved ? 'Save Changes' : 'Settings Up-to-Date'}
+                </>
+              )}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Filters */}
       <div className="bg-slate-50 border border-slate-200 rounded-xl mb-2">

@@ -859,6 +859,11 @@ service cloud.firestore {
         function sessionClassIds() {
           return get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data.get('classIds', []);
         }
+        // Defense in depth — block response writes on view-only sessions.
+        // Pre-feature sessions without a `mode` field default to 'submissions'.
+        function sessionMode() {
+          return get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data.get('mode', 'submissions');
+        }
 
         // Student branch allows `resource == null` so the student-app join
         // flow can call getDoc() to probe whether a response already exists
@@ -898,6 +903,8 @@ service cloud.firestore {
           request.resource.data.get('completedAttempts', 0) == 0 &&
           // studentRole users must be enrolled in the session's class
           passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
+          // Block submissions on view-only sessions (mode is frozen at creation)
+          sessionMode() == 'submissions' &&
           (isStudentRoleUser()
             ? responseKey == request.auth.uid
             : responseKey.matches('^pin-[a-z0-9_]+-[a-z0-9_]+$'));
@@ -941,6 +948,22 @@ service cloud.firestore {
         );
         allow delete: if request.auth != null &&
           (request.auth.uid == sessionTeacherUid() || isAdmin());
+      }
+
+      // View tracking for view-only Share links. Each pageview by a student
+      // (anonymous or studentRole) appends an immutable doc with just a
+      // server timestamp; the teacher's "Shared" archive aggregates the
+      // count via getCountFromServer(). Refresh-inflation is accepted —
+      // the metric is "URL opens", not "unique viewers".
+      match /views/{viewId} {
+        allow read: if request.auth != null && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data.teacherUid == request.auth.uid
+        );
+        allow create: if request.auth != null &&
+          request.resource.data.keys().hasOnly(['viewedAt']) &&
+          request.resource.data.viewedAt is timestamp;
+        allow update, delete: if false;
       }
     }
 
@@ -1059,6 +1082,10 @@ service cloud.firestore {
         function vaSessionClassIds() {
           return get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.get('classIds', []);
         }
+        // Defense in depth — block response writes on view-only sessions.
+        function vaSessionMode() {
+          return get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.get('mode', 'submissions');
+        }
 
         // Teacher can read all responses; students can only read their own (doc ID == auth UID)
         allow read: if request.auth != null && (
@@ -1073,7 +1100,9 @@ service cloud.firestore {
           request.resource.data.studentUid == request.auth.uid &&
           request.resource.data.score == null &&
           request.resource.data.completedAt == null &&
-          passesStudentClassGateCompat(vaSessionClassIds(), vaSessionClassId());
+          passesStudentClassGateCompat(vaSessionClassIds(), vaSessionClassId()) &&
+          // Block submissions on view-only sessions (mode is frozen at creation)
+          vaSessionMode() == 'submissions';
         // Students can update only their own response to add answers or set completedAt;
         // identity fields and score are immutable from the client; answers array may only grow
         allow update: if request.auth != null &&
@@ -1098,6 +1127,18 @@ service cloud.firestore {
           get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.teacherUid == request.auth.uid ||
           isAdmin()
         );
+      }
+
+      // View tracking for view-only Share links (see quiz_sessions/views).
+      match /views/{viewId} {
+        allow read: if request.auth != null && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/video_activity_sessions/$(sessionId)).data.teacherUid == request.auth.uid
+        );
+        allow create: if request.auth != null &&
+          request.resource.data.keys().hasOnly(['viewedAt']) &&
+          request.resource.data.viewedAt is timestamp;
+        allow update, delete: if false;
       }
     }
 
@@ -1187,6 +1228,9 @@ service cloud.firestore {
           request.resource.data.submittedAt is int &&
           request.resource.data.payload is map &&
           request.resource.data.payload.size() <= 50 &&
+          // Block submissions on view-only sessions (mode is frozen at creation).
+          // Defense in depth alongside the existing `submissionsEnabled` gate.
+          maSessionData().get('mode', 'submissions') == 'submissions' &&
           (
             maSessionData().get('submissionsEnabled', false) == true ||
             (request.resource.data.payload.keys().hasOnly(['completed']) &&
@@ -1199,6 +1243,18 @@ service cloud.firestore {
           isAdmin() ||
           maSessionData().teacherUid == request.auth.uid
         );
+      }
+
+      // View tracking for view-only Share links (see quiz_sessions/views).
+      match /views/{viewId} {
+        allow read: if request.auth != null && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/mini_app_sessions/$(sessionId)).data.teacherUid == request.auth.uid
+        );
+        allow create: if request.auth != null &&
+          request.resource.data.keys().hasOnly(['viewedAt']) &&
+          request.resource.data.viewedAt is timestamp;
+        allow update, delete: if false;
       }
     }
 
@@ -1244,6 +1300,10 @@ service cloud.firestore {
         function glSessionClassIds() {
           return get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.get('classIds', []);
         }
+        // Defense in depth — block response writes on view-only sessions.
+        function glSessionMode() {
+          return get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.get('mode', 'submissions');
+        }
 
         // Teacher can read all responses; students can only read their own
         allow read: if request.auth != null && (
@@ -1258,7 +1318,9 @@ service cloud.firestore {
           request.resource.data.studentAnonymousId == request.auth.uid &&
           request.resource.data.sessionId == sessionId &&
           request.resource.data.score == null &&
-          passesStudentClassGateCompat(glSessionClassIds(), glSessionClassId());
+          passesStudentClassGateCompat(glSessionClassIds(), glSessionClassId()) &&
+          // Block submissions on view-only sessions (mode is frozen at creation)
+          glSessionMode() == 'submissions';
         // Students can update only their own response to add answers or set completedAt;
         // identity fields and score are immutable from the client
         allow update: if request.auth != null &&
@@ -1276,6 +1338,18 @@ service cloud.firestore {
           get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.teacherUid == request.auth.uid ||
           isAdmin()
         );
+      }
+
+      // View tracking for view-only Share links (see quiz_sessions/views).
+      match /views/{viewId} {
+        allow read: if request.auth != null && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/guided_learning_sessions/$(sessionId)).data.teacherUid == request.auth.uid
+        );
+        allow create: if request.auth != null &&
+          request.resource.data.keys().hasOnly(['viewedAt']) &&
+          request.resource.data.viewedAt is timestamp;
+        allow update, delete: if false;
       }
     }
 

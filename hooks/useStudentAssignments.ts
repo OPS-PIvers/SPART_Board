@@ -447,9 +447,14 @@ export function useStudentAssignments({
     ) => {
       const config = KIND_CONFIG[plan.kind];
       const key = planKey(plan);
+      // View-only sessions never appear in the student's My Assignments list:
+      // they're shared links, not assignments. Pre-feature sessions don't
+      // carry a `mode` field and pass through unchanged.
       buckets.set(
         key,
-        snap.docs.map((d) => docToSummary(plan.kind, plan.channel, config, d))
+        snap.docs
+          .filter((d) => (d.data() as { mode?: unknown }).mode !== 'view-only')
+          .map((d) => docToSummary(plan.kind, plan.channel, config, d))
       );
       emit(plan.kind, plan.channel);
       setErroredBuckets((prev) => {

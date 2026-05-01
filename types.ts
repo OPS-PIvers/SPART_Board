@@ -3506,7 +3506,8 @@ export type GlobalFeature =
   | 'embed-mini-app'
   | 'video-activity-audio-transcription'
   | 'ai-file-context'
-  | 'org-admin-writes';
+  | 'org-admin-writes'
+  | 'assignment-modes';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
@@ -3515,6 +3516,29 @@ export interface GlobalFeaturePermission {
   enabled: boolean;
   config?: Record<string, unknown>;
 }
+
+/**
+ * Assignment mode for student-facing widgets that can either collect submissions
+ * or be shared as view-only experiences. Set org-wide by an admin via Global
+ * Settings; frozen onto each assignment/session at creation time so flipping
+ * the admin toggle never alters the behavior of in-flight assignments.
+ */
+export type AssignmentMode = 'submissions' | 'view-only';
+
+/** Widgets whose assignment behavior is controlled by AssignmentModesConfig. */
+export type AssignmentWidgetKey =
+  | 'quiz'
+  | 'videoActivity'
+  | 'miniApp'
+  | 'guidedLearning';
+
+/**
+ * Stored as the `config` of the `assignment-modes` GlobalFeaturePermission doc.
+ * Missing keys default to `'submissions'` (preserves pre-feature behavior).
+ */
+export type AssignmentModesConfig = Partial<
+  Record<AssignmentWidgetKey, AssignmentMode>
+>;
 
 export interface AppSettings {
   geminiDailyLimit: number;
