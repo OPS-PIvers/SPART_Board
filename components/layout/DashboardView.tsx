@@ -335,6 +335,22 @@ export const DashboardView: React.FC = () => {
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent('board-pan'));
   }, [panOffset]);
+
+  // Coalesce pan deltas into one update per animation frame: pointer events
+  // can fire faster than the display refresh rate, and applying every delta
+  // synchronously triggers React reconciliation per event. We accumulate the
+  // deltas in a ref and flush once per rAF.
+  const pendingPanRef = React.useRef({ dx: 0, dy: 0 });
+  const panFrameRef = React.useRef<number | null>(null);
+  React.useEffect(
+    () => () => {
+      if (panFrameRef.current !== null) {
+        cancelAnimationFrame(panFrameRef.current);
+        panFrameRef.current = null;
+      }
+    },
+    []
+  );
   const { uploadAndRegisterPdf } = useStorage();
 
   const [isCheatSheetOpen, setIsCheatSheetOpen] = React.useState(false);
@@ -640,14 +656,23 @@ export const DashboardView: React.FC = () => {
           // Disabled when the gesture starts on a widget to avoid interfering
           // with widget interactions.
           if (gestureFingerCount.current === 1 && zoom > 1 && !widgetEl) {
-            const rect = dashboardRef.current?.getBoundingClientRect();
-            const maxX = rect ? ((zoom - 1) * rect.width) / 2 : Infinity;
-            const maxY = rect ? ((zoom - 1) * rect.height) / 2 : Infinity;
-            setPanOffset((prev) => ({
-              x: Math.min(maxX, Math.max(-maxX, prev.x + dx)),
-              y: Math.min(maxY, Math.max(-maxY, prev.y + dy)),
-            }));
-            window.dispatchEvent(new CustomEvent('board-pan'));
+            // Accumulate the delta and schedule a single flush per animation
+            // frame. Window dimensions match the dashboard root (h-screen
+            // w-screen) without forcing a synchronous layout read.
+            pendingPanRef.current.dx += dx;
+            pendingPanRef.current.dy += dy;
+            panFrameRef.current ??= requestAnimationFrame(() => {
+              panFrameRef.current = null;
+              const { dx: pdx, dy: pdy } = pendingPanRef.current;
+              pendingPanRef.current = { dx: 0, dy: 0 };
+              if (pdx === 0 && pdy === 0) return;
+              const maxX = ((zoom - 1) * window.innerWidth) / 2;
+              const maxY = ((zoom - 1) * window.innerHeight) / 2;
+              setPanOffset((prev) => ({
+                x: Math.min(maxX, Math.max(-maxX, prev.x + pdx)),
+                y: Math.min(maxY, Math.max(-maxY, prev.y + pdy)),
+              }));
+            });
           }
           return;
         }
@@ -837,21 +862,21 @@ export const DashboardView: React.FC = () => {
   // dashboard fits inside the viewport so the offset must collapse to (0, 0);
   // at zoom > 1 we re-clamp to the new (smaller) max if the user just zoomed
   // out — otherwise the previous offset could leave the widget surface
-  // dragged off-center.
+  // dragged off-center. Use window.innerWidth/innerHeight rather than the
+  // dashboard ref's getBoundingClientRect() — the root is h-screen w-screen
+  // so the values match exactly, and avoiding a layout read in the render
+  // body prevents synchronous reflow on every render.
   if (zoom <= 1) {
     if (panOffset.x !== 0 || panOffset.y !== 0) {
       setPanOffset({ x: 0, y: 0 });
     }
   } else {
-    const rect = dashboardRef.current?.getBoundingClientRect();
-    if (rect) {
-      const maxX = ((zoom - 1) * rect.width) / 2;
-      const maxY = ((zoom - 1) * rect.height) / 2;
-      const clampedX = Math.min(maxX, Math.max(-maxX, panOffset.x));
-      const clampedY = Math.min(maxY, Math.max(-maxY, panOffset.y));
-      if (clampedX !== panOffset.x || clampedY !== panOffset.y) {
-        setPanOffset({ x: clampedX, y: clampedY });
-      }
+    const maxX = ((zoom - 1) * window.innerWidth) / 2;
+    const maxY = ((zoom - 1) * window.innerHeight) / 2;
+    const clampedX = Math.min(maxX, Math.max(-maxX, panOffset.x));
+    const clampedY = Math.min(maxY, Math.max(-maxY, panOffset.y));
+    if (clampedX !== panOffset.x || clampedY !== panOffset.y) {
+      setPanOffset({ x: clampedX, y: clampedY });
     }
   }
 
