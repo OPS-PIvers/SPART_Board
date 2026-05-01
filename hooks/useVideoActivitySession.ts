@@ -271,6 +271,11 @@ export const useVideoActivitySessionTeacher =
         sessionDocUnsubRef.current = null;
       }
 
+      // Clear stale state from any prior subscription so consumers don't
+      // briefly render the previous session's roster / status while the
+      // first snapshot for the new session is in flight.
+      setResponses([]);
+      setLiveSession(null);
       setLoading(true);
       unsubRef.current = onSnapshot(
         collection(db, SESSIONS_COLLECTION, sessionId, RESPONSES_SUBCOLLECTION),

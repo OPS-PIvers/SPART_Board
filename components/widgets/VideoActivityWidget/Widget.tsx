@@ -5,7 +5,7 @@
  * as a sibling of the Manager library view.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import {
@@ -105,6 +105,10 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [selectedSession, setSelectedSession] =
     useState<VideoActivitySession | null>(null);
+  // Monotonically increasing token to guard against rapid Monitor/Results
+  // clicks across different assignments — we bail out of any stale fetch
+  // resolution that's no longer the most recent attempt.
+  const sessionLoadAttemptRef = useRef(0);
 
   // Editor modal state — ephemeral, not persisted to Firestore.
   const [editingActivity, setEditingActivity] =
@@ -153,6 +157,50 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
     },
     [loadActivityData, addToast]
   );
+
+  // ─── Reactive cleanup ──────────────────────────────────────────────────
+  //
+  // Auto-exit the live monitor if the assignment under it goes inactive
+  // (deactivated from another tab) or the session doc is deleted. Without
+  // this the header would silently misrepresent state — pause/end both
+  // write `session.status='ended'`, so the monitor can't tell them apart
+  // from `session` alone, and a deleted session leaves a stale snapshot.
+  // Effect must run before the early-return guards below to keep hook
+  // order stable across renders.
+  const rawViewForGuard = config.view as
+    | VideoActivityView
+    | 'editor'
+    | undefined;
+  const viewForGuard: VideoActivityView =
+    rawViewForGuard === 'editor' || !rawViewForGuard
+      ? 'manager'
+      : rawViewForGuard;
+  useEffect(() => {
+    if (viewForGuard !== 'monitor' || !selectedSession || assignmentsLoading)
+      return;
+    const match = assignments.find((a) => a.id === selectedSession.id);
+    if (match && match.status !== 'inactive') return;
+    unsubscribeFromSession();
+    setSelectedSession(null);
+    addToast('Assignment is no longer active — returning to library.', 'info');
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        view: 'manager',
+        resultsSessionId: null,
+      } as VideoActivityConfig,
+    });
+  }, [
+    viewForGuard,
+    selectedSession,
+    assignments,
+    assignmentsLoading,
+    unsubscribeFromSession,
+    addToast,
+    updateWidget,
+    widget.id,
+    config,
+  ]);
 
   // ─── Guards ────────────────────────────────────────────────────────────────
 
@@ -234,6 +282,7 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
   const rawView = config.view as VideoActivityView | 'editor' | undefined;
   const view: VideoActivityView =
     rawView === 'editor' || !rawView ? 'manager' : rawView;
+
   const defaultSessionSettings: VideoActivitySessionSettings = {
     autoPlay: config.autoPlay ?? false,
     requireCorrectAnswer: config.requireCorrectAnswer ?? true,
@@ -553,12 +602,15 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
           // Fetch the session doc up-front so we can confirm it exists
           // before arming the live listeners. Subscribing first would leak
           // an open Firestore listener on every error / missing-session
-          // path here.
+          // path here. The attempt token guards against a stale resolution
+          // clobbering a newer click for a different assignment.
+          const myAttempt = ++sessionLoadAttemptRef.current;
           let sessionDoc: VideoActivitySession;
           try {
             const snap = await getDoc(
               doc(db, 'video_activity_sessions', assignment.id)
             );
+            if (myAttempt !== sessionLoadAttemptRef.current) return;
             if (!snap.exists()) {
               addToast(
                 'Session data no longer available — cannot open monitor.',
@@ -568,6 +620,7 @@ export const VideoActivityWidget: React.FC<{ widget: WidgetData }> = ({
             }
             sessionDoc = snap.data() as VideoActivitySession;
           } catch (err) {
+            if (myAttempt !== sessionLoadAttemptRef.current) return;
             addToast(
               err instanceof Error
                 ? err.message

@@ -82,10 +82,13 @@ const StudentRow: React.FC<StudentRowProps> = ({ response, questions }) => {
   }
   const answeredCount = response.answers.length;
   const completed = response.completedAt !== null;
+  // Returns null when there's nothing to grade against — e.g. a fallback
+  // session doc with no questions — so the row renders an em-dash instead
+  // of a misleading red 0%.
   const score =
     questions.length > 0
       ? Math.round((correctCount / questions.length) * 100)
-      : 0;
+      : null;
 
   const formatTime = (ts: number | null): string => {
     if (ts === null) return '—';
@@ -200,15 +203,17 @@ const StudentRow: React.FC<StudentRowProps> = ({ response, questions }) => {
         })}
         <span
           className={`font-black ml-1 ${
-            score >= 70
-              ? 'text-emerald-600'
-              : score >= 40
-                ? 'text-amber-600'
-                : 'text-brand-red-primary'
+            score === null
+              ? 'text-slate-400'
+              : score >= 70
+                ? 'text-emerald-600'
+                : score >= 40
+                  ? 'text-amber-600'
+                  : 'text-brand-red-primary'
           }`}
           style={{ fontSize: 'min(14px, 4.5cqmin)' }}
         >
-          {score}%
+          {score === null ? '—' : `${score}%`}
         </span>
       </div>
     </div>
@@ -386,12 +391,12 @@ export const VideoActivityLiveMonitor: React.FC<
             />
             <div className="flex flex-col min-w-0">
               <div
-                className={`flex items-center gap-1.5 font-black leading-none uppercase tracking-tight ${
+                className={`font-black leading-none uppercase tracking-tight ${
                   isLive ? 'text-brand-red-primary' : 'text-amber-600'
                 }`}
                 style={{ fontSize: 'min(12px, 4cqmin)' }}
               >
-                <span>{isLive ? 'Live' : 'Paused'}</span>
+                {isLive ? 'Live' : 'Paused'}
               </div>
               <span
                 className="text-brand-blue-dark font-bold truncate"
