@@ -87,6 +87,12 @@ export interface UseVideoActivityAssignmentsResult {
    * to `deactivateAssignment`: flips assignment → 'active' and session →
    * 'active' so the URL works again. Submissions assignments don't expose
    * this affordance; reopening a stale roster is a different UX call.
+   *
+   * Behaviorally equivalent to `resumeAssignment` today (both call
+   * `setStatus(id, 'active', 'active')`). Kept as a separate method so
+   * callers can express *intent* — view-only Reactivate from inactive vs.
+   * Resume from paused — and so the two can diverge later if Resume needs
+   * to preserve, e.g., a paused-at timestamp or pending-question state.
    */
   reactivateAssignment: (assignmentId: string) => Promise<void>;
   /** Permanently delete assignment + session + all responses. */

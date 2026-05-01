@@ -276,9 +276,7 @@ const formatDate = (ms: number): string =>
 /* ─── ViewCountSubtitle ──────────────────────────────────────────────────── */
 
 /**
- * Per-row hook host so `useSessionViewCount` can run as a top-level hook
- * (calling it inside the `.map` body of `renderAssignmentTab` would violate
- * the rules of hooks). Renders the count chip inline as part of the
+ * Per-row hook host that renders the view-count chip inline as part of the
  * subtitle line for view-only Shared / Closed cards.
  */
 const ViewCountSubtitle: React.FC<{ sessionId: string }> = ({ sessionId }) => {

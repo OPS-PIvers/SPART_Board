@@ -203,10 +203,14 @@ const IconActionButton: React.FC<{ action: LibraryIconAction }> = ({
       disabled={action.disabled}
       title={action.disabled ? action.disabledReason : action.label}
       aria-label={action.label}
-      className={`inline-flex shrink-0 items-center justify-center rounded-xl shadow-sm transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+      // Hover affordances are only meaningful on an enabled button — gating
+      // them behind `enabled:` keeps the disabled state visually inert
+      // (Tailwind's `enabled:` variant matches `:not(:disabled)`). Without
+      // this, a disabled button still glowed on hover, which is misleading.
+      className={`inline-flex shrink-0 items-center justify-center rounded-xl shadow-sm transition-all enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
         isPrimary
-          ? 'bg-brand-blue-primary text-white hover:bg-brand-blue-dark'
-          : 'border border-slate-200 bg-white text-slate-600 hover:border-brand-blue-primary/40 hover:bg-brand-blue-lighter/30 hover:text-brand-blue-dark'
+          ? 'bg-brand-blue-primary text-white enabled:hover:bg-brand-blue-dark'
+          : 'border border-slate-200 bg-white text-slate-600 enabled:hover:border-brand-blue-primary/40 enabled:hover:bg-brand-blue-lighter/30 enabled:hover:text-brand-blue-dark'
       }`}
       style={{
         width: 'min(34px, 9.5cqmin)',

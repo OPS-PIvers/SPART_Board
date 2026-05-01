@@ -45,6 +45,27 @@ import { usePlcs } from '@/hooks/usePlcs';
 import { QuizDriveService } from '@/utils/quizDriveService';
 import { getPlcMemberEmails, getPlcTeammateEmails } from '@/utils/plc';
 
+/**
+ * Session-options shape used when minting a view-only Quiz share. Typed as
+ * `Required<QuizSessionOptions>` so adding a new field to QuizSessionOptions
+ * fails type-check here until a deliberate value is chosen — the previous
+ * inline literal silently let new optional fields default to undefined.
+ *
+ * View-only shares disable every per-attempt feature (no leaderboard, no
+ * tab warnings, no bonuses, no result reveal) — none of them have meaning
+ * when there are no submissions to score or compare.
+ */
+const VIEW_ONLY_SESSION_OPTIONS: Required<QuizSessionOptions> = {
+  tabWarningsEnabled: false,
+  showResultToStudent: false,
+  showCorrectAnswerToStudent: false,
+  showCorrectOnBoard: false,
+  speedBonusEnabled: false,
+  streakBonusEnabled: false,
+  showPodiumBetweenQuestions: false,
+  soundEffectsEnabled: false,
+};
+
 export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     updateWidget,
@@ -1085,16 +1106,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             },
             {
               sessionMode: 'teacher',
-              sessionOptions: {
-                tabWarningsEnabled: false,
-                showResultToStudent: false,
-                showCorrectAnswerToStudent: false,
-                showCorrectOnBoard: false,
-                speedBonusEnabled: false,
-                streakBonusEnabled: false,
-                showPodiumBetweenQuestions: false,
-                soundEffectsEnabled: false,
-              },
+              sessionOptions: VIEW_ONLY_SESSION_OPTIONS,
               attemptLimit: null,
             },
             'paused',

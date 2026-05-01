@@ -264,10 +264,9 @@ interface VideoActivityArchiveRowProps {
 }
 
 /**
- * Per-row component so `useSessionViewCount` can be called as a top-level
- * hook (calling it inside `.map()` violates the rules of hooks). Owns the
- * primary-action selection and the meta-line layout for both Active and
- * Archive tabs across submissions and view-only modes.
+ * Per-row hook host for view-count fetch. Owns the primary-action selection
+ * and the meta-line layout for both Active and Archive tabs across
+ * submissions and view-only modes.
  */
 const VideoActivityArchiveRow: React.FC<VideoActivityArchiveRowProps> = ({
   assignment,

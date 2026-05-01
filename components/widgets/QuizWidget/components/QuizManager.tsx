@@ -1541,9 +1541,8 @@ interface QuizArchiveRowProps {
 }
 
 /**
- * Per-row component so `useSessionViewCount` can be a top-level hook.
- * View-only quizzes annotate the meta line with a view count fetched from
- * the session's `views/` subcollection on mount.
+ * Per-row hook host. View-only quizzes annotate the meta line with a view
+ * count fetched from the session's `views/` subcollection on mount.
  */
 const QuizArchiveRow: React.FC<QuizArchiveRowProps> = ({
   assignment: a,
@@ -1571,6 +1570,51 @@ const QuizArchiveRow: React.FC<QuizArchiveRowProps> = ({
     assignmentIsViewOnly
   );
 
+  // Meta line composes per-mode. View-only shares show date + view count
+  // only — the join code, class targeting, and live-radio dot all relate to
+  // submissions plumbing that doesn't apply. Submissions show the full row.
+  const dateChip = (
+    <span className="inline-flex items-center gap-0.5">
+      <Calendar className="w-3 h-3" />
+      {new Date(a.createdAt).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })}
+    </span>
+  );
+
+  let meta: React.ReactNode;
+  if (assignmentIsViewOnly) {
+    meta = (
+      <>
+        {dateChip}
+        <ViewCountBadge count={count} />
+      </>
+    );
+  } else {
+    meta = (
+      <>
+        {dateChip}
+        {urlLive && <span className="font-mono tracking-wider">{a.code}</span>}
+        {noPeriods ? (
+          <span className="font-semibold text-amber-600 truncate max-w-[120px]">
+            No classes
+          </span>
+        ) : periodLabel != null ? (
+          <span className="font-semibold truncate max-w-[120px]">
+            {periodLabel}
+          </span>
+        ) : null}
+        {status.tone === 'success' && (
+          <span className="inline-flex items-center">
+            <Radio className="w-3 h-3" />
+          </span>
+        )}
+      </>
+    );
+  }
+
   return (
     <AssignmentArchiveCard<QuizAssignment>
       assignment={a}
@@ -1578,36 +1622,7 @@ const QuizArchiveRow: React.FC<QuizArchiveRowProps> = ({
       status={status}
       title={a.quizTitle}
       subtitle={a.className?.trim() ? a.className : undefined}
-      meta={
-        <>
-          <span className="inline-flex items-center gap-0.5">
-            <Calendar className="w-3 h-3" />
-            {new Date(a.createdAt).toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </span>
-          {urlLive && !assignmentIsViewOnly && (
-            <span className="font-mono tracking-wider">{a.code}</span>
-          )}
-          {noPeriods && !assignmentIsViewOnly ? (
-            <span className="font-semibold text-amber-600 truncate max-w-[120px]">
-              No classes
-            </span>
-          ) : periodLabel != null && !assignmentIsViewOnly ? (
-            <span className="font-semibold truncate max-w-[120px]">
-              {periodLabel}
-            </span>
-          ) : null}
-          {assignmentIsViewOnly && <ViewCountBadge count={count} />}
-          {status.tone === 'success' && !assignmentIsViewOnly && (
-            <span className="inline-flex items-center">
-              <Radio className="w-3 h-3" />
-            </span>
-          )}
-        </>
-      }
+      meta={meta}
       primaryAction={
         primary
           ? {

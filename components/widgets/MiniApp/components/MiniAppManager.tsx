@@ -222,14 +222,8 @@ const LIBRARY_FILTER_PREDICATES = {
   source: (row: UnifiedRow, value: string): boolean => row.kind === value,
 };
 
-/* ─── View-only row wrapper (encapsulates per-row view-count fetch) ───────── */
+/* ─── View-only row wrapper (per-row hook host for view-count fetch) ──────── */
 
-/**
- * Per-row component so `useSessionViewCount` can run as a top-level hook.
- * Calling it inside a `.map()` body would violate the rules of hooks; this
- * wrapper makes the hook call legal and keeps the count colocated with the
- * card it annotates.
- */
 const MiniAppArchiveRow: React.FC<{
   assignment: MiniAppAssignment;
   mode: 'active' | 'archive';

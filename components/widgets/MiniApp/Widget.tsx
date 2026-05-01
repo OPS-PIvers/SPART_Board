@@ -185,16 +185,14 @@ const MiniAppAssignModal: React.FC<MiniAppAssignModalProps> = ({
               </div>
             </>
           ) : (
-            /* Pre-creation */
+            /* Pre-creation: zero form fields in view-only; name input + class
+               picker in submissions. */
             <>
               <div className="text-center">
                 <p className="font-bold text-brand-blue-dark text-base truncate px-2">
                   {appTitle}
                 </p>
-                <p
-                  className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1"
-                  style={{ fontSize: 'clamp(10px, 3cqmin, 12px)' }}
-                >
+                <p className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1 text-xs">
                   {isViewOnly ? 'Create Share Link' : 'Create Assignment Link'}
                 </p>
               </div>
