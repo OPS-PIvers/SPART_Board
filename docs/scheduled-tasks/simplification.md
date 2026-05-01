@@ -3,7 +3,7 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: weekly — Friday_
-_Last audited: 2026-04-24_
+_Last audited: 2026-05-01_
 _Last action: never_
 
 ---
