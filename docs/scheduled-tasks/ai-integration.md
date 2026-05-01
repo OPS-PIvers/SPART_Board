@@ -61,7 +61,7 @@ _Nothing currently in progress._
 - **Detected:** 2026-05-01
 - **File:** functions/src/index.ts (generateWithAI), components/layout/dock/MagicLayoutModal.tsx
 - **Detail:** The `dashboard-layout` generation type has a client-side feature permission gate (`canAccessFeature('magic-layout')` in `MagicLayoutModal.tsx`) but no `specificFeatureId` assignment in the cloud function's rate-limit transaction. This means it shares the global daily `gemini-functions` quota but has no per-feature daily limit or admin-toggleable specific permission. An admin cannot restrict `dashboard-layout` usage independently of the global AI permission. Additionally, if the client-side gate is bypassed (e.g. direct API call), the cloud function will not reject the request based on a `magic-layout` feature check — only the global rate limit applies. This is similar to the existing MEDIUM finding for `instructional-routine`, but lower severity because the client-side gate does exist.
-- **Fix:** Add `if (genType === 'dashboard-layout') specificFeatureId = 'magic-layout';` in the `generateWithAI` cloud function alongside the other `specificFeatureId` assignments. Then add a `magic-layout` entry to `GlobalFeature` in `types.ts` and `GlobalPermissionsManager.tsx` so admins can control it independently.
+- **Fix:** Add `if (genType === 'dashboard-layout') specificFeatureId = 'magic-layout';` in the `generateWithAI` cloud function alongside the other `specificFeatureId` assignments. The `'magic-layout'` feature is already defined in `types.ts` and `components/admin/GlobalPermissionsManager.tsx`, so only the cloud function change is needed to link server-side rate limiting to the existing permission.
 
 ### LOW RevealGrid "Sparkles" button uses AI icon for a paste-import feature
 
