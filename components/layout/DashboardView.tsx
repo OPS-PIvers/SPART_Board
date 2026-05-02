@@ -1667,7 +1667,18 @@ export const DashboardView: React.FC = () => {
             setImportModePrompt(null);
             runAssignmentImport(shareId, mode);
           }}
-          onClose={() => setImportModePrompt(null)}
+          onClose={() => {
+            // Closing the picker without choosing drops the deep-link share
+            // (it was cleared synchronously in the effect above to avoid
+            // triple-import races). Surface a Retry toast so the teacher can
+            // re-run the same import without re-pasting the URL.
+            const { shareId } = importModePrompt;
+            setImportModePrompt(null);
+            addToast('Import canceled.', 'info', {
+              label: 'Retry',
+              onClick: () => peekAndDispatchImport(shareId),
+            });
+          }}
         />
       )}
 

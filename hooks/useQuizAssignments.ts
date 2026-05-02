@@ -1238,7 +1238,16 @@ export const useQuizAssignments = (
         try {
           const joinResult = await callJoinSyncedQuizGroup(shareId);
           joinedGroupId = joinResult.groupId;
-          const liveVersion = canonicalVersion ?? joinResult.version;
+          // Prefer the higher of canonicalVersion (read at step 1) and
+          // joinResult.version (read inside the join transaction). If a peer
+          // published between those two reads, joinResult.version is fresher
+          // — using only canonicalVersion would tag the new local copy as
+          // already-stale and surface a false "Sync available" prompt right
+          // after import. Math.max picks the most recent observed version.
+          const liveVersion = Math.max(
+            canonicalVersion ?? 0,
+            joinResult.version
+          );
           if (options?.attachSyncLinkage) {
             await options.attachSyncLinkage(savedMeta.id, {
               groupId: joinResult.groupId,

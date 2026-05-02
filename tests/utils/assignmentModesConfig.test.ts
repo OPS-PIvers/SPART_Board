@@ -7,7 +7,10 @@ import {
   vi,
   type MockInstance,
 } from 'vitest';
-import { parseAssignmentModesConfig } from '@/utils/assignmentModesConfig';
+import {
+  _resetAssignmentModesWarnings,
+  parseAssignmentModesConfig,
+} from '@/utils/assignmentModesConfig';
 
 describe('parseAssignmentModesConfig', () => {
   let warnSpy: MockInstance<(...args: unknown[]) => void>;
@@ -18,6 +21,9 @@ describe('parseAssignmentModesConfig', () => {
       .mockImplementation(() => undefined) as unknown as MockInstance<
       (...args: unknown[]) => void
     >;
+    // Module-level drift-warn dedupe set persists across tests in the same
+    // process; reset it so each test sees a fresh "first warn" surface.
+    _resetAssignmentModesWarnings();
   });
 
   afterEach(() => {

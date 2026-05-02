@@ -35,6 +35,16 @@ const isAssignmentMode = (value: unknown): value is AssignmentMode =>
   typeof value === 'string' &&
   (ASSIGNMENT_MODE_VALUES as readonly string[]).includes(value);
 
+// Dedupe schema-drift warnings so a malformed config doesn't flood the
+// console — both `getAssignmentMode` and the admin permissions UI re-parse
+// on every render.
+const warnedDriftKeys = new Set<string>();
+
+/** Test helper — clear the drift-warning dedupe set between test cases. */
+export const _resetAssignmentModesWarnings = (): void => {
+  warnedDriftKeys.clear();
+};
+
 /**
  * Validate an unknown blob (typically `permission.config`) and return a
  * clean `AssignmentModesConfig`. Unknown widget keys are silently dropped;
@@ -53,10 +63,15 @@ export const parseAssignmentModesConfig = (
     if (!isAssignmentMode(value)) {
       // Surface schema drift (e.g. a future client writes a new mode value
       // that this client doesn't yet know about) so it shows up in logs
-      // instead of silently coercing to the 'submissions' default.
-      console.warn(
-        `[assignmentModesConfig] Unrecognized mode value for widget ${key}: ${String(value)}`
-      );
+      // instead of silently coercing to the 'submissions' default. Dedupe
+      // by (key, value) so a render-loop caller doesn't flood the console.
+      const driftKey = `${key}:${String(value)}`;
+      if (!warnedDriftKeys.has(driftKey)) {
+        warnedDriftKeys.add(driftKey);
+        console.warn(
+          `[assignmentModesConfig] Unrecognized mode value for widget ${key}: ${String(value)}`
+        );
+      }
       continue;
     }
     out[key] = value;

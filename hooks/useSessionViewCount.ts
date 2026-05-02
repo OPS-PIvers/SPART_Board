@@ -42,7 +42,17 @@ export type ViewTrackingCollection =
 interface CacheEntry {
   count: number | null;
   promise: Promise<number> | null;
+  // Set when the underlying aggregation query failed. Lets the cache surface
+  // `0` for this render (so the UI shows a graceful zero-state) but expires
+  // after `FAILURE_TTL_MS` so a transient permission/network error doesn't
+  // memoize "0 views" for the entire session.
+  failedAt?: number;
 }
+
+// How long a failed-query result stays cached before the next mount retries.
+// Long enough to avoid thundering-herd retries on a real outage; short enough
+// that a one-time rules misconfig clears itself within a minute of the fix.
+const FAILURE_TTL_MS = 60_000;
 
 // Module-level cache so the same sessionId rendered from multiple cards
 // (or after a list re-render) doesn't fanout to repeat aggregation queries.
@@ -155,8 +165,17 @@ export function useSessionViewCount(
     // racing through `cache.get(key)` before either has set `promise` would
     // each call `getCountFromServer`, doubling Firestore reads in dev.
     const cached = cache.get(key);
-    if (cached?.count != null) return;
-    if (cached?.promise) {
+    // Treat an old failed cache entry as a cache miss so the next mount
+    // retries; otherwise, a permission/network blip would pin the count
+    // to 0 for the rest of the session.
+    const failureExpired =
+      cached?.failedAt != null && Date.now() - cached.failedAt > FAILURE_TTL_MS;
+    if (failureExpired) {
+      cache.delete(key);
+    } else if (cached?.count != null) {
+      return;
+    }
+    if (!failureExpired && cached?.promise) {
       // Coalesce: hitch a ride on the in-flight promise so this consumer
       // re-renders when it resolves, but don't fire a second query.
       let cancelled = false;
@@ -170,11 +189,13 @@ export function useSessionViewCount(
 
     // Cache miss + no in-flight: claim the slot synchronously by writing
     // the promise BEFORE awaiting, so a concurrent mount sees it.
+    let succeeded = true;
     const inFlight: Promise<number> = getCountFromServer(
       collection(db, collectionName, sessionId as string, 'views')
     ).then(
       (snap) => snap.data().count,
       (err: unknown) => {
+        succeeded = false;
         // Surface the failure to the caller as `count: 0` rather than
         // null — a zero-state UI ("0 views") is a fine soft-fail and
         // avoids broadcasting an empty cell. Logged for debugging.
@@ -186,7 +207,15 @@ export function useSessionViewCount(
 
     let cancelled = false;
     void inFlight.then((n) => {
-      cache.set(key, { count: n, promise: null });
+      // Tag failed results with `failedAt` so the cache lookup above can
+      // expire them after FAILURE_TTL_MS; a transient permission / network
+      // error then auto-recovers without waiting on a tab-visibility flip.
+      cache.set(
+        key,
+        succeeded
+          ? { count: n, promise: null }
+          : { count: n, promise: null, failedAt: Date.now() }
+      );
       if (!cancelled) setRevision((r) => r + 1);
     });
 

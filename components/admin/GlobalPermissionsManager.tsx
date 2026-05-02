@@ -546,15 +546,19 @@ export const GlobalPermissionsManager: React.FC = () => {
     featureId: GlobalFeature,
     updates: Partial<GlobalFeaturePermission>
   ) => {
-    const current = getPermission(featureId);
-    const updated = { ...current, ...updates };
-    setPermissions(new Map(permissions).set(featureId, updated));
-    setUnsavedChanges(new Set(unsavedChanges).add(featureId));
+    // Functional setState so rapid back-to-back calls (e.g. toggling several
+    // Assignment Mode widgets in one tick) all merge against the latest
+    // permissions/unsavedChanges instead of a stale closure.
+    setPermissions((prev) => {
+      const current = prev.get(featureId) ?? getPermission(featureId);
+      return new Map(prev).set(featureId, { ...current, ...updates });
+    });
+    setUnsavedChanges((prev) => new Set(prev).add(featureId));
   };
 
   const savePermission = async (featureId: GlobalFeature) => {
     try {
-      setSaving(new Set(saving).add(featureId));
+      setSaving((prev) => new Set(prev).add(featureId));
       const permission = getPermission(featureId);
 
       await setDoc(doc(db, 'global_permissions', featureId), permission);

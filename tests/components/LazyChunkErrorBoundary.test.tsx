@@ -13,6 +13,7 @@ const buildChunkError = () =>
 
 describe('LazyChunkErrorBoundary', () => {
   let reloadSpy: ReturnType<typeof vi.fn>;
+  let originalLocation: Location;
   const noop = () => {
     /* swallow logs in tests */
   };
@@ -20,9 +21,10 @@ describe('LazyChunkErrorBoundary', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     reloadSpy = vi.fn();
+    originalLocation = window.location;
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { ...window.location, reload: reloadSpy },
+      value: { ...originalLocation, reload: reloadSpy },
     });
     // React logs caught errors to console.error; silence to keep test output readable.
     vi.spyOn(console, 'warn').mockImplementation(noop);
@@ -31,6 +33,10 @@ describe('LazyChunkErrorBoundary', () => {
 
   afterEach(() => {
     window.sessionStorage.clear();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    });
     vi.restoreAllMocks();
   });
 

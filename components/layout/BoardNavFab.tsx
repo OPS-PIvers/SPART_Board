@@ -42,9 +42,18 @@ export const BoardNavFab: FC = () => {
 
   useClickOutside(containerRef, handleClickOutside);
 
-  // Move focus into the menu when it opens; default to the active board.
+  // Move focus into the menu the first time it opens; default to the active
+  // board. Tracks "already focused this open-cycle" via a ref so a Firestore
+  // snapshot reordering dashboards (which bumps currentIndex) doesn't yank
+  // focus from wherever the keyboard user has navigated since.
+  const didFocusOnOpenRef = useRef(false);
   useEffect(() => {
-    if (!isPickerOpen) return;
+    if (!isPickerOpen) {
+      didFocusOnOpenRef.current = false;
+      return;
+    }
+    if (didFocusOnOpenRef.current) return;
+    didFocusOnOpenRef.current = true;
     const targetIdx = currentIndex >= 0 ? currentIndex : 0;
     itemRefs.current[targetIdx]?.focus();
   }, [isPickerOpen, currentIndex]);

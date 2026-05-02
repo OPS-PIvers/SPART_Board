@@ -68,19 +68,25 @@ describe('chunkLoadError', () => {
 
   describe('attemptChunkReload', () => {
     let reloadSpy: ReturnType<typeof vi.fn>;
+    let originalLocation: Location;
 
     beforeEach(() => {
       window.sessionStorage.clear();
       reloadSpy = vi.fn();
+      originalLocation = window.location;
       // jsdom's location.reload is non-configurable; replace the whole object.
       Object.defineProperty(window, 'location', {
         configurable: true,
-        value: { ...window.location, reload: reloadSpy },
+        value: { ...originalLocation, reload: reloadSpy },
       });
     });
 
     afterEach(() => {
       window.sessionStorage.clear();
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
     });
 
     it('reloads the page on first call and returns true', () => {

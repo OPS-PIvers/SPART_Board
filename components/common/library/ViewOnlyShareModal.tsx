@@ -60,6 +60,7 @@ export const ViewOnlyShareModal: React.FC<ViewOnlyShareModalProps> = ({
   onClose,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const headerLabelId = useId();
 
   // Reset the "Copied!" affordance back to "Copy Link" 2s after a successful
@@ -78,9 +79,13 @@ export const ViewOnlyShareModal: React.FC<ViewOnlyShareModalProps> = ({
     try {
       await navigator.clipboard.writeText(createdLink);
       setCopied(true);
+      setCopyFailed(false);
     } catch {
       // Clipboard API can reject in non-secure contexts or when permission
-      // is denied. Swallow — the link is still visible to manually copy.
+      // is denied. Surface a hint so teachers know to copy the link manually
+      // from the visible URL block above the button rather than thinking
+      // the copy succeeded silently.
+      setCopyFailed(true);
     }
   }, [createdLink]);
 
@@ -178,6 +183,15 @@ export const ViewOnlyShareModal: React.FC<ViewOnlyShareModalProps> = ({
                 </>
               )}
             </button>
+            {copyFailed && (
+              <p
+                role="status"
+                className="text-xs text-brand-red-primary text-center -mt-1"
+              >
+                Couldn&apos;t copy automatically — please select and copy the
+                link above.
+              </p>
+            )}
             <a
               href={createdLink}
               target="_blank"
