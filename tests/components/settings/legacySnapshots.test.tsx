@@ -69,6 +69,8 @@ describe('legacy settings render snapshots', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(FIXED_NOW);
+    // CI injects a weather key; pin it so the Weather panel renders the same everywhere.
+    vi.stubEnv('VITE_OPENWEATHER_API_KEY', 'test-key');
     let counter = 0;
     vi.spyOn(Math, 'random').mockImplementation(() => 0.42);
     vi.stubGlobal('crypto', {
@@ -82,6 +84,7 @@ describe('legacy settings render snapshots', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
