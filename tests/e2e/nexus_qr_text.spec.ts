@@ -86,9 +86,14 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // 5. Enable Sync
   // The settings panel is open.
 
-  // Wait for settings panel to be clearly visible (by looking for Close button or unique text)
-  // This ensures animation is done
-  await expect(page.getByLabel('Close settings')).toBeVisible({
+  // Wait for the settings surface to be clearly visible. This spec runs in both
+  // Playwright projects, so match the drawer's test id or the legacy panel's label.
+  const closeSettings = page
+    .locator(
+      '[data-testid="settings-drawer-close"], [aria-label="Close settings"]'
+    )
+    .first();
+  await expect(closeSettings).toBeVisible({
     timeout: 10000,
   });
 
@@ -128,7 +133,7 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // The 'qrWidget' locator was based on 'https://google.com' which might be gone.
 
   // Close settings (using standard Close button)
-  await page.getByLabel('Close settings').click();
+  await closeSettings.click();
 
   // Find the widget by content on the dashboard (Settings input is gone now)
   // Use a looser check or poll for it
