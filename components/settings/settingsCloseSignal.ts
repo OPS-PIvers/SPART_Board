@@ -18,6 +18,13 @@ export const markSettingsJustClosed = (): void => {
 export const wasSettingsJustClosed = (at: number = now()): boolean =>
   closedAt !== 0 && at - closedAt <= FRESHNESS_MS && at >= closedAt;
 
+/** One-shot read: true while fresh, and clears so no later Escape is suppressed. */
+export const consumeSettingsJustClosed = (): boolean => {
+  const fresh = wasSettingsJustClosed();
+  closedAt = 0;
+  return fresh;
+};
+
 /** Marks a close caused by a widget drag/resize gesture: the camera is not restored. */
 export const markSettingsClosedByGesture = (): void => {
   gestureAt = now();

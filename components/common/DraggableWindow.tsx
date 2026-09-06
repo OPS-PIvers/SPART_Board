@@ -63,8 +63,8 @@ import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
 import {
   markSettingsClosedByGesture,
+  consumeSettingsJustClosed,
   markSettingsJustClosed,
-  wasSettingsJustClosed,
 } from '@/components/settings/settingsCloseSignal';
 import { markSettingsOpenedLocally } from '@/components/settings/settingsOpenSignal';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -1988,7 +1988,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         // If you add a new Escape branch here, mirror it in handleKeyDown and vice-versa.
         if (showConfirm) {
           setShowConfirm(false);
-        } else if (!wasSettingsJustClosed()) {
+        } else if (!consumeSettingsJustClosed()) {
           // Wrapped (rather than an early empty `else if` branch) so a new
           // sub-case added below is mechanically guarded by the ref check —
           // SettingsPanel's own Escape handler already closed the panel in

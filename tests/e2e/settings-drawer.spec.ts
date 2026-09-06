@@ -16,12 +16,20 @@ const addNoteWidget = async (page: Page) => {
   await expect(noteButton).toBeVisible();
   await noteButton.click({ force: true });
 
-  // Close the dock by clicking empty canvas.
+  // Close the dock, then select the new widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
+  const noteWidget = page
+    .locator('.widget', { has: page.locator('[contenteditable]') })
+    .last();
+  await expect(noteWidget).toBeVisible();
+  await noteWidget.click({ position: { x: 20, y: 20 } });
 };
 
 const openDrawer = async (page: Page) => {
-  const gear = page.getByRole('button', { name: /^Settings/i }).first();
+  const gear = page.getByRole('button', {
+    name: 'Settings (Alt+S)',
+    exact: true,
+  });
   await expect(gear).toBeVisible();
   await gear.click({ force: true });
   const drawer = page.getByRole('dialog');
