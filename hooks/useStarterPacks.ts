@@ -1,7 +1,13 @@
+import { migrateBoardWidgets } from '@/utils/migration';
 import { useState, useEffect, useCallback } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
-import { StarterPack, WidgetType, AddWidgetOverrides } from '@/types';
+import {
+  StarterPack,
+  WidgetType,
+  WidgetData,
+  AddWidgetOverrides,
+} from '@/types';
 
 const appId =
   String(import.meta.env.VITE_FIREBASE_APP_ID ?? '') ||
@@ -110,10 +116,13 @@ export function useStarterPacks(userId?: string | null) {
         deleteAllWidgets();
       }
 
-      pack.widgets.forEach((widget) => {
+      const withIds = (pack.widgets ?? []).map((w) => ({
+        ...w,
+        id: crypto.randomUUID(),
+      })) as WidgetData[];
+      migrateBoardWidgets(withIds).forEach((widget) => {
         addWidget(widget.type, {
           ...widget,
-          id: crypto.randomUUID(),
           config: structuredClone(widget.config),
         } as unknown as AddWidgetOverrides);
       });

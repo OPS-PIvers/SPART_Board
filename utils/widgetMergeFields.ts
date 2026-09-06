@@ -22,6 +22,7 @@ export const LAYOUT_FIELDS = [
   'groupId',
 ] as const;
 
+/** `configVersion` is deliberately absent from both groups: it travels with `config` in the merge, never on its own. */
 /** Appearance and per-instance chrome. `annotation` is deep-compared separately. */
 export const STYLE_FIELDS = [
   'backgroundColor',

@@ -62,7 +62,7 @@ import {
 } from '@/config/widgetDefaults';
 import {
   migrateLocalStorageToFirestore,
-  migrateWidget,
+  migrateBoardWidgets,
 } from '@/utils/migration';
 import {
   migrateDrawingToSubcollection,
@@ -1934,7 +1934,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           const collectionsMigrated = migrateBoardForCollections(db);
           const widgetMigrated: Dashboard = {
             ...collectionsMigrated,
-            widgets: collectionsMigrated.widgets.map(migrateWidget),
+            widgets: migrateBoardWidgets(collectionsMigrated.widgets),
           };
           const hydrated = hydrateDashboardForViewport(
             widgetMigrated,
