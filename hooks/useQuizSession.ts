@@ -2747,7 +2747,12 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     );
   }, []);
 
-  /** Flips one artifact's `uploadState` after the upload/archive settles. */
+  /**
+   * Flips one artifact's `uploadState` after the upload/archive settles.
+   * Runs in a transaction, reading `answers` fresh — an upload settling for
+   * one question can otherwise race a `commitRecordingTake`/`markUnresponded`
+   * write for a different question against the same stale snapshot.
+   */
   const setArtifactUploadState = useCallback(
     async (
       questionId: string,
@@ -2757,29 +2762,34 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       const sessionId = sessionIdRef.current;
       const responseKey = responseKeyRef.current;
       if (!sessionId || !responseKey) return;
-      const existingAnswers = myResponseRef.current?.answers ?? [];
-      let changed = false;
-      const updated = existingAnswers.map((a) => {
-        if (a.questionId !== questionId || !a.artifacts?.length) return a;
-        const artifacts = a.artifacts.map((art) => {
-          if (art.id !== artifactId || art.uploadState === uploadState)
-            return art;
-          changed = true;
-          return { ...art, uploadState };
-        });
-        return changed ? { ...a, artifacts } : a;
-      });
-      if (!changed) return;
-      await updateDoc(
-        doc(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          sessionId,
-          RESPONSES_COLLECTION,
-          responseKey
-        ),
-        { answers: updated, lastWriteAt: serverTimestamp() }
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        responseKey
       );
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(responseRef);
+        if (!snap.exists()) return;
+        const existingAnswers = (snap.data() as QuizResponse).answers ?? [];
+        let changed = false;
+        const updated = existingAnswers.map((a) => {
+          if (a.questionId !== questionId || !a.artifacts?.length) return a;
+          const artifacts = a.artifacts.map((art) => {
+            if (art.id !== artifactId || art.uploadState === uploadState)
+              return art;
+            changed = true;
+            return { ...art, uploadState };
+          });
+          return changed ? { ...a, artifacts } : a;
+        });
+        if (!changed) return;
+        tx.update(responseRef, {
+          answers: updated,
+          lastWriteAt: serverTimestamp(),
+        });
+      });
     },
     []
   );
@@ -2787,7 +2797,10 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   /**
    * Writes the terminal entry for a slot the student never filled — prep
    * expiry (`passed`/`expired`) or a dead mic (`capture-unavailable`).
-   * Replaces rather than appends: it is not a take.
+   * Replaces rather than appends: it is not a take. Runs in a transaction,
+   * reading `answers` fresh — the same rationale as `commitRecordingTake`:
+   * a recording commit for a different question racing this write against
+   * a stale snapshot could otherwise clobber it.
    */
   const markUnresponded = useCallback(
     async (questionId: string, reason: UnrespondedReason) => {
@@ -2800,49 +2813,50 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       )
         return;
 
-      const existingAnswers = myResponseRef.current?.answers ?? [];
-      // Never overwrite a real response — a student who already recorded a
-      // take on this question has answered it.
-      if (
-        existingAnswers.some(
-          (a) => a.questionId === questionId && !a.unresponded
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        responseKey
+      );
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(responseRef);
+        if (!snap.exists()) return;
+        const existing = snap.data() as QuizResponse;
+        const existingAnswers = existing.answers ?? [];
+        // Never overwrite a real response — a student who already recorded a
+        // take on this question has answered it.
+        if (
+          existingAnswers.some(
+            (a) => a.questionId === questionId && !a.unresponded
+          )
         )
-      )
-        return;
+          return;
 
-      const entry: QuizResponseAnswer = {
-        questionId,
-        answer: '',
-        answeredAt: Date.now(),
-        status: reason === 'passed' ? 'draft' : 'submitted',
-        unresponded: reason,
-      };
-      const updated = [
-        ...existingAnswers.filter((a) => a.questionId !== questionId),
-        entry,
-      ];
-      const nextStatus =
-        myResponseRef.current?.status === 'completed'
-          ? 'completed'
-          : 'in-progress';
-      await updateDoc(
-        doc(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          sessionId,
-          RESPONSES_COLLECTION,
-          responseKey
-        ),
-        {
+        const entry: QuizResponseAnswer = {
+          questionId,
+          answer: '',
+          answeredAt: Date.now(),
+          status: reason === 'passed' ? 'draft' : 'submitted',
+          unresponded: reason,
+        };
+        const updated = [
+          ...existingAnswers.filter((a) => a.questionId !== questionId),
+          entry,
+        ];
+        const nextStatus =
+          existing.status === 'completed' ? 'completed' : 'in-progress';
+        tx.update(responseRef, {
           status: nextStatus,
           answers: updated,
           lastWriteAt: serverTimestamp(),
           ...servedSnapshotPatch(
             servedQuestionIdsRef.current,
-            myResponseRef.current?.servedQuestionIds
+            existing.servedQuestionIds
           ),
-        }
-      );
+        });
+      });
     },
     []
   );

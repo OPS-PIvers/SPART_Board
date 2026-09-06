@@ -2497,6 +2497,87 @@ describe('useQuizSessionStudent — commitRecordingTake / markUnresponded', () =
     ]);
   });
 
+  it('does not drop a take when it races setArtifactUploadState for a different question (cross-function lost-update guard)', async () => {
+    const result = await joinAndSeed([
+      {
+        questionId: 'q2',
+        answer: '',
+        answeredAt: 50,
+        status: 'submitted',
+        takeIndex: 1,
+        artifacts: [
+          makeTestArtifact({ id: 'art-existing', uploadState: 'pending' }),
+        ],
+      },
+    ]);
+    (firestore.updateDoc as unknown as ReturnType<typeof vi.fn>).mockClear();
+
+    let serverDoc: Record<string, unknown> = {
+      answers: latestResponseData.answers,
+      status: 'in-progress',
+    };
+    let version = 0;
+
+    (
+      firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementation(
+      async (
+        _db: unknown,
+        updateFn: (tx: {
+          get: (ref: unknown) => Promise<{
+            exists: () => boolean;
+            data: () => Record<string, unknown>;
+          }>;
+          update: (ref: unknown, patch: Record<string, unknown>) => void;
+        }) => Promise<void>
+      ) => {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const readVersion = version;
+          const snapshotData = JSON.parse(JSON.stringify(serverDoc)) as Record<
+            string,
+            unknown
+          >;
+          let conflict = false;
+          await updateFn({
+            get: () =>
+              Promise.resolve({
+                exists: () => true,
+                data: () => snapshotData,
+              }),
+            update: (_ref, patch) => {
+              if (version !== readVersion) {
+                conflict = true;
+                return;
+              }
+              serverDoc = { ...serverDoc, ...patch };
+              version += 1;
+            },
+          });
+          if (!conflict) return;
+        }
+      }
+    );
+
+    await act(async () => {
+      await Promise.all([
+        result.current.commitRecordingTake({
+          questionId: 'q1',
+          artifact: makeTestArtifact({ id: 'art-new' }),
+        }),
+        result.current.setArtifactUploadState('q2', 'art-existing', 'uploaded'),
+      ]);
+    });
+
+    const finalAnswers = serverDoc.answers as Record<string, unknown>[];
+    const q1Answer = finalAnswers.find((a) => a.questionId === 'q1');
+    const q2Answer = finalAnswers.find((a) => a.questionId === 'q2');
+    expect(q1Answer).toBeDefined();
+    expect(q2Answer).toBeDefined();
+    expect(
+      (q2Answer?.artifacts as { uploadState: string }[])[0].uploadState
+    ).toBe('uploaded');
+  });
+
   it('starts at takeIndex 1 and leaves other questions untouched', async () => {
     const result = await joinAndSeed([
       { questionId: 'q2', answer: 'B', answeredAt: 50, status: 'submitted' },
