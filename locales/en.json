@@ -1180,7 +1180,9 @@
         "textColor": "Text color",
         "titleColor": "Title color",
         "scaleMultiplier": "Scale"
-      }
+      },
+      "dockedLeft": "Settings panel docked to the left of the board",
+      "dockedRight": "Settings panel docked to the right of the board"
     }
   },
   "widgetWindow": {
