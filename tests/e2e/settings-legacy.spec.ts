@@ -21,11 +21,23 @@ test('legacy widget settings panel opens when settings-drawer is overridden off'
   await expect(noteButton).toBeVisible();
   await noteButton.click({ force: true });
 
+  // Close the dock by clicking outside it, then click inside the new
+  // widget's body to select it — the settings gear only renders while
+  // the widget is selected (DraggableWindow's isSelectedWidget gate).
   await page.mouse.click(0, 0);
 
-  const settingsGear = page.getByRole('button', { name: /^Settings/i }).first();
+  const noteWidget = page
+    .locator('.widget', { has: page.locator('[contenteditable]') })
+    .last();
+  await expect(noteWidget).toBeVisible();
+  await noteWidget.click({ position: { x: 20, y: 20 } });
+
+  const settingsGear = page.getByRole('button', {
+    name: 'Settings (Alt+S)',
+    exact: true,
+  });
   await expect(settingsGear).toBeVisible();
-  await settingsGear.click();
+  await settingsGear.click({ force: true });
 
   const legacyPanel = page.locator('[data-widget-portal]');
   await expect(legacyPanel).toBeVisible();

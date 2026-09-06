@@ -2211,6 +2211,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                       ...sw,
                       version: keepLocalConfig ? lw.version : sw.version,
                       config: keepLocalConfig ? lw.config : sw.config,
+                      configVersion: keepLocalConfig
+                        ? lw.configVersion
+                        : sw.configVersion,
                       ...(keepLocalLayout
                         ? (() => {
                             const acc: Record<string, unknown> = {};
@@ -2338,6 +2341,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     ...sw,
                     version: keepLocalConfig ? saved.version : sw.version,
                     config: keepLocalConfig ? saved.config : sw.config,
+                    configVersion: keepLocalConfig
+                      ? saved.configVersion
+                      : sw.configVersion,
                     ...(keepLocalLayout
                       ? (() => {
                           const acc: Record<string, unknown> = {};
