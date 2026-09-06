@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { useBuildingSelection } from '@/hooks/useBuildingSelection';
+import {
+  canonicalBuildingId,
+  canonicalizeBuildingKeyedRecord,
+} from '@/config/buildings';
 import { UrlGlobalConfig } from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
 import {
@@ -19,11 +23,15 @@ export const UrlConfigurationPanel: React.FC<UrlConfigurationPanelProps> = ({
 }) => {
   const BUILDINGS = useAdminBuildings();
   const [activeTab, setActiveTab] = useBuildingSelection(BUILDINGS);
+  // useAdminBuildings() can return a legacy long-form id; key buildingDefaults off the canonical id.
+  const canonicalId = canonicalBuildingId(activeTab);
 
   const typedConfig = config as UrlGlobalConfig;
-  const buildingDefaults = typedConfig.buildingDefaults ?? {};
-  const activeBuildingConfig = buildingDefaults[activeTab] ?? {
-    buildingId: activeTab,
+  const buildingDefaults = canonicalizeBuildingKeyedRecord(
+    typedConfig.buildingDefaults ?? {}
+  );
+  const activeBuildingConfig = buildingDefaults[canonicalId] ?? {
+    buildingId: canonicalId,
     urls: [],
   };
 
@@ -33,16 +41,13 @@ export const UrlConfigurationPanel: React.FC<UrlConfigurationPanelProps> = ({
   const [newTitle, setNewTitle] = useState('');
   const [newColor, setNewColor] = useState(DEFAULT_URL_COLOR);
 
-  const updateBuilding = (
-    buildingId: string,
-    updates: Partial<typeof activeBuildingConfig>
-  ) => {
+  const updateBuilding = (updates: Partial<typeof activeBuildingConfig>) => {
     onChange({
       ...typedConfig,
       buildingDefaults: {
         ...buildingDefaults,
-        [buildingId]: {
-          ...(buildingDefaults[buildingId] ?? { buildingId }),
+        [canonicalId]: {
+          ...activeBuildingConfig,
           ...updates,
         },
       },
@@ -64,13 +69,13 @@ export const UrlConfigurationPanel: React.FC<UrlConfigurationPanelProps> = ({
       color: newColor,
     };
 
-    updateBuilding(activeTab, { urls: [...urls, newItem] });
+    updateBuilding({ urls: [...urls, newItem] });
     setNewUrl('');
     setNewTitle('');
   };
 
   const removeUrl = (id: string) => {
-    updateBuilding(activeTab, {
+    updateBuilding({
       urls: urls.filter((u) => u.id !== id),
     });
   };
