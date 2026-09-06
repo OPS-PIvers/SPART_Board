@@ -59,6 +59,12 @@ const SKIPPED: Partial<
 
 const FIXED_NOW = new Date('2026-01-01T00:00:00.000Z');
 
+// React's useId() output (both the `_r_xx_` and legacy `:rN:` forms) shifts
+// whenever the set of registry entries changes, so normalize it before
+// snapshotting.
+const normalizeGeneratedIds = (html: string): string =>
+  html.replace(/_r_[0-9a-z]+_/g, '_r_ID_').replace(/:r[0-9a-z]+:/g, '_r_ID_');
+
 describe('legacy settings render snapshots', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -80,7 +86,7 @@ describe('legacy settings render snapshots', () => {
     vi.useRealTimers();
   });
 
-  const cases: Array<{ slot: LegacySlot; type: WidgetType }> = [
+  const allCases: Array<{ slot: LegacySlot; type: WidgetType }> = [
     ...Object.keys(WIDGET_SETTINGS_COMPONENTS).map((type) => ({
       slot: 'settings' as const,
       type: type as WidgetType,
@@ -90,19 +96,20 @@ describe('legacy settings render snapshots', () => {
       type: type as WidgetType,
     })),
   ];
+  const cases = allCases.filter(({ slot, type }) => !SKIPPED[slot]?.[type]);
+  const skippedCases = allCases.filter(
+    ({ slot, type }) => SKIPPED[slot]?.[type]
+  );
 
   it.each(cases)(
     '$slot slot for $type',
     async ({ slot, type }) => {
-      const skipReason = SKIPPED[slot]?.[type];
-      if (skipReason) {
-        expect(skipReason).toBeTruthy();
-        return;
-      }
       const container = await renderLegacySettings(type, slot);
-      expect(container.innerHTML).toMatchSnapshot();
+      expect(normalizeGeneratedIds(container.innerHTML)).toMatchSnapshot();
       // Large panels pull deep lazy import graphs; the default 5s is too tight.
     },
     30000
   );
+
+  it.skip.each(skippedCases)('$slot slot for $type', () => undefined);
 });

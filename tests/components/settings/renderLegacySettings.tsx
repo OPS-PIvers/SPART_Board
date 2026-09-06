@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import { WidgetData, WidgetType } from '@/types';
 import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
@@ -43,8 +43,10 @@ export const buildLegacyWidget = (type: WidgetType): WidgetData => {
     w: defaults.w ?? 300,
     h: defaults.h ?? 200,
     z: 1,
+    // Settings/appearance panels only mount when the widget is flipped.
+    flipped: true,
     config: { ...(defaults.config ?? {}) },
-  } as WidgetData;
+  } satisfies WidgetData;
 };
 
 const asyncNoop = () => Promise.resolve();
@@ -100,7 +102,7 @@ const authValue = {
   customMaterials: [],
   materialsPreferences: {},
   googleAccessToken: null,
-  quizGraderMode: 'manual',
+  quizGraderMode: 'question',
   quizGraderAutoAdvance: false,
   disableCloseConfirmation: false,
   canSeeShareTracking: false,
@@ -136,11 +138,27 @@ const savedWidgetsValue = {
   deleteSavedWidget: asyncNoop,
 } as unknown as SavedWidgetsContextValue;
 
-const toolVisibilityValue = {
+const toolVisibilityValue: ToolVisibilityContextValue = {
   visibleTools: [],
-  isToolVisible: () => true,
+  dockItems: [],
+  libraryOrder: [],
+  hiddenTools: [],
+  toggleToolHidden: vi.fn(),
   toggleToolVisibility: vi.fn(),
-} as unknown as ToolVisibilityContextValue;
+  setAllToolsVisibility: vi.fn(),
+  reorderTools: vi.fn(),
+  reorderLibrary: vi.fn(),
+  reorderDockItems: vi.fn(),
+  resetDockToDefaults: vi.fn(),
+  addFolder: vi.fn(),
+  createFolderWithItems: vi.fn(),
+  renameFolder: vi.fn(),
+  deleteFolder: vi.fn(),
+  addItemToFolder: vi.fn(),
+  removeItemFromFolder: vi.fn(),
+  moveItemOutOfFolder: vi.fn(),
+  reorderFolderItems: vi.fn(),
+};
 
 const withProviders = (children: React.ReactNode) => (
   <AuthContext.Provider value={authValue}>
@@ -187,5 +205,16 @@ export const renderLegacySettings = async (
     },
     { timeout: 20000 }
   );
+  // Flush effects that commit one tick after Suspense resolves — dnd-kit's
+  // DndContext mounts its accessibility live region in a useEffect.
+  await act(() => Promise.resolve());
+  await waitFor(
+    () => {
+      if (!container.querySelector('[id^="DndLiveRegion"]')) {
+        throw new Error('dnd-kit live region not settled');
+      }
+    },
+    { timeout: 500, interval: 25 }
+  ).catch(() => undefined);
   return container;
 };
