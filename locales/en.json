@@ -1145,7 +1145,9 @@
       "reset": "Reset to default",
       "addRow": "Add item",
       "removeRow": "Remove item",
-      "reorderRow": "Drag to reorder"
+      "reorderRow": "Drag to reorder",
+      "dockedLeft": "Settings panel docked to the left of the board",
+      "dockedRight": "Settings panel docked to the right of the board"
     }
   },
   "widgetWindow": {

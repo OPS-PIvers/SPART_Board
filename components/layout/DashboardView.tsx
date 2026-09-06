@@ -50,6 +50,7 @@ import {
   computeCursorAnchoredPan,
   viewportToWrapper,
 } from '@/utils/zoomPanMath';
+import { registerPanSetter } from '@/components/settings/panSetterRegistry';
 import {
   AlertCircle,
   CheckCircle2,
@@ -352,6 +353,23 @@ export const DashboardView: React.FC = () => {
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent('board-pan'));
   }, [panOffset]);
+
+  // Expose a clamped pan setter to the settings drawer camera (§4.8): the
+  // registry is module-level, so panOffset stays local state here.
+  React.useEffect(
+    () =>
+      registerPanSetter((next) =>
+        setPanOffset((prev) =>
+          clampPan(
+            typeof next === 'function' ? next(prev) : next,
+            zoomRef.current,
+            window.innerWidth,
+            window.innerHeight
+          )
+        )
+      ),
+    []
+  );
 
   // Explicit "reset to canonical view" actions (FAB reset button, 100% preset)
   // dispatch this event so we snap pan to center alongside their setZoom(1).
@@ -698,8 +716,8 @@ export const DashboardView: React.FC = () => {
               if (pdx === 0 && pdy === 0) return;
               // Read zoom from the ref so the bound matches the *current*
               // zoom, not whatever was captured when this frame scheduled.
-              // clampPan returns range [0, 0] at zoom = 1 (collapsing pan to
-              // center) and widens symmetrically as zoom moves either way.
+              // clampPan's range grows with zoom from zero at ZOOM_MIN (0.5);
+              // at zoom 1 it is +/- viewport/2.
               setPanOffset((prev) =>
                 clampPan(
                   { x: prev.x + pdx, y: prev.y + pdy },
@@ -959,10 +977,10 @@ export const DashboardView: React.FC = () => {
   // frame was scheduled).
   zoomRef.current = zoom;
 
-  // Re-clamp panOffset during render when zoom changes. clampPan returns
-  // range [0, 0] at zoom = 1 (snap-to-center), and the symmetric range
-  // around |zoom − 1| means a zoom-in or zoom-out can shrink the allowed
-  // offset and require pulling pan back inside. Use window.innerWidth/
+  // Re-clamp panOffset during render when zoom changes. clampPan's range is
+  // zero at ZOOM_MIN (0.5) and grows with zoom (+/- viewport/2 at zoom 1), so
+  // zooming out can shrink the allowed offset and require pulling pan back
+  // inside. Use window.innerWidth/
   // innerHeight rather than the dashboard ref's getBoundingClientRect() —
   // the root is h-screen w-screen so the values match, and avoiding a
   // layout read in the render body prevents synchronous reflow.
