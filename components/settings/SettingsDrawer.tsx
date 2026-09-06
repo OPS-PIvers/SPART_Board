@@ -105,11 +105,13 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
   const [query, setQuery] = useState('');
   const [isVisible, setIsVisible] = useState(false);
 
-  // Adjust local size while rendering when the host commits a new value (no effect needed).
+  // Adjust local size while rendering when the host commits a new value or placement changes (no effect needed).
   const [size, setSize] = useState(() => clampDrawerSize(width, placement));
   const [lastWidthProp, setLastWidthProp] = useState(width);
-  if (lastWidthProp !== width) {
+  const [lastPlacement, setLastPlacement] = useState(placement);
+  if (lastWidthProp !== width || lastPlacement !== placement) {
     setLastWidthProp(width);
+    setLastPlacement(placement);
     setSize(clampDrawerSize(width, placement));
   }
 
