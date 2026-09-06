@@ -2,6 +2,8 @@ import type React from 'react';
 import type { Field } from '../../schema/types';
 import type { FieldProps } from '../FieldProps';
 import { UnsupportedField } from './UnsupportedField';
+import { List } from './List';
+import { Custom } from './Custom';
 
 /** Total registry over the field union; items 1a.2-1a.4 replace their own lines. */
 export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
@@ -22,6 +24,6 @@ export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
   imageUpload: UnsupportedField,
   soundPicker: UnsupportedField,
   rosterPicker: UnsupportedField,
-  list: UnsupportedField,
-  custom: UnsupportedField,
+  list: List,
+  custom: Custom,
 };
