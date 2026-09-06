@@ -230,8 +230,7 @@ export const SettingsDrawerHost: React.FC = () => {
       updateWidgets([
         { id: activeWidgetId, changes: { flipped: true } },
         { id: pendingUnflipId, changes: { flipped: false } },
-        // updateWidgets' published type names positional keys only; the reducer applies any field.
-      ] as unknown as Parameters<typeof updateWidgets>[0]);
+      ]);
     }
     if (pendingRestoreId) {
       const target = getCanvasState().activeDashboard?.widgets.find(

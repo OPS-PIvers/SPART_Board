@@ -5863,10 +5863,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateWidgets = useCallback(
     (
-      updates: Array<{
-        id: string;
-        changes: Partial<Pick<WidgetData, 'x' | 'y' | 'w' | 'h'>>;
-      }>,
+      updates: Array<{ id: string; changes: Partial<WidgetData> }>,
       opts?: { skipHistory?: boolean }
     ) => {
       if (!activeIdRef.current) return;
@@ -5892,6 +5889,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               if (!changes) return w;
               const merged = { ...w, ...changes };
               const isResize = 'w' in changes || 'h' in changes;
+              // Flip-only batches must not re-derive proportional bounds (plan §4.9).
+              if (!isResize && !('x' in changes) && !('y' in changes))
+                return merged;
               return syncWidgetProportionsFromPixels(
                 merged,
                 vpW,
