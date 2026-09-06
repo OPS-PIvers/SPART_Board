@@ -1,5 +1,9 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useContext } from 'react';
 import { LucideIcon } from 'lucide-react';
+import {
+  SettingsLabelToneContext,
+  SettingsLabelTone,
+} from './SettingsLabelToneContext';
 
 interface SettingsLabelProps {
   children: ReactNode;
@@ -9,6 +13,7 @@ interface SettingsLabelProps {
   // 'span' renders a heading for a group of sibling controls (checkbox/chip groups) — a bare <label> would be orphaned; pair with role="group" + aria-labelledby={id}.
   as?: 'label' | 'span';
   id?: string;
+  tone?: SettingsLabelTone;
 }
 
 export const SettingsLabel: React.FC<SettingsLabelProps> = ({
@@ -18,9 +23,13 @@ export const SettingsLabel: React.FC<SettingsLabelProps> = ({
   htmlFor,
   as = 'label',
   id,
+  tone,
 }) => {
-  const baseClasses =
-    'text-xxs font-black text-slate-400 uppercase tracking-widest block mb-2';
+  const contextTone = useContext(SettingsLabelToneContext);
+  const resolvedTone = tone ?? contextTone;
+  const toneClass =
+    resolvedTone === 'drawer' ? 'text-slate-700' : 'text-slate-400';
+  const baseClasses = `text-xxs font-black ${toneClass} uppercase tracking-widest block mb-2`;
   const layoutClasses = Icon ? 'flex items-center gap-2' : '';
   const combinedClasses = [baseClasses, layoutClasses, className]
     .filter(Boolean)
