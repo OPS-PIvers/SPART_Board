@@ -736,7 +736,9 @@ export class GoogleDriveService {
     const dashboard = (await response.json()) as Dashboard;
     return {
       ...dashboard,
-      widgets: migrateBoardWidgets(dashboard.widgets ?? []),
+      ...(Array.isArray(dashboard.widgets)
+        ? { widgets: migrateBoardWidgets(dashboard.widgets) }
+        : {}),
     };
   }
 
