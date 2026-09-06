@@ -123,6 +123,12 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
   // Shared select handlers — reused by both onClick and the radiogroup
   // roving-tabindex keydown handler (handleRadioGroupKeyDown) below.
   const selectMode = (m: TimeToolMode) => {
+    // Roving-tabindex arrow-key nav means selection follows focus, so arrowing
+    // back to the already-active mode (e.g. cycling right then left through
+    // only two options) must not re-run the destructive duration/elapsedTime/
+    // isRunning/startTime reset below — that would silently wipe a running
+    // timer's remaining time for a no-op selection.
+    if (m === config.mode) return;
     if (m === 'timer') {
       updateWidget(widget.id, {
         config: {
