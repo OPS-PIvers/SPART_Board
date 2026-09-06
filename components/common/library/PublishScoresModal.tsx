@@ -232,9 +232,21 @@ export const PublishScoresModal: React.FC<PublishScoresModalProps> = ({
           role="radiogroup"
           aria-label="Score visibility"
           className="space-y-2"
-          onKeyDown={(e) =>
-            handleRadioGroupKeyDown(e, OPTIONS, (opt) => setSelected(opt.id))
-          }
+          onKeyDown={(e) => {
+            if (submitting) return;
+            // Vertical layout: remap Down/Up onto the helper's Right/Left (local, not in radioGroupKeyNav.ts — that file has other pending edits).
+            const key =
+              e.key === 'ArrowDown'
+                ? 'ArrowRight'
+                : e.key === 'ArrowUp'
+                  ? 'ArrowLeft'
+                  : e.key;
+            handleRadioGroupKeyDown(
+              { ...e, key, preventDefault: () => e.preventDefault() },
+              OPTIONS,
+              (opt) => setSelected(opt.id)
+            );
+          }}
         >
           {OPTIONS.map((opt) => {
             const isActive = selected === opt.id;
