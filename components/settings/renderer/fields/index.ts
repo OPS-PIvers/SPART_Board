@@ -9,8 +9,13 @@ import { NumberField } from './Number';
 import { SelectField } from './Select';
 import { SegmentedField } from './Segmented';
 import { SliderField } from './Slider';
+import { Color } from './Color';
+import { FontFamily } from './FontFamily';
+import { TextSizePreset } from './TextSizePreset';
+import { AccentColor } from './AccentColor';
+import { SurfaceColor } from './SurfaceColor';
 
-/** Total registry over the field union; items 1a.2-1a.4 replace their own lines. */
+/** Total registry over the field union; picker types stay Unsupported until wave 2. */
 export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
   toggle: ToggleField as React.FC<FieldProps>,
   text: TextField as React.FC<FieldProps>,
@@ -19,11 +24,11 @@ export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
   select: SelectField as React.FC<FieldProps>,
   segmented: SegmentedField as React.FC<FieldProps>,
   slider: SliderField as React.FC<FieldProps>,
-  color: UnsupportedField,
-  fontFamily: UnsupportedField,
-  textSizePreset: UnsupportedField,
-  accentColor: UnsupportedField,
-  surfaceColor: UnsupportedField,
+  color: Color as React.FC<FieldProps>,
+  fontFamily: FontFamily as React.FC<FieldProps>,
+  textSizePreset: TextSizePreset as React.FC<FieldProps>,
+  accentColor: AccentColor as React.FC<FieldProps>,
+  surfaceColor: SurfaceColor as React.FC<FieldProps>,
   iconPicker: UnsupportedField,
   emojiPicker: UnsupportedField,
   imageUpload: UnsupportedField,
