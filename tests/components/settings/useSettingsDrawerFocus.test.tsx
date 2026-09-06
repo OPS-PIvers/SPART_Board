@@ -1,7 +1,10 @@
 import { describe, expect, it, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import React from 'react';
-import { useSettingsDrawerFocus } from '@/components/settings/useSettingsDrawerFocus';
+import {
+  useSettingsDrawerFocus,
+  useSettingsTargetMarker,
+} from '@/components/settings/useSettingsDrawerFocus';
 
 const Probe: React.FC<{
   widgetId: string | null;
@@ -17,6 +20,14 @@ const Probe: React.FC<{
   ) : null;
 };
 
+const MarkerProbe: React.FC<{ widgetId: string | null; open: boolean }> = ({
+  widgetId,
+  open,
+}) => {
+  useSettingsTargetMarker(widgetId, open);
+  return null;
+};
+
 const mountWidget = (id: string): HTMLElement => {
   const el = document.createElement('div');
   el.setAttribute('data-widget-id', id);
@@ -29,15 +40,14 @@ afterEach(() => {
 });
 
 describe('useSettingsDrawerFocus', () => {
-  it('focuses the heading and marks the edited widget on open', () => {
-    const widget = mountWidget('w1');
+  it('focuses the heading on open', () => {
+    mountWidget('w1');
     render(<Probe widgetId="w1" open />);
     expect(document.activeElement?.textContent).toBe('Settings');
-    expect(widget.hasAttribute('data-settings-target')).toBe(true);
   });
 
-  it('returns focus to the opener and clears the marker on close', () => {
-    const widget = mountWidget('w1');
+  it('returns focus to the opener on close', () => {
+    mountWidget('w1');
     const opener = document.createElement('button');
     document.body.appendChild(opener);
     const openerRef = { current: opener };
@@ -46,7 +56,6 @@ describe('useSettingsDrawerFocus', () => {
     view.rerender(<Probe widgetId="w1" open={false} openerRef={openerRef} />);
 
     expect(document.activeElement).toBe(opener);
-    expect(widget.hasAttribute('data-settings-target')).toBe(false);
   });
 
   it('falls back to the widget root when the opener is gone', () => {
@@ -60,5 +69,20 @@ describe('useSettingsDrawerFocus', () => {
     view.rerender(<Probe widgetId="w1" open={false} openerRef={openerRef} />);
 
     expect(document.activeElement).toBe(widget);
+  });
+});
+
+describe('useSettingsTargetMarker', () => {
+  it('marks the edited widget whenever open, regardless of origin', () => {
+    const widget = mountWidget('w1');
+    render(<MarkerProbe widgetId="w1" open />);
+    expect(widget.hasAttribute('data-settings-target')).toBe(true);
+  });
+
+  it('clears the marker on close', () => {
+    const widget = mountWidget('w1');
+    const view = render(<MarkerProbe widgetId="w1" open />);
+    view.rerender(<MarkerProbe widgetId="w1" open={false} />);
+    expect(widget.hasAttribute('data-settings-target')).toBe(false);
   });
 });

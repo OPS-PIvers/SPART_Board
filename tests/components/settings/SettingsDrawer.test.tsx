@@ -239,31 +239,60 @@ describe('SettingsDrawer resize handle', () => {
     expect(separator).toHaveAttribute('aria-valuemax', '85');
   });
 
-  it('grows and shrinks with the arrow keys, 64px with Shift', () => {
+  it('grows and shrinks with the arrow keys, 64px with Shift, committing once idle', () => {
+    vi.useFakeTimers();
     const { props } = renderDrawer();
     fireEvent.keyDown(handle(), { key: 'ArrowLeft' });
+    expect(props.onWidthCommit).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(250);
     expect(props.onWidthCommit).toHaveBeenLastCalledWith(416);
+
     fireEvent.keyDown(handle(), { key: 'ArrowRight' });
+    vi.advanceTimersByTime(250);
     expect(props.onWidthCommit).toHaveBeenLastCalledWith(400);
+
     fireEvent.keyDown(handle(), { key: 'ArrowLeft', shiftKey: true });
+    vi.advanceTimersByTime(250);
     expect(props.onWidthCommit).toHaveBeenLastCalledWith(464);
+    vi.useRealTimers();
+  });
+
+  it('commits once for a burst of arrow presses (finding 3)', () => {
+    vi.useFakeTimers();
+    const { props } = renderDrawer();
+    for (let i = 0; i < 5; i += 1) {
+      fireEvent.keyDown(handle(), { key: 'ArrowRight' });
+    }
+    expect(props.onWidthCommit).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(250);
+    expect(props.onWidthCommit).toHaveBeenCalledTimes(1);
+    expect(props.onWidthCommit).toHaveBeenCalledWith(
+      Math.max(DRAWER_MIN_WIDTH, 400 - 5 * 16)
+    );
+    vi.useRealTimers();
   });
 
   it('clamps to the 360-560 range', () => {
+    vi.useFakeTimers();
     const { props } = renderDrawer({ width: DRAWER_MAX_WIDTH });
     for (let i = 0; i < 5; i += 1) {
       fireEvent.keyDown(handle(), { key: 'ArrowLeft', shiftKey: true });
     }
+    vi.advanceTimersByTime(250);
     expect(props.onWidthCommit).toHaveBeenLastCalledWith(DRAWER_MAX_WIDTH);
+    vi.useRealTimers();
     cleanup();
 
+    vi.useFakeTimers();
     const small = renderDrawer({ width: DRAWER_MIN_WIDTH });
     for (let i = 0; i < 5; i += 1) {
       fireEvent.keyDown(handle(), { key: 'ArrowRight', shiftKey: true });
     }
+    vi.advanceTimersByTime(250);
     expect(small.props.onWidthCommit).toHaveBeenLastCalledWith(
       DRAWER_MIN_WIDTH
     );
+    vi.useRealTimers();
   });
 
   it('re-clamps when placement changes with the same width prop', () => {

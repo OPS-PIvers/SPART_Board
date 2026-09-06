@@ -147,6 +147,32 @@ describe('SettingsDrawerHost remote opens', () => {
     expect(pan).not.toHaveBeenCalled();
     unregister();
   });
+
+  it('marks the widget root but does not move heading focus for a remote-originated open (finding 2)', async () => {
+    const pan = vi.fn();
+    const unregister = registerPanSetter(pan);
+    const root = document.createElement('div');
+    root.setAttribute('data-widget-id', 'w1');
+    document.body.appendChild(root);
+    const activeBefore = document.activeElement;
+
+    const w = makeWidget();
+    const harness = renderWithCanvas(<SettingsDrawerHost />, makeBoard([w]));
+
+    await act(() => {
+      harness.setState({
+        activeDashboard: makeBoard([{ ...w, flipped: true }]),
+      });
+      return Promise.resolve();
+    });
+
+    expect(drawer()).not.toBeNull();
+    expect(root.hasAttribute('data-settings-target')).toBe(true);
+    expect(document.activeElement).toBe(activeBefore);
+    expect(pan).not.toHaveBeenCalled();
+    unregister();
+    root.remove();
+  });
 });
 
 describe('SettingsDrawerHost read-only board', () => {
@@ -166,6 +192,63 @@ describe('SettingsDrawerHost read-only board', () => {
     expect(harness.updateWidget).not.toHaveBeenCalled();
     expect(drawer()).toBeNull();
     expect(wasSettingsJustClosed()).toBe(true);
+  });
+});
+
+describe('SettingsDrawerHost board switch + read-only (finding 1)', () => {
+  it('renders read-only for a stored flipped widget when board id and read-only change together', () => {
+    const a = makeWidget({ id: 'a', flipped: true });
+    const harness = renderWithCanvas(<SettingsDrawerHost />, makeBoard([a]));
+    expect(drawer()).not.toBeNull();
+
+    const b = makeWidget({ id: 'b', flipped: true });
+    act(() => {
+      harness.setState({
+        activeDashboard: makeBoard([b], 'b2'),
+        isActiveBoardReadOnly: true,
+      });
+    });
+
+    expect(drawer()).not.toBeNull();
+    expect(drawer()).toHaveAttribute('data-widget-id', 'b');
+    expect(
+      screen.getByText('This board is read-only. Settings cannot be changed.')
+    ).toBeVisible();
+  });
+});
+
+describe('SettingsDrawerHost read-only → writable unsuppress (finding 4)', () => {
+  it('clears the suppressed widget and unflips it once the board becomes writable', () => {
+    const w = makeWidget({ flipped: true });
+    const harness = renderWithCanvas(<SettingsDrawerHost />, makeBoard([w]));
+    expect(drawer()).not.toBeNull();
+
+    act(() => {
+      harness.setState({ isActiveBoardReadOnly: true });
+    });
+    expect(drawer()).toBeNull();
+
+    act(() => {
+      harness.setState({
+        isActiveBoardReadOnly: false,
+        // The real store reflects the effect's updateWidget write; the mock does not.
+        activeDashboard: makeBoard([{ ...w, flipped: false }]),
+      });
+    });
+
+    expect(harness.updateWidget).toHaveBeenCalledWith('w1', {
+      flipped: false,
+    });
+    expect(drawer()).toBeNull();
+
+    harness.updateWidget.mockClear();
+    markSettingsOpenedLocally('w1');
+    act(() => {
+      harness.setState({
+        activeDashboard: makeBoard([{ ...w, flipped: true }]),
+      });
+    });
+    expect(drawer()).not.toBeNull();
   });
 });
 
@@ -208,6 +291,7 @@ describe('SettingsDrawerHost maximized widgets', () => {
 
 describe('SettingsDrawerHost width persistence (§4.9)', () => {
   it('resizes across the full range without touching widget geometry', () => {
+    vi.useFakeTimers();
     const w = makeWidget({ flipped: true });
     const harness = renderWithCanvas(<SettingsDrawerHost />, makeBoard([w]));
     const handle = screen.getByTestId('settings-drawer-resize');
@@ -217,7 +301,9 @@ describe('SettingsDrawerHost width persistence (§4.9)', () => {
       for (let i = 0; i < 20; i += 1) {
         fireEvent.keyDown(handle, { key, shiftKey: true });
       }
+      vi.advanceTimersByTime(250);
     }
+    vi.useRealTimers();
     fireEvent.click(screen.getByTestId('settings-drawer-close'));
 
     const sizes = updateUserPreference.mock.calls.map((c) => c[1] as number);
