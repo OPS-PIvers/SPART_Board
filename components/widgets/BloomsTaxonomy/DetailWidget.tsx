@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, ArrowLeft, X } from 'lucide-react';
 import {
   WidgetData,
@@ -51,6 +51,12 @@ export const BloomsDetailWidget: React.FC<{ widget: WidgetData }> = ({
   const parentWidget = activeDashboard?.widgets.find(
     (w) => w.id === parentWidgetId
   );
+
+  // Self-remove if the parent pyramid was closed, so this companion never strands on the board.
+  useEffect(() => {
+    if (!parentWidget) removeWidget(widget.id);
+  }, [parentWidget, removeWidget, widget.id]);
+
   const parentConfig = parentWidget?.config as BloomsTaxonomyConfig | undefined;
   const enabledCategories = parentConfig?.enabledCategories ??
     defaultEnabledCategories ?? [...CONTENT_CATEGORIES];
