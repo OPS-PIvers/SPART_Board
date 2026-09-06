@@ -6809,6 +6809,8 @@ export interface WidgetData {
    */
   isPinned?: boolean;
   transparency?: number;
+  /** Version of the applied per-type config migration table (utils/migration.ts). */
+  configVersion?: number;
   annotation?: DrawingConfig;
   /** Override which building's admin defaults this widget uses (falls back to user's primary building) */
   buildingId?: string;

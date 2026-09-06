@@ -1,7 +1,9 @@
 import {
   Dashboard,
   DrawingConfig,
+  WidgetConfig,
   WidgetData,
+  WidgetType,
   TimeToolConfig,
   TextConfig,
   PollConfig,
@@ -48,7 +50,7 @@ const fixDimensions = (widget: WidgetData): WidgetData => {
   };
 };
 
-export const migrateWidget = (widget: WidgetData): WidgetData => {
+const applyLegacyRewrites = (widget: WidgetData): WidgetData => {
   // Correct impossibly small dimensions before any other migration so all
   // code paths benefit from the fix (early returns included).
   const w = fixDimensions(widget);
@@ -167,6 +169,69 @@ export const migrateWidget = (widget: WidgetData): WidgetData => {
 
   return w;
 };
+
+export type ConfigMigrationStep = (config: WidgetConfig) => WidgetConfig;
+
+/** Per-type, per-version config migration steps. Index N runs on configVersion N. */
+export const WIDGET_CONFIG_MIGRATIONS: Partial<
+  Record<WidgetType, ConfigMigrationStep[]>
+> = {};
+
+/** Target `configVersion` for a type — always the step-table length. */
+export const targetConfigVersion = (type: WidgetType): number =>
+  WIDGET_CONFIG_MIGRATIONS[type]?.length ?? 0;
+
+/** Dual-write step N: copy old -> new, keep old (D25). */
+export const renameKeyStep =
+  (oldKey: string, newKey: string): ConfigMigrationStep =>
+  (config) => {
+    const c = config as Record<string, unknown>;
+    if (!(oldKey in c) || c[newKey] !== undefined) return config;
+    return { ...c, [newKey]: c[oldKey] } as WidgetConfig;
+  };
+
+/** Step N+1: re-apply the copy first (self-healing), then drop the old key. */
+export const deleteKeyStep =
+  (oldKey: string, newKey: string): ConfigMigrationStep =>
+  (config) => {
+    const c = config as Record<string, unknown>;
+    if (!(oldKey in c)) return config;
+    const next = { ...c };
+    if (next[newKey] === undefined) next[newKey] = next[oldKey];
+    delete next[oldKey];
+    return next as WidgetConfig;
+  };
+
+export const migrateWidget = (widget: WidgetData): WidgetData => {
+  const rewritten = applyLegacyRewrites(widget);
+  const target = targetConfigVersion(rewritten.type);
+  const from = rewritten.configVersion ?? 0;
+  if (rewritten.configVersion === target) return rewritten;
+  // A newer bundle already stamped it past this table — leave it alone.
+  if (from > target) return rewritten;
+  const steps = WIDGET_CONFIG_MIGRATIONS[rewritten.type] ?? [];
+  let config = rewritten.config;
+  for (let v = from; v < target; v += 1) config = steps[v](config);
+  return { ...rewritten, config, configVersion: target };
+};
+
+/**
+ * Clears `flipped` on all but the highest-`z` flipped widget (first wins on a
+ * tie). Board-level, so it cannot live inside the per-widget migrateWidget.
+ */
+export const normalizeFlipped = (widgets: WidgetData[]): WidgetData[] => {
+  const flipped = widgets.filter((w) => w.flipped);
+  if (flipped.length <= 1) return widgets;
+  let keep = flipped[0];
+  for (const w of flipped) if ((w.z ?? 0) > (keep.z ?? 0)) keep = w;
+  return widgets.map((w) =>
+    w.flipped && w !== keep ? { ...w, flipped: false } : w
+  );
+};
+
+/** The canonical board-load pipeline: per-widget migration then flip normalization. */
+export const migrateBoardWidgets = (widgets: WidgetData[]): WidgetData[] =>
+  normalizeFlipped(widgets.map(migrateWidget));
 
 export const migrateLocalStorageToFirestore = async (
   userId: string,

@@ -1,0 +1,4 @@
+{
+  "clock": { "fontFamily": "font-sans", "fontColor": "#ffffff" },
+  "checklist": { "scaleMultiplier": 1.2, "items": ["leaked"] }
+}

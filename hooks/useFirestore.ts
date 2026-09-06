@@ -22,7 +22,7 @@ import {
 } from '@/utils/dashboardSaveMerge';
 import { migrateBoardForCollections } from '@/utils/collectionsMigration';
 import { migrateDashboardWidgets } from '@/utils/migrateProportionalLayout';
-import { migrateWidget } from '@/utils/migration';
+import { migrateBoardWidgets } from '@/utils/migration';
 import {
   Dashboard,
   SharedBoardIntendedMode,
@@ -270,8 +270,10 @@ function mapSharedDocToDashboard(
     rawIntendedMode === 'view-only'
       ? rawIntendedMode
       : undefined;
+  const base = record as unknown as Dashboard;
   return {
-    ...(record as unknown as Dashboard),
+    ...base,
+    widgets: migrateBoardWidgets(base.widgets ?? []),
     id: shareId,
     ...(originalAuthorName ? { linkedShareHostName: originalAuthorName } : {}),
     ...(intendedMode ? { intendedMode } : {}),
@@ -287,7 +289,7 @@ function mapSharedDocToDashboard(
 const normalizeServerBoard = (board: Dashboard): Dashboard => {
   const withCollections = migrateBoardForCollections(board);
   // Snapshot-path order: without migrateWidget the merge folds a legacy timer config onto a migrated time-tool widget.
-  const typeMigrated = (withCollections.widgets ?? []).map(migrateWidget);
+  const typeMigrated = migrateBoardWidgets(withCollections.widgets ?? []);
   const widgets = migrateDashboardWidgets(
     typeMigrated,
     withCollections.viewportWidth,

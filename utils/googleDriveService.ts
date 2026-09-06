@@ -1,6 +1,7 @@
 import { APP_NAME } from '@/config/constants';
 import { Dashboard } from '@/types';
 import { authError } from './driveAuthErrors';
+import { migrateBoardWidgets } from './migration';
 
 // Re-export so existing imports of `isDriveAuthError` from this module keep
 // working — the canonical home is now `./driveAuthErrors`.
@@ -732,7 +733,11 @@ export class GoogleDriveService {
       throw new Error('Failed to download dashboard from Drive');
     }
 
-    return (await response.json()) as Dashboard;
+    const dashboard = (await response.json()) as Dashboard;
+    return {
+      ...dashboard,
+      widgets: migrateBoardWidgets(dashboard.widgets ?? []),
+    };
   }
 
   /**
