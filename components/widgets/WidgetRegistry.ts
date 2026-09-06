@@ -18,6 +18,7 @@ import {
   isChunkLoadError,
   neverResolvingPromise,
 } from '@/utils/chunkLoadError';
+import type { WidgetSettingsSchema } from '@/components/settings/schema/types';
 
 // Component type definitions to ensure type safety
 type SettingsComponentProps = {
@@ -262,6 +263,11 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
  * Do not assume `WIDGET_SETTINGS_COMPONENTS[widgetType]` is defined for every
  * `WidgetType` — always handle the `undefined` case at call sites.
  */
+// Settings-drawer schemas (modules, not components); populated per migrated widget.
+export const WIDGET_SETTINGS_SCHEMAS: Partial<
+  Record<WidgetType, () => Promise<WidgetSettingsSchema>>
+> = {};
+
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
 > = {

@@ -1,6 +1,6 @@
 # Widget Settings Drawer — Implementation Plan
 
-**Date**: 2026-09-05 · **Branch**: `dev-paul` · **Status**: Revision 9 (2026-09-05) — FINAL — decisions locked via design interview, hardened by adversarial code review, revised against the graded comparison in §10, re-scoped by the product owner (§11), corrected against a third independent grading (§12), then validated against a four-variant in-app UI prototype and amended per the product owner's pick (§13: find-a-setting filter, Window-tier dedupe, darker section labels, bottom-sheet viewport fixed), then corrected by an adversarial review of the plan itself (§14: false dedupe rationale, maximized z-order, dock/sidebar coverage, resize-pan, scoped heading color, flag-path gating), then finalized after two independent reviews (§15: flag defaults that gated everyone out, per-user width store, single-bundle E2E override, read-only asymmetry corrected, local-only camera on remote flips, `activeWidgetId` state machine, host render isolation, axe scope, wave dependencies), then amended by an independent go/no-go grading (§16: dev and prod share one Firebase project, dual-write key renames, wave-2 reassessment gate), then by a pre-implementation safety review (§17: save-merge stamp desync, self-healing deletion steps, flag-script disable mode) (not started)
+**Date**: 2026-09-05 · **Branch**: `dev-paul` · **Status**: Revision 9 (2026-09-05) — FINAL — decisions locked via design interview, hardened by adversarial code review, revised against the graded comparison in §10, re-scoped by the product owner (§11), corrected against a third independent grading (§12), then validated against a four-variant in-app UI prototype and amended per the product owner's pick (§13: find-a-setting filter, Window-tier dedupe, darker section labels, bottom-sheet viewport fixed), then corrected by an adversarial review of the plan itself (§14: false dedupe rationale, maximized z-order, dock/sidebar coverage, resize-pan, scoped heading color, flag-path gating), then finalized after two independent reviews (§15: flag defaults that gated everyone out, per-user width store, single-bundle E2E override, read-only asymmetry corrected, local-only camera on remote flips, `activeWidgetId` state machine, host render isolation, axe scope, wave dependencies), then amended by an independent go/no-go grading (§16: dev and prod share one Firebase project, dual-write key renames, wave-2 reassessment gate), then by a pre-implementation safety review (§17: save-merge stamp desync, self-healing deletion steps, flag-script disable mode). **Waves 0 and 1a implemented** on `feat/settings-drawer-w01a` (PR #2888 to `dev-paul`, 2026-09-06); wave 1b next
 
 Replace the per-widget floating settings panel with a docked, schema-driven settings drawer so
 every widget's settings look and behave the same way while the live widget stays visible on the
@@ -777,25 +777,37 @@ after the last rename (D25).
 
 ## 6. Top-10 migration list
 
-**Status: PROVISIONAL — replace in wave 0.1 with the analytics-ranked list.**
+**Status: Analytics-ranked as of 2026-09-05, ranked by presence on current boards (not adds).**
+No widget-add event log exists (`adminAnalyticsCompute.ts` only tallies `widgets[]` entries on
+each dashboard's current, live state); "adds in the last 90 days" is therefore not a
+computable metric from this project's data, per the §8 open question. This table instead ranks
+by current instance count across all `dashboards` documents in the production `spartboard`
+Firestore project (451 dashboards scanned via `collectionGroup('dashboards')` with the caller's
+own `gcloud`/firebase-login application-default credentials — no service-account key or code
+change was needed), the same "presence" metric `AnalyticsManager.tsx` calls `totalInstances`.
+The system-injected `onboarding` widget (never user-added; auto-inserted on first run) and
+`sticker` (not independently addable — spawned only by the `stickers`/StickerBook widget and
+has no settings panel) were excluded as not meaningful "widget adds" for this migration.
 
-Provisional (largest legacy settings files, verified 2026-09-05):
+| #   | Widget       | Legacy settings file                                 | Lines | Instances | Strings (0.3) |
+| --- | ------------ | ---------------------------------------------------- | ----- | --------- | ------------- |
+| 1   | Timer        | `components/widgets/TimeTool/Settings.tsx`           | 641   | 130       | 39            |
+| 2   | Note         | `components/widgets/TextWidget/Settings.tsx`         | 77    | 130       | 1             |
+| 3   | Embed        | `components/widgets/Embed/Settings.tsx`              | 338   | 120       | 11            |
+| 4   | Clock        | `components/widgets/ClockWidget/Settings.tsx`        | 153   | 82        | 8             |
+| 5   | Lunch        | `components/widgets/LunchCount/Settings.tsx`         | 343   | 69        | 7             |
+| 6   | Tasks        | `components/widgets/Checklist/Settings.tsx`          | 383   | 65        | 11            |
+| 7   | Weather      | `components/widgets/Weather/Settings.tsx`            | 549   | 58        | 23            |
+| 8   | Expectations | `components/widgets/ExpectationsWidget/Settings.tsx` | 92    | 45        | 3             |
+| 9   | Random       | `components/widgets/random/RandomSettings.tsx`       | 641   | 43        | 14            |
+| 10  | Links        | `components/widgets/UrlWidget/Settings.tsx`          | 348   | 37        | 9             |
 
-| #   | Widget             | Legacy settings file                                 | Lines | Strings (0.3) |
-| --- | ------------------ | ---------------------------------------------------- | ----- | ------------- |
-| 1   | Schedule           | `components/widgets/Schedule/Settings.tsx`           | 938   | TBD           |
-| 2   | SpecialistSchedule | `components/widgets/SpecialistSchedule/Settings.tsx` | 731   | TBD           |
-| 3   | RevealGrid         | `components/widgets/RevealGrid/Settings.tsx`         | 703   | TBD           |
-| 4   | Poll               | `components/widgets/PollWidget/Settings.tsx`         | 650   | TBD           |
-| 5   | Random             | `components/widgets/random/RandomSettings.tsx`       | 641   | TBD           |
-| 6   | TimeTool           | `components/widgets/TimeTool/Settings.tsx`           | 641   | TBD           |
-| 7   | Materials          | `components/widgets/MaterialsWidget/Settings.tsx`    | 572   | TBD           |
-| 8   | Weather            | `components/widgets/Weather/Settings.tsx`            | 549   | TBD           |
-| 9   | NumberLine         | `components/widgets/NumberLine/Settings.tsx`         | 447   | TBD           |
-| 10  | NextUp             | `components/widgets/NextUp/Settings.tsx`             | 433   | TBD           |
+Strings (0.3) = visible labels + help strings counted in `widget-settings-inventory.md`; total
+126 across the ten. Only Timer, Clock and Weather go through `t()` today; the other seven are
+hardcoded English, which sizes the deferred translation follow-up (D20).
 
-When the analytics list arrives, keep whichever of these are in the true top 10 and drop the
-rest; do not exceed 10 in this series.
+Note is inline in `TextWidget/Settings.tsx` (a thin wrapper — most of Note's front-face
+formatting lives in `FormattingToolbar.tsx`, not counted here since it isn't a settings panel).
 
 ## 7. Done bar (per migrated widget)
 

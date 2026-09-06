@@ -15,7 +15,11 @@ export default mergeConfig(
       // setTz.ts pins process.env.TZ = 'UTC' with no imports, so it must run
       // BEFORE setup.ts (whose import statements would otherwise be hoisted
       // above any TZ assignment in the same file).
-      setupFiles: ['./tests/setTz.ts', './tests/setup.ts'],
+      setupFiles: [
+        './tests/setTz.ts',
+        './tests/setup.ts',
+        './tests/setup-axe.ts',
+      ],
       exclude: [
         ...configDefaults.exclude,
         'tests/e2e/**',

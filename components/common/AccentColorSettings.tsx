@@ -10,6 +10,8 @@ interface AccentColorSettingsProps {
   fallbackLabel?: string;
   onChange: (color: string | undefined) => void;
   icon?: LucideIcon | React.ElementType;
+  /** Suppresses the heading when the caller already renders a label. */
+  hideLabel?: boolean;
 }
 
 // Single accent-color picker (presets + custom); the leading dashed swatch clears back to `fallback`.
@@ -20,8 +22,10 @@ export const AccentColorSettings: React.FC<AccentColorSettingsProps> = ({
   fallbackLabel = 'Match',
   onChange,
   icon = Palette,
+  hideLabel = false,
 }) => (
   <ColorPresetPicker
+    hideLabel={hideLabel}
     label={label}
     presets={TEXT_COLOR_SWATCHES}
     value={value}
