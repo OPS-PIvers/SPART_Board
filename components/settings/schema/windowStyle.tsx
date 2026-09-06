@@ -3,10 +3,7 @@ import type { GlobalStyle, WidgetData } from '@/types';
 import { UniversalStyleSettings } from '@/components/common/UniversalStyleSettings';
 import type { TranslateFn } from './types';
 
-/**
- * The four Window-tier labels the find-a-setting filter indexes (§3 item 2).
- * They are i18n leaves under `widgetSettings.common.*`, not schema fields.
- */
+// The four Window-tier labels the find-a-setting filter indexes; i18n leaves under `widgetSettings.common.*`, not schema fields.
 export const WINDOW_STYLE_LABELS = [
   'style.windowBackground',
   'style.windowTransparency',
@@ -21,11 +18,7 @@ export type WindowStyleTierProps = {
   t: TranslateFn;
 };
 
-/**
- * Window tier (D18): frame background, window font and window text size come
- * from `UniversalStyleSettings` — which already renders the one and only
- * background control (§3 item 4) — followed by transparency.
- */
+// Window tier (D18): frame background, window font and window text size come from UniversalStyleSettings, followed by transparency.
 export const WindowStyleTier: React.FC<WindowStyleTierProps> = ({
   widget,
   updateWidget,

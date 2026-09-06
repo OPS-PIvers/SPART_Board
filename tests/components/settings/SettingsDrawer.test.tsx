@@ -118,7 +118,7 @@ describe('SettingsDrawer chrome', () => {
     });
     fireEvent.click(screen.getByRole('tab', { name: 'Style' }));
     expect(screen.getByText('legacy style body')).toBeVisible();
-    expect(screen.getByText('Transparency (Global)')).toBeVisible();
+    expect(screen.getByText('Window transparency (Global)')).toBeVisible();
   });
 
   it('renders exactly one background control on the Style tab', () => {
@@ -264,6 +264,19 @@ describe('SettingsDrawer resize handle', () => {
     expect(small.props.onWidthCommit).toHaveBeenLastCalledWith(
       DRAWER_MIN_WIDTH
     );
+  });
+
+  it('re-clamps when placement changes with the same width prop', () => {
+    const { rerender, props } = renderDrawer({
+      placement: 'right',
+      width: 400,
+    });
+    rerender(<SettingsDrawer {...props} placement="bottom" />);
+    const separator = handle();
+    const now = Number(separator.getAttribute('aria-valuenow'));
+    expect(now).toBeGreaterThanOrEqual(35);
+    expect(now).toBeLessThanOrEqual(85);
+    expect(separator).toHaveAttribute('aria-valuenow', String(now));
   });
 
   it('commits a pointer drag only when it ends', () => {

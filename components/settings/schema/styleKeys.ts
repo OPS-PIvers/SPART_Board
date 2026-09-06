@@ -1,11 +1,8 @@
 import type { AppearanceKey, Field } from './types';
 
-/**
- * Content-tier Style fields (D18): one shared field per appearance key the
- * generic tier can render. A schema's `styleKeys` selects from this map.
- * `layout` is deliberately absent — its options are per-widget, so it stays a
- * schema field in the widget's own `display` group.
- */
+// Content-tier Style fields (D18): one shared field per appearance key the generic tier can render.
+// `layout` is deliberately absent — its options are per-widget, so it stays a schema field in the widget's own `display` group.
+// `cardOpacity` is deliberately absent — cardColor embeds opacity via opacityKey, so a bare 'cardOpacity' styleKey is ignored.
 export const UNIVERSAL_STYLE_FIELDS: Partial<Record<AppearanceKey, Field>> = {
   fontFamily: {
     type: 'fontFamily',
@@ -18,14 +15,6 @@ export const UNIVERSAL_STYLE_FIELDS: Partial<Record<AppearanceKey, Field>> = {
     key: 'cardColor',
     label: 'style.cardColor',
     opacityKey: 'cardOpacity',
-  },
-  cardOpacity: {
-    type: 'slider',
-    key: 'cardOpacity',
-    label: 'style.cardOpacity',
-    min: 0,
-    max: 1,
-    step: 0.05,
   },
   textSizePreset: {
     type: 'textSizePreset',
