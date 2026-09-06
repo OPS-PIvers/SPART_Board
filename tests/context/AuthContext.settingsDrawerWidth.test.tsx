@@ -228,6 +228,24 @@ describe('AuthContext — settingsDrawerWidth', () => {
       expect(options).toEqual({ merge: true });
     });
 
+    it('persists the clamped value, not the raw out-of-range value', async () => {
+      await mountWithProfile({ settingsDrawerWidth: 400 });
+      vi.mocked(firestore.setDoc).mockClear();
+
+      await act(async () => {
+        await getCtx().updateUserPreference('settingsDrawerWidth', 900);
+      });
+
+      const profileWrites = vi
+        .mocked(firestore.setDoc)
+        .mock.calls.filter(([ref]) =>
+          (ref as unknown as DocRef).__path?.endsWith('userProfile/profile')
+        );
+      expect(profileWrites).toHaveLength(1);
+      const [, payload] = profileWrites[0];
+      expect(payload).toEqual({ settingsDrawerWidth: 560 });
+    });
+
     it('applies the optimistic state update, clamped, before setDoc resolves', async () => {
       await mountWithProfile({ settingsDrawerWidth: 400 });
       let resolveSetDoc: () => void = () => undefined;

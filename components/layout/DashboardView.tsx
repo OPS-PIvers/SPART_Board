@@ -50,7 +50,10 @@ import {
   computeCursorAnchoredPan,
   viewportToWrapper,
 } from '@/utils/zoomPanMath';
-import { registerPanSetter } from '@/components/settings/panSetterRegistry';
+import {
+  registerPanSetter,
+  registerPanGetter,
+} from '@/components/settings/panSetterRegistry';
 import {
   AlertCircle,
   CheckCircle2,
@@ -348,28 +351,39 @@ export const DashboardView: React.FC = () => {
 
   const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 });
 
+  // Render-body ref sync (no effect) so the pan getter below always reads
+  // the latest value without waiting for an effect pass.
+  const panOffsetRef = React.useRef(panOffset);
+  panOffsetRef.current = panOffset;
+
   // Notify DraggableWindow tool-menu positioning without triggering re-renders
   // on every context consumer — panOffset intentionally lives outside context.
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent('board-pan'));
   }, [panOffset]);
 
-  // Expose a clamped pan setter to the settings drawer camera (§4.8): the
-  // registry is module-level, so panOffset stays local state here.
+  // Expose a clamped pan setter + getter to the settings drawer camera
+  // (§4.8): the registry is module-level, so panOffset stays local state
+  // here. The setter is a by-value no-op when x/y are unchanged, mirroring
+  // the render-time re-clamp guard below — otherwise a read-only pan probe
+  // (identity updater) would still fire a 'board-pan' event.
   React.useEffect(
     () =>
       registerPanSetter((next) =>
-        setPanOffset((prev) =>
-          clampPan(
+        setPanOffset((prev) => {
+          const clamped = clampPan(
             typeof next === 'function' ? next(prev) : next,
             zoomRef.current,
             window.innerWidth,
             window.innerHeight
-          )
-        )
+          );
+          return clamped.x === prev.x && clamped.y === prev.y ? prev : clamped;
+        })
       ),
     []
   );
+
+  React.useEffect(() => registerPanGetter(() => panOffsetRef.current), []);
 
   // Explicit "reset to canonical view" actions (FAB reset button, 100% preset)
   // dispatch this event so we snap pan to center alongside their setZoom(1).

@@ -2111,8 +2111,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateUserPreference = useCallback(
     async (key: UserPreferenceKey, value: number) => {
+      const persistedValue =
+        key === 'settingsDrawerWidth' ? clampSettingsDrawerWidth(value) : value;
       if (key === 'settingsDrawerWidth') {
-        setSettingsDrawerWidthState(clampSettingsDrawerWidth(value));
+        setSettingsDrawerWidthState(persistedValue);
       }
       if (!user || isAuthBypass) return;
       const myToken = ++writeTokenRef.current;
@@ -2120,7 +2122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // `merge: true` is mandatory — see the UserProfile ownership contract in types.ts.
         await setDoc(
           doc(db, 'users', user.uid, 'userProfile', 'profile'),
-          { [key]: value },
+          { [key]: persistedValue },
           { merge: true }
         );
       } catch (error) {

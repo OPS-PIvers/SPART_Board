@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  getPan,
   isPanSetterRegistered,
+  registerPanGetter,
   registerPanSetter,
   requestPan,
 } from '@/components/settings/panSetterRegistry';
@@ -49,5 +51,30 @@ describe('panSetterRegistry', () => {
     expect(second).toHaveBeenCalled();
     expect(first).not.toHaveBeenCalled();
     registerPanSetter(second)();
+  });
+
+  it('getPan is null when no getter is registered', () => {
+    expect(getPan()).toBeNull();
+  });
+
+  it('getPan reads from the registered getter without calling the setter', () => {
+    const setter = vi.fn();
+    const unregisterSetter = registerPanSetter(setter);
+    const unregisterGetter = registerPanGetter(() => ({ x: 3, y: 9 }));
+
+    expect(getPan()).toEqual({ x: 3, y: 9 });
+    expect(setter).not.toHaveBeenCalled();
+
+    unregisterGetter();
+    expect(getPan()).toBeNull();
+    unregisterSetter();
+  });
+
+  it('unregistering a stale getter does not clear a newer one', () => {
+    const unregisterFirst = registerPanGetter(() => ({ x: 1, y: 1 }));
+    const unregisterSecond = registerPanGetter(() => ({ x: 2, y: 2 }));
+    unregisterFirst();
+    expect(getPan()).toEqual({ x: 2, y: 2 });
+    unregisterSecond();
   });
 });
