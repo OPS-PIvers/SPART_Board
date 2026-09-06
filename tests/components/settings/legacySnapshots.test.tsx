@@ -1,0 +1,108 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import { WidgetType } from '@/types';
+import {
+  WIDGET_SETTINGS_COMPONENTS,
+  WIDGET_APPEARANCE_COMPONENTS,
+} from '@/components/widgets/WidgetRegistry';
+import { renderLegacySettings, LegacySlot } from './renderLegacySettings';
+
+// Inert Firestore so panels that load data render their deterministic empty state.
+vi.mock('firebase/firestore', () => {
+  const ref = { id: 'mock', path: 'mock' };
+  const emptySnap = {
+    exists: () => false,
+    data: () => undefined,
+    docs: [],
+    empty: true,
+    forEach: () => undefined,
+    id: 'mock',
+  };
+  return {
+    collection: () => ref,
+    doc: () => ref,
+    query: () => ref,
+    where: () => ref,
+    orderBy: () => ref,
+    limit: () => ref,
+    FieldPath: class {},
+    getDoc: () => Promise.resolve(emptySnap),
+    getDocs: () => Promise.resolve(emptySnap),
+    getCountFromServer: () => Promise.resolve({ data: () => ({ count: 0 }) }),
+    onSnapshot: () => () => undefined,
+    setDoc: () => Promise.resolve(),
+    addDoc: () => Promise.resolve(ref),
+    updateDoc: () => Promise.resolve(),
+    deleteDoc: () => Promise.resolve(),
+    deleteField: () => undefined,
+    arrayUnion: (...items: unknown[]) => items,
+    increment: (n: number) => n,
+    serverTimestamp: () => 0,
+    runTransaction: () => Promise.resolve(),
+    writeBatch: () => ({
+      set: () => undefined,
+      update: () => undefined,
+      delete: () => undefined,
+      commit: () => Promise.resolve(),
+    }),
+    Timestamp: { now: () => ({ toMillis: () => 0 }), fromMillis: () => ({}) },
+  };
+});
+
+// Panels that cannot render under jsdom; each retires with its wave migration.
+const SKIPPED: Partial<
+  Record<LegacySlot, Partial<Record<WidgetType, string>>>
+> = {
+  settings: {},
+  appearance: {},
+};
+
+const FIXED_NOW = new Date('2026-01-01T00:00:00.000Z');
+
+describe('legacy settings render snapshots', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(FIXED_NOW);
+    let counter = 0;
+    vi.spyOn(Math, 'random').mockImplementation(() => 0.42);
+    vi.stubGlobal('crypto', {
+      ...globalThis.crypto,
+      randomUUID: () =>
+        `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`,
+      getRandomValues: (array: Uint8Array) => array.fill(7),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  const cases: Array<{ slot: LegacySlot; type: WidgetType }> = [
+    ...Object.keys(WIDGET_SETTINGS_COMPONENTS).map((type) => ({
+      slot: 'settings' as const,
+      type: type as WidgetType,
+    })),
+    ...Object.keys(WIDGET_APPEARANCE_COMPONENTS).map((type) => ({
+      slot: 'appearance' as const,
+      type: type as WidgetType,
+    })),
+  ];
+
+  it.each(cases)(
+    '$slot slot for $type',
+    async ({ slot, type }) => {
+      const skipReason = SKIPPED[slot]?.[type];
+      if (skipReason) {
+        expect(skipReason).toBeTruthy();
+        return;
+      }
+      const container = await renderLegacySettings(type, slot);
+      expect(container.innerHTML).toMatchSnapshot();
+      // Large panels pull deep lazy import graphs; the default 5s is too tight.
+    },
+    30000
+  );
+});
