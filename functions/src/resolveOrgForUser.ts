@@ -155,6 +155,10 @@ export const resolveOrgForUser = onCall(
       // claim). No org to resolve — free tier.
       return { orgId: null };
     }
+    // Unverified claims can't prove domain ownership (email/password sign-in allows a self-reported address) — same rail as studentLoginV1/isExternalCaller.
+    if (token.email_verified !== true) {
+      return { orgId: null };
+    }
 
     const db = admin.firestore();
     // Try `hd` first, then the email domain — first registered match wins.
