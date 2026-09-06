@@ -75,26 +75,13 @@ const TileGrid: React.FC<TileGridProps> = ({
 
   if (numItems === 0) {
     return (
-      <div className="h-full w-full flex items-center justify-center text-slate-400">
-        <div className="flex flex-col items-center">
-          <Package
-            style={{
-              width: 'min(36px, 18cqmin)',
-              height: 'min(36px, 18cqmin)',
-            }}
-            className="opacity-30"
-          />
-          <span
-            className="italic"
-            style={{
-              marginTop: 'min(8px, 2cqmin)',
-              fontSize: 'min(12px, 5cqmin)',
-            }}
-          >
-            Flip to add items
-          </span>
-        </div>
-      </div>
+      <ScaledEmptyState
+        icon={Package}
+        title="Flip to add items"
+        iconClassName="text-slate-400 opacity-30"
+        titleClassName="text-slate-400"
+        iconSize="min(36px, 18cqmin)"
+      />
     );
   }
 
