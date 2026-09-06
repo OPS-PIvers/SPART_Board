@@ -13,11 +13,11 @@ data URIs.
 
 ## Workflow
 
-1. **Get the images.** For app walkthroughs, capture screenshots with
-   Playwright (see Screenshots below). For diagrams, read the supplied
-   image at full resolution. When starting from an exported file, decode
-   each `imageUrls` entry and overlay its existing pins so you can see what
-   the author meant.
+1. **Get the images.** For app walkthroughs, read
+   [references/app-walkthrough.md](references/app-walkthrough.md) and capture
+   screenshots with Playwright. For diagrams, read the supplied image at full
+   resolution. When starting from an exported file, decode each `imageUrls`
+   entry and overlay its existing pins so you can see what the author meant.
 2. **Plan steps.** One hotspot per thing the audience must notice. 4–10
    steps for a diagram; up to ~16 for an app walkthrough. Add pins for
    controls the story needs (a Save button, a toggle) even if the author
@@ -34,28 +34,27 @@ data URIs.
 6. **Embed images.** Convert each image to a base64 data URI
    (`data:image/png;base64,…` or `image/jpeg`), in `imageUrls` in slide
    order. The importer re-hosts data URIs to Storage.
-7. **Validate** against the rules below, then save as
-   `<Title>.<first-8-of-id>.gl.json`.
+7. **Validate** against the rules below and run
+   `node .claude/skills/gl-author/scripts/validate_gl_json.mjs <file>`, then
+   save as `<Title>.<first-8-of-id>.gl.json`.
 
 ## Screenshots (app walkthroughs)
 
-Use the Playwright MCP (`mcp__plugin_playwright_playwright__*`). It is the
-only tool that writes screenshot files; the Browser pane returns inline
-images you cannot embed.
+Prefer the Playwright MCP (`mcp__plugin_playwright_playwright__*`) when it is
+available. Tool availability varies between clean sessions, so the local
+`@playwright/test` fallback is supported and must not modify tracked package
+files. Do not use the Browser pane for deliverable screenshots: it may not
+reach localhost and its inline images cannot be embedded reliably.
 
-- Start `vite-dev-bypass` (port 56300) or a `*-dev` harness route; drive
-  the UI with `browser_click` / `browser_type` / `browser_evaluate`.
-- Save with `browser_take_screenshot` to `.playwright-mcp/shots/<n>.png`.
-  Relative paths resolve against the worktree root, and Playwright can only
-  read or write inside the worktree and `.playwright-mcp/`. Copy any fixture
-  you upload into one of those roots first.
-- Use a fixed viewport (`browser_resize`, e.g. 1440×900) for every slide so
-  coordinates stay comparable, and hide harness chrome (state bars, dev
-  banners) via `browser_evaluate` before capturing.
-- Toasts and other timed UI: override `window.setTimeout` for delays ≥
-  1500 ms before triggering them so they stay on screen for the capture.
-- Read each saved PNG back to measure pixel positions; do not estimate
-  from memory of the page.
+The app-walkthrough reference covers clean-session setup, deterministic mock
+data, dev-only harnesses, local Chromium fallback, semantic waits, coordinate
+measurement, screenshot verification, and cleanup. Keep captures in
+`.playwright-mcp/shots/`, use one fixed viewport such as 1440×900, and measure
+hotspots from the saved full-resolution PNGs or Playwright element bounds.
+
+Repository code may retain internal names such as `RandomWidget` or widget
+type `random`. Use the client-facing product name requested by the user in the
+guide title, labels, and prose.
 
 ## Writing rules (step `text` and `label`)
 
@@ -199,6 +198,11 @@ multiple-choice `correctAnswer` must appear verbatim in `choices`;
 matching/sorting arrays must be non-empty; `schemaVersion` must be `2`
 (the importer passes it through, and without it spotlights render with
 legacy container-relative semantics).
+
+The validator also decodes every embedded image and prints its byte count.
+Large base64 strings are often shortened by file previews, so judge
+completeness from successful JSON parsing and decoded payloads, not from a
+preview window.
 
 ## Round-trip guarantee
 
