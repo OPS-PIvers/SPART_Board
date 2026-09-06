@@ -6872,7 +6872,7 @@ export interface UserRolesConfig {
  *  - `AuthContext` owns the account-level/identity fields: `selectedBuildings`,
  *    `language`, `savedWidgetConfigs`, `savedWidgetPresets`,
  *    `savedWidgetConfigsPreV2`, `setupCompleted`, `disableCloseConfirmation`,
- *    `remoteControlEnabled`, `dockPosition`, `quizMonitorColorsEnabled`,
+ *    `remoteControlEnabled`, `dockPosition`, `settingsDrawerWidth`, `quizMonitorColorsEnabled`,
  *    `quizMonitorScoreDisplay`, `favoriteBackgrounds`, `recentBackgrounds`.
  *  - `DashboardContext` owns the board/dock state fields: `dockItems`,
  *    `libraryOrder`, `dockInitialized`, `lastActiveCollectionId`,
@@ -6926,6 +6926,11 @@ export interface UserProfile {
   remoteControlEnabled?: boolean;
   /** Where the dock is anchored on screen (account-level) */
   dockPosition?: DockPosition;
+  /**
+   * Widget settings drawer width in px, clamped to 360-560. Per-user
+   * account-level preference; falls back to 400 when absent.
+   */
+  settingsDrawerWidth?: number;
   /**
    * Quiz live-monitor row tinting toggle. When `true` (default), rows are
    * tinted by score band for completed students; when `false`, rows render
