@@ -31,6 +31,7 @@ import {
   X,
 } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
+import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 import {
   RESULTS_PROTECTION_DEFAULTS,
   RESULTS_TAB_WARNING_THRESHOLD_MAX,
@@ -231,6 +232,21 @@ export const PublishScoresModal: React.FC<PublishScoresModalProps> = ({
           role="radiogroup"
           aria-label="Score visibility"
           className="space-y-2"
+          onKeyDown={(e) => {
+            if (submitting) return;
+            // Vertical layout: remap Down/Up onto the helper's Right/Left (local, not in radioGroupKeyNav.ts — that file has other pending edits).
+            const key =
+              e.key === 'ArrowDown'
+                ? 'ArrowRight'
+                : e.key === 'ArrowUp'
+                  ? 'ArrowLeft'
+                  : e.key;
+            handleRadioGroupKeyDown(
+              { ...e, key, preventDefault: () => e.preventDefault() },
+              OPTIONS,
+              (opt) => setSelected(opt.id)
+            );
+          }}
         >
           {OPTIONS.map((opt) => {
             const isActive = selected === opt.id;
@@ -241,6 +257,7 @@ export const PublishScoresModal: React.FC<PublishScoresModalProps> = ({
                 type="button"
                 role="radio"
                 aria-checked={isActive}
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => setSelected(opt.id)}
                 disabled={submitting}
                 className={`w-full text-left rounded-xl border px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-brand-blue-primary/40 disabled:opacity-50 ${
