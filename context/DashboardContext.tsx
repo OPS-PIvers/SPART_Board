@@ -5518,7 +5518,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           if (d.id !== activeId) return d;
           const target = d.widgets.find((w) => w.id === id);
           const gid = target?.groupId;
-          let widgets = d.widgets.filter((w) => w.id !== id);
+          // Cascade-delete companion widgets (e.g. blooms-detail) whose config points back at this one.
+          let widgets = d.widgets.filter(
+            (w) =>
+              w.id !== id &&
+              (w.config as { parentWidgetId?: unknown }).parentWidgetId !== id
+          );
           // Auto-dissolve group if only 1 member left
           if (gid) {
             const remaining = widgets.filter((w) => w.groupId === gid);
@@ -5592,7 +5597,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           d.widgets.forEach((w) => {
             if (idSet.has(w.id) && w.groupId) affectedGroupIds.add(w.groupId);
           });
-          const widgets = d.widgets.filter((w) => !idSet.has(w.id));
+          // Cascade-delete companion widgets (e.g. blooms-detail) whose config points back at a removed one.
+          const widgets = d.widgets.filter(
+            (w) =>
+              !idSet.has(w.id) &&
+              !idSet.has(
+                (w.config as { parentWidgetId?: string }).parentWidgetId ?? ''
+              )
+          );
 
           if (affectedGroupIds.size === 0) return { ...d, widgets };
 
