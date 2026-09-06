@@ -199,6 +199,14 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
   // Resize handle -------------------------------------------------------
   const bounds = drawerSizeBounds(placement);
   const dragRef = useRef<{ start: number; size: number } | null>(null);
+  const keyCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (keyCommitTimerRef.current) clearTimeout(keyCommitTimerRef.current);
+    },
+    []
+  );
 
   const commit = (next: number) => {
     const clamped = clampDrawerSize(next, placement);
@@ -250,7 +258,12 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
     if (delta === 0) return;
     e.preventDefault();
     e.stopPropagation();
-    onWidthCommit(commit(size + delta));
+    const next = commit(size + delta);
+    if (keyCommitTimerRef.current) clearTimeout(keyCommitTimerRef.current);
+    keyCommitTimerRef.current = setTimeout(() => {
+      keyCommitTimerRef.current = null;
+      onWidthCommit(next);
+    }, 250);
   };
 
   // Layout --------------------------------------------------------------

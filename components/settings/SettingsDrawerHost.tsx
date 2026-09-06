@@ -22,7 +22,10 @@ import { LegacySettingsSlot } from './legacy/LegacySettingsSlot';
 import type { WidgetSettingsSchema } from './schema/types';
 import { useSettingsDrawerPlacement } from './useSettingsDrawerPlacement';
 import { useSettingsDrawerCamera } from './useSettingsDrawerCamera';
-import { useSettingsDrawerFocus } from './useSettingsDrawerFocus';
+import {
+  useSettingsDrawerFocus,
+  useSettingsTargetMarker,
+} from './useSettingsDrawerFocus';
 import { consumeLocalSettingsOpen } from './settingsOpenSignal';
 import {
   markSettingsJustClosed,
@@ -40,10 +43,17 @@ type HostState = {
   pendingUnflipId: string | null;
   /** Maximized widget that must be restored before its drawer opens (D22). */
   pendingRestoreId: string | null;
+  /** Widget whose stored `flipped` must be cleared after read-only ends. */
+  pendingUnsuppressId: string | null;
 };
 
 type HostAction =
-  | { type: 'board'; boardId: string | null; activeWidgetId: string | null }
+  | {
+      type: 'board';
+      boardId: string | null;
+      activeWidgetId: string | null;
+      readOnly: boolean;
+    }
   | { type: 'readOnly'; readOnly: boolean }
   | { type: 'close'; suppressId?: string | null }
   | { type: 'unsuppress' }
@@ -59,9 +69,11 @@ const reducer = (state: HostState, action: HostAction): HostState => {
         ...state,
         boardId: action.boardId,
         activeWidgetId: action.activeWidgetId,
+        readOnly: action.readOnly,
         suppressedId: null,
         pendingUnflipId: null,
         pendingRestoreId: null,
+        pendingUnsuppressId: null,
       };
     case 'readOnly':
       return action.readOnly
@@ -71,7 +83,12 @@ const reducer = (state: HostState, action: HostAction): HostState => {
             activeWidgetId: null,
             suppressedId: state.activeWidgetId,
           }
-        : { ...state, readOnly: false };
+        : {
+            ...state,
+            readOnly: false,
+            suppressedId: null,
+            pendingUnsuppressId: state.suppressedId,
+          };
     case 'close':
       return {
         ...state,
@@ -95,7 +112,12 @@ const reducer = (state: HostState, action: HostAction): HostState => {
     case 'refuse':
       return { ...state, suppressedId: action.id, pendingRestoreId: null };
     case 'clearPending':
-      return { ...state, pendingUnflipId: null, pendingRestoreId: null };
+      return {
+        ...state,
+        pendingUnflipId: null,
+        pendingRestoreId: null,
+        pendingUnsuppressId: null,
+      };
     default:
       return state;
   }
@@ -114,10 +136,7 @@ type SchemaState = {
 
 const schemaReducer = (_: SchemaState, next: SchemaState): SchemaState => next;
 
-/**
- * Mounted once by DashboardView. Owns which widget the settings drawer edits
- * and composes the placement, camera and focus hooks (§3 Selection, §4.8).
- */
+/** Mounted once by DashboardView; owns which widget the settings drawer edits (§3 Selection, §4.8). */
 export const SettingsDrawerHost: React.FC = () => {
   const { t } = useTranslation();
   const {
@@ -148,6 +167,7 @@ export const SettingsDrawerHost: React.FC = () => {
       suppressedId: null,
       pendingUnflipId: null,
       pendingRestoreId: null,
+      pendingUnsuppressId: null,
     };
   });
   const { activeWidgetId, suppressedId } = state;
@@ -181,6 +201,7 @@ export const SettingsDrawerHost: React.FC = () => {
       activeWidgetId: flippedWinnerId(
         getCanvasState().activeDashboard?.widgets
       ),
+      readOnly,
     });
   } else if (readOnly !== state.readOnly) {
     dispatch({ type: 'readOnly', readOnly });
@@ -223,9 +244,12 @@ export const SettingsDrawerHost: React.FC = () => {
   const originatedLocally = open && originatedRef.current;
 
   // Swap and maximize-restore writes: batched, outside render.
-  const { pendingUnflipId, pendingRestoreId } = state;
+  const { pendingUnflipId, pendingRestoreId, pendingUnsuppressId } = state;
   useEffect(() => {
-    if (!pendingUnflipId && !pendingRestoreId) return;
+    if (!pendingUnflipId && !pendingRestoreId && !pendingUnsuppressId) return;
+    if (pendingUnsuppressId) {
+      updateWidget(pendingUnsuppressId, { flipped: false });
+    }
     if (pendingUnflipId && activeWidgetId) {
       updateWidgets([
         { id: activeWidgetId, changes: { flipped: true } },
@@ -250,6 +274,7 @@ export const SettingsDrawerHost: React.FC = () => {
   }, [
     pendingUnflipId,
     pendingRestoreId,
+    pendingUnsuppressId,
     activeWidgetId,
     readOnly,
     updateWidget,
@@ -285,6 +310,8 @@ export const SettingsDrawerHost: React.FC = () => {
     boardId,
     restoreOnClose: !closedByGestureRef.current,
   });
+
+  useSettingsTargetMarker(open ? widget.id : null, open);
 
   useSettingsDrawerFocus({
     widgetId: open ? widget.id : null,

@@ -13,8 +13,24 @@ const widgetRoot = (widgetId: string): HTMLElement | null =>
         `[data-widget-id="${widgetId}"]:not([data-widget-portal])`
       );
 
+/** Sets the edited-widget marker whenever the drawer is open, regardless of which tab opened it. */
+export const useSettingsTargetMarker = (
+  widgetId: string | null,
+  open: boolean
+): void => {
+  useEffect(() => {
+    if (!open || !widgetId) return undefined;
+    const root = widgetRoot(widgetId);
+    root?.setAttribute(SETTINGS_TARGET_ATTRIBUTE, '');
+    return () => {
+      root?.removeAttribute(SETTINGS_TARGET_ATTRIBUTE);
+    };
+  }, [open, widgetId]);
+};
+
 export interface UseSettingsDrawerFocusArgs {
   widgetId: string | null;
+  /** Move focus to the heading on open / opener on close (local-origin opens only). */
   open: boolean;
   /** The drawer heading (tabIndex -1); focus moves here on open. */
   headingRef: RefObject<HTMLElement | null>;
@@ -31,13 +47,10 @@ export const useSettingsDrawerFocus = ({
   useEffect(() => {
     if (!open || !widgetId) return;
     headingRef.current?.focus();
-    const root = widgetRoot(widgetId);
-    root?.setAttribute(SETTINGS_TARGET_ATTRIBUTE, '');
     // Read at close time on purpose: the opener is whatever the host points at then.
     const readOpener = () => openerRef?.current ?? null;
 
     return () => {
-      root?.removeAttribute(SETTINGS_TARGET_ATTRIBUTE);
       const opener = readOpener();
       if (opener && opener.isConnected) {
         opener.focus();
