@@ -36,12 +36,13 @@ function readWorkflow(name: string): string {
   return readFileSync(resolve(repoRoot, '.github/workflows', name), 'utf-8');
 }
 
-// The uncommented `pnpm run lint:app` invocation line (exactly one per workflow).
-function lintAppLine(yaml: string): string | undefined {
+// Every uncommented `pnpm run lint:app` invocation line — filter, not find, so a
+// workflow that ever grows a second such step doesn't silently skip checking it.
+function lintAppLines(yaml: string): string[] {
   return yaml
     .split('\n')
     .map((l) => l.trim())
-    .find((l) => !l.startsWith('#') && l.includes('pnpm run lint:app'));
+    .filter((l) => !l.startsWith('#') && l.includes('pnpm run lint:app'));
 }
 
 describe('Node worker_threads do not inherit the parent --max-old-space-size (empirical)', () => {
@@ -71,14 +72,16 @@ describe('CI workflow: type-aware ESLint concurrency must not assume NODE_OPTION
   ];
 
   for (const name of workflows) {
-    it(`${name}'s lint:app step does not pass --concurrency`, () => {
+    it(`${name}'s lint:app step(s) do not pass --concurrency`, () => {
       const yaml = readWorkflow(name);
-      const line = lintAppLine(yaml);
+      const lines = lintAppLines(yaml);
       expect(
-        line,
+        lines.length,
         `expected a 'pnpm run lint:app' step in ${name}`
-      ).toBeTruthy();
-      expect(line).not.toMatch(/--concurrency/);
+      ).toBeGreaterThan(0);
+      for (const line of lines) {
+        expect(line).not.toMatch(/--concurrency/);
+      }
     });
   }
 });
