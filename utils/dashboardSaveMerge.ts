@@ -77,7 +77,11 @@ const mergeWidget = (
   ...local,
   ...(configChanged(local, base)
     ? {}
-    : { config: server.config, version: server.version }),
+    : {
+        config: server.config,
+        version: server.version,
+        configVersion: server.configVersion,
+      }),
   ...(anyChanged(local, base, LAYOUT_FIELDS)
     ? {}
     : pick(server, LAYOUT_FIELDS)),

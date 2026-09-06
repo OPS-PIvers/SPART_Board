@@ -62,7 +62,7 @@ import {
 } from '@/config/widgetDefaults';
 import {
   migrateLocalStorageToFirestore,
-  migrateWidget,
+  migrateBoardWidgets,
 } from '@/utils/migration';
 import {
   migrateDrawingToSubcollection,
@@ -1934,7 +1934,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           const collectionsMigrated = migrateBoardForCollections(db);
           const widgetMigrated: Dashboard = {
             ...collectionsMigrated,
-            widgets: collectionsMigrated.widgets.map(migrateWidget),
+            widgets: migrateBoardWidgets(collectionsMigrated.widgets),
           };
           const hydrated = hydrateDashboardForViewport(
             widgetMigrated,
@@ -2211,6 +2211,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                       ...sw,
                       version: keepLocalConfig ? lw.version : sw.version,
                       config: keepLocalConfig ? lw.config : sw.config,
+                      configVersion: keepLocalConfig
+                        ? lw.configVersion
+                        : sw.configVersion,
                       ...(keepLocalLayout
                         ? (() => {
                             const acc: Record<string, unknown> = {};
@@ -2338,6 +2341,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     ...sw,
                     version: keepLocalConfig ? saved.version : sw.version,
                     config: keepLocalConfig ? saved.config : sw.config,
+                    configVersion: keepLocalConfig
+                      ? saved.configVersion
+                      : sw.configVersion,
                     ...(keepLocalLayout
                       ? (() => {
                           const acc: Record<string, unknown> = {};
@@ -5863,10 +5869,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateWidgets = useCallback(
     (
-      updates: Array<{
-        id: string;
-        changes: Partial<Pick<WidgetData, 'x' | 'y' | 'w' | 'h'>>;
-      }>,
+      updates: Array<{ id: string; changes: Partial<WidgetData> }>,
       opts?: { skipHistory?: boolean }
     ) => {
       if (!activeIdRef.current) return;
@@ -5892,6 +5895,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               if (!changes) return w;
               const merged = { ...w, ...changes };
               const isResize = 'w' in changes || 'h' in changes;
+              // Flip-only batches must not re-derive proportional bounds (plan §4.9).
+              if (!isResize && !('x' in changes) && !('y' in changes))
+                return merged;
               return syncWidgetProportionsFromPixels(
                 merged,
                 vpW,

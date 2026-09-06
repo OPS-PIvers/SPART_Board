@@ -37,6 +37,7 @@ export const Z_INDEX = {
   annotationSurface: 9960, // Ink layer beside the zoom surface, above fixed chrome
   annotationChromeLift: 9965, // Dock/Sidebar/FAB raised over the ink layer while annotating
   annotationChrome: 9970, // Annotation toolbar / text editor (above the ink layer)
+  drawer: 9980, // Widget settings drawer (above annotation chrome, below every modal)
   announcementOverlay: 9985, // Windowed announcements
   announcementMaximized: 9990, // Maximized announcements
   snapPreview: 9998, // Drag-to-edge visual preview

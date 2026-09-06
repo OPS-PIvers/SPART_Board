@@ -366,6 +366,55 @@ describe('DashboardContext per-widget merge', () => {
     });
   });
 
+  it('carries configVersion alongside config for both the local-wins and server-wins branches', async () => {
+    const stateRef = setup();
+
+    const widgetA = { ...makeWidget('wA', 'original-A'), configVersion: 1 };
+    const widgetB = { ...makeWidget('wB', 'original-B'), configVersion: 1 };
+    const initialDashboard = makeDashboard([widgetA, widgetB]);
+
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+
+    // Local edit on widget A bumps its local configVersion.
+    await act(async () => {
+      stateRef.current?.updateWidget('wA', {
+        config: { text: 'local-A' } as WidgetData['config'],
+        configVersion: 2,
+      });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      const wA = stateRef.current?.activeDashboard?.widgets.find(
+        (w) => w.id === 'wA'
+      );
+      expect(wA?.config).toMatchObject({ text: 'local-A' });
+    });
+
+    // Server snapshot: widget A unchanged (stale), widget B changed with a new configVersion.
+    const serverDashboard = makeDashboard([
+      { ...makeWidget('wA', 'original-A'), configVersion: 1 },
+      { ...makeWidget('wB', 'server-B'), configVersion: 5 },
+    ]);
+    await pushSnapshot([{ ...serverDashboard, updatedAt: 2000 }]);
+
+    await waitFor(() => {
+      const widgets = stateRef.current?.activeDashboard?.widgets;
+      const wA = widgets?.find((w) => w.id === 'wA');
+      const wB = widgets?.find((w) => w.id === 'wB');
+      // Local-wins branch: configVersion travels with the kept local config.
+      expect(wA?.config).toMatchObject({ text: 'local-A' });
+      expect(wA?.configVersion).toBe(2);
+      // Server-wins branch: configVersion travels with the accepted server config.
+      expect(wB?.config).toMatchObject({ text: 'server-B' });
+      expect(wB?.configVersion).toBe(5);
+    });
+  });
+
   it('preserves a locally-present widget that the server deleted while local edits exist', async () => {
     const stateRef = setup();
 

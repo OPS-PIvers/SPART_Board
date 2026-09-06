@@ -176,6 +176,8 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     void updateSessionBackground(dashboardBackground);
   }, [dashboardBackground, isLive, updateSessionBackground]);
 
+  // With the drawer flag on, SettingsDrawerHost owns the settings surface.
+  const useSettingsDrawer = canAccessFeature('settings-drawer');
   const SettingsComponent = WIDGET_SETTINGS_COMPONENTS[widget.type];
   const AppearanceComponent = WIDGET_APPEARANCE_COMPONENTS[widget.type];
 
@@ -184,6 +186,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   // re-renders when neither the component type nor the widget changed. A
   // useCallback here would be useless because the value is consumed inline.
   const widgetSettings = useMemo(() => {
+    if (useSettingsDrawer) {
+      return undefined;
+    }
     if (SettingsComponent) {
       return (
         <Suspense fallback={<LoadingFallback />}>
@@ -196,9 +201,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         Standard settings available.
       </div>
     );
-  }, [SettingsComponent, widget]);
+  }, [SettingsComponent, widget, useSettingsDrawer]);
 
   const widgetAppearanceSettings = useMemo(() => {
+    if (useSettingsDrawer || !AppearanceComponent) {
+      return null;
+    }
     if (AppearanceComponent) {
       return (
         <Suspense fallback={<LoadingFallback />}>
@@ -207,7 +215,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       );
     }
     return null;
-  }, [AppearanceComponent, widget]);
+  }, [AppearanceComponent, widget, useSettingsDrawer]);
 
   // When spotlighted we switch to position:fixed so the element escapes all
   // parent stacking contexts (will-change:transform / container-type:size on
@@ -348,6 +356,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       title={getTitle(widget, permission)}
       settings={widgetSettings}
       appearanceSettings={widgetAppearanceSettings}
+      useSettingsDrawer={useSettingsDrawer}
       style={customStyle}
       isSpotlighted={isSpotlighted}
       isBoardActive={isActive}

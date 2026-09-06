@@ -18,6 +18,9 @@ import {
 } from '@/types';
 import type { BuildingRecord } from '@/types/organization';
 
+/** Keys writable via `updateUserPreference`. Grows as more per-user numeric prefs land. */
+export type UserPreferenceKey = 'settingsDrawerWidth';
+
 export interface AuthContextType {
   user: User | null;
   googleAccessToken: string | null;
@@ -186,6 +189,13 @@ export interface AuthContextType {
   remoteControlEnabled: boolean;
   /** Where the dock is anchored on screen (account-level preference) */
   dockPosition: DockPosition;
+  /** Widget settings drawer width in px, clamped 360-560 (account-level preference) */
+  settingsDrawerWidth: number;
+  /** Write a single per-user preference (merged, immediate); in-memory only under auth bypass */
+  updateUserPreference: (
+    key: UserPreferenceKey,
+    value: number
+  ) => Promise<void>;
   /**
    * Whether the quiz live-monitor tints completed-student rows by score
    * band (≥80% green, 60-79% amber, <60% rose). When false the roster

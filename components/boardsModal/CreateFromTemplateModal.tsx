@@ -14,6 +14,7 @@ import {
   DashboardTemplate,
 } from '@/types';
 import { logError } from '@/utils/logError';
+import { migrateBoardWidgets } from '@/utils/migration';
 import { mockTemplateStore } from '@/hooks/useTemplateStore';
 
 interface Props {
@@ -91,7 +92,7 @@ export const CreateFromTemplateModal: React.FC<Props> = ({
           id: crypto.randomUUID(),
           name: tpl.name,
           background: tpl.background ?? 'bg-slate-900',
-          widgets: tpl.widgets,
+          widgets: migrateBoardWidgets(tpl.widgets ?? []),
           createdAt: Date.now(),
           order: baseOrder + 1,
           ...(tpl.globalStyle !== undefined && {
@@ -131,10 +132,14 @@ export const CreateFromTemplateModal: React.FC<Props> = ({
         let succeeded = 0;
         for (const board of boardInputs) {
           try {
-            await createNewDashboard(board.name, board, {
-              collectionId: newCollectionId,
-              silent: true,
-            });
+            await createNewDashboard(
+              board.name,
+              { ...board, widgets: migrateBoardWidgets(board.widgets ?? []) },
+              {
+                collectionId: newCollectionId,
+                silent: true,
+              }
+            );
             succeeded += 1;
           } catch (boardErr) {
             logError('CreateFromTemplateModal.boardCreate', boardErr, {

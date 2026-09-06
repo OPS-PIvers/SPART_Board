@@ -8,6 +8,7 @@ import {
 } from '@/context/DashboardContextValue';
 import { useDialog } from '@/context/useDialog';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { resetSettingsCloseSignal } from '@/components/settings/settingsCloseSignal';
 
 // Override the global useDialog mock so tests can track individual showConfirm calls.
 vi.mock('@/context/useDialog', () => ({
@@ -84,6 +85,7 @@ describe('DraggableWindow (Tests folder)', () => {
   const mockShowConfirm = vi.fn().mockResolvedValue(true);
 
   beforeEach(() => {
+    resetSettingsCloseSignal();
     vi.clearAllMocks();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     // Configure the useDialog mock to return a stable object so tests can

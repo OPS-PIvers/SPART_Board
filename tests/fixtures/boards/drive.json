@@ -1,0 +1,28 @@
+{
+  "id": "drive-1",
+  "name": "Drive board",
+  "background": "bg-slate-900",
+  "createdAt": 1700000000000,
+  "widgets": [
+    {
+      "id": "d1",
+      "type": "timer",
+      "x": 0,
+      "y": 0,
+      "w": 300,
+      "h": 300,
+      "z": 1,
+      "config": { "duration": 300 }
+    },
+    {
+      "id": "d2",
+      "type": "clock",
+      "x": 40,
+      "y": 40,
+      "w": 300,
+      "h": 200,
+      "z": 2,
+      "config": {}
+    }
+  ]
+}

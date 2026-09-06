@@ -198,6 +198,13 @@ export const FEATURE_DEFAULTS: Record<GlobalFeature, FeatureDefault> = {
     defaultEnabled: false,
     missingDocPublic: false,
   },
+  // Alpha rollout of the redesigned widget settings UI (wave 1b). Default-off
+  // and admin-only until the drawer is verified across all widget types.
+  'settings-drawer': {
+    defaultAccessLevel: 'admin',
+    defaultEnabled: true,
+    missingDocPublic: false,
+  },
 };
 
 /**

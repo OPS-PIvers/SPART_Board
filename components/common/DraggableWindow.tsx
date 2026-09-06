@@ -61,6 +61,12 @@ import {
 } from '@/context/dashboardCanvasStore';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
+import {
+  markSettingsClosedByGesture,
+  consumeSettingsJustClosed,
+  markSettingsJustClosed,
+} from '@/components/settings/settingsCloseSignal';
+import { markSettingsOpenedLocally } from '@/components/settings/settingsOpenSignal';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useHasOpenModal } from './modalStore';
 import { AnnotationCanvas } from './AnnotationCanvas';
@@ -130,8 +136,10 @@ const RESIZE_PRIORITY_INSET = 16;
 interface DraggableWindowProps {
   widget: WidgetData;
   children: React.ReactNode;
-  settings: React.ReactNode;
+  settings?: React.ReactNode;
   appearanceSettings?: React.ReactNode;
+  /** True when SettingsDrawerHost owns the settings surface (§4.5). */
+  useSettingsDrawer?: boolean;
   title: string;
   style?: React.CSSProperties; // Added style prop
   isSpotlighted?: boolean; // Added isSpotlighted prop
@@ -183,6 +191,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   headerActions,
   globalStyle,
   isBoardActive = true,
+  useSettingsDrawer = false,
 }) => {
   const { t } = useTranslation();
   // Mount-stable actions surface — identities never change, so dep arrays
@@ -589,9 +598,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // within the same synchronous keydown dispatch) and call updateWidget a
   // second, redundant time. Reset every render — the ref only needs to
   // survive the brief window between onClose firing and the next commit.
-  const justClosedSettingsRef = useRef(false);
-  // eslint-disable-next-line react-hooks/refs -- intentional render-body ref reset for stale-flag prevention (CLAUDE.md pattern); false positive from react-hooks/refs v7
-  justClosedSettingsRef.current = false;
 
   const handleCloseTools = useCallback(() => {
     setSelectedWidgetId(null);
@@ -978,6 +984,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         case 's': // Settings
           if (isLocked) break;
           e.preventDefault();
+          if (!widget.flipped) markSettingsOpenedLocally(widget.id);
           updateWidget(widget.id, { flipped: !widget.flipped });
           handleCloseTools();
           break;
@@ -1054,6 +1061,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Close settings panel on drag start to prevent position desync
     // (panel position is based on widget.x/y which don't update during DOM-level drag)
     if (widget.flipped) {
+      markSettingsClosedByGesture();
       updateWidget(widget.id, { flipped: false });
     }
 
@@ -1468,6 +1476,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     // Close settings panel on resize start to prevent position desync
     if (widget.flipped) {
+      markSettingsClosedByGesture();
       updateWidget(widget.id, { flipped: false });
     }
 
@@ -1979,7 +1988,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         // If you add a new Escape branch here, mirror it in handleKeyDown and vice-versa.
         if (showConfirm) {
           setShowConfirm(false);
-        } else if (!justClosedSettingsRef.current) {
+        } else if (!consumeSettingsJustClosed()) {
           // Wrapped (rather than an early empty `else if` branch) so a new
           // sub-case added below is mechanically guarded by the ref check —
           // SettingsPanel's own Escape handler already closed the panel in
@@ -2830,9 +2839,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     ? t('widgetWindow.closeSettings')
                     : t('widgetWindow.settings')
                 }
+                data-settings-opener={widget.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (isLocked) return;
+                  if (!widget.flipped) markSettingsOpenedLocally(widget.id);
                   updateWidget(widget.id, { flipped: !widget.flipped });
                   setShowMaxMenu(false);
                 }}
@@ -3012,8 +3023,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </div>
                   <div className="flex items-center gap-1 -mr-1">
                     <IconButton
+                      data-settings-opener={widget.id}
                       onClick={() => {
                         if (isLocked) return;
+                        if (!widget.flipped)
+                          markSettingsOpenedLocally(widget.id);
                         updateWidget(widget.id, {
                           flipped: !widget.flipped,
                         });
@@ -3404,43 +3418,49 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         )}
 
       {/* SETTINGS PANEL PORTAL */}
-      {widget.flipped && isBoardActive && typeof document !== 'undefined' && (
-        <SettingsPanel
-          key={widget.id}
-          widget={widget}
-          widgetRef={windowRef}
-          settings={settings}
-          appearanceSettings={appearanceSettings}
-          shouldRenderSettings={shouldRenderSettings}
-          onClose={() => {
-            // updateWidget (DashboardContext.tsx) returns early — without
-            // calling setDashboards, so no re-render fires to reset this ref
-            // in the render body — on a read-only board OR when there's no
-            // active dashboard (activeIdRef.current null; a very narrow race
-            // where a dashboard switch clears activeId while this widget is
-            // still mounted). Either way the ref would otherwise stay stuck
-            // `true` for the widget's lifetime, permanently no-op'ing every
-            // subsequent Escape in handleCustomKeyboard's priority chain
-            // (including setIsAnnotating(false), a purely local write NOT
-            // blocked by either guard). Only set it when the write will
-            // actually land and trigger the reset.
-            //
-            // Read via getCanvasState() (event-fire time) rather than the
-            // render-closure values above — this callback can fire after a
-            // stale render commit, and reading at event time closes that
-            // window entirely instead of risking acting on a value that's
-            // already out of date by the time onClose runs.
-            const canvasState = getCanvasState();
-            justClosedSettingsRef.current =
-              !canvasState.isActiveBoardReadOnly &&
-              canvasState.activeDashboard !== null;
-            updateWidget(widget.id, { flipped: false });
-          }}
-          updateWidget={updateWidget}
-          globalStyle={globalStyle}
-          title={title}
-        />
-      )}
+      {!useSettingsDrawer &&
+        widget.flipped &&
+        isBoardActive &&
+        typeof document !== 'undefined' && (
+          <SettingsPanel
+            key={widget.id}
+            widget={widget}
+            widgetRef={windowRef}
+            settings={settings}
+            appearanceSettings={appearanceSettings}
+            shouldRenderSettings={shouldRenderSettings}
+            onClose={() => {
+              // updateWidget (DashboardContext.tsx) returns early — without
+              // calling setDashboards, so no re-render fires to reset this ref
+              // in the render body — on a read-only board OR when there's no
+              // active dashboard (activeIdRef.current null; a very narrow race
+              // where a dashboard switch clears activeId while this widget is
+              // still mounted). Either way the ref would otherwise stay stuck
+              // `true` for the widget's lifetime, permanently no-op'ing every
+              // subsequent Escape in handleCustomKeyboard's priority chain
+              // (including setIsAnnotating(false), a purely local write NOT
+              // blocked by either guard). Only set it when the write will
+              // actually land and trigger the reset.
+              //
+              // Read via getCanvasState() (event-fire time) rather than the
+              // render-closure values above — this callback can fire after a
+              // stale render commit, and reading at event time closes that
+              // window entirely instead of risking acting on a value that's
+              // already out of date by the time onClose runs.
+              const canvasState = getCanvasState();
+              if (
+                !canvasState.isActiveBoardReadOnly &&
+                canvasState.activeDashboard !== null
+              ) {
+                markSettingsJustClosed();
+              }
+              updateWidget(widget.id, { flipped: false });
+            }}
+            updateWidget={updateWidget}
+            globalStyle={globalStyle}
+            title={title}
+          />
+        )}
     </>
   );
 };

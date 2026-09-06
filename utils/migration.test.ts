@@ -136,7 +136,7 @@ describe('migration', () => {
       expect(result.h).toBe(600);
     });
 
-    it('returns other widgets unchanged', () => {
+    it('returns other widgets unchanged apart from the configVersion stamp', () => {
       const widget = {
         id: '123',
         type: 'clock',
@@ -149,7 +149,7 @@ describe('migration', () => {
       } as WidgetData;
 
       const newWidget = migrateWidget(widget);
-      expect(newWidget).toEqual(widget);
+      expect(newWidget).toEqual({ ...widget, configVersion: 0 });
     });
   });
 

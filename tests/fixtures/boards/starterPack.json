@@ -1,0 +1,24 @@
+{
+  "id": "pack-1",
+  "name": "Morning routine",
+  "widgets": [
+    {
+      "type": "clock",
+      "x": 0,
+      "y": 0,
+      "w": 300,
+      "h": 200,
+      "z": 1,
+      "config": {}
+    },
+    {
+      "type": "workSymbols",
+      "x": 10,
+      "y": 10,
+      "w": 400,
+      "h": 300,
+      "z": 2,
+      "config": { "layout": "grid" }
+    }
+  ]
+}
