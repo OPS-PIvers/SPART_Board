@@ -16,6 +16,6 @@ export type FieldProps<F extends Field = Field> = {
     rowIndex: number,
     onRowChange: (nextRow: Record<string, unknown>) => void
   ) => ReactNode;
-  /** Custom fields only: the mount-stable patch writer handed to `render`. */
+  /** Mount-stable patch writer for Custom `render` and fields that write a second key. */
   updateConfig?: UpdateConfig;
 };

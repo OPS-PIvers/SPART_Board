@@ -1,16 +1,9 @@
 import React from 'react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FieldRenderer } from '../FieldRenderer';
 import type { SurfaceColorField } from '../../schema/types';
-import type { WidgetData } from '@/types';
 import { makeCtx, widget } from './testUtils';
-
-const updateWidget =
-  vi.fn<(id: string, updates: Partial<WidgetData>) => void>();
-vi.mock('@/context/useDashboard', () => ({
-  useDashboard: () => ({ updateWidget }),
-}));
 
 const field: SurfaceColorField<string> = {
   type: 'surfaceColor',
@@ -19,10 +12,6 @@ const field: SurfaceColorField<string> = {
 };
 
 describe('SurfaceColor field', () => {
-  beforeEach(() => {
-    updateWidget.mockClear();
-  });
-
   it('renders the current color and opacity', () => {
     const ctx = makeCtx({ cardColor: '#ffffff', cardOpacity: 0.5 });
     render(
@@ -52,26 +41,25 @@ describe('SurfaceColor field', () => {
       />
     );
     screen.getByRole('radio', { name: /Slate/i }).click();
+    expect(updateConfig).toHaveBeenCalledTimes(1);
     expect(updateConfig).toHaveBeenCalledWith({ cardColor: '#f8fafc' });
-    expect(updateWidget).not.toHaveBeenCalled();
   });
 
-  it('writes opacity changes to the resolved opacityKey via updateWidget', () => {
+  it('writes opacity changes to the resolved opacityKey via updateConfig', () => {
     const ctx = makeCtx({ cardColor: '#ffffff', cardOpacity: 1 });
+    const updateConfig = vi.fn();
     render(
       <FieldRenderer
         field={field}
         widget={widget}
         ctx={ctx}
-        updateConfig={vi.fn()}
+        updateConfig={updateConfig}
       />
     );
     const slider = screen.getByRole('slider');
     fireEvent.change(slider, { target: { value: '0.25' } });
-    expect(updateWidget).toHaveBeenCalledTimes(1);
-    const [calledId, calledUpdates] = updateWidget.mock.calls[0];
-    expect(calledId).toBe('w1');
-    expect(calledUpdates.config).toMatchObject({ cardOpacity: 0.25 });
+    expect(updateConfig).toHaveBeenCalledTimes(1);
+    expect(updateConfig).toHaveBeenCalledWith({ cardOpacity: 0.25 });
   });
 
   it('uses a custom opacityKey when provided', () => {

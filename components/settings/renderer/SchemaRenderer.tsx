@@ -54,8 +54,7 @@ export const SchemaRenderer: React.FC<SchemaRendererProps> = ({
             aria-labelledby={headingId}
             data-group={group.id}
           >
-            {/* tone="drawer" goes here once item 1a.8 lands the prop. */}
-            <SettingsLabel as="span" id={headingId}>
+            <SettingsLabel as="span" id={headingId} tone="drawer">
               {title}
             </SettingsLabel>
             <div className="divide-y divide-slate-100">

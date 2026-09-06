@@ -205,6 +205,11 @@ describe('widgetHelpers', () => {
         lastNames: '',
         completedNames: [],
         scaleMultiplier: 1,
+        rosterMode: 'class',
+        fontFamily: 'global',
+        fontColor: '#334155',
+        cardColor: '#ffffff',
+        cardOpacity: 1,
       });
     });
 
@@ -241,6 +246,11 @@ describe('widgetHelpers', () => {
         lastNames: '',
         completedNames: [],
         scaleMultiplier: 1,
+        rosterMode: 'class',
+        fontFamily: 'global',
+        fontColor: '#334155',
+        cardColor: '#ffffff',
+        cardOpacity: 1,
       });
     });
 

@@ -1135,6 +1135,16 @@
       "use": "Use"
     }
   },
+  "widgetSettings": {
+    "common": {
+      "group": {
+        "content": "Content",
+        "behavior": "Behavior",
+        "display": "Display"
+      },
+      "reset": "Reset to default"
+    }
+  },
   "widgetWindow": {
     "closeWidget": "Close widget? Data will be lost.",
     "settings": "Settings",

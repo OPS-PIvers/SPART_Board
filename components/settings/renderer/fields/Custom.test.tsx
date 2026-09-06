@@ -71,9 +71,8 @@ describe('Custom field', () => {
   });
 
   it('renders nothing when field type is not custom', () => {
-    const field = { type: 'toggle', key: 'a', label: 'title' } as const;
-    // FieldRenderer routes toggle to UnsupportedField, not Custom, so this
-    // just confirms Custom's own guard is never reached via the registry path.
+    const field = { type: 'iconPicker', key: 'a', label: 'title' } as const;
+    // Picker types still route to UnsupportedField, never to Custom.
     render(
       <FieldRenderer
         field={field}
