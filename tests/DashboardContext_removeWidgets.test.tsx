@@ -129,6 +129,7 @@ vi.mock('firebase/firestore', async (importOriginal) => {
 interface ContextSnapshot {
   dashboards: Dashboard[];
   activeDashboard: Dashboard | null;
+  removeWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
 }
 
@@ -140,6 +141,7 @@ const TestConsumer: React.FC<{
     stateRef.current = {
       dashboards: ctx.dashboards,
       activeDashboard: ctx.activeDashboard,
+      removeWidget: ctx.removeWidget,
       removeWidgets: ctx.removeWidgets,
     };
   });
@@ -160,10 +162,15 @@ function setup() {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeWidget(id: string, groupId?: string): WidgetData {
+function makeWidget(
+  id: string,
+  groupId?: string,
+  config?: WidgetData['config'],
+  type: WidgetData['type'] = 'text'
+): WidgetData {
   return {
     id,
-    type: 'text',
+    type,
     x: 0,
     y: 0,
     w: 1,
@@ -171,7 +178,7 @@ function makeWidget(id: string, groupId?: string): WidgetData {
     z: 1,
     flipped: false,
     groupId,
-    config: { text: 'test' } as WidgetData['config'],
+    config: config ?? ({ text: 'test' } as WidgetData['config']),
   };
 }
 
@@ -322,6 +329,100 @@ describe('DashboardContext removeWidgets regression tests', () => {
     await waitFor(() => {
       const widgets = stateRef.current?.activeDashboard?.widgets;
       expect(widgets?.length).toBe(1);
+    });
+  });
+
+  // Regression: closing a pyramid used to strand its blooms-detail companion
+  // (config.parentWidgetId pointing back at the removed widget) on the board
+  // forever. removeWidget now cascades to companions instead of relying on
+  // the companion to self-detect its own orphaning.
+  it('removeWidget cascades to a companion widget whose parentWidgetId points at it', async () => {
+    const stateRef = setup();
+    const pyramid = makeWidget('pyramid-1');
+    const detail = makeWidget(
+      'detail-1',
+      undefined,
+      { parentWidgetId: 'pyramid-1' } as unknown as WidgetData['config'],
+      'blooms-detail'
+    );
+    await pushSnapshot([makeDashboard([pyramid, detail])]);
+
+    act(() => {
+      stateRef.current?.removeWidget('pyramid-1');
+    });
+
+    await waitFor(() => {
+      const widgets = stateRef.current?.activeDashboard?.widgets;
+      expect(widgets?.length).toBe(0);
+    });
+  });
+
+  it('removeWidget does not touch an unrelated widget with no matching parentWidgetId', async () => {
+    const stateRef = setup();
+    const pyramid = makeWidget('pyramid-1');
+    const unrelated = makeWidget(
+      'other-1',
+      undefined,
+      {
+        parentWidgetId: 'some-other-widget',
+      } as unknown as WidgetData['config'],
+      'blooms-detail'
+    );
+    await pushSnapshot([makeDashboard([pyramid, unrelated])]);
+
+    act(() => {
+      stateRef.current?.removeWidget('pyramid-1');
+    });
+
+    await waitFor(() => {
+      const widgets = stateRef.current?.activeDashboard?.widgets;
+      expect(widgets?.length).toBe(1);
+      expect(widgets?.[0].id).toBe('other-1');
+    });
+  });
+
+  // Regression: the cascade is scoped to blooms-detail specifically — a
+  // different widget type independently using a `parentWidgetId` config key
+  // for an unrelated purpose must never be silently cascade-deleted.
+  it('removeWidget does not cascade-delete a non-blooms-detail widget even with a matching parentWidgetId', async () => {
+    const stateRef = setup();
+    const pyramid = makeWidget('pyramid-1');
+    const lookalike = makeWidget('other-1', undefined, {
+      parentWidgetId: 'pyramid-1',
+    } as unknown as WidgetData['config']);
+    await pushSnapshot([makeDashboard([pyramid, lookalike])]);
+
+    act(() => {
+      stateRef.current?.removeWidget('pyramid-1');
+    });
+
+    await waitFor(() => {
+      const widgets = stateRef.current?.activeDashboard?.widgets;
+      expect(widgets?.length).toBe(1);
+      expect(widgets?.[0].id).toBe('other-1');
+    });
+  });
+
+  it('removeWidgets (multi-select) also cascades to a companion widget', async () => {
+    const stateRef = setup();
+    const pyramid = makeWidget('pyramid-1');
+    const detail = makeWidget(
+      'detail-1',
+      undefined,
+      { parentWidgetId: 'pyramid-1' } as unknown as WidgetData['config'],
+      'blooms-detail'
+    );
+    const other = makeWidget('other-1');
+    await pushSnapshot([makeDashboard([pyramid, detail, other])]);
+
+    act(() => {
+      stateRef.current?.removeWidgets(['pyramid-1']);
+    });
+
+    await waitFor(() => {
+      const widgets = stateRef.current?.activeDashboard?.widgets;
+      expect(widgets?.length).toBe(1);
+      expect(widgets?.[0].id).toBe('other-1');
     });
   });
 });
