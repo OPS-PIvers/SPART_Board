@@ -2658,6 +2658,14 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
    * `submitAnswer`: recordings append as siblings with an explicit
    * `takeIndex`, every other answer type keeps replacing. `takeLimit` is
    * advisory here — the archival callable is the authoritative gate.
+   *
+   * Runs inside a transaction, reading `answers` fresh rather than off the
+   * client-cached `myResponseRef` — the same rationale as `completeQuiz`'s
+   * transaction: two rapid commits (a retry after an ambiguous upload, a
+   * double-tap before the recorder UI disables) would otherwise both compute
+   * `takeIndex`/`answers` from the same stale snapshot, and the second
+   * `updateDoc` would overwrite the first take right out of the array —
+   * silently discarding a student's recorded answer.
    */
   const commitRecordingTake = useCallback(
     async (input: CommitRecordingTakeInput): Promise<number | null> => {
@@ -2666,49 +2674,53 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       if (!sessionId || !responseKey) return null;
       if (!mediaResponseEnabledRef.current) return null;
 
-      const existingAnswers = myResponseRef.current?.answers ?? [];
-      // Symmetric to markUnresponded: a closed slot never accepts a take.
-      if (isRecordingSlotClosed(existingAnswers, input.questionId)) return null;
-      const takeIndex = nextTakeIndex(existingAnswers, input.questionId);
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        responseKey
+      );
 
-      const newAnswer: QuizResponseAnswer = {
-        questionId: input.questionId,
-        // A recording answer's text slot is legitimately empty; the artifact
-        // is the response. `isUnsafeBlankDraft` only guards drafts, and a
-        // committed take is never a draft.
-        answer: '',
-        answeredAt: Date.now(),
-        status: 'submitted',
-        takeIndex,
-        artifacts: [input.artifact],
-      };
-      if (input.noticeAckedAt) newAnswer.noticeAckedAt = input.noticeAckedAt;
+      let writtenTakeIndex: number | null = null;
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(responseRef);
+        if (!snap.exists()) return;
+        const existing = snap.data() as QuizResponse;
+        const existingAnswers = existing.answers ?? [];
+        // Symmetric to markUnresponded: a closed slot never accepts a take.
+        if (isRecordingSlotClosed(existingAnswers, input.questionId)) return;
+        const takeIndex = nextTakeIndex(existingAnswers, input.questionId);
 
-      const updated = [...existingAnswers, newAnswer];
-      const nextStatus =
-        myResponseRef.current?.status === 'completed'
-          ? 'completed'
-          : 'in-progress';
+        const newAnswer: QuizResponseAnswer = {
+          questionId: input.questionId,
+          // A recording answer's text slot is legitimately empty; the artifact
+          // is the response. `isUnsafeBlankDraft` only guards drafts, and a
+          // committed take is never a draft.
+          answer: '',
+          answeredAt: Date.now(),
+          status: 'submitted',
+          takeIndex,
+          artifacts: [input.artifact],
+        };
+        if (input.noticeAckedAt) newAnswer.noticeAckedAt = input.noticeAckedAt;
 
-      await updateDoc(
-        doc(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          sessionId,
-          RESPONSES_COLLECTION,
-          responseKey
-        ),
-        {
+        const updated = [...existingAnswers, newAnswer];
+        const nextStatus =
+          existing.status === 'completed' ? 'completed' : 'in-progress';
+
+        tx.update(responseRef, {
           status: nextStatus,
           answers: updated,
           lastWriteAt: serverTimestamp(),
           ...servedSnapshotPatch(
             servedQuestionIdsRef.current,
-            myResponseRef.current?.servedQuestionIds
+            existing.servedQuestionIds
           ),
-        }
-      );
-      return takeIndex;
+        });
+        writtenTakeIndex = takeIndex;
+      });
+      return writtenTakeIndex;
     },
     []
   );

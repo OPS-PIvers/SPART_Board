@@ -2220,6 +2220,13 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
 
 describe('useQuizSessionStudent — commitRecordingTake / markUnresponded', () => {
   let responseCallback: ((snap: unknown) => void) | null = null;
+  // Mirrors the response doc `commitRecordingTake`'s transaction reads via
+  // `tx.get()` — updated by `joinAndSeed` alongside the onSnapshot payload so
+  // both the live listener and the transaction mock agree on current state.
+  let latestResponseData: Record<string, unknown> = {
+    status: 'in-progress',
+    answers: [] as Record<string, unknown>[],
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -2259,6 +2266,44 @@ describe('useQuizSessionStudent — commitRecordingTake / markUnresponded', () =
     (
       firestore.updateDoc as unknown as ReturnType<typeof vi.fn>
     ).mockResolvedValue(undefined);
+    // Default `runTransaction`: reads the same data the onSnapshot listener
+    // last saw, and forwards its `tx.update()` patch through the `updateDoc`
+    // mock so `lastAnswers()` keeps working unchanged for every test that
+    // doesn't care about transaction mechanics. Tests exercising concurrent
+    // commits install their own richer mock with conflict/retry semantics.
+    (
+      firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementation(
+      async (
+        _db: unknown,
+        updateFn: (tx: {
+          get: (ref: unknown) => Promise<{
+            exists: () => boolean;
+            data: () => Record<string, unknown>;
+          }>;
+          update: (ref: unknown, patch: Record<string, unknown>) => void;
+        }) => Promise<void>
+      ) => {
+        let patch: Record<string, unknown> | null = null;
+        await updateFn({
+          get: () =>
+            Promise.resolve({
+              exists: () => true,
+              data: () => latestResponseData,
+            }),
+          update: (_ref, p) => {
+            patch = p;
+          },
+        });
+        if (patch) {
+          const updateDocMock = firestore.updateDoc as unknown as (
+            ref: unknown,
+            patch: Record<string, unknown>
+          ) => Promise<void>;
+          await updateDocMock({}, patch);
+        }
+      }
+    );
   });
 
   async function joinAndSeed(
@@ -2281,15 +2326,16 @@ describe('useQuizSessionStudent — commitRecordingTake / markUnresponded', () =
     await act(async () => {
       await result.current.joinQuizSession('ABC123', '1234');
     });
+    latestResponseData = {
+      studentUid: 'student-uid-1',
+      status: 'in-progress',
+      answers,
+    };
     act(() => {
       responseCallback?.({
         exists: () => true,
         id: 'student-uid-1',
-        data: () => ({
-          studentUid: 'student-uid-1',
-          status: 'in-progress',
-          answers,
-        }),
+        data: () => latestResponseData,
       });
     });
     return result;
@@ -2326,6 +2372,94 @@ describe('useQuizSessionStudent — commitRecordingTake / markUnresponded', () =
     expect(answers.map((a) => a.takeIndex)).toEqual([1, 2]);
     expect(answers[1].status).toBe('submitted');
     expect(answers[1].answer).toBe('');
+  });
+
+  it('does not drop a take when two commits race concurrently (lost-update guard)', async () => {
+    const result = await joinAndSeed([]);
+    (firestore.updateDoc as unknown as ReturnType<typeof vi.fn>).mockClear();
+
+    // A minimal server-side document + version counter standing in for
+    // Firestore: `updateDoc` writes through unconditionally (as the real
+    // client SDK does), while `runTransaction` only commits when nothing
+    // else has written since its `get()` — retrying with a fresh read
+    // otherwise, exactly like real Firestore transaction conflict handling.
+    let serverDoc: Record<string, unknown> = {
+      answers: [] as Record<string, unknown>[],
+      status: 'in-progress',
+    };
+    let version = 0;
+
+    (
+      firestore.updateDoc as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementation((_ref: unknown, patch: Record<string, unknown>) => {
+      serverDoc = { ...serverDoc, ...patch };
+      version += 1;
+      return Promise.resolve();
+    });
+
+    (
+      firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementation(
+      async (
+        _db: unknown,
+        updateFn: (tx: {
+          get: (ref: unknown) => Promise<{
+            exists: () => boolean;
+            data: () => Record<string, unknown>;
+          }>;
+          update: (ref: unknown, patch: Record<string, unknown>) => void;
+        }) => Promise<void>
+      ) => {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const readVersion = version;
+          const snapshotData = JSON.parse(JSON.stringify(serverDoc)) as Record<
+            string,
+            unknown
+          >;
+          let conflict = false;
+          await updateFn({
+            get: () =>
+              Promise.resolve({
+                exists: () => true,
+                data: () => snapshotData,
+              }),
+            update: (_ref, patch) => {
+              if (version !== readVersion) {
+                conflict = true;
+                return;
+              }
+              serverDoc = { ...serverDoc, ...patch };
+              version += 1;
+            },
+          });
+          if (!conflict) return;
+        }
+      }
+    );
+
+    await act(async () => {
+      await Promise.all([
+        result.current.commitRecordingTake({
+          questionId: 'q1',
+          artifact: makeTestArtifact({ id: 'art-1' }),
+        }),
+        result.current.commitRecordingTake({
+          questionId: 'q1',
+          artifact: makeTestArtifact({ id: 'art-2' }),
+        }),
+      ]);
+    });
+
+    const finalAnswers = serverDoc.answers as Record<string, unknown>[];
+    const artifactIds = finalAnswers
+      .flatMap((a) => (a.artifacts as { id: string }[] | undefined) ?? [])
+      .map((a) => a.id)
+      .sort();
+    expect(finalAnswers).toHaveLength(2);
+    expect(artifactIds).toEqual(['art-1', 'art-2']);
+    expect((finalAnswers.map((a) => a.takeIndex) as number[]).sort()).toEqual([
+      1, 2,
+    ]);
   });
 
   it('starts at takeIndex 1 and leaves other questions untouched', async () => {
