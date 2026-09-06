@@ -755,11 +755,14 @@ const QuizJoinFlow: React.FC<{
 
       // The metadata lands first, so a mid-upload crash still shows the
       // student a pending take rather than losing the question silently.
-      await commitRecordingTake({
+      const takeIndex = await commitRecordingTake({
         questionId,
         artifact,
         noticeAckedAt: noticeAckedAt ?? undefined,
       });
+      // null means the commit was declined (closed slot, or the response doc
+      // no longer exists) — never upload an artifact no answers row references.
+      if (takeIndex === null) return;
 
       await runRecordingUpload(questionId, artifact, take.blob);
     },
