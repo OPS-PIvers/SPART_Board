@@ -7178,7 +7178,8 @@ export type GlobalFeature =
   | 'google-classroom'
   | 'anonymous-join'
   /** Fail-closed: read it through `canAccessQuizMediaResponse`, never `canAccessFeature`. */
-  | 'quiz-media-response';
+  | 'quiz-media-response'
+  | 'settings-drawer';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
