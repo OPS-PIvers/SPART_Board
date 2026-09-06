@@ -36,6 +36,7 @@ import {
   GOOGLE_SHEETS_SCOPE,
   GOOGLE_CALENDAR_READONLY_SCOPE,
 } from '@/config/firebase';
+import { resolveAuthBypassFeatureOverride } from '@/utils/authBypassFeatureOverrides';
 import {
   FeaturePermission,
   WidgetType,
@@ -2697,7 +2698,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const canAccessFeature = useCallback(
     (featureId: GlobalFeature): boolean => {
-      if (isAuthBypass) return true;
+      if (isAuthBypass) {
+        const envOverrides = import.meta.env
+          .VITE_AUTH_BYPASS_FEATURE_OVERRIDES as string | undefined;
+        const override = resolveAuthBypassFeatureOverride(
+          featureId,
+          envOverrides,
+          typeof window !== 'undefined' ? window.localStorage : undefined
+        );
+        return override ?? true;
+      }
       if (!user) return false;
 
       const permission = globalPermissions.find(

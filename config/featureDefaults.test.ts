@@ -12,4 +12,15 @@ describe('FEATURE_DEFAULTS', () => {
     expect(entry.defaultEnabled).toBe(true);
     expect(entry.missingDocPublic).toBe(true);
   });
+
+  it('declares a settings-drawer entry that is admin-only and default-off for missing docs', () => {
+    // Wave 1b alpha rollout: admin-only, but the missing-doc gate stays
+    // fail-closed until an admin opts in (flipped in wave 4).
+    const entry = FEATURE_DEFAULTS['settings-drawer'];
+    expect(entry).toBeDefined();
+    expect(entry.defaultAccessLevel).toBe('admin');
+    expect(entry.defaultEnabled).toBe(true);
+    expect(entry.missingDocPublic).toBe(false);
+    expect(entry.defaultMinTier).toBeUndefined();
+  });
 });
