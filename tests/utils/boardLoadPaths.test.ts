@@ -63,7 +63,7 @@ describe('board load-path characterization', () => {
     const expected = clone(input).map((w) => ({
       ...w,
       configVersion: 0,
-      ...(w.type === 'workSymbols' ? { type: 'expectations' } : {}),
+      ...((w.type as string) === 'workSymbols' ? { type: 'expectations' } : {}),
     }));
 
     expect(migrateBoardWidgets(input)).toEqual(expected);

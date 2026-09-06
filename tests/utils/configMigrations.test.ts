@@ -32,9 +32,10 @@ describe('WIDGET_CONFIG_MIGRATIONS', () => {
     expect(targetConfigVersion('clock')).toBe(0);
   });
 
-  it('every schema configVersion matches its migration-table length', () => {
-    for (const [type, schema] of Object.entries(WIDGET_SETTINGS_SCHEMAS)) {
-      if (!schema) continue;
+  it('every schema configVersion matches its migration-table length', async () => {
+    for (const [type, load] of Object.entries(WIDGET_SETTINGS_SCHEMAS)) {
+      if (!load) continue;
+      const schema = await load();
       expect(schema.configVersion ?? 0).toBe(
         targetConfigVersion(type as WidgetType)
       );
