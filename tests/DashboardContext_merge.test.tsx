@@ -173,6 +173,7 @@ interface ContextSnapshot {
   updateWidget: ReturnType<typeof useDashboard>['updateWidget'];
   setGlobalStyle: ReturnType<typeof useDashboard>['setGlobalStyle'];
   pinBoard: ReturnType<typeof useDashboard>['pinBoard'];
+  updateDashboard: ReturnType<typeof useDashboard>['updateDashboard'];
 }
 
 /**
@@ -191,6 +192,7 @@ const TestConsumer: React.FC<{
       updateWidget: ctx.updateWidget,
       setGlobalStyle: ctx.setGlobalStyle,
       pinBoard: ctx.pinBoard,
+      updateDashboard: ctx.updateDashboard,
     };
   });
   return null;
@@ -629,5 +631,64 @@ describe('DashboardContext per-widget merge', () => {
     // Give the debounced autosave timer (if wrongly scheduled) time to fire.
     await new Promise((resolve) => setTimeout(resolve, 1200));
     expect(mockSaveDashboard).not.toHaveBeenCalled();
+  });
+
+  it('REGRESSION: a sharedGroups-only change alone triggers autosave', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+    mockSaveDashboard.mockClear();
+
+    // Teacher links a Randomizer group to a Scoreboard widget and touches
+    // nothing else — no widget, background, name, settings, or style edit.
+    await act(async () => {
+      stateRef.current?.updateDashboard({
+        sharedGroups: [{ id: 'group-1', name: 'Group 1' }],
+      });
+      await Promise.resolve();
+    });
+    expect(stateRef.current?.activeDashboard?.sharedGroups).toEqual([
+      { id: 'group-1', name: 'Group 1' },
+    ]);
+
+    await waitFor(() => expect(mockSaveDashboard).toHaveBeenCalledTimes(1), {
+      timeout: 3000,
+    });
+    const saved = mockSaveDashboard.mock.calls[0][0] as Dashboard;
+    expect(saved.sharedGroups).toEqual([{ id: 'group-1', name: 'Group 1' }]);
+  });
+
+  it('REGRESSION: an unsaved sharedGroups change survives a snapshot that has not seen it yet', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+
+    await act(async () => {
+      stateRef.current?.updateDashboard({
+        sharedGroups: [{ id: 'group-1', name: 'Group 1' }],
+      });
+      await Promise.resolve();
+    });
+
+    // A snapshot lands (e.g. this device's own unrelated widget-resize echo)
+    // before the debounced autosave has flushed the sharedGroups change to
+    // Firestore, so the server copy still carries no sharedGroups at all.
+    await pushSnapshot([{ ...initialDashboard, updatedAt: 2000 }]);
+
+    await waitFor(() => {
+      expect(stateRef.current?.activeDashboard?.sharedGroups).toEqual([
+        { id: 'group-1', name: 'Group 1' },
+      ]);
+    });
   });
 });
