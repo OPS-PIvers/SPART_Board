@@ -37,6 +37,7 @@
     "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "new-widget-settings": "node scripts/new-widget-settings.ts",
     "prepare": "husky"
   },
   "pnpm": {
@@ -98,6 +99,7 @@
     "@types/gapi": "^0.0.47",
     "@types/google.accounts": "^0.0.18",
     "@types/google.picker": "^0.0.52",
+    "@types/jest-axe": "^3.5.9",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.10",
@@ -125,6 +127,7 @@
     "globals": "^17.2.0",
     "hono": "^4.13.0",
     "husky": "^9.1.7",
+    "jest-axe": "^11.0.0",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
     "oauth-1.0a": "^2.2.6",
