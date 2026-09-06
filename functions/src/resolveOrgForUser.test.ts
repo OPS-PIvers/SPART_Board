@@ -115,7 +115,9 @@ describe('resolveOrgForUser callable', () => {
   it('resolves the org from the verified token domain', async () => {
     resolveOrgIdForDomainMock.mockResolvedValue('orono');
     const res = await handler({
-      auth: { token: { email: 'teacher@orono.k12.mn.us' } },
+      auth: {
+        token: { email: 'teacher@orono.k12.mn.us', email_verified: true },
+      },
       data: {},
     });
     expect(res).toEqual({ orgId: 'orono' });
@@ -128,7 +130,7 @@ describe('resolveOrgForUser callable', () => {
   it('returns orgId: null for an unregistered domain', async () => {
     resolveOrgIdForDomainMock.mockResolvedValue(null);
     const res = await handler({
-      auth: { token: { email: 'someone@gmail.com' } },
+      auth: { token: { email: 'someone@gmail.com', email_verified: true } },
       data: {},
     });
     expect(res).toEqual({ orgId: null });
@@ -141,7 +143,11 @@ describe('resolveOrgForUser callable', () => {
       .mockResolvedValueOnce('orono');
     const res = await handler({
       auth: {
-        token: { hd: 'alias-domain.com', email: 'teacher@orono.k12.mn.us' },
+        token: {
+          hd: 'alias-domain.com',
+          email: 'teacher@orono.k12.mn.us',
+          email_verified: true,
+        },
       },
       data: {},
     });
@@ -162,7 +168,11 @@ describe('resolveOrgForUser callable', () => {
     resolveOrgIdForDomainMock.mockResolvedValueOnce('orono');
     const res = await handler({
       auth: {
-        token: { hd: 'orono.k12.mn.us', email: 'teacher@alias-domain.com' },
+        token: {
+          hd: 'orono.k12.mn.us',
+          email: 'teacher@alias-domain.com',
+          email_verified: true,
+        },
       },
       data: {},
     });
@@ -179,7 +189,7 @@ describe('resolveOrgForUser callable', () => {
   it('never trusts a client-supplied domain in request.data', async () => {
     resolveOrgIdForDomainMock.mockResolvedValue(null);
     await handler({
-      auth: { token: { email: 'a@gmail.com' } },
+      auth: { token: { email: 'a@gmail.com', email_verified: true } },
       data: { domain: '@orono.k12.mn.us', orgId: 'orono' },
     });
     // Resolution used the token's gmail.com domain, not the injected one.
@@ -187,6 +197,33 @@ describe('resolveOrgForUser callable', () => {
       expect.anything(),
       '@gmail.com'
     );
+  });
+
+  // Regression: an unverified claim must never resolve an org, even at a registered domain.
+  it('never resolves an org for an unverified email, even at a registered domain', async () => {
+    resolveOrgIdForDomainMock.mockResolvedValue('orono');
+    const res = await handler({
+      auth: { token: { email: 'unverified@orono.k12.mn.us' } },
+      data: {},
+    });
+    expect(res).toEqual({ orgId: null });
+    expect(resolveOrgIdForDomainMock).not.toHaveBeenCalled();
+  });
+
+  it('never resolves an org for an unverified hd claim', async () => {
+    resolveOrgIdForDomainMock.mockResolvedValue('orono');
+    const res = await handler({
+      auth: {
+        token: {
+          hd: 'orono.k12.mn.us',
+          email: 'unverified@orono.k12.mn.us',
+          email_verified: false,
+        },
+      },
+      data: {},
+    });
+    expect(res).toEqual({ orgId: null });
+    expect(resolveOrgIdForDomainMock).not.toHaveBeenCalled();
   });
 });
 
@@ -270,7 +307,7 @@ describe('resolveOrgForUser auto-enrollment', () => {
     expect(docMock).not.toHaveBeenCalled();
   });
 
-  it('skips unverified emails', async () => {
+  it('skips unverified emails — and never resolves an org for them either', async () => {
     const res = await handler({
       auth: {
         uid: 'uid-3',
@@ -278,7 +315,9 @@ describe('resolveOrgForUser auto-enrollment', () => {
       },
       data: {},
     });
-    expect(res).toEqual({ orgId: 'orono' });
+    // Regression: must not resolve an org at all, not just skip auto-enrollment.
+    expect(res).toEqual({ orgId: null });
+    expect(resolveOrgIdForDomainMock).not.toHaveBeenCalled();
     expect(docMock).not.toHaveBeenCalled();
   });
 
