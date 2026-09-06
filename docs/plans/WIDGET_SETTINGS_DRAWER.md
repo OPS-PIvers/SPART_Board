@@ -791,16 +791,20 @@ has no settings panel) were excluded as not meaningful "widget adds" for this mi
 
 | #   | Widget       | Legacy settings file                                 | Lines | Instances | Strings (0.3) |
 | --- | ------------ | ---------------------------------------------------- | ----- | --------- | ------------- |
-| 1   | Timer        | `components/widgets/TimeTool/Settings.tsx`           | 641   | 130       | TBD           |
-| 2   | Note         | `components/widgets/TextWidget/Settings.tsx`         | 77    | 130       | TBD           |
-| 3   | Embed        | `components/widgets/Embed/Settings.tsx`              | 338   | 120       | TBD           |
-| 4   | Clock        | `components/widgets/ClockWidget/Settings.tsx`        | 153   | 82        | TBD           |
-| 5   | Lunch        | `components/widgets/LunchCount/Settings.tsx`         | 343   | 69        | TBD           |
-| 6   | Tasks        | `components/widgets/Checklist/Settings.tsx`          | 383   | 65        | TBD           |
-| 7   | Weather      | `components/widgets/Weather/Settings.tsx`            | 549   | 58        | TBD           |
-| 8   | Expectations | `components/widgets/ExpectationsWidget/Settings.tsx` | 92    | 45        | TBD           |
-| 9   | Random       | `components/widgets/random/RandomSettings.tsx`       | 641   | 43        | TBD           |
-| 10  | Links        | `components/widgets/UrlWidget/Settings.tsx`          | 348   | 37        | TBD           |
+| 1   | Timer        | `components/widgets/TimeTool/Settings.tsx`           | 641   | 130       | 39            |
+| 2   | Note         | `components/widgets/TextWidget/Settings.tsx`         | 77    | 130       | 1             |
+| 3   | Embed        | `components/widgets/Embed/Settings.tsx`              | 338   | 120       | 11            |
+| 4   | Clock        | `components/widgets/ClockWidget/Settings.tsx`        | 153   | 82        | 8             |
+| 5   | Lunch        | `components/widgets/LunchCount/Settings.tsx`         | 343   | 69        | 7             |
+| 6   | Tasks        | `components/widgets/Checklist/Settings.tsx`          | 383   | 65        | 11            |
+| 7   | Weather      | `components/widgets/Weather/Settings.tsx`            | 549   | 58        | 23            |
+| 8   | Expectations | `components/widgets/ExpectationsWidget/Settings.tsx` | 92    | 45        | 3             |
+| 9   | Random       | `components/widgets/random/RandomSettings.tsx`       | 641   | 43        | 14            |
+| 10  | Links        | `components/widgets/UrlWidget/Settings.tsx`          | 348   | 37        | 9             |
+
+Strings (0.3) = visible labels + help strings counted in `widget-settings-inventory.md`; total
+126 across the ten. Only Timer, Clock and Weather go through `t()` today; the other seven are
+hardcoded English, which sizes the deferred translation follow-up (D20).
 
 Note is inline in `TextWidget/Settings.tsx` (a thin wrapper — most of Note's front-face
 formatting lives in `FormattingToolbar.tsx`, not counted here since it isn't a settings panel).
