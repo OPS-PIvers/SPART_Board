@@ -54,7 +54,9 @@ export const selectDrawerSide = ({
 /** Viewport rect of the edited widget's DraggableWindow root, or null. */
 export const measureWidgetRect = (widgetId: string): DrawerRect | null => {
   if (typeof document === 'undefined') return null;
-  const root = document.querySelector(`[data-widget-id="${widgetId}"]`);
+  const root = document.querySelector(
+    `[data-widget-id="${widgetId}"]:not([data-widget-portal])`
+  );
   if (!root) return null;
   const r = root.getBoundingClientRect();
   return { left: r.left, top: r.top, width: r.width, height: r.height };
