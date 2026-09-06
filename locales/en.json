@@ -1145,7 +1145,42 @@
       "reset": "Reset to default",
       "addRow": "Add item",
       "removeRow": "Remove item",
-      "reorderRow": "Drag to reorder"
+      "reorderRow": "Drag to reorder",
+      "close": "Close settings",
+      "findSetting": "Find a setting",
+      "clearFilter": "Clear search",
+      "noMatches": "No settings match \"{{query}}\".",
+      "legacyNotIndexed": "This widget’s settings are not searchable yet.",
+      "readOnly": "This board is read-only. Settings cannot be changed.",
+      "empty": "Standard settings available.",
+      "loading": "Loading settings…",
+      "resizeDrawer": "Resize settings drawer",
+      "tabs": {
+        "settings": "Settings",
+        "style": "Style"
+      },
+      "style": {
+        "contentTier": "Widget style",
+        "windowTier": "Window",
+        "windowBackground": "Background color",
+        "windowTransparency": "Transparency",
+        "windowFont": "Typography",
+        "windowTextSize": "Default text size",
+        "globalSuffix": "(Global)",
+        "resetTransparency": "Reset transparency to global default",
+        "transparencyPercent": "Transparency percentage",
+        "frameColorSolidHint": "A frame background color stays solid. Set it to Default to use this slider.",
+        "fontFamily": "Font",
+        "fontColor": "Text color",
+        "cardColor": "Card color",
+        "cardOpacity": "Card opacity",
+        "textSizePreset": "Text size",
+        "bgColor": "Background color",
+        "fontSize": "Font size",
+        "textColor": "Text color",
+        "titleColor": "Title color",
+        "scaleMultiplier": "Scale"
+      }
     }
   },
   "widgetWindow": {
