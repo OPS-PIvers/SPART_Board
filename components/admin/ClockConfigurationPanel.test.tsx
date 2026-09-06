@@ -44,9 +44,8 @@ describe('ClockConfigurationPanel', () => {
     render(<ClockConfigurationPanel config={config} onChange={mockOnChange} />);
 
     // If the lookup missed (raw-id bug), the toggle would fall back to the
-    // widget default of off, not the saved value of on. The Glow toggle is
-    // the second `role="switch"` control (after 24-Hour Format).
-    const glowToggle = screen.getAllByRole('switch')[1];
+    // widget default of off, not the saved value of on.
+    const glowToggle = screen.getByRole('switch', { name: 'Glow Effect' });
     expect(glowToggle).toHaveAttribute('aria-checked', 'true');
   });
 
@@ -64,7 +63,7 @@ describe('ClockConfigurationPanel', () => {
 
     render(<ClockConfigurationPanel config={config} onChange={mockOnChange} />);
 
-    fireEvent.click(screen.getAllByRole('switch')[1]);
+    fireEvent.click(screen.getByRole('switch', { name: 'Glow Effect' }));
 
     expect(mockOnChange).toHaveBeenCalledTimes(1);
     const updated = mockOnChange.mock.calls[0][0] as ClockGlobalConfig;

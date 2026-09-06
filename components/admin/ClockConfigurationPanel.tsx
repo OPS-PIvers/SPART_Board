@@ -94,6 +94,7 @@ export const ClockConfigurationPanel: React.FC<
             <span className="text-xxs text-slate-400">Widget default: On</span>
           </div>
           <Toggle
+            label="24-Hour Format"
             checked={currentBuildingConfig.format24 ?? true}
             onChange={(checked) => handleUpdateBuilding({ format24: checked })}
             size="xs"
@@ -203,6 +204,7 @@ export const ClockConfigurationPanel: React.FC<
             <span className="text-xxs text-slate-400">Widget default: Off</span>
           </div>
           <Toggle
+            label="Glow Effect"
             checked={currentBuildingConfig.glow ?? false}
             onChange={(checked) => handleUpdateBuilding({ glow: checked })}
             size="xs"
