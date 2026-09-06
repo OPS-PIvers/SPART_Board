@@ -4,30 +4,6 @@ import type { Field, FieldCtx, UpdateConfig } from '../schema/types';
 import { FIELD_COMPONENTS } from './fields';
 import { resolveLabel } from './resolveLabel';
 
-type CustomRenderProps = {
-  widgetId: string;
-  fieldKey: string;
-  render: (ctx: FieldCtx & { updateConfig: UpdateConfig }) => React.ReactNode;
-  ctx: FieldCtx;
-  updateConfig: UpdateConfig;
-};
-
-const CustomFieldHost: React.FC<CustomRenderProps> = ({
-  render,
-  ctx,
-  updateConfig,
-}) => <>{render({ ...ctx, updateConfig })}</>;
-
-// Keyed on [widget.id, field.key] so a keystroke elsewhere never rebuilds the custom element tree.
-const MemoCustomFieldHost = React.memo(
-  CustomFieldHost,
-  (prev, next) =>
-    prev.widgetId === next.widgetId &&
-    prev.fieldKey === next.fieldKey &&
-    prev.render === next.render &&
-    prev.updateConfig === next.updateConfig
-);
-
 export type FieldRendererProps = {
   field: Field;
   widget: WidgetData;
@@ -69,18 +45,27 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     value !== defaultValue;
 
   const control = useMemo(() => {
-    if (field.type === 'custom') {
-      return (
-        <MemoCustomFieldHost
-          widgetId={widget.id}
-          fieldKey={field.key}
-          render={field.render}
-          ctx={ctx}
-          updateConfig={updateConfig}
-        />
-      );
-    }
     const Component = FIELD_COMPONENTS[field.type] ?? FIELD_COMPONENTS.custom;
+    const renderRow =
+      field.type === 'list'
+        ? (
+            row: Record<string, unknown>,
+            rowIndex: number,
+            onRowChange: (nextRow: Record<string, unknown>) => void
+          ) => (
+            <div className="flex flex-col gap-1">
+              {field.row.fields.map((rowField) => (
+                <FieldRenderer
+                  key={rowField.key}
+                  field={rowField}
+                  widget={widget}
+                  ctx={{ ...ctx, config: row }}
+                  updateConfig={(patch) => onRowChange({ ...row, ...patch })}
+                />
+              ))}
+            </div>
+          )
+        : undefined;
     return (
       <Component
         field={field}
@@ -90,11 +75,13 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         describedBy={help ? helpId : undefined}
         disabled={disabled}
         ctx={ctx}
+        updateConfig={updateConfig}
+        renderRow={renderRow}
       />
     );
   }, [
     field,
-    widget.id,
+    widget,
     ctx,
     updateConfig,
     value,

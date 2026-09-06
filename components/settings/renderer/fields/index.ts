@@ -14,6 +14,8 @@ import { FontFamily } from './FontFamily';
 import { TextSizePreset } from './TextSizePreset';
 import { AccentColor } from './AccentColor';
 import { SurfaceColor } from './SurfaceColor';
+import { List } from './List';
+import { Custom } from './Custom';
 
 /** Total registry over the field union; picker types stay Unsupported until wave 2. */
 export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
@@ -34,6 +36,6 @@ export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
   imageUpload: UnsupportedField,
   soundPicker: UnsupportedField,
   rosterPicker: UnsupportedField,
-  list: UnsupportedField,
-  custom: UnsupportedField,
+  list: List,
+  custom: Custom,
 };
