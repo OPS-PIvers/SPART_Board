@@ -6,7 +6,10 @@ import {
   useSettingsDrawerCamera,
   type UseSettingsDrawerCameraArgs,
 } from '@/components/settings/useSettingsDrawerCamera';
-import { registerPanSetter } from '@/components/settings/panSetterRegistry';
+import {
+  registerPanGetter,
+  registerPanSetter,
+} from '@/components/settings/panSetterRegistry';
 import type { Point } from '@/utils/zoomPanMath';
 
 const VW = 1280;
@@ -20,18 +23,24 @@ const Probe: React.FC<UseSettingsDrawerCameraArgs> = (props) => {
 
 let pan: Point;
 let panCalls: Point[];
-let unregister: () => void;
+let unregisterSetter: () => void;
+let unregisterGetter: () => void;
 
+// Mirrors real DashboardView: the setter always produces a NEW object and
+// fires 'board-pan' on every call, even when x/y are unchanged by value —
+// only reads through the dedicated getter avoid triggering it. A mock that
+// no-ops on unchanged values hides the bug where reading pan through the
+// setter's identity-updater path gets misclassified as a user pan.
 const setupHost = (): void => {
   pan = { x: 0, y: 0 };
   panCalls = [];
-  unregister = registerPanSetter((next) => {
+  unregisterSetter = registerPanSetter((next) => {
     const value = typeof next === 'function' ? next(pan) : next;
-    if (value.x === pan.x && value.y === pan.y) return;
-    pan = value;
-    panCalls.push(value);
+    pan = { x: value.x, y: value.y };
+    panCalls.push(pan);
     window.dispatchEvent(new CustomEvent('board-pan'));
   });
+  unregisterGetter = registerPanGetter(() => pan);
 };
 
 const reducedMotion = (matches: boolean): void => {
@@ -137,7 +146,8 @@ describe('useSettingsDrawerCamera', () => {
   });
 
   afterEach(() => {
-    unregister();
+    unregisterSetter();
+    unregisterGetter();
     vi.unstubAllGlobals();
   });
 
@@ -222,5 +232,38 @@ describe('useSettingsDrawerCamera', () => {
     render(<Probe {...baseProps} />);
     await flushFrames(10);
     expect(panCalls.length).toBeGreaterThan(1);
+  });
+
+  it('restores exactly once with no user-pan misclassification (open with needsPan, then close)', async () => {
+    const view = render(<Probe {...baseProps} />);
+    await flushFrames();
+    const afterAutoPan = pan.x;
+    const callsAfterOpen = panCalls.length;
+    expect(afterAutoPan).toBeLessThan(0);
+
+    view.rerender(<Probe {...baseProps} open={false} />);
+    await flushFrames();
+
+    // Exactly one settle at the restored value: the read-only pan probe
+    // during auto-pan must not have been misclassified as a user pan.
+    expect(pan).toEqual({ x: 0, y: 0 });
+    expect(panCalls.length).toBeGreaterThan(callsAfterOpen);
+    expect(panCalls[panCalls.length - 1]).toEqual({ x: 0, y: 0 });
+  });
+
+  it('records the new board id when a board switch and open land in the same commit', async () => {
+    const view = render(
+      <Probe {...baseProps} open={false} boardId="board-a" />
+    );
+    act(() => {
+      view.rerender(<Probe {...baseProps} open boardId="board-b" />);
+    });
+    await flushFrames();
+
+    view.rerender(<Probe {...baseProps} open={false} boardId="board-b" />);
+    await flushFrames();
+    // Restore fires because the close boardId matches the board that was
+    // current (board-b) when the drawer opened, not a stale board-a capture.
+    expect(pan).toEqual({ x: 0, y: 0 });
   });
 });

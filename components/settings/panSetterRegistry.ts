@@ -7,7 +7,10 @@ import type { Point } from '@/utils/zoomPanMath';
 export type PanUpdater = Point | ((previous: Point) => Point);
 export type PanSetter = (next: PanUpdater) => void;
 
+export type PanGetter = () => Point;
+
 let panSetter: PanSetter | null = null;
+let panGetter: PanGetter | null = null;
 
 /** Registers the host's pan setter and returns its unregister function. */
 export const registerPanSetter = (setter: PanSetter): (() => void) => {
@@ -17,11 +20,22 @@ export const registerPanSetter = (setter: PanSetter): (() => void) => {
   };
 };
 
+/** Registers an accessor for the host's current pan and returns its unregister function. */
+export const registerPanGetter = (getter: PanGetter): (() => void) => {
+  panGetter = getter;
+  return () => {
+    if (panGetter === getter) panGetter = null;
+  };
+};
+
 /** Applies a pan; returns false (and does nothing) when no host is registered. */
 export const requestPan = (next: PanUpdater): boolean => {
   if (!panSetter) return false;
   panSetter(next);
   return true;
 };
+
+/** Reads the current pan without triggering a setter/board-pan event; null when no host is registered. */
+export const getPan = (): Point | null => (panGetter ? panGetter() : null);
 
 export const isPanSetterRegistered = (): boolean => panSetter !== null;

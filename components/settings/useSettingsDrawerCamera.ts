@@ -3,7 +3,7 @@
 
 import { useEffect, useRef } from 'react';
 import { clampPan, viewportToWrapper, type Point } from '@/utils/zoomPanMath';
-import { requestPan } from './panSetterRegistry';
+import { requestPan, getPan } from './panSetterRegistry';
 import type { DrawerPlacement, DrawerRect } from './useSettingsDrawerPlacement';
 
 const PAN_DURATION_MS = 220;
@@ -98,15 +98,12 @@ export const useSettingsDrawerCamera = ({
 
   const openBoardIdRef = useRef<string | null>(null);
   const boardIdRef = useRef<string | null>(boardId);
+  boardIdRef.current = boardId;
   const wasOpenRef = useRef(false);
 
   const animate = (to: Point): void => {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-    let from: Point = { x: 0, y: 0 };
-    requestPan((prev) => {
-      from = prev;
-      return prev;
-    });
+    const from: Point = getPan() ?? { x: 0, y: 0 };
     const finish = () => {
       frameRef.current = null;
       // Keep the programmatic window open for one more frame: `board-pan`
@@ -183,10 +180,6 @@ export const useSettingsDrawerCamera = ({
     animate(saved);
   }, [open, restoreOnClose, boardId]);
 
-  useEffect(() => {
-    boardIdRef.current = boardId;
-  }, [boardId]);
-
   // Auto-pan once per open, after the placement hook has measured the rect.
   useEffect(() => {
     if (!open || !widgetId || panStartedRef.current) return;
@@ -194,21 +187,18 @@ export const useSettingsDrawerCamera = ({
       return;
     }
     panStartedRef.current = true;
-    const box: { target: Point | null } = { target: null };
-    requestPan((prev) => {
-      savedPanRef.current = prev;
-      box.target = computeDrawerPan({
-        rect,
-        currentPan: prev,
-        zoom,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-        drawerWidth,
-        side: placement,
-      });
-      return prev;
+    const prev = getPan() ?? { x: 0, y: 0 };
+    savedPanRef.current = prev;
+    const target = computeDrawerPan({
+      rect,
+      currentPan: prev,
+      zoom,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      drawerWidth,
+      side: placement,
     });
-    if (box.target) animate(box.target);
+    animate(target);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- drawerWidth/zoom must not re-run the pan (D24)
   }, [open, widgetId, originatedLocally, needsPan, rect, placement]);
 };
