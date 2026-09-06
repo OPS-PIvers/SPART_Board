@@ -51,6 +51,7 @@ import {
   viewportToWrapper,
 } from '@/utils/zoomPanMath';
 import { registerPanSetter } from '@/components/settings/panSetterRegistry';
+import { SettingsDrawerHost } from '@/components/settings/SettingsDrawerHost';
 import {
   AlertCircle,
   CheckCircle2,
@@ -1844,6 +1845,9 @@ export const DashboardView: React.FC = () => {
           </div>
         </button>
       )}
+
+      {/* Settings drawer surface (flag-gated inside the host). */}
+      <SettingsDrawerHost />
 
       {/* Only mount Help when open — its body builds the whole shortcut tree. */}
       {helpState.open && (

@@ -9,7 +9,9 @@ export const SETTINGS_TARGET_ATTRIBUTE = 'data-settings-target';
 const widgetRoot = (widgetId: string): HTMLElement | null =>
   typeof document === 'undefined'
     ? null
-    : document.querySelector<HTMLElement>(`[data-widget-id="${widgetId}"]`);
+    : document.querySelector<HTMLElement>(
+        `[data-widget-id="${widgetId}"]:not([data-widget-portal])`
+      );
 
 export interface UseSettingsDrawerFocusArgs {
   widgetId: string | null;
