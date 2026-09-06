@@ -2374,6 +2374,41 @@ describe('useQuizSessionStudent — commitRecordingTake / markUnresponded', () =
     expect(answers[1].answer).toBe('');
   });
 
+  it('returns null without writing when the response doc no longer exists', async () => {
+    const result = await joinAndSeed([]);
+    (firestore.updateDoc as unknown as ReturnType<typeof vi.fn>).mockClear();
+    (
+      firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementationOnce(
+      async (
+        _db: unknown,
+        updateFn: (tx: {
+          get: (ref: unknown) => Promise<{
+            exists: () => boolean;
+            data: () => Record<string, unknown>;
+          }>;
+          update: (ref: unknown, patch: Record<string, unknown>) => void;
+        }) => Promise<void>
+      ) => {
+        await updateFn({
+          get: () => Promise.resolve({ exists: () => false, data: () => ({}) }),
+          update: () => {
+            throw new Error('must not write when the response doc is missing');
+          },
+        });
+      }
+    );
+    let takeIndex: number | null = 999;
+    await act(async () => {
+      takeIndex = await result.current.commitRecordingTake({
+        questionId: 'q1',
+        artifact: makeTestArtifact({ id: 'art-1' }),
+      });
+    });
+    expect(takeIndex).toBeNull();
+    expect(firestore.updateDoc).not.toHaveBeenCalled();
+  });
+
   it('does not drop a take when two commits race concurrently (lost-update guard)', async () => {
     const result = await joinAndSeed([]);
     (firestore.updateDoc as unknown as ReturnType<typeof vi.fn>).mockClear();
