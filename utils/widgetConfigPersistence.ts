@@ -11,7 +11,7 @@ import type { WidgetConfig, WidgetType } from '@/types';
  * that lives nested inside a content array (per-card colors, custom-widget
  * block styles) — those travel with their content.
  */
-export const APPEARANCE_CONFIG_KEYS = new Set<string>([
+export const APPEARANCE_CONFIG_KEY_LIST = [
   'fontFamily', // shared TypographySettings
   'fontColor', // shared TypographySettings
   'cardColor', // shared SurfaceColorSettings
@@ -23,7 +23,13 @@ export const APPEARANCE_CONFIG_KEYS = new Set<string>([
   'titleColor', // MaterialsConfig
   'scaleMultiplier', // ChecklistConfig
   'layout', // ScoreboardConfig | ExpectationsConfig | MusicConfig
-]);
+] as const;
+
+export type AppearanceKey = (typeof APPEARANCE_CONFIG_KEY_LIST)[number];
+
+export const APPEARANCE_CONFIG_KEYS = new Set<string>(
+  APPEARANCE_CONFIG_KEY_LIST
+);
 
 /**
  * Keys holding an explicit "save as preset" library, which teachers opt into

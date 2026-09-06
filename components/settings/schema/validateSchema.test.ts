@@ -171,6 +171,83 @@ describe('validateSchema', () => {
     expect(result).toEqual({ errors: [], warnings: [] });
   });
 
+  it('accepts a List field whose row labels resolve', () => {
+    const result = validateSchema(
+      'clock',
+      {
+        groups: [
+          {
+            id: 'content',
+            fields: [
+              {
+                type: 'list',
+                key: 'showSeconds',
+                label: 'title',
+                row: {
+                  fields: [{ type: 'text', key: 'label', label: 'title' }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      { locale, defaults: {} }
+    );
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects a List row field with no i18n key', () => {
+    const result = validateSchema(
+      'clock',
+      {
+        groups: [
+          {
+            id: 'content',
+            fields: [
+              {
+                type: 'list',
+                key: 'showSeconds',
+                label: 'title',
+                row: {
+                  fields: [{ type: 'text', key: 'label', label: 'nope' }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      { locale, defaults: {} }
+    );
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain('content.showSeconds.row.label');
+    expect(result.errors[0]).toContain('resolves to neither');
+  });
+
+  it('does not warn about missing defaults coverage for row fields', () => {
+    const result = validateSchema(
+      'clock',
+      {
+        groups: [
+          {
+            id: 'content',
+            fields: [
+              {
+                type: 'list',
+                key: 'showSeconds',
+                label: 'title',
+                row: {
+                  fields: [{ type: 'text', key: 'label', label: 'title' }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      { locale, defaults: { showSeconds: [] } }
+    );
+    expect(result.warnings).toEqual([]);
+  });
+
   it('defineSettings returns the schema unchanged', () => {
     const schema = defineSettings<{ showSeconds: boolean }>({
       groups: [

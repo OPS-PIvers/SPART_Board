@@ -94,6 +94,28 @@ export function validateSchema<C = Record<string, unknown>>(
           `${type}: WIDGET_DEFAULTS.config has no default for "${field.key}"`
         );
       }
+
+      if (field.type === 'list') {
+        for (const rowField of field.row.fields) {
+          const prefix = `${type}: ${group.id}.${field.key}.row.${rowField.key}`;
+          if (rowField.key.includes('.')) {
+            errors.push(`${prefix} is dotted; top-level row keys only`);
+          }
+          if (!resolves(catalog, type, rowField.label)) {
+            errors.push(
+              `${prefix} label "${rowField.label}" resolves to neither widgetSettings.${type}.${rowField.label} nor widgetSettings.common.${rowField.label}`
+            );
+          }
+          if (
+            rowField.help !== undefined &&
+            !resolves(catalog, type, rowField.help)
+          ) {
+            errors.push(
+              `${prefix} help "${rowField.help}" resolves to neither widgetSettings.${type}.${rowField.help} nor widgetSettings.common.${rowField.help}`
+            );
+          }
+        }
+      }
     }
   }
 

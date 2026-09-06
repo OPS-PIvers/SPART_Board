@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
 import type { GlobalFeature, WidgetData } from '@/types';
-import { APPEARANCE_CONFIG_KEYS } from '@/utils/widgetConfigPersistence';
+import type { AppearanceKey } from '@/utils/widgetConfigPersistence';
 
 /** Appearance keys a schema may list in `styleKeys` (membership checked at runtime). */
-export type AppearanceKey =
-  typeof APPEARANCE_CONFIG_KEYS extends ReadonlySet<infer K> ? K : never;
+export type { AppearanceKey } from '@/utils/widgetConfigPersistence';
 
 export type TranslateFn = (
   key: string,
