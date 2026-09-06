@@ -12,7 +12,7 @@ type TextSizePresetShimConfig = {
 // Thin wrapper over the shared text-size preset selector.
 export const TextSizePreset: React.FC<
   FieldProps<TextSizePresetField<string>>
-> = ({ value, onChange, id, describedBy, disabled }) => {
+> = ({ value, onChange, id, describedBy, labelId, disabled }) => {
   const shimConfig: TextSizePresetShimConfig = {
     textSizePreset:
       typeof value === 'string' ? (value as TextSizePresetValue) : undefined,
@@ -22,11 +22,14 @@ export const TextSizePreset: React.FC<
   };
 
   return (
-    <div id={id} aria-describedby={describedBy}>
+    <div id={id}>
       <fieldset disabled={disabled} className="contents">
         <TextSizePresetSettings
           config={shimConfig}
           updateConfig={updateConfigShim}
+          hideLabel
+          labelId={labelId}
+          describedBy={describedBy}
         />
       </fieldset>
     </div>

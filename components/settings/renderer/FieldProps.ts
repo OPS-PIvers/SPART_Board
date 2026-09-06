@@ -8,6 +8,8 @@ export type FieldProps<F extends Field = Field> = {
   onChange: (value: unknown) => void;
   id: string;
   describedBy?: string;
+  /** Id of FieldRenderer's visible label, for controls whose root cannot use `<label for>`. */
+  labelId?: string;
   disabled: boolean;
   ctx: FieldCtx;
   /** List fields only: renders one row's sub-schema fields via FieldRenderer. */

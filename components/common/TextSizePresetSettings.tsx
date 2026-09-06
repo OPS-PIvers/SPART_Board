@@ -14,6 +14,11 @@ interface TextSizePresetSettingsProps {
   updateConfig: (updates: Partial<PresetConfig>) => void;
   fallbackScale?: number;
   writeScaleMultiplier?: boolean;
+  /** Suppresses the "Text Size" heading when the caller already renders a label. */
+  hideLabel?: boolean;
+  /** Id of the caller's own heading; labels the radiogroup when `hideLabel` is set. */
+  labelId?: string;
+  describedBy?: string;
 }
 
 export const TextSizePresetSettings: React.FC<TextSizePresetSettingsProps> = ({
@@ -21,8 +26,12 @@ export const TextSizePresetSettings: React.FC<TextSizePresetSettingsProps> = ({
   updateConfig,
   fallbackScale = 1,
   writeScaleMultiplier = false,
+  hideLabel = false,
+  labelId,
+  describedBy,
 }) => {
-  const textSizeLabelId = useId();
+  const generatedLabelId = useId();
+  const textSizeLabelId = labelId ?? generatedLabelId;
 
   const presetCandidate = config.textSizePreset;
   const scaleCandidate = config.scaleMultiplier;
@@ -35,13 +44,16 @@ export const TextSizePresetSettings: React.FC<TextSizePresetSettingsProps> = ({
 
   return (
     <div>
-      <SettingsLabel icon={Type} as="span" id={textSizeLabelId}>
-        Text Size
-      </SettingsLabel>
+      {!hideLabel && (
+        <SettingsLabel icon={Type} as="span" id={textSizeLabelId}>
+          Text Size
+        </SettingsLabel>
+      )}
       <div
         className="grid grid-cols-2 gap-2"
         role="radiogroup"
         aria-labelledby={textSizeLabelId}
+        aria-describedby={describedBy}
       >
         {TEXT_SIZE_PRESETS.map((preset) => (
           <button

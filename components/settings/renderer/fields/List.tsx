@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
 import { SortableList } from '@/components/common/SortableList';
 import type { FieldProps } from '../FieldProps';
@@ -7,17 +7,7 @@ import { resolveLabel } from '../resolveLabel';
 
 type Row = Record<string, unknown>;
 
-const rowIds = new WeakMap<Row, string>();
 let rowIdCounter = 0;
-
-// Stable per-row id keyed on object identity; rows keep their id across reorders and edits.
-function getRowId(row: Row): string {
-  const existing = rowIds.get(row);
-  if (existing) return existing;
-  const next = `row-${rowIdCounter++}`;
-  rowIds.set(row, next);
-  return next;
-}
 
 const ListImpl: React.FC<FieldProps> = ({
   field,
@@ -25,13 +15,28 @@ const ListImpl: React.FC<FieldProps> = ({
   onChange,
   id,
   describedBy,
+  labelId,
   disabled,
   ctx,
   renderRow,
 }) => {
+  // Positional ids: an edit replaces the row object, so identity keys would remount the row and drop focus.
+  const positionalIds = useRef<string[]>([]);
+  const rows = Array.isArray(value) ? (value as Row[]) : [];
+  while (positionalIds.current.length < rows.length) {
+    positionalIds.current.push(`row-${rowIdCounter++}`);
+  }
+  if (positionalIds.current.length > rows.length) {
+    positionalIds.current.length = rows.length;
+  }
+
+  const getRowId = (row: Row, index: number): string =>
+    typeof row.id === 'string' && row.id
+      ? row.id
+      : (positionalIds.current[index] ?? `row-${index}`);
+
   if (field.type !== 'list') return null;
   const listField = field as ListField<string>;
-  const rows = Array.isArray(value) ? (value as Row[]) : [];
   const maxRows = listField.maxRows;
   const sortable = listField.sortable ?? false;
   const addDisabled =
@@ -100,18 +105,21 @@ const ListImpl: React.FC<FieldProps> = ({
     <div
       id={id}
       role="group"
+      aria-labelledby={labelId}
       aria-describedby={describedBy}
       className="flex flex-col gap-2"
     >
       {sortable ? (
         <SortableList
           items={rows}
-          getId={getRowId}
+          getId={(item) => getRowId(item, rows.indexOf(item))}
           onReorder={(next) => onChange(next)}
           renderItem={(item, dragHandle, index) => row(item, index, dragHandle)}
         />
       ) : (
-        rows.map((r, index) => <div key={getRowId(r)}>{row(r, index)}</div>)
+        rows.map((r, index) => (
+          <div key={getRowId(r, index)}>{row(r, index)}</div>
+        ))
       )}
       <button
         type="button"

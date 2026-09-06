@@ -13,6 +13,7 @@ export const SurfaceColor: React.FC<FieldProps<SurfaceColorField<string>>> = ({
   onChange,
   id,
   describedBy,
+  labelId,
   disabled,
   ctx,
   updateConfig,
@@ -32,12 +33,15 @@ export const SurfaceColor: React.FC<FieldProps<SurfaceColorField<string>>> = ({
   };
 
   return (
-    <div id={id} aria-describedby={describedBy}>
+    <div id={id}>
       <fieldset disabled={disabled} className="contents">
         <SurfaceColorSettings
           config={shimConfig}
           updateConfig={updateConfigShim}
           label={resolveLabel(ctx.t, ctx.widget.type, field.label)}
+          hideLabel
+          labelId={labelId}
+          describedBy={describedBy}
         />
       </fieldset>
     </div>

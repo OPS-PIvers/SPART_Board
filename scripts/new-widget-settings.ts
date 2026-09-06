@@ -1,5 +1,4 @@
-// Scaffolds a widget's settings schema, en.json stub, schema test, and migration fixture.
-// Usage: pnpm run new-widget-settings <type> [--dry-run]
+// Scaffolds a widget settings schema, en.json stub, schema test and fixture: pnpm run new-widget-settings <type> [--dry-run]
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -141,9 +140,7 @@ export function listObjectEntries(
       else if (c === '}' || c === ']') depth--;
       else if (c === ',' && depth === 0) break;
     }
-    // A comma-terminated value stops exactly at the comma. A value that
-    // runs to `bodyEnd` (the last entry) instead swallows trailing
-    // whitespace before the closing brace — trim it back to the value.
+    // The last entry runs to bodyEnd and swallows trailing whitespace; trim it back.
     let entryEnd = i;
     if (entryEnd === bodyEnd) {
       while (entryEnd > valueStart && /\s/.test(text[entryEnd - 1])) {
@@ -189,10 +186,7 @@ function detectNewline(text: string): string {
   return text.includes('\r\n') ? '\r\n' : '\n';
 }
 
-/**
- * Inserts `"<key>": <valueText>` alphabetically into a JSON object body, or reports it already
- * exists (idempotent). Only the inserted bytes touch the text — everything else is untouched.
- */
+// Idempotently inserts `"<key>": <valueText>` alphabetically into a JSON object body.
 function insertSortedEntry(
   text: string,
   bodyStart: number,
@@ -218,10 +212,7 @@ function insertSortedEntry(
   }
 
   if (next) {
-    // `entry.end` for a non-last entry is the index of its trailing comma
-    // (the scan breaks on it without consuming it). Anchor the insertion
-    // right after that comma so the original whitespace leading into
-    // `next` (which already carries the correct indent) is left untouched.
+    // A non-last entry's `end` is its trailing comma; insert just after it to keep `next` indentation.
     const nextIdx = entries.indexOf(next);
     const insertAt = nextIdx > 0 ? entries[nextIdx - 1].end + 1 : bodyStart;
     const inserted = `${nl}${newLine},`;

@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useMemo } from 'react';
+import React, { useCallback, useId } from 'react';
 import type { WidgetData } from '@/types';
 import type { Field, FieldCtx, UpdateConfig } from '../schema/types';
 import { FIELD_COMPONENTS } from './fields';
@@ -12,6 +12,17 @@ export type FieldRendererProps = {
   defaults?: Record<string, unknown>;
 };
 
+// Control roots that are not native labelable elements; they take aria-labelledby instead of <label for>.
+const LABELLEDBY_TYPES = new Set<Field['type']>([
+  'segmented',
+  'list',
+  'fontFamily',
+  'textSizePreset',
+  'surfaceColor',
+  'color',
+  'accentColor',
+]);
+
 export const FieldRenderer: React.FC<FieldRendererProps> = ({
   field,
   widget,
@@ -22,6 +33,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   const uid = useId();
   const id = `${uid}${widget.id}-${field.key}`;
   const helpId = `${id}-help`;
+  const labelId = `${id}-label`;
 
   const onChange = useCallback(
     (value: unknown) => updateConfig({ [field.key]: value }),
@@ -44,63 +56,61 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     value !== undefined &&
     value !== defaultValue;
 
-  const control = useMemo(() => {
-    const Component = FIELD_COMPONENTS[field.type] ?? FIELD_COMPONENTS.custom;
-    const renderRow =
-      field.type === 'list'
-        ? (
-            row: Record<string, unknown>,
-            rowIndex: number,
-            onRowChange: (nextRow: Record<string, unknown>) => void
-          ) => (
-            <div className="flex flex-col gap-1">
-              {field.row.fields.map((rowField) => (
-                <FieldRenderer
-                  key={rowField.key}
-                  field={rowField}
-                  widget={widget}
-                  ctx={{ ...ctx, config: row }}
-                  updateConfig={(patch) => onRowChange({ ...row, ...patch })}
-                />
-              ))}
-            </div>
-          )
-        : undefined;
-    return (
-      <Component
-        field={field}
-        value={value}
-        onChange={onChange}
-        id={id}
-        describedBy={help ? helpId : undefined}
-        disabled={disabled}
-        ctx={ctx}
-        updateConfig={updateConfig}
-        renderRow={renderRow}
-      />
-    );
-  }, [
-    field,
-    widget,
-    ctx,
-    updateConfig,
-    value,
-    onChange,
-    id,
-    help,
-    helpId,
-    disabled,
-  ]);
+  const usesLabelledBy = LABELLEDBY_TYPES.has(field.type);
+
+  // Not memoized: `ctx` is a fresh object every render, so only Custom's own React.memo can skip work.
+  const Component = FIELD_COMPONENTS[field.type] ?? FIELD_COMPONENTS.custom;
+  const renderRow =
+    field.type === 'list'
+      ? (
+          row: Record<string, unknown>,
+          rowIndex: number,
+          onRowChange: (nextRow: Record<string, unknown>) => void
+        ) => (
+          <div className="flex flex-col gap-1">
+            {field.row.fields.map((rowField) => (
+              <FieldRenderer
+                key={rowField.key}
+                field={rowField}
+                widget={widget}
+                ctx={{ ...ctx, config: row }}
+                updateConfig={(patch) => onRowChange({ ...row, ...patch })}
+              />
+            ))}
+          </div>
+        )
+      : undefined;
+  const control = (
+    <Component
+      field={field}
+      value={value}
+      onChange={onChange}
+      id={id}
+      describedBy={help ? helpId : undefined}
+      labelId={usesLabelledBy ? labelId : undefined}
+      disabled={disabled}
+      ctx={ctx}
+      updateConfig={updateConfig}
+      renderRow={renderRow}
+    />
+  );
 
   if (!visible) return null;
 
   const inline = field.type === 'toggle';
+  const labelClass = 'text-xs font-semibold text-slate-700';
 
   const labelRow = (
     <div className="flex items-center justify-between gap-2">
-      <label htmlFor={id} className="text-xs font-semibold text-slate-700">
-        {label}
-      </label>
+      {usesLabelledBy ? (
+        <span id={labelId} className={labelClass}>
+          {label}
+        </span>
+      ) : (
+        <label htmlFor={id} id={labelId} className={labelClass}>
+          {label}
+        </label>
+      )}
       {canReset && (
         <button
           type="button"

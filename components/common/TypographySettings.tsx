@@ -17,6 +17,11 @@ interface TypographySettingsProps<T extends WidgetConfig> {
    * shared font-family picker can be reused without surfacing a dead control.
    */
   showColorPicker?: boolean;
+  /** Suppresses the "Typography" heading when the caller already renders a label. */
+  hideLabel?: boolean;
+  /** Id of the caller's own heading; labels the font radiogroup when `hideLabel` is set. */
+  labelId?: string;
+  describedBy?: string;
 }
 
 export const TypographySettings = <
@@ -25,20 +30,27 @@ export const TypographySettings = <
   config,
   updateConfig,
   showColorPicker = true,
+  hideLabel = false,
+  labelId,
+  describedBy,
 }: TypographySettingsProps<T>) => {
   const { fontFamily = 'global', fontColor = '#334155' } = config;
-  const typographyLabelId = useId();
+  const generatedLabelId = useId();
+  const typographyLabelId = labelId ?? generatedLabelId;
 
   return (
     <>
       <div>
-        <SettingsLabel icon={Type} as="span" id={typographyLabelId}>
-          Typography
-        </SettingsLabel>
+        {!hideLabel && (
+          <SettingsLabel icon={Type} as="span" id={typographyLabelId}>
+            Typography
+          </SettingsLabel>
+        )}
         <div
           className="grid grid-cols-4 gap-2"
           role="radiogroup"
           aria-labelledby={typographyLabelId}
+          aria-describedby={describedBy}
           onKeyDown={(e) =>
             handleRadioGroupKeyDown(e, FONTS, (f) =>
               updateConfig({

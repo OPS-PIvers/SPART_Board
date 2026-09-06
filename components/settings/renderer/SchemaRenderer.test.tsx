@@ -228,7 +228,7 @@ describe('FieldRenderer', () => {
     expect(updateConfig).toHaveBeenCalledWith({ b: 'original' });
   });
 
-  it('gives Custom a stable updateConfig and does not re-invoke it for unrelated changes', () => {
+  it('gives Custom a stable updateConfig and re-renders only when its config changes', () => {
     const updateConfig = vi.fn();
     const seen: Array<(patch: Record<string, unknown>) => void> = [];
     const renderFn = vi.fn(
@@ -245,11 +245,12 @@ describe('FieldRenderer', () => {
       label: 'title',
       render: renderFn,
     };
+    const ctx = makeCtx({ other: 1 });
     const { rerender } = render(
       <FieldRenderer
         field={field}
         widget={widget}
-        ctx={makeCtx({ other: 1 })}
+        ctx={ctx}
         updateConfig={updateConfig}
       />
     );
@@ -257,11 +258,21 @@ describe('FieldRenderer', () => {
       <FieldRenderer
         field={field}
         widget={widget}
-        ctx={makeCtx({ other: 2 })}
+        ctx={{ ...ctx, config: { other: 1 } }}
         updateConfig={updateConfig}
       />
     );
     expect(renderFn).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <FieldRenderer
+        field={field}
+        widget={widget}
+        ctx={{ ...ctx, config: { other: 2 } }}
+        updateConfig={updateConfig}
+      />
+    );
+    expect(renderFn).toHaveBeenCalledTimes(2);
     expect(seen[0]).toBe(updateConfig);
   });
 });

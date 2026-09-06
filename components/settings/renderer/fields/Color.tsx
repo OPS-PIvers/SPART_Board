@@ -14,6 +14,7 @@ export const Color: React.FC<FieldProps<ColorField<string>>> = ({
   onChange,
   id,
   describedBy,
+  labelId,
   disabled,
   ctx,
 }) => {
@@ -27,7 +28,12 @@ export const Color: React.FC<FieldProps<ColorField<string>>> = ({
   const fallback = presets[0]?.hex ?? '#000000';
 
   return (
-    <div id={id} aria-describedby={describedBy} role="group" aria-label={label}>
+    <div
+      id={id}
+      role="group"
+      aria-labelledby={labelId}
+      aria-describedby={describedBy}
+    >
       <fieldset disabled={disabled} className="contents">
         <ColorPresetPicker
           hideLabel

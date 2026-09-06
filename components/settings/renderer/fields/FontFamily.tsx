@@ -11,6 +11,7 @@ export const FontFamily: React.FC<FieldProps<FontFamilyField<string>>> = ({
   onChange,
   id,
   describedBy,
+  labelId,
   disabled,
 }) => {
   const shimConfig: FontFamilyShimConfig = {
@@ -21,12 +22,15 @@ export const FontFamily: React.FC<FieldProps<FontFamilyField<string>>> = ({
   };
 
   return (
-    <div id={id} aria-describedby={describedBy}>
+    <div id={id}>
       <fieldset disabled={disabled} className="contents">
         <TypographySettings
           config={shimConfig}
           updateConfig={updateConfigShim}
           showColorPicker={false}
+          hideLabel
+          labelId={labelId}
+          describedBy={describedBy}
         />
       </fieldset>
     </div>

@@ -13,6 +13,7 @@ export const AccentColor: React.FC<FieldProps<AccentColorField<string>>> = ({
   onChange,
   id,
   describedBy,
+  labelId,
   disabled,
   ctx,
 }) => {
@@ -20,9 +21,15 @@ export const AccentColor: React.FC<FieldProps<AccentColorField<string>>> = ({
   const current = typeof value === 'string' ? value : undefined;
 
   return (
-    <div id={id} aria-describedby={describedBy} role="group" aria-label={label}>
+    <div
+      id={id}
+      role="group"
+      aria-labelledby={labelId}
+      aria-describedby={describedBy}
+    >
       <fieldset disabled={disabled} className="contents">
         <AccentColorSettings
+          hideLabel
           label={label}
           value={current}
           fallback={DEFAULT_FALLBACK}

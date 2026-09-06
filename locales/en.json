@@ -1142,7 +1142,10 @@
         "behavior": "Behavior",
         "display": "Display"
       },
-      "reset": "Reset to default"
+      "reset": "Reset to default",
+      "addRow": "Add item",
+      "removeRow": "Remove item",
+      "reorderRow": "Drag to reorder"
     }
   },
   "widgetWindow": {
