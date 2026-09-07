@@ -76,6 +76,8 @@ test.describe('clock settings drawer at 1280x800', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     // Reopen: both values are still shown.
+    // Re-select the widget: the gear only renders while it is selected.
+    await clockWidget.click({ position: { x: 20, y: 20 } });
     const reopened = await openDrawer(page);
     await expect(
       reopened.getByRole('switch', { name: 'Show Seconds' })

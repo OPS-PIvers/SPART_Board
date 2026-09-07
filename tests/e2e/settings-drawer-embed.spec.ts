@@ -20,12 +20,17 @@ const addEmbedWidget = async (page: Page) => {
   await page.mouse.click(0, 0);
   // Pin the locator to the new widget's id so it survives the empty state disappearing.
   const widgetId = await page
-    .locator('.widget', { has: page.getByText('No URL Provided') })
+    .locator('.widget')
     .last()
     .getAttribute('data-widget-id');
   const embedWidget = page.locator(`.widget[data-widget-id="${widgetId}"]`);
   await expect(embedWidget).toBeVisible();
-  await embedWidget.click({ position: { x: 20, y: 20 }, force: true });
+  // The fill-sized embed can report as unstable at 820px; fall back to a forced click.
+  await embedWidget
+    .click({ position: { x: 20, y: 20 }, timeout: 15000 })
+    .catch(() =>
+      embedWidget.click({ position: { x: 20, y: 20 }, force: true })
+    );
   return embedWidget;
 };
 
@@ -78,6 +83,8 @@ test.describe('embed settings drawer at 1280x800', () => {
     await drawer.locator('[data-testid="settings-drawer-close"]').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
+    // Re-select the widget: the gear only renders while it is selected.
+    await widget.click({ position: { x: 20, y: 20 } });
     const reopened = await openDrawer(page);
     await expect(reopened.getByLabel('Target URL')).toHaveValue(
       'https://example.org'
