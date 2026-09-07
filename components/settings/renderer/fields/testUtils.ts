@@ -1,5 +1,5 @@
 import type { WidgetData } from '@/types';
-import type { FieldCtx } from '../../schema/types';
+import type { FieldCtx } from '@/components/settings/schema/types';
 
 export const CATALOG: Record<string, string> = {
   'widgetSettings.common.label': 'Label',

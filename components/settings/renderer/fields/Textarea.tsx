@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { TextareaField as TextareaFieldSchema } from '../../schema/types';
+import type { TextareaField as TextareaFieldSchema } from '@/components/settings/schema/types';
 
 export const TextareaField: React.FC<
   FieldProps<TextareaFieldSchema<string>>

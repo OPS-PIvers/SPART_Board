@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SurfaceColorField } from '../../schema/types';
+import type { SurfaceColorField } from '@/components/settings/schema/types';
 import type { FieldProps } from '../FieldProps';
 import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
 import { resolveLabel } from '../resolveLabel';

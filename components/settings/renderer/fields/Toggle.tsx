@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { ToggleField as ToggleFieldSchema } from '../../schema/types';
+import type { ToggleField as ToggleFieldSchema } from '@/components/settings/schema/types';
 
 export const ToggleField: React.FC<FieldProps<ToggleFieldSchema<string>>> = ({
   value,

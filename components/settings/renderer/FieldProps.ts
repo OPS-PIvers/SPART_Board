@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react';
-import type { Field, FieldCtx, UpdateConfig } from '../schema/types';
+import type {
+  Field,
+  FieldCtx,
+  UpdateConfig,
+} from '@/components/settings/schema/types';
 
 /** Field components render only the control; FieldRenderer draws the label row and help line. */
 export type FieldProps<F extends Field = Field> = {

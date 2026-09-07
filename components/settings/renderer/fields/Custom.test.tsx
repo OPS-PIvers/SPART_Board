@@ -2,7 +2,11 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { WidgetData } from '@/types';
-import type { CustomField, FieldCtx, UpdateConfig } from '../../schema/types';
+import type {
+  CustomField,
+  FieldCtx,
+  UpdateConfig,
+} from '@/components/settings/schema/types';
 import { FieldRenderer } from '../FieldRenderer';
 
 const t = (key: string, options?: Record<string, unknown>): string =>

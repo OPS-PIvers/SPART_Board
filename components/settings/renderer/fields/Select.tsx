@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { SelectField as SelectFieldSchema } from '../../schema/types';
+import type { SelectField as SelectFieldSchema } from '@/components/settings/schema/types';
 
 export const SelectField: React.FC<FieldProps<SelectFieldSchema<string>>> = ({
   field,

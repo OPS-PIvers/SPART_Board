@@ -2,8 +2,11 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { WidgetData } from '@/types';
-import type { FieldCtx, UpdateConfig } from '../../schema/types';
-import type { ToggleField as ToggleFieldType } from '../../schema/types';
+import type {
+  FieldCtx,
+  UpdateConfig,
+} from '@/components/settings/schema/types';
+import type { ToggleField as ToggleFieldType } from '@/components/settings/schema/types';
 import { FieldRenderer } from '../FieldRenderer';
 
 const t = (key: string, options?: Record<string, unknown>): string =>

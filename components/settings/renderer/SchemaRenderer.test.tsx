@@ -6,7 +6,7 @@ import type {
   FieldCtx,
   UpdateConfig,
   WidgetSettingsSchema,
-} from '../schema/types';
+} from '@/components/settings/schema/types';
 import { SchemaRenderer } from './SchemaRenderer';
 import { FieldRenderer } from './FieldRenderer';
 import { resolveLabel } from './resolveLabel';

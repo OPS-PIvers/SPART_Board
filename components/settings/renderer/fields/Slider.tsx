@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { SliderField as SliderFieldSchema } from '../../schema/types';
+import type { SliderField as SliderFieldSchema } from '@/components/settings/schema/types';
 
 export const SliderField: React.FC<FieldProps<SliderFieldSchema<string>>> = ({
   field,

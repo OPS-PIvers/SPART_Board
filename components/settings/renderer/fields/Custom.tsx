@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { CustomField } from '../../schema/types';
+import type { CustomField } from '@/components/settings/schema/types';
 
 const CustomImpl: React.FC<FieldProps> = ({ field, ctx, updateConfig }) => {
   if (field.type !== 'custom' || !updateConfig) return null;

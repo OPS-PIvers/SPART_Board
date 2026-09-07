@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { TextField as TextFieldSchema } from '../../schema/types';
+import type { TextField as TextFieldSchema } from '@/components/settings/schema/types';
 
 export const TextField: React.FC<FieldProps<TextFieldSchema<string>>> = ({
   field,

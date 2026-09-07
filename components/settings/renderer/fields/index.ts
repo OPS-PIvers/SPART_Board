@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { Field } from '../../schema/types';
+import type { Field } from '@/components/settings/schema/types';
 import type { FieldProps } from '../FieldProps';
 import { UnsupportedField } from './UnsupportedField';
 import { ToggleField } from './Toggle';

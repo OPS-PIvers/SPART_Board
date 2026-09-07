@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { NumberField as NumberFieldSchema } from '../../schema/types';
+import type { NumberField as NumberFieldSchema } from '@/components/settings/schema/types';
 
 export const NumberField: React.FC<FieldProps<NumberFieldSchema<string>>> = ({
   field,

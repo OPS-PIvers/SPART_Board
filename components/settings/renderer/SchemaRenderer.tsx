@@ -7,7 +7,7 @@ import {
   type Group,
   type UpdateConfig,
   type WidgetSettingsSchema,
-} from '../schema/types';
+} from '@/components/settings/schema/types';
 import { FieldRenderer } from './FieldRenderer';
 import { resolveLabel } from './resolveLabel';
 
