@@ -1,4 +1,5 @@
 import React from 'react';
+import { handleRadioGroupKeyDown } from './radioGroupKeyNav';
 
 /**
  * Shared segmented (pill) control. A row of mutually-exclusive options
@@ -31,39 +32,8 @@ export const SegmentedControl: <T extends string>(props: {
   role = 'tablist',
 }) => {
   const itemRole = role === 'radiogroup' ? 'radio' : 'tab';
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (
-      e.key !== 'ArrowRight' &&
-      e.key !== 'ArrowLeft' &&
-      e.key !== 'Home' &&
-      e.key !== 'End'
-    )
-      return;
-    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    const nodes = Array.from(
-      e.currentTarget.querySelectorAll<HTMLButtonElement>(
-        `[role="${itemRole}"]`
-      )
-    );
-    if (nodes.length === 0) return;
-    e.preventDefault();
-    const idx = nodes.indexOf(document.activeElement as HTMLButtonElement);
-    const safeIdx = idx < 0 ? 0 : idx;
-    let nextIdx: number;
-    if (e.key === 'Home') {
-      nextIdx = 0;
-    } else if (e.key === 'End') {
-      nextIdx = nodes.length - 1;
-    } else if (e.key === 'ArrowRight') {
-      nextIdx = (safeIdx + 1) % nodes.length;
-    } else {
-      nextIdx = (safeIdx - 1 + nodes.length) % nodes.length;
-    }
-    const nextOption = options[nextIdx];
-    if (!nextOption) return;
-    nodes[nextIdx].focus();
-    onChange(nextOption.value);
-  };
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) =>
+    handleRadioGroupKeyDown(e, options, (opt) => onChange(opt.value));
 
   return (
     <div

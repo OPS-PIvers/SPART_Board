@@ -1,6 +1,10 @@
 import React, { useId } from 'react';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { useBuildingSelection } from '@/hooks/useBuildingSelection';
+import {
+  canonicalBuildingId,
+  canonicalizeBuildingKeyedRecord,
+} from '@/config/buildings';
 import { BuildingSelector } from './BuildingSelector';
 import { TimeToolGlobalConfig, BuildingTimeToolDefaults } from '@/types';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
@@ -91,11 +95,16 @@ export const TimeToolConfigurationPanel: React.FC<
   const defaultAlertSoundLabelId = useId();
   const defaultFontSelectId = useId();
 
-  const buildingDefaults = config.buildingDefaults ?? {};
+  // useAdminBuildings() can return a legacy long-form id; key buildingDefaults off the canonical id.
+  const canonicalId = canonicalBuildingId(selectedBuildingId);
+
+  const buildingDefaults = canonicalizeBuildingKeyedRecord(
+    config.buildingDefaults ?? {}
+  );
   const currentBuildingConfig: BuildingTimeToolDefaults = buildingDefaults[
-    selectedBuildingId
+    canonicalId
   ] ?? {
-    buildingId: selectedBuildingId,
+    buildingId: canonicalId,
   };
 
   const handleUpdateBuilding = (updates: Partial<BuildingTimeToolDefaults>) => {
@@ -103,7 +112,7 @@ export const TimeToolConfigurationPanel: React.FC<
       ...config,
       buildingDefaults: {
         ...buildingDefaults,
-        [selectedBuildingId]: {
+        [canonicalId]: {
           ...currentBuildingConfig,
           ...updates,
         },
