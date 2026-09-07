@@ -1,8 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// Runs in the default `chromium` project, where auth bypass leaves the
-// settings-drawer flag on (see playwright.config.ts). Helpers copied from
-// tests/e2e/settings-drawer.spec.ts.
+// Default chromium project with auth bypass; helpers copied from tests/e2e/settings-drawer.spec.ts.
 
 const addNoteWidget = async (page: Page) => {
   await page.addStyleTag({
@@ -88,9 +86,7 @@ test.describe('Note settings drawer at 1280x800', () => {
     const heading = drawer.getByRole('heading').first();
     await heading.focus();
 
-    // Heading -> building toggle/help/close chrome -> filter -> tabs -> the
-    // single template-grid field. Walk until the first template button is
-    // reached, asserting focus never escapes the dialog along the way.
+    // Walk from the heading to the template-grid field, checking focus stays in the dialog.
     let reachedField = false;
     for (let i = 0; i < 20 && !reachedField; i += 1) {
       await page.keyboard.press('Tab');

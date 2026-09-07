@@ -1,24 +1,20 @@
 import React from 'react';
-import type {
-  FieldCtx,
-  UpdateConfig,
-} from '@/components/settings/schema/types';
+import type { CustomRenderCtx } from '@/components/settings/schema/types';
 import { sanitizeHtml } from '@/utils/security';
 import { TEXT_WIDGET_TEMPLATES } from './constants';
 
 type TemplateGridProps = {
-  ctx: FieldCtx & { updateConfig: UpdateConfig };
+  ctx: CustomRenderCtx;
 };
 
 // Module-level component the schema's Custom field renders — ctx.updateConfig is mount-stable.
 export const TemplateGrid: React.FC<TemplateGridProps> = ({ ctx }) => {
-  const groupLabel = ctx.t('widgetSettings.text.templates');
-
   return (
     <div
+      id={ctx.id}
       className="grid grid-cols-2 gap-2"
       role="group"
-      aria-label={groupLabel}
+      aria-labelledby={ctx.labelId}
     >
       {TEXT_WIDGET_TEMPLATES.map((template) => (
         <button
