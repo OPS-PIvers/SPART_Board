@@ -84,6 +84,64 @@ describe('NumberField', () => {
     expect(updateConfig).not.toHaveBeenCalled();
   });
 
+  it('clamps a value above max to field.max', () => {
+    const clampedField: NumberFieldType<string> = {
+      ...field,
+      min: 5,
+      max: 60,
+    };
+    const updateConfig = vi.fn() as UpdateConfig;
+    render(
+      <FieldRenderer
+        field={clampedField}
+        widget={widget}
+        ctx={makeCtx({ count: 20 })}
+        updateConfig={updateConfig}
+      />
+    );
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '9999' },
+    });
+    expect(updateConfig).toHaveBeenCalledWith({ count: 60 });
+  });
+
+  it('clamps a value below min to field.min', () => {
+    const clampedField: NumberFieldType<string> = {
+      ...field,
+      min: 5,
+      max: 60,
+    };
+    const updateConfig = vi.fn() as UpdateConfig;
+    render(
+      <FieldRenderer
+        field={clampedField}
+        widget={widget}
+        ctx={makeCtx({ count: 20 })}
+        updateConfig={updateConfig}
+      />
+    );
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '-3' },
+    });
+    expect(updateConfig).toHaveBeenCalledWith({ count: 5 });
+  });
+
+  it('keeps the previous value on blur when the draft is empty', () => {
+    const updateConfig = vi.fn() as UpdateConfig;
+    render(
+      <FieldRenderer
+        field={field}
+        widget={widget}
+        ctx={makeCtx({ count: 5 })}
+        updateConfig={updateConfig}
+      />
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+    expect(input).toHaveValue(5);
+  });
+
   it('honours disabled', () => {
     const disabledField: NumberFieldType<string> = {
       ...field,

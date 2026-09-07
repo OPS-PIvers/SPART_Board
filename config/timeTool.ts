@@ -1,6 +1,6 @@
 /**
  * Canonical value sets for the TimeTool (Timer/Stopwatch) widget, shared by:
- *   - the widget's user-level settings (`components/widgets/TimeTool/Settings.tsx`)
+ *   - the widget's user-level settings (`components/widgets/TimeTool/settings.schema.ts`)
  *   - the admin building-config panel (`components/admin/TimeToolConfigurationPanel.tsx`)
  *   - the admin building-config validator (`utils/adminBuildingConfig.ts`)
  *
