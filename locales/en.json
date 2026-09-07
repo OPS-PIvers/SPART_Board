@@ -1183,6 +1183,26 @@
       },
       "dockedLeft": "Settings panel docked to the left of the board",
       "dockedRight": "Settings panel docked to the right of the board"
+    },
+    "embed": {
+      "flaggedNotice": "This site is currently flagged as non-embeddable. A \"New Tab\" button will be shown to users instead.",
+      "htmlHelp": "You can paste a full single-file mini-app here. Scripts are allowed but run in a secure sandbox.",
+      "htmlLabel": "HTML / CSS / JS",
+      "modeCodeOption": "Custom Code",
+      "modeLabel": "Embed Type",
+      "modeUrlOption": "Website URL",
+      "openOriginal": "Open Original",
+      "refreshIntervalLabel": "Auto-Refresh",
+      "urlHelp": "Pro-tip: Links from YouTube, Google Docs, Slides, and Sheets are automatically formatted.",
+      "urlLabel": "Target URL",
+      "verifyBlockedFallback": "Embedding is blocked by this site.",
+      "verifyBlockedFallbackNote": "Fallback mode will be used.",
+      "verifyBlockedTitle": "Embedding Blocked",
+      "verifyButton": "Verify",
+      "verifyErrorGeneric": "Could not verify link compatibility.",
+      "verifyLabel": "Link Compatibility",
+      "verifySuccess": "Compatible with embedding!",
+      "verifyTip": "Some websites prevent embedding for security. Use the Verify button above to check compatibility."
     }
   },
   "widgetWindow": {

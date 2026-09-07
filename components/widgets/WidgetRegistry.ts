@@ -266,7 +266,9 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
 // Settings-drawer schemas (modules, not components); populated per migrated widget.
 export const WIDGET_SETTINGS_SCHEMAS: Partial<
   Record<WidgetType, () => Promise<WidgetSettingsSchema>>
-> = {};
+> = {
+  embed: () => import('./Embed/settings.schema').then((m) => m.default),
+};
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
@@ -282,7 +284,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
   dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),
   sound: lazyNamed(() => import('./SoundWidget'), 'SoundSettings'),
-  embed: lazyNamed(() => import('./Embed'), 'EmbedSettings'),
   drawing: lazyNamed(
     () => import('./DrawingWidget/Settings'),
     'DrawingSettings'
