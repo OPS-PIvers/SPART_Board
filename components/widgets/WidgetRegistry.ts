@@ -266,7 +266,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
 // Settings-drawer schemas (modules, not components); populated per migrated widget.
 export const WIDGET_SETTINGS_SCHEMAS: Partial<
   Record<WidgetType, () => Promise<WidgetSettingsSchema>>
-> = {};
+> = {
+  'time-tool': () =>
+    import('./TimeTool/settings.schema').then((m) => m.default),
+};
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
@@ -300,10 +303,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),
   miniApp: MiniAppSettings,
-  'time-tool': lazyNamed(
-    () => import('./TimeTool/Settings'),
-    'TimeToolSettings'
-  ),
   'seating-chart': lazyNamed(
     () => import('./SeatingChart/Settings'),
     'SeatingChartSettings'
@@ -434,10 +433,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
   clock: lazyNamed(
     () => import('./ClockWidget/Settings'),
     'ClockAppearanceSettings'
-  ),
-  'time-tool': lazyNamed(
-    () => import('./TimeTool/Settings'),
-    'TimeToolAppearanceSettings'
   ),
   checklist: lazyNamed(
     () => import('./Checklist'),
