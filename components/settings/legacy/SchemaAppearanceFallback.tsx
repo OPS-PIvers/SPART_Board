@@ -5,9 +5,10 @@ import { useDashboardActions } from '@/context/dashboardCanvasStore';
 import { WIDGET_SETTINGS_SCHEMAS } from '@/components/widgets/WidgetRegistry';
 import type { WidgetData, WidgetType } from '@/types';
 import type { FieldCtx, WidgetSettingsSchema } from '../schema/types';
-import { SchemaRenderer } from '../renderer/SchemaRenderer';
+import { resolveStyleFields } from '../schema/styleKeys';
+import { FieldRenderer } from '../renderer/FieldRenderer';
 
-export interface SchemaSettingsFallbackProps {
+export interface SchemaAppearanceFallbackProps {
   widget: WidgetData;
 }
 
@@ -19,10 +20,10 @@ type SchemaState = {
 // Dispatch (not setState) mirrors SettingsDrawerHost's loader — keeps the no-setState-in-effect rule happy.
 const schemaReducer = (_: SchemaState, next: SchemaState): SchemaState => next;
 
-// Flag-off fallback rendering a migrated widget's schema groups into the legacy panel's Settings tab (item 2.8).
-export const SchemaSettingsFallback: React.FC<SchemaSettingsFallbackProps> = ({
-  widget,
-}) => {
+// Flag-off fallback rendering a migrated widget's Content-tier styleKeys into the legacy panel's Style tab (item 2.8).
+export const SchemaAppearanceFallback: React.FC<
+  SchemaAppearanceFallbackProps
+> = ({ widget }) => {
   const { t } = useTranslation();
   const { isAdmin, canAccessFeature } = useAuth();
   const { updateWidget } = useDashboardActions();
@@ -80,35 +81,22 @@ export const SchemaSettingsFallback: React.FC<SchemaSettingsFallbackProps> = ({
     [config, widget, isAdmin, canAccessFeature, t]
   );
 
-  if (schema === undefined) {
-    return (
-      <div
-        className="flex flex-col gap-3"
-        data-testid="widget-settings-fallback-skeleton"
-        aria-busy="true"
-      >
-        <span className="sr-only">{t('widgetSettings.common.loading')}</span>
-        {[0, 1, 2].map((row) => (
-          <div key={row} className="h-8 rounded-lg bg-slate-100" />
-        ))}
-      </div>
-    );
-  }
+  if (!schema) return null;
 
-  if (!schema) {
-    return (
-      <p className="text-sm text-slate-500 italic">
-        {t('widgetSettings.common.empty')}
-      </p>
-    );
-  }
+  const styleFields = resolveStyleFields(schema.styleKeys);
+  if (styleFields.length === 0) return null;
 
   return (
-    <SchemaRenderer
-      schema={schema}
-      widget={widget}
-      ctx={ctx}
-      updateConfig={updateConfig}
-    />
+    <div className="flex flex-col divide-y divide-slate-100">
+      {styleFields.map((field) => (
+        <FieldRenderer
+          key={field.key}
+          field={field}
+          widget={widget}
+          ctx={ctx}
+          updateConfig={updateConfig}
+        />
+      ))}
+    </div>
   );
 };

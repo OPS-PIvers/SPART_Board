@@ -57,6 +57,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   const defaultValue = defaults ? defaults[field.key] : undefined;
   const canReset =
+    field.type !== 'custom' &&
     defaults !== undefined &&
     defaultValue !== undefined &&
     value !== undefined &&

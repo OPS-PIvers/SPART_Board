@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SchemaSettingsFallback } from './SchemaSettingsFallback';
+import { WIDGET_SETTINGS_SCHEMAS } from '@/components/widgets/WidgetRegistry';
 import {
   useDashboardActions,
   type DashboardActions,
@@ -68,12 +69,30 @@ describe('SchemaSettingsFallback', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the trailing Style section for the schema styleKeys', async () => {
+  it('does not render a Style section (moved to SchemaAppearanceFallback)', async () => {
     render(<SchemaSettingsFallback widget={widget} />);
     await waitFor(() =>
-      expect(screen.getByText('Widget style')).toBeInTheDocument()
+      expect(
+        screen.getByRole('switch', { name: 'Show Seconds' })
+      ).toBeInTheDocument()
     );
-    expect(screen.getByText('Font')).toBeInTheDocument();
+    expect(screen.queryByText('Widget style')).not.toBeInTheDocument();
+  });
+
+  it('shows "Standard settings available." when the schema chunk fails to load', async () => {
+    const originalLoader = WIDGET_SETTINGS_SCHEMAS.clock;
+    WIDGET_SETTINGS_SCHEMAS.clock = () =>
+      Promise.reject(new Error('chunk load failed'));
+    try {
+      render(<SchemaSettingsFallback widget={widget} />);
+      await waitFor(() =>
+        expect(
+          screen.getByText('Standard settings available.')
+        ).toBeInTheDocument()
+      );
+    } finally {
+      WIDGET_SETTINGS_SCHEMAS.clock = originalLoader;
+    }
   });
 
   it('calls updateWidget with the merged config when a field changes', async () => {

@@ -235,6 +235,21 @@ describe('FieldRenderer', () => {
     expect(updateConfig).toHaveBeenCalledWith({ b: 'original' });
   });
 
+  it('never renders the reset link for a custom field, even when its value differs from default', () => {
+    const field = {
+      type: 'custom' as const,
+      key: 'mode',
+      label: 'title',
+      render: () => <span>custom</span>,
+    };
+    renderField(
+      field,
+      { mode: 'countdown' },
+      { defaults: { mode: 'stopwatch' } }
+    );
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+  });
+
   it('gives Custom a stable updateConfig and re-renders only when its config changes', () => {
     const updateConfig = vi.fn();
     const seen: Array<(patch: Record<string, unknown>) => void> = [];
