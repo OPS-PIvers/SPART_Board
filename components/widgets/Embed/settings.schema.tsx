@@ -1,7 +1,5 @@
-import type {
-  CustomField,
-  WidgetSettingsSchema,
-} from '@/components/settings/schema/types';
+import type { CustomField } from '@/components/settings/schema/types';
+import { defineSettings } from '@/components/settings/schema/defineSettings';
 import type { EmbedConfig } from '@/types';
 import { EmbedModeControl } from './EmbedModeControl';
 import { EmbedVerifyControl } from './EmbedVerifyControl';
@@ -16,14 +14,7 @@ const renderVerifyControl: CustomField<'isEmbeddable'>['render'] = (ctx) => (
 
 const isCodeMode = (mode: unknown): boolean => mode === 'code';
 
-// `satisfies` (rather than `defineSettings<EmbedConfig>(...)`) validates every
-// field key against EmbedConfig at compile time while still exporting the
-// erased `WidgetSettingsSchema` the registry/drawer expect — `defineSettings`
-// preserves the `<EmbedConfig>` generic on its return value, which TS then
-// refuses to widen back to the bare `WidgetSettingsSchema` (keyof-based
-// generics infer as invariant), so every field-typed schema module hits the
-// same TS2322 through that helper.
-const schema: WidgetSettingsSchema = {
+const schema = defineSettings<EmbedConfig>({
   groups: [
     {
       id: 'content',
@@ -82,6 +73,6 @@ const schema: WidgetSettingsSchema = {
       ],
     },
   ],
-} satisfies WidgetSettingsSchema<EmbedConfig>;
+});
 
 export default schema;

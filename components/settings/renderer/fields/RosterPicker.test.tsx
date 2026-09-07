@@ -25,7 +25,10 @@ const roster = {
   driveFileId: null,
   studentCount: 2,
   createdAt: 0,
-  students: [],
+  students: [
+    { id: 's1', name: 'Ada' },
+    { id: 's2', name: 'Grace' },
+  ],
 } as unknown as ClassRoster;
 
 const field: RosterPickerField<string> = {
@@ -71,13 +74,30 @@ describe('RosterPicker field', () => {
     );
   });
 
-  it('shows the active roster name in Auto mode', () => {
+  it('shows the active roster name and student count in Auto mode', () => {
     dashboardState.rosters = [roster];
     dashboardState.activeRosterId = 'r1';
     renderField({ rosterMode: 'class' });
     expect(screen.getByTestId('roster-picker-status')).toHaveTextContent(
-      'rosterActive: Room 12'
+      'rosterActive: Room 12 · 2 students'
     );
+  });
+
+  it('looks disabled inside an ancestor <fieldset disabled> (read-only drawer)', () => {
+    render(
+      <fieldset disabled>
+        <FieldRenderer
+          field={field}
+          widget={widget}
+          ctx={makeCtx({ rosterMode: 'class' })}
+          updateConfig={vi.fn()}
+        />
+      </fieldset>
+    );
+    const radio = screen.getByRole('radio', { name: 'rosterAuto' });
+    expect(radio).toBeDisabled();
+    expect(radio.className).toContain('disabled:opacity-50');
+    expect(radio.className).toContain('disabled:cursor-not-allowed');
   });
 
   it('hides the roster status in Custom mode', () => {

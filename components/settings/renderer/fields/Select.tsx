@@ -1,6 +1,7 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
 import type { SelectField as SelectFieldSchema } from '../../schema/types';
+import { resolveLabel } from '../resolveLabel';
 
 export const SelectField: React.FC<FieldProps<SelectFieldSchema<string>>> = ({
   field,
@@ -9,6 +10,7 @@ export const SelectField: React.FC<FieldProps<SelectFieldSchema<string>>> = ({
   id,
   describedBy,
   disabled,
+  ctx,
 }) => {
   const current =
     typeof value === 'string' || typeof value === 'number' ? String(value) : '';
@@ -28,7 +30,7 @@ export const SelectField: React.FC<FieldProps<SelectFieldSchema<string>>> = ({
     >
       {field.options.map((option) => (
         <option key={option.value} value={option.value}>
-          {option.label}
+          {resolveLabel(ctx.t, ctx.widget.type, option.label)}
         </option>
       ))}
     </select>

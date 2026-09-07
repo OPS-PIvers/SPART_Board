@@ -46,9 +46,9 @@ export const SoundPicker: React.FC<
               tabIndex={tabbable ? 0 : -1}
               disabled={disabled}
               onClick={() => onChange(option.value)}
-              className={`flex-1 min-w-0 truncate text-xs font-semibold px-2 py-1.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-blue-primary ${
+              className={`flex-1 min-w-0 truncate text-xs font-semibold px-2 py-1.5 text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-blue-primary disabled:opacity-50 disabled:cursor-not-allowed ${
                 selected ? 'text-brand-blue-dark' : 'text-slate-700'
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              }`}
             >
               {label}
             </button>

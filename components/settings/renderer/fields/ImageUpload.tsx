@@ -14,7 +14,7 @@ export const ImageUpload: React.FC<
   FieldProps<ImageUploadFieldSchema<string>>
 > = ({ field, value, onChange, id, describedBy, labelId, disabled, ctx }) => {
   const { user } = useAuth();
-  const { uploadSticker } = useStorage();
+  const { uploadDisplayImage } = useStorage();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
@@ -41,7 +41,7 @@ export const ImageUpload: React.FC<
     setError(null);
     setUploading(true);
     try {
-      onChange(await uploadSticker(user.uid, file));
+      onChange(await uploadDisplayImage(user.uid, file));
     } catch (err) {
       console.error('[ImageUpload] Upload failed', err);
       setError(t('imageUploadFailed'));

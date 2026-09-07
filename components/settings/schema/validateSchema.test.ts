@@ -248,6 +248,87 @@ describe('validateSchema', () => {
     expect(result.warnings).toEqual([]);
   });
 
+  it('warns for select/segmented option labels that look like literal English', () => {
+    const result = validateSchema(
+      'clock',
+      {
+        groups: [
+          {
+            id: 'display',
+            fields: [
+              {
+                type: 'select',
+                key: 'showSeconds',
+                label: 'title',
+                options: [
+                  { value: 0, label: 'Disabled' },
+                  { value: 1, label: 'Every 1 Minute' },
+                ],
+              },
+              {
+                type: 'segmented',
+                key: 'showSeconds',
+                label: 'title',
+                options: [{ value: 'a', label: 'Left Side' }],
+              },
+            ],
+          },
+        ],
+      },
+      base
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([
+      'clock: option label "Disabled" on "showSeconds" looks like literal English; use a widgetSettings.clock or common leaf',
+      'clock: option label "Every 1 Minute" on "showSeconds" looks like literal English; use a widgetSettings.clock or common leaf',
+      'clock: option label "Left Side" on "showSeconds" looks like literal English; use a widgetSettings.clock or common leaf',
+    ]);
+  });
+
+  it('does not warn for option labels that resolve or look like leaves', () => {
+    const result = validateSchema(
+      'clock',
+      {
+        groups: [
+          {
+            id: 'display',
+            fields: [
+              {
+                type: 'segmented',
+                key: 'showSeconds',
+                label: 'title',
+                options: [
+                  { value: 'a', label: 'showSeconds' },
+                  { value: 'b', label: 'title' },
+                  { value: 'c', label: 'styles.modern' },
+                ],
+              },
+              {
+                type: 'list',
+                key: 'showSeconds',
+                label: 'title',
+                row: {
+                  fields: [
+                    {
+                      type: 'select',
+                      key: 'kind',
+                      label: 'title',
+                      options: [{ value: 'x', label: 'Literal Row Label' }],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      base
+    );
+    expect(result.warnings).toEqual([
+      'clock: display.showSeconds.row.kind option label "Literal Row Label" looks like literal English; use a widgetSettings.clock or common leaf',
+    ]);
+  });
+
   it('defineSettings returns the schema unchanged', () => {
     const schema = defineSettings<{ showSeconds: boolean }>({
       groups: [

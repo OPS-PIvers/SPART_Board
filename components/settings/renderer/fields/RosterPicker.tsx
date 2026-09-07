@@ -8,7 +8,7 @@ import { resolveLabel } from '../resolveLabel';
 type RosterMode = 'class' | 'custom';
 const MODES: ReadonlyArray<RosterMode> = ['class', 'custom'];
 
-// Auto/Custom roster-mode switch (RosterModeControl semantics) plus the active class name.
+// Auto/Custom roster-mode switch (RosterModeControl semantics) plus the active class name and size.
 export const RosterPicker: React.FC<
   FieldProps<RosterPickerFieldSchema<string>>
 > = ({ value, onChange, id, describedBy, labelId, disabled, ctx }) => {
@@ -20,6 +20,13 @@ export const RosterPicker: React.FC<
     class: t('rosterAuto'),
     custom: t('rosterCustom'),
   };
+  const count = activeRoster
+    ? (activeRoster.students?.length ?? activeRoster.studentCount ?? 0)
+    : 0;
+  const countText = ctx.t('widgetSettings.common.rosterStudentCount', {
+    count,
+    defaultValue: String(count),
+  });
 
   return (
     <div
@@ -46,11 +53,11 @@ export const RosterPicker: React.FC<
               tabIndex={selected ? 0 : -1}
               disabled={disabled}
               onClick={() => onChange(option)}
-              className={`flex-1 text-xs px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-blue-primary ${
+              className={`flex-1 text-xs px-2 py-1.5 rounded-md transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-blue-primary disabled:opacity-50 disabled:cursor-not-allowed ${
                 selected
                   ? 'bg-white text-slate-900 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              }`}
             >
               {labels[option]}
             </button>
@@ -67,7 +74,7 @@ export const RosterPicker: React.FC<
           }`}
         >
           {activeRoster
-            ? `${t('rosterActive')}: ${activeRoster.name}`
+            ? `${t('rosterActive')}: ${activeRoster.name} · ${countText}`
             : t('rosterNone')}
         </p>
       )}

@@ -269,10 +269,7 @@ export const WIDGET_SETTINGS_SCHEMAS: Partial<
 > = {
   text: () => import('./TextWidget/settings.schema').then((m) => m.default),
   embed: () => import('./Embed/settings.schema').then((m) => m.default),
-  clock: () =>
-    import('./ClockWidget/settings.schema').then(
-      (m) => m.default as unknown as WidgetSettingsSchema
-    ),
+  clock: () => import('./ClockWidget/settings.schema').then((m) => m.default),
   'time-tool': () =>
     import('./TimeTool/settings.schema').then((m) => m.default),
 };

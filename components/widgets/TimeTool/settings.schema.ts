@@ -4,7 +4,6 @@ import { defineSettings } from '@/components/settings/schema/defineSettings';
 import type {
   FieldCtx,
   UpdateConfig,
-  WidgetSettingsSchema,
 } from '@/components/settings/schema/types';
 import { TIME_TOOL_SOUNDS } from '@/config/timeTool';
 import { playTimerAlert, resumeAudio } from '@/utils/timeToolAudio';
@@ -48,7 +47,7 @@ export const previewTimerSound = (sound: string) => {
 
 const isTimerMode = (ctx: FieldCtx) => ctx.config.mode === 'timer';
 
-const schema = defineSettings<TimeToolConfig>({
+export default defineSettings<TimeToolConfig>({
   groups: [
     {
       id: 'content',
@@ -155,6 +154,3 @@ const schema = defineSettings<TimeToolConfig>({
   ],
   styleKeys: ['fontFamily'],
 });
-
-// The generic `WidgetSettingsSchema<C>` is not assignable to the registry's `WidgetSettingsSchema` (NoDots<K> makes C invariant).
-export default schema as unknown as WidgetSettingsSchema;

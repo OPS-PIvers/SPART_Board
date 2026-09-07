@@ -5,7 +5,8 @@ import { axe } from 'jest-axe';
 import type { ImageUploadField } from '../../schema/types';
 import { makeCtx, widget } from './testUtils';
 
-const mockUploadSticker = vi.fn<(uid: string, file: File) => Promise<string>>();
+const mockUploadDisplayImage =
+  vi.fn<(uid: string, file: File) => Promise<string>>();
 const authState: { user: { uid: string } | null } = { user: { uid: 'u1' } };
 const pickerState = { isConnected: false };
 
@@ -14,7 +15,8 @@ vi.mock('@/context/useAuth', () => ({
 }));
 vi.mock('@/hooks/useStorage', () => ({
   useStorage: () => ({
-    uploadSticker: mockUploadSticker,
+    uploadDisplayImage: mockUploadDisplayImage,
+    uploadSticker: vi.fn(),
     uploadHotspotImage: vi.fn(),
   }),
 }));
@@ -66,7 +68,7 @@ function makeFile(type = 'image/png', size = 10): File {
 }
 
 beforeEach(() => {
-  mockUploadSticker.mockReset();
+  mockUploadDisplayImage.mockReset();
   authState.user = { uid: 'u1' };
   pickerState.isConnected = false;
 });
@@ -102,7 +104,7 @@ describe('ImageUpload field', () => {
   });
 
   it('uploads a local file and writes the returned URL', async () => {
-    mockUploadSticker.mockResolvedValue('https://cdn/img.png');
+    mockUploadDisplayImage.mockResolvedValue('https://cdn/img.png');
     const updateConfig = vi.fn();
     renderField({}, updateConfig);
     const file = makeFile();
@@ -112,7 +114,7 @@ describe('ImageUpload field', () => {
         imageUrl: 'https://cdn/img.png',
       })
     );
-    expect(mockUploadSticker).toHaveBeenCalledWith('u1', file);
+    expect(mockUploadDisplayImage).toHaveBeenCalledWith('u1', file);
   });
 
   it('rejects files over 5 MB and non-images without uploading', async () => {
@@ -128,12 +130,12 @@ describe('ImageUpload field', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'imageInvalidType'
     );
-    expect(mockUploadSticker).not.toHaveBeenCalled();
+    expect(mockUploadDisplayImage).not.toHaveBeenCalled();
     expect(updateConfig).not.toHaveBeenCalled();
   });
 
   it('reports upload failures inline', async () => {
-    mockUploadSticker.mockRejectedValue(new Error('nope'));
+    mockUploadDisplayImage.mockRejectedValue(new Error('nope'));
     const errorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
@@ -154,7 +156,7 @@ describe('ImageUpload field', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'signInToUpload'
     );
-    expect(mockUploadSticker).not.toHaveBeenCalled();
+    expect(mockUploadDisplayImage).not.toHaveBeenCalled();
   });
 
   it('offers the Drive picker only when Drive is connected', () => {

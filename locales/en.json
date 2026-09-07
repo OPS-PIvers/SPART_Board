@@ -1218,7 +1218,9 @@
       "rosterAuto": "Auto",
       "rosterCustom": "Custom",
       "rosterActive": "Active class",
-      "rosterNone": "No active class"
+      "rosterNone": "No active class",
+      "rosterStudentCount_one": "{{count}} student",
+      "rosterStudentCount_other": "{{count}} students"
     },
     "text": {
       "templates": "Templates"
