@@ -87,6 +87,30 @@ describe('SettingsDrawer chrome', () => {
     expect(screen.getByRole('heading', { name: 'My clock' })).toBeVisible();
   });
 
+  it('does not bubble clicks to ancestors, so the board never deselects the edited widget', () => {
+    const onAncestorClick = vi.fn();
+    const props: React.ComponentProps<typeof SettingsDrawer> = {
+      widget,
+      title: 'Clock',
+      placement: 'right',
+      width: 400,
+      onWidthCommit: vi.fn(),
+      onClose: vi.fn(),
+      updateWidget: vi.fn(),
+      updateConfig: vi.fn(),
+      globalStyle,
+      schema,
+    };
+    render(
+      <div onClick={onAncestorClick}>
+        <SettingsDrawer {...props} />
+      </div>
+    );
+    fireEvent.click(filter());
+    fireEvent.click(dialog());
+    expect(onAncestorClick).not.toHaveBeenCalled();
+  });
+
   it('closes from the close button, which carries the test id and a t() label', () => {
     const { props } = renderDrawer();
     const close = screen.getByTestId('settings-drawer-close');

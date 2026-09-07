@@ -1,4 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
 
 // Timer (time-tool) drawer coverage: one field per group changes the board face,
 // values survive close/reopen, Tab stays inside the dialog, and the 820x640 sheet
@@ -18,8 +19,9 @@ const addTimerWidget = async (page: Page): Promise<Locator> => {
 
   // Close the dock, then select the widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
+  // The Play button exists in both timer and stopwatch mode, unlike "Add time".
   const widget = page
-    .locator('.widget', { has: page.getByRole('button', { name: 'Add time' }) })
+    .locator('.widget', { has: page.getByRole('button', { name: 'Play' }) })
     .last();
   await expect(widget).toBeVisible();
   await widget.click({ position: { x: 20, y: 20 } });
@@ -148,33 +150,22 @@ test.describe('time-tool settings drawer at 1280x800', () => {
     await addTimerWidget(page);
     const drawer = await openDrawer(page);
 
-    const heading = drawer.getByRole('heading').first();
-    await heading.focus();
-    await expect(heading).toBeFocused();
-
-    const fieldKeys = await drawer
+    // Disabled Custom controls (partner widget missing) have no tab stop, so only tabbable fields are expected.
+    const tabbableKeys = await drawer
       .locator('[data-field-key]')
       .evaluateAll((nodes) =>
-        nodes.map((n) => n.getAttribute('data-field-key'))
+        nodes
+          .filter((n) =>
+            Array.from(
+              n.querySelectorAll<HTMLElement>('button, input, select, textarea')
+            ).some((el) => el.tabIndex >= 0 && !el.hasAttribute('disabled'))
+          )
+          .map((n) => n.getAttribute('data-field-key'))
       );
-    expect(fieldKeys.length).toBeGreaterThan(0);
+    expect(tabbableKeys.length).toBeGreaterThan(0);
 
-    const visited = new Set<string>();
-    for (let i = 0; i < 80 && visited.size < fieldKeys.length; i += 1) {
-      await page.keyboard.press('Tab');
-      const info = await page.evaluate(() => {
-        const el = document.activeElement as HTMLElement | null;
-        const dialog = el?.closest('[role="dialog"]');
-        const field = el?.closest('[data-field-key]');
-        return {
-          inDialog: Boolean(dialog),
-          key: field?.getAttribute('data-field-key') ?? null,
-        };
-      });
-      expect(info.inDialog, `tab stop ${i} left the dialog`).toBe(true);
-      if (info.key) visited.add(info.key);
-    }
-    expect([...visited].sort()).toEqual([...fieldKeys].sort());
+    const visited = await expectTabOrderStaysInDrawer(page, drawer);
+    expect([...visited].sort()).toEqual([...tabbableKeys].sort());
   });
 });
 

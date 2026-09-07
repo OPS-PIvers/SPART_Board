@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
 
 // Runs in the default `chromium` project, where auth bypass leaves the
 // settings-drawer flag on (see playwright.config.ts and settings-drawer.spec.ts).
@@ -17,7 +18,9 @@ const addEmbedWidget = async (page: Page) => {
 
   // Close the dock, then select the new widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
-  const embedWidget = page.locator('.widget').last();
+  const embedWidget = page
+    .locator('.widget', { has: page.getByText('No URL Provided') })
+    .last();
   await expect(embedWidget).toBeVisible();
   await embedWidget.click({ position: { x: 20, y: 20 } });
   return embedWidget;
@@ -63,14 +66,10 @@ test.describe('embed settings drawer at 1280x800', () => {
     await refreshSelect.selectOption('5');
 
     // Tab from the heading through every Settings-tab field without leaving the dialog.
-    await drawer.getByRole('heading').first().focus();
-    for (let i = 0; i < 20; i += 1) {
-      await page.keyboard.press('Tab');
-      const active = await page.evaluate(
-        () => document.activeElement?.closest('[data-widget-portal]') !== null
-      );
-      expect(active).toBe(true);
-    }
+    const visited = await expectTabOrderStaysInDrawer(page, drawer);
+    expect(visited).toEqual(
+      expect.arrayContaining(['mode', 'refreshInterval'])
+    );
 
     // Close and reopen: values persist.
     await drawer.locator('[data-testid="settings-drawer-close"]').click();

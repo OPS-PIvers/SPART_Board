@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
 
 // Clock is migrated to the schema-driven settings drawer (see
 // tests/e2e/settings-drawer.spec.ts for the generic chrome coverage this
@@ -91,22 +92,10 @@ test.describe('clock settings drawer at 1280x800', () => {
     await addClockWidget(page);
     const drawer = await openDrawer(page);
 
-    await drawer.getByRole('heading').first().focus();
-    // The Settings tab holds: find-a-setting, both tabs, format24 + showSeconds
-    // toggles, the clockStyle segmented control, the glow toggle, and the
-    // themeColor/dateColor accent-color pickers (radio swatches + custom
-    // color swatch + hex input each) -- comfortably under 40 stops.
-    for (let i = 0; i < 40; i += 1) {
-      await page.keyboard.press('Tab');
-      const stillInDrawer = await page.evaluate(() => {
-        const active = document.activeElement;
-        const dialog = document.querySelector('[role="dialog"]');
-        return !!active && !!dialog && dialog.contains(active);
-      });
-      expect(stillInDrawer, `focus left the drawer after Tab #${i + 1}`).toBe(
-        true
-      );
-    }
+    const visited = await expectTabOrderStaysInDrawer(page, drawer);
+    expect(visited).toEqual(
+      expect.arrayContaining(['format24', 'showSeconds', 'clockStyle', 'glow'])
+    );
     await expect(drawer).toBeVisible();
   });
 });

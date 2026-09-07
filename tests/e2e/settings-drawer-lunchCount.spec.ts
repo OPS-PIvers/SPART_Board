@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
 
 // Runs in the default `chromium` project, where auth bypass leaves the
 // settings-drawer flag on (see playwright.config.ts and settings-drawer.spec.ts).
@@ -69,18 +70,10 @@ test.describe('lunchCount settings drawer at 1280x800', () => {
     await expect(widget.getByText('Pizza Day')).toBeVisible();
 
     // Tab from the heading through every Settings-tab field without leaving the dialog.
-    await drawer.getByRole('heading').first().focus();
-    for (let i = 0; i < 30; i += 1) {
-      await page.keyboard.press('Tab');
-      const stillInDrawer = await page.evaluate(() => {
-        const active = document.activeElement;
-        const dialog = document.querySelector('[role="dialog"]');
-        return !!active && !!dialog && dialog.contains(active);
-      });
-      expect(stillInDrawer, `focus left the drawer after Tab #${i + 1}`).toBe(
-        true
-      );
-    }
+    const visited = await expectTabOrderStaysInDrawer(page, drawer);
+    expect(visited).toEqual(
+      expect.arrayContaining(['schoolSite', 'isManualMode', 'manualHotLunch'])
+    );
 
     // Close and reopen: values persist.
     await drawer.locator('[data-testid="settings-drawer-close"]').click();
