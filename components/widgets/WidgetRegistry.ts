@@ -269,6 +269,10 @@ export const WIDGET_SETTINGS_SCHEMAS: Partial<
 > = {
   text: () => import('./TextWidget/settings.schema').then((m) => m.default),
   embed: () => import('./Embed/settings.schema').then((m) => m.default),
+  clock: () =>
+    import('./ClockWidget/settings.schema').then(
+      (m) => m.default as unknown as WidgetSettingsSchema
+    ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -280,6 +284,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     'SoundboardSettings'
   ),
   clock: lazyNamed(() => import('./ClockWidget/Settings'), 'ClockSettings'),
+  text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistSettings'),
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
   dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),
@@ -431,10 +436,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
   'blending-board': lazyNamed(
     () => import('./BlendingBoard/Settings'),
     'BlendingBoardAppearanceSettings'
-  ),
-  clock: lazyNamed(
-    () => import('./ClockWidget/Settings'),
-    'ClockAppearanceSettings'
   ),
   'time-tool': lazyNamed(
     () => import('./TimeTool/Settings'),

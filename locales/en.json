@@ -1136,6 +1136,20 @@
     }
   },
   "widgetSettings": {
+    "clock": {
+      "format24": "24H Format",
+      "showSeconds": "Show Seconds",
+      "clockStyle": "Display Style",
+      "styles": {
+        "modern": "Default",
+        "lcd": "LCD Panel",
+        "minimal": "Minimal"
+      },
+      "glow": "Glow",
+      "themeColor": "Color Palette",
+      "dateColor": "Date Color",
+      "matchTime": "Match time"
+    },
     "common": {
       "group": {
         "content": "Content",
