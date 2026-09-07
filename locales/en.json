@@ -1205,6 +1205,9 @@
       "rosterCustom": "Custom",
       "rosterActive": "Active class",
       "rosterNone": "No active class"
+    },
+    "text": {
+      "templates": "Templates"
     }
   },
   "widgetWindow": {
