@@ -697,6 +697,7 @@ vi.mock('@/components/widgets/WidgetRegistry', () => ({
   WIDGET_COMPONENTS: {},
   WIDGET_SETTINGS_COMPONENTS: {},
   WIDGET_APPEARANCE_COMPONENTS: {},
+  WIDGET_SETTINGS_SCHEMAS: {},
   DEFAULT_SCALING_CONFIG: { baseWidth: 300, baseHeight: 200, canSpread: true },
   WIDGET_SCALING_CONFIG: {},
 }));

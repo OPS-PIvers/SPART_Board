@@ -35,6 +35,28 @@ function resolves(catalog: LocaleCatalog, type: string, leaf: string): boolean {
   );
 }
 
+const LITERAL_ENGLISH = /[\sA-Z]/;
+
+/** Option labels are i18n leaves too; a non-resolving label with a space or capital is probably literal English. */
+function literalOptionLabels(
+  catalog: LocaleCatalog,
+  type: string,
+  field: Field
+): string[] {
+  if (
+    field.type !== 'select' &&
+    field.type !== 'segmented' &&
+    field.type !== 'soundPicker'
+  ) {
+    return [];
+  }
+  return field.options
+    .map((option) => option.label)
+    .filter(
+      (label) => !resolves(catalog, type, label) && LITERAL_ENGLISH.test(label)
+    );
+}
+
 /** Validates a widget settings schema against the §4.2 rules. */
 export function validateSchema<C = Record<string, unknown>>(
   type: WidgetType,
@@ -94,10 +116,20 @@ export function validateSchema<C = Record<string, unknown>>(
           `${type}: WIDGET_DEFAULTS.config has no default for "${field.key}"`
         );
       }
+      for (const label of literalOptionLabels(catalog, type, field)) {
+        warnings.push(
+          `${type}: option label "${label}" on "${field.key}" looks like literal English; use a widgetSettings.${type} or common leaf`
+        );
+      }
 
       if (field.type === 'list') {
         for (const rowField of field.row.fields) {
           const prefix = `${type}: ${group.id}.${field.key}.row.${rowField.key}`;
+          for (const label of literalOptionLabels(catalog, type, rowField)) {
+            warnings.push(
+              `${prefix} option label "${label}" looks like literal English; use a widgetSettings.${type} or common leaf`
+            );
+          }
           if (rowField.key.includes('.')) {
             errors.push(`${prefix} is dotted; top-level row keys only`);
           }

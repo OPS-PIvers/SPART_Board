@@ -377,14 +377,13 @@ export const SettingsDrawerHost: React.FC = () => {
     updateWidget(widgetId, { flipped: false });
   }, [widgetId, readOnly, updateWidget]);
 
+  // Sparse patch: updateWidget merges over the live config, so an async write never reverts newer keys.
   const updateConfig = useCallback(
     (patch: Record<string, unknown>) => {
       if (!widgetId || readOnly) return;
-      updateWidget(widgetId, {
-        config: { ...(widgetConfig ?? {}), ...patch },
-      });
+      updateWidget(widgetId, { config: patch });
     },
-    [widgetId, widgetConfig, readOnly, updateWidget]
+    [widgetId, readOnly, updateWidget]
   );
 
   const handleWidthCommit = useCallback(

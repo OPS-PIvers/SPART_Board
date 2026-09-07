@@ -211,9 +211,16 @@ describe('FieldRenderer', () => {
     expect(b.firstElementChild?.getAttribute('data-layout')).toBe('stacked');
   });
 
-  it('renders UnsupportedField for a type with no component yet', () => {
-    renderField({ type: 'iconPicker', key: 'b', label: 'title' });
-    expect(screen.getByTestId('unsupported-field')).toBeInTheDocument();
+  it('renders a dev-only warning for an unknown field type', () => {
+    const { container } = renderField({
+      type: 'notAField',
+      key: 'b',
+      label: 'title',
+    } as unknown as WidgetSettingsSchema['groups'][number]['fields'][number]);
+    expect(container.querySelector('[data-field-key="b"]')).toBeNull();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Unknown settings field type "notAField" for key "b".'
+    );
   });
 
   it('writes exactly { [key]: value } through updateConfig', () => {
@@ -226,6 +233,21 @@ describe('FieldRenderer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
     expect(updateConfig).toHaveBeenCalledTimes(1);
     expect(updateConfig).toHaveBeenCalledWith({ b: 'original' });
+  });
+
+  it('never renders the reset link for a custom field, even when its value differs from default', () => {
+    const field = {
+      type: 'custom' as const,
+      key: 'mode',
+      label: 'title',
+      render: () => <span>custom</span>,
+    };
+    renderField(
+      field,
+      { mode: 'countdown' },
+      { defaults: { mode: 'stopwatch' } }
+    );
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
   });
 
   it('gives Custom a stable updateConfig and re-renders only when its config changes', () => {
