@@ -273,6 +273,8 @@ export const WIDGET_SETTINGS_SCHEMAS: Partial<
     import('./ClockWidget/settings.schema').then(
       (m) => m.default as unknown as WidgetSettingsSchema
     ),
+  'time-tool': () =>
+    import('./TimeTool/settings.schema').then((m) => m.default),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -304,10 +306,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),
   miniApp: MiniAppSettings,
-  'time-tool': lazyNamed(
-    () => import('./TimeTool/Settings'),
-    'TimeToolSettings'
-  ),
   'seating-chart': lazyNamed(
     () => import('./SeatingChart/Settings'),
     'SeatingChartSettings'
@@ -434,10 +432,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
   'blending-board': lazyNamed(
     () => import('./BlendingBoard/Settings'),
     'BlendingBoardAppearanceSettings'
-  ),
-  'time-tool': lazyNamed(
-    () => import('./TimeTool/Settings'),
-    'TimeToolAppearanceSettings'
   ),
   checklist: lazyNamed(
     () => import('./Checklist'),
