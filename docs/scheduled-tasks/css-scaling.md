@@ -4,7 +4,7 @@ _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
 _Last audited: 2026-09-07_
-_Last action: 2026-09-07 — MEDIUM `CatalystVisualWidget` uncapped icon/title `cqmin` resolved: capped icon (`min(96px, 40cqmin)`) and title (`min(20px, 6cqmin)`) per the item's own Fix guidance. `tsc --noEmit`/`eslint`/`prettier --check` clean. Moved to Completed._
+_Last action: 2026-09-07 — MEDIUM `CatalystVisualWidget` uncapped icon/title `cqmin` resolved: initial fix used `min(96px, 40cqmin)`/`min(20px, 6cqmin)` per the item's own Fix guidance, but automated PR review correctly flagged this as the wrong tool for the widget's hero content (a hard `min()` bound at the widget's own 600×400 default size), citing the `ConceptWeb` precedent (reverted from `min()` to `clamp()` for the same reason) and `WeatherWidget`'s uncapped hero content. Revised to `clamp(32px, 40cqmin, 220px)`/`clamp(14px, 6cqmin, 36px)`. `tsc --noEmit`/`eslint`/`prettier --check` clean. Moved to Completed._
 
 ---
 
@@ -387,7 +387,7 @@ _2026-09-06 action notes (Sunday): Reading list = three dailies (widget-registry
 - **Completed:** 2026-09-07
 - **File:** `components/widgets/Catalyst/CatalystVisualWidget.tsx:32-35` (icon), `:66` (title)
 - **Detail:** The front-face icon (`style={{ width: '40cqmin', height: '40cqmin' }}`, the widget's hero content, at 40cqmin already above the skill's own 20-30cqmin hero-icon guidance) and the title (`style={{ fontSize: '6cqmin' }}`) were both uncapped. Distinct from the already-Completed `CatalystWidget.tsx` group fix and the already-triaged back-face `text-xs` hits in the same file's `CatalystVisualSettings` export (line 81, out of scope).
-- **Resolution:** Capped exactly per the item's own Fix guidance: icon → `style={{ width: 'min(96px, 40cqmin)', height: 'min(96px, 40cqmin)' }}`; title → `style={{ fontSize: 'min(20px, 6cqmin)' }}`. `tsc --noEmit` shows no new errors (pre-existing unrelated `jest-axe` module errors only), `eslint components/widgets/Catalyst/CatalystVisualWidget.tsx` exit 0, `prettier --check` clean.
+- **Resolution:** Initial pass followed the item's own Fix guidance verbatim (`min(96px, 40cqmin)`/`min(20px, 6cqmin)`), but that guidance was itself wrong for this widget: `CatalystVisualWidget` is an explicit "Visual Anchor" — full-bleed hero content meant to be glanceable from across a projected classroom (CLAUDE.md's "glanceable at distance" principle) — and a hard `min()` ceiling defeats that at anything beyond the widget's own 600×400 default size (96px/20px were already binding below the 160px/24px the bare `cqmin` values produced there). Automated PR review caught this, citing the in-repo `ConceptWeb` precedent (originally capped with `min()`, reverted to `clamp(12px, 15cqmin, 48px)` for the identical reason) and `WeatherWidget`'s hero temperature/icon, which are left uncapped entirely. Revised to `style={{ width: 'clamp(32px, 40cqmin, 220px)', height: 'clamp(32px, 40cqmin, 220px)' }}` (icon) and `style={{ fontSize: 'clamp(14px, 6cqmin, 36px)' }}` (title) — a floor for small sizes, unrestricted growth through normal-to-large sizes, and a ceiling only to guard against blur on very large displays. `tsc --noEmit` shows no new errors (pre-existing unrelated `jest-axe` module errors only), `eslint components/widgets/Catalyst/CatalystVisualWidget.tsx` exit 0, `prettier --check` clean.
 
 ### MEDIUM `DiceWidget` die size is fully uncapped `cqmin`, no px ceiling
 
