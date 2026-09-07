@@ -1996,6 +1996,13 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
   // write does not own — future artifacts[]/takeIndex, server-written data)
   // while re-owning speedBonus and isCorrect so stale values can't ride along.
   let responseCallback: ((snap: unknown) => void) | null = null;
+  // Mirrors `submitAnswer`'s transaction read via `tx.get()` — updated by
+  // `joinAndSeedPrior` alongside the onSnapshot payload so both the live
+  // listener and the transaction mock agree on current state.
+  let latestResponseData: Record<string, unknown> = {
+    status: 'in-progress',
+    answers: [] as Record<string, unknown>[],
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -2037,6 +2044,45 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
     (
       firestore.updateDoc as unknown as ReturnType<typeof vi.fn>
     ).mockResolvedValue(undefined);
+    // Default `runTransaction`: reads the same data the onSnapshot listener
+    // last saw, and forwards its `tx.update()` patch (plus any returned
+    // value, e.g. `submitAnswer`'s history-snapshot decision) through the
+    // `updateDoc` mock so `updateMock.mock.calls` keeps working unchanged
+    // for every test that doesn't care about transaction mechanics.
+    (
+      firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementation(
+      async (
+        _db: unknown,
+        updateFn: (tx: {
+          get: (ref: unknown) => Promise<{
+            exists: () => boolean;
+            data: () => Record<string, unknown>;
+          }>;
+          update: (ref: unknown, patch: Record<string, unknown>) => void;
+        }) => Promise<unknown>
+      ) => {
+        let patch: Record<string, unknown> | null = null;
+        const returned = await updateFn({
+          get: () =>
+            Promise.resolve({
+              exists: () => true,
+              data: () => latestResponseData,
+            }),
+          update: (_ref, p) => {
+            patch = p;
+          },
+        });
+        if (patch) {
+          const updateDocMock = firestore.updateDoc as unknown as (
+            ref: unknown,
+            patch: Record<string, unknown>
+          ) => Promise<void>;
+          await updateDocMock({}, patch);
+        }
+        return returned;
+      }
+    );
   });
 
   async function joinAndSeedPrior(priorEntry: Record<string, unknown>) {
@@ -2051,15 +2097,16 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
       await result.current.joinQuizSession('ABC123', '1234');
     });
     expect(responseCallback).not.toBeNull();
+    latestResponseData = {
+      studentUid: 'student-uid-1',
+      status: 'in-progress',
+      answers: [priorEntry],
+    };
     act(() => {
       responseCallback?.({
         exists: () => true,
         id: 'student-uid-1',
-        data: () => ({
-          studentUid: 'student-uid-1',
-          status: 'in-progress',
-          answers: [priorEntry],
-        }),
+        data: () => latestResponseData,
       });
     });
     return result;
@@ -2215,6 +2262,91 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
       answers: Record<string, unknown>[];
     };
     expect(payload.answers[0].speedBonus).toBe(50);
+  });
+
+  it('does not drop a submitAnswer write when it races setArtifactUploadState for a different question (cross-function lost-update guard)', async () => {
+    // Mirrors #2885's own cross-function race test (commitRecordingTake vs.
+    // setArtifactUploadState). Before this fix, submitAnswer read/wrote
+    // `answers` off the stale `myResponseRef` snapshot via a plain
+    // `updateDoc`, so a submit for one question racing a sibling
+    // transaction for a different question could silently drop whichever
+    // write landed second.
+    const result = await joinAndSeedPrior({
+      questionId: 'q2',
+      answer: '',
+      answeredAt: 50,
+      status: 'submitted',
+      artifacts: [
+        makeTestArtifact({ id: 'art-existing', uploadState: 'pending' }),
+      ],
+    });
+
+    // A minimal server-side document + version counter standing in for
+    // Firestore: `runTransaction` only commits when nothing else has
+    // written since its `get()` — retrying with a fresh read otherwise,
+    // exactly like real Firestore transaction conflict handling.
+    let serverDoc: Record<string, unknown> = {
+      ...latestResponseData,
+    };
+    let version = 0;
+
+    (
+      firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementation(
+      async (
+        _db: unknown,
+        updateFn: (tx: {
+          get: (ref: unknown) => Promise<{
+            exists: () => boolean;
+            data: () => Record<string, unknown>;
+          }>;
+          update: (ref: unknown, patch: Record<string, unknown>) => void;
+        }) => Promise<unknown>
+      ) => {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const readVersion = version;
+          const snapshotData = JSON.parse(JSON.stringify(serverDoc)) as Record<
+            string,
+            unknown
+          >;
+          let conflict = false;
+          const returned = await updateFn({
+            get: () =>
+              Promise.resolve({
+                exists: () => true,
+                data: () => snapshotData,
+              }),
+            update: (_ref, patch) => {
+              if (version !== readVersion) {
+                conflict = true;
+                return;
+              }
+              serverDoc = { ...serverDoc, ...patch };
+              version += 1;
+            },
+          });
+          if (!conflict) return returned;
+        }
+        return null;
+      }
+    );
+
+    await act(async () => {
+      await Promise.all([
+        result.current.submitAnswer('q1', 'brand new answer'),
+        result.current.setArtifactUploadState('q2', 'art-existing', 'uploaded'),
+      ]);
+    });
+
+    const finalAnswers = serverDoc.answers as Record<string, unknown>[];
+    const q1Answer = finalAnswers.find((a) => a.questionId === 'q1');
+    const q2Answer = finalAnswers.find((a) => a.questionId === 'q2');
+    expect(q1Answer).toBeDefined();
+    expect(q1Answer?.answer).toBe('brand new answer');
+    expect(q2Answer).toBeDefined();
+    expect(
+      (q2Answer?.artifacts as { uploadState: string }[])[0].uploadState
+    ).toBe('uploaded');
   });
 });
 
