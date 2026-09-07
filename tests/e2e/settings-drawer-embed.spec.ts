@@ -25,12 +25,10 @@ const addEmbedWidget = async (page: Page) => {
     .getAttribute('data-widget-id');
   const embedWidget = page.locator(`.widget[data-widget-id="${widgetId}"]`);
   await expect(embedWidget).toBeVisible();
-  // The fill-sized embed can report as unstable at 820px; fall back to a forced click.
+  // The embed fills the viewport, so (20,20) sits under the board chrome; click its center instead.
   await embedWidget
-    .click({ position: { x: 20, y: 20 }, timeout: 15000 })
-    .catch(() =>
-      embedWidget.click({ position: { x: 20, y: 20 }, force: true })
-    );
+    .click({ timeout: 15000 })
+    .catch(() => embedWidget.click({ force: true }));
   return embedWidget;
 };
 
@@ -84,7 +82,7 @@ test.describe('embed settings drawer at 1280x800', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     // Re-select the widget: the gear only renders while it is selected.
-    await widget.click({ position: { x: 20, y: 20 } });
+    await widget.click();
     const reopened = await openDrawer(page);
     await expect(reopened.getByLabel('Target URL')).toHaveValue(
       'https://example.org'
