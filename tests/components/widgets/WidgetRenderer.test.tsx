@@ -66,6 +66,7 @@ vi.mock('@/components/common/ScalableWidget', () => ({
 vi.mock('@/components/widgets/WidgetRegistry', () => ({
   WIDGET_SETTINGS_COMPONENTS: {},
   WIDGET_APPEARANCE_COMPONENTS: {},
+  WIDGET_SETTINGS_SCHEMAS: {},
   WIDGET_SCALING_CONFIG: {
     text: { baseWidth: 200, baseHeight: 200, canSpread: true },
   },
