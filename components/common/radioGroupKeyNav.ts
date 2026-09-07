@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Roving-tabindex arrow-key nav for a `role="radiogroup"` of `role="radio"` buttons — mirrors SegmentedControl.tsx's onKeyDown, generalized over the option list.
+// Roving-tabindex arrow-key nav for a `role="radiogroup"`/`role="tablist"` of `radio`/`tab` buttons — shared by SegmentedControl.tsx and the widget settings primitives, generalized over the option list.
 export function handleRadioGroupKeyDown<O>(
   e: React.KeyboardEvent<HTMLDivElement>,
   options: readonly O[],
@@ -22,7 +22,9 @@ export function handleRadioGroupKeyDown<O>(
     return;
   if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   const nodes = Array.from(
-    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+    e.currentTarget.querySelectorAll<HTMLButtonElement>(
+      '[role="radio"], [role="tab"]'
+    )
   );
   if (nodes.length === 0) return;
   e.preventDefault();
