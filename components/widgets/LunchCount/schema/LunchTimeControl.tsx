@@ -1,11 +1,6 @@
 import React from 'react';
-import type {
-  FieldCtx,
-  UpdateConfig,
-} from '@/components/settings/schema/types';
+import type { CustomRenderCtx } from '@/components/settings/schema/types';
 import { resolveLabel } from '@/components/settings/renderer/resolveLabel';
-
-type Props = FieldCtx & { updateConfig: UpdateConfig };
 
 const pad = (n: string) => n.padStart(2, '0');
 
@@ -13,11 +8,14 @@ const pad = (n: string) => n.padStart(2, '0');
 // two config keys (lunchTimeHour/lunchTimeMinute) that stay zero-padded
 // strings, not numbers, and the minute is only zero-padded on blur (not while
 // typing). No Number field can preserve that shape or write a sibling key.
-const LunchTimeControlImpl: React.FC<Props> = ({
+const LunchTimeControlImpl: React.FC<CustomRenderCtx> = ({
   config,
   widget,
   updateConfig,
   t,
+  id,
+  labelId,
+  describedBy,
 }) => {
   const label = (leaf: string) => resolveLabel(t, widget.type, leaf);
   const hour =
@@ -28,9 +26,11 @@ const LunchTimeControlImpl: React.FC<Props> = ({
   return (
     <div className="flex flex-col gap-1">
       <div
+        id={id}
         className="flex items-center gap-2"
         role="group"
-        aria-label={label('lunchTime')}
+        aria-labelledby={labelId}
+        aria-describedby={describedBy}
       >
         <input
           type="number"

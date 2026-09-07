@@ -2,15 +2,18 @@ import type { LunchCountConfig } from '@/types';
 
 export type LunchCountSchoolSite = LunchCountConfig['schoolSite'];
 
-// District-specific option data (site names + grade codes), not app copy — kept literal, not run through i18n.
+// District-specific option data (site names + grade codes). Labels are
+// widgetSettings.lunchCount leaves, not literal English — Segmented/Select
+// resolve `option.label` through i18n per render, and validateSchema warns
+// on a literal-looking (space/uppercase) option label that doesn't resolve.
 export const SCHOOL_SITE_OPTIONS: {
   value: LunchCountSchoolSite;
   label: string;
 }[] = [
-  { value: 'schumann-elementary', label: 'Schumann Elementary' },
-  { value: 'orono-intermediate-school', label: 'Orono Intermediate' },
-  { value: 'orono-middle-school', label: 'Orono Middle School' },
-  { value: 'orono-high-school', label: 'Orono High School' },
+  { value: 'schumann-elementary', label: 'siteSchumann' },
+  { value: 'orono-intermediate-school', label: 'siteIntermediate' },
+  { value: 'orono-middle-school', label: 'siteMiddle' },
+  { value: 'orono-high-school', label: 'siteHigh' },
 ];
 
 export const GRADE_OPTIONS_BY_SITE: Record<
@@ -18,25 +21,25 @@ export const GRADE_OPTIONS_BY_SITE: Record<
   { value: string; label: string }[]
 > = {
   'schumann-elementary': [
-    { value: 'K', label: 'K' },
-    { value: '1', label: '1' },
-    { value: '2', label: '2' },
-    { value: 'MAC', label: 'MAC' },
+    { value: 'K', label: 'gradeK' },
+    { value: '1', label: 'grade1' },
+    { value: '2', label: 'grade2' },
+    { value: 'MAC', label: 'gradeMac' },
   ],
   'orono-intermediate-school': [
-    { value: '3', label: '3' },
-    { value: '4', label: '4' },
-    { value: '5', label: '5' },
+    { value: '3', label: 'grade3' },
+    { value: '4', label: 'grade4' },
+    { value: '5', label: 'grade5' },
   ],
   'orono-middle-school': [
-    { value: '6', label: '6' },
-    { value: '7', label: '7' },
-    { value: '8', label: '8' },
+    { value: '6', label: 'grade6' },
+    { value: '7', label: 'grade7' },
+    { value: '8', label: 'grade8' },
   ],
   'orono-high-school': [
-    { value: '9', label: '9' },
-    { value: '10', label: '10' },
-    { value: '11', label: '11' },
-    { value: '12', label: '12' },
+    { value: '9', label: 'grade9' },
+    { value: '10', label: 'grade10' },
+    { value: '11', label: 'grade11' },
+    { value: '12', label: 'grade12' },
   ],
 };

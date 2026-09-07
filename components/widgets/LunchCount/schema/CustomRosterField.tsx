@@ -1,28 +1,28 @@
 import React from 'react';
-import type {
-  FieldCtx,
-  UpdateConfig,
-} from '@/components/settings/schema/types';
+import type { CustomRenderCtx } from '@/components/settings/schema/types';
 import { resolveLabel } from '@/components/settings/renderer/resolveLabel';
-
-type Props = FieldCtx & { updateConfig: UpdateConfig };
 
 // schema-gap: linesTextarea — the config holds a string[] (one name per
 // line); a plain Textarea field writes the raw string value and would break
 // the array shape the front face reads.
-const CustomRosterFieldImpl: React.FC<Props> = ({
+const CustomRosterFieldImpl: React.FC<CustomRenderCtx> = ({
   config,
   widget,
   updateConfig,
   t,
+  id,
+  labelId,
+  describedBy,
 }) => {
   const roster = Array.isArray(config.roster)
     ? (config.roster as string[])
     : [];
   return (
     <textarea
+      id={id}
       value={roster.join('\n')}
-      aria-label={resolveLabel(t, widget.type, 'roster')}
+      aria-labelledby={labelId}
+      aria-describedby={describedBy}
       onChange={(e) =>
         updateConfig({
           roster: e.target.value
