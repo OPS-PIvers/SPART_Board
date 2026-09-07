@@ -4,7 +4,7 @@ _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
 _Last audited: 2026-09-07_
-_Last action: 2026-09-06 — MEDIUM `DiceWidget` uncapped die-size `cqmin` resolved: capped all five `getDiceSize()` tiers with `min(Npx, ...)` ceilings per the item's own Fix guidance. `pnpm exec tsc --noEmit` exit 0, `eslint --max-warnings 0` exit 0, `prettier --check` clean, dedicated test file 6/6 pass. Moved to Completed._
+_Last action: 2026-09-07 — MEDIUM `CatalystVisualWidget` uncapped icon/title `cqmin` resolved: capped icon (`min(96px, 40cqmin)`) and title (`min(20px, 6cqmin)`) per the item's own Fix guidance. `tsc --noEmit`/`eslint`/`prettier --check` clean. Moved to Completed._
 
 ---
 
@@ -49,13 +49,6 @@ _Nothing currently in progress._
 - **File:** `components/widgets/QuizWidget/components/QuizPreview.tsx:122, 126, 421, 519`
 - **Detail:** Rendered as a top-level front-face view at `QuizWidget/Widget.tsx:878` (`view === 'preview'`), no portal. The file is otherwise a model citizen — every `fontSize` and `padding` uses `min(Npx, Ycqmin)` — but the back-arrow `<ArrowLeft className="w-4 h-4" />` and three `<Eye className="w-3.5 h-3.5" />` icons stayed as Tailwind classes, plus `p-1.5` on the back button (`:119`) and `gap-3`/`gap-2` (`:114,124`).
 - **Fix:** `w-4 h-4` → `style={{ width: 'min(16px, 4cqmin)', height: 'min(16px, 4cqmin)' }}`; `w-3.5 h-3.5` → `min(14px, 3.5cqmin)`; `p-1.5` → `padding: 'min(6px, 1.5cqmin)'`.
-
-### MEDIUM `CatalystVisualWidget` primary icon and title use uncapped `cqmin` with no px ceiling
-
-- **Detected:** 2026-08-27
-- **File:** `components/widgets/Catalyst/CatalystVisualWidget.tsx:32-35` (icon), `:66` (title)
-- **Detail:** The front-face icon (`style={{ width: '40cqmin', height: '40cqmin' }}`, the widget's hero content, at 40cqmin already above the skill's own 20-30cqmin hero-icon guidance) and the title (`style={{ fontSize: '6cqmin' }}`) are both uncapped. Distinct from the already-Completed `CatalystWidget.tsx` group fix and the already-triaged back-face `text-xs` hits in the same file's `CatalystVisualSettings` export (line 81, out of scope).
-- **Fix:** Icon → `style={{ width: 'min(96px, 40cqmin)', height: 'min(96px, 40cqmin)' }}`; title → `style={{ fontSize: 'min(20px, 6cqmin)' }}`.
 
 ### MEDIUM `QuizStimulusView.tsx` has zero container-query units, rendered inline in two `quiz` front-face views
 
@@ -387,6 +380,14 @@ _2026-09-06 action notes (Sunday): Reading list = three dailies (widget-registry
 ---
 
 ## Completed
+
+### MEDIUM `CatalystVisualWidget` primary icon and title use uncapped `cqmin` with no px ceiling
+
+- **Detected:** 2026-08-27
+- **Completed:** 2026-09-07
+- **File:** `components/widgets/Catalyst/CatalystVisualWidget.tsx:32-35` (icon), `:66` (title)
+- **Detail:** The front-face icon (`style={{ width: '40cqmin', height: '40cqmin' }}`, the widget's hero content, at 40cqmin already above the skill's own 20-30cqmin hero-icon guidance) and the title (`style={{ fontSize: '6cqmin' }}`) were both uncapped. Distinct from the already-Completed `CatalystWidget.tsx` group fix and the already-triaged back-face `text-xs` hits in the same file's `CatalystVisualSettings` export (line 81, out of scope).
+- **Resolution:** Capped exactly per the item's own Fix guidance: icon → `style={{ width: 'min(96px, 40cqmin)', height: 'min(96px, 40cqmin)' }}`; title → `style={{ fontSize: 'min(20px, 6cqmin)' }}`. `tsc --noEmit` shows no new errors (pre-existing unrelated `jest-axe` module errors only), `eslint components/widgets/Catalyst/CatalystVisualWidget.tsx` exit 0, `prettier --check` clean.
 
 ### MEDIUM `DiceWidget` die size is fully uncapped `cqmin`, no px ceiling
 

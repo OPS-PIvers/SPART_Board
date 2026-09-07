@@ -32,7 +32,7 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
     return (
       <Icon
         className="animate-pulse"
-        style={{ width: '40cqmin', height: '40cqmin' }}
+        style={{ width: 'min(96px, 40cqmin)', height: 'min(96px, 40cqmin)' }}
       />
     );
   };
@@ -63,7 +63,7 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
           <div className="shrink-0">{getIcon(config.icon ?? '')}</div>
           <h2
             className="font-black text-center uppercase tracking-wider leading-tight w-full"
-            style={{ fontSize: '6cqmin' }}
+            style={{ fontSize: 'min(20px, 6cqmin)' }}
           >
             {title}
           </h2>
