@@ -7,18 +7,26 @@ import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
 const gearLocator = (page: Page) =>
   page.getByRole('button', { name: 'Settings (Alt+S)', exact: true });
 
-// The embed's content swallows clicks, so only its border selects it; try the top edge, then the left edge.
+// Which spot selects the fill-sized embed depends on viewport and content; try each until the gear shows.
 const selectWidget = async (page: Page, widget: Locator) => {
   const box = await widget.boundingBox();
   if (!box) throw new Error('embed widget has no bounding box');
-  await widget.click({ position: { x: box.width / 2, y: 4 }, force: true });
-  if (
-    await gearLocator(page)
-      .isVisible()
-      .catch(() => false)
-  )
-    return;
-  await widget.click({ position: { x: 4, y: box.height / 2 }, force: true });
+  const spots = [
+    { x: 20, y: 20 },
+    { x: box.width / 2, y: box.height / 2 },
+    { x: box.width / 2, y: 4 },
+    { x: 4, y: box.height / 2 },
+    { x: box.width - 20, y: 20 },
+  ];
+  for (const position of spots) {
+    await widget.click({ position, force: true });
+    if (
+      await gearLocator(page)
+        .isVisible()
+        .catch(() => false)
+    )
+      return;
+  }
   await expect(gearLocator(page)).toBeVisible({ timeout: 10000 });
 };
 
