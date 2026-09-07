@@ -2360,7 +2360,9 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
       typeof vi.fn
     >;
     updateMock.mockClear();
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     (
       firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
     ).mockImplementationOnce(
