@@ -1,6 +1,10 @@
 import React, { useCallback, useId } from 'react';
 import type { WidgetData } from '@/types';
-import type { Field, FieldCtx, UpdateConfig } from '../schema/types';
+import type {
+  Field,
+  FieldCtx,
+  UpdateConfig,
+} from '@/components/settings/schema/types';
 import { FIELD_COMPONENTS } from './fields';
 import { resolveLabel } from './resolveLabel';
 

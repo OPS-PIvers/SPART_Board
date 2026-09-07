@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FontFamilyField } from '../../schema/types';
+import type { FontFamilyField } from '@/components/settings/schema/types';
 import type { FieldProps } from '../FieldProps';
 import { TypographySettings } from '@/components/common/TypographySettings';
 

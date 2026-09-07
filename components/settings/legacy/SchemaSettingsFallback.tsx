@@ -4,8 +4,11 @@ import { useAuth } from '@/context/useAuth';
 import { useDashboardActions } from '@/context/dashboardCanvasStore';
 import { WIDGET_SETTINGS_SCHEMAS } from '@/components/widgets/WidgetRegistry';
 import type { WidgetData, WidgetType } from '@/types';
-import type { FieldCtx, WidgetSettingsSchema } from '../schema/types';
-import { SchemaRenderer } from '../renderer/SchemaRenderer';
+import type {
+  FieldCtx,
+  WidgetSettingsSchema,
+} from '@/components/settings/schema/types';
+import { SchemaRenderer } from '@/components/settings/renderer/SchemaRenderer';
 
 export interface SchemaSettingsFallbackProps {
   widget: WidgetData;

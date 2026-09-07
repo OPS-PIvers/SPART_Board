@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AccentColorField } from '../../schema/types';
+import type { AccentColorField } from '@/components/settings/schema/types';
 import type { FieldProps } from '../FieldProps';
 import { AccentColorSettings } from '@/components/common/AccentColorSettings';
 import { resolveLabel } from '../resolveLabel';

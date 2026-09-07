@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { FieldRenderer } from '../FieldRenderer';
-import type { EmojiPickerField } from '../../schema/types';
+import type { EmojiPickerField } from '@/components/settings/schema/types';
 import { CURATED_EMOJI_GROUPS, firstGrapheme } from './emojiCatalog';
 import { makeCtx, widget } from './testUtils';
 

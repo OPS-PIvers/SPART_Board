@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { IconPickerField as IconPickerFieldSchema } from '../../schema/types';
+import type { IconPickerField as IconPickerFieldSchema } from '@/components/settings/schema/types';
 import { COMMON_INSTRUCTIONAL_ICONS } from '@/config/instructionalIcons';
 import { renderCatalystIcon } from '@/components/widgets/Catalyst/catalystHelpers';
 import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';

@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
 import { SortableList } from '@/components/common/SortableList';
 import type { FieldProps } from '../FieldProps';
-import type { ListField } from '../../schema/types';
+import type { ListField } from '@/components/settings/schema/types';
 import { resolveLabel } from '../resolveLabel';
 
 type Row = Record<string, unknown>;

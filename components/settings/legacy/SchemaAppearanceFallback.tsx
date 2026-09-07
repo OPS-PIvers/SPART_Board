@@ -4,9 +4,12 @@ import { useAuth } from '@/context/useAuth';
 import { useDashboardActions } from '@/context/dashboardCanvasStore';
 import { WIDGET_SETTINGS_SCHEMAS } from '@/components/widgets/WidgetRegistry';
 import type { WidgetData, WidgetType } from '@/types';
-import type { FieldCtx, WidgetSettingsSchema } from '../schema/types';
-import { resolveStyleFields } from '../schema/styleKeys';
-import { FieldRenderer } from '../renderer/FieldRenderer';
+import type {
+  FieldCtx,
+  WidgetSettingsSchema,
+} from '@/components/settings/schema/types';
+import { resolveStyleFields } from '@/components/settings/schema/styleKeys';
+import { FieldRenderer } from '@/components/settings/renderer/FieldRenderer';
 
 export interface SchemaAppearanceFallbackProps {
   widget: WidgetData;

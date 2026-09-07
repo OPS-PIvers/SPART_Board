@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import type { Field } from '../schema/types';
+import type { Field } from '@/components/settings/schema/types';
 import { FieldRenderer } from './FieldRenderer';
 import { makeCtx, widget } from './fields/testUtils';
 

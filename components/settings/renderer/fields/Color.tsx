@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ColorField } from '../../schema/types';
+import type { ColorField } from '@/components/settings/schema/types';
 import type { FieldProps } from '../FieldProps';
 import { ColorPresetPicker } from '@/components/common/ColorPresetPicker';
 import { TEXT_COLOR_SWATCHES, ColorPreset } from '@/config/widgetAppearance';

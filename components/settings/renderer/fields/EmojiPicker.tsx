@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { EmojiPickerField as EmojiPickerFieldSchema } from '../../schema/types';
+import type { EmojiPickerField as EmojiPickerFieldSchema } from '@/components/settings/schema/types';
 import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 import { resolveLabel } from '../resolveLabel';
 import {

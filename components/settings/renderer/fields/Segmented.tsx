@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { SegmentedField as SegmentedFieldSchema } from '../../schema/types';
+import type { SegmentedField as SegmentedFieldSchema } from '@/components/settings/schema/types';
 import { resolveLabel } from '../resolveLabel';
 
 const NAV_KEYS = [

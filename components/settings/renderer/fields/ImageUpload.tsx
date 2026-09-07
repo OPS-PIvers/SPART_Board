@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
 import type { FieldProps } from '../FieldProps';
-import type { ImageUploadField as ImageUploadFieldSchema } from '../../schema/types';
+import type { ImageUploadField as ImageUploadFieldSchema } from '@/components/settings/schema/types';
 import { DriveImagePicker } from '@/components/common/DriveImagePicker';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuth } from '@/context/useAuth';

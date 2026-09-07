@@ -6,7 +6,7 @@ import type {
   FieldCtx,
   UpdateConfig,
   NumberField as NumberFieldType,
-} from '../../schema/types';
+} from '@/components/settings/schema/types';
 import { FieldRenderer } from '../FieldRenderer';
 
 const t = (key: string, options?: Record<string, unknown>): string =>

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { RosterPickerField as RosterPickerFieldSchema } from '../../schema/types';
+import type { RosterPickerField as RosterPickerFieldSchema } from '@/components/settings/schema/types';
 import { useDashboard } from '@/context/useDashboard';
 import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 import { resolveLabel } from '../resolveLabel';

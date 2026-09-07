@@ -1,7 +1,7 @@
 import React from 'react';
 import { Play } from 'lucide-react';
 import type { FieldProps } from '../FieldProps';
-import type { SoundPickerField as SoundPickerFieldSchema } from '../../schema/types';
+import type { SoundPickerField as SoundPickerFieldSchema } from '@/components/settings/schema/types';
 import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 import { resolveLabel } from '../resolveLabel';
 

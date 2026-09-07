@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { FieldRenderer } from '../FieldRenderer';
-import type { TextSizePresetField } from '../../schema/types';
+import type { TextSizePresetField } from '@/components/settings/schema/types';
 import { makeCtx, widget } from './testUtils';
 
 const field: TextSizePresetField<string> = {

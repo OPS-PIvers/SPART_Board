@@ -1,5 +1,5 @@
 import type { WidgetType } from '@/types';
-import type { TranslateFn } from '../schema/types';
+import type { TranslateFn } from '@/components/settings/schema/types';
 
 const MISSING = ' __missing__';
 

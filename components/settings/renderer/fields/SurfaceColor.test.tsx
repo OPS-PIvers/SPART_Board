@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FieldRenderer } from '../FieldRenderer';
-import type { SurfaceColorField } from '../../schema/types';
+import type { SurfaceColorField } from '@/components/settings/schema/types';
 import { makeCtx, widget } from './testUtils';
 
 const field: SurfaceColorField<string> = {

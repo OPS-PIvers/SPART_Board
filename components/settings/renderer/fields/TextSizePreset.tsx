@@ -1,5 +1,5 @@
 import React from 'react';
-import type { TextSizePresetField } from '../../schema/types';
+import type { TextSizePresetField } from '@/components/settings/schema/types';
 import type { FieldProps } from '../FieldProps';
 import { TextSizePresetSettings } from '@/components/common/TextSizePresetSettings';
 import type { TextSizePreset as TextSizePresetValue } from '@/types';

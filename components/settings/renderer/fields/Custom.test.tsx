@@ -8,7 +8,7 @@ import type {
   FieldCtx,
   TranslateFn,
   UpdateConfig,
-} from '../../schema/types';
+} from '@/components/settings/schema/types';
 import { FieldRenderer } from '../FieldRenderer';
 
 const t: TranslateFn = (key, options) =>

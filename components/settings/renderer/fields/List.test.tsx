@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { WidgetData } from '@/types';
-import type { FieldCtx, ListField } from '../../schema/types';
+import type { FieldCtx, ListField } from '@/components/settings/schema/types';
 import { FieldRenderer } from '../FieldRenderer';
 import { List } from './List';
 

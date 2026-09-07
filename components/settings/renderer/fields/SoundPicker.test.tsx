@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { FieldRenderer } from '../FieldRenderer';
-import type { SoundPickerField } from '../../schema/types';
+import type { SoundPickerField } from '@/components/settings/schema/types';
 import { makeCtx, widget } from './testUtils';
 
 const STRUCTURAL_ONLY = { rules: { 'color-contrast': { enabled: false } } };

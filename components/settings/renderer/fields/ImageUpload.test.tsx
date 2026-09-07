@@ -2,7 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import type { ImageUploadField } from '../../schema/types';
+import type { ImageUploadField } from '@/components/settings/schema/types';
 import { makeCtx, widget } from './testUtils';
 
 const mockUploadDisplayImage =

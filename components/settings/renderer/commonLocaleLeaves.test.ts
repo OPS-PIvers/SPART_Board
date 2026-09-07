@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import en from '@/locales/en.json';
-import { GROUP_ORDER } from '../schema/types';
+import { GROUP_ORDER } from '@/components/settings/schema/types';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 

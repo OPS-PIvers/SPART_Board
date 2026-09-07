@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
-import type { TextareaField as TextareaFieldSchema } from '../../schema/types';
+import type { TextareaField as TextareaFieldSchema } from '@/components/settings/schema/types';
 
 const BASE_CLASS =
   'w-full text-xs border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50';

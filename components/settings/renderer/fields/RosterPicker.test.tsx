@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import type { ClassRoster } from '@/types';
-import type { RosterPickerField } from '../../schema/types';
+import type { RosterPickerField } from '@/components/settings/schema/types';
 import { makeCtx, widget } from './testUtils';
 
 const dashboardState: {
