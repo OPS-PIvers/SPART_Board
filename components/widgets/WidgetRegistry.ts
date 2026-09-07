@@ -283,8 +283,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./SoundboardWidget/Settings'),
     'SoundboardSettings'
   ),
-  clock: lazyNamed(() => import('./ClockWidget/Settings'), 'ClockSettings'),
-  text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistSettings'),
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
   dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),
