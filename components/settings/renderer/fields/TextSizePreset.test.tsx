@@ -28,6 +28,23 @@ describe('TextSizePreset field', () => {
     );
   });
 
+  it('derives the selected preset from a legacy scaleMultiplier when textSizePreset is unset', () => {
+    // Pre-preset widgets persisted a raw scaleMultiplier; the field must forward it through.
+    const ctx = makeCtx({ scaleMultiplier: 1.5 });
+    render(
+      <FieldRenderer
+        field={field}
+        widget={widget}
+        ctx={ctx}
+        updateConfig={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('radio', { name: /^X-Large$/i })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+  });
+
   it('calls updateConfig with the field key on selection', () => {
     const ctx = makeCtx({});
     const updateConfig = vi.fn();
