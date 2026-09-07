@@ -106,6 +106,17 @@ describe('time-tool settings schema', () => {
     expect(schema.styleKeys).toEqual(['fontFamily']);
   });
 
+  it('clamps adjustStepSeconds to the legacy 5-60 range', () => {
+    const field = schema.groups[1].fields[0];
+    expect(field).toMatchObject({
+      type: 'number',
+      key: 'adjustStepSeconds',
+      min: 5,
+      max: 60,
+      step: 5,
+    });
+  });
+
   it('hides the adjust step outside timer mode', () => {
     const field = schema.groups[1].fields[0];
     const ctx = (mode: string) => ({ config: { mode } }) as unknown as FieldCtx;

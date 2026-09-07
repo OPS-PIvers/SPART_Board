@@ -124,6 +124,7 @@ describe('mode field', () => {
 
 describe('nullable timer-end fields', () => {
   it('writes null for "None" and a number for a voice level', () => {
+    boardWith('expectations');
     const updateConfig = renderKey('timerEndVoiceLevel', {
       timerEndVoiceLevel: 2,
     });
@@ -137,7 +138,18 @@ describe('nullable timer-end fields', () => {
     expect(updateConfig).toHaveBeenCalledWith({ timerEndVoiceLevel: 4 });
   });
 
+  it('disables the voice level control and shows a tip when Expectations is absent', () => {
+    renderKey('timerEndVoiceLevel', { timerEndVoiceLevel: 2 });
+    const radiogroup = screen.getByRole('radiogroup', {
+      name: 'Switch to Voice Level when finished',
+    });
+    expect(radiogroup).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('radio', { name: 'Lvl 2' })).toBeDisabled();
+    expect(screen.getByText(leaves.addExpectationsTip)).toBeInTheDocument();
+  });
+
   it('treats an absent traffic color as "None" and writes color names', () => {
+    boardWith('traffic');
     const updateConfig = renderKey('timerEndTrafficColor', {});
     expect(screen.getByRole('radio', { name: 'None' })).toHaveAttribute(
       'aria-checked',
@@ -147,6 +159,16 @@ describe('nullable timer-end fields', () => {
     expect(updateConfig).toHaveBeenCalledWith({
       timerEndTrafficColor: 'yellow',
     });
+  });
+
+  it('disables the traffic color control and shows a tip when Traffic Light is absent', () => {
+    renderKey('timerEndTrafficColor', {});
+    const radiogroup = screen.getByRole('radiogroup', {
+      name: 'Auto-set Traffic Light',
+    });
+    expect(radiogroup).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('radio', { name: 'Slow' })).toBeDisabled();
+    expect(screen.getByText(leaves.addTrafficLightTip)).toBeInTheDocument();
   });
 });
 
@@ -170,6 +192,25 @@ describe('connected-widget hints', () => {
     renderKey('startTime', {});
     expect(screen.queryByRole('list')).toBeNull();
     expect(screen.getByText(leaves.allConnected)).toBeInTheDocument();
+  });
+});
+
+describe('segmented option labels', () => {
+  it('resolves visualType and clockStyle option leaves to English text', () => {
+    renderKey('visualType', { visualType: 'digital' });
+    expect(screen.getByRole('radio', { name: 'Digital' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('radio', { name: 'Visual Ring' })
+    ).toBeInTheDocument();
+  });
+
+  it('resolves clockStyle option leaves to English text', () => {
+    renderKey('clockStyle', { clockStyle: 'modern' });
+    expect(screen.getByRole('radio', { name: 'Default' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('radio', { name: 'LCD Panel' })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Minimal' })).toBeInTheDocument();
   });
 });
 

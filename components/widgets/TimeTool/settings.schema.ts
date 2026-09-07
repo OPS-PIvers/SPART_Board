@@ -2,8 +2,8 @@ import React from 'react';
 import type { TimeToolConfig } from '@/types';
 import { defineSettings } from '@/components/settings/schema/defineSettings';
 import type {
+  CustomRenderCtx,
   FieldCtx,
-  UpdateConfig,
 } from '@/components/settings/schema/types';
 import { TIME_TOOL_SOUNDS } from '@/config/timeTool';
 import { playTimerAlert, resumeAudio } from '@/utils/timeToolAudio';
@@ -14,31 +14,17 @@ import {
   TimeToolVoiceLevelField,
 } from './settingsFields';
 
-type RenderCtx = FieldCtx & { updateConfig: UpdateConfig };
+const renderMode = (ctx: CustomRenderCtx) =>
+  React.createElement(TimeToolModeField, { ctx });
 
-const renderMode = (ctx: RenderCtx) =>
-  React.createElement(TimeToolModeField, {
-    ctx,
-    updateConfig: ctx.updateConfig,
-  });
+const renderVoiceLevel = (ctx: CustomRenderCtx) =>
+  React.createElement(TimeToolVoiceLevelField, { ctx });
 
-const renderVoiceLevel = (ctx: RenderCtx) =>
-  React.createElement(TimeToolVoiceLevelField, {
-    ctx,
-    updateConfig: ctx.updateConfig,
-  });
+const renderTrafficColor = (ctx: CustomRenderCtx) =>
+  React.createElement(TimeToolTrafficColorField, { ctx });
 
-const renderTrafficColor = (ctx: RenderCtx) =>
-  React.createElement(TimeToolTrafficColorField, {
-    ctx,
-    updateConfig: ctx.updateConfig,
-  });
-
-const renderNexusHints = (ctx: RenderCtx) =>
-  React.createElement(TimeToolNexusHints, {
-    ctx,
-    updateConfig: ctx.updateConfig,
-  });
+const renderNexusHints = (ctx: CustomRenderCtx) =>
+  React.createElement(TimeToolNexusHints, { ctx });
 
 // Same synthesis the timer plays at zero; the context must be resumed from the click first.
 export const previewTimerSound = (sound: string) => {
