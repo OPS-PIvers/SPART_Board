@@ -71,6 +71,10 @@ const EmbedVerifyControlImpl: React.FC<Props> = ({
     updateConfig({ isEmbeddable: true });
   }, [url, updateConfig]);
 
+  // Tracks the latest url synchronously so an in-flight verify can tell it went stale; assigned in the render body per repo convention, not an effect.
+  const currentUrlRef = useRef(url);
+  currentUrlRef.current = url;
+
   const isActuallyEmbeddable = useMemo(() => {
     if (isEmbeddable) return true;
     try {
@@ -83,6 +87,7 @@ const EmbedVerifyControlImpl: React.FC<Props> = ({
 
   const handleVerify = async () => {
     if (!url) return;
+    const verifiedUrl = url;
     setIsVerifying(true);
     setVerifyStatus('idle');
 
@@ -103,7 +108,9 @@ const EmbedVerifyControlImpl: React.FC<Props> = ({
         { url: string },
         CompatibilityResult
       >(functions, 'checkUrlCompatibility');
-      const result = await checkCompatibility({ url });
+      const result = await checkCompatibility({ url: verifiedUrl });
+      // The teacher edited the url while this was in flight; discard the stale result.
+      if (currentUrlRef.current !== verifiedUrl) return;
       const data = result.data;
 
       if (data.isEmbeddable) {
@@ -115,6 +122,7 @@ const EmbedVerifyControlImpl: React.FC<Props> = ({
         updateConfig({ isEmbeddable: false, blockedReason: data.reason ?? '' });
       }
     } catch (err) {
+      if (currentUrlRef.current !== verifiedUrl) return;
       console.error('Verify error:', err);
       setVerifyStatus('error');
       setErrorMsg(label('verifyErrorGeneric'));
