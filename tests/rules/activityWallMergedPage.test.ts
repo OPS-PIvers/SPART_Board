@@ -302,6 +302,7 @@ describe('merged student page — teacher posting', () => {
 describe('merged student page — session likes and comments', () => {
   it('student likes a post when allowLikes is on', async () => {
     await seedSession(padletSession({ allowLikes: true }));
+    await seedSubmission('sub-1', submission());
     await assertSucceeds(
       setDoc(
         doc(asStudent(), likePath('sub-1', STUDENT_UID)),
@@ -334,6 +335,7 @@ describe('merged student page — session likes and comments', () => {
     await seedSession(
       padletSession({ allowLikes: true, publiclyShared: true })
     );
+    await seedSubmission('sub-1', submission());
     await assertSucceeds(
       setDoc(
         doc(asAnonymous(), likePath('sub-1', ANON_UID)),
@@ -365,8 +367,29 @@ describe('merged student page — session likes and comments', () => {
     );
   });
 
+  it('a like referencing a submission that never existed is denied', async () => {
+    await seedSession(padletSession({ allowLikes: true }));
+    await assertFails(
+      setDoc(
+        doc(asStudent(), likePath('ghost-post', STUDENT_UID)),
+        like('ghost-post', STUDENT_UID)
+      )
+    );
+  });
+
+  it('a comment referencing a submission that never existed is denied', async () => {
+    await seedSession(padletSession({ allowComments: true }));
+    await assertFails(
+      setDoc(
+        doc(asStudent(), commentPath('c-ghost')),
+        comment('c-ghost', STUDENT_UID, { submissionId: 'ghost-post' })
+      )
+    );
+  });
+
   it('student comments when allowComments is on', async () => {
     await seedSession(padletSession({ allowComments: true }));
+    await seedSubmission('sub-1', submission());
     await assertSucceeds(
       setDoc(doc(asStudent(), commentPath('c-1')), comment('c-1', STUDENT_UID))
     );
@@ -395,6 +418,7 @@ describe('merged student page — session likes and comments', () => {
     await seedSession(
       padletSession({ allowComments: true, allowCommentResponses: true })
     );
+    await seedSubmission('sub-1', submission());
     await assertSucceeds(
       setDoc(
         doc(asStudent(), commentPath('c-2')),
@@ -546,6 +570,7 @@ describe('merged student page — engagement on a closed wall', () => {
         acceptingResponses: false,
       })
     );
+    await seedSubmission('sub-1', submission());
     await assertSucceeds(
       setDoc(
         doc(asTeacher(), likePath('sub-1', TEACHER_UID)),
@@ -562,6 +587,7 @@ describe('merged student page — engagement on a closed wall', () => {
 
   it('student likes and comments while the wall is open', async () => {
     await seedSession(padletSession({ allowLikes: true, allowComments: true }));
+    await seedSubmission('sub-1', submission());
     await assertSucceeds(
       setDoc(
         doc(asStudent(), likePath('sub-1', STUDENT_UID)),

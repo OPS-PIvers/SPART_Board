@@ -4319,12 +4319,15 @@ service cloud.firestore {
       // for ANY caller including the owner — otherwise that still-unreviewed
       // post's existence/content reaches the whole class through this same
       // unfiltered listen the instant anyone engages with it, before a
-      // teacher ever approved it. A submissionId with no matching submission
-      // doc (untracked/legacy) is permitted, matching every pre-existing
-      // engagement doc shape in this collection.
+      // teacher ever approved it. The submissionId must also reference a
+      // real, approved post: every legitimate caller (useWallEngagement.ts)
+      // always supplies the id of a post it is currently rendering, so this
+      // costs no real usage while closing off a fabricated-id create that
+      // would otherwise seed the whole class's unfiltered listen with
+      // engagement docs for a post that never existed.
       function awEngagementSubmissionOk(refSubmissionId) {
         let ref = /databases/$(database)/documents/activity_wall_sessions/$(sessionId)/submissions/$(refSubmissionId);
-        return !exists(ref) || get(ref).data.get('status', 'approved') == 'approved';
+        return exists(ref) && get(ref).data.get('status', 'approved') == 'approved';
       }
 
       match /submissions/{submissionId} {
