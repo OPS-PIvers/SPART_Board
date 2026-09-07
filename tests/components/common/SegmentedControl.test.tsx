@@ -83,6 +83,28 @@ describe('SegmentedControl', () => {
     expect(onChange).toHaveBeenLastCalledWith('settings');
   });
 
+  it('aliases ArrowDown/ArrowUp to ArrowRight/ArrowLeft, per the WAI-ARIA radiogroup pattern', () => {
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        value="settings"
+        onChange={onChange}
+        options={[...OPTIONS]}
+      />
+    );
+    const first = screen.getByRole('tab', { name: 'Settings' });
+    const second = screen.getByRole('tab', { name: 'Style' });
+
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowDown' });
+    expect(second).toHaveFocus();
+    expect(onChange).toHaveBeenLastCalledWith('style');
+
+    fireEvent.keyDown(second, { key: 'ArrowUp' });
+    expect(first).toHaveFocus();
+    expect(onChange).toHaveBeenLastCalledWith('settings');
+  });
+
   it('ignores arrow keys with a modifier held', () => {
     const onChange = vi.fn();
     render(
