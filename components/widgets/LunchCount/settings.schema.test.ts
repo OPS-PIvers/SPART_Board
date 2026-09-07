@@ -7,8 +7,22 @@ import {
   targetConfigVersion,
 } from '@/utils/migration';
 import { mergeWidgetConfig } from '@/utils/widgetConfigPersistence';
+import type {
+  FieldCtx,
+  SegmentedField,
+} from '@/components/settings/schema/types';
 import type { LunchCountConfig, WidgetData } from '@/types';
 import schema from './settings.schema';
+import { GRADE_OPTIONS_BY_SITE } from './schema/gradeOptions';
+import type { LunchCountSchoolSite } from './schema/gradeOptions';
+
+const gradeCtx = (schoolSite: LunchCountSchoolSite): FieldCtx => ({
+  config: { schoolSite },
+  widget: { id: 'w1', type: 'lunchCount' } as WidgetData,
+  isAdmin: false,
+  canAccessFeature: () => true,
+  t: ((key: string) => key) as FieldCtx['t'],
+});
 
 describe('lunchCount settings schema', () => {
   it('has no validation errors', () => {
@@ -21,13 +35,8 @@ describe('lunchCount settings schema', () => {
     expect(result.warnings).toEqual([]);
   });
 
-  it('declares only the appearance keys the front face reads', () => {
-    expect(schema.styleKeys).toEqual([
-      'fontFamily',
-      'fontColor',
-      'cardColor',
-      'cardOpacity',
-    ]);
+  it('declares only the appearance keys the front face reads (fontFamily/fontColor are unread; cardOpacity folds into cardColor)', () => {
+    expect(schema.styleKeys).toEqual(['cardColor']);
   });
 
   it('has no configVersion bump (no key renames in this migration)', () => {
@@ -35,11 +44,19 @@ describe('lunchCount settings schema', () => {
     expect(WIDGET_CONFIG_MIGRATIONS.lunchCount ?? []).toEqual([]);
   });
 
-  it('shows one grade-level segmented per site and none collide when visible', () => {
+  it('shows exactly one grade-level segmented per site, never two at once', () => {
     const gradeFields = schema.groups
       .flatMap((g) => g.fields)
-      .filter((f) => f.key === 'gradeLevel');
+      .filter((f): f is SegmentedField<'gradeLevel'> => f.key === 'gradeLevel');
     expect(gradeFields).toHaveLength(4);
+
+    const sites = Object.keys(GRADE_OPTIONS_BY_SITE) as LunchCountSchoolSite[];
+    for (const site of sites) {
+      const ctx = gradeCtx(site);
+      const visible = gradeFields.filter((f) => f.visibleWhen?.(ctx));
+      expect(visible).toHaveLength(1);
+      expect(visible[0].options).toBe(GRADE_OPTIONS_BY_SITE[site]);
+    }
   });
 });
 

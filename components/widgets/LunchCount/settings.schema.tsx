@@ -2,8 +2,8 @@ import type {
   CustomField,
   FieldCtx,
   SegmentedField,
-  WidgetSettingsSchema,
 } from '@/components/settings/schema/types';
+import { defineSettings } from '@/components/settings/schema/defineSettings';
 import type { LunchCountConfig } from '@/types';
 import { toLunchCountSchoolSite } from '@/config/buildings';
 import { SchoolSiteControl } from './schema/SchoolSiteControl';
@@ -46,10 +46,7 @@ const gradeLevelFields: SegmentedField<'gradeLevel'>[] = (
 const isManualMode = (ctx: FieldCtx) => ctx.config.isManualMode === true;
 const isCustomRoster = (ctx: FieldCtx) => ctx.config.rosterMode === 'custom';
 
-// `satisfies` (rather than `defineSettings<LunchCountConfig>(...)`) validates
-// every field key against LunchCountConfig at compile time while still
-// exporting the erased `WidgetSettingsSchema` the registry/drawer expect.
-const schema: WidgetSettingsSchema = {
+const schema = defineSettings<LunchCountConfig>({
   groups: [
     {
       id: 'content',
@@ -96,7 +93,7 @@ const schema: WidgetSettingsSchema = {
       ],
     },
   ],
-  styleKeys: ['fontFamily', 'fontColor', 'cardColor', 'cardOpacity'],
-} satisfies WidgetSettingsSchema<LunchCountConfig>;
+  styleKeys: ['cardColor'],
+});
 
 export default schema;

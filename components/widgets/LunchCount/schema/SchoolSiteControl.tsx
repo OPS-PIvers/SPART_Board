@@ -1,26 +1,23 @@
 import React from 'react';
-import type {
-  FieldCtx,
-  UpdateConfig,
-} from '@/components/settings/schema/types';
+import type { CustomRenderCtx } from '@/components/settings/schema/types';
 import { resolveLabel } from '@/components/settings/renderer/resolveLabel';
 import { toLunchCountSchoolSite } from '@/config/buildings';
 import { GRADE_OPTIONS_BY_SITE, SCHOOL_SITE_OPTIONS } from './gradeOptions';
 import type { LunchCountSchoolSite } from './gradeOptions';
 
-type Props = FieldCtx & { updateConfig: UpdateConfig };
-
 // schema-gap: selectWithDependentReset — changing the site must also reset
 // gradeLevel (when it's invalid for the new site) and clear the cached menu,
 // exactly like the legacy handleSiteChange. A plain Select field only writes
 // its own key and can't express that side effect.
-const SchoolSiteControlImpl: React.FC<Props> = ({
+const SchoolSiteControlImpl: React.FC<CustomRenderCtx> = ({
   config,
   widget,
   updateConfig,
   t,
+  id,
+  labelId,
+  describedBy,
 }) => {
-  const label = resolveLabel(t, widget.type, 'schoolSite');
   const rawSite =
     typeof config.schoolSite === 'string' ? config.schoolSite : '';
   const site: LunchCountSchoolSite =
@@ -30,8 +27,10 @@ const SchoolSiteControlImpl: React.FC<Props> = ({
 
   return (
     <select
+      id={id}
       value={site}
-      aria-label={label}
+      aria-labelledby={labelId}
+      aria-describedby={describedBy}
       onChange={(e) => {
         const newSite = e.target.value as LunchCountSchoolSite;
         const validGrades = GRADE_OPTIONS_BY_SITE[newSite].map((g) => g.value);
@@ -45,7 +44,7 @@ const SchoolSiteControlImpl: React.FC<Props> = ({
     >
       {SCHOOL_SITE_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>
-          {opt.label}
+          {resolveLabel(t, widget.type, opt.label)}
         </option>
       ))}
     </select>
