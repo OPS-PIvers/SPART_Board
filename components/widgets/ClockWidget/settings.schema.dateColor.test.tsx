@@ -68,4 +68,22 @@ describe('clock dateColor Custom field', () => {
     screen.getByRole('radio', { name: /Brand red/i }).click();
     expect(updateConfig).toHaveBeenCalledWith({ dateColor: '#ad2122' });
   });
+
+  // Custom.render receives { id, labelId, describedBy } (field-kit contract,
+  // see CustomRenderCtx in schema/types.ts); the root must point back at
+  // FieldRenderer's own label rather than computing a second, duplicate name.
+  it('wires its root to the FieldRenderer-generated id/labelId instead of a duplicate aria-label', () => {
+    render(
+      <FieldRenderer
+        field={dateColorField}
+        widget={widget}
+        ctx={makeCtx({})}
+        updateConfig={vi.fn()}
+      />
+    );
+    const labelSpan = screen.getByText('dateColor');
+    const radiogroup = screen.getByRole('radiogroup', { name: 'dateColor' });
+    expect(radiogroup).toHaveAttribute('aria-labelledby', labelSpan.id);
+    expect(radiogroup).not.toHaveAttribute('aria-label');
+  });
 });
