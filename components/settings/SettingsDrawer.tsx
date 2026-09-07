@@ -409,8 +409,10 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
       data-widget-portal=""
       data-widget-id={widget.id}
       data-placement={placement}
+      data-click-outside-ignore="true"
       onKeyDown={handleKeyDown}
       onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       className={`fixed flex flex-col bg-white shadow-2xl border-slate-200 transition-[opacity,transform] duration-150 motion-reduce:transition-opacity ${
         isSheet ? 'border-t rounded-t-2xl' : 'border-l'
       } ${

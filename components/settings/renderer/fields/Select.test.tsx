@@ -78,4 +78,33 @@ describe('SelectField', () => {
     );
     expect(screen.getByRole('combobox')).toBeDisabled();
   });
+
+  it('resolves option labels as i18n leaves (widget scope, then common, then literal)', () => {
+    const catalog: Record<string, string> = {
+      'widgetSettings.clock.sizeSmall': 'Klein',
+      'widgetSettings.common.sizeLarge': 'Groß',
+    };
+    const i18nT = (key: string, options?: Record<string, unknown>): string =>
+      catalog[key] ??
+      (typeof options?.defaultValue === 'string' ? options.defaultValue : key);
+    const leafField: SelectFieldType<string> = {
+      ...field,
+      options: [
+        { value: 1, label: 'sizeSmall' },
+        { value: 2, label: 'sizeLarge' },
+        { value: 3, label: 'Huge' },
+      ],
+    };
+    render(
+      <FieldRenderer
+        field={leafField}
+        widget={widget}
+        ctx={{ ...makeCtx({ size: 1 }), t: i18nT }}
+        updateConfig={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('option', { name: 'Klein' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Groß' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Huge' })).toBeInTheDocument();
+  });
 });

@@ -23,9 +23,12 @@ import { UI_CONSTANTS } from '@/config/layout';
 import {
   WIDGET_SETTINGS_COMPONENTS,
   WIDGET_APPEARANCE_COMPONENTS,
+  WIDGET_SETTINGS_SCHEMAS,
   WIDGET_SCALING_CONFIG,
   DEFAULT_SCALING_CONFIG,
 } from './WidgetRegistry';
+import { SchemaSettingsFallback } from '@/components/settings/legacy/SchemaSettingsFallback';
+import { SchemaAppearanceFallback } from '@/components/settings/legacy/SchemaAppearanceFallback';
 import { POSITION_AWARE_WIDGETS } from '@/config/widgetDefaults';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
@@ -196,6 +199,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         </Suspense>
       );
     }
+    if (WIDGET_SETTINGS_SCHEMAS[widget.type]) {
+      return <SchemaSettingsFallback widget={widget} />;
+    }
     return (
       <div className="text-slate-500 italic text-sm">
         Standard settings available.
@@ -204,7 +210,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   }, [SettingsComponent, widget, useSettingsDrawer]);
 
   const widgetAppearanceSettings = useMemo(() => {
-    if (useSettingsDrawer || !AppearanceComponent) {
+    if (useSettingsDrawer) {
       return null;
     }
     if (AppearanceComponent) {
@@ -213,6 +219,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
           <AppearanceComponent widget={widget} />
         </Suspense>
       );
+    }
+    if (WIDGET_SETTINGS_SCHEMAS[widget.type]) {
+      return <SchemaAppearanceFallback widget={widget} />;
     }
     return null;
   }, [AppearanceComponent, widget, useSettingsDrawer]);

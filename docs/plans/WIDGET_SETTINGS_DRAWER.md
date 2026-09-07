@@ -1,6 +1,6 @@
 # Widget Settings Drawer — Implementation Plan
 
-**Date**: 2026-09-05 · **Branch**: `dev-paul` · **Status**: Revision 9 (2026-09-05) — FINAL — decisions locked via design interview, hardened by adversarial code review, revised against the graded comparison in §10, re-scoped by the product owner (§11), corrected against a third independent grading (§12), then validated against a four-variant in-app UI prototype and amended per the product owner's pick (§13: find-a-setting filter, Window-tier dedupe, darker section labels, bottom-sheet viewport fixed), then corrected by an adversarial review of the plan itself (§14: false dedupe rationale, maximized z-order, dock/sidebar coverage, resize-pan, scoped heading color, flag-path gating), then finalized after two independent reviews (§15: flag defaults that gated everyone out, per-user width store, single-bundle E2E override, read-only asymmetry corrected, local-only camera on remote flips, `activeWidgetId` state machine, host render isolation, axe scope, wave dependencies), then amended by an independent go/no-go grading (§16: dev and prod share one Firebase project, dual-write key renames, wave-2 reassessment gate), then by a pre-implementation safety review (§17: save-merge stamp desync, self-healing deletion steps, flag-script disable mode). **Waves 0 and 1a implemented** on `feat/settings-drawer-w01a` (PR #2888, merged to `dev-paul` 2026-09-06). **Wave 1b implemented** on `feat/settings-drawer-w1b` (PR #2892 to `dev-paul`, 2026-09-06; pan setter = module registry, `updateWidgets` widened, flip-only batches skip proportional re-sync); wave 2 next
+**Date**: 2026-09-05 · **Branch**: `dev-paul` · **Status**: Revision 9 (2026-09-05) — FINAL — decisions locked via design interview, hardened by adversarial code review, revised against the graded comparison in §10, re-scoped by the product owner (§11), corrected against a third independent grading (§12), then validated against a four-variant in-app UI prototype and amended per the product owner's pick (§13: find-a-setting filter, Window-tier dedupe, darker section labels, bottom-sheet viewport fixed), then corrected by an adversarial review of the plan itself (§14: false dedupe rationale, maximized z-order, dock/sidebar coverage, resize-pan, scoped heading color, flag-path gating), then finalized after two independent reviews (§15: flag defaults that gated everyone out, per-user width store, single-bundle E2E override, read-only asymmetry corrected, local-only camera on remote flips, `activeWidgetId` state machine, host render isolation, axe scope, wave dependencies), then amended by an independent go/no-go grading (§16: dev and prod share one Firebase project, dual-write key renames, wave-2 reassessment gate), then by a pre-implementation safety review (§17: save-merge stamp desync, self-healing deletion steps, flag-script disable mode). **Waves 0 and 1a implemented** on `feat/settings-drawer-w01a` (PR #2888, merged to `dev-paul` 2026-09-06). **Wave 1b implemented** on `feat/settings-drawer-w1b` (PR #2892 to `dev-paul`, 2026-09-06; pan setter = module registry, `updateWidgets` widened, flip-only batches skip proportional re-sync). **Wave 2 implemented** on `feat/settings-drawer-w2` (PR to `dev-paul`, 2026-09-06; pickers, Timer/Note/Embed/Clock/Lunch migrated, plus orchestrator item 2.8 flag-off schema fallback; D26 report in §6). **Reassessment gate (D26) open: waves 3–10 wait for a product-owner go recorded in §2**
 
 Replace the per-widget floating settings panel with a docked, schema-driven settings drawer so
 every widget's settings look and behave the same way while the live widget stays visible on the
@@ -808,6 +808,50 @@ hardcoded English, which sizes the deferred translation follow-up (D20).
 
 Note is inline in `TextWidget/Settings.tsx` (a thin wrapper — most of Note's front-face
 formatting lives in `FormattingToolbar.tsx`, not counted here since it isn't a settings panel).
+
+### Wave-2 reassessment report (D26)
+
+Written by the wave-2 orchestrator on 2026-09-06 after the five migrations merged to the
+integration branch. The product owner decides in §2 whether waves 3–10 run.
+
+**Schema-gap Custom fields** (9 across the five schemas):
+
+| Widget | Field                                        | Gap type                          |
+| ------ | -------------------------------------------- | --------------------------------- |
+| Note   | `content` (template grid)                    | templateApply                     |
+| Embed  | `mode` (toggle + URL/Verify or HTML block)   | buildingGatedContent, asyncVerify |
+| Clock  | `dateColor`                                  | accentColorNullable               |
+| Timer  | `mode`                                       | segmentedWithReset                |
+| Timer  | `timerEndVoiceLevel`, `timerEndTrafficColor` | segmentedNullable                 |
+| Timer  | partner tips (keyed `startTime`)             | boardAwareHint                    |
+| Lunch  | `schoolSite`                                 | selectWithDependentReset          |
+| Lunch  | `lunchTimeHour` (+ minute)                   | timeHourMinute                    |
+| Lunch  | `roster`                                     | linesTextarea                     |
+
+Recurring shapes worth promoting to real field types before wave 3: "one control writes sibling
+keys" (4 of 9: a `onChange` hook or `writes: [...]` on Segmented/Select), "nullable segmented"
+(2: a `noneLabel` option that writes `null`), and "needs board or building context" (2: extend
+`FieldCtx` with the active board's widget types and the building config). A label-only field
+type would free Timer from borrowing `startTime`.
+
+**0.4 snapshot harness**: it caught nothing in wave 2. The migrations delete the legacy panel
+outright, so the snapshot's only effect was the orchestrator retiring 11 entries (`vitest -u`)
+after each merge. Its remaining value is guarding the 54 unmigrated panels inside
+`LegacySettingsSlot` against drift from unrelated `dev-paul` PRs, which it did once during 1b.
+Recommendation: keep it (cheap to run) but stop treating re-recording as review evidence.
+
+**Field-kit fixes forced by the migrations** (all landed in this wave): option labels resolved
+through i18n, `defineSettings` erasing the invariant generic, Custom fields receiving
+`id`/`labelId` and no generic reset link, Number clamping to `min`/`max`, sparse config patches
+from the host, Textarea `monospace`, picker disabled styling under a read-only drawer.
+
+**Teacher feedback**: none yet. The flag is admin-only, so only admins have used the drawer on
+the shared project; no comments were received before this report.
+
+**Flag-off exposure**: orchestrator item 2.8 (`SchemaSettingsFallback` /
+`SchemaAppearanceFallback`) renders a registered schema inside the legacy floating panel when
+the flag is off, so the five migrations do not regress non-admin teachers when `dev-paul`
+reaches `main` before wave 4.
 
 ## 7. Done bar (per migrated widget)
 

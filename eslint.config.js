@@ -259,7 +259,9 @@ export default tseslint.config(
     // path. Same recurring bug class as `components/plc/**` and
     // `components/widgets/**` above, found here as ~37 files across a single
     // brand-new PR (waves 0/1a/1b of the settings-drawer feature); more waves
-    // are still landing, so this guards the pattern going forward. One-level
+    // are still landing, so the pattern is shaped by escape *depth* rather
+    // than a hardcoded subdirectory allowlist — a new sibling directory is
+    // guarded the day it lands, with no rule edit to remember. One-level
     // escapes to a file living directly in the immediate parent directory
     // (e.g. `renderer/fields/*.tsx` → `'../FieldProps'`, `'../resolveLabel'`)
     // are the D4-E2 gray zone and are NOT matched by this pattern.
@@ -270,7 +272,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              regex: '^(\\.\\./)+(renderer|schema|legacy)(/.*)?$',
+              regex: '^(\\.\\./){2,}|^\\.\\./[^/]+/',
               caseSensitive: true,
               message:
                 "Cross-subdirectory settings-drawer import — use '@/components/settings/...' instead of a relative path that escapes this directory (see D4 in docs/routines/unifier.md).",

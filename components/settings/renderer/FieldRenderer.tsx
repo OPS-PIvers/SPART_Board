@@ -25,6 +25,12 @@ const LABELLEDBY_TYPES = new Set<Field['type']>([
   'surfaceColor',
   'color',
   'accentColor',
+  'iconPicker',
+  'emojiPicker',
+  'imageUpload',
+  'soundPicker',
+  'rosterPicker',
+  'custom',
 ]);
 
 export const FieldRenderer: React.FC<FieldRendererProps> = ({
@@ -55,6 +61,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   const defaultValue = defaults ? defaults[field.key] : undefined;
   const canReset =
+    field.type !== 'custom' &&
     defaults !== undefined &&
     defaultValue !== undefined &&
     value !== undefined &&
@@ -63,7 +70,16 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   const usesLabelledBy = LABELLEDBY_TYPES.has(field.type);
 
   // Not memoized: `ctx` is a fresh object every render, so only Custom's own React.memo can skip work.
-  const Component = FIELD_COMPONENTS[field.type] ?? FIELD_COMPONENTS.custom;
+  const Component = FIELD_COMPONENTS[field.type];
+  if (!Component) {
+    if (!import.meta.env.DEV) return null;
+    return (
+      <p role="alert" className="text-xxs text-brand-red-primary py-2">
+        Unknown settings field type &quot;{String(field.type)}&quot; for key
+        &quot;{field.key}&quot;.
+      </p>
+    );
+  }
   const renderRow =
     field.type === 'list'
       ? (

@@ -51,3 +51,47 @@ test('legacy widget settings panel opens when settings-drawer is overridden off'
     page.locator('[data-testid="settings-drawer-close"]')
   ).toHaveCount(0);
 });
+
+// Clock is migrated to WIDGET_SETTINGS_SCHEMAS (no WIDGET_SETTINGS_COMPONENTS
+// entry) — with the flag off this asserts SchemaSettingsFallback renders the
+// schema's fields instead of the "Standard settings available." placeholder.
+test('legacy panel renders the clock schema fields when settings-drawer is off', async ({
+  page,
+}) => {
+  await page.addStyleTag({
+    content:
+      '*, *::before, *::after { transition: none !important; animation: none !important; }',
+  });
+
+  await page.goto('/');
+
+  await page.getByTitle('Open Tools').click();
+  await page.waitForTimeout(500);
+
+  const clockButton = page.getByRole('button', { name: /^Clock$/ }).first();
+  await expect(clockButton).toBeVisible();
+  await clockButton.click({ force: true });
+
+  await page.mouse.click(0, 0);
+  const clockWidget = page
+    .locator('.widget', { has: page.getByTestId('clock-time-container') })
+    .last();
+  await expect(clockWidget).toBeVisible();
+  await clockWidget.click({ position: { x: 20, y: 20 } });
+
+  const settingsGear = page.getByRole('button', {
+    name: 'Settings (Alt+S)',
+    exact: true,
+  });
+  await expect(settingsGear).toBeVisible();
+  await settingsGear.click({ force: true });
+
+  const legacyPanel = page.locator('[data-widget-portal]');
+  await expect(legacyPanel).toBeVisible();
+  await expect(
+    legacyPanel.getByRole('switch', { name: 'Show Seconds' })
+  ).toBeVisible();
+  await expect(
+    legacyPanel.getByRole('radiogroup', { name: 'Display Style' })
+  ).toBeVisible();
+});

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { FieldProps } from '../FieldProps';
 import type { SegmentedField as SegmentedFieldSchema } from '@/components/settings/schema/types';
+import { resolveLabel } from '../resolveLabel';
 
 const NAV_KEYS = [
   'ArrowRight',
@@ -13,7 +14,7 @@ const NAV_KEYS = [
 
 export const SegmentedField: React.FC<
   FieldProps<SegmentedFieldSchema<string>>
-> = ({ field, value, onChange, id, describedBy, labelId, disabled }) => {
+> = ({ field, value, onChange, id, describedBy, labelId, disabled, ctx }) => {
   const options = field.options;
   const selectedIndex = options.findIndex((option) => option.value === value);
 
@@ -59,14 +60,14 @@ export const SegmentedField: React.FC<
             tabIndex={tabbable ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(option.value)}
-            className={`flex-1 flex items-center justify-center gap-1 text-xs px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-blue-primary ${
+            className={`flex-1 flex items-center justify-center gap-1 text-xs px-2 py-1.5 rounded-md transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-blue-primary disabled:opacity-50 disabled:cursor-not-allowed ${
               selected
                 ? 'bg-white text-slate-900 shadow-sm font-semibold'
                 : 'text-slate-600 hover:text-slate-900'
-            } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            }`}
           >
             {option.icon}
-            {option.label}
+            {resolveLabel(ctx.t, ctx.widget.type, option.label)}
           </button>
         );
       })}

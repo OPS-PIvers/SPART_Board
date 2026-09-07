@@ -1,9 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TextWidget, TextSettings } from './index';
+import { TextWidget } from './index';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
-import { useDashboard } from '@/context/useDashboard';
 import {
   useDashboardActions,
   useGlobalStyle,
@@ -12,20 +11,13 @@ import {
   type DashboardActions,
 } from '@/context/dashboardCanvasStore';
 
-// Mock the dashboard surfaces both TextWidget (canvas store) and TextSettings
-// (legacy useDashboard) consume.
+// Mock the dashboard surface TextWidget consumes (canvas store).
 const mockUpdateWidget = vi.fn();
 const mockSetSelectedWidgetId = vi.fn();
-// TextSettings (back-face panel) still reads `updateWidget` off the legacy
-// useDashboard() value, so its mock is preserved for that describe block.
-const mockDashboardContext = {
-  updateWidget: mockUpdateWidget,
-};
 
 // Mock useDialog
 const mockShowPrompt = vi.fn();
 
-vi.mock('@/context/useDashboard');
 vi.mock('@/context/dashboardCanvasStore');
 vi.mock('@/context/useDialog', () => ({
   useDialog: () => ({
@@ -543,49 +535,5 @@ describe('TextWidget', () => {
       config: { ...mockConfig, content: '' },
     });
     expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('TextSettings', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      mockDashboardContext
-    );
-  });
-
-  const mockConfig: TextConfig = {
-    content: '',
-    bgColor: '#fef9c3',
-    fontSize: 18,
-  };
-
-  const mockWidget: WidgetData = {
-    id: 'test-widget',
-    type: 'text',
-    x: 0,
-    y: 0,
-    w: 4,
-    h: 4,
-    z: 1,
-    flipped: true,
-    config: mockConfig,
-  };
-
-  it('applies template when clicked', () => {
-    render(<TextSettings widget={mockWidget} />);
-    const templateButton = screen.getByText('Integrity Code');
-    fireEvent.click(templateButton);
-
-    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
-
-    const lastCall = mockUpdateWidget.mock.lastCall;
-    expect(lastCall).toBeDefined();
-
-    if (lastCall) {
-      expect(lastCall[0]).toBe('test-widget');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      expect(lastCall[1].config.content).toContain('Integrity Code');
-    }
   });
 });

@@ -32,7 +32,11 @@ export const NumberField: React.FC<FieldProps<NumberFieldSchema<string>>> = ({
       onChange={(e) => {
         setDraft(e.target.value);
         const parsed = e.target.valueAsNumber;
-        if (e.target.value !== '' && !Number.isNaN(parsed)) onChange(parsed);
+        if (e.target.value === '' || Number.isNaN(parsed)) return;
+        let clamped = parsed;
+        if (field.min !== undefined) clamped = Math.max(field.min, clamped);
+        if (field.max !== undefined) clamped = Math.min(field.max, clamped);
+        onChange(clamped);
       }}
       onBlur={() => setDraft(committed)}
       className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"

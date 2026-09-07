@@ -91,4 +91,35 @@ describe('TextareaField', () => {
     );
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
+
+  it('renders a monospace code surface with spellcheck off when monospace is set', () => {
+    render(
+      <FieldRenderer
+        field={{ ...field, monospace: true }}
+        widget={widget}
+        ctx={makeCtx({ notes: '<div />' })}
+        updateConfig={vi.fn()}
+      />
+    );
+    const textarea = screen.getByRole('textbox');
+    expect(textarea).toHaveAttribute('spellcheck', 'false');
+    expect(textarea.className).toContain('font-mono');
+    expect(textarea.className).toContain('bg-slate-900');
+    expect(textarea.className).toContain('text-emerald-200');
+  });
+
+  it('keeps the prose surface and browser spellcheck by default', () => {
+    render(
+      <FieldRenderer
+        field={field}
+        widget={widget}
+        ctx={makeCtx({ notes: '' })}
+        updateConfig={vi.fn()}
+      />
+    );
+    const textarea = screen.getByRole('textbox');
+    expect(textarea).not.toHaveAttribute('spellcheck');
+    expect(textarea.className).not.toContain('font-mono');
+    expect(textarea.className).toContain('bg-white');
+  });
 });
