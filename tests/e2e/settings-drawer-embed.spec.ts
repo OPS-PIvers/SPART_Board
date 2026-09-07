@@ -18,11 +18,14 @@ const addEmbedWidget = async (page: Page) => {
 
   // Close the dock, then select the new widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
-  const embedWidget = page
+  // Pin the locator to the new widget's id so it survives the empty state disappearing.
+  const widgetId = await page
     .locator('.widget', { has: page.getByText('No URL Provided') })
-    .last();
+    .last()
+    .getAttribute('data-widget-id');
+  const embedWidget = page.locator(`.widget[data-widget-id="${widgetId}"]`);
   await expect(embedWidget).toBeVisible();
-  await embedWidget.click({ position: { x: 20, y: 20 } });
+  await embedWidget.click({ position: { x: 20, y: 20 }, force: true });
   return embedWidget;
 };
 

@@ -109,6 +109,8 @@ describe('SettingsDrawer chrome', () => {
     fireEvent.click(filter());
     fireEvent.click(dialog());
     expect(onAncestorClick).not.toHaveBeenCalled();
+    // DraggableWindow's useClickOutside deselects on pointerdown unless this marker is present.
+    expect(dialog()).toHaveAttribute('data-click-outside-ignore', 'true');
   });
 
   it('closes from the close button, which carries the test id and a t() label', () => {

@@ -409,6 +409,7 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
       data-widget-portal=""
       data-widget-id={widget.id}
       data-placement={placement}
+      data-click-outside-ignore="true"
       onKeyDown={handleKeyDown}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
