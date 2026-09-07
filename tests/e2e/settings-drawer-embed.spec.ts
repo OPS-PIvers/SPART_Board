@@ -1,8 +1,23 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
 
 // Runs in the default `chromium` project, where auth bypass leaves the
 // settings-drawer flag on (see playwright.config.ts and settings-drawer.spec.ts).
+
+const gearLocator = (page: Page) =>
+  page.getByRole('button', { name: 'Settings (Alt+S)', exact: true });
+
+const selectWidget = async (page: Page, widget: Locator) => {
+  await widget.click({ position: { x: 20, y: 20 }, force: true });
+  if (
+    await gearLocator(page)
+      .isVisible()
+      .catch(() => false)
+  )
+    return;
+  await widget.click({ force: true });
+  await expect(gearLocator(page)).toBeVisible({ timeout: 10000 });
+};
 
 const addEmbedWidget = async (page: Page) => {
   await page.addStyleTag({
@@ -25,10 +40,8 @@ const addEmbedWidget = async (page: Page) => {
     .getAttribute('data-widget-id');
   const embedWidget = page.locator(`.widget[data-widget-id="${widgetId}"]`);
   await expect(embedWidget).toBeVisible();
-  // The embed fills the viewport, so (20,20) sits under the board chrome; click its center instead.
-  await embedWidget
-    .click({ timeout: 15000 })
-    .catch(() => embedWidget.click({ force: true }));
+  // The embed fills the viewport; which spot selects it depends on the chrome overlay, so try both.
+  await selectWidget(page, embedWidget);
   return embedWidget;
 };
 
@@ -82,7 +95,7 @@ test.describe('embed settings drawer at 1280x800', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     // Re-select the widget: the gear only renders while it is selected.
-    await widget.click();
+    await selectWidget(page, widget);
     const reopened = await openDrawer(page);
     await expect(reopened.getByLabel('Target URL')).toHaveValue(
       'https://example.org'
