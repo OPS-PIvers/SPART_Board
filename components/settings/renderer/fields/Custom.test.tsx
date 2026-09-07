@@ -70,10 +70,13 @@ describe('Custom field', () => {
     expect(seen[0]).toBe(updateConfig);
   });
 
-  it('renders nothing when field type is not custom', () => {
-    const field = { type: 'iconPicker', key: 'a', label: 'title' } as const;
-    // Picker types still route to UnsupportedField, never to Custom.
-    render(
+  it('renders nothing when an unknown type falls back to Custom', () => {
+    const field = {
+      type: 'notAField',
+      key: 'a',
+      label: 'title',
+    } as unknown as CustomField<string>;
+    const { container } = render(
       <FieldRenderer
         field={field}
         widget={widget}
@@ -81,6 +84,6 @@ describe('Custom field', () => {
         updateConfig={vi.fn()}
       />
     );
-    expect(screen.getByTestId('unsupported-field')).toBeInTheDocument();
+    expect(container.querySelector('fieldset')?.childElementCount).toBe(0);
   });
 });

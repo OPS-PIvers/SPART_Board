@@ -1182,7 +1182,29 @@
         "scaleMultiplier": "Scale"
       },
       "dockedLeft": "Settings panel docked to the left of the board",
-      "dockedRight": "Settings panel docked to the right of the board"
+      "dockedRight": "Settings panel docked to the right of the board",
+      "searchIcons": "Search icons",
+      "noMatchingIcons": "No matching icons.",
+      "emojiFaces": "Faces",
+      "emojiObjects": "Objects",
+      "emojiNature": "Nature",
+      "emojiSymbols": "Symbols",
+      "emojiCustom": "Type or paste any emoji",
+      "previewSound": "Preview",
+      "uploadImage": "Upload image",
+      "replaceImage": "Replace image",
+      "clearImage": "Remove image",
+      "imageFromDrive": "Add from Google Drive",
+      "imagePreview": "Selected image",
+      "uploading": "Uploading…",
+      "signInToUpload": "Sign in to upload images.",
+      "imageInvalidType": "Please choose an image file.",
+      "imageTooLarge": "Image too large. 5 MB maximum.",
+      "imageUploadFailed": "Failed to upload image.",
+      "rosterAuto": "Auto",
+      "rosterCustom": "Custom",
+      "rosterActive": "Active class",
+      "rosterNone": "No active class"
     }
   },
   "widgetWindow": {

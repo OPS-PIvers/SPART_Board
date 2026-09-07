@@ -21,6 +21,11 @@ const LABELLEDBY_TYPES = new Set<Field['type']>([
   'surfaceColor',
   'color',
   'accentColor',
+  'iconPicker',
+  'emojiPicker',
+  'imageUpload',
+  'soundPicker',
+  'rosterPicker',
 ]);
 
 export const FieldRenderer: React.FC<FieldRendererProps> = ({

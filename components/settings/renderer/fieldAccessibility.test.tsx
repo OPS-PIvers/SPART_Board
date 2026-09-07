@@ -5,6 +5,22 @@ import type { Field } from '../schema/types';
 import { FieldRenderer } from './FieldRenderer';
 import { makeCtx, widget } from './fields/testUtils';
 
+vi.mock('@/context/useDashboard', () => ({
+  useDashboard: () => ({ activeRosterId: null, rosters: [] }),
+}));
+vi.mock('@/context/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'u1' } }),
+}));
+vi.mock('@/hooks/useStorage', () => ({
+  useStorage: () => ({ uploadSticker: vi.fn(), uploadHotspotImage: vi.fn() }),
+}));
+vi.mock('@/hooks/useGooglePicker', () => ({
+  useGooglePicker: () => ({ openPicker: vi.fn(), isConnected: false }),
+}));
+vi.mock('@/hooks/useGoogleDrive', () => ({
+  useGoogleDrive: () => ({ getDriveFileAsBlob: vi.fn() }),
+}));
+
 type Case = {
   name: string;
   field: Field;
@@ -96,6 +112,39 @@ const CASES: Case[] = [
     },
     role: 'group',
     config: { a: [] },
+  },
+  {
+    name: 'iconPicker',
+    field: { type: 'iconPicker', key: 'a', label: 'label' },
+    role: 'group',
+  },
+  {
+    name: 'emojiPicker',
+    field: { type: 'emojiPicker', key: 'a', label: 'label' },
+    role: 'group',
+  },
+  {
+    name: 'imageUpload',
+    field: { type: 'imageUpload', key: 'a', label: 'label' },
+    role: 'group',
+  },
+  {
+    name: 'soundPicker',
+    field: {
+      type: 'soundPicker',
+      key: 'a',
+      label: 'label',
+      options: [
+        { value: 'x', label: 'X' },
+        { value: 'y', label: 'Y' },
+      ],
+    },
+    role: 'radiogroup',
+  },
+  {
+    name: 'rosterPicker',
+    field: { type: 'rosterPicker', key: 'a', label: 'label' },
+    role: 'group',
   },
 ];
 

@@ -1,7 +1,6 @@
 import type React from 'react';
 import type { Field } from '../../schema/types';
 import type { FieldProps } from '../FieldProps';
-import { UnsupportedField } from './UnsupportedField';
 import { ToggleField } from './Toggle';
 import { TextField } from './Text';
 import { TextareaField } from './Textarea';
@@ -16,8 +15,13 @@ import { AccentColor } from './AccentColor';
 import { SurfaceColor } from './SurfaceColor';
 import { List } from './List';
 import { Custom } from './Custom';
+import { IconPicker } from './IconPicker';
+import { EmojiPicker } from './EmojiPicker';
+import { ImageUpload } from './ImageUpload';
+import { SoundPicker } from './SoundPicker';
+import { RosterPicker } from './RosterPicker';
 
-/** Total registry over the field union; picker types stay Unsupported until wave 2. */
+/** Total registry over the field union. */
 export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
   toggle: ToggleField as React.FC<FieldProps>,
   text: TextField as React.FC<FieldProps>,
@@ -31,11 +35,11 @@ export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
   textSizePreset: TextSizePreset as React.FC<FieldProps>,
   accentColor: AccentColor as React.FC<FieldProps>,
   surfaceColor: SurfaceColor as React.FC<FieldProps>,
-  iconPicker: UnsupportedField,
-  emojiPicker: UnsupportedField,
-  imageUpload: UnsupportedField,
-  soundPicker: UnsupportedField,
-  rosterPicker: UnsupportedField,
+  iconPicker: IconPicker as React.FC<FieldProps>,
+  emojiPicker: EmojiPicker as React.FC<FieldProps>,
+  imageUpload: ImageUpload as React.FC<FieldProps>,
+  soundPicker: SoundPicker as React.FC<FieldProps>,
+  rosterPicker: RosterPicker as React.FC<FieldProps>,
   list: List,
   custom: Custom,
 };

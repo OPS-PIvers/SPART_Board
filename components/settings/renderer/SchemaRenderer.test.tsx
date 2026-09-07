@@ -211,9 +211,15 @@ describe('FieldRenderer', () => {
     expect(b.firstElementChild?.getAttribute('data-layout')).toBe('stacked');
   });
 
-  it('renders UnsupportedField for a type with no component yet', () => {
-    renderField({ type: 'iconPicker', key: 'b', label: 'title' });
-    expect(screen.getByTestId('unsupported-field')).toBeInTheDocument();
+  it('renders only the label row for an unknown field type', () => {
+    renderField({
+      type: 'notAField',
+      key: 'b',
+      label: 'title',
+    } as unknown as WidgetSettingsSchema['groups'][number]['fields'][number]);
+    const row = screen.getByText('Title').closest('[data-field-key]');
+    expect(row).not.toBeNull();
+    expect(row?.querySelector('fieldset')?.childElementCount).toBe(0);
   });
 
   it('writes exactly { [key]: value } through updateConfig', () => {

@@ -104,10 +104,14 @@ export type SurfaceColorField<K extends string> = FieldBase<K> & {
 
 export type IconPickerField<K extends string> = FieldBase<K> & {
   type: 'iconPicker';
+  /** Lucide icon names to offer; defaults to COMMON_INSTRUCTIONAL_ICONS. */
+  icons?: ReadonlyArray<string>;
 };
 
 export type EmojiPickerField<K extends string> = FieldBase<K> & {
   type: 'emojiPicker';
+  /** Emoji to offer as a flat grid; defaults to the curated classroom set. */
+  emoji?: ReadonlyArray<string>;
 };
 
 export type ImageUploadField<K extends string> = FieldBase<K> & {
@@ -115,8 +119,13 @@ export type ImageUploadField<K extends string> = FieldBase<K> & {
   accept?: string;
 };
 
+export type SoundOption = { value: string; label: string };
+
 export type SoundPickerField<K extends string> = FieldBase<K> & {
   type: 'soundPicker';
+  options: ReadonlyArray<SoundOption>;
+  /** Plays the sound for `value`; omit to hide the per-option play buttons. */
+  preview?: (value: string) => void;
 };
 
 export type RosterPickerField<K extends string> = FieldBase<K> & {
