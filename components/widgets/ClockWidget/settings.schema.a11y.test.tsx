@@ -3,12 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer';
-import type { WidgetSettingsSchema } from '@/components/settings/schema/types';
 import type { ClockConfig, GlobalStyle, WidgetData } from '@/types';
 import { STANDARD_COLORS } from '@/config/colors';
-import clockSchema from './settings.schema';
-
-const schema = clockSchema as unknown as WidgetSettingsSchema;
+import schema from './settings.schema';
 
 const config: ClockConfig = {
   format24: true,

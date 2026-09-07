@@ -3,10 +3,18 @@ import type { FieldCtx } from '../../schema/types';
 
 export const CATALOG: Record<string, string> = {
   'widgetSettings.common.label': 'Label',
+  'widgetSettings.common.rosterStudentCount': '{{count}} students',
 };
 
 export const t = (key: string, options?: Record<string, unknown>): string => {
-  if (key in CATALOG) return CATALOG[key];
+  if (key in CATALOG) {
+    return CATALOG[key].replace(/\{\{(\w+)\}\}/g, (_, name: string) => {
+      const value = options?.[name];
+      return typeof value === 'number' || typeof value === 'string'
+        ? String(value)
+        : '';
+    });
+  }
   return typeof options?.defaultValue === 'string' ? options.defaultValue : key;
 };
 

@@ -211,15 +211,16 @@ describe('FieldRenderer', () => {
     expect(b.firstElementChild?.getAttribute('data-layout')).toBe('stacked');
   });
 
-  it('renders only the label row for an unknown field type', () => {
-    renderField({
+  it('renders a dev-only warning for an unknown field type', () => {
+    const { container } = renderField({
       type: 'notAField',
       key: 'b',
       label: 'title',
     } as unknown as WidgetSettingsSchema['groups'][number]['fields'][number]);
-    const row = screen.getByText('Title').closest('[data-field-key]');
-    expect(row).not.toBeNull();
-    expect(row?.querySelector('fieldset')?.childElementCount).toBe(0);
+    expect(container.querySelector('[data-field-key="b"]')).toBeNull();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Unknown settings field type "notAField" for key "b".'
+    );
   });
 
   it('writes exactly { [key]: value } through updateConfig', () => {

@@ -2,6 +2,12 @@ import React from 'react';
 import type { FieldProps } from '../FieldProps';
 import type { TextareaField as TextareaFieldSchema } from '../../schema/types';
 
+const BASE_CLASS =
+  'w-full text-xs border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50';
+const PROSE_CLASS = 'bg-white border-slate-200';
+const CODE_CLASS =
+  'font-mono bg-slate-900 border-slate-700 text-emerald-200 placeholder:text-slate-400';
+
 export const TextareaField: React.FC<
   FieldProps<TextareaFieldSchema<string>>
 > = ({ field, value, onChange, id, describedBy, disabled }) => (
@@ -13,7 +19,8 @@ export const TextareaField: React.FC<
     maxLength={field.maxLength}
     rows={field.rows ?? 3}
     disabled={disabled}
+    spellCheck={field.monospace ? false : undefined}
     aria-describedby={describedBy}
-    className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+    className={`${BASE_CLASS} ${field.monospace ? CODE_CLASS : PROSE_CLASS}`}
   />
 );

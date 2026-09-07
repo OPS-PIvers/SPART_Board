@@ -33,11 +33,11 @@ export const EmojiPicker: React.FC<
         tabIndex={tabbable ? 0 : -1}
         disabled={disabled}
         onClick={() => onChange(emoji)}
-        className={`flex items-center justify-center text-lg leading-none p-1 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue-primary ${
+        className={`flex items-center justify-center text-lg leading-none p-1 rounded-md transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-blue-primary disabled:opacity-50 disabled:cursor-not-allowed ${
           selected
             ? 'bg-brand-blue-primary/15 ring-1 ring-brand-blue-primary'
             : 'hover:bg-slate-100'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        }`}
       >
         {emoji}
       </button>

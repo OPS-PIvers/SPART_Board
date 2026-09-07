@@ -60,11 +60,11 @@ export const IconPicker: React.FC<
               tabIndex={tabbable ? 0 : -1}
               disabled={disabled}
               onClick={() => onChange(name)}
-              className={`flex items-center justify-center p-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue-primary ${
+              className={`flex items-center justify-center p-1.5 rounded-md transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-blue-primary disabled:opacity-50 disabled:cursor-not-allowed ${
                 selected
                   ? 'bg-brand-blue-primary text-white shadow-sm'
                   : 'text-slate-600 hover:bg-blue-50 hover:text-brand-blue-primary'
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              }`}
             >
               {renderCatalystIcon(name, 16)}
             </button>
