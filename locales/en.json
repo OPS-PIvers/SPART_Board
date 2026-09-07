@@ -1220,6 +1220,20 @@
       "rosterActive": "Active class",
       "rosterNone": "No active class"
     },
+    "lunchCount": {
+      "schoolSite": "School Site",
+      "lunchTime": "Lunch Time",
+      "lunchTimeHourAria": "Lunch hour",
+      "lunchTimeMinuteAria": "Lunch minute",
+      "lunchTimePreview": "Preview",
+      "gradeLevel": "Grade Level",
+      "rosterMode": "Roster Selection",
+      "isManualMode": "Manual Mode",
+      "manualHotLunch": "Hot Lunch Name",
+      "manualBentoBox": "Bento Box Name",
+      "roster": "Custom Roster",
+      "rosterPlaceholder": "Enter one student per line..."
+    },
     "text": {
       "templates": "Templates"
     },

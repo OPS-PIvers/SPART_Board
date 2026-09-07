@@ -269,6 +269,8 @@ export const WIDGET_SETTINGS_SCHEMAS: Partial<
 > = {
   text: () => import('./TextWidget/settings.schema').then((m) => m.default),
   embed: () => import('./Embed/settings.schema').then((m) => m.default),
+  lunchCount: () =>
+    import('./LunchCount/settings.schema').then((m) => m.default),
   clock: () =>
     import('./ClockWidget/settings.schema').then(
       (m) => m.default as unknown as WidgetSettingsSchema
@@ -298,7 +300,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   webcam: lazyNamed(() => import('./Webcam'), 'WebcamSettings'),
   calendar: lazyNamed(() => import('./Calendar/Settings'), 'CalendarSettings'),
   weather: lazyNamed(() => import('./Weather/Settings'), 'WeatherSettings'),
-  lunchCount: lazyNamed(() => import('./LunchCount'), 'LunchCountSettings'),
   poll: lazyNamed(() => import('./PollWidget'), 'PollSettings'),
   instructionalRoutines: lazyNamed(
     () => import('./InstructionalRoutines/Settings'),
@@ -502,10 +503,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
   numberLine: lazyNamed(
     () => import('./NumberLine/Settings'),
     'NumberLineAppearanceSettings'
-  ),
-  lunchCount: lazyNamed(
-    () => import('./LunchCount'),
-    'LunchCountAppearanceSettings'
   ),
   smartNotebook: lazyNamed(
     () => import('./SmartNotebook'),
