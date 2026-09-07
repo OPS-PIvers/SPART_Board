@@ -268,6 +268,7 @@ export const WIDGET_SETTINGS_SCHEMAS: Partial<
   Record<WidgetType, () => Promise<WidgetSettingsSchema>>
 > = {
   text: () => import('./TextWidget/settings.schema').then((m) => m.default),
+  embed: () => import('./Embed/settings.schema').then((m) => m.default),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -283,7 +284,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
   dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),
   sound: lazyNamed(() => import('./SoundWidget'), 'SoundSettings'),
-  embed: lazyNamed(() => import('./Embed'), 'EmbedSettings'),
   drawing: lazyNamed(
     () => import('./DrawingWidget/Settings'),
     'DrawingSettings'
