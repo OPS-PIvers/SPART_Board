@@ -266,7 +266,9 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
 // Settings-drawer schemas (modules, not components); populated per migrated widget.
 export const WIDGET_SETTINGS_SCHEMAS: Partial<
   Record<WidgetType, () => Promise<WidgetSettingsSchema>>
-> = {};
+> = {
+  text: () => import('./TextWidget/settings.schema').then((m) => m.default),
+};
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
@@ -277,7 +279,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     'SoundboardSettings'
   ),
   clock: lazyNamed(() => import('./ClockWidget/Settings'), 'ClockSettings'),
-  text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistSettings'),
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
   dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),
@@ -533,7 +534,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
     () => import('./Stations/Settings'),
     'StationsAppearanceSettings'
   ),
-  text: lazyNamed(() => import('./TextWidget'), 'TextAppearanceSettings'),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
