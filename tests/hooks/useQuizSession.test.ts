@@ -2348,6 +2348,51 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
       (q2Answer?.artifacts as { uploadState: string }[])[0].uploadState
     ).toBe('uploaded');
   });
+
+  it('resolves without writing when the response doc no longer exists', async () => {
+    const result = await joinAndSeedPrior({
+      questionId: 'q1',
+      answer: '',
+      answeredAt: 100,
+      status: 'draft',
+    });
+    const updateMock = firestore.updateDoc as unknown as ReturnType<
+      typeof vi.fn
+    >;
+    updateMock.mockClear();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    (
+      firestore.runTransaction as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementationOnce(
+      async (
+        _db: unknown,
+        updateFn: (tx: {
+          get: (ref: unknown) => Promise<{
+            exists: () => boolean;
+            data: () => Record<string, unknown>;
+          }>;
+          update: (ref: unknown, patch: Record<string, unknown>) => void;
+        }) => Promise<unknown>
+      ) =>
+        updateFn({
+          get: () => Promise.resolve({ exists: () => false, data: () => ({}) }),
+          update: () => {
+            throw new Error('must not write when the response doc is missing');
+          },
+        })
+    );
+
+    await act(async () => {
+      await result.current.submitAnswer('q1', 'too late');
+    });
+
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[useQuizSession] submitAnswer: response doc missing on write',
+      expect.any(Object)
+    );
+    errorSpy.mockRestore();
+  });
 });
 
 describe('useQuizSessionStudent — commitRecordingTake / markUnresponded', () => {

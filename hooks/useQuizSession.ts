@@ -2519,12 +2519,21 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       // successful commit — firing the addDoc from inside the callback
       // would risk writing duplicate snapshots, since Firestore may
       // re-invoke it on contention.
+      // Trades updateDoc's offline queuing for a required server round-trip — accepted, matching commitRecordingTake/setArtifactUploadState/markUnresponded.
       const historySnapshot = await runTransaction<{
         priorEntry: QuizResponseAnswer;
         now: number;
       } | null>(db, async (tx) => {
         const snap = await tx.get(responseRef);
-        if (!snap.exists()) return null;
+        if (!snap.exists()) {
+          // Can't-happen in practice (doc is created on join) — logged so a
+          // real occurrence isn't silently invisible, unlike a swallowed return.
+          console.error(
+            '[useQuizSession] submitAnswer: response doc missing on write',
+            { sessionId, responseKey }
+          );
+          return null;
+        }
         const existing = snap.data() as QuizResponse;
         const existingAnswers = existing.answers ?? [];
 
