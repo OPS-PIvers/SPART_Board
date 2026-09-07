@@ -2241,6 +2241,41 @@ describe('useQuizSessionStudent — submitAnswer field ownership (RR-08 sd-9)', 
     expect(written.artifacts).toEqual(prior);
   });
 
+  it('writes a draft autosave via a plain updateDoc, not runTransaction', async () => {
+    // Draft autosaves are the hot debounced-typing path and the
+    // beforeunload/visibilitychange flush's last resort — both need
+    // updateDoc's single-round-trip, offline-tolerant write rather than
+    // runTransaction's mandatory read-then-write, which cannot complete
+    // at all while offline. Only explicit submits use the transaction.
+    const result = await joinAndSeedPrior({
+      questionId: 'q1',
+      answer: 'old answer',
+      answeredAt: 100,
+      status: 'draft',
+    });
+    const updateMock = firestore.updateDoc as unknown as ReturnType<
+      typeof vi.fn
+    >;
+    const transactionMock = firestore.runTransaction as unknown as ReturnType<
+      typeof vi.fn
+    >;
+    updateMock.mockClear();
+    transactionMock.mockClear();
+
+    await act(async () => {
+      await result.current.submitAnswer('q1', 'typing...', undefined, {
+        isDraft: true,
+      });
+    });
+
+    expect(transactionMock).not.toHaveBeenCalled();
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    const payload = updateMock.mock.calls[0][1] as {
+      answers: Record<string, unknown>[];
+    };
+    expect(payload.answers[0].answer).toBe('typing...');
+  });
+
   it('writes only the freshly-earned speedBonus, clamped to [0, 50]', async () => {
     const result = await joinAndSeedPrior({
       questionId: 'q1',
