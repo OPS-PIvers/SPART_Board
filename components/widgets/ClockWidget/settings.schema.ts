@@ -11,11 +11,7 @@ import type {
   UpdateConfig,
 } from '@/components/settings/schema/types';
 
-// dateColor's legacy fallback is dynamic ("Match Time" = follow the current
-// themeColor), which the shared AccentColor field can't express: its clear
-// swatch always writes undefined but shows a fixed fallback color + a fixed
-// "Match" label, not the widget's actual current themeColor.
-// schema-gap: accentColorNullable
+// schema-gap: accentColorNullable — "Match Time" clears to undefined and must preview the live themeColor.
 const ClockDateColorField: React.FC<{
   ctx: FieldCtx;
   updateConfig: UpdateConfig;

@@ -1777,3 +1777,21 @@ Pre-migration config fixture:
 | need-do-put-then    | 9                    | 9             | 0    | none | fontFamily, fontColor, textSizePreset, cardColor, cardOpacity                  |
 | stations            | 4 (+2 cross-cutting) | 7             | 1    | none | fontFamily, fontColor, cardColor, cardOpacity                                  |
 | stickers            | 4 (all dead)         | 4             | 0    | none | fontFamily, fontColor (cardColor/cardOpacity are in defaults but still dead)   |
+
+# Burndown
+
+Updated once per wave by the orchestrator (widget · wave · PR · done). Wave-2 rows retired their
+0.4 legacy snapshots in the same PR.
+
+| Widget       | Type           | Wave | PR                        | Done |
+| ------------ | -------------- | ---- | ------------------------- | ---- |
+| Timer        | `time-tool`    | 2    | `feat/settings-drawer-w2` | yes  |
+| Note         | `text`         | 2    | `feat/settings-drawer-w2` | yes  |
+| Embed        | `embed`        | 2    | `feat/settings-drawer-w2` | yes  |
+| Clock        | `clock`        | 2    | `feat/settings-drawer-w2` | yes  |
+| Lunch        | `lunchCount`   | 2    | `feat/settings-drawer-w2` | yes  |
+| Tasks        | `checklist`    | 3    |                           |      |
+| Weather      | `weather`      | 3    |                           |      |
+| Expectations | `expectations` | 3    |                           |      |
+| Random       | `random`       | 3    |                           |      |
+| Links        | `url`          | 3    |                           |      |

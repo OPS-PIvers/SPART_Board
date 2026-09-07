@@ -14,12 +14,7 @@ const TEXTAREA_BASE_CLASS =
 const TEXTAREA_CODE_CLASS =
   'font-mono bg-slate-900 border-slate-700 text-emerald-200 placeholder:text-slate-400';
 
-// schema-gap: buildingGatedContent — the building's `hideUrlField` global
-// config (Firestore, loaded via useEmbedConfig) forces code mode and hides
-// the toggle, exactly like the deleted legacy panel's `displayMode`. The
-// url/verify vs. html block must key off that same derived displayMode, not
-// the raw `mode` config value, so a hidden toggle can never strand a stored
-// url-mode config on a URL field the teacher can't reach.
+// schema-gap: buildingGatedContent — hideUrlField (building config) forces code mode for the toggle and the url/html block alike.
 const EmbedContentControlImpl: React.FC<Props> = ({
   config,
   widget,

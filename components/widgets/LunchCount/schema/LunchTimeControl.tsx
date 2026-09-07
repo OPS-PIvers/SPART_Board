@@ -4,10 +4,7 @@ import { resolveLabel } from '@/components/settings/renderer/resolveLabel';
 
 const pad = (n: string) => n.padStart(2, '0');
 
-// schema-gap: timeHourMinute — one teacher-facing "Lunch Time" control writes
-// two config keys (lunchTimeHour/lunchTimeMinute) that stay zero-padded
-// strings, not numbers, and the minute is only zero-padded on blur (not while
-// typing). No Number field can preserve that shape or write a sibling key.
+// schema-gap: timeHourMinute — one control writes two zero-padded string keys (minute pads on blur only).
 const LunchTimeControlImpl: React.FC<CustomRenderCtx> = ({
   config,
   widget,

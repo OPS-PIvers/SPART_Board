@@ -5,10 +5,7 @@ import { toLunchCountSchoolSite } from '@/config/buildings';
 import { GRADE_OPTIONS_BY_SITE, SCHOOL_SITE_OPTIONS } from './gradeOptions';
 import type { LunchCountSchoolSite } from './gradeOptions';
 
-// schema-gap: selectWithDependentReset — changing the site must also reset
-// gradeLevel (when it's invalid for the new site) and clear the cached menu,
-// exactly like the legacy handleSiteChange. A plain Select field only writes
-// its own key and can't express that side effect.
+// schema-gap: selectWithDependentReset — a site change also resets an invalid gradeLevel and clears cachedMenu.
 const SchoolSiteControlImpl: React.FC<CustomRenderCtx> = ({
   config,
   widget,

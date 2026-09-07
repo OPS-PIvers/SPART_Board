@@ -2,9 +2,7 @@ import React from 'react';
 import type { CustomRenderCtx } from '@/components/settings/schema/types';
 import { resolveLabel } from '@/components/settings/renderer/resolveLabel';
 
-// schema-gap: linesTextarea — the config holds a string[] (one name per
-// line); a plain Textarea field writes the raw string value and would break
-// the array shape the front face reads.
+// schema-gap: linesTextarea — roster is a string[] (one name per line), not a raw string.
 const CustomRosterFieldImpl: React.FC<CustomRenderCtx> = ({
   config,
   widget,

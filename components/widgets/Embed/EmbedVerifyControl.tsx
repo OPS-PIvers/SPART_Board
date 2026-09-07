@@ -28,11 +28,7 @@ interface CompatibilityResult {
 
 type Props = FieldCtx & { updateConfig: UpdateConfig };
 
-// schema-gap: asyncVerify — the Verify button calls a Cloud Function and
-// writes isEmbeddable + blockedReason together, renders the async result
-// messaging, and resets isEmbeddable to true whenever the url changes
-// (mirrors the legacy per-keystroke reset without moving `url` itself off
-// the plain Text field).
+// schema-gap: asyncVerify — Cloud Function check writing isEmbeddable + blockedReason together; url edits reset isEmbeddable.
 const EmbedVerifyControlImpl: React.FC<Props> = ({
   config,
   widget,
