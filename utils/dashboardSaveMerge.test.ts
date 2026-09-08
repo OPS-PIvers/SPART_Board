@@ -181,6 +181,27 @@ describe('mergeDashboardForSave', () => {
 
     expect(merged.thumbnailUrl).toBe('https://example.test/t.png');
   });
+
+  it('takes a remote object-field edit when the local copy is unchanged but key-reordered', () => {
+    // Same content as base, different key order — must still read as "unchanged locally".
+    const base = board([], {
+      globalStyle: { fontFamily: 'Lexend', fontColor: '#fff' } as never,
+    });
+    const local = board([], {
+      globalStyle: { fontColor: '#fff', fontFamily: 'Lexend' } as never,
+    });
+    const server = board([], {
+      globalStyle: {
+        fontColor: '#fff',
+        fontFamily: 'Lexend',
+        cardColor: '#000',
+      } as never,
+    });
+
+    const merged = mergeDashboardForSave(local, server, baselineOf(base));
+
+    expect(merged.globalStyle).toEqual(server.globalStyle);
+  });
 });
 
 describe('configVersion travels with config', () => {

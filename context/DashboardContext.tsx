@@ -50,6 +50,7 @@ import {
   STYLE_FIELDS,
   INSTANCE_FIELDS,
 } from '@/utils/widgetMergeFields';
+import { stableStringify } from '@/utils/stableStringify';
 import { useAuth } from './useAuth';
 import { mergeWidgetConfig } from '@/utils/widgetConfigPersistence';
 import i18n from '@/i18n';
@@ -276,22 +277,6 @@ const mirroredAnnotationBaseline = (
   } catch {
     return [];
   }
-};
-
-// Firestore hands documents back with alphabetically sorted keys, so a plain
-// JSON.stringify of a remote widget never matches the local one it echoes.
-const stableStringify = (value: unknown): string => {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  if (value && typeof value === 'object') {
-    const obj = value as Record<string, unknown>;
-    const body = Object.keys(obj)
-      .sort()
-      .filter((k) => obj[k] !== undefined)
-      .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
-      .join(',');
-    return `{${body}}`;
-  }
-  return JSON.stringify(value) ?? 'null';
 };
 
 /** Widget signature for remote-vs-local comparison: PII-free and key-stable. */
