@@ -35,6 +35,7 @@ import {
   VIDEO_ACTIVITY_SESSIONS_COLLECTION,
   LTI_SESSION_MEMBERSHIPS_COLLECTION,
   USERS_COLLECTION,
+  dropLinkedSectionPeriod,
   type LtiSessionKind,
 } from './nrpsStore';
 // Reuse the existing OneRoster seam (and its test-spy point) rather than
@@ -222,6 +223,7 @@ export const linkLtiCourseV1 = onCall(
 
     // Transactional check-then-write: never re-point a link another teacher owns
     // (no-hijack); a same-teacher re-link just updates the paired class.
+    let linkedTitle: string | null = contextTitle;
     await db.runTransaction(async (tx) => {
       const ref = db.collection(LTI_COURSE_LINKS_COLLECTION).doc(contextId);
       const existing = await tx.get(ref);
@@ -255,6 +257,7 @@ export const linkLtiCourseV1 = onCall(
           ? priorData.contextTitle
           : null;
       const finalContextTitle = contextTitle ?? storedTitle;
+      linkedTitle = finalContextTitle;
       const payload: Record<string, unknown> = {
         teacherUid: callerUid,
         contextId,
@@ -267,6 +270,19 @@ export const linkLtiCourseV1 = onCall(
       if (!existing.exists) payload.createdAt = Date.now();
       tx.set(ref, payload, { merge: true });
     });
+
+    // Best-effort: the section now IS the paired class, so stop counting its title as a second class.
+    try {
+      await dropLinkedSectionPeriod(db, {
+        kind,
+        sessionId,
+        contextTitle: linkedTitle,
+        classlinkClassId,
+        rosterId,
+      });
+    } catch (err) {
+      console.warn('[linkLtiCourse] period dedupe failed (non-fatal)', err);
+    }
 
     return { ok: true, contextId };
   }
