@@ -312,8 +312,8 @@ needs the hand-written `Settings.tsx` panel described in Step 3 and the
 `WIDGET_SETTINGS_COMPONENTS` / `WIDGET_APPEARANCE_COMPONENTS` entries in Step
 4 — the schema and the legacy panel coexist during the migration. **Already
 cut over:** `clock`, `time-tool`, `text`, `embed`, and `lunchCount` (wave 2)
-are schema-only — neither widget has a `Settings.tsx` file, and neither has
-a `WIDGET_SETTINGS_COMPONENTS`/`WIDGET_APPEARANCE_COMPONENTS` entry, only a
+are schema-only — none of them has a `Settings.tsx` file, and none has a
+`WIDGET_SETTINGS_COMPONENTS`/`WIDGET_APPEARANCE_COMPONENTS` entry, only a
 `WIDGET_SETTINGS_SCHEMAS` one. Don't use them as legacy-panel references.
 
 ---
