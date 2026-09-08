@@ -23,6 +23,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type * as admin from 'firebase-admin';
 import {
   persistLtiLaunchContext,
+  dropLinkedSectionPeriod,
   LTI_SESSION_MEMBERSHIPS_COLLECTION,
   QUIZ_SESSIONS_COLLECTION,
   VIDEO_ACTIVITY_SESSIONS_COLLECTION,
@@ -45,6 +46,10 @@ let vaSessions: Map<string, Record<string, unknown>>;
 let contextDocs: Map<string, Record<string, unknown>>;
 // Existing per-teacher seen-section inventory docs by full path.
 let seenDocs: Map<string, Record<string, unknown>>;
+// lti_course_links/{contextId} docs (section ↔ ClassLink class).
+let courseLinkDocs: Map<string, Record<string, unknown>>;
+// classPeriod labels already carried by responses, keyed by session id.
+let responsePeriods: Map<string, string[]>;
 // Writes recorded when the batch commits.
 let writes: Write[];
 
@@ -72,10 +77,31 @@ function docRef(path: string) {
           data: () => seenDocs.get(path),
         };
       }
+      if (path.startsWith('lti_course_links/')) {
+        const id = path.split('/')[1];
+        return {
+          exists: courseLinkDocs.has(id),
+          data: () => courseLinkDocs.get(id),
+        };
+      }
+      if (path.startsWith(`${QUIZ_SESSIONS_COLLECTION}/`)) {
+        const id = path.split('/')[1];
+        const row = quizSessions.find((s) => s.id === id);
+        return { id, exists: !!row, data: () => row?.data };
+      }
       throw new Error(`unexpected get on ${path}`);
     },
     collection: (sub: string) => ({
       doc: (id: string) => docRef(`${path}/${sub}/${id}`),
+      where: (_field: string, _op: string, value: string) => ({
+        limit: () => ({
+          get: async () => ({
+            empty: !(responsePeriods.get(path.split('/')[1]) ?? []).includes(
+              value
+            ),
+          }),
+        }),
+      }),
     }),
   };
 }
@@ -128,6 +154,8 @@ beforeEach(() => {
   vaSessions = new Map();
   contextDocs = new Map();
   seenDocs = new Map();
+  courseLinkDocs = new Map();
+  responsePeriods = new Map();
   writes = [];
 });
 
@@ -546,5 +574,146 @@ describe('persistLtiLaunchContext — video activity', () => {
     ).toBeNull();
     expect(await persistLtiLaunchContext(db(), VA_ARGS)).toBeNull();
     expect(writes).toHaveLength(0);
+  });
+});
+
+describe('linked-section period dedupe', () => {
+  // An in-app session targeting ClassLink class CL-1 (roster r-1), attached in
+  // Schoology; section ctx-1 is linked to that same class.
+  const pairedSession = (extra: Record<string, unknown> = {}) => {
+    quizSessions = [
+      {
+        id: 'sess-1',
+        data: {
+          code: 'ABC123',
+          status: 'active',
+          startedAt: 100,
+          teacherUid: 'teacher-1',
+          classIds: ['CL-1'],
+          rosterIds: ['r-1'],
+          periodNames: ['Period 1'],
+          ...extra,
+        },
+      },
+    ];
+  };
+  const linkCtx1 = () =>
+    courseLinkDocs.set('ctx-1', { classlinkClassId: 'CL-1', rosterId: 'r-1' });
+
+  it('does not append the section title when the section is linked to a class on the session', async () => {
+    pairedSession();
+    linkCtx1();
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      contextTitle: 'Math: Sec 1',
+    });
+    const sess = writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`);
+    expect(sess?.data.periodNames).toBeUndefined();
+    // The SSO period map still learns the section so a bridged join resolves.
+    expect(sess?.data.classPeriodByClassId).toEqual({
+      'schoology:ctx-1': 'Math: Sec 1',
+    });
+    expect(writeAt('users/teacher-1/quiz_assignments/sess-1')).toBeUndefined();
+  });
+
+  it('removes an already-present section title (self-heal) and mirrors the archive', async () => {
+    pairedSession({ periodNames: ['Period 1', 'Math: Sec 1'] });
+    linkCtx1();
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      contextTitle: 'Math: Sec 1',
+    });
+    expect(
+      writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data.periodNames
+    ).toEqual(['Period 1']);
+    expect(writeAt('users/teacher-1/quiz_assignments/sess-1')?.data).toEqual({
+      periodNames: ['Period 1'],
+    });
+  });
+
+  it('keeps the section title when a response already carries it as classPeriod', async () => {
+    pairedSession({ periodNames: ['Period 1', 'Math: Sec 1'] });
+    linkCtx1();
+    responsePeriods.set('sess-1', ['Math: Sec 1']);
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      contextTitle: 'Math: Sec 1',
+    });
+    expect(
+      writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data.periodNames
+    ).toBeUndefined();
+  });
+
+  it('still appends the title for a linked section whose class is NOT on the session', async () => {
+    pairedSession();
+    courseLinkDocs.set('ctx-1', {
+      classlinkClassId: 'CL-other',
+      rosterId: 'r-other',
+    });
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      contextTitle: 'Math: Sec 1',
+    });
+    expect(
+      writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data.periodNames
+    ).toEqual(['Period 1', 'Math: Sec 1']);
+  });
+
+  it('pairs by rosterId when the session only carries rosterIds', async () => {
+    pairedSession({ classIds: [] });
+    courseLinkDocs.set('ctx-1', {
+      classlinkClassId: 'CL-other',
+      rosterId: 'r-1',
+    });
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      contextTitle: 'Math: Sec 1',
+    });
+    expect(
+      writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data.periodNames
+    ).toBeUndefined();
+  });
+
+  describe('dropLinkedSectionPeriod (link time)', () => {
+    it('drops the title from the session and the quiz archive doc', async () => {
+      pairedSession({ periodNames: ['Period 1', 'Math: Sec 1'] });
+      const changed = await dropLinkedSectionPeriod(db(), {
+        kind: 'quiz',
+        sessionId: 'sess-1',
+        contextTitle: 'Math: Sec 1',
+        classlinkClassId: 'CL-1',
+        rosterId: 'r-1',
+      });
+      expect(changed).toBe(true);
+      expect(writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data).toEqual({
+        periodNames: ['Period 1'],
+      });
+      expect(writeAt('users/teacher-1/quiz_assignments/sess-1')?.data).toEqual({
+        periodNames: ['Period 1'],
+      });
+    });
+
+    it('is a no-op when the paired class is not on the session or the title is absent', async () => {
+      pairedSession({ periodNames: ['Period 1', 'Math: Sec 1'] });
+      expect(
+        await dropLinkedSectionPeriod(db(), {
+          kind: 'quiz',
+          sessionId: 'sess-1',
+          contextTitle: 'Math: Sec 1',
+          classlinkClassId: 'CL-other',
+          rosterId: 'r-other',
+        })
+      ).toBe(false);
+      expect(
+        await dropLinkedSectionPeriod(db(), {
+          kind: 'quiz',
+          sessionId: 'sess-1',
+          contextTitle: 'Not here',
+          classlinkClassId: 'CL-1',
+          rosterId: 'r-1',
+        })
+      ).toBe(false);
+      expect(writes).toHaveLength(0);
+    });
   });
 });
