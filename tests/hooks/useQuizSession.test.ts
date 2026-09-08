@@ -1708,6 +1708,62 @@ describe('useQuizSessionStudent — joinQuizSession', () => {
     expect(writtenResponse).not.toHaveProperty('classId');
   });
 
+  it('prefers the ClassLink class over the Schoology section when a bridged claim matches both', async () => {
+    // A Schoology launch bridged to ClassLink carries [classlinkId, schoology:ctx];
+    // the session lists both once the section has been unioned at launch.
+    (
+      auth as unknown as {
+        currentUser: {
+          uid: string;
+          isAnonymous: boolean;
+          getIdTokenResult: () => Promise<{
+            claims: { classIds?: unknown };
+          }>;
+        } | null;
+      }
+    ).currentUser = {
+      uid: 'sso-uid-bridged',
+      isAnonymous: false,
+      getIdTokenResult: () =>
+        Promise.resolve({
+          claims: { classIds: ['classlink-A', 'schoology:ctx-1'] },
+        }),
+    };
+
+    (
+      firestore.getDocs as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      empty: false,
+      docs: [
+        buildSessionDoc('s1', {
+          status: 'waiting',
+          classIds: ['classlink-A', 'schoology:ctx-1'],
+          classPeriodByClassId: {
+            'classlink-A': 'Period 3',
+            'schoology:ctx-1': 'Math: Section 1',
+          },
+        }),
+      ],
+    });
+    (
+      firestore.getDoc as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({ exists: () => false });
+    const setDocMock = firestore.setDoc as unknown as ReturnType<typeof vi.fn>;
+    setDocMock.mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useQuizSessionStudent());
+    await act(async () => {
+      await result.current.joinQuizSession('ABC123');
+    });
+
+    const writtenResponse = setDocMock.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    expect(writtenResponse.classId).toBe('classlink-A');
+    expect(writtenResponse.classPeriod).toBe('Period 3');
+  });
+
   it('does not resolve classId for anonymous PIN joiners', async () => {
     // PIN joiners pick a period through the picker — the student-side
     // shortcut `if (!currentUser.isAnonymous && !classPeriod)` short-circuits

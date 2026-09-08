@@ -166,6 +166,7 @@ describe('persistLtiLaunchContext — quiz', () => {
     // Session denormalization.
     const sess = writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`);
     expect(sess?.data).toMatchObject({
+      classIds: ['schoology:ctx-1'],
       periodNames: ['Math 7'],
       classPeriodByClassId: { 'schoology:ctx-1': 'Math 7' },
       ltiAttachment: { resourceLinkId: 'rl-1', contextId: 'ctx-1' },
@@ -197,6 +198,7 @@ describe('persistLtiLaunchContext — quiz', () => {
           status: 'active',
           startedAt: 100,
           teacherUid: 'teacher-1',
+          classIds: ['schoology:ctx-1'],
           periodNames: ['Math 7'],
           classPeriodByClassId: { 'schoology:ctx-1': 'Math 7' },
           ltiAttachment: { resourceLinkId: 'rl-1', contextId: 'ctx-1' },
@@ -217,6 +219,97 @@ describe('persistLtiLaunchContext — quiz', () => {
     });
     await persistLtiLaunchContext(db(), QUIZ_ARGS);
     expect(writes).toHaveLength(0);
+  });
+
+  it('unions a linked section into classIds so its students pass the rules class-gate', async () => {
+    // Attached from section ctx-1; a student of LINKED section ctx-2 launches
+    // with classIds claim ['schoology:ctx-2'] — must overlap after this write.
+    quizSessions = [
+      {
+        id: 'sess-1',
+        data: {
+          code: 'ABC123',
+          status: 'active',
+          startedAt: 100,
+          teacherUid: 'teacher-1',
+          classIds: ['schoology:ctx-1'],
+          classId: 'schoology:ctx-1',
+        },
+      },
+    ];
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      contextId: 'ctx-2',
+      contextTitle: null,
+      membershipUrl: null,
+    });
+    const sess = writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`);
+    expect(sess?.data.classIds).toEqual(['schoology:ctx-1', 'schoology:ctx-2']);
+    // Legacy single classId is left alone (rules prefer the list when non-empty).
+    expect(sess?.data.classId).toBeUndefined();
+  });
+
+  it('skips the classIds union when the launch was bridged to a ClassLink class already on the session', async () => {
+    quizSessions = [
+      {
+        id: 'sess-1',
+        data: {
+          code: 'ABC123',
+          status: 'active',
+          startedAt: 100,
+          teacherUid: 'teacher-1',
+          classIds: ['CL-CLASS-A'],
+        },
+      },
+    ];
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      bridgedClassId: 'CL-CLASS-A',
+    });
+    expect(
+      writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data.classIds
+    ).toBeUndefined();
+  });
+
+  it('still unions the section when the bridged class is NOT on the session', async () => {
+    quizSessions = [
+      {
+        id: 'sess-1',
+        data: {
+          code: 'ABC123',
+          status: 'active',
+          startedAt: 100,
+          teacherUid: 'teacher-1',
+          classIds: ['schoology:ctx-0'],
+        },
+      },
+    ];
+    await persistLtiLaunchContext(db(), {
+      ...QUIZ_ARGS,
+      bridgedClassId: 'CL-CLASS-Z',
+    });
+    expect(
+      writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data.classIds
+    ).toEqual(['schoology:ctx-0', 'schoology:ctx-1']);
+  });
+
+  it('also unions the section into an in-app session targeted by ClassLink class ids', async () => {
+    quizSessions = [
+      {
+        id: 'sess-1',
+        data: {
+          code: 'ABC123',
+          status: 'active',
+          startedAt: 100,
+          teacherUid: 'teacher-1',
+          classIds: ['CL-CLASS-A', 'CL-CLASS-B'],
+        },
+      },
+    ];
+    await persistLtiLaunchContext(db(), QUIZ_ARGS);
+    expect(
+      writeAt(`${QUIZ_SESSIONS_COLLECTION}/sess-1`)?.data.classIds
+    ).toEqual(['CL-CLASS-A', 'CL-CLASS-B', 'schoology:ctx-1']);
   });
 
   it('unions a second section into periodNames + classPeriodByClassId + archive', async () => {
@@ -336,6 +429,7 @@ describe('persistLtiLaunchContext — quiz', () => {
           status: 'active',
           startedAt: 100,
           teacherUid: 'teacher-1',
+          classIds: ['schoology:ctx-1'],
           periodNames: ['Math 7'],
           classPeriodByClassId: { 'schoology:ctx-1': 'Math 7' },
           ltiAttachment: { resourceLinkId: 'rl-1', contextId: 'ctx-1' },
@@ -428,6 +522,7 @@ describe('persistLtiLaunchContext — video activity', () => {
     expect(
       writeAt(`${VIDEO_ACTIVITY_SESSIONS_COLLECTION}/va-1`)?.data
     ).toMatchObject({
+      classIds: ['schoology:ctx-9'],
       periodNames: ['Science 6'],
       classPeriodByClassId: { 'schoology:ctx-9': 'Science 6' },
       ltiAttachment: { resourceLinkId: 'rl-9', contextId: 'ctx-9' },
