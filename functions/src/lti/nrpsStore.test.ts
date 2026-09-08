@@ -203,7 +203,11 @@ describe('persistLtiLaunchContext — quiz', () => {
 
     // Archive-doc mirror (so the manager card needs no extra read).
     const archive = writeAt('users/teacher-1/quiz_assignments/sess-1');
-    expect(archive?.data).toEqual({ periodNames: ['Math 7'] });
+    expect(archive?.data).toEqual({
+      periodNames: ['Math 7'],
+      classIds: ['schoology:ctx-1'],
+      classPeriodByClassId: { 'schoology:ctx-1': 'Math 7' },
+    });
 
     // Per-teacher seen-section inventory (drives the linking UI; carries the
     // sessionId the linking CFs use as their trust anchor).
@@ -373,6 +377,11 @@ describe('persistLtiLaunchContext — quiz', () => {
     // Archive mirror gets the unioned list too.
     expect(writeAt('users/teacher-1/quiz_assignments/sess-1')?.data).toEqual({
       periodNames: ['Math 7', 'Math 8'],
+      classIds: ['schoology:ctx-2'],
+      classPeriodByClassId: {
+        'schoology:ctx-1': 'Math 7',
+        'schoology:ctx-2': 'Math 8',
+      },
     });
   });
 
@@ -403,6 +412,8 @@ describe('persistLtiLaunchContext — quiz', () => {
     // Archive mirror still happens (it's keyed off the section change, not NRPS).
     expect(writeAt('users/teacher-1/quiz_assignments/sess-1')?.data).toEqual({
       periodNames: ['Math 7'],
+      classIds: ['schoology:ctx-1'],
+      classPeriodByClassId: { 'schoology:ctx-1': 'Math 7' },
     });
     // …but the seen-section inventory is NOT written without NRPS: the linking
     // trust anchor needs the membership context doc (NRPS-only), so advertising
@@ -613,7 +624,11 @@ describe('linked-section period dedupe', () => {
     expect(sess?.data.classPeriodByClassId).toEqual({
       'schoology:ctx-1': 'Math: Sec 1',
     });
-    expect(writeAt('users/teacher-1/quiz_assignments/sess-1')).toBeUndefined();
+    // The archive learns the section too, so the hub can resolve it to the class.
+    expect(writeAt('users/teacher-1/quiz_assignments/sess-1')?.data).toEqual({
+      classIds: ['CL-1', 'schoology:ctx-1'],
+      classPeriodByClassId: { 'schoology:ctx-1': 'Math: Sec 1' },
+    });
   });
 
   it('removes an already-present section title (self-heal) and mirrors the archive', async () => {
@@ -628,6 +643,8 @@ describe('linked-section period dedupe', () => {
     ).toEqual(['Period 1']);
     expect(writeAt('users/teacher-1/quiz_assignments/sess-1')?.data).toEqual({
       periodNames: ['Period 1'],
+      classIds: ['CL-1', 'schoology:ctx-1'],
+      classPeriodByClassId: { 'schoology:ctx-1': 'Math: Sec 1' },
     });
   });
 

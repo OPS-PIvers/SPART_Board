@@ -30,7 +30,7 @@
 //                                   id is only known server-side, at launch).
 //       - ltiNrps                ← routing flag: the monitor calls the NRPS name
 //                                   resolver only for flagged sessions.
-//   • For a quiz, periodNames is ALSO mirrored onto the teacher's archive doc
+//   • For a quiz, periodNames/classIds/classPeriodByClassId are ALSO mirrored onto the archive doc
 //     (`users/{teacherUid}/quiz_assignments/{sessionId}`) so the QuizManager
 //     card shows the section with ZERO extra client reads (the archive is
 //     already streamed) — matching how the Classroom path stores it there.
@@ -412,7 +412,14 @@ export async function persistLtiLaunchContext(
   // (only when the section set actually changed) lets the card show the Schoology
   // section with NO extra client read. The doc id is the sessionId (1:1). VA's
   // manager card labels by activity title, so it needs no equivalent write.
-  if (kind === 'quiz' && nextPeriodNames) {
+  // classIds / classPeriodByClassId ride along so the assignments hub can resolve sections without a session read.
+  const archive: Record<string, unknown> = {};
+  if (nextPeriodNames) archive.periodNames = nextPeriodNames;
+  if (update.classIds) archive.classIds = update.classIds;
+  if (update.classPeriodByClassId) {
+    archive.classPeriodByClassId = update.classPeriodByClassId;
+  }
+  if (kind === 'quiz' && Object.keys(archive).length > 0) {
     const teacherUid =
       typeof sessionData.teacherUid === 'string' ? sessionData.teacherUid : '';
     if (teacherUid) {
@@ -422,7 +429,7 @@ export async function persistLtiLaunchContext(
           .doc(teacherUid)
           .collection(QUIZ_ASSIGNMENTS_SUBCOLLECTION)
           .doc(sessionId),
-        { periodNames: nextPeriodNames },
+        archive,
         { merge: true }
       );
       hasWrites = true;

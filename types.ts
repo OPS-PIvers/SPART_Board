@@ -4720,6 +4720,10 @@ export interface QuizAssignmentSettings {
    * (and session `classIds`). No backfill of existing assignments.
    */
   rosterIds?: string[];
+  /** Session class ids mirrored onto the assignment (e.g. `schoology:<contextId>`); read-only. */
+  classIds?: string[];
+  /** Display titles for `classIds`, mirrored from the session; read-only. */
+  classPeriodByClassId?: Record<string, string>;
   /**
    * Max completed submissions allowed per student. `null`/`undefined` means
    * unlimited (legacy). `1` (default for new assignments) means one-and-done.
@@ -8081,6 +8085,10 @@ export interface VideoActivityAssignment extends VideoActivityAssignmentSettings
    *  legacy assignments read via `className` / session.classIds only. See
    *  `utils/resolveAssignmentTargets.ts`. */
   rosterIds?: string[];
+  /** Session class ids mirrored onto the assignment (e.g. `schoology:<contextId>`); read-only. */
+  classIds?: string[];
+  /** Display titles for `classIds`, mirrored from the session; read-only. */
+  classPeriodByClassId?: Record<string, string>;
   /** Frozen at creation from the org-wide `assignment-modes` admin setting.
    *  Mirrors VideoActivitySession.mode. Absent on pre-feature assignments. */
   mode?: AssignmentMode;
