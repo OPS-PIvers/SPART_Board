@@ -3,7 +3,7 @@
 _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
-_Last audited: 2026-09-07_
+_Last audited: 2026-09-08_
 _Last action: 2026-09-07 — MEDIUM `CatalystVisualWidget` uncapped icon/title `cqmin` resolved: initial fix used `min(96px, 40cqmin)`/`min(20px, 6cqmin)` per the item's own Fix guidance, but automated PR review correctly flagged this as the wrong tool for the widget's hero content (a hard `min()` bound at the widget's own 600×400 default size), citing the `ConceptWeb` precedent (reverted from `min()` to `clamp()` for the same reason) and `WeatherWidget`'s uncapped hero content. Revised to `clamp(32px, 40cqmin, 220px)`/`clamp(14px, 6cqmin, 36px)`. `tsc --noEmit`/`eslint`/`prettier --check` clean. Moved to Completed._
 
 ---
@@ -21,6 +21,13 @@ _Nothing currently in progress._
 ---
 
 ## Open
+
+### LOW `MiniAppAssignModal`'s "skipped students" warning text drops to hardcoded `text-xs` amid otherwise-correct cqmin scaling
+
+- **Detected:** 2026-09-08
+- **File:** `components/widgets/MiniApp/Widget.tsx:239,243` (inside `MiniAppAssignModal`, rendered as an `absolute inset-0` overlay directly within the widget's own front-face container, not portaled — so it is inside the container-query scope)
+- **Detail:** This modal correctly uses `cqmin`-based inline styles everywhere else — icons at `min(20px, 6cqmin)`, gaps at `min(8px, 2cqmin)`, body text at `min(14px, 5.5cqmin)` — but the "Couldn't target N students" warning block (`<p className="text-xs font-bold text-amber-800">` at :239 and `<ul className="mt-1 text-xs ...">` at :243) drops to hardcoded Tailwind `text-xs`. At small widget sizes this warning text will look disproportionately large relative to the rest of the scaled overlay; at large sizes it won't grow with it, unlike everything else in the same dialog.
+- **Fix:** Match the surrounding caption-tier convention: `style={{ fontSize: 'min(12px, 4.5cqmin)' }}` on the `<p>`, and `style={{ marginTop: 'min(4px, 1cqmin)', fontSize: 'min(12px, 4.5cqmin)' }}` on the `<ul>`, dropping `text-xs`/`mt-1` from both `className`s.
 
 ### LOW ActivityWall rebuild leaves several small hardcoded-spacing residuals amid an otherwise fully `cqmin`-scaled front face
 
