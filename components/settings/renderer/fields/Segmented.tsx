@@ -2,15 +2,7 @@ import React from 'react';
 import type { FieldProps } from '../FieldProps';
 import type { SegmentedField as SegmentedFieldSchema } from '@/components/settings/schema/types';
 import { resolveLabel } from '../resolveLabel';
-
-const NAV_KEYS = [
-  'ArrowRight',
-  'ArrowDown',
-  'ArrowLeft',
-  'ArrowUp',
-  'Home',
-  'End',
-];
+import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 
 export const SegmentedField: React.FC<
   FieldProps<SegmentedFieldSchema<string>>
@@ -18,34 +10,15 @@ export const SegmentedField: React.FC<
   const options = field.options;
   const selectedIndex = options.findIndex((option) => option.value === value);
 
-  // APG radiogroup: one tab stop, arrows move focus and selection.
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!NAV_KEYS.includes(e.key)) return;
-    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    const nodes = Array.from(
-      e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-    );
-    if (nodes.length === 0) return;
-    e.preventDefault();
-    const active = nodes.indexOf(document.activeElement as HTMLButtonElement);
-    const from = active < 0 ? Math.max(selectedIndex, 0) : active;
-    let next: number;
-    if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = nodes.length - 1;
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown')
-      next = (from + 1) % nodes.length;
-    else next = (from - 1 + nodes.length) % nodes.length;
-    nodes[next].focus();
-    onChange(options[next].value);
-  };
-
   return (
     <div
       id={id}
       role="radiogroup"
       aria-labelledby={labelId}
       aria-describedby={describedBy}
-      onKeyDown={handleKeyDown}
+      onKeyDown={(e) =>
+        handleRadioGroupKeyDown(e, options, (opt) => onChange(opt.value))
+      }
       className="flex flex-wrap gap-1 bg-slate-100 rounded-lg p-1"
     >
       {options.map((option, index) => {
