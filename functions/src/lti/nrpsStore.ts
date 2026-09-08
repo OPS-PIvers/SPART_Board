@@ -12,6 +12,10 @@
 //     never leak one teacher's roster to another: the resolver reads only its
 //     own session's contexts and is gated on session ownership.
 //   • On the session doc itself (denormalized, idempotent):
+//       - classIds               ← ∪ 'schoology:<contextId>' so students of
+//                                   every linked section pass the rules
+//                                   class-gate (the deep-link only knows the
+//                                   section it was attached from).
 //       - periodNames            ← the Schoology section title (so the class
 //                                   filter shows the section instead of "No
 //                                   classes" — the analogue of a roster name).
@@ -86,6 +90,8 @@ export type PersistLtiLaunchContextArgs = {
   membershipUrl?: string | null;
   /** Launch deployment id, stored for diagnostics / future multi-deployment. */
   deploymentId: string;
+  /** ClassLink class the launch was bridged to (classlinkBridge.ts), if any. */
+  bridgedClassId?: string | null;
 } & (
   | {
       kind: 'quiz';
@@ -211,6 +217,20 @@ export async function persistLtiLaunchContext(
   // lockstep. Null when the title is absent or already present (no change).
   let nextPeriodNames: string[] | null = null;
 
+  // Linked sections launch with their own contextId; union it so the rules class-gate admits them.
+  const classId = `schoology:${contextId}`;
+  const currentClassIds = Array.isArray(sessionData.classIds)
+    ? (sessionData.classIds as unknown[]).filter(
+        (c): c is string => typeof c === 'string' && !!c
+      )
+    : [];
+  // A bridged student already passes on their ClassLink class; skip the union so SSO period resolution stays unambiguous.
+  const admittedByBridge =
+    !!args.bridgedClassId && currentClassIds.includes(args.bridgedClassId);
+  if (!currentClassIds.includes(classId) && !admittedByBridge) {
+    update.classIds = [...currentClassIds, classId];
+  }
+
   if (args.contextTitle) {
     const currentPeriods = Array.isArray(sessionData.periodNames)
       ? (sessionData.periodNames as unknown[]).filter(
@@ -222,7 +242,6 @@ export async function persistLtiLaunchContext(
       update.periodNames = nextPeriodNames;
     }
 
-    const classId = `schoology:${contextId}`;
     const currentMap =
       sessionData.classPeriodByClassId &&
       typeof sessionData.classPeriodByClassId === 'object'

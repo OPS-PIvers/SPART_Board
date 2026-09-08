@@ -2300,8 +2300,14 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
               const matches = sessionClassIds.filter((c) =>
                 studentClaimSet.has(c)
               );
-              if (matches.length === 1) {
-                resolvedClassId = matches[0];
+              // A bridged Schoology launch matches both its ClassLink class and its section; prefer the roster-backed class.
+              const rosterMatches = matches.filter(
+                (c) => !c.startsWith('schoology:')
+              );
+              const preferred =
+                rosterMatches.length === 1 ? rosterMatches : matches;
+              if (preferred.length === 1) {
+                resolvedClassId = preferred[0];
                 const periodFromSession =
                   sessionData.classPeriodByClassId?.[resolvedClassId];
                 if (
