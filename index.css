@@ -256,7 +256,7 @@ body.is-dragging-widget video {
 
 /* Edited-widget marker while the settings drawer is open */
 [data-settings-target] {
-  outline: 2px solid #2d3f89;
+  outline: 2px solid var(--spart-primary, #2d3f89);
   outline-offset: 2px;
   border-radius: 0.75rem;
 }
