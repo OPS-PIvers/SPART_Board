@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   Pause,
   Play,
+  Projector,
   Settings,
   Square,
   Trophy,
@@ -454,6 +455,9 @@ export const MonitorShell: React.FC<QuizLiveMonitorProps> = (props) => {
         ? { label: 'Ended', cls: 'bg-white/20 text-white' }
         : { label: 'Live', cls: 'bg-white text-brand-blue-primary' };
 
+  // Board view hides WHO raised a hand / is idle; on by default since the widget is usually projected.
+  const boardView = config.monitorBoardView ?? true;
+
   const onHome = screen.name === 'home';
   const headerTitle = onHome
     ? session.quizTitle || quizData.title
@@ -499,6 +503,32 @@ export const MonitorShell: React.FC<QuizLiveMonitorProps> = (props) => {
         >
           {headerTitle}
         </p>
+        <button
+          onClick={() => onUpdateConfig({ monitorBoardView: !boardView })}
+          aria-pressed={boardView}
+          aria-label={
+            boardView
+              ? 'Board view on. Hiding who raised a hand or is idle.'
+              : 'Teacher view. Showing who raised a hand or is idle.'
+          }
+          title={
+            boardView ? 'Board view: counts only' : 'Teacher view: names shown'
+          }
+          className={`shrink-0 rounded-md transition-colors ${
+            boardView
+              ? 'bg-white text-brand-blue-primary'
+              : 'text-white/80 hover:bg-white/15'
+          }`}
+          style={{ padding: 'min(4px, 1cqmin)' }}
+        >
+          <Projector
+            aria-hidden
+            style={{
+              width: 'min(16px, 5cqmin)',
+              height: 'min(16px, 5cqmin)',
+            }}
+          />
+        </button>
         <span
           className={`shrink-0 rounded-full font-sans font-semibold uppercase tracking-wider ${statusPill.cls}`}
           style={{
@@ -560,7 +590,8 @@ export const MonitorShell: React.FC<QuizLiveMonitorProps> = (props) => {
             />
             <StatusBuckets
               counts={data.counts}
-              needsHelpCount={data.needsHelpCount}
+              handCount={data.handCount}
+              idleCount={data.idleCount}
               openBucket={openBucket}
               onToggle={(key) =>
                 setOpenBucket((cur) => (cur === key ? null : key))

@@ -32,7 +32,8 @@ function makeStudent(tabSwitchWarnings: number): MonitorStudent {
     awaitingGrade: false,
     band: null,
     tabWarnings: tabSwitchWarnings,
-    needsHelp: null,
+    hand: null,
+    idle: null,
     duplicate: false,
     onQuestion: 1,
   };

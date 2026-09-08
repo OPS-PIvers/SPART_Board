@@ -73,6 +73,16 @@ export const QuizSettingsScreen: React.FC<QuizSettingsScreenProps> = ({
 }) => (
   <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
     <SettingRow
+      label="Board view"
+      description="Show only counts for raised hands and idle students. Turn off to see names when the board isn't projected."
+      on={config.monitorBoardView ?? true}
+      onToggle={() =>
+        onUpdateConfig({
+          monitorBoardView: !(config.monitorBoardView ?? true),
+        })
+      }
+    />
+    <SettingRow
       label="Tab warnings"
       description="Flag students who leave the quiz tab."
       on={session.tabWarningsEnabled !== false}
