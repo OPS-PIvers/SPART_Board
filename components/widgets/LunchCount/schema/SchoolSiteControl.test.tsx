@@ -1,6 +1,4 @@
-// Pins that a school-site change also resets lastSyncDate, not just
-// cachedMenu — otherwise useNutrislice's "already synced today" check
-// stays true and the widget never re-fetches the new site's menu.
+// Pins that a site change resets lastSyncDate too, or useNutrislice never re-fetches the new site.
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, fireEvent, screen } from '@testing-library/react';
