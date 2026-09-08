@@ -47,11 +47,10 @@ export const useSettingsDrawerFocus = ({
   useEffect(() => {
     if (!open || !widgetId) return;
     headingRef.current?.focus();
-    // Read at close time on purpose: the opener is whatever the host points at then.
-    const readOpener = () => openerRef?.current ?? null;
+    // Capture now: a same-render widget swap repoints openerRef before this cleanup runs.
+    const opener = openerRef?.current ?? null;
 
     return () => {
-      const opener = readOpener();
       if (opener && opener.isConnected) {
         opener.focus();
         return;
