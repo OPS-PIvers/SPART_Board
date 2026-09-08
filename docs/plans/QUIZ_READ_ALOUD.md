@@ -52,24 +52,43 @@ quiz. The Apps Script portal stays in service for scanned/paper assessments.
 
 ## 2. Decisions (locked 2026-09-08)
 
-| #   | Decision        | Choice                                                                                                                                                                                                                                   |
-| --- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Scope           | Native quiz content **plus text inside stimuli**. The Apps Script portal remains for paper assessments; no document-upload port.                                                                                                         |
-| Q2  | Engine          | **Google Cloud Text-to-Speech** called from a Cloud Function; MP3 cached in Storage keyed by hash of text + voice. No browser `speechSynthesis`.                                                                                         |
-| Q3  | Who             | **Per-student override** (`StudentOverride.readAloud`) **plus** an assignment-level "Allow read-aloud for everyone" toggle.                                                                                                              |
-| Q4  | Playback UX v1  | Speaker button on the question, on each choice/item, and on each text-bearing stimulus; a "Read whole question" button; playback speed 0.75×–1.5×; replay. **No** word-level highlighting or auto-play in v1.                            |
-| Q5  | Stimulus text   | Extracted **at authoring time** (PDF text layer first, Gemini OCR fallback via the existing `ocr` generation type), stored as `QuizStimulus.readAloudText`, **teacher-reviewable and editable**. Nothing unreviewed is ever synthesized. |
-| Q6  | Voice           | **Neural2** voices, admin-configurable default per language in `admin_settings`.                                                                                                                                                         |
-| Q7  | When            | **On demand at first play**, cached forever by content hash. Client prefetches the current question's parts on load.                                                                                                                     |
-| Q8  | Language        | Optional **quiz-level `language`** (BCP-47, default `en-US`) set in the quiz editor; voice map picks the matching Neural2 voice.                                                                                                         |
-| Q9  | Text source     | **Server-derived only.** The client sends `{sessionId, questionId, part}`; the function reads the session doc and synthesizes only text that exists there (or the reviewed `readAloudText`). Client-supplied text is never accepted.     |
-| Q10 | Eligibility     | **SSO students only.** The caller must carry `studentRole === true` and own a pointer doc for the session. Anonymous PIN joiners never see the control.                                                                                  |
-| Q11 | Gating          | New global feature permission **`quiz-read-aloud`** (admin → beta → public). When off for a user, no reference to read-aloud renders anywhere: not the override checkbox, the assignment toggle, the editor fields, nor student buttons. |
-| Q12 | Delivery        | **Three stacked PRs** into `dev-paul` (§7).                                                                                                                                                                                              |
-| Q13 | Quota           | Characters counted **under the student's uid** in `ai_usage` with feature key `tts`; cache hits are free; a hard **per-session ceiling** stops runaway replay.                                                                           |
-| Q14 | "Everyone"      | Means **all SSO students on that assignment**. Server check: pointer exists AND (`override.readAloud === true` OR `assignment.readAloudAll === true`).                                                                                   |
-| Q15 | Teacher preview | **Yes**: a "Preview voice" button beside the language field in the quiz editor synthesizes one fixed sentence in the mapped voice, billed to the teacher under `tts`.                                                                    |
-| Q16 | Next step       | Plan doc only; product owner reviews before any code.                                                                                                                                                                                    |
+| #   | Decision        | Choice                                                                                                                                                                                                                                           |
+| --- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Q1  | Scope           | Native quiz content **plus text inside stimuli**. The Apps Script portal remains for paper assessments; no document-upload port.                                                                                                                 |
+| Q2  | Engine          | **Google Cloud Text-to-Speech** called from a Cloud Function; MP3 cached in Storage keyed by hash of text + voice. No browser `speechSynthesis`.                                                                                                 |
+| Q3  | Who             | **Per-student override** (`StudentOverride.readAloud`) **plus** an assignment-level "Allow read-aloud for everyone" toggle.                                                                                                                      |
+| Q4  | Playback UX v1  | Speaker button on the question, on each choice/item, and on each text-bearing stimulus; a "Read question" button; playback speed 0.75×–1.5×; replay. Part-level highlight and an opt-in auto-read switch (see D1, D5). No word-level sync in v1. |
+| Q5  | Stimulus text   | Extracted **at authoring time** (PDF text layer first, Gemini OCR fallback via the existing `ocr` generation type), stored as `QuizStimulus.readAloudText`, **teacher-reviewable and editable**. Nothing unreviewed is ever synthesized.         |
+| Q6  | Voice           | **Neural2** voices, admin-configurable default per language in `admin_settings`.                                                                                                                                                                 |
+| Q7  | When            | **On demand at first play**, cached forever by content hash. Client prefetches the current question's parts on load.                                                                                                                             |
+| Q8  | Language        | Optional **quiz-level `language`** (BCP-47, default `en-US`) set in the quiz editor; voice map picks the matching Neural2 voice.                                                                                                                 |
+| Q9  | Text source     | **Server-derived only.** The client sends `{sessionId, questionId, part}`; the function reads the session doc and synthesizes only text that exists there (or the reviewed `readAloudText`). Client-supplied text is never accepted.             |
+| Q10 | Eligibility     | **SSO students only.** The caller must carry `studentRole === true` and own a pointer doc for the session. Anonymous PIN joiners never see the control.                                                                                          |
+| Q11 | Gating          | New global feature permission **`quiz-read-aloud`** (admin → beta → public). When off for a user, no reference to read-aloud renders anywhere: not the override checkbox, the assignment toggle, the editor fields, nor student buttons.         |
+| Q12 | Delivery        | **Three stacked PRs** into `dev-paul` (§7).                                                                                                                                                                                                      |
+| Q13 | Quota           | Characters counted **under the student's uid** in `ai_usage` with feature key `tts`; cache hits are free; a hard **per-session ceiling** stops runaway replay.                                                                                   |
+| Q14 | "Everyone"      | Means **all SSO students on that assignment**. Server check: pointer exists AND (`override.readAloud === true` OR `assignment.readAloudAll === true`).                                                                                           |
+| Q15 | Teacher preview | **Yes**: a "Preview voice" button beside the language field in the quiz editor speaks the first question prompt (else a fixed localized sample) in the mapped voice, billed to the teacher under `tts` (D10).                                    |
+| Q16 | Next step       | Plan doc only; product owner reviews before any code.                                                                                                                                                                                            |
+
+### 2.1 Design decisions (locked 2026-09-08, UI grill)
+
+| #   | Decision            | Choice                                                                                                                                                                                                                                                     |
+| --- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Highlight           | **Part-level.** The prompt, choice or item whose audio is playing gets a soft brand-blue tint + outline. No word-level sync.                                                                                                                               |
+| D2  | MC rows             | **Sibling speaker.** Each choice row is a flex pair: existing choice button grows, a 44 px speaker button sits beside it with the same height and radius. Never nested inside the choice button; own `aria-label`.                                         |
+| D3  | Toolbar             | **Compact sticky bar under the progress header**, full width, glass surface. Not rendered at all for ineligible students so layout never shifts.                                                                                                           |
+| D4  | Modes               | **Self-paced (light) only for v1.** Live teacher-paced quizzes (`session.sessionMode !== 'student'`) get no read-aloud; the server rejects them too.                                                                                                       |
+| D5  | Autoplay            | **Tap only**, plus an opt-in **Auto-read** switch in the toolbar, off by default, persisted per device in `localStorage`. Once on, each new question's prompt plays after the browser has a prior gesture.                                                 |
+| D6  | Speed               | **One cycling pill** 1× → 1.25× → 1.5× → 0.75× → 1×, 44 px, current rate as its label, `aria-live` announces the new rate.                                                                                                                                 |
+| D7  | States              | Speaker icon becomes a spinner while synthesizing. Failure: icon returns and one inline line under the toolbar, "Couldn't load audio. Tap to try again." Quota exhausted: controls unmount and one calm line says read-aloud is unavailable for this quiz. |
+| D8  | Matching / Ordering | **Trailing speaker outside the drag surface**: `[grip] [text] [speaker]`, `pointerdown` stopped before the drag listeners. Muted until hover/focus on pointer devices, always visible on touch.                                                            |
+| D9  | Read order          | "Read question" = prompt, pause, then choices as "A. …", "B. …" (letters spoken); Matching reads left column then right; Ordering reads items in shown order. Attached stimulus text (PR3) is read first. Highlight walks each part.                       |
+| D10 | Preview text        | First question prompt if present, else a fixed localized sample sentence. Same cache key scheme as student playback.                                                                                                                                       |
+| D11 | Copy                | Override checkbox label **"Read aloud"**, help line **"Signed-in students only."** Same two strings on the assignment-wide toggle. No tooltips, no parentheticals.                                                                                         |
+| D12 | Stimulus text UI    | **Collapsed disclosure row** under each image/pdf stimulus card: "Read-aloud text" + source badge (PDF text / OCR / Edited / None). Expands to textarea, Extract, Clear.                                                                                   |
+| D13 | Admin card          | One row per language (en-US, es-US, de-DE, fr-FR): Neural2 voice select + Play sample. Below: "Characters per session" number input showing the default. Save. Existing admin card styling.                                                                |
+| D14 | Auto-read control   | Small labeled switch "Auto-read", existing switch styling, right end of the toolbar, `role="switch"` + `aria-checked`.                                                                                                                                     |
 
 ## 3. Data model
 
@@ -145,7 +164,7 @@ type QuizReadAloudPart =
   | { kind: 'choice'; index: number }
   | { kind: 'matchingLeft' | 'matchingRight' | 'orderingItem'; index: number }
   | { kind: 'stimulus'; stimulusId: string }
-  | { kind: 'whole' }; // question + all choices/items, joined with pauses
+  | { kind: 'whole' }; // D9: prompt, pause, then "A. …" choices / left then right / items in order
 
 type SynthesizeQuizAudioRequest =
   | {
@@ -154,10 +173,11 @@ type SynthesizeQuizAudioRequest =
       questionId: string;
       part: QuizReadAloudPart;
     }
-  | { mode: 'preview'; language: string }; // teacher preview, fixed sentence
+  | { mode: 'preview'; language: string; quizId?: string }; // D10: first prompt of the teacher's quiz, else fixed sample
 ```
 
-Response: `{ url: string; mimeType: 'audio/mpeg'; chars: number; cached: boolean }`.
+Response: `{ url: string; mimeType: 'audio/mpeg'; chars: number; cached: boolean; parts?: { kind: string; index?: number; startMs: number }[] }`
+(`parts` only for `whole`, from SSML `<mark>` timepoints, so the client highlight can walk the rows per D9).
 `url` is a short-lived signed URL (15 min) to the cached object, matching the
 download-URL shape the student player needs for `<audio>` and `preload`.
 
@@ -235,61 +255,93 @@ optional and noted in §8; the cache is safe to purge at any time.
 
 ### 6.1 Teacher surfaces (PR1 unless noted)
 
-- **Override editor** `components/common/library/OverrideEditorRow.tsx`: add a
-  "Read aloud" checkbox after "Extended time" (`:255`). Rendered only when
+- **Override editor** `components/common/library/OverrideEditorRow.tsx`: a
+  "Read aloud" checkbox after "Extended time" (`:255`) with the help line
+  "Signed-in students only." (D11). Rendered only when
   `canAccessFeature('quiz-read-aloud')`; the "No accommodations" summary at `:208`
   must include it. Standing defaults in the roster editor pick it up through the
   same component.
 - **Assignment settings** `components/common/library/QuizBehaviorSettingsPanel.tsx`:
-  new toggle "Read aloud for everyone (SSO students)" under the accommodation-ish
-  area near the tab-switch toggle (`:112`), gated the same way, with help text stating
-  that PIN joiners are excluded. Snapshotted onto the session at create time by the
-  existing assign path (`hooks/useQuizAssignments.ts`).
+  toggle "Read aloud" with the same help line, under the accommodation-ish area near
+  the tab-switch toggle (`:112`), gated the same way. Snapshotted onto the session at
+  create time by the existing assign path (`hooks/useQuizAssignments.ts`).
 - **Quiz editor** `components/widgets/QuizWidget/components/QuizEditorModal.tsx`
   (`:372` region): a "Language" select (en-US, es-US, de-DE, fr-FR, plus "Other…"
-  free BCP-47 input) and the "Preview voice" button (Q15). Gated.
+  free BCP-47 input) and the "Preview voice" button (Q15, D10) that speaks the first
+  question prompt, else a fixed sample. Gated.
 - **Stimulus manager** (PR3) `components/widgets/QuizWidget/components/StimulusManagerPanel.tsx`
-  (`:370` area): for `image` and `pdf` stimuli, a "Read-aloud text" textarea with an
-  "Extract text" button that calls `extractStimulusReadAloudTextV1`, shows a source
-  badge (PDF text / OCR / edited), and a clear button. Empty text = no speaker button
-  for students. Gated.
+  (`:370` area): for `image` and `pdf` stimuli, a collapsed "Read-aloud text"
+  disclosure row (D12) carrying a source badge (PDF text / OCR / Edited / None). Open
+  it for the textarea, "Extract text" (calls `extractStimulusReadAloudTextV1`) and
+  "Clear". Empty text = no speaker button for students. Gated.
 - **Admin** (PR1): card in Admin Settings → "Quiz read-aloud" editing
-  `admin_settings/quiz_read_aloud` (voice per language, session ceiling).
+  `admin_settings/quiz_read_aloud` (D13): one row per language with a Neural2 voice
+  select and Play sample, then a "Characters per session" number input, then Save.
 - **Permission registry** (PR1): add `'quiz-read-aloud'` to `GlobalFeature`,
   `config/featureDefaults.ts` (default `admin`, enabled), and the admin
   `GlobalPermissionsManager` label/description strings in `locales/*.json`.
 
 ### 6.2 Student player (PR2)
 
+Applies to the self-paced (light) `ActiveQuiz` shell only (D4). The player pulls
+its classes from the same light token block as the MC rows
+(`QuizStudentApp.tsx:2645`); live dark mode is untouched in v1.
+
 - New `components/quiz/readAloud/` folder:
   - `useQuizReadAloud.ts`: owns one `HTMLAudioElement`, a prefetch queue (question,
-    then choices in order), an in-memory `Map<partKey, url>` per session, playback
-    rate state persisted in `localStorage` (`quiz_read_aloud_rate`), and the
-    `synthesizeQuizAudioV1` callable. Stops audio on question change and on unmount.
-  - `ReadAloudButton.tsx`: icon-only speaker button (`Volume2` / `Square` while
-    playing), `aria-label` "Read question aloud" / "Read choice 2 aloud" / "Stop",
-    `aria-pressed`, min 44×44 px hit target. Uses container-safe Tailwind classes
-    (student app is not a widget; no cqmin needed).
-  - `ReadAloudToolbar.tsx`: "Read whole question" + rate select (0.75, 1, 1.25, 1.5)
-    - stop, placed in the `ActiveQuiz` header next to the hand-raise control
-      (`QuizStudentApp.tsx:1336-1343`).
-- Eligibility on the client: `readAloudEnabled = isSsoStudent && (myOverride?.readAloud || session.readAloudAll)`
+    then choices in order), an in-memory `Map<partKey, url>` per session, the
+    `synthesizeQuizAudioV1` callable, and two `localStorage` keys:
+    `quiz_read_aloud_rate` and `quiz_read_aloud_auto`. Exposes
+    `{ playingPart, loadingPart, error, play(part), stop(), rate, cycleRate(), auto, setAuto() }`.
+    Stops audio on question change and on unmount; when `auto` is on and the page
+    has a prior gesture, plays `{kind:'question'}` on question change.
+  - `ReadAloudButton.tsx`: icon-only 44×44 button. Idle `Volume2`, playing `Square`,
+    loading `Loader2` spinning (`motion-reduce` keeps a static icon). `aria-label`
+    "Read question aloud" / "Read choice B aloud" / "Read item 3 aloud" / "Stop",
+    `aria-pressed` while playing. Light-mode classes:
+    `rounded-2xl border-2 border-slate-200 bg-white text-slate-600 hover:border-slate-300`,
+    playing `border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary`.
+  - `ReadAloudToolbar.tsx` (D3): sticky bar directly under the progress header,
+    `bg-white/85 backdrop-blur border-b border-slate-200`, contents left→right:
+    "Read question" button with `Volume2`, the speed pill (D6), then the Auto-read
+    switch (D14) at the right end. Beneath it, only when needed, one line for the
+    error or quota message (D7).
+  - `readAloudHighlight.ts`: `highlightClass(part, playingPart)` returning
+    `ring-2 ring-brand-blue-primary/60 bg-brand-blue-lighter/60` for the part being
+    read (D1). MC rows, prompt block, matching/ordering items and the stimulus header
+    apply it.
+- Eligibility on the client:
+  `readAloudEnabled = isSsoStudent && isStudentPaced && (myOverride?.readAloud || session.readAloudAll)`
   where `isSsoStudent` is derived from the current user's `studentRole` claim
-  (already resolved for the `ssoGate` path at `QuizStudentApp.tsx:352`). The
-  permission flag is not readable by students; the server is the authority, and the
-  session doc gains `readAloudAll` only when the teacher's flag was on at assign time.
-  For override-only students the server check in §4.1 step 4 is the guard; the client
+  (already resolved for the `ssoGate` path at `QuizStudentApp.tsx:352`) and
+  `isStudentPaced` is `session.sessionMode === 'student'` (`:1593`). The permission
+  flag is not readable by students; the server is the authority, and the session doc
+  gains `readAloudAll` only when the teacher's flag was on at assign time. For
+  override-only students the server check in §4.1 step 4 is the guard; the client
   handles a `permission-denied` by hiding the controls for the rest of the session.
+  When not eligible nothing read-aloud-related mounts, so layout is identical to
+  today.
 - Placement per question type:
-  - MC: button beside the prompt, button at the end of each choice row.
-  - FIB / free-response: prompt button only (placeholder text is not read).
-  - Matching: buttons on each left and right item (`MatchingResponseInput.tsx`).
-  - Ordering: button on each item (`OrderingResponseInput.tsx`).
-  - Stimuli (PR3): button in `QuizStimulusView.tsx` header for image/pdf stimuli
-    that have reviewed text.
-- Audio etiquette: starting any read-aloud pauses another; the quiz's own sound
-  effects (`soundEffectsEnabled`) are unaffected; timers keep running (extended time
-  is the separate accommodation).
+  - Prompt: speaker at the trailing end of the prompt block for every type.
+  - MC (D2): each row becomes `flex items-stretch gap-2`; the existing choice
+    `<button>` gets `flex-1`, the speaker sits beside it, never inside it.
+  - FIB / free-response: prompt speaker only (placeholder text is not read).
+  - Matching / Ordering (D8): `[grip] [text] [speaker]` in
+    `MatchingResponseInput.tsx` and `OrderingResponseInput.tsx`; the speaker calls
+    `stopPropagation` on `pointerdown` so it never starts a drag. `opacity-60` until
+    hover/focus on `(hover: hover)` devices, full opacity on touch.
+  - Stimuli (PR3): speaker in the `QuizStimulusView.tsx` header for image/pdf
+    stimuli that have reviewed text.
+- "Read question" (D9): plays `{kind:'whole'}`; the server joins prompt, a 600 ms
+  SSML break, then "A. …", "B. …" for MC, left column then right for Matching,
+  items in shown order for Ordering, with attached stimulus text first. The response
+  `parts` timings drive the row-by-row highlight.
+- Audio etiquette: starting any read-aloud stops the previous one; the quiz's own
+  sound effects (`soundEffectsEnabled`) are unaffected; timers keep running (extended
+  time is the separate accommodation).
+- Accessibility: every control is keyboard reachable in DOM order, visible
+  `focus-visible:ring-2` ring, 44 px minimum targets, AA contrast on the light
+  surface, `aria-live="polite"` region announcing rate changes and errors.
 - i18n: all labels in `locales/en.json` under `quizReadAloud.*`; the other three
   locales get the English strings copied per repo convention for new keys.
 
@@ -298,7 +350,7 @@ optional and noted in §8; the cache is safe to purge at any time.
 | PR                      | Branch                         | Contents                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Verifies                                                                                                                                                                                                                                                                                                                                                                                          |
 | ----------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **PR1 data + gating**   | `feat/quiz-read-aloud-model`   | `GlobalFeature` id + `featureDefaults`; `StudentOverride.readAloud`; `QuizData.language`; `QuizAssignmentSettings.readAloudAll` + session snapshot; `admin_settings/quiz_read_aloud` type + admin card; override checkbox; behavior-panel toggle; editor language select (preview button lands with PR2's callable, so PR1 renders it disabled with "available after rollout" only if the flag is on — or omit until PR2, decided at PR time); locale strings. | Unit: types, `OverrideEditorRow` renders/gates the checkbox, `toPublicQuestion` unchanged, assign path snapshots `readAloudAll`/`language`. Rules tests: pointer doc with `override.readAloud` still student-readable, still not writable.                                                                                                                                                        |
-| **PR2 engine + player** | `feat/quiz-read-aloud-engine`  | `synthesizeQuizAudioV1` (student + preview), Storage path + rules, `@google-cloud/text-to-speech` dep in `functions/`, quota keys, student player components, `ActiveQuiz` integration, teacher preview button, admin analytics label for `tts`.                                                                                                                                                                                                               | Function unit tests with mocked TTS client and Storage (deny anonymous, deny no-pointer, deny flag-off, cache hit skips quota, per-session ceiling, text only from session doc, stimulus id must be attached to the question). Student app unit tests for eligibility and button placement per question type. E2E: SSO fixture quiz with override → speaker buttons present; PIN joiner → absent. |
+| **PR2 engine + player** | `feat/quiz-read-aloud-engine`  | `synthesizeQuizAudioV1` (student + preview), Storage path + rules, `@google-cloud/text-to-speech` dep in `functions/`, quota keys, student player components (toolbar, button, highlight helper), `ActiveQuiz` light-mode integration, teacher preview button, admin analytics label for `tts`.                                                                                                                                                                | Function unit tests with mocked TTS client and Storage (deny anonymous, deny no-pointer, deny flag-off, cache hit skips quota, per-session ceiling, text only from session doc, stimulus id must be attached to the question). Student app unit tests for eligibility and button placement per question type. E2E: SSO fixture quiz with override → speaker buttons present; PIN joiner → absent. |
 | **PR3 stimuli**         | `feat/quiz-read-aloud-stimuli` | `QuizStimulus.readAloudText/readAloudSource`; `extractStimulusReadAloudTextV1`; stimulus manager UI; `readAloudTextByStimulusId` snapshot on the session; stimulus speaker button.                                                                                                                                                                                                                                                                             | Function tests (pdf-text vs ocr fallback vs needs-manual); editor tests (extract, edit flips source to `edited`, clear removes); student test (button only when text exists and stimulus attached).                                                                                                                                                                                               |
 
 Each PR is independently shippable behind the `quiz-read-aloud` flag at `admin`.
@@ -325,7 +377,8 @@ Rollout: admin → beta (the teachers with read-aloud students) → public.
 - Word/sentence highlighting synchronized to audio (needs SSML marks + timepoints;
   Neural2 supports them, so the cache key already includes voice to allow a later
   `ssml` variant).
-- Auto-play on question load.
+- Auto-read without the opt-in switch (D5).
+- Read-aloud in live teacher-paced (dark) quizzes (D4).
 - Reading PDF stimuli page by page for long documents (v1 caps OCR at 4 pages;
   longer documents get `needs-manual` and the teacher pastes text).
 - Browser `speechSynthesis` fallback when offline.
