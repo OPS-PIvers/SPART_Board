@@ -66,6 +66,7 @@ const asAdmin = () =>
   testEnv
     .authenticatedContext(ADMIN_UID, {
       email: ADMIN_EMAIL,
+      email_verified: true,
       studentRole: false,
       classIds: [],
       firebase: { sign_in_provider: 'google.com' },

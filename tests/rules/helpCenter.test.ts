@@ -39,10 +39,18 @@ const RULES_PATH = fileURLToPath(
 let testEnv: RulesTestEnvironment;
 
 const asSuper = () =>
-  testEnv.authenticatedContext(SUPER_UID, { email: SUPER_EMAIL }).firestore();
+  testEnv
+    .authenticatedContext(SUPER_UID, {
+      email: SUPER_EMAIL,
+      email_verified: true,
+    })
+    .firestore();
 const asOrgAdmin = () =>
   testEnv
-    .authenticatedContext(ORG_ADMIN_UID, { email: ORG_ADMIN_EMAIL })
+    .authenticatedContext(ORG_ADMIN_UID, {
+      email: ORG_ADMIN_EMAIL,
+      email_verified: true,
+    })
     .firestore();
 const asTeacher = () =>
   testEnv

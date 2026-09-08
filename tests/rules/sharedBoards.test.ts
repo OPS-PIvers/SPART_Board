@@ -77,9 +77,15 @@ const asStranger = () =>
 const asOronoTeacher = () =>
   testEnv.authenticatedContext(ORONO_UID, { email: ORONO_EMAIL }).firestore();
 
-// isAdmin() matches on request.auth.token.email.lower(), so the token needs an email.
+// isAdmin() matches on request.auth.token.email.lower() and also requires
+// email_verified: true.
 const asAdmin = () =>
-  testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL }).firestore();
+  testEnv
+    .authenticatedContext(ADMIN_UID, {
+      email: ADMIN_EMAIL,
+      email_verified: true,
+    })
+    .firestore();
 
 const seededShare = (overrides: Record<string, unknown> = {}) => ({
   name: 'Shared Board',
