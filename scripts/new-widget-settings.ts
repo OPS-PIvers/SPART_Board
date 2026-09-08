@@ -36,6 +36,10 @@ export function resolveWidgetFolder(
   return folder;
 }
 
+// Candidates derive from a CLI argument, so escape them before they reach the RegExp constructor.
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /** Resolves the `*Config` type name declared for `type` in types.ts. */
 export function resolveConfigTypeName(
   typesText: string,
@@ -50,7 +54,7 @@ export function resolveConfigTypeName(
   ];
   for (const candidate of candidates) {
     const pattern = new RegExp(
-      `^export (?:interface|type) ${candidate}\\b`,
+      `^export (?:interface|type) ${escapeRegExp(candidate)}\\b`,
       'm'
     );
     if (pattern.test(typesText)) return candidate;
