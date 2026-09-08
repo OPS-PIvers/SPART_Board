@@ -21,13 +21,13 @@ import {
   List,
   Volume2,
   VolumeX,
-  Clock,
   RefreshCw,
   Send,
   Puzzle,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { PartnerCard } from '@/components/settings/PartnerCard';
 import { getLocalIsoDate } from '@/utils/localDate';
 
 export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
@@ -317,65 +317,58 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
         />
       </Card>
 
-      {/* Automation - Nexus Connection */}
+      {/* Partner: Timer auto-start */}
       {mode === 'single' && (
-        <div className="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-3">
-            <div
-              className={`p-2 rounded-lg ${autoStartTimer ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-400'}`}
-            >
-              <Clock className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xxs uppercase tracking-widest text-indigo-900 font-bold">
-                Auto-Start Timer
+        <PartnerCard
+          partner="time-tool"
+          missingHelp="Add a Timer widget to start it automatically when a winner is picked."
+        >
+          {(present) => (
+            <div className="flex items-center justify-between gap-3 py-2">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-xs font-semibold text-slate-700">
+                  Auto-Start Timer
+                </span>
+                <span className="text-xxs text-slate-600">
+                  Start the timer when a winner is picked.
+                </span>
               </div>
-              <div className="text-xxxs text-indigo-600 uppercase">
-                Start timer when winner is picked
-              </div>
-            </div>
-          </div>
-          <Toggle
-            checked={autoStartTimer ?? false}
-            onChange={() =>
-              updateWidget(widget.id, {
-                config: { autoStartTimer: !autoStartTimer },
-              })
-            }
-            size="md"
-            disabled={
-              !activeDashboard?.widgets.some((w) => w.type === 'time-tool')
-            }
-          />
-        </div>
-      )}
-      {!activeDashboard?.widgets.some((w) => w.type === 'time-tool') &&
-        mode === 'single' &&
-        autoStartTimer && (
-          <div className="text-xxxs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
-            ⚠️ Timer widget required for automation.
-          </div>
-        )}
-
-      {/* Nexus Connection: Send Groups → Stations */}
-      {mode === 'groups' && (
-        <div className="space-y-1">
-          <button
-            type="button"
-            onClick={() => void handleSendGroupsToStations()}
-            disabled={!stationsWidget}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 font-black uppercase tracking-widest text-xxs hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send size={13} />
-            Send Groups to Stations
-          </button>
-          {!stationsWidget && (
-            <div className="text-xxxs text-slate-500 leading-snug">
-              Add a Stations widget to send your generated groups there as
-              station assignments.
+              <Toggle
+                checked={autoStartTimer ?? false}
+                onChange={() =>
+                  updateWidget(widget.id, {
+                    config: { autoStartTimer: !autoStartTimer },
+                  })
+                }
+                size="md"
+                label="Auto-Start Timer"
+                disabled={!present}
+              />
             </div>
           )}
-        </div>
+        </PartnerCard>
+      )}
+
+      {/* Partner: send groups to Stations */}
+      {mode === 'groups' && (
+        <PartnerCard
+          partner="stations"
+          missingHelp="Add a Stations widget to send your generated groups there as station assignments."
+        >
+          {(present) => (
+            <div className="py-2">
+              <button
+                type="button"
+                onClick={() => void handleSendGroupsToStations()}
+                disabled={!present}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 font-black uppercase tracking-widest text-xxs hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send size={13} />
+                Send Groups to Stations
+              </button>
+            </div>
+          )}
+        </PartnerCard>
       )}
 
       <div>

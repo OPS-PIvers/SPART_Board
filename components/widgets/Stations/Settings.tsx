@@ -6,6 +6,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { useDialog } from '@/context/useDialog';
 import { useStorage } from '@/hooks/useStorage';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { PartnerCard } from '@/components/settings/PartnerCard';
 import { TypographySettings } from '@/components/common/TypographySettings';
 import { SurfaceColorSettings } from '@/components/common/SurfaceColorSettings';
 import { WIDGET_PALETTE } from '@/config/colors';
@@ -170,7 +171,7 @@ export const StationsSettings: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  // Find the first Randomizer widget on the active dashboard. Matches the
+  // Find the first Random widget on the active dashboard. Matches the
   // "find-first" pattern used by Timer→Randomizer/Traffic/NextUp Nexus.
   const randomizerWidget = activeDashboard?.widgets.find(
     (w) => w.type === 'random'
@@ -178,7 +179,7 @@ export const StationsSettings: React.FC<{ widget: WidgetData }> = ({
 
   const handleSendToRandomizer = async () => {
     if (!randomizerWidget) {
-      addToast('Add a Randomizer widget to the board first.', 'info');
+      addToast('Add a Random widget to the board first.', 'info');
       return;
     }
     const titles = stations.map((s) =>
@@ -194,7 +195,7 @@ export const StationsSettings: React.FC<{ widget: WidgetData }> = ({
       (randomConfig.lastNames ?? '').trim().length > 0;
     const willSwitchMode = randomConfig.rosterMode !== 'custom';
     const messageParts = [
-      `This will replace the Randomizer's name list with ${titles.length} station name${titles.length === 1 ? '' : 's'}.`,
+      `This will replace the Random widget's name list with ${titles.length} station name${titles.length === 1 ? '' : 's'}.`,
     ];
     if (willSwitchMode) {
       messageParts.push(
@@ -203,11 +204,11 @@ export const StationsSettings: React.FC<{ widget: WidgetData }> = ({
     }
     if (willOverwriteCustom) {
       messageParts.push(
-        'Any custom names currently typed into the Randomizer will be lost.'
+        'Any custom names currently typed into the Random widget will be lost.'
       );
     }
     const ok = await showConfirm(messageParts.join(' '), {
-      title: 'Send station names to Randomizer?',
+      title: 'Send station names to Random?',
       confirmLabel: 'Send',
       ...(willOverwriteCustom || willSwitchMode
         ? { variant: 'danger' as const }
@@ -222,7 +223,7 @@ export const StationsSettings: React.FC<{ widget: WidgetData }> = ({
         rosterMode: 'custom',
       },
     });
-    addToast('Sent station names to Randomizer.', 'success');
+    addToast('Sent station names to Random.', 'success');
   };
 
   return (
@@ -266,24 +267,26 @@ export const StationsSettings: React.FC<{ widget: WidgetData }> = ({
         )}
       </div>
 
-      {/* Nexus: Send to Randomizer */}
+      {/* Partner: send station names to the Random widget */}
       <div className="pt-4 border-t border-slate-100">
-        <SettingsLabel icon={Send}>Connect with Randomizer</SettingsLabel>
-        {!randomizerWidget ? (
-          <div className="text-xs text-brand-blue-primary bg-brand-blue-lighter/20 p-3 rounded-xl border border-brand-blue-lighter/30 leading-snug">
-            Add a Randomizer widget to send your station names to it.
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSendToRandomizer}
-            disabled={stations.length === 0}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-black uppercase tracking-widest text-xxs hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send size={13} />
-            Send Station Names to Randomizer
-          </button>
-        )}
+        <PartnerCard
+          partner="random"
+          missingHelp="Add a Random widget to send your station names to it."
+        >
+          {(present) => (
+            <div className="py-2">
+              <button
+                type="button"
+                onClick={handleSendToRandomizer}
+                disabled={!present || stations.length === 0}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-black uppercase tracking-widest text-xxs hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send size={13} />
+                Send Station Names to Random
+              </button>
+            </div>
+          )}
+        </PartnerCard>
       </div>
 
       {/* Saved presets */}
