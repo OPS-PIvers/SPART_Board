@@ -8,9 +8,16 @@ service cloud.firestore {
     // on tokens with no email claim (anon PIN), even behind a != null guard —
     // load-bearing because isAdmin() runs before the anon-student branch in the
     // quiz-response update OR chain.
+    // email_verified is REQUIRED: this project's Auth also accepts email/password
+    // sign-in (see aiGeneration.ts's isExternalCaller / resolveOrgForUser.ts), so
+    // an unverified, self-reported `email` claim could otherwise be forged to a
+    // real admin's address to claim the /admins/{email} doc without ever proving
+    // ownership of it — the single highest-privilege gate in this file must not
+    // trust that claim any less strictly than the AI-quota/org-resolution paths do.
     function isAdmin() {
       return request.auth != null &&
              request.auth.token.get('email', '') != '' &&
+             request.auth.token.get('email_verified', false) == true &&
              exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()));
     }
 

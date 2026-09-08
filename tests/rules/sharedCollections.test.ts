@@ -80,9 +80,15 @@ const asExternalTeacher = () =>
     .firestore();
 
 // Admin token must carry the admin's email so isAdmin() can match
-// /admins/{email.lower()} via request.auth.token.email.lower().
+// /admins/{email.lower()} via request.auth.token.email.lower(), plus
+// email_verified: true (isAdmin() now requires it).
 const asAdmin = () =>
-  testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL }).firestore();
+  testEnv
+    .authenticatedContext(ADMIN_UID, {
+      email: ADMIN_EMAIL,
+      email_verified: true,
+    })
+    .firestore();
 
 // A token email with an embedded @ before the orono domain — regression
 // fixture for the `[^@]+@orono...` regex hardening (mirrors sharedBoards.test.ts).
