@@ -3,11 +3,11 @@ import type { WidgetData } from '@/types';
 import { migrateBoardWidgets, migrateWidget } from '@/utils/migration';
 import { migrateSavedWidgetConfigs } from '@/utils/widgetConfigPersistence';
 import type { SavedWidgetConfigMap } from '@/utils/widgetConfigPersistence';
-import sharedFixture from '../fixtures/boards/shared.json';
-import driveFixture from '../fixtures/boards/drive.json';
-import starterPackFixture from '../fixtures/boards/starterPack.json';
-import templateFixture from '../fixtures/boards/template.json';
-import savedConfigsFixture from '../fixtures/boards/savedConfigs.json';
+import sharedFixture from '@/tests/fixtures/boards/shared.json';
+import driveFixture from '@/tests/fixtures/boards/drive.json';
+import starterPackFixture from '@/tests/fixtures/boards/starterPack.json';
+import templateFixture from '@/tests/fixtures/boards/template.json';
+import savedConfigsFixture from '@/tests/fixtures/boards/savedConfigs.json';
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
