@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
+import { dismissWelcomeToast } from './helpers/dismissWelcomeToast';
 
 // Timer (time-tool) drawer coverage: one field per group changes the board face,
 // values survive close/reopen, Tab stays inside the dialog, and the 820x640 sheet
@@ -15,7 +16,7 @@ const addTimerWidget = async (page: Page): Promise<Locator> => {
 
   const timerButton = page.getByRole('button', { name: /^Timer$/i }).first();
   await expect(timerButton).toBeVisible();
-  await timerButton.click({ force: true });
+  await timerButton.click();
 
   // Close the dock, then select the widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
@@ -34,7 +35,7 @@ const openDrawer = async (page: Page) => {
     exact: true,
   });
   await expect(gear).toBeVisible();
-  await gear.click({ force: true });
+  await gear.click();
   const drawer = page.getByRole('dialog');
   await expect(drawer).toBeVisible({ timeout: 10000 });
   return drawer;
@@ -80,7 +81,9 @@ test.describe('time-tool settings drawer at 1280x800', () => {
       drawer.locator('[data-testid="time-tool-nexus-hints"] li')
     ).toHaveCount(5);
 
-    // Display: visual ring draws the progress ring behind the digits.
+    // Display group lives on the Style tab: visual ring draws the progress ring behind the digits.
+    await dismissWelcomeToast(page);
+    await drawer.getByRole('tab', { name: 'Style' }).click();
     await expect(widget.locator('svg circle')).toHaveCount(0);
     await drawer
       .getByRole('radiogroup', { name: 'Display Style' })
@@ -96,6 +99,7 @@ test.describe('time-tool settings drawer at 1280x800', () => {
     await expect(timeFace(widget)).toHaveClass(/tracking-widest/);
 
     // Content: mode switch to stopwatch hides the +/- adjust controls and the step field.
+    await drawer.getByRole('tab', { name: 'Settings' }).click();
     await drawer
       .getByRole('radiogroup', { name: 'Mode' })
       .getByRole('radio', { name: /stopwatch/i })
@@ -122,6 +126,7 @@ test.describe('time-tool settings drawer at 1280x800', () => {
         .getByRole('radiogroup', { name: 'Mode' })
         .getByRole('radio', { name: /stopwatch/i })
     ).toHaveAttribute('aria-checked', 'true');
+    await drawer.getByRole('tab', { name: 'Style' }).click();
     await expect(
       drawer
         .getByRole('radiogroup', { name: 'Display Style' })
@@ -134,6 +139,7 @@ test.describe('time-tool settings drawer at 1280x800', () => {
     ).toHaveAttribute('aria-checked', 'true');
 
     // Back to timer mode: the step value entered earlier is still stored.
+    await drawer.getByRole('tab', { name: 'Settings' }).click();
     await drawer
       .getByRole('radiogroup', { name: 'Mode' })
       .getByRole('radio', { name: /timer/i })

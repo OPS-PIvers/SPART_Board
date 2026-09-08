@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { expectTabOrderStaysInDrawer } from './helpers/drawerTabbing';
+import { dismissWelcomeToast } from './helpers/dismissWelcomeToast';
 
 // Clock is migrated to the schema-driven settings drawer (see
 // tests/e2e/settings-drawer.spec.ts for the generic chrome coverage this
@@ -15,7 +16,7 @@ const addClockWidget = async (page: Page) => {
 
   const clockButton = page.getByRole('button', { name: /^Clock$/ }).first();
   await expect(clockButton).toBeVisible();
-  await clockButton.click({ force: true });
+  await clockButton.click();
 
   // Close the dock, then select the new widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
@@ -33,7 +34,7 @@ const openDrawer = async (page: Page) => {
     exact: true,
   });
   await expect(gear).toBeVisible();
-  await gear.click({ force: true });
+  await gear.click();
   const drawer = page.getByRole('dialog');
   await expect(drawer).toBeVisible({ timeout: 10000 });
   return drawer;
@@ -66,7 +67,9 @@ test.describe('clock settings drawer at 1280x800', () => {
       .poll(async () => (await timeContainer.textContent())?.trim().length)
       .toBeLessThan(beforeText.length);
 
-    // Display group: clockStyle -> lcd shows the LCD ghost-digits background.
+    // Display group lives on the Style tab: clockStyle -> lcd shows the LCD ghost-digits background.
+    await dismissWelcomeToast(page);
+    await drawer.getByRole('tab', { name: 'Style' }).click();
     const lcdOption = drawer.getByRole('radio', { name: 'LCD Panel' });
     await lcdOption.click();
     await expect(lcdOption).toHaveAttribute('aria-checked', 'true');
@@ -82,6 +85,7 @@ test.describe('clock settings drawer at 1280x800', () => {
     await expect(
       reopened.getByRole('switch', { name: 'Show Seconds' })
     ).toHaveAttribute('aria-checked', 'false');
+    await reopened.getByRole('tab', { name: 'Style' }).click();
     await expect(
       reopened.getByRole('radio', { name: 'LCD Panel' })
     ).toHaveAttribute('aria-checked', 'true');
@@ -96,8 +100,10 @@ test.describe('clock settings drawer at 1280x800', () => {
 
     const visited = await expectTabOrderStaysInDrawer(page, drawer);
     expect(visited).toEqual(
-      expect.arrayContaining(['format24', 'showSeconds', 'clockStyle', 'glow'])
+      expect.arrayContaining(['format24', 'showSeconds'])
     );
+    // Display fields (clockStyle, glow) live on the Style tab now.
+    expect(visited).not.toEqual(expect.arrayContaining(['clockStyle']));
     await expect(drawer).toBeVisible();
   });
 });

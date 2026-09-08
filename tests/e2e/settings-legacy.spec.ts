@@ -91,6 +91,8 @@ test('legacy panel renders the clock schema fields when settings-drawer is off',
   await expect(
     legacyPanel.getByRole('switch', { name: 'Show Seconds' })
   ).toBeVisible();
+  // The schema's display group renders on the legacy panel's Style tab.
+  await legacyPanel.getByRole('button', { name: 'Style', exact: true }).click();
   await expect(
     legacyPanel.getByRole('radiogroup', { name: 'Display Style' })
   ).toBeVisible();
