@@ -192,7 +192,7 @@ export const LinkSchoologyModal: React.FC<LinkSchoologyModalProps> = ({
           Link to Schoology
         </p>
         <h3 className="font-black text-base text-slate-800 truncate">
-          Pair your Schoology sections with classes
+          Link your Schoology sections to classes
         </h3>
       </div>
     </div>
