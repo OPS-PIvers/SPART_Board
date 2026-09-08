@@ -70,6 +70,30 @@ describe('useSettingsDrawerFocus', () => {
 
     expect(document.activeElement).toBe(widget);
   });
+
+  it('does not steal focus to the next widget opener on a same-render, non-local swap', () => {
+    const openerA = document.createElement('button');
+    const openerB = document.createElement('button');
+    document.body.appendChild(openerA);
+    document.body.appendChild(openerB);
+    const openerRef: React.RefObject<HTMLElement | null> = {
+      current: openerA,
+    };
+
+    const view = render(<Probe widgetId="A" open openerRef={openerRef} />);
+    expect(document.activeElement?.textContent).toBe('Settings');
+
+    const outside = document.createElement('input');
+    document.body.appendChild(outside);
+    outside.focus();
+    expect(document.activeElement).toBe(outside);
+
+    // Mirrors the host's render-time reassignment on a widget swap, before A's effect cleanup runs.
+    openerRef.current = openerB;
+    view.rerender(<Probe widgetId="B" open={false} openerRef={openerRef} />);
+
+    expect(document.activeElement).not.toBe(openerB);
+  });
 });
 
 describe('useSettingsTargetMarker', () => {
