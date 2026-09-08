@@ -4529,6 +4529,8 @@ export interface QuizConfig {
    * Pre-selects the picker on re-launch.
    */
   lastRosterIdsByQuizId?: Record<string, string[]>;
+  /** Live monitor: hide WHO raised a hand / is idle and show counts only (on = projector-safe default). */
+  monitorBoardView?: boolean;
   /** Live monitor roster toolbar: show per-student score pills (off = projector-safe default). */
   monitorShowScores?: boolean;
   /** Live monitor roster toolbar: show tab-switch warning badges. */

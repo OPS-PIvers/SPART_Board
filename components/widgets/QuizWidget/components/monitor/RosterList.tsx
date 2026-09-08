@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   AlertTriangle,
+  Clock,
   Hand,
   ImageOff,
   Lock,
@@ -211,11 +212,13 @@ export const RosterList: React.FC<RosterListProps> = ({
   const sortBy: MonitorSortBy = config.monitorSortBy ?? 'first';
   const filterBy: MonitorFilterBy = config.monitorFilterBy ?? 'all';
 
-  const needsHelp =
-    bucket === 'inProgress' ? students.filter((s) => s.needsHelp) : [];
-  const needsHelpKeys = new Set(needsHelp.map((s) => s.key));
+  // Board view (default): per-student hand/idle flags stay off the projected face; counts live in StatusBuckets.
+  const showFlags =
+    bucket === 'inProgress' && !(config.monitorBoardView ?? true);
+  const hands = showFlags ? students.filter((s) => s.hand != null) : [];
+  const handKeys = new Set(hands.map((s) => s.key));
   const rest = students
-    .filter((s) => !needsHelpKeys.has(s.key))
+    .filter((s) => !handKeys.has(s.key))
     .filter((s) =>
       showToolbar
         ? matchesFilter(
@@ -328,10 +331,11 @@ export const RosterList: React.FC<RosterListProps> = ({
         </div>
       )}
 
-      {needsHelp.map((s) => (
+      {hands.map((s) => (
         <div
           key={s.key}
-          className="flex items-center justify-between bg-red-50 rounded-lg"
+          data-testid="hand-row"
+          className="flex items-center justify-between bg-brand-blue-lighter rounded-lg"
           style={{
             padding: 'min(8px, 2cqmin) min(10px, 2.5cqmin)',
             gap: 'min(8px, 2cqmin)',
@@ -342,7 +346,7 @@ export const RosterList: React.FC<RosterListProps> = ({
             style={{ gap: 'min(8px, 2cqmin)' }}
           >
             <Hand
-              className="text-brand-red-primary shrink-0"
+              className="text-brand-blue-primary shrink-0"
               aria-hidden
               style={{
                 width: 'min(14px, 4.5cqmin)',
@@ -357,19 +361,17 @@ export const RosterList: React.FC<RosterListProps> = ({
                 {s.name}
               </p>
               <p
-                className="text-brand-red-primary"
+                className="text-brand-blue-dark"
                 style={{ fontSize: 'min(10px, 3.5cqmin)' }}
               >
-                {s.needsHelp?.kind === 'hand'
-                  ? `Raised hand · Q${s.onQuestion}`
-                  : `No activity ${Math.max(s.needsHelp?.minutes ?? 2, 2)} min · Q${s.onQuestion}`}
+                {`Raised hand${(s.hand ?? 0) >= 1 ? ` ${s.hand} min ago` : ''} · Q${s.onQuestion}`}
               </p>
             </div>
           </div>
-          {s.needsHelp?.kind === 'hand' && onClearHand && (
+          {onClearHand && (
             <button
               onClick={() => onClearHand(s.key)}
-              className="shrink-0 rounded-md border border-brand-red-light text-brand-red-primary hover:bg-brand-red-primary hover:text-white font-sans font-medium transition-colors"
+              className="shrink-0 rounded-md border border-brand-blue-primary text-brand-blue-primary hover:bg-brand-blue-primary hover:text-white font-sans font-medium transition-colors"
               style={fieldStyle}
             >
               Clear
@@ -378,7 +380,7 @@ export const RosterList: React.FC<RosterListProps> = ({
         </div>
       ))}
 
-      {rest.length === 0 && needsHelp.length === 0 && (
+      {rest.length === 0 && hands.length === 0 && (
         <p
           className="text-brand-gray-primary text-center"
           style={{ fontSize: 'min(12px, 4cqmin)', padding: 'min(8px, 2cqmin)' }}
@@ -447,6 +449,26 @@ export const RosterList: React.FC<RosterListProps> = ({
                   style={{ fontSize: 'min(11px, 3.8cqmin)' }}
                 >
                   Q{s.onQuestion}
+                </span>
+              )}
+              {showFlags && s.idle != null && (
+                <span
+                  className="inline-flex items-center text-amber-700 font-sans tabular-nums"
+                  title={`No answer for ${s.idle} min`}
+                  aria-label={`Idle ${s.idle} min`}
+                  style={{
+                    gap: 'min(2px, 0.5cqmin)',
+                    fontSize: 'min(11px, 3.8cqmin)',
+                  }}
+                >
+                  <Clock
+                    aria-hidden
+                    style={{
+                      width: 'min(12px, 4cqmin)',
+                      height: 'min(12px, 4cqmin)',
+                    }}
+                  />
+                  {s.idle} min
                 </span>
               )}
               {Object.keys(r.stimulusErrors ?? {}).length > 0 && (

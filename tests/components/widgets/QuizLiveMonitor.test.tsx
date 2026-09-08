@@ -247,11 +247,41 @@ describe('QuizLiveMonitor (rebuilt)', () => {
     expect(screen.queryByText(/PIN 1111/)).not.toBeInTheDocument();
   });
 
-  it('pins needs-help students (raised hand + stuck) above the rest with a Clear action for hands', async () => {
+  it('counts hands and idle separately; board view (default) hides who they are', () => {
+    const now = Date.now();
+    renderMonitor({
+      responses: [
+        makeResponse({
+          pin: '1111',
+          classPeriod: 'Period 1',
+          status: 'in-progress',
+          handRaisedAt: fakeTimestamp(now - 60_000),
+        }),
+        makeResponse({
+          pin: '2222',
+          classPeriod: 'Period 1',
+          status: 'in-progress',
+          lastWriteAt: fakeTimestamp(now - 300_000),
+        }),
+      ],
+    });
+    expect(screen.getByText('1 hand')).toBeInTheDocument();
+    expect(screen.getByText('1 idle')).toBeInTheDocument();
+    expect(screen.queryByText(/need help/)).not.toBeInTheDocument();
+    openBucket(/In progress/);
+    expect(screen.queryByText(/Raised hand/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Idle/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Board view on/ })
+    ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('teacher view pins raised hands above the rest with a Clear action and badges idle rows', async () => {
     const onClearHand = vi.fn().mockResolvedValue(undefined);
     const now = Date.now();
     renderMonitor({
       onClearHand,
+      config: { monitorBoardView: false },
       responses: [
         makeResponse({
           pin: '1111',
@@ -272,10 +302,9 @@ describe('QuizLiveMonitor (rebuilt)', () => {
         }),
       ],
     });
-    expect(screen.getByText(/2 need help/)).toBeInTheDocument();
     openBucket(/In progress/);
     expect(screen.getByText(/Raised hand/)).toBeInTheDocument();
-    expect(screen.getByText(/No activity/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Idle 5 min')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
     await act(async () => {

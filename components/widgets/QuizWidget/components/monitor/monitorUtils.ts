@@ -10,11 +10,15 @@ export type MonitorSortBy = 'first' | 'last' | 'status' | 'score';
 export type MonitorFilterBy = 'all' | 'hi' | 'mid' | 'low' | 'tabs';
 export type ProficiencyBand = 'hi' | 'mid' | 'low' | 'crit';
 
-export interface NeedsHelpFlag {
-  kind: 'hand' | 'stuck';
-  /** Minutes idle (stuck) or minutes since raise (hand), floored. */
-  minutes: number;
+/** Two independent signals: an explicit request (hand) and a passive heuristic (idle). */
+export interface StudentFlags {
+  /** Minutes since the student raised their hand, floored; null when lowered. */
+  handMinutes: number | null;
+  /** Minutes without an answer write (min 2, the threshold); null when active. */
+  idleMinutes: number | null;
 }
+
+export const NO_FLAGS: StudentFlags = { handMinutes: null, idleMinutes: null };
 
 /** Approved 4-band row tint scale: green >=80, yellow 60-79, orange 40-59, red <40. */
 export function proficiencyBand(score: number): ProficiencyBand {
@@ -31,19 +35,15 @@ export function isStuck(r: QuizResponse, now: number): boolean {
   return now - last > STUCK_THRESHOLD_MS;
 }
 
-export function needsHelpFlag(
-  r: QuizResponse,
-  now: number
-): NeedsHelpFlag | null {
+export function studentFlags(r: QuizResponse, now: number): StudentFlags {
   const raisedAt = r.handRaisedAt?.toMillis?.();
-  if (raisedAt) {
-    return { kind: 'hand', minutes: Math.floor((now - raisedAt) / 60_000) };
-  }
+  const handMinutes = raisedAt ? Math.floor((now - raisedAt) / 60_000) : null;
+  let idleMinutes: number | null = null;
   if (isStuck(r, now)) {
     const last = r.lastWriteAt?.toMillis?.() ?? now;
-    return { kind: 'stuck', minutes: Math.floor((now - last) / 60_000) };
+    idleMinutes = Math.max(2, Math.floor((now - last) / 60_000));
   }
-  return null;
+  return { handMinutes, idleMinutes };
 }
 
 export interface SortableStudent {

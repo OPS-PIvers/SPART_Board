@@ -24,8 +24,8 @@ import {
   findDuplicateResponseIds,
 } from '@/components/widgets/QuizWidget/utils/resolveDisplayName';
 import {
-  needsHelpFlag,
-  NeedsHelpFlag,
+  NO_FLAGS,
+  studentFlags,
   ProficiencyBand,
   proficiencyBand,
 } from './monitorUtils';
@@ -42,7 +42,10 @@ export interface MonitorStudent {
   awaitingGrade: boolean;
   band: ProficiencyBand | null;
   tabWarnings: number;
-  needsHelp: NeedsHelpFlag | null;
+  /** Minutes since the hand was raised; null when not raised. In-progress only. */
+  hand: number | null;
+  /** Minutes without an answer write past the threshold; null when active. */
+  idle: number | null;
   duplicate: boolean;
   /** 1-based question the student is on (answers.length + 1, capped). */
   onQuestion: number;
@@ -52,7 +55,8 @@ export interface MonitorData {
   students: MonitorStudent[];
   byBucket: Record<'notStarted' | 'inProgress' | 'done', MonitorStudent[]>;
   counts: { notStarted: number; inProgress: number; done: number };
-  needsHelpCount: number;
+  handCount: number;
+  idleCount: number;
   currentQ: QuizQuestion | undefined;
   answeredCurrent: number;
   totalStudents: number;
@@ -168,6 +172,8 @@ export function useMonitorData(
         const bandScore = scoreable
           ? getResponseScore(r, quizData.questions)
           : null;
+        const flags =
+          r.status === 'in-progress' ? studentFlags(r, now) : NO_FLAGS;
         return {
           response: r,
           key: responseDocKey(r),
@@ -180,7 +186,8 @@ export function useMonitorData(
             scoreable && isResponseAwaitingGrade(r, quizData.questions),
           band: bandScore != null ? proficiencyBand(bandScore) : null,
           tabWarnings: r.tabSwitchWarnings ?? 0,
-          needsHelp: r.status === 'in-progress' ? needsHelpFlag(r, now) : null,
+          hand: flags.handMinutes,
+          idle: flags.idleMinutes,
           duplicate: duplicateIds.has(responseTeamId(r)),
           onQuestion: Math.min(
             r.answers.length + 1,
@@ -200,42 +207,48 @@ export function useMonitorData(
     ]
   );
 
-  const { byBucket, counts, needsHelpCount, answeredCurrent } = useMemo(() => {
-    const buckets: MonitorData['byBucket'] = {
-      notStarted: [],
-      inProgress: [],
-      done: [],
-    };
-    let needs = 0;
-    let answered = 0;
-    for (const s of students) {
-      if (
-        currentQ &&
-        s.response.answers.some((a) => a.questionId === currentQ.id)
-      )
-        answered++;
-      if (s.needsHelp) needs++;
-      if (s.response.status === 'completed') buckets.done.push(s);
-      else if (s.response.status === 'in-progress') buckets.inProgress.push(s);
-      else buckets.notStarted.push(s);
-    }
-    return {
-      byBucket: buckets,
-      counts: {
-        notStarted: buckets.notStarted.length,
-        inProgress: buckets.inProgress.length,
-        done: buckets.done.length,
-      },
-      needsHelpCount: needs,
-      answeredCurrent: answered,
-    };
-  }, [students, currentQ]);
+  const { byBucket, counts, handCount, idleCount, answeredCurrent } =
+    useMemo(() => {
+      const buckets: MonitorData['byBucket'] = {
+        notStarted: [],
+        inProgress: [],
+        done: [],
+      };
+      let hands = 0;
+      let idle = 0;
+      let answered = 0;
+      for (const s of students) {
+        if (
+          currentQ &&
+          s.response.answers.some((a) => a.questionId === currentQ.id)
+        )
+          answered++;
+        if (s.hand != null) hands++;
+        if (s.idle != null) idle++;
+        if (s.response.status === 'completed') buckets.done.push(s);
+        else if (s.response.status === 'in-progress')
+          buckets.inProgress.push(s);
+        else buckets.notStarted.push(s);
+      }
+      return {
+        byBucket: buckets,
+        counts: {
+          notStarted: buckets.notStarted.length,
+          inProgress: buckets.inProgress.length,
+          done: buckets.done.length,
+        },
+        handCount: hands,
+        idleCount: idle,
+        answeredCurrent: answered,
+      };
+    }, [students, currentQ]);
 
   return {
     students,
     byBucket,
     counts,
-    needsHelpCount,
+    handCount,
+    idleCount,
     currentQ,
     answeredCurrent,
     totalStudents: students.length,
