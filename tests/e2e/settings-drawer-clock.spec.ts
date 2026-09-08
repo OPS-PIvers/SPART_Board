@@ -16,7 +16,7 @@ const addClockWidget = async (page: Page) => {
 
   const clockButton = page.getByRole('button', { name: /^Clock$/ }).first();
   await expect(clockButton).toBeVisible();
-  await clockButton.click({ force: true });
+  await clockButton.click();
 
   // Close the dock, then select the new widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
