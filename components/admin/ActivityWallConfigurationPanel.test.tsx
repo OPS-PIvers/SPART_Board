@@ -4,10 +4,7 @@ import { ActivityWallConfigurationPanel } from './ActivityWallConfigurationPanel
 import { ActivityWallGlobalConfig } from '@/types';
 import type { Building } from '@/config/buildings';
 
-// The panel reads its building list from useAdminBuildings(), which for a
-// real org can hand back a legacy long-form building doc id (e.g.
-// `schumann-elementary`) when that org's building record predates the
-// short-id migration — see config/buildings.ts's BUILDING_ID_ALIASES.
+// useAdminBuildings() can return a legacy long-form id — see config/buildings.ts's BUILDING_ID_ALIASES.
 const mockUseAdminBuildings = vi.fn<() => Building[]>();
 vi.mock('@/hooks/useAdminBuildings', () => ({
   useAdminBuildings: () => mockUseAdminBuildings(),
@@ -21,8 +18,7 @@ describe('ActivityWallConfigurationPanel', () => {
   });
 
   it('finds a buildingDefaults entry keyed by the canonical id when the org building record resolves to a legacy raw id', () => {
-    // Saved config is canonically keyed ('schumann'), but this org's
-    // building doc still resolves to the legacy long-form id.
+    // Saved config is canonically keyed ('schumann'); the org's building doc resolves to the legacy id.
     mockUseAdminBuildings.mockReturnValue([
       {
         id: 'schumann-elementary',
@@ -50,8 +46,7 @@ describe('ActivityWallConfigurationPanel', () => {
       />
     );
 
-    // If the lookup missed (raw-id bug), the input would fall back to the
-    // widget default of 0, not the saved value of 7.
+    // A raw-id lookup miss would fall back to the widget default of 0, not the saved 7.
     expect(screen.getByLabelText('Default Max Posts Per Student')).toHaveValue(
       7
     );
