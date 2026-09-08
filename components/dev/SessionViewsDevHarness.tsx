@@ -88,6 +88,23 @@ const WIDTHS = [340, 520, 820];
 
 const noop = (): Promise<void> => Promise.resolve();
 
+/** Holds monitor config so header/settings toggles (e.g. Board view) work in the harness. */
+const QuizMonitorDev: React.FC<
+  Omit<
+    React.ComponentProps<typeof QuizLiveMonitor>,
+    'config' | 'onUpdateConfig'
+  >
+> = (props) => {
+  const [config, setConfig] = useState(makeQuizConfig);
+  return (
+    <QuizLiveMonitor
+      {...props}
+      config={config}
+      onUpdateConfig={(updates) => setConfig((c) => ({ ...c, ...updates }))}
+    />
+  );
+};
+
 const PRESENT_STANDINGS = [
   { studentUid: 'u1', name: 'Ada Lovelace', score: 940, rank: 1 },
   { studentUid: 'u2', name: 'Grace Hopper', score: 880, rank: 2 },
@@ -150,17 +167,15 @@ const SessionView: React.FC<{
       state === 'paused' ? 'paused' : state === 'ended' ? 'ended' : 'active';
     const responses = state === 'waiting' ? [] : makeQuizResponses();
     return (
-      <QuizLiveMonitor
+      <QuizMonitorDev
         session={makeQuizSession(status)}
         responses={responses}
         quizData={makeQuizData()}
-        config={makeQuizConfig()}
         rosters={[]}
         onAdvance={noop}
         onEnd={noop}
         onPause={noop}
         onResume={noop}
-        onUpdateConfig={() => undefined}
         onRemoveStudent={noop}
         onUnlockStudent={noop}
         onUnlockResultsForStudent={noop}
