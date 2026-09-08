@@ -183,10 +183,7 @@ describe('mergeDashboardForSave', () => {
   });
 
   it('takes a remote object-field edit when the local copy is unchanged but key-reordered', () => {
-    // The baseline was captured from a Firestore echo of this same content,
-    // which alphabetizes map keys; the in-memory local copy keeps whatever
-    // insertion order the app built it with. Same content, different key
-    // order must still read as "unchanged locally".
+    // Same content as base, different key order — must still read as "unchanged locally".
     const base = board([], {
       globalStyle: { fontFamily: 'Lexend', fontColor: '#fff' } as never,
     });
