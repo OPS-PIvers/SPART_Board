@@ -183,3 +183,91 @@ describe('AssignmentDetailPane — D3 edit-in-place', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 });
+
+describe('AssignmentDetailPane — Schoology section resolution', () => {
+  const linkedRoster: ClassRoster = {
+    ...roster,
+    id: 'roster-lti',
+    name: 'Biology B2',
+    ltiContextId: 'ctx-1',
+  };
+
+  const schoologyRow = (overrides: Partial<UnifiedAssignmentRow> = {}) =>
+    makeRow({
+      targetMode: 'class',
+      rosterIds: [],
+      targetStudents: [],
+      className: 'Schoology',
+      periodNames: ['Biology Section 2'],
+      classIds: ['schoology:ctx-1'],
+      classPeriodByClassId: { 'schoology:ctx-1': 'Biology Section 2' },
+      ...overrides,
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: { uid: 'teacher-1' },
+      orgId: 'org-1',
+    });
+    (
+      useAssignmentPseudonymsMulti as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
+      byStudentUid: new Map(),
+      byAssignmentPseudonym: new Map(),
+      targetRefKeyByStudentUid: new Map(),
+      targetRefKeyByAssignmentPseudonym: new Map(),
+    });
+    (
+      useAssignmentRosterStatus as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
+      statusByUid: new Map(),
+      totalQuestions: 5,
+      loading: false,
+    });
+    (
+      useAssignmentDetailActions as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
+      saveEdit: mockSaveEdit,
+      closeNow: mockCloseNow,
+      toTargetingValue: vi.fn(),
+    });
+  });
+
+  it('resolves a linked section to its SpartBoard class and lists its students', () => {
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      rosters: [linkedRoster],
+    });
+    render(<AssignmentDetailPane row={schoologyRow()} />);
+    expect(screen.getByText('Biology B2')).toBeInTheDocument();
+    expect(screen.queryByText('Not linked')).not.toBeInTheDocument();
+    expect(screen.getByText('Alex Doe')).toBeInTheDocument();
+  });
+
+  it('falls back to the section title with a "Not linked" hint when no roster mirrors the context', () => {
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      rosters: [roster],
+    });
+    render(<AssignmentDetailPane row={schoologyRow()} />);
+    expect(screen.getByText('Biology Section 2')).toBeInTheDocument();
+    expect(screen.getByText('Not linked')).toBeInTheDocument();
+  });
+
+  it('leaves a plain rosterIds assignment untouched', () => {
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      rosters: [roster, linkedRoster],
+    });
+    render(
+      <AssignmentDetailPane
+        row={makeRow({
+          targetMode: 'class',
+          rosterIds: ['roster-1'],
+          targetStudents: [],
+        })}
+      />
+    );
+    expect(screen.getByText('Alex Doe')).toBeInTheDocument();
+    expect(screen.queryByText('Not linked')).not.toBeInTheDocument();
+    expect(screen.queryByText('Biology B2')).not.toBeInTheDocument();
+  });
+});

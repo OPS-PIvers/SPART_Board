@@ -26,6 +26,8 @@ import type { AssignTargetingValue } from '@/utils/studentTargetRef';
 import { AssignmentStatusChip } from './AssignmentStatusChip';
 import type { UnifiedAssignmentRow } from './useUnifiedAssignments';
 
+const SCHOOLOGY_PREFIX = 'schoology:';
+
 const STATUS_ORDER = [
   'not-started',
   'in-progress',
@@ -127,11 +129,51 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
     }
   };
 
+  // Schoology sections ride the session's `classIds` as `schoology:<contextId>`.
+  const schoologyClassIds = useMemo(
+    () => (row.classIds ?? []).filter((id) => id.startsWith(SCHOOLOGY_PREFIX)),
+    [row.classIds]
+  );
+
+  // A section resolves to a SpartBoard class when a roster mirrors its contextId.
+  const sections = useMemo(
+    () =>
+      schoologyClassIds.map((classId) => {
+        const contextId = classId.slice(SCHOOLOGY_PREFIX.length);
+        const linkedRoster = rosters.find((r) => r.ltiContextId === contextId);
+        const title =
+          row.classPeriodByClassId?.[classId] ??
+          (schoologyClassIds.length === 1 ? row.periodNames?.[0] : undefined);
+        return { classId, linkedRoster, title };
+      }),
+    [schoologyClassIds, rosters, row.classPeriodByClassId, row.periodNames]
+  );
+
+  const linkedSectionRosters = useMemo(
+    () =>
+      sections
+        .map((s) => s.linkedRoster)
+        .filter((r): r is (typeof rosters)[number] => r !== undefined),
+    [sections]
+  );
+
+  // Union the linked rosters into the rosterIds path; identical to the plain
+  // rosterIds result when no section resolves.
+  const effectiveRosterIds = useMemo(() => {
+    if (linkedSectionRosters.length === 0) return row.rosterIds;
+    return Array.from(
+      new Set([
+        ...(row.rosterIds ?? []),
+        ...linkedSectionRosters.map((r) => r.id),
+      ])
+    );
+  }, [row.rosterIds, linkedSectionRosters]);
+
   const targeting = useMemo(
     () =>
       resolveAssignmentTargets(
         {
-          rosterIds: row.rosterIds,
+          rosterIds: effectiveRosterIds,
           periodNames: row.periodNames,
           targetMode: row.targetMode,
           targetStudents: row.targetStudents,
@@ -139,7 +181,7 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
         rosters
       ),
     [
-      row.rosterIds,
+      effectiveRosterIds,
       row.periodNames,
       row.targetMode,
       row.targetStudents,
@@ -148,13 +190,23 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
   );
 
   const matchedRosters = useMemo(
-    () => rosters.filter((r) => (row.rosterIds ?? []).includes(r.id)),
-    [rosters, row.rosterIds]
+    () => rosters.filter((r) => (effectiveRosterIds ?? []).includes(r.id)),
+    [rosters, effectiveRosterIds]
+  );
+
+  // The section ids still gate pseudonym lookups for launches that never
+  // resolved to a roster.
+  const pseudonymClassIds = useMemo(
+    () =>
+      schoologyClassIds.length === 0
+        ? targeting.classIds
+        : Array.from(new Set([...targeting.classIds, ...schoologyClassIds])),
+    [targeting.classIds, schoologyClassIds]
   );
 
   const pseudonyms = useAssignmentPseudonymsMulti(
     row.sessionId,
-    targeting.classIds,
+    pseudonymClassIds,
     orgId,
     row.targetMode === 'students' ? row.targetStudents : undefined
   );
@@ -251,6 +303,26 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
             </div>
           )}
         </div>
+        {sections.length > 0 && (
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {sections.map((s) => (
+              <span key={s.classId} className="text-xs text-slate-500">
+                {s.linkedRoster?.name ??
+                  s.title ??
+                  t('assignmentsHub.detail.schoologySection', {
+                    defaultValue: 'Schoology section',
+                  })}
+                {!s.linkedRoster && (
+                  <span className="ml-1 text-slate-400">
+                    {t('assignmentsHub.detail.sectionNotLinked', {
+                      defaultValue: 'Not linked',
+                    })}
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
         {!isEmptyRoster && (
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {STATUS_ORDER.map((status) => (
