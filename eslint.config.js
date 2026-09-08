@@ -40,6 +40,10 @@ export default tseslint.config(
       // tsconfig + package.json) for rendering demo videos. Not part of
       // the main app's TypeScript project.
       'remotion',
+      // Standalone Node CLI script run directly via `node`/`execFileSync`
+      // from tests/ci.eslintConcurrencyMemory.test.ts, not app source — same
+      // category as `scripts` above, so it doesn't need browser globals.
+      'tests/fixtures/eslintWorkerMemoryProbe.mjs',
       'coverage',
       '.agents',
       '.gemini',
@@ -238,6 +242,40 @@ export default tseslint.config(
               caseSensitive: true,
               message:
                 "Cross-subdirectory Organization import — use '@/components/admin/Organization/...' instead of a relative path that escapes this view's own directory (see D4 in docs/routines/unifier.md).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // D4 (Import Path Convention) enforcement: the widget settings drawer
+    // subsystem (components/settings/) split across sibling directories
+    // (renderer/, renderer/fields/, schema/, legacy/) authored entirely with
+    // relative escapes — `renderer/fields/*.tsx` reaching `'../../schema/types'`
+    // and `renderer/*.tsx` reaching `'../schema/types'` — even though the
+    // module's own external consumers (WidgetRegistry.ts, DraggableWindow.tsx)
+    // already used the `@/components/settings/...` alias for the identical
+    // path. Same recurring bug class as `components/plc/**` and
+    // `components/widgets/**` above, found here as ~37 files across a single
+    // brand-new PR (waves 0/1a/1b of the settings-drawer feature); more waves
+    // are still landing, so the pattern is shaped by escape *depth* rather
+    // than a hardcoded subdirectory allowlist — a new sibling directory is
+    // guarded the day it lands, with no rule edit to remember. One-level
+    // escapes to a file living directly in the immediate parent directory
+    // (e.g. `renderer/fields/*.tsx` → `'../FieldProps'`, `'../resolveLabel'`)
+    // are the D4-E2 gray zone and are NOT matched by this pattern.
+    files: ['components/settings/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^(\\.\\./){2,}|^\\.\\./[^/]+/',
+              caseSensitive: true,
+              message:
+                "Cross-subdirectory settings-drawer import — use '@/components/settings/...' instead of a relative path that escapes this directory (see D4 in docs/routines/unifier.md).",
             },
           ],
         },

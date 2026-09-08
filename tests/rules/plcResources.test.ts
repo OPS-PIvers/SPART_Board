@@ -33,11 +33,16 @@ const RULES_PATH = fileURLToPath(
 
 let testEnv: RulesTestEnvironment;
 
-// The isAdmin() rule checks existence of /admins/{email.lower()}.
-// Seeding that doc in beforeEach (with security rules disabled) is all
-// that is required — the email is matched via request.auth.token.email.lower().
+// The isAdmin() rule checks existence of /admins/{email.lower()} AND now
+// requires email_verified: true. Seeding the admin doc in beforeEach (with
+// security rules disabled) plus the verified claim here is all that's required.
 const asAdmin = () =>
-  testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL }).firestore();
+  testEnv
+    .authenticatedContext(ADMIN_UID, {
+      email: ADMIN_EMAIL,
+      email_verified: true,
+    })
+    .firestore();
 
 const asNonAdmin = () =>
   testEnv

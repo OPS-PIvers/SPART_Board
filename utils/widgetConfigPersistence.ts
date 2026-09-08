@@ -11,7 +11,7 @@ import type { WidgetConfig, WidgetType } from '@/types';
  * that lives nested inside a content array (per-card colors, custom-widget
  * block styles) — those travel with their content.
  */
-export const APPEARANCE_CONFIG_KEYS = new Set<string>([
+export const APPEARANCE_CONFIG_KEY_LIST = [
   'fontFamily', // shared TypographySettings
   'fontColor', // shared TypographySettings
   'cardColor', // shared SurfaceColorSettings
@@ -23,7 +23,13 @@ export const APPEARANCE_CONFIG_KEYS = new Set<string>([
   'titleColor', // MaterialsConfig
   'scaleMultiplier', // ChecklistConfig
   'layout', // ScoreboardConfig | ExpectationsConfig | MusicConfig
-]);
+] as const;
+
+export type AppearanceKey = (typeof APPEARANCE_CONFIG_KEY_LIST)[number];
+
+export const APPEARANCE_CONFIG_KEYS = new Set<string>(
+  APPEARANCE_CONFIG_KEY_LIST
+);
 
 /**
  * Keys holding an explicit "save as preset" library, which teachers opt into
@@ -31,6 +37,26 @@ export const APPEARANCE_CONFIG_KEYS = new Set<string>([
  * `savedWidgetPresets` profile field, never in `savedWidgetConfigs`.
  */
 export const PRESET_CONFIG_KEYS = new Set<string>(['savedLibrary']);
+
+/** Renamed appearance keys, per widget type: [oldKey, newKey]. Empty until a rename ships. */
+export const SAVED_CONFIG_KEY_MIGRATIONS: Partial<
+  Record<WidgetType, ReadonlyArray<readonly [string, string]>>
+> = {};
+
+/** Dual-write rename (D25): copy old -> new, keep old until a later deletion step. */
+function applySavedConfigRenames(
+  type: WidgetType,
+  stored: Record<string, unknown>
+): Record<string, unknown> {
+  const renames = SAVED_CONFIG_KEY_MIGRATIONS[type];
+  if (!renames?.length) return stored;
+  const next = { ...stored };
+  for (const [oldKey, newKey] of renames) {
+    if (oldKey in next && next[newKey] === undefined)
+      next[newKey] = next[oldKey];
+  }
+  return next;
+}
 
 /** Keeps only appearance keys; everything else stays on its own board. */
 export function pickAppearanceKeys(
@@ -51,6 +77,7 @@ export function pickAppearanceKeys(
  *   3. saved        — from user's savedWidgetConfigs (appearance keys only)
  *   4. overrides    — explicit per-add overrides (e.g. AI-provided config, paste import)
  */
+// No WidgetData here, so this path cannot stamp configVersion; migrateWidget stamps at add time.
 export function mergeWidgetConfig(
   defaults: Partial<WidgetConfig> | undefined,
   adminConfig: Record<string, unknown> | Partial<WidgetConfig> | undefined,
@@ -102,7 +129,10 @@ export function migrateSavedWidgetConfigs(
       continue;
     }
     const widgetType = type as WidgetType;
-    const stored = config as Record<string, unknown>;
+    const stored = applySavedConfigRenames(
+      widgetType,
+      config as Record<string, unknown>
+    );
     const appearance = pickAppearanceKeys(stored as Partial<WidgetConfig>);
     if (Object.keys(appearance).length > 0) cleaned[widgetType] = appearance;
 

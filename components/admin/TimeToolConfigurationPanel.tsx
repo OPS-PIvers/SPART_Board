@@ -1,9 +1,14 @@
 import React, { useId } from 'react';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { useBuildingSelection } from '@/hooks/useBuildingSelection';
+import {
+  canonicalBuildingId,
+  canonicalizeBuildingKeyedRecord,
+} from '@/config/buildings';
 import { BuildingSelector } from './BuildingSelector';
 import { TimeToolGlobalConfig, BuildingTimeToolDefaults } from '@/types';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 import { Card } from '@/components/common/Card';
 import { WIDGET_PALETTE } from '@/config/colors';
 import { FONTS } from '@/config/fonts';
@@ -90,11 +95,16 @@ export const TimeToolConfigurationPanel: React.FC<
   const defaultAlertSoundLabelId = useId();
   const defaultFontSelectId = useId();
 
-  const buildingDefaults = config.buildingDefaults ?? {};
+  // useAdminBuildings() can return a legacy long-form id; key buildingDefaults off the canonical id.
+  const canonicalId = canonicalBuildingId(selectedBuildingId);
+
+  const buildingDefaults = canonicalizeBuildingKeyedRecord(
+    config.buildingDefaults ?? {}
+  );
   const currentBuildingConfig: BuildingTimeToolDefaults = buildingDefaults[
-    selectedBuildingId
+    canonicalId
   ] ?? {
-    buildingId: selectedBuildingId,
+    buildingId: canonicalId,
   };
 
   const handleUpdateBuilding = (updates: Partial<BuildingTimeToolDefaults>) => {
@@ -102,7 +112,7 @@ export const TimeToolConfigurationPanel: React.FC<
       ...config,
       buildingDefaults: {
         ...buildingDefaults,
-        [selectedBuildingId]: {
+        [canonicalId]: {
           ...currentBuildingConfig,
           ...updates,
         },
@@ -203,12 +213,20 @@ export const TimeToolConfigurationPanel: React.FC<
             className="flex gap-1.5"
             role="radiogroup"
             aria-labelledby={defaultModeLabelId}
+            onKeyDown={(e) =>
+              handleRadioGroupKeyDown(e, MODES, ({ value }) =>
+                handleUpdateBuilding({ mode: value })
+              )
+            }
           >
             {MODES.map(({ value, label }) => (
               <button
                 key={value}
                 role="radio"
                 aria-checked={(currentBuildingConfig.mode ?? 'timer') === value}
+                tabIndex={
+                  (currentBuildingConfig.mode ?? 'timer') === value ? 0 : -1
+                }
                 onClick={() => handleUpdateBuilding({ mode: value })}
                 className={pillClasses(
                   (currentBuildingConfig.mode ?? 'timer') === value
@@ -229,6 +247,11 @@ export const TimeToolConfigurationPanel: React.FC<
             className="flex gap-1.5"
             role="radiogroup"
             aria-labelledby={displayStyleLabelId}
+            onKeyDown={(e) =>
+              handleRadioGroupKeyDown(e, VISUAL_TYPES, ({ value }) =>
+                handleUpdateBuilding({ visualType: value })
+              )
+            }
           >
             {VISUAL_TYPES.map(({ value, label }) => (
               <button
@@ -236,6 +259,11 @@ export const TimeToolConfigurationPanel: React.FC<
                 role="radio"
                 aria-checked={
                   (currentBuildingConfig.visualType ?? 'digital') === value
+                }
+                tabIndex={
+                  (currentBuildingConfig.visualType ?? 'digital') === value
+                    ? 0
+                    : -1
                 }
                 onClick={() => handleUpdateBuilding({ visualType: value })}
                 className={pillClasses(
@@ -257,6 +285,11 @@ export const TimeToolConfigurationPanel: React.FC<
             className="flex gap-1.5"
             role="radiogroup"
             aria-labelledby={numberStyleLabelId}
+            onKeyDown={(e) =>
+              handleRadioGroupKeyDown(e, CLOCK_STYLES, ({ value }) =>
+                handleUpdateBuilding({ clockStyle: value })
+              )
+            }
           >
             {CLOCK_STYLES.map(({ value, label }) => (
               <button
@@ -264,6 +297,11 @@ export const TimeToolConfigurationPanel: React.FC<
                 role="radio"
                 aria-checked={
                   (currentBuildingConfig.clockStyle ?? 'modern') === value
+                }
+                tabIndex={
+                  (currentBuildingConfig.clockStyle ?? 'modern') === value
+                    ? 0
+                    : -1
                 }
                 onClick={() => handleUpdateBuilding({ clockStyle: value })}
                 className={pillClasses(
@@ -289,6 +327,11 @@ export const TimeToolConfigurationPanel: React.FC<
             className="flex gap-1.5"
             role="radiogroup"
             aria-labelledby={defaultAlertSoundLabelId}
+            onKeyDown={(e) =>
+              handleRadioGroupKeyDown(e, SOUNDS, (sound) =>
+                handleUpdateBuilding({ selectedSound: sound })
+              )
+            }
           >
             {SOUNDS.map((sound) => (
               <button
@@ -296,6 +339,11 @@ export const TimeToolConfigurationPanel: React.FC<
                 role="radio"
                 aria-checked={
                   (currentBuildingConfig.selectedSound ?? 'Gong') === sound
+                }
+                tabIndex={
+                  (currentBuildingConfig.selectedSound ?? 'Gong') === sound
+                    ? 0
+                    : -1
                 }
                 onClick={() => handleUpdateBuilding({ selectedSound: sound })}
                 className={pillClasses(

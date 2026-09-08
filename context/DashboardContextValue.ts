@@ -267,10 +267,7 @@ export interface DashboardContextValue {
   groupWidgets: (widgetIds: string[]) => void;
   ungroupWidgets: (groupId: string) => void;
   updateWidgets: (
-    updates: Array<{
-      id: string;
-      changes: Partial<Pick<WidgetData, 'x' | 'y' | 'w' | 'h'>>;
-    }>,
+    updates: Array<{ id: string; changes: Partial<WidgetData> }>,
     opts?: { skipHistory?: boolean }
   ) => void;
   /**

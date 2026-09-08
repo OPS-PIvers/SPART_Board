@@ -36,6 +36,7 @@ import {
   GOOGLE_SHEETS_SCOPE,
   GOOGLE_CALENDAR_READONLY_SCOPE,
 } from '@/config/firebase';
+import { resolveAuthBypassFeatureOverride } from '@/utils/authBypassFeatureOverrides';
 import {
   FeaturePermission,
   WidgetType,
@@ -53,7 +54,7 @@ import {
   MaterialsPreferences,
 } from '@/types';
 import type { MemberRecord, BuildingRecord } from '@/types/organization';
-import { AuthContext } from './AuthContextValue';
+import { AuthContext, UserPreferenceKey } from './AuthContextValue';
 import {
   buildingRecordToBuilding,
   canonicalizeBuildingIds,
@@ -202,6 +203,12 @@ const GOOGLE_TOKEN_DISCONNECTED_RETRY_MS = 5 * 60 * 1000; // Silent retry cadenc
 
 // Inactivity-based session timeout: force re-login after 7 days of no app usage
 // so stale Google OAuth tokens (Drive, Calendar, Sheets) get fully refreshed.
+const MIN_SETTINGS_DRAWER_WIDTH = 360;
+const MAX_SETTINGS_DRAWER_WIDTH = 560;
+const DEFAULT_SETTINGS_DRAWER_WIDTH = 400;
+const clampSettingsDrawerWidth = (n: number): number =>
+  Math.min(MAX_SETTINGS_DRAWER_WIDTH, Math.max(MIN_SETTINGS_DRAWER_WIDTH, n));
+
 const LAST_ACTIVITY_KEY = 'spart_last_activity';
 const INACTIVITY_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const ACTIVITY_UPDATE_INTERVAL_MS = 5 * 60 * 1000; // Update activity timestamp every 5 minutes
@@ -334,6 +341,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     useState(false);
   const [remoteControlEnabled, setRemoteControlEnabledState] = useState(true);
   const [dockPosition, setDockPositionState] = useState<DockPosition>('bottom');
+  const [settingsDrawerWidth, setSettingsDrawerWidthState] = useState<number>(
+    DEFAULT_SETTINGS_DRAWER_WIDTH
+  );
   // Default colors-on so existing teachers see the same tinted rows they're
   // used to. When the field is absent from a profile doc (older accounts)
   // we still treat them as opted-in.
@@ -1534,6 +1544,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setDisableCloseConfirmationState(false);
       setRemoteControlEnabledState(true);
       setDockPositionState('bottom');
+      setSettingsDrawerWidthState(DEFAULT_SETTINGS_DRAWER_WIDTH);
       setLastActiveCollectionIdState(undefined);
       setLastBoardIdByCollectionState(undefined);
       setFavoriteBackgrounds([]);
@@ -1704,6 +1715,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setDockPositionState(data.dockPosition);
           } else {
             setDockPositionState('bottom');
+          }
+          if (
+            'settingsDrawerWidth' in data &&
+            typeof data.settingsDrawerWidth === 'number' &&
+            Number.isFinite(data.settingsDrawerWidth)
+          ) {
+            setSettingsDrawerWidthState(
+              clampSettingsDrawerWidth(data.settingsDrawerWidth)
+            );
+          } else {
+            setSettingsDrawerWidthState(DEFAULT_SETTINGS_DRAWER_WIDTH);
           }
           if (
             'quizMonitorColorsEnabled' in data &&
@@ -2086,6 +2108,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error('Error saving setup completion:', error);
     }
   }, [user]);
+
+  const updateUserPreference = useCallback(
+    async (key: UserPreferenceKey, value: number) => {
+      const persistedValue =
+        key === 'settingsDrawerWidth' ? clampSettingsDrawerWidth(value) : value;
+      if (key === 'settingsDrawerWidth') {
+        setSettingsDrawerWidthState(persistedValue);
+      }
+      if (!user || isAuthBypass) return;
+      const myToken = ++writeTokenRef.current;
+      try {
+        // `merge: true` is mandatory — see the UserProfile ownership contract in types.ts.
+        await setDoc(
+          doc(db, 'users', user.uid, 'userProfile', 'profile'),
+          { [key]: persistedValue },
+          { merge: true }
+        );
+      } catch (error) {
+        if (myToken === writeTokenRef.current) {
+          console.error('Error saving user preference:', error);
+        }
+      }
+    },
+    [user]
+  );
 
   const updateAccountPreferences = useCallback(
     async (updates: {
@@ -2697,7 +2744,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const canAccessFeature = useCallback(
     (featureId: GlobalFeature): boolean => {
-      if (isAuthBypass) return true;
+      if (isAuthBypass) {
+        const envOverrides = import.meta.env
+          .VITE_AUTH_BYPASS_FEATURE_OVERRIDES as string | undefined;
+        const override = resolveAuthBypassFeatureOverride(
+          featureId,
+          envOverrides,
+          typeof window !== 'undefined' ? window.localStorage : undefined
+        );
+        return override ?? true;
+      }
       if (!user) return false;
 
       const permission = globalPermissions.find(
@@ -2909,6 +2965,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         disableCloseConfirmation,
         remoteControlEnabled,
         dockPosition,
+        settingsDrawerWidth,
+        updateUserPreference,
         quizMonitorColorsEnabled,
         quizMonitorScoreDisplay,
         quizGraderMode,

@@ -10,6 +10,11 @@ interface SurfaceColorSettingsProps<T extends WidgetConfig> {
   updateConfig: (updates: Partial<T>) => void;
   label?: string;
   icon?: LucideIcon | React.ElementType;
+  /** Suppresses the heading when the caller already renders a label. */
+  hideLabel?: boolean;
+  /** Id of the caller's own heading; labels the group when `hideLabel` is set. */
+  labelId?: string;
+  describedBy?: string;
 }
 
 export const SurfaceColorSettings = <
@@ -19,10 +24,14 @@ export const SurfaceColorSettings = <
   updateConfig,
   label = 'Surface',
   icon = Palette,
+  hideLabel = false,
+  labelId,
+  describedBy,
 }: SurfaceColorSettingsProps<T>) => {
   const cardColor = config.cardColor ?? '#ffffff';
   const cardOpacity = config.cardOpacity ?? 1;
-  const surfaceLabelId = useId();
+  const generatedLabelId = useId();
+  const surfaceLabelId = labelId ?? generatedLabelId;
   // Callers are inconsistent about whether `label` already names a color:
   // DiceWidget passes "Die Color"/"Pip Color", while others pass "Surface"
   // or "Card surface". The aria-labels below all append the word "color", so
@@ -34,13 +43,16 @@ export const SurfaceColorSettings = <
 
   return (
     <div>
-      <SettingsLabel icon={icon} as="span" id={surfaceLabelId}>
-        {label}
-      </SettingsLabel>
+      {!hideLabel && (
+        <SettingsLabel icon={icon} as="span" id={surfaceLabelId}>
+          {label}
+        </SettingsLabel>
+      )}
       <div
         className="space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-3"
         role="group"
         aria-labelledby={surfaceLabelId}
+        aria-describedby={describedBy}
       >
         <ColorPresetPicker
           hideLabel

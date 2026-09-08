@@ -5,6 +5,7 @@ import {
   anyFieldChanged as anyChanged,
   type MergeFieldKey,
 } from '@/utils/widgetMergeFields';
+import { stableStringify } from '@/utils/stableStringify';
 
 /**
  * The last state this device knew the server to hold, used to tell its own
@@ -54,9 +55,15 @@ export const DASHBOARD_FIELDS = [
 
 export type MergedDashboardField = (typeof DASHBOARD_FIELDS)[number];
 
-/** `undefined` and `null` must serialize alike so an absent field isn't a change. */
+/**
+ * `undefined` and `null` must serialize alike so an absent field isn't a
+ * change. Key-stable, or a Firestore-echoed object (whose map keys come back
+ * alphabetized) reads as a local edit and clobbers a genuine remote one —
+ * the same bug class fixed in PR #2843 and #2876 for the sibling comparisons
+ * in DashboardContext.tsx.
+ */
 export const serializeDashboardField = (value: unknown): string =>
-  JSON.stringify(value ?? null);
+  stableStringify(value ?? null);
 
 const configChanged = (a: WidgetData, b: WidgetData) =>
   a.version !== undefined && b.version !== undefined
@@ -77,7 +84,11 @@ const mergeWidget = (
   ...local,
   ...(configChanged(local, base)
     ? {}
-    : { config: server.config, version: server.version }),
+    : {
+        config: server.config,
+        version: server.version,
+        configVersion: server.configVersion,
+      }),
   ...(anyChanged(local, base, LAYOUT_FIELDS)
     ? {}
     : pick(server, LAYOUT_FIELDS)),

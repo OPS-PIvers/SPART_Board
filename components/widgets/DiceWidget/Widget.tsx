@@ -104,11 +104,11 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const getDiceSize = () => {
-    if (diceCount === 1) return '75cqmin';
-    if (diceCount === 2) return '50cqmin';
-    if (diceCount === 3) return '38cqmin';
-    if (diceCount === 4) return '42cqmin';
-    return '30cqmin';
+    if (diceCount === 1) return 'min(220px, 75cqmin)';
+    if (diceCount === 2) return 'min(160px, 50cqmin)';
+    if (diceCount === 3) return 'min(130px, 38cqmin)';
+    if (diceCount === 4) return 'min(140px, 42cqmin)';
+    return 'min(110px, 30cqmin)';
   };
 
   return (

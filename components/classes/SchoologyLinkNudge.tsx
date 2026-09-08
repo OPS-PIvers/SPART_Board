@@ -94,8 +94,8 @@ export const SchoologyLinkNudge: React.FC = () => {
                   : `${pending.length} Schoology sections to link`}
               </p>
               <p className="text-xs text-slate-500 mt-0.5 leading-snug">
-                Pair them with your classes so names and grades route
-                automatically.
+                Link them to a class for the right name, roster targeting, and
+                grade sync.
               </p>
               <button
                 onClick={() => setModalOpen(true)}

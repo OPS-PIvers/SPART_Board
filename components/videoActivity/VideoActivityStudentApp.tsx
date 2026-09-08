@@ -57,8 +57,12 @@ function resolveSsoClassPeriod(
   const map = session.classPeriodByClassId;
   if (!map) return undefined;
   const sessionClassIds = new Set(session.classIds ?? []);
-  const matches = classIdsClaim
-    .filter((id) => sessionClassIds.size === 0 || sessionClassIds.has(id))
+  const matchedIds = classIdsClaim.filter(
+    (id) => sessionClassIds.size === 0 || sessionClassIds.has(id)
+  );
+  // A bridged Schoology launch matches both its ClassLink class and its section; prefer the roster-backed class.
+  const rosterIds = matchedIds.filter((id) => !id.startsWith('schoology:'));
+  const matches = (rosterIds.length === 1 ? rosterIds : matchedIds)
     .map((id) => map[id])
     .filter((period): period is string => typeof period === 'string');
   // Dedupe so a student enrolled in multiple targeted classes that share

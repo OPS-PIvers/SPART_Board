@@ -387,6 +387,7 @@ export const ltiExchange = onCall(
         resourceLinkId: launch.resourceLinkId,
         membershipUrl,
         deploymentId: launch.deploymentId,
+        bridgedClassId: bridged?.classlinkClassId ?? null,
       };
       try {
         if (launch.custom?.['kind'] === 'va') {

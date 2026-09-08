@@ -213,6 +213,7 @@ describe('shared_activity_walls — read gating (expiresAt / revoked)', () => {
     testEnv
       .authenticatedContext('admin-uid', {
         email: 'admin@example.com',
+        email_verified: true,
         firebase: { sign_in_provider: 'google.com' },
       })
       .firestore();
@@ -314,6 +315,7 @@ describe('shared_activity_walls/{comments,likes} — read gating', () => {
     testEnv
       .authenticatedContext('admin-uid', {
         email: 'admin@example.com',
+        email_verified: true,
         firebase: { sign_in_provider: 'google.com' },
       })
       .firestore();

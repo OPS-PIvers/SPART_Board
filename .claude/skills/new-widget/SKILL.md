@@ -20,16 +20,17 @@ transparency ownership rule:
 - never add a full-size opaque inner shell that visually replaces the widget
   window background.
 
-| #   | File                                             | What to add                                                                                                           |
-| --- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| 1   | `types.ts`                                       | `WidgetType` union member, config interface, `WidgetConfig` union, `ConfigForWidget` branch                           |
-| 2   | `config/tools.ts`                                | Entry in `TOOLS` array                                                                                                |
-| 3   | `components/widgets/YourWidget/`                 | Subdirectory with `Widget.tsx`, `Settings.tsx`, `index.ts`                                                            |
-| 4   | `components/widgets/WidgetRegistry.ts`           | Entries in `WIDGET_COMPONENTS`, `WIDGET_SETTINGS_COMPONENTS`, `WIDGET_APPEARANCE_COMPONENTS`, `WIDGET_SCALING_CONFIG` |
-| 5   | `config/widgetDefaults.ts`                       | Entry in `WIDGET_DEFAULTS`                                                                                            |
-| 6   | `config/widgetGradeLevels.ts`                    | Entry in `WIDGET_GRADE_LEVELS`                                                                                        |
-| 7   | `components/admin/`                              | Admin config panel or modal (see spart-widget-admin-config skill)                                                     |
-| 8   | `components/admin/FeaturePermissionsManager.tsx` | Wire admin config modal if using dedicated modal path                                                                 |
+| #   | File                                             | What to add                                                                                                                                                                         |
+| --- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `types.ts`                                       | `WidgetType` union member, config interface, `WidgetConfig` union, `ConfigForWidget` branch                                                                                         |
+| 2   | `config/tools.ts`                                | Entry in `TOOLS` array                                                                                                                                                              |
+| 3   | `components/widgets/YourWidget/`                 | Subdirectory with `Widget.tsx`, `Settings.tsx`, `index.ts`                                                                                                                          |
+| 3.5 | `pnpm run new-widget-settings your-widget`       | Scaffolds `settings.schema.ts` (schema-first settings drawer path) — see Step 3.5                                                                                                   |
+| 4   | `components/widgets/WidgetRegistry.ts`           | Entries in `WIDGET_COMPONENTS`, `WIDGET_SETTINGS_COMPONENTS`, `WIDGET_APPEARANCE_COMPONENTS`, `WIDGET_SCALING_CONFIG` (plus `WIDGET_SETTINGS_SCHEMAS` for the schema from Step 3.5) |
+| 5   | `config/widgetDefaults.ts`                       | Entry in `WIDGET_DEFAULTS`                                                                                                                                                          |
+| 6   | `config/widgetGradeLevels.ts`                    | Entry in `WIDGET_GRADE_LEVELS`                                                                                                                                                      |
+| 7   | `components/admin/`                              | Admin config panel or modal (see spart-widget-admin-config skill)                                                                                                                   |
+| 8   | `components/admin/FeaturePermissionsManager.tsx` | Wire admin config modal if using dedicated modal path                                                                                                                               |
 
 ---
 
@@ -274,6 +275,46 @@ export const YourWidgetAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
   );
 };
 ```
+
+---
+
+## Step 3.5 — Settings schema (schema-first path)
+
+The Widget Settings Drawer (`docs/plans/WIDGET_SETTINGS_DRAWER.md`) renders
+settings from a declarative schema instead of a hand-written `Settings.tsx`
+panel. After the widget's `*Config` type exists in `types.ts` (Step 1) and the
+widget folder exists (Step 3), scaffold its schema:
+
+```bash
+pnpm run new-widget-settings your-widget
+```
+
+This generates, idempotently:
+
+- `components/widgets/YourWidget/settings.schema.ts` — a `defineSettings<YourWidgetConfig>({...})`
+  module with an empty `content` group; fill in `groups`/`fields` per the field
+  kit in `docs/plans/WIDGET_SETTINGS_DRAWER.md` §4.2–4.3.
+- `components/widgets/YourWidget/settings.schema.test.ts` — asserts
+  `validateSchema` reports no errors.
+- `tests/fixtures/widgetConfigs/your-widget.json` — a migration fixture stub.
+- the `widgetSettings.your-widget` stub namespace in `locales/en.json` (the
+  one script that writes `en.json` directly — review the diff before
+  committing it, same as any other file the scaffold touches).
+
+Use `--dry-run` to preview without writing. Register the finished schema in
+`WIDGET_SETTINGS_SCHEMAS` in `components/widgets/WidgetRegistry.ts`
+(orchestrator-owned during the drawer migration waves — coordinate before
+editing it directly).
+
+**Legacy path still applies for now**: until wave 4 of the settings-drawer
+series flips the default and deletes `SettingsPanel.tsx`, every widget also
+needs the hand-written `Settings.tsx` panel described in Step 3 and the
+`WIDGET_SETTINGS_COMPONENTS` / `WIDGET_APPEARANCE_COMPONENTS` entries in Step
+4 — the schema and the legacy panel coexist during the migration. **Already
+cut over:** `clock`, `time-tool`, `text`, `embed`, and `lunchCount` (wave 2)
+are schema-only — none of them has a `Settings.tsx` file, and none has a
+`WIDGET_SETTINGS_COMPONENTS`/`WIDGET_APPEARANCE_COMPONENTS` entry, only a
+`WIDGET_SETTINGS_SCHEMAS` one. Don't use them as legacy-panel references.
 
 ---
 
@@ -557,7 +598,7 @@ gold standard for each pattern:
 | Icon + text layout                  | `components/widgets/Weather/Widget.tsx`                                                                                                   |
 | List with cqmin rows                | `components/widgets/LunchCount/Widget.tsx`                                                                                                |
 | Building-defaults consumption       | `components/widgets/SpecialistSchedule/SpecialistScheduleWidget.tsx` (exception to the standard `Widget.tsx` convention — do not imitate) |
-| Settings + Appearance split         | `components/widgets/ClockWidget/Settings.tsx`                                                                                             |
+| Settings + Appearance split         | `components/widgets/Checklist/Settings.tsx`                                                                                               |
 | Good empty state usage              | `components/widgets/QRWidget/Widget.tsx`                                                                                                  |
 | Transparent-root front-face pattern | `components/widgets/ExpectationsWidget/Widget.tsx`                                                                                        |
 

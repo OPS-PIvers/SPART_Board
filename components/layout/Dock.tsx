@@ -44,6 +44,7 @@ import {
   InternalToolType,
 } from '@/types';
 import { TOOLS } from '@/config/tools';
+import { useToolLabel } from '@/hooks/useToolLabel';
 import { toLunchCountSchoolSite } from '@/config/buildings';
 import {
   matchesUserBuilding as matchesUserBuildingLevels,
@@ -222,15 +223,7 @@ export const Dock: React.FC = () => {
     [setPinnedToDock, addToast]
   );
 
-  const getToolLabel = useCallback(
-    (type: WidgetType | InternalToolType): string => {
-      const permission = featurePermissions.find((p) => p.widgetType === type);
-      const staticLabel = TOOLS.find((t) => t.type === type)?.label ?? '';
-      const trimmed = permission?.displayName?.trim() ?? '';
-      return trimmed !== '' ? trimmed : staticLabel;
-    },
-    [featurePermissions]
-  );
+  const getToolLabel = useToolLabel();
 
   const getBuildingAwareOverrides = useCallback(
     (type: WidgetType): AddWidgetOverrides | undefined => {

@@ -108,6 +108,14 @@ vi.mock('firebase-admin', () => ({
   })),
 }));
 
+const { dropLinkedSectionPeriodMock } = vi.hoisted(() => ({
+  dropLinkedSectionPeriodMock: vi.fn(async () => true),
+}));
+vi.mock('./nrpsStore', async (orig) => ({
+  ...(await orig<typeof import('./nrpsStore')>()),
+  dropLinkedSectionPeriod: dropLinkedSectionPeriodMock,
+}));
+
 vi.mock('./config', async (orig) => ({
   ...(await orig<typeof import('./config')>()),
   getLtiPlatformConfig: vi
@@ -181,6 +189,8 @@ beforeEach(() => {
   courseLinks.clear();
   fetchNrpsMembersMock.mockReset();
   fetchClassStudentsMock.mockReset();
+  dropLinkedSectionPeriodMock.mockReset();
+  dropLinkedSectionPeriodMock.mockResolvedValue(true);
 });
 
 describe('linkLtiCourseV1', () => {
@@ -242,6 +252,29 @@ describe('linkLtiCourseV1', () => {
       rosterId: 'r-1',
     });
     expect(typeof link.createdAt).toBe('number');
+  });
+
+  it('dedupes the linked section out of the session period list on success', async () => {
+    seenSession();
+    await callLink({ auth: TEACHER, data: base });
+    expect(dropLinkedSectionPeriodMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        kind: 'quiz',
+        sessionId: 'S1',
+        contextTitle: 'Algebra 1 · P1',
+        classlinkClassId: 'cl-1',
+        rosterId: 'r-1',
+      }
+    );
+  });
+
+  it('still links when the period dedupe throws (best-effort)', async () => {
+    seenSession();
+    dropLinkedSectionPeriodMock.mockRejectedValueOnce(new Error('boom'));
+    const res = await callLink({ auth: TEACHER, data: base });
+    expect(res).toEqual({ ok: true, contextId: 'ctx-1' });
+    expect(courseLinks.has('ctx-1')).toBe(true);
   });
 
   it('refuses to hijack a link owned by another teacher', async () => {

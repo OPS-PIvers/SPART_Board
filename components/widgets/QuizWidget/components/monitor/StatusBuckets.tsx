@@ -11,14 +11,16 @@ const BUCKETS: { key: BucketKey; label: string }[] = [
 
 interface StatusBucketsProps {
   counts: MonitorData['counts'];
-  needsHelpCount: number;
+  handCount: number;
+  idleCount: number;
   openBucket: BucketKey | null;
   onToggle: (key: BucketKey) => void;
 }
 
 export const StatusBuckets: React.FC<StatusBucketsProps> = ({
   counts,
-  needsHelpCount,
+  handCount,
+  idleCount,
   openBucket,
   onToggle,
 }) => (
@@ -54,15 +56,28 @@ export const StatusBuckets: React.FC<StatusBucketsProps> = ({
           >
             {label}
           </span>
-          {key === 'inProgress' && needsHelpCount > 0 && (
+          {key === 'inProgress' && (handCount > 0 || idleCount > 0) && (
             <span
-              className="font-sans font-semibold text-brand-red-primary"
+              className="flex items-center font-sans font-semibold tabular-nums"
               style={{
+                gap: 'min(4px, 1cqmin)',
                 fontSize: 'min(10px, 3.5cqmin)',
                 marginTop: 'min(2px, 0.5cqmin)',
               }}
             >
-              {needsHelpCount} need{needsHelpCount === 1 ? 's' : ''} help
+              {handCount > 0 && (
+                <span className="text-brand-blue-primary">
+                  {handCount} hand{handCount === 1 ? '' : 's'}
+                </span>
+              )}
+              {handCount > 0 && idleCount > 0 && (
+                <span className="text-brand-gray-primary" aria-hidden>
+                  ·
+                </span>
+              )}
+              {idleCount > 0 && (
+                <span className="text-amber-700">{idleCount} idle</span>
+              )}
             </span>
           )}
         </button>

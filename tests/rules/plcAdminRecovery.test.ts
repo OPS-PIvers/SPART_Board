@@ -77,14 +77,22 @@ const asMember = () =>
 const asCoLead = () =>
   testEnv.authenticatedContext(COLEAD_UID, { email: COLEAD_EMAIL }).firestore();
 const asAdmin = () =>
-  testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL }).firestore();
+  testEnv
+    .authenticatedContext(ADMIN_UID, {
+      email: ADMIN_EMAIL,
+      email_verified: true,
+    })
+    .firestore();
 const asOrgPeer = () =>
   testEnv
     .authenticatedContext(ORG_PEER_UID, { email: ORG_PEER_EMAIL })
     .firestore();
 const asOtherAdmin = () =>
   testEnv
-    .authenticatedContext(OTHER_ADMIN_UID, { email: OTHER_ADMIN_EMAIL })
+    .authenticatedContext(OTHER_ADMIN_UID, {
+      email: OTHER_ADMIN_EMAIL,
+      email_verified: true,
+    })
     .firestore();
 const asInvitee = () =>
   testEnv

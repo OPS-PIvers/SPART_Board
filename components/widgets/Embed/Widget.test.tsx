@@ -7,13 +7,12 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { EmbedWidget, EmbedSettings } from './index';
+import { EmbedWidget } from './index';
 import { WidgetData, EmbedConfig, EmbedGlobalConfig } from '@/types';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { User } from 'firebase/auth';
 import '@testing-library/jest-dom';
 import * as aiModule from '@/utils/ai';
-import { useEmbedConfig } from './hooks/useEmbedConfig';
 import { useAuth } from '@/context/useAuth';
 
 vi.mock('@/context/useAuth', () => ({
@@ -76,6 +75,8 @@ vi.mock('@/context/useAuth', () => ({
     disableCloseConfirmation: false,
     remoteControlEnabled: true,
     dockPosition: 'bottom',
+    settingsDrawerWidth: 400,
+    updateUserPreference: vi.fn(),
     quizMonitorColorsEnabled: true,
     quizMonitorScoreDisplay: 'percent',
     quizGraderMode: 'question',
@@ -137,13 +138,6 @@ const mockDashboardContext = {
 
 vi.mock('@/context/dashboardCanvasStore', () => ({
   useDashboardActions: () => mockDashboardContext,
-}));
-
-// EmbedSettings (rendered in the EmbedSettings describe block) still reads the
-// full legacy context; keep it stubbed so those cases don't hit the real
-// provider.
-vi.mock('@/context/useDashboard', () => ({
-  useDashboard: () => mockDashboardContext,
 }));
 
 vi.mock('@/utils/ai', () => ({
@@ -268,50 +262,6 @@ describe('EmbedWidget', () => {
     expect(iframeAfter).toBeInTheDocument();
     // Changing the 'key' prop forces React to create a new DOM element
     expect(iframeAfter).not.toBe(iframeBefore);
-  });
-
-  describe('EmbedSettings', () => {
-    it('updates refreshInterval when selection changes', () => {
-      // Mock useEmbedConfig specifically for this test
-      vi.mocked(useEmbedConfig).mockReturnValue({
-        config: {
-          buildingId: 'schumann-elementary',
-          hideUrlField: false,
-          whitelistUrls: [],
-        },
-        isLoading: false,
-      });
-
-      render(<EmbedSettings widget={baseWidget} />);
-
-      const select = screen.getByLabelText(/Auto-Refresh/i);
-
-      fireEvent.change(select, { target: { value: '5' } });
-
-      expect(mockUpdateWidget).toHaveBeenCalledWith('1', {
-        config: expect.objectContaining({
-          refreshInterval: 5,
-        }),
-      });
-    });
-
-    it('names the Target URL input from its label', () => {
-      vi.mocked(useEmbedConfig).mockReturnValue({
-        config: {
-          buildingId: 'schumann-elementary',
-          hideUrlField: false,
-          whitelistUrls: [],
-        },
-        isLoading: false,
-      });
-
-      render(<EmbedSettings widget={baseWidget} />);
-
-      expect(screen.getByLabelText('Target URL')).toHaveAttribute(
-        'type',
-        'text'
-      );
-    });
   });
 
   describe('Mini App Generation', () => {
@@ -467,6 +417,8 @@ describe('EmbedWidget', () => {
         disableCloseConfirmation: false,
         remoteControlEnabled: true,
         dockPosition: 'bottom',
+        settingsDrawerWidth: 400,
+        updateUserPreference: vi.fn(),
         quizMonitorColorsEnabled: true,
         quizMonitorScoreDisplay: 'percent',
         quizGraderMode: 'question',

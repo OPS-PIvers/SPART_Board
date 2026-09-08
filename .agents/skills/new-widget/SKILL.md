@@ -521,9 +521,16 @@ gold standard for each pattern:
 | Icon + text layout | `components/widgets/Weather/Widget.tsx` |
 | List with cqmin rows | `components/widgets/LunchCount/Widget.tsx` |
 | Building-defaults consumption | `components/widgets/SpecialistSchedule/SpecialistScheduleWidget.tsx` (exception to the standard `Widget.tsx` convention — do not imitate) |
-| Settings + Appearance split | `components/widgets/ClockWidget/Settings.tsx` |
+| Settings + Appearance split | `components/widgets/Checklist/Settings.tsx` |
 | Good empty state usage | `components/widgets/QRWidget/Widget.tsx` |
 | Transparent-root front-face pattern | `components/widgets/ExpectationsWidget/Widget.tsx` |
+
+> **Note:** `clock`, `time-tool`, `text`, `embed`, and `lunchCount` are already
+> migrated to the schema-driven settings drawer — none of them has a
+> `Settings.tsx` file or a `WIDGET_SETTINGS_COMPONENTS`/
+> `WIDGET_APPEARANCE_COMPONENTS` entry anymore, only a
+> `WIDGET_SETTINGS_SCHEMAS` one. Don't use them as legacy `Settings.tsx`
+> panel references.
 
 > **SpecialistSchedule file layout (reference note):** SpecialistSchedule is
 > the canonical building-defaults example, but it does **not** follow the

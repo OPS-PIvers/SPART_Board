@@ -80,6 +80,10 @@ const mockAuth: AuthContextType = {
   disableCloseConfirmation: false,
   remoteControlEnabled: true,
   dockPosition: 'bottom',
+  settingsDrawerWidth: 400,
+  updateUserPreference: async () => {
+    // No-op in student view
+  },
   quizMonitorColorsEnabled: true,
   quizMonitorScoreDisplay: 'percent',
   quizGraderMode: 'question',

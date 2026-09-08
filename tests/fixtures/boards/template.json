@@ -1,0 +1,53 @@
+{
+  "board": {
+    "id": "tpl-1",
+    "name": "Board template",
+    "background": "bg-slate-900",
+    "widgets": [
+      {
+        "id": "t1",
+        "type": "clock",
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 200,
+        "z": 1,
+        "flipped": true,
+        "config": {}
+      },
+      {
+        "id": "t2",
+        "type": "dice",
+        "x": 10,
+        "y": 10,
+        "w": 300,
+        "h": 200,
+        "z": 3,
+        "flipped": true,
+        "config": {}
+      }
+    ]
+  },
+  "collection": {
+    "id": "tplc-1",
+    "name": "Collection template",
+    "boards": [
+      {
+        "id": "tplc-1-b1",
+        "name": "Board A",
+        "widgets": [
+          {
+            "id": "c1",
+            "type": "clock",
+            "x": 0,
+            "y": 0,
+            "w": 300,
+            "h": 200,
+            "z": 1,
+            "config": {}
+          }
+        ]
+      }
+    ]
+  }
+}

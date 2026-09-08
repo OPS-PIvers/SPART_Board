@@ -271,7 +271,7 @@ describe('useStarterPacks — executePack', () => {
     const deleteAllWidgets = vi.fn();
     const pack = basePack({
       widgets: [
-        baseWidget({ type: 'timer' as WidgetType }),
+        baseWidget({ type: 'text' as WidgetType }),
         baseWidget({ type: 'clock' as WidgetType }),
       ],
     });
@@ -282,8 +282,31 @@ describe('useStarterPacks — executePack', () => {
 
     expect(deleteAllWidgets).toHaveBeenCalledTimes(1);
     expect(addWidget).toHaveBeenCalledTimes(2);
-    expect(addWidget.mock.calls[0]?.[0]).toBe('timer');
+    expect(addWidget.mock.calls[0]?.[0]).toBe('text');
     expect(addWidget.mock.calls[1]?.[0]).toBe('clock');
+  });
+
+  it('rewrites a legacy pack widget type to its migrated type and stamps configVersion', () => {
+    const { result } = renderHook(() => useStarterPacks(USER_UID));
+    const addWidget =
+      vi.fn<(type: WidgetType, overrides?: AddWidgetOverrides) => void>();
+    const deleteAllWidgets = vi.fn();
+    const pack = basePack({
+      widgets: [baseWidget({ type: 'timer' as WidgetType })],
+    });
+
+    act(() => {
+      result.current.executePack(pack, false, addWidget, deleteAllWidgets);
+    });
+
+    expect(addWidget).toHaveBeenCalledTimes(1);
+    expect(addWidget.mock.calls[0]?.[0]).toBe('time-tool');
+    const overrides = addWidget.mock.calls[0]?.[1] as AddWidgetOverrides & {
+      type: WidgetType;
+      configVersion?: number;
+    };
+    expect(overrides.type).toBe('time-tool');
+    expect(overrides.configVersion).toBeDefined();
   });
 
   it('does not delete existing widgets when cleanSlate is false', () => {
@@ -311,7 +334,7 @@ describe('useStarterPacks — executePack', () => {
     const originalConfig = { nested: { value: 1 } };
     const pack = basePack({
       widgets: [
-        baseWidget({ type: 'timer' as WidgetType, config: originalConfig }),
+        baseWidget({ type: 'text' as WidgetType, config: originalConfig }),
       ],
     });
 

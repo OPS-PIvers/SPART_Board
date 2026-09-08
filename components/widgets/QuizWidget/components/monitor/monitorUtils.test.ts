@@ -6,7 +6,7 @@ import {
   compareStudents,
   isStuck,
   matchesFilter,
-  needsHelpFlag,
+  studentFlags,
   proficiencyBand,
 } from './monitorUtils';
 
@@ -43,13 +43,20 @@ describe('proficiencyBand', () => {
   });
 });
 
-describe('isStuck / needsHelpFlag', () => {
-  it('flags in-progress students idle past the threshold', () => {
+describe('isStuck / studentFlags', () => {
+  it('flags in-progress students idle past the threshold (floored at 2 min)', () => {
     const stuck = response({
       lastWriteAt: ts(NOW - STUCK_THRESHOLD_MS - 1),
     });
     expect(isStuck(stuck, NOW)).toBe(true);
-    expect(needsHelpFlag(stuck, NOW)?.kind).toBe('stuck');
+    expect(studentFlags(stuck, NOW)).toEqual({
+      handMinutes: null,
+      idleMinutes: 2,
+    });
+    expect(
+      studentFlags(response({ lastWriteAt: ts(NOW - 5 * 60_000) }), NOW)
+        .idleMinutes
+    ).toBe(5);
   });
 
   it('does not flag recent activity, completed rows, or missing lastWriteAt', () => {
@@ -68,23 +75,27 @@ describe('isStuck / needsHelpFlag', () => {
     expect(isStuck(response({}), NOW)).toBe(false);
   });
 
-  it('prefers a raised hand over the stuck heuristic', () => {
+  it('reports a raised hand and idleness independently', () => {
     const both = response({
       handRaisedAt: ts(NOW - 60_000),
       lastWriteAt: ts(NOW - STUCK_THRESHOLD_MS * 2),
     });
-    const flag = needsHelpFlag(both, NOW);
-    expect(flag?.kind).toBe('hand');
-    expect(flag?.minutes).toBe(1);
+    expect(studentFlags(both, NOW)).toEqual({ handMinutes: 1, idleMinutes: 4 });
+    expect(
+      studentFlags(
+        response({ handRaisedAt: ts(NOW - 30_000), lastWriteAt: ts(NOW) }),
+        NOW
+      )
+    ).toEqual({ handMinutes: 0, idleMinutes: null });
   });
 
-  it('treats a lowered hand (null) as no flag', () => {
+  it('treats a lowered hand (null) and recent activity as no flags', () => {
     expect(
-      needsHelpFlag(
+      studentFlags(
         response({ handRaisedAt: null, lastWriteAt: ts(NOW - 10_000) }),
         NOW
       )
-    ).toBeNull();
+    ).toEqual({ handMinutes: null, idleMinutes: null });
   });
 });
 

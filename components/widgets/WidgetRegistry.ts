@@ -18,6 +18,7 @@ import {
   isChunkLoadError,
   neverResolvingPromise,
 } from '@/utils/chunkLoadError';
+import type { WidgetSettingsSchema } from '@/components/settings/schema/types';
 
 // Component type definitions to ensure type safety
 type SettingsComponentProps = {
@@ -262,6 +263,19 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
  * Do not assume `WIDGET_SETTINGS_COMPONENTS[widgetType]` is defined for every
  * `WidgetType` — always handle the `undefined` case at call sites.
  */
+// Settings-drawer schemas (modules, not components); populated per migrated widget.
+export const WIDGET_SETTINGS_SCHEMAS: Partial<
+  Record<WidgetType, () => Promise<WidgetSettingsSchema>>
+> = {
+  text: () => import('./TextWidget/settings.schema').then((m) => m.default),
+  embed: () => import('./Embed/settings.schema').then((m) => m.default),
+  lunchCount: () =>
+    import('./LunchCount/settings.schema').then((m) => m.default),
+  clock: () => import('./ClockWidget/settings.schema').then((m) => m.default),
+  'time-tool': () =>
+    import('./TimeTool/settings.schema').then((m) => m.default),
+};
+
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
 > = {
@@ -270,13 +284,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./SoundboardWidget/Settings'),
     'SoundboardSettings'
   ),
-  clock: lazyNamed(() => import('./ClockWidget/Settings'), 'ClockSettings'),
-  text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
   checklist: lazyNamed(() => import('./Checklist'), 'ChecklistSettings'),
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
   dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),
   sound: lazyNamed(() => import('./SoundWidget'), 'SoundSettings'),
-  embed: lazyNamed(() => import('./Embed'), 'EmbedSettings'),
   drawing: lazyNamed(
     () => import('./DrawingWidget/Settings'),
     'DrawingSettings'
@@ -286,7 +297,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   webcam: lazyNamed(() => import('./Webcam'), 'WebcamSettings'),
   calendar: lazyNamed(() => import('./Calendar/Settings'), 'CalendarSettings'),
   weather: lazyNamed(() => import('./Weather/Settings'), 'WeatherSettings'),
-  lunchCount: lazyNamed(() => import('./LunchCount'), 'LunchCountSettings'),
   poll: lazyNamed(() => import('./PollWidget'), 'PollSettings'),
   instructionalRoutines: lazyNamed(
     () => import('./InstructionalRoutines/Settings'),
@@ -294,10 +304,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),
   miniApp: MiniAppSettings,
-  'time-tool': lazyNamed(
-    () => import('./TimeTool/Settings'),
-    'TimeToolSettings'
-  ),
   'seating-chart': lazyNamed(
     () => import('./SeatingChart/Settings'),
     'SeatingChartSettings'
@@ -425,14 +431,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
     () => import('./BlendingBoard/Settings'),
     'BlendingBoardAppearanceSettings'
   ),
-  clock: lazyNamed(
-    () => import('./ClockWidget/Settings'),
-    'ClockAppearanceSettings'
-  ),
-  'time-tool': lazyNamed(
-    () => import('./TimeTool/Settings'),
-    'TimeToolAppearanceSettings'
-  ),
   checklist: lazyNamed(
     () => import('./Checklist'),
     'ChecklistAppearanceSettings'
@@ -503,10 +501,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
     () => import('./NumberLine/Settings'),
     'NumberLineAppearanceSettings'
   ),
-  lunchCount: lazyNamed(
-    () => import('./LunchCount'),
-    'LunchCountAppearanceSettings'
-  ),
   smartNotebook: lazyNamed(
     () => import('./SmartNotebook'),
     'SmartNotebookAppearanceSettings'
@@ -527,7 +521,6 @@ export const WIDGET_APPEARANCE_COMPONENTS: Partial<
     () => import('./Stations/Settings'),
     'StationsAppearanceSettings'
   ),
-  text: lazyNamed(() => import('./TextWidget'), 'TextAppearanceSettings'),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {

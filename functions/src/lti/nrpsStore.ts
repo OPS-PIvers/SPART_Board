@@ -12,9 +12,16 @@
 //     never leak one teacher's roster to another: the resolver reads only its
 //     own session's contexts and is gated on session ownership.
 //   • On the session doc itself (denormalized, idempotent):
+//       - classIds               ← ∪ 'schoology:<contextId>' so students of
+//                                   every linked section pass the rules
+//                                   class-gate (the deep-link only knows the
+//                                   section it was attached from).
 //       - periodNames            ← the Schoology section title (so the class
 //                                   filter shows the section instead of "No
 //                                   classes" — the analogue of a roster name).
+//                                   Skipped/removed when the section is linked
+//                                   to a class already on the session, so a
+//                                   roster + its linked section count once.
 //       - classPeriodByClassId   ← { 'schoology:<contextId>': <section title> }
 //                                   so the SSO join resolves each student's
 //                                   period the same way the ClassLink path does.
@@ -23,7 +30,7 @@
 //                                   id is only known server-side, at launch).
 //       - ltiNrps                ← routing flag: the monitor calls the NRPS name
 //                                   resolver only for flagged sessions.
-//   • For a quiz, periodNames is ALSO mirrored onto the teacher's archive doc
+//   • For a quiz, periodNames/classIds/classPeriodByClassId are ALSO mirrored onto the archive doc
 //     (`users/{teacherUid}/quiz_assignments/{sessionId}`) so the QuizManager
 //     card shows the section with ZERO extra client reads (the archive is
 //     already streamed) — matching how the Classroom path stores it there.
@@ -56,6 +63,121 @@ export const USERS_COLLECTION = 'users';
 export const QUIZ_ASSIGNMENTS_SUBCOLLECTION = 'quiz_assignments';
 /** `lti_session_memberships/{sessionId}/contexts/{contextId}` */
 export const LTI_SESSION_MEMBERSHIPS_COLLECTION = 'lti_session_memberships';
+/** Section↔ClassLink link docs (owned by courseLinkEndpoints.ts; read here only). */
+const LTI_COURSE_LINKS_COLLECTION = 'lti_course_links';
+const RESPONSES_SUBCOLLECTION = 'responses';
+
+function sessionCollectionForKind(kind: LtiSessionKind): string {
+  return kind === 'va'
+    ? VIDEO_ACTIVITY_SESSIONS_COLLECTION
+    : QUIZ_SESSIONS_COLLECTION;
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? (value as unknown[]).filter(
+        (v): v is string => typeof v === 'string' && !!v
+      )
+    : [];
+}
+
+/** True when the section's paired ClassLink class or roster already targets the session. */
+export function sectionPairedOnSession(
+  sessionData: admin.firestore.DocumentData,
+  classlinkClassId: unknown,
+  rosterId: unknown
+): boolean {
+  const classIds = stringList(sessionData.classIds);
+  const rosterIds = stringList(sessionData.rosterIds);
+  return (
+    (typeof classlinkClassId === 'string' &&
+      !!classlinkClassId &&
+      classIds.includes(classlinkClassId)) ||
+    (typeof rosterId === 'string' && !!rosterId && rosterIds.includes(rosterId))
+  );
+}
+
+export interface DedupeLinkedSectionPeriodArgs {
+  kind: LtiSessionKind;
+  sessionId: string;
+  sessionData: admin.firestore.DocumentData;
+  contextTitle: string | null;
+  classlinkClassId: unknown;
+  rosterId: unknown;
+}
+
+/**
+ * The session's periodNames with a linked section's title removed, or null when
+ * nothing should change: the section isn't paired with a class already on the
+ * session, the title isn't present, or a response already carries that label
+ * (PIN students picked it — removing it would fork the period filter).
+ */
+export async function dedupeLinkedSectionPeriod(
+  db: Db,
+  args: DedupeLinkedSectionPeriodArgs
+): Promise<string[] | null> {
+  const { kind, sessionId, sessionData, contextTitle } = args;
+  if (!contextTitle) return null;
+  if (
+    !sectionPairedOnSession(sessionData, args.classlinkClassId, args.rosterId)
+  )
+    return null;
+  const periods = stringList(sessionData.periodNames);
+  if (!periods.includes(contextTitle)) return null;
+  const used = await db
+    .collection(sessionCollectionForKind(kind))
+    .doc(sessionId)
+    .collection(RESPONSES_SUBCOLLECTION)
+    .where('classPeriod', '==', contextTitle)
+    .limit(1)
+    .get();
+  if (!used.empty) return null;
+  return periods.filter((p) => p !== contextTitle);
+}
+
+export interface DropLinkedSectionPeriodArgs {
+  kind: LtiSessionKind;
+  sessionId: string;
+  contextTitle: string | null;
+  classlinkClassId: unknown;
+  rosterId: unknown;
+}
+
+/**
+ * Link-time counterpart of the launch-time dedupe: when a teacher links a
+ * section to a class already on the session, drop the section's title from the
+ * session (and the quiz archive doc) so the card stops counting it twice.
+ * Returns true when a write happened.
+ */
+export async function dropLinkedSectionPeriod(
+  db: Db,
+  args: DropLinkedSectionPeriodArgs
+): Promise<boolean> {
+  const { kind, sessionId } = args;
+  const ref = db.collection(sessionCollectionForKind(kind)).doc(sessionId);
+  const snap = await ref.get();
+  if (!snap.exists) return false;
+  const sessionData = snap.data() ?? {};
+  const next = await dedupeLinkedSectionPeriod(db, { ...args, sessionData });
+  if (!next) return false;
+  const batch = db.batch();
+  batch.set(ref, { periodNames: next }, { merge: true });
+  const teacherUid =
+    typeof sessionData.teacherUid === 'string' ? sessionData.teacherUid : '';
+  if (kind === 'quiz' && teacherUid) {
+    batch.set(
+      db
+        .collection(USERS_COLLECTION)
+        .doc(teacherUid)
+        .collection(QUIZ_ASSIGNMENTS_SUBCOLLECTION)
+        .doc(sessionId),
+      { periodNames: next },
+      { merge: true }
+    );
+  }
+  await batch.commit();
+  return true;
+}
 /** `users/{teacherUid}/lti_seen_sections/{contextId}` — linking-UI inventory. */
 export const LTI_SEEN_SECTIONS_SUBCOLLECTION = 'lti_seen_sections';
 
@@ -86,6 +208,8 @@ export type PersistLtiLaunchContextArgs = {
   membershipUrl?: string | null;
   /** Launch deployment id, stored for diagnostics / future multi-deployment. */
   deploymentId: string;
+  /** ClassLink class the launch was bridged to (classlinkBridge.ts), if any. */
+  bridgedClassId?: string | null;
 } & (
   | {
       kind: 'quiz';
@@ -119,10 +243,7 @@ export async function persistLtiLaunchContext(
   const { kind, contextId } = args;
   if (!contextId) return null;
 
-  const collectionName =
-    kind === 'va'
-      ? VIDEO_ACTIVITY_SESSIONS_COLLECTION
-      : QUIZ_SESSIONS_COLLECTION;
+  const collectionName = sessionCollectionForKind(kind);
 
   // ── Resolve the target session doc ──────────────────────────────────────────
   let sessionId: string;
@@ -211,18 +332,47 @@ export async function persistLtiLaunchContext(
   // lockstep. Null when the title is absent or already present (no change).
   let nextPeriodNames: string[] | null = null;
 
+  // Linked sections launch with their own contextId; union it so the rules class-gate admits them.
+  const classId = `schoology:${contextId}`;
+  const currentClassIds = Array.isArray(sessionData.classIds)
+    ? (sessionData.classIds as unknown[]).filter(
+        (c): c is string => typeof c === 'string' && !!c
+      )
+    : [];
+  // A bridged student already passes on their ClassLink class; skip the union so SSO period resolution stays unambiguous.
+  const admittedByBridge =
+    !!args.bridgedClassId && currentClassIds.includes(args.bridgedClassId);
+  if (!currentClassIds.includes(classId) && !admittedByBridge) {
+    update.classIds = [...currentClassIds, classId];
+  }
+
   if (args.contextTitle) {
-    const currentPeriods = Array.isArray(sessionData.periodNames)
-      ? (sessionData.periodNames as unknown[]).filter(
-          (p): p is string => typeof p === 'string' && !!p
-        )
-      : [];
-    if (!currentPeriods.includes(args.contextTitle)) {
-      nextPeriodNames = [...currentPeriods, args.contextTitle];
-      update.periodNames = nextPeriodNames;
+    // A section linked to a class already on the session is that class; its title must not count twice.
+    const linkSnap = await db
+      .collection(LTI_COURSE_LINKS_COLLECTION)
+      .doc(contextId)
+      .get();
+    const link = linkSnap.data() ?? {};
+    if (
+      sectionPairedOnSession(sessionData, link.classlinkClassId, link.rosterId)
+    ) {
+      nextPeriodNames = await dedupeLinkedSectionPeriod(db, {
+        kind,
+        sessionId,
+        sessionData,
+        contextTitle: args.contextTitle,
+        classlinkClassId: link.classlinkClassId,
+        rosterId: link.rosterId,
+      });
+      if (nextPeriodNames) update.periodNames = nextPeriodNames;
+    } else {
+      const currentPeriods = stringList(sessionData.periodNames);
+      if (!currentPeriods.includes(args.contextTitle)) {
+        nextPeriodNames = [...currentPeriods, args.contextTitle];
+        update.periodNames = nextPeriodNames;
+      }
     }
 
-    const classId = `schoology:${contextId}`;
     const currentMap =
       sessionData.classPeriodByClassId &&
       typeof sessionData.classPeriodByClassId === 'object'
@@ -262,7 +412,14 @@ export async function persistLtiLaunchContext(
   // (only when the section set actually changed) lets the card show the Schoology
   // section with NO extra client read. The doc id is the sessionId (1:1). VA's
   // manager card labels by activity title, so it needs no equivalent write.
-  if (kind === 'quiz' && nextPeriodNames) {
+  // classIds / classPeriodByClassId ride along so the assignments hub can resolve sections without a session read.
+  const archive: Record<string, unknown> = {};
+  if (nextPeriodNames) archive.periodNames = nextPeriodNames;
+  if (update.classIds) archive.classIds = update.classIds;
+  if (update.classPeriodByClassId) {
+    archive.classPeriodByClassId = update.classPeriodByClassId;
+  }
+  if (kind === 'quiz' && Object.keys(archive).length > 0) {
     const teacherUid =
       typeof sessionData.teacherUid === 'string' ? sessionData.teacherUid : '';
     if (teacherUid) {
@@ -272,7 +429,7 @@ export async function persistLtiLaunchContext(
           .doc(teacherUid)
           .collection(QUIZ_ASSIGNMENTS_SUBCOLLECTION)
           .doc(sessionId),
-        { periodNames: nextPeriodNames },
+        archive,
         { merge: true }
       );
       hasWrites = true;

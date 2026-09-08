@@ -181,4 +181,49 @@ describe('mergeDashboardForSave', () => {
 
     expect(merged.thumbnailUrl).toBe('https://example.test/t.png');
   });
+
+  it('takes a remote object-field edit when the local copy is unchanged but key-reordered', () => {
+    // Same content as base, different key order — must still read as "unchanged locally".
+    const base = board([], {
+      globalStyle: { fontFamily: 'Lexend', fontColor: '#fff' } as never,
+    });
+    const local = board([], {
+      globalStyle: { fontColor: '#fff', fontFamily: 'Lexend' } as never,
+    });
+    const server = board([], {
+      globalStyle: {
+        fontColor: '#fff',
+        fontFamily: 'Lexend',
+        cardColor: '#000',
+      } as never,
+    });
+
+    const merged = mergeDashboardForSave(local, server, baselineOf(base));
+
+    expect(merged.globalStyle).toEqual(server.globalStyle);
+  });
+});
+
+describe('configVersion travels with config', () => {
+  it('takes the server stamp whenever it takes the server config', () => {
+    const base = board([widget('w1', 'a', { configVersion: 1 })]);
+    const local = board([widget('w1', 'a', { configVersion: 1 })]);
+    const server = board([widget('w1', 'server', { configVersion: 0 })]);
+
+    const merged = mergeDashboardForSave(local, server, baselineOf(base));
+
+    expect(textOf(merged.widgets[0])).toBe('server');
+    expect(merged.widgets[0].configVersion).toBe(0);
+  });
+
+  it('keeps the local stamp when the local config wins', () => {
+    const base = board([widget('w1', 'a', { configVersion: 0 })]);
+    const local = board([widget('w1', 'local', { configVersion: 1 })]);
+    const server = board([widget('w1', 'server', { configVersion: 0 })]);
+
+    const merged = mergeDashboardForSave(local, server, baselineOf(base));
+
+    expect(textOf(merged.widgets[0])).toBe('local');
+    expect(merged.widgets[0].configVersion).toBe(1);
+  });
 });

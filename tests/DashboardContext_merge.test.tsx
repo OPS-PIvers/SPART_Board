@@ -19,7 +19,8 @@ import { render, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardProvider } from '@/context/DashboardContext';
 import { useDashboard } from '@/context/useDashboard';
-import { Dashboard, WidgetData } from '@/types';
+import { Dashboard, WidgetData, DEFAULT_GLOBAL_STYLE } from '@/types';
+import { updateDoc } from 'firebase/firestore';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -28,22 +29,30 @@ import { Dashboard, WidgetData } from '@/types';
 // Mutable so a test can flip the phone-remote toggle off.
 const authState = { remoteControlEnabled: true };
 
+// Stable singleton — a fresh object per render would churn the `user`
+// dependency on the dashboards-subscription effect and reset `loading` to
+// true on every commit, trapping any effect gated on `!loading` (e.g. the
+// autosave effect), even between renders that changed nothing relevant.
+const authMock = {
+  user: {
+    uid: 'test-user',
+    displayName: 'Test User',
+    email: 'test@example.com',
+  },
+  isAdmin: false,
+  featurePermissions: [],
+  selectedBuildings: [],
+  savedWidgetConfigs: {},
+  saveWidgetConfig: vi.fn(),
+  refreshGoogleToken: vi.fn(),
+  get remoteControlEnabled() {
+    return authState.remoteControlEnabled;
+  },
+  profileLoaded: true,
+};
+
 vi.mock('@/context/useAuth', () => ({
-  useAuth: () => ({
-    user: {
-      uid: 'test-user',
-      displayName: 'Test User',
-      email: 'test@example.com',
-    },
-    isAdmin: false,
-    featurePermissions: [],
-    selectedBuildings: [],
-    savedWidgetConfigs: {},
-    saveWidgetConfig: vi.fn(),
-    refreshGoogleToken: vi.fn(),
-    remoteControlEnabled: authState.remoteControlEnabled,
-    profileLoaded: true,
-  }),
+  useAuth: () => authMock,
 }));
 
 type SnapshotCb = (dashboards: Dashboard[], hasPendingWrites: boolean) => void;
@@ -51,66 +60,77 @@ let capturedSnapshotCb: SnapshotCb | null = null;
 
 const mockSaveDashboard = vi.fn().mockResolvedValue(Date.now());
 
-vi.mock('@/hooks/useFirestore', () => ({
-  useFirestore: () => ({
-    saveDashboard: mockSaveDashboard,
-    saveDashboards: vi.fn().mockResolvedValue(undefined),
-    deleteDashboard: vi.fn().mockResolvedValue(undefined),
-    subscribeToDashboards: vi.fn((cb: SnapshotCb) => {
-      capturedSnapshotCb = cb;
-      return () => {
-        // unsubscribe no-op
-      };
-    }),
-    shareDashboard: vi.fn(),
-    loadSharedDashboard: vi.fn().mockResolvedValue(null),
-    rosters: [],
-    addRoster: vi.fn(),
-    updateRoster: vi.fn(),
-    deleteRoster: vi.fn(),
-    setActiveRoster: vi.fn(),
-    activeRosterId: null,
+// Stable singleton objects — a fresh object (or fresh vi.fn() inside one) per
+// render churns the mount effect's `subscribeToDashboards`/`saveDashboard`
+// deps, re-triggering `setLoading(true)` on every commit (see authMock above).
+const firestoreMock = {
+  saveDashboard: mockSaveDashboard,
+  saveDashboards: vi.fn().mockResolvedValue(undefined),
+  deleteDashboard: vi.fn().mockResolvedValue(undefined),
+  subscribeToDashboards: vi.fn((cb: SnapshotCb) => {
+    capturedSnapshotCb = cb;
+    return () => {
+      // unsubscribe no-op
+    };
   }),
+  shareDashboard: vi.fn(),
+  loadSharedDashboard: vi.fn().mockResolvedValue(null),
+  rosters: [],
+  addRoster: vi.fn(),
+  updateRoster: vi.fn(),
+  deleteRoster: vi.fn(),
+  setActiveRoster: vi.fn(),
+  activeRosterId: null,
+};
+
+vi.mock('@/hooks/useFirestore', () => ({
+  useFirestore: () => firestoreMock,
 }));
+
+const rostersMock = {
+  rosters: [],
+  activeRosterId: null,
+  addRoster: vi.fn(),
+  updateRoster: vi.fn(),
+  deleteRoster: vi.fn(),
+  setActiveRoster: vi.fn(),
+  setAbsentStudents: vi.fn(),
+};
 
 vi.mock('@/hooks/useRosters', () => ({
-  useRosters: () => ({
-    rosters: [],
-    activeRosterId: null,
-    addRoster: vi.fn(),
-    updateRoster: vi.fn(),
-    deleteRoster: vi.fn(),
-    setActiveRoster: vi.fn(),
-    setAbsentStudents: vi.fn(),
-  }),
+  useRosters: () => rostersMock,
 }));
+
+const collectionsMock = {
+  collections: [],
+  loading: false,
+  error: null,
+  createCollection: vi.fn(),
+  renameCollection: vi.fn(),
+  moveCollection: vi.fn(),
+  deleteCollection: vi.fn(),
+  reorderSiblings: vi.fn(),
+  setCollectionMetadata: vi.fn(),
+  setCollectionDefaultBoard: vi.fn(),
+};
 
 vi.mock('@/hooks/useCollections', () => ({
-  useCollections: () => ({
-    collections: [],
-    loading: false,
-    error: null,
-    createCollection: vi.fn(),
-    renameCollection: vi.fn(),
-    moveCollection: vi.fn(),
-    deleteCollection: vi.fn(),
-    reorderSiblings: vi.fn(),
-    setCollectionMetadata: vi.fn(),
-    setCollectionDefaultBoard: vi.fn(),
-  }),
+  useCollections: () => collectionsMock,
 }));
 
+const sharedCollectionMock = {
+  shareCollection: vi.fn().mockResolvedValue('mock-collection-share-id'),
+  shareSubstituteCollection: vi
+    .fn()
+    .mockResolvedValue('mock-collection-sub-share-id'),
+  loadSharedCollection: vi
+    .fn()
+    .mockResolvedValue({ ok: false, reason: 'not-found' }),
+  loadSharedCollectionBoards: vi.fn().mockResolvedValue([]),
+};
+
 vi.mock('@/hooks/useSharedCollection', () => ({
-  useSharedCollection: () => ({
-    shareCollection: vi.fn().mockResolvedValue('mock-collection-share-id'),
-    shareSubstituteCollection: vi
-      .fn()
-      .mockResolvedValue('mock-collection-sub-share-id'),
-    loadSharedCollection: vi
-      .fn()
-      .mockResolvedValue({ ok: false, reason: 'not-found' }),
-    loadSharedCollectionBoards: vi.fn().mockResolvedValue([]),
-  }),
+  useSharedCollection: () => sharedCollectionMock,
 }));
 
 vi.mock('firebase/firestore', async (importOriginal) => {
@@ -151,6 +171,9 @@ interface ContextSnapshot {
   dashboards: Dashboard[];
   activeDashboard: Dashboard | null;
   updateWidget: ReturnType<typeof useDashboard>['updateWidget'];
+  setGlobalStyle: ReturnType<typeof useDashboard>['setGlobalStyle'];
+  pinBoard: ReturnType<typeof useDashboard>['pinBoard'];
+  updateDashboard: ReturnType<typeof useDashboard>['updateDashboard'];
 }
 
 /**
@@ -167,6 +190,9 @@ const TestConsumer: React.FC<{
       dashboards: ctx.dashboards,
       activeDashboard: ctx.activeDashboard,
       updateWidget: ctx.updateWidget,
+      setGlobalStyle: ctx.setGlobalStyle,
+      pinBoard: ctx.pinBoard,
+      updateDashboard: ctx.updateDashboard,
     };
   });
   return null;
@@ -340,6 +366,55 @@ describe('DashboardContext per-widget merge', () => {
     });
   });
 
+  it('carries configVersion alongside config for both the local-wins and server-wins branches', async () => {
+    const stateRef = setup();
+
+    const widgetA = { ...makeWidget('wA', 'original-A'), configVersion: 1 };
+    const widgetB = { ...makeWidget('wB', 'original-B'), configVersion: 1 };
+    const initialDashboard = makeDashboard([widgetA, widgetB]);
+
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+
+    // Local edit on widget A bumps its local configVersion.
+    await act(async () => {
+      stateRef.current?.updateWidget('wA', {
+        config: { text: 'local-A' } as WidgetData['config'],
+        configVersion: 2,
+      });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      const wA = stateRef.current?.activeDashboard?.widgets.find(
+        (w) => w.id === 'wA'
+      );
+      expect(wA?.config).toMatchObject({ text: 'local-A' });
+    });
+
+    // Server snapshot: widget A unchanged (stale), widget B changed with a new configVersion.
+    const serverDashboard = makeDashboard([
+      { ...makeWidget('wA', 'original-A'), configVersion: 1 },
+      { ...makeWidget('wB', 'server-B'), configVersion: 5 },
+    ]);
+    await pushSnapshot([{ ...serverDashboard, updatedAt: 2000 }]);
+
+    await waitFor(() => {
+      const widgets = stateRef.current?.activeDashboard?.widgets;
+      const wA = widgets?.find((w) => w.id === 'wA');
+      const wB = widgets?.find((w) => w.id === 'wB');
+      // Local-wins branch: configVersion travels with the kept local config.
+      expect(wA?.config).toMatchObject({ text: 'local-A' });
+      expect(wA?.configVersion).toBe(2);
+      // Server-wins branch: configVersion travels with the accepted server config.
+      expect(wB?.config).toMatchObject({ text: 'server-B' });
+      expect(wB?.configVersion).toBe(5);
+    });
+  });
+
   it('preserves a locally-present widget that the server deleted while local edits exist', async () => {
     const stateRef = setup();
 
@@ -472,6 +547,197 @@ describe('DashboardContext per-widget merge', () => {
       );
       expect(wA?.w).toBe(400);
       expect(wA?.h).toBe(200);
+    });
+  });
+
+  it('REGRESSION: an unsaved board-level style change survives a snapshot that has not seen it yet', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+
+    // Teacher picks a new global font from the style settings; not saved yet.
+    await act(async () => {
+      stateRef.current?.setGlobalStyle({ fontFamily: 'serif' });
+      await Promise.resolve();
+    });
+    expect(stateRef.current?.activeDashboard?.globalStyle?.fontFamily).toBe(
+      'serif'
+    );
+
+    // A snapshot lands (e.g. this device's own unrelated widget-resize echo)
+    // before the debounced autosave has flushed the style change to Firestore,
+    // so the server copy still carries no globalStyle at all.
+    await pushSnapshot([{ ...initialDashboard, updatedAt: 2000 }]);
+
+    await waitFor(() => {
+      expect(stateRef.current?.activeDashboard?.globalStyle?.fontFamily).toBe(
+        'serif'
+      );
+    });
+  });
+
+  it('REGRESSION: a global style change alone triggers autosave', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+    mockSaveDashboard.mockClear();
+
+    // Teacher picks a new global font from the style settings and touches
+    // nothing else — no widget, background, name, settings, or ink edit.
+    await act(async () => {
+      stateRef.current?.setGlobalStyle({ fontFamily: 'serif' });
+      await Promise.resolve();
+    });
+    expect(stateRef.current?.activeDashboard?.globalStyle?.fontFamily).toBe(
+      'serif'
+    );
+
+    await waitFor(() => expect(mockSaveDashboard).toHaveBeenCalledTimes(1), {
+      timeout: 3000,
+    });
+    const saved = mockSaveDashboard.mock.calls[0][0] as Dashboard;
+    expect(saved.globalStyle?.fontFamily).toBe('serif');
+  });
+
+  it('REGRESSION: a kept-local dashboard field does not advance its save baseline to a same-valued incoming snapshot', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+    mockSaveDashboard.mockClear();
+
+    // Teacher picks a new global font; not saved yet.
+    await act(async () => {
+      stateRef.current?.setGlobalStyle({ fontFamily: 'serif' });
+      await Promise.resolve();
+    });
+
+    // A snapshot lands showing globalStyle already committed with the SAME
+    // value from a different device/tab (a coincidental match — plausible
+    // for any low-cardinality field, e.g. isPinned) before the debounced
+    // autosave flushes. The onSnapshot merge correctly keeps the local
+    // value either way; the bug was in what it recorded as the new
+    // "last synced" baseline for the field.
+    await pushSnapshot([
+      {
+        ...initialDashboard,
+        updatedAt: 2000,
+        globalStyle: { ...DEFAULT_GLOBAL_STYLE, fontFamily: 'serif' },
+      },
+    ]);
+
+    await waitFor(() => expect(mockSaveDashboard).toHaveBeenCalledTimes(1), {
+      timeout: 3000,
+    });
+    const baseline = mockSaveDashboard.mock.calls[0][1] as
+      | { dashboardFields?: Record<string, string> }
+      | undefined;
+    // The true prior baseline is "no globalStyle was ever synced from this
+    // device" (serializes to the string "null"). If the incoming snapshot's
+    // matching value had advanced it instead, a later save racing a
+    // genuinely different concurrent edit would treat this still-unsaved
+    // edit as unchanged and silently adopt the other edit instead.
+    expect(baseline?.dashboardFields?.globalStyle).toBe('null');
+  });
+
+  it('REGRESSION: pinning the active board does not also schedule a redundant full-document autosave', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+    mockSaveDashboard.mockClear();
+    vi.mocked(updateDoc).mockClear();
+
+    // pinBoard does its own optimistic setDashboards + a direct, immediate
+    // updateDoc — isPinned has a dedicated write path and must never also
+    // flow through the debounced whole-document autosave, which would
+    // silently double-write the board on every pin/unpin.
+    await act(async () => {
+      await stateRef.current?.pinBoard('dash-1');
+    });
+
+    expect(updateDoc).toHaveBeenCalledTimes(1);
+    expect(stateRef.current?.activeDashboard?.isPinned).toBe(true);
+
+    // Give the debounced autosave timer (if wrongly scheduled) time to fire.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(mockSaveDashboard).not.toHaveBeenCalled();
+  });
+
+  it('REGRESSION: a sharedGroups-only change alone triggers autosave', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+    mockSaveDashboard.mockClear();
+
+    // Teacher links a Randomizer group to a Scoreboard widget and touches
+    // nothing else — no widget, background, name, settings, or style edit.
+    await act(async () => {
+      stateRef.current?.updateDashboard({
+        sharedGroups: [{ id: 'group-1', name: 'Group 1' }],
+      });
+      await Promise.resolve();
+    });
+    expect(stateRef.current?.activeDashboard?.sharedGroups).toEqual([
+      { id: 'group-1', name: 'Group 1' },
+    ]);
+
+    await waitFor(() => expect(mockSaveDashboard).toHaveBeenCalledTimes(1), {
+      timeout: 3000,
+    });
+    const saved = mockSaveDashboard.mock.calls[0][0] as Dashboard;
+    expect(saved.sharedGroups).toEqual([{ id: 'group-1', name: 'Group 1' }]);
+  });
+
+  it('REGRESSION: an unsaved sharedGroups change survives a snapshot that has not seen it yet', async () => {
+    const stateRef = setup();
+
+    const initialDashboard = makeDashboard([makeWidget('wA', 'a')]);
+    await pushSnapshot([initialDashboard]);
+    await waitFor(() =>
+      expect(stateRef.current?.activeDashboard?.id).toBe('dash-1')
+    );
+    await pushSnapshot([initialDashboard]);
+
+    await act(async () => {
+      stateRef.current?.updateDashboard({
+        sharedGroups: [{ id: 'group-1', name: 'Group 1' }],
+      });
+      await Promise.resolve();
+    });
+
+    // A snapshot lands (e.g. this device's own unrelated widget-resize echo)
+    // before the debounced autosave has flushed the sharedGroups change to
+    // Firestore, so the server copy still carries no sharedGroups at all.
+    await pushSnapshot([{ ...initialDashboard, updatedAt: 2000 }]);
+
+    await waitFor(() => {
+      expect(stateRef.current?.activeDashboard?.sharedGroups).toEqual([
+        { id: 'group-1', name: 'Group 1' },
+      ]);
     });
   });
 });

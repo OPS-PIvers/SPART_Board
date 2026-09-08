@@ -2300,8 +2300,14 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
               const matches = sessionClassIds.filter((c) =>
                 studentClaimSet.has(c)
               );
-              if (matches.length === 1) {
-                resolvedClassId = matches[0];
+              // A bridged Schoology launch matches both its ClassLink class and its section; prefer the roster-backed class.
+              const rosterMatches = matches.filter(
+                (c) => !c.startsWith('schoology:')
+              );
+              const preferred =
+                rosterMatches.length === 1 ? rosterMatches : matches;
+              if (preferred.length === 1) {
+                resolvedClassId = preferred[0];
                 const periodFromSession =
                   sessionData.classPeriodByClassId?.[resolvedClassId];
                 if (
@@ -2491,53 +2497,206 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       const sessionId = sessionIdRef.current;
       const responseKey = responseKeyRef.current;
       if (!sessionId || !responseKey) return;
+      const isDraft = opts?.isDraft === true;
 
-      // isCorrect is intentionally not written by the student to prevent
-      // client-side forgery. It is computed by the teacher's results view
-      // using gradeAnswer() against the full quiz data loaded from Drive.
-      //
-      // `status` distinguishes a debounced autosave draft (written-response
-      // only) from an explicit submit. The student's `alreadyAnswered` gate
-      // checks for `'submitted'` so a draft autosave doesn't masquerade as
-      // a final answer and prematurely fire the completion card.
-      const existingAnswers = myResponseRef.current?.answers ?? [];
-      const priorEntry = existingAnswers.find(
-        (a) => a.questionId === questionId
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        responseKey
       );
 
-      // #1 guard — see `isUnsafeBlankDraft` doc. Refuses a draft autosave
-      // that would silently clobber a non-empty saved answer with ''.
-      if (isUnsafeBlankDraft(answer, opts?.isDraft === true, priorEntry)) {
-        return;
+      // Pure given a live `existing` doc — shared by both the draft and
+      // submit paths below so the guard/rewrite logic can't drift between
+      // them. Returns `skip: true` when the write should be dropped
+      // entirely (blank-draft guard) or reduced to just the history
+      // snapshot decision (status-downgrade guard).
+      type WriteResult =
+        | {
+            skip: true;
+            snapshot: { priorEntry: QuizResponseAnswer; now: number } | null;
+          }
+        | {
+            skip: false;
+            snapshot: { priorEntry: QuizResponseAnswer; now: number } | null;
+            patch: Record<string, unknown>;
+          };
+      const computeWrite = (existing: QuizResponse): WriteResult => {
+        const existingAnswers = existing.answers ?? [];
+
+        // isCorrect is intentionally not written by the student to prevent
+        // client-side forgery. It is computed by the teacher's results view
+        // using gradeAnswer() against the full quiz data loaded from Drive.
+        //
+        // `status` distinguishes a debounced autosave draft (written-response
+        // only) from an explicit submit. The student's `alreadyAnswered` gate
+        // checks for `'submitted'` so a draft autosave doesn't masquerade as
+        // a final answer and prematurely fire the completion card.
+        const priorEntry = existingAnswers.find(
+          (a) => a.questionId === questionId
+        );
+
+        // #1 guard — see `isUnsafeBlankDraft` doc. Refuses a draft autosave
+        // that would silently clobber a non-empty saved answer with ''.
+        if (isUnsafeBlankDraft(answer, isDraft, priorEntry)) {
+          return { skip: true, snapshot: null };
+        }
+
+        // #5 history snapshot decision — computed BEFORE the status-downgrade
+        // guard so a rejected downgrade attempt is still recorded as a
+        // forensic snapshot. Without this ordering, the downgrade branch
+        // of `shouldSnapshotHistory` was unreachable in production
+        // (`isUnsafeStatusDowngrade` returns early on the very condition
+        // the snapshot path wants to capture). Keeping it here means the
+        // recovery log records both completed and rejected overwrites.
+        const now = Date.now();
+        const lastAt = lastHistorySnapshotAtRef.current.get(questionId) ?? 0;
+        const snapshot =
+          priorEntry &&
+          shouldSnapshotHistory(priorEntry, answer, isDraft, lastAt, now)
+            ? { priorEntry, now }
+            : null;
+
+        // Status-downgrade guard — see `isUnsafeStatusDowngrade` doc.
+        // Stops the back-nav listener-lag race from silently flipping a
+        // 'submitted' answer back to 'draft' status. Runs AFTER the
+        // history snapshot so the rejected attempt is still recorded
+        // (the decision already made above is returned as-is).
+        if (isUnsafeStatusDowngrade(isDraft, priorEntry)) {
+          return { skip: true, snapshot };
+        }
+
+        // Spread the prior entry so sibling fields this write does not own
+        // (future artifacts/takeIndex, server-written data) survive the
+        // filter-then-append rewrite below, then explicitly re-own every
+        // field this write DOES own. `speedBonus` is per-call — delete it
+        // so the spread can't resurrect a stale bonus onto a new answer.
+        // Same for legacy `isCorrect`: recomputed teacher-side, and a
+        // stale value must not ride along under a changed answer.
+        const newAnswer: QuizResponseAnswer = {
+          ...priorEntry,
+          questionId,
+          answer,
+          answeredAt: Date.now(),
+          status: isDraft ? 'draft' : 'submitted',
+        };
+        delete newAnswer.speedBonus;
+        delete newAnswer.isCorrect;
+        // Per-answer flag: the student write whitelist admits no new top-level
+        // response field, and a re-submit must not carry the stale marker.
+        delete newAnswer.timedOutUnderMinimum;
+        if (opts?.timedOutUnderMinimum) newAnswer.timedOutUnderMinimum = true;
+        if (speedBonus != null && speedBonus > 0) {
+          newAnswer.speedBonus = Math.min(50, Math.max(0, speedBonus));
+        }
+
+        const updated = [
+          ...existingAnswers.filter((a) => a.questionId !== questionId),
+          newAnswer,
+        ];
+
+        // Don't downgrade a finalized response: if `completeQuiz` already
+        // flipped the doc to `'completed'`, a late autosave/draft write
+        // arriving here (visibility-hidden flush, beforeunload, retry on
+        // a quiz the student already finished) must not revert to
+        // `'in-progress'`.
+        const nextStatus =
+          existing.status === 'completed' ? 'completed' : 'in-progress';
+
+        return {
+          skip: false,
+          snapshot,
+          patch: {
+            // `lastWriteAt` is the idle-auto-submit Cloud Function's cutoff
+            // field: any joined/in-progress response whose `lastWriteAt` is
+            // older than the assignment's idle threshold gets finalized
+            // automatically. Stamped on every answer write (draft or
+            // submitted) — tab-switch warnings deliberately do NOT update
+            // it, so a student who toggles tabs without answering still
+            // ages out as expected. Server-stamped so client clock skew
+            // can't trigger spurious auto-submit or evade it.
+            status: nextStatus,
+            answers: updated,
+            lastWriteAt: serverTimestamp(),
+            // Snapshot the served subset (M17) only when it differs from what
+            // the doc already carries — rules validate the field against the
+            // student's pointer doc, so an unchanged value skips that get().
+            ...servedSnapshotPatch(
+              servedQuestionIdsRef.current,
+              existing.servedQuestionIds
+            ),
+          },
+        };
+      };
+
+      let historySnapshot: {
+        priorEntry: QuizResponseAnswer;
+        now: number;
+      } | null = null;
+
+      if (isDraft) {
+        // Draft autosaves are the hot debounced-typing path (500ms per
+        // keystroke) AND what QuizStudentApp's beforeunload/visibilitychange
+        // flush relies on to avoid losing the last few keystrokes at tab
+        // close — both need updateDoc's fire-and-forget-friendly semantics.
+        // `runTransaction` cannot complete at all while offline (its `get()`
+        // requires a live round trip) and always costs a read-then-write
+        // pair instead of one write, which is strictly the wrong trade for
+        // this specific path. This narrowly reintroduces the cross-question
+        // race this file's other transactions close, but only for drafts
+        // racing each other — a dropped draft self-heals on the next tick,
+        // unlike a dropped explicit submit.
+        const existing = myResponseRef.current;
+        if (existing) {
+          const result = computeWrite(existing);
+          historySnapshot = result.snapshot;
+          if (!result.skip) {
+            await updateDoc(responseRef, result.patch);
+          }
+        }
+      } else {
+        // Explicit submits are discrete, user-initiated actions rather than
+        // a tight debounce loop, so the extra round trip is imperceptible —
+        // and this is the write worth protecting from a different-question
+        // race, mirroring commitRecordingTake/setArtifactUploadState/
+        // markUnresponded. Reads `answers` fresh from the transaction rather
+        // than the client-cached `myResponseRef`, so a submit racing one of
+        // those siblings for a different question can no longer silently
+        // drop whichever write lands second.
+        historySnapshot = await runTransaction<{
+          priorEntry: QuizResponseAnswer;
+          now: number;
+        } | null>(db, async (tx) => {
+          const snap = await tx.get(responseRef);
+          if (!snap.exists()) {
+            // Can't-happen in practice (doc is created on join) — logged so
+            // a real occurrence isn't silently invisible, unlike a
+            // swallowed return.
+            console.error(
+              '[useQuizSession] submitAnswer: response doc missing on write',
+              { sessionId, responseKey }
+            );
+            return null;
+          }
+          const result = computeWrite(snap.data() as QuizResponse);
+          if (!result.skip) {
+            tx.update(responseRef, result.patch);
+          }
+          return result.snapshot;
+        });
       }
 
-      // #5 history snapshot decision — runs BEFORE the status-downgrade
-      // guard so a rejected downgrade attempt is still recorded as a
-      // forensic snapshot. Without this ordering, the downgrade branch
-      // of `shouldSnapshotHistory` was unreachable in production
-      // (`isUnsafeStatusDowngrade` returns early on the very condition
-      // the snapshot path wants to capture). Keeping it here means the
-      // recovery log records both completed and rejected overwrites.
-      const now = Date.now();
-      const lastAt = lastHistorySnapshotAtRef.current.get(questionId) ?? 0;
-      const wantSnapshot =
-        !!priorEntry &&
-        shouldSnapshotHistory(
-          priorEntry,
-          answer,
-          opts?.isDraft === true,
-          lastAt,
-          now
-        );
-      if (wantSnapshot && priorEntry) {
-        // Consume the throttle slot eagerly — BEFORE issuing the addDoc
-        // — so a tap-storm with multiple in-flight writes can't all see
-        // the same stale `lastAt` and slip past the throttle, and an
-        // out-of-order resolution can't move the timestamp backwards.
-        // A one-time failure burns the throttle slot for the window
-        // (logged below); the alternative is unbounded write-
-        // amplification on a flaky network, which is the worse failure
-        // mode for a fire-and-forget safety net.
+      if (historySnapshot) {
+        // Consume the throttle slot eagerly — BEFORE issuing the addDoc —
+        // so a tap-storm with multiple in-flight writes can't all see the
+        // same stale `lastAt` and slip past the throttle, and an
+        // out-of-order resolution can't move the timestamp backwards. A
+        // one-time failure burns the throttle slot for the window (logged
+        // below); the alternative is unbounded write-amplification on a
+        // flaky network, which is the worse failure mode for a
+        // fire-and-forget safety net.
+        const { priorEntry, now } = historySnapshot;
         lastHistorySnapshotAtRef.current.set(questionId, now);
         void addDoc(
           collection(
@@ -2570,85 +2729,6 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           console.error('[useQuizSession] history snapshot write failed:', err);
         });
       }
-
-      // Status-downgrade guard — see `isUnsafeStatusDowngrade` doc.
-      // Stops the back-nav listener-lag race from silently flipping a
-      // 'submitted' answer back to 'draft' status. Runs AFTER the
-      // history snapshot so the rejected attempt is still recorded.
-      if (isUnsafeStatusDowngrade(opts?.isDraft === true, priorEntry)) {
-        return;
-      }
-
-      // Spread the prior entry so sibling fields this write does not own
-      // (future artifacts/takeIndex, server-written data) survive the
-      // filter-then-append rewrite below, then explicitly re-own every
-      // field this write DOES own. `speedBonus` is per-call — delete it
-      // so the spread can't resurrect a stale bonus onto a new answer.
-      // Same for legacy `isCorrect`: recomputed teacher-side, and a
-      // stale value must not ride along under a changed answer.
-      const newAnswer: QuizResponseAnswer = {
-        ...priorEntry,
-        questionId,
-        answer,
-        answeredAt: Date.now(),
-        status: opts?.isDraft ? 'draft' : 'submitted',
-      };
-      delete newAnswer.speedBonus;
-      delete newAnswer.isCorrect;
-      // Per-answer flag: the student write whitelist admits no new top-level
-      // response field, and a re-submit must not carry the stale marker.
-      delete newAnswer.timedOutUnderMinimum;
-      if (opts?.timedOutUnderMinimum) newAnswer.timedOutUnderMinimum = true;
-      if (speedBonus != null && speedBonus > 0) {
-        newAnswer.speedBonus = Math.min(50, Math.max(0, speedBonus));
-      }
-
-      const updated = [
-        ...existingAnswers.filter((a) => a.questionId !== questionId),
-        newAnswer,
-      ];
-
-      // Don't downgrade a finalized response: if `completeQuiz` already
-      // flipped the doc to `'completed'`, a late autosave/draft write
-      // arriving here (visibility-hidden flush, beforeunload, retry on
-      // a quiz the student already finished) must not revert to
-      // `'in-progress'`. Treats client-side `myResponseRef` as the
-      // freshest signal; it's updated by the `onSnapshot` listener so
-      // it reflects the post-completeQuiz state in the same tab.
-      const nextStatus =
-        myResponseRef.current?.status === 'completed'
-          ? 'completed'
-          : 'in-progress';
-
-      await updateDoc(
-        doc(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          sessionId,
-          RESPONSES_COLLECTION,
-          responseKey
-        ),
-        // `lastWriteAt` is the idle-auto-submit Cloud Function's cutoff
-        // field: any joined/in-progress response whose `lastWriteAt` is
-        // older than the assignment's idle threshold gets finalized
-        // automatically. Stamped on every answer write (draft or
-        // submitted) — tab-switch warnings deliberately do NOT update
-        // it, so a student who toggles tabs without answering still
-        // ages out as expected. Server-stamped so client clock skew
-        // can't trigger spurious auto-submit or evade it.
-        {
-          status: nextStatus,
-          answers: updated,
-          lastWriteAt: serverTimestamp(),
-          // Snapshot the served subset (M17) only when it differs from what
-          // the doc already carries — rules validate the field against the
-          // student's pointer doc, so an unchanged value skips that get().
-          ...servedSnapshotPatch(
-            servedQuestionIdsRef.current,
-            myResponseRef.current?.servedQuestionIds
-          ),
-        }
-      );
     },
     []
   );
@@ -2658,6 +2738,14 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
    * `submitAnswer`: recordings append as siblings with an explicit
    * `takeIndex`, every other answer type keeps replacing. `takeLimit` is
    * advisory here — the archival callable is the authoritative gate.
+   *
+   * Runs inside a transaction, reading `answers` fresh rather than off the
+   * client-cached `myResponseRef` — the same rationale as `completeQuiz`'s
+   * transaction: two rapid commits (a retry after an ambiguous upload, a
+   * double-tap before the recorder UI disables) would otherwise both compute
+   * `takeIndex`/`answers` from the same stale snapshot, and the second
+   * `updateDoc` would overwrite the first take right out of the array —
+   * silently discarding a student's recorded answer.
    */
   const commitRecordingTake = useCallback(
     async (input: CommitRecordingTakeInput): Promise<number | null> => {
@@ -2666,49 +2754,53 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       if (!sessionId || !responseKey) return null;
       if (!mediaResponseEnabledRef.current) return null;
 
-      const existingAnswers = myResponseRef.current?.answers ?? [];
-      // Symmetric to markUnresponded: a closed slot never accepts a take.
-      if (isRecordingSlotClosed(existingAnswers, input.questionId)) return null;
-      const takeIndex = nextTakeIndex(existingAnswers, input.questionId);
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        responseKey
+      );
 
-      const newAnswer: QuizResponseAnswer = {
-        questionId: input.questionId,
-        // A recording answer's text slot is legitimately empty; the artifact
-        // is the response. `isUnsafeBlankDraft` only guards drafts, and a
-        // committed take is never a draft.
-        answer: '',
-        answeredAt: Date.now(),
-        status: 'submitted',
-        takeIndex,
-        artifacts: [input.artifact],
-      };
-      if (input.noticeAckedAt) newAnswer.noticeAckedAt = input.noticeAckedAt;
+      let writtenTakeIndex: number | null = null;
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(responseRef);
+        if (!snap.exists()) return;
+        const existing = snap.data() as QuizResponse;
+        const existingAnswers = existing.answers ?? [];
+        // Symmetric to markUnresponded: a closed slot never accepts a take.
+        if (isRecordingSlotClosed(existingAnswers, input.questionId)) return;
+        const takeIndex = nextTakeIndex(existingAnswers, input.questionId);
 
-      const updated = [...existingAnswers, newAnswer];
-      const nextStatus =
-        myResponseRef.current?.status === 'completed'
-          ? 'completed'
-          : 'in-progress';
+        const newAnswer: QuizResponseAnswer = {
+          questionId: input.questionId,
+          // A recording answer's text slot is legitimately empty; the artifact
+          // is the response. `isUnsafeBlankDraft` only guards drafts, and a
+          // committed take is never a draft.
+          answer: '',
+          answeredAt: Date.now(),
+          status: 'submitted',
+          takeIndex,
+          artifacts: [input.artifact],
+        };
+        if (input.noticeAckedAt) newAnswer.noticeAckedAt = input.noticeAckedAt;
 
-      await updateDoc(
-        doc(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          sessionId,
-          RESPONSES_COLLECTION,
-          responseKey
-        ),
-        {
+        const updated = [...existingAnswers, newAnswer];
+        const nextStatus =
+          existing.status === 'completed' ? 'completed' : 'in-progress';
+
+        tx.update(responseRef, {
           status: nextStatus,
           answers: updated,
           lastWriteAt: serverTimestamp(),
           ...servedSnapshotPatch(
             servedQuestionIdsRef.current,
-            myResponseRef.current?.servedQuestionIds
+            existing.servedQuestionIds
           ),
-        }
-      );
-      return takeIndex;
+        });
+        writtenTakeIndex = takeIndex;
+      });
+      return writtenTakeIndex;
     },
     []
   );
@@ -2735,7 +2827,12 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     );
   }, []);
 
-  /** Flips one artifact's `uploadState` after the upload/archive settles. */
+  /**
+   * Flips one artifact's `uploadState` after the upload/archive settles.
+   * Runs in a transaction, reading `answers` fresh — an upload settling for
+   * one question can otherwise race a `commitRecordingTake`/`markUnresponded`
+   * write for a different question against the same stale snapshot.
+   */
   const setArtifactUploadState = useCallback(
     async (
       questionId: string,
@@ -2745,29 +2842,34 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       const sessionId = sessionIdRef.current;
       const responseKey = responseKeyRef.current;
       if (!sessionId || !responseKey) return;
-      const existingAnswers = myResponseRef.current?.answers ?? [];
-      let changed = false;
-      const updated = existingAnswers.map((a) => {
-        if (a.questionId !== questionId || !a.artifacts?.length) return a;
-        const artifacts = a.artifacts.map((art) => {
-          if (art.id !== artifactId || art.uploadState === uploadState)
-            return art;
-          changed = true;
-          return { ...art, uploadState };
-        });
-        return changed ? { ...a, artifacts } : a;
-      });
-      if (!changed) return;
-      await updateDoc(
-        doc(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          sessionId,
-          RESPONSES_COLLECTION,
-          responseKey
-        ),
-        { answers: updated, lastWriteAt: serverTimestamp() }
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        responseKey
       );
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(responseRef);
+        if (!snap.exists()) return;
+        const existingAnswers = (snap.data() as QuizResponse).answers ?? [];
+        let changed = false;
+        const updated = existingAnswers.map((a) => {
+          if (a.questionId !== questionId || !a.artifacts?.length) return a;
+          const artifacts = a.artifacts.map((art) => {
+            if (art.id !== artifactId || art.uploadState === uploadState)
+              return art;
+            changed = true;
+            return { ...art, uploadState };
+          });
+          return changed ? { ...a, artifacts } : a;
+        });
+        if (!changed) return;
+        tx.update(responseRef, {
+          answers: updated,
+          lastWriteAt: serverTimestamp(),
+        });
+      });
     },
     []
   );
@@ -2775,7 +2877,10 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   /**
    * Writes the terminal entry for a slot the student never filled — prep
    * expiry (`passed`/`expired`) or a dead mic (`capture-unavailable`).
-   * Replaces rather than appends: it is not a take.
+   * Replaces rather than appends: it is not a take. Runs in a transaction,
+   * reading `answers` fresh — the same rationale as `commitRecordingTake`:
+   * a recording commit for a different question racing this write against
+   * a stale snapshot could otherwise clobber it.
    */
   const markUnresponded = useCallback(
     async (questionId: string, reason: UnrespondedReason) => {
@@ -2788,49 +2893,50 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       )
         return;
 
-      const existingAnswers = myResponseRef.current?.answers ?? [];
-      // Never overwrite a real response — a student who already recorded a
-      // take on this question has answered it.
-      if (
-        existingAnswers.some(
-          (a) => a.questionId === questionId && !a.unresponded
+      const responseRef = doc(
+        db,
+        QUIZ_SESSIONS_COLLECTION,
+        sessionId,
+        RESPONSES_COLLECTION,
+        responseKey
+      );
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(responseRef);
+        if (!snap.exists()) return;
+        const existing = snap.data() as QuizResponse;
+        const existingAnswers = existing.answers ?? [];
+        // Never overwrite a real response — a student who already recorded a
+        // take on this question has answered it.
+        if (
+          existingAnswers.some(
+            (a) => a.questionId === questionId && !a.unresponded
+          )
         )
-      )
-        return;
+          return;
 
-      const entry: QuizResponseAnswer = {
-        questionId,
-        answer: '',
-        answeredAt: Date.now(),
-        status: reason === 'passed' ? 'draft' : 'submitted',
-        unresponded: reason,
-      };
-      const updated = [
-        ...existingAnswers.filter((a) => a.questionId !== questionId),
-        entry,
-      ];
-      const nextStatus =
-        myResponseRef.current?.status === 'completed'
-          ? 'completed'
-          : 'in-progress';
-      await updateDoc(
-        doc(
-          db,
-          QUIZ_SESSIONS_COLLECTION,
-          sessionId,
-          RESPONSES_COLLECTION,
-          responseKey
-        ),
-        {
+        const entry: QuizResponseAnswer = {
+          questionId,
+          answer: '',
+          answeredAt: Date.now(),
+          status: reason === 'passed' ? 'draft' : 'submitted',
+          unresponded: reason,
+        };
+        const updated = [
+          ...existingAnswers.filter((a) => a.questionId !== questionId),
+          entry,
+        ];
+        const nextStatus =
+          existing.status === 'completed' ? 'completed' : 'in-progress';
+        tx.update(responseRef, {
           status: nextStatus,
           answers: updated,
           lastWriteAt: serverTimestamp(),
           ...servedSnapshotPatch(
             servedQuestionIdsRef.current,
-            myResponseRef.current?.servedQuestionIds
+            existing.servedQuestionIds
           ),
-        }
-      );
+        });
+      });
     },
     []
   );

@@ -13,6 +13,8 @@ import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Plus, RefreshCcw, Check, Trash2, Copy, Users } from 'lucide-react';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { PartnerCard } from '@/components/settings/PartnerCard';
+import { Toggle } from '@/components/common/Toggle';
 
 const NEXTUP_FOLDER_NAME = 'NextUp';
 const SESSIONS_COLLECTION = 'nextup_sessions';
@@ -345,29 +347,37 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
         <section className="space-y-4">
           <SettingsLabel>Integration &amp; Logic</SettingsLabel>
 
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="space-y-0.5">
-              <p className="text-xs font-bold">Auto-Start Timer</p>
-              <p className="text-xxs text-slate-500">
-                Start active timer when clicking NEXT
-              </p>
-            </div>
-            <div
-              className={`w-10 h-6 rounded-full p-1 cursor-pointer transition-colors ${config.autoStartTimer ? 'bg-brand-blue-primary' : 'bg-slate-300'}`}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    autoStartTimer: !config.autoStartTimer,
-                  },
-                })
-              }
-            >
-              <div
-                className={`w-4 h-4 bg-white rounded-full transition-transform ${config.autoStartTimer ? 'translate-x-4' : 'translate-x-0'}`}
-              />
-            </div>
-          </div>
+          <PartnerCard
+            partner="time-tool"
+            missingHelp="Add a Timer widget to start it automatically when you tap NEXT."
+          >
+            {(present) => (
+              <div className="flex items-center justify-between gap-3 py-2">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-xs font-semibold text-slate-700">
+                    Auto-Start Timer
+                  </span>
+                  <span className="text-xxs text-slate-600">
+                    Start the timer when you tap NEXT.
+                  </span>
+                </div>
+                <Toggle
+                  checked={config.autoStartTimer ?? false}
+                  onChange={() =>
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        autoStartTimer: !config.autoStartTimer,
+                      },
+                    })
+                  }
+                  size="md"
+                  label="Auto-Start Timer"
+                  disabled={!present}
+                />
+              </div>
+            )}
+          </PartnerCard>
 
           <div className="space-y-2">
             <p className="text-xs font-bold">Display Count</p>

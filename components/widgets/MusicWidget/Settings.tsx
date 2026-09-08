@@ -12,6 +12,7 @@ import {
   COLOR_HEX_TO_NAME,
 } from '@/config/colors';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 import { buildSpotifyEmbedUrl } from './utils';
 import { PersonalSpotifyPanel } from './PersonalSpotifyPanel';
 
@@ -352,6 +353,14 @@ export const MusicAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
 
   const textColors = [...WIDGET_PALETTE, '#ffffff'];
 
+  // Shared select handlers — reused by both onClick and the radiogroup
+  // roving-tabindex keydown handler (handleRadioGroupKeyDown) below.
+  const selectBgColor = (hex: string) =>
+    updateWidget(widget.id, { config: { bgColor: hex } });
+
+  const selectTextColor = (hex: string) =>
+    updateWidget(widget.id, { config: { textColor: hex } });
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
@@ -362,6 +371,13 @@ export const MusicAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
           className="flex flex-wrap gap-1.5 mt-1"
           role="radiogroup"
           aria-labelledby={bgColorLabelId}
+          onKeyDown={(e) =>
+            handleRadioGroupKeyDown(
+              e,
+              bgColors.map((c) => c.hex),
+              selectBgColor
+            )
+          }
         >
           {bgColors.map((c) => (
             <button
@@ -369,11 +385,8 @@ export const MusicAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
               type="button"
               role="radio"
               aria-checked={bgColor === c.hex}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { bgColor: c.hex },
-                })
-              }
+              tabIndex={bgColor === c.hex ? 0 : -1}
+              onClick={() => selectBgColor(c.hex)}
               className={`w-6 h-6 rounded-full border-2 transition-all ${
                 bgColor === c.hex
                   ? 'border-indigo-500 scale-110 shadow-md'
@@ -398,6 +411,9 @@ export const MusicAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
           className="flex flex-wrap gap-1.5 mt-1"
           role="radiogroup"
           aria-labelledby={textColorLabelId}
+          onKeyDown={(e) =>
+            handleRadioGroupKeyDown(e, textColors, selectTextColor)
+          }
         >
           {textColors.map((c) => (
             <button
@@ -405,11 +421,8 @@ export const MusicAppearanceSettings: React.FC<{ widget: WidgetData }> = ({
               type="button"
               role="radio"
               aria-checked={textColor === c}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { textColor: c },
-                })
-              }
+              tabIndex={textColor === c ? 0 : -1}
+              onClick={() => selectTextColor(c)}
               className={`w-6 h-6 rounded-full border-2 transition-all ${
                 textColor === c
                   ? 'border-indigo-500 scale-110 shadow-md'

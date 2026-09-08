@@ -32,6 +32,10 @@ export interface UnifiedAssignmentRow {
   /** Raw targeting fields, passed through for D2's `resolveAssignmentTargets` + pseudonym lookups. */
   rosterIds?: string[];
   periodNames?: string[];
+  /** Class ids mirrored from the session doc (e.g. `schoology:<contextId>`), when present. */
+  classIds?: string[];
+  /** Display titles for `classIds` (Schoology section titles), when present. */
+  classPeriodByClassId?: Record<string, string>;
   targetStudents?: StudentTargetRef[];
   /** Teacher's own per-student overrides, keyed by `studentTargetRefKey` (D2 "modified" marker). */
   overridesBySourcedId?: Record<string, StudentOverride>;
@@ -85,6 +89,8 @@ export const useUnifiedAssignments = (
       sessionId: a.id,
       rosterIds: a.rosterIds,
       periodNames: a.periodNames,
+      classIds: a.classIds,
+      classPeriodByClassId: a.classPeriodByClassId,
       targetStudents: a.targetStudents,
       overridesBySourcedId: a.overridesBySourcedId,
       removedStudentRefs: a.removedStudentRefs,
@@ -104,6 +110,8 @@ export const useUnifiedAssignments = (
       sessionId: a.id,
       rosterIds: a.rosterIds,
       periodNames: a.periodNames,
+      classIds: a.classIds,
+      classPeriodByClassId: a.classPeriodByClassId,
       targetStudents: a.targetStudents,
       overridesBySourcedId: a.overridesBySourcedId,
       removedStudentRefs: a.removedStudentRefs,

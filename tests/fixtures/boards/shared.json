@@ -1,0 +1,40 @@
+{
+  "id": "share-1",
+  "name": "Shared board",
+  "background": "bg-slate-900",
+  "createdAt": 1700000000000,
+  "widgets": [
+    {
+      "id": "w1",
+      "type": "clock",
+      "x": 10,
+      "y": 10,
+      "w": 300,
+      "h": 200,
+      "z": 1,
+      "flipped": true,
+      "config": { "showSeconds": true }
+    },
+    {
+      "id": "w2",
+      "type": "text",
+      "x": 20,
+      "y": 20,
+      "w": 300,
+      "h": 200,
+      "z": 5,
+      "flipped": true,
+      "config": { "content": "hello" }
+    },
+    {
+      "id": "w3",
+      "type": "dice",
+      "x": 30,
+      "y": 30,
+      "w": 300,
+      "h": 200,
+      "z": 2,
+      "config": { "count": 2 }
+    }
+  ]
+}

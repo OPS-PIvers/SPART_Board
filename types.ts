@@ -4529,6 +4529,8 @@ export interface QuizConfig {
    * Pre-selects the picker on re-launch.
    */
   lastRosterIdsByQuizId?: Record<string, string[]>;
+  /** Live monitor: hide WHO raised a hand / is idle and show counts only (on = projector-safe default). */
+  monitorBoardView?: boolean;
   /** Live monitor roster toolbar: show per-student score pills (off = projector-safe default). */
   monitorShowScores?: boolean;
   /** Live monitor roster toolbar: show tab-switch warning badges. */
@@ -4718,6 +4720,10 @@ export interface QuizAssignmentSettings {
    * (and session `classIds`). No backfill of existing assignments.
    */
   rosterIds?: string[];
+  /** Session class ids mirrored onto the assignment (e.g. `schoology:<contextId>`); read-only. */
+  classIds?: string[];
+  /** Display titles for `classIds`, mirrored from the session; read-only. */
+  classPeriodByClassId?: Record<string, string>;
   /**
    * Max completed submissions allowed per student. `null`/`undefined` means
    * unlimited (legacy). `1` (default for new assignments) means one-and-done.
@@ -6809,6 +6815,8 @@ export interface WidgetData {
    */
   isPinned?: boolean;
   transparency?: number;
+  /** Version of the applied per-type config migration table (utils/migration.ts). */
+  configVersion?: number;
   annotation?: DrawingConfig;
   /** Override which building's admin defaults this widget uses (falls back to user's primary building) */
   buildingId?: string;
@@ -6872,7 +6880,7 @@ export interface UserRolesConfig {
  *  - `AuthContext` owns the account-level/identity fields: `selectedBuildings`,
  *    `language`, `savedWidgetConfigs`, `savedWidgetPresets`,
  *    `savedWidgetConfigsPreV2`, `setupCompleted`, `disableCloseConfirmation`,
- *    `remoteControlEnabled`, `dockPosition`, `quizMonitorColorsEnabled`,
+ *    `remoteControlEnabled`, `dockPosition`, `settingsDrawerWidth`, `quizMonitorColorsEnabled`,
  *    `quizMonitorScoreDisplay`, `favoriteBackgrounds`, `recentBackgrounds`.
  *  - `DashboardContext` owns the board/dock state fields: `dockItems`,
  *    `libraryOrder`, `dockInitialized`, `lastActiveCollectionId`,
@@ -6926,6 +6934,11 @@ export interface UserProfile {
   remoteControlEnabled?: boolean;
   /** Where the dock is anchored on screen (account-level) */
   dockPosition?: DockPosition;
+  /**
+   * Widget settings drawer width in px, clamped to 360-560. Per-user
+   * account-level preference; falls back to 400 when absent.
+   */
+  settingsDrawerWidth?: number;
   /**
    * Quiz live-monitor row tinting toggle. When `true` (default), rows are
    * tinted by score band for completed students; when `false`, rows render
@@ -7178,7 +7191,8 @@ export type GlobalFeature =
   | 'google-classroom'
   | 'anonymous-join'
   /** Fail-closed: read it through `canAccessQuizMediaResponse`, never `canAccessFeature`. */
-  | 'quiz-media-response';
+  | 'quiz-media-response'
+  | 'settings-drawer';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
@@ -8071,6 +8085,10 @@ export interface VideoActivityAssignment extends VideoActivityAssignmentSettings
    *  legacy assignments read via `className` / session.classIds only. See
    *  `utils/resolveAssignmentTargets.ts`. */
   rosterIds?: string[];
+  /** Session class ids mirrored onto the assignment (e.g. `schoology:<contextId>`); read-only. */
+  classIds?: string[];
+  /** Display titles for `classIds`, mirrored from the session; read-only. */
+  classPeriodByClassId?: Record<string, string>;
   /** Frozen at creation from the org-wide `assignment-modes` admin setting.
    *  Mirrors VideoActivitySession.mode. Absent on pre-feature assignments. */
   mode?: AssignmentMode;
