@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer';
 import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
@@ -107,6 +107,17 @@ describe('time-tool settings drawer accessibility', () => {
       within(dialog).getByRole('switch', { name: 'Auto-Pick Random Student' })
     ).toBeInTheDocument();
     expect(
+      within(dialog).queryByRole('group', { name: 'Color Palette' })
+    ).not.toBeInTheDocument();
+    // Only the Traffic Light, Randomizer, Stations and NextUp tips remain: Expectations is on the board.
+    expect(within(dialog).getAllByRole('listitem')).toHaveLength(4);
+  });
+
+  it('renders the display group on the Style tab', () => {
+    renderDrawer();
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Style' }));
+    expect(
       within(dialog).getByRole('radiogroup', { name: 'Display Style' })
     ).toBeInTheDocument();
     expect(
@@ -118,7 +129,5 @@ describe('time-tool settings drawer accessibility', () => {
     expect(
       within(dialog).getByRole('switch', { name: 'Glow' })
     ).toBeInTheDocument();
-    // Only the Traffic Light, Randomizer, Stations and NextUp tips remain: Expectations is on the board.
-    expect(within(dialog).getAllByRole('listitem')).toHaveLength(4);
   });
 });

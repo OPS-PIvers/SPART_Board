@@ -65,8 +65,8 @@ describe('SchemaSettingsFallback', () => {
       screen.getByRole('switch', { name: 'Show Seconds' })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('radiogroup', { name: 'Display Style' })
-    ).toBeInTheDocument();
+      screen.queryByRole('radiogroup', { name: 'Display Style' })
+    ).not.toBeInTheDocument();
   });
 
   it('does not render a Style section (moved to SchemaAppearanceFallback)', async () => {

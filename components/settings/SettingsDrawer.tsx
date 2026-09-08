@@ -382,14 +382,24 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
     body = (
       <div className="flex flex-col gap-5">
         {schema ? (
-          contentTier && (
-            <section data-filter-section="style">
-              <div className={sectionHeading}>{contentTier.title}</div>
-              {contentTier.fields.map((entry) =>
-                entry.field ? renderField(entry.field, entry.key) : null
-              )}
-            </section>
-          )
+          <>
+            <SchemaRenderer
+              schema={schema}
+              widget={widget}
+              ctx={ctx}
+              updateConfig={updateConfig}
+              defaults={defaults}
+              tab="style"
+            />
+            {contentTier && (
+              <section data-filter-section="style">
+                <div className={sectionHeading}>{contentTier.title}</div>
+                {contentTier.fields.map((entry) =>
+                  entry.field ? renderField(entry.field, entry.key) : null
+                )}
+              </section>
+            )}
+          </>
         ) : (
           <>{legacyStyleContent}</>
         )}

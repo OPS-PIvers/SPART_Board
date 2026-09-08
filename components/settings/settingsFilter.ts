@@ -1,5 +1,5 @@
 import type { Field, FieldCtx, WidgetSettingsSchema } from './schema/types';
-import { GROUP_ORDER } from './schema/types';
+import { TAB_GROUPS, type GroupId } from './schema/types';
 import { WINDOW_STYLE_LABELS } from './schema/windowStyle';
 import { resolveStyleFields } from './schema/styleKeys';
 
@@ -30,14 +30,14 @@ export function matchesQuery(label: string, query: string): boolean {
   return label.toLowerCase().includes(normalized);
 }
 
-/** Settings-tab sections in D8 order, excluding `visibleWhen`-hidden fields. */
-export function buildSchemaSections(
+function buildGroupSections(
   schema: WidgetSettingsSchema | null | undefined,
+  ids: ReadonlyArray<GroupId>,
   ctx: FieldCtx,
   resolve: ResolveLeaf
 ): IndexSection[] {
   if (!schema) return [];
-  return GROUP_ORDER.flatMap((id) => {
+  return ids.flatMap((id) => {
     const group = schema.groups.find((candidate) => candidate.id === id);
     if (!group) return [];
     const fields = group.fields
@@ -52,13 +52,27 @@ export function buildSchemaSections(
   });
 }
 
-/** Style-tab sections: the Content tier (declared `styleKeys`) then the Window tier. */
+/** Settings-tab sections in D8 order, excluding `visibleWhen`-hidden fields. */
+export function buildSchemaSections(
+  schema: WidgetSettingsSchema | null | undefined,
+  ctx: FieldCtx,
+  resolve: ResolveLeaf
+): IndexSection[] {
+  return buildGroupSections(schema, TAB_GROUPS.settings, ctx, resolve);
+}
+
+/** Style-tab sections: the widget's `display` group, the Content tier (declared `styleKeys`), then the Window tier. */
 export function buildStyleSections(
   schema: WidgetSettingsSchema | null | undefined,
   ctx: FieldCtx,
   resolve: ResolveLeaf
 ): IndexSection[] {
-  const sections: IndexSection[] = [];
+  const sections: IndexSection[] = buildGroupSections(
+    schema,
+    TAB_GROUPS.style,
+    ctx,
+    resolve
+  );
   const contentFields = resolveStyleFields(schema?.styleKeys)
     .filter((field) => (field.visibleWhen ? field.visibleWhen(ctx) : true))
     .map((field) => ({

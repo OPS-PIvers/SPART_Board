@@ -61,7 +61,7 @@ describe('resolveLabel', () => {
 });
 
 describe('SchemaRenderer', () => {
-  it('renders groups in D8 order regardless of array order', () => {
+  it('renders the Settings-tab groups in D8 order and routes display to the Style tab', () => {
     const schema: WidgetSettingsSchema = {
       groups: [
         {
@@ -89,7 +89,20 @@ describe('SchemaRenderer', () => {
     const order = Array.from(container.querySelectorAll('[data-group]')).map(
       (el) => el.getAttribute('data-group')
     );
-    expect(order).toEqual(['content', 'behavior', 'display']);
+    expect(order).toEqual(['content', 'behavior']);
+    const style = render(
+      <SchemaRenderer
+        schema={schema}
+        widget={widget}
+        ctx={makeCtx()}
+        updateConfig={vi.fn()}
+        tab="style"
+      />
+    );
+    const styleOrder = Array.from(
+      style.container.querySelectorAll('[data-group]')
+    ).map((el) => el.getAttribute('data-group'));
+    expect(styleOrder).toEqual(['display']);
   });
 
   it('omits a group whose fields are all hidden', () => {

@@ -46,6 +46,10 @@ const schema: WidgetSettingsSchema = {
         },
       ],
     },
+    {
+      id: 'display',
+      fields: [{ type: 'toggle', key: 'glow', label: 'Glow' }],
+    },
   ],
 };
 
@@ -75,15 +79,16 @@ describe('buildSchemaSections', () => {
 });
 
 describe('buildStyleSections', () => {
-  it('emits the Content tier from styleKeys plus the atomic Window tier', () => {
+  it('emits the display group, the Content tier from styleKeys, then the atomic Window tier', () => {
     const sections = buildStyleSections(schema, ctx, resolve);
-    expect(sections.map((s) => s.id)).toEqual(['style', 'window']);
-    expect(sections[0].fields.map((f) => f.key)).toEqual([
+    expect(sections.map((s) => s.id)).toEqual(['display', 'style', 'window']);
+    expect(sections[0].fields.map((f) => f.key)).toEqual(['glow']);
+    expect(sections[1].fields.map((f) => f.key)).toEqual([
       'fontFamily',
       'cardColor',
     ]);
-    expect(sections[1].atomic).toBe(true);
-    expect(sections[1].fields).toHaveLength(4);
+    expect(sections[2].atomic).toBe(true);
+    expect(sections[2].fields).toHaveLength(4);
   });
 
   it('still emits the Window tier for a legacy widget', () => {

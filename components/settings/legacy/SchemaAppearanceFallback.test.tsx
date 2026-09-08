@@ -50,13 +50,19 @@ describe('SchemaAppearanceFallback', () => {
     } as unknown as DashboardActions);
   });
 
-  it('renders the schema styleKeys fields for a migrated widget', async () => {
-    render(<SchemaAppearanceFallback widget={widget} />);
+  it('renders the display group above the schema styleKeys fields for a migrated widget', async () => {
+    const { container } = render(<SchemaAppearanceFallback widget={widget} />);
     await waitFor(() =>
       expect(
         screen.getByRole('radiogroup', { name: 'Font' })
       ).toBeInTheDocument()
     );
+    const display = screen.getByRole('radiogroup', { name: 'Display Style' });
+    const font = screen.getByRole('radiogroup', { name: 'Font' });
+    expect(
+      display.compareDocumentPosition(font) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(container.querySelector('[data-group="display"]')).not.toBeNull();
   });
 
   it('calls updateWidget with the merged config when a style field changes', async () => {
@@ -93,7 +99,7 @@ describe('SchemaAppearanceFallback', () => {
     }
   });
 
-  it('renders nothing when the schema declares no styleKeys', async () => {
+  it('renders nothing when the schema declares no styleKeys and no display group', async () => {
     const originalLoader = WIDGET_SETTINGS_SCHEMAS.clock;
     WIDGET_SETTINGS_SCHEMAS.clock = () => Promise.resolve({ groups: [] });
     try {

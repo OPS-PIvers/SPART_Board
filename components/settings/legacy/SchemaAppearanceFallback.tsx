@@ -10,6 +10,7 @@ import type {
 } from '@/components/settings/schema/types';
 import { resolveStyleFields } from '@/components/settings/schema/styleKeys';
 import { FieldRenderer } from '@/components/settings/renderer/FieldRenderer';
+import { SchemaRenderer } from '@/components/settings/renderer/SchemaRenderer';
 
 export interface SchemaAppearanceFallbackProps {
   widget: WidgetData;
@@ -87,19 +88,31 @@ export const SchemaAppearanceFallback: React.FC<
   if (!schema) return null;
 
   const styleFields = resolveStyleFields(schema.styleKeys);
-  if (styleFields.length === 0) return null;
+  const hasDisplayGroup = schema.groups.some((g) => g.id === 'display');
+  if (styleFields.length === 0 && !hasDisplayGroup) return null;
 
   return (
-    <div className="flex flex-col divide-y divide-slate-100">
-      {styleFields.map((field) => (
-        <FieldRenderer
-          key={field.key}
-          field={field}
-          widget={widget}
-          ctx={ctx}
-          updateConfig={updateConfig}
-        />
-      ))}
+    <div className="flex flex-col gap-5">
+      <SchemaRenderer
+        schema={schema}
+        widget={widget}
+        ctx={ctx}
+        updateConfig={updateConfig}
+        tab="style"
+      />
+      {styleFields.length > 0 && (
+        <div className="flex flex-col divide-y divide-slate-100">
+          {styleFields.map((field) => (
+            <FieldRenderer
+              key={field.key}
+              field={field}
+              widget={widget}
+              ctx={ctx}
+              updateConfig={updateConfig}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
