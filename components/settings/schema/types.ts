@@ -198,6 +198,14 @@ export const GROUP_ORDER: ReadonlyArray<GroupId> = [
   'display',
 ];
 
+export type SettingsTab = 'settings' | 'style';
+
+/** Which D8 groups each drawer tab renders: `display` is the widget-scoped section of the Style tab. */
+export const TAB_GROUPS: Record<SettingsTab, ReadonlyArray<GroupId>> = {
+  settings: ['content', 'behavior'],
+  style: ['display'],
+};
+
 export type Group<K extends string = string, Row = Record<string, unknown>> = {
   id: GroupId;
   title?: string;

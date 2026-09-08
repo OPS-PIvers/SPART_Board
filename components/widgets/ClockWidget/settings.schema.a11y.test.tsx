@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer';
 import type { ClockConfig, GlobalStyle, WidgetData } from '@/types';
@@ -62,15 +62,17 @@ describe('Clock settings schema accessibility', () => {
     expect(
       screen.getByRole('switch', { name: 'Show Seconds' })
     ).toBeInTheDocument();
+    // The display group lives on the Style tab.
+    fireEvent.click(screen.getByRole('tab', { name: 'Style' }));
+    expect(
+      screen.getByRole('radiogroup', { name: 'Date Color' })
+    ).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Glow' })).toBeInTheDocument();
     expect(
       screen.getByRole('radiogroup', { name: 'Display Style' })
     ).toBeInTheDocument();
     expect(
       screen.getByRole('group', { name: 'Color Palette' })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('radiogroup', { name: 'Date Color' })
     ).toBeInTheDocument();
   });
 });

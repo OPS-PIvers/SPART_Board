@@ -2,9 +2,10 @@ import React, { useId } from 'react';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import type { WidgetData } from '@/types';
 import {
-  GROUP_ORDER,
+  TAB_GROUPS,
   type FieldCtx,
   type Group,
+  type SettingsTab,
   type UpdateConfig,
   type WidgetSettingsSchema,
 } from '@/components/settings/schema/types';
@@ -17,6 +18,8 @@ export type SchemaRendererProps = {
   ctx: FieldCtx;
   updateConfig: UpdateConfig;
   defaults?: Record<string, unknown>;
+  /** Which tab's groups to render (D8 order within the tab). Defaults to the Settings tab. */
+  tab?: SettingsTab;
 };
 
 export const SchemaRenderer: React.FC<SchemaRendererProps> = ({
@@ -25,12 +28,14 @@ export const SchemaRenderer: React.FC<SchemaRendererProps> = ({
   ctx,
   updateConfig,
   defaults,
+  tab = 'settings',
 }) => {
   const uid = useId();
 
-  const groups = GROUP_ORDER.map((id) =>
-    schema.groups.find((group) => group.id === id)
-  ).filter((group): group is Group => group !== undefined);
+  const groups = TAB_GROUPS[tab]
+    .map((id) => schema.groups.find((group) => group.id === id))
+    .filter((group): group is Group => group !== undefined);
+  if (groups.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-5">
