@@ -1,5 +1,5 @@
 import type { Field, FieldCtx, WidgetSettingsSchema } from './schema/types';
-import { TAB_GROUPS, type GroupId } from './schema/types';
+import { TAB_GROUPS, isFieldVisible, type GroupId } from './schema/types';
 import { WINDOW_STYLE_LABELS } from './schema/windowStyle';
 import { resolveStyleFields } from './schema/styleKeys';
 
@@ -41,10 +41,14 @@ function buildGroupSections(
     const group = schema.groups.find((candidate) => candidate.id === id);
     if (!group) return [];
     const fields = group.fields
-      .filter((field) => (field.visibleWhen ? field.visibleWhen(ctx) : true))
+      .filter((field) => isFieldVisible(field, ctx))
       .map((field) => ({
         key: field.key,
-        label: resolve(field.label),
+        // A partner card matches on the partner's name and its inner control's label.
+        label:
+          field.type === 'partnerWidget'
+            ? `${ctx.toolLabel?.(field.partner) ?? field.partner} ${resolve(field.control.label)}`
+            : resolve(field.label),
         field: field as Field,
       }));
     if (fields.length === 0) return [];

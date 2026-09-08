@@ -1,9 +1,10 @@
 import React, { useCallback, useId } from 'react';
 import type { WidgetData } from '@/types';
-import type {
-  Field,
-  FieldCtx,
-  UpdateConfig,
+import {
+  isFieldVisible,
+  type Field,
+  type FieldCtx,
+  type UpdateConfig,
 } from '@/components/settings/schema/types';
 import { FIELD_COMPONENTS } from './fields';
 import { resolveLabel } from './resolveLabel';
@@ -14,6 +15,8 @@ export type FieldRendererProps = {
   ctx: FieldCtx;
   updateConfig: UpdateConfig;
   defaults?: Record<string, unknown>;
+  /** Set by a PartnerWidget card while its partner is off the board. */
+  forceDisabled?: boolean;
 };
 
 // Control roots that are not native labelable elements; they take aria-labelledby instead of <label for>.
@@ -31,6 +34,7 @@ const LABELLEDBY_TYPES = new Set<Field['type']>([
   'soundPicker',
   'rosterPicker',
   'custom',
+  'partnerWidget',
 ]);
 
 export const FieldRenderer: React.FC<FieldRendererProps> = ({
@@ -39,6 +43,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   ctx,
   updateConfig,
   defaults,
+  forceDisabled = false,
 }) => {
   const uid = useId();
   const id = `${uid}${widget.id}-${field.key}`;
@@ -50,18 +55,23 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     [updateConfig, field.key]
   );
 
-  const label = resolveLabel(ctx.t, widget.type, field.label);
+  const label =
+    field.type === 'partnerWidget' && ctx.toolLabel
+      ? ctx.toolLabel(field.partner)
+      : resolveLabel(ctx.t, widget.type, field.label);
   const help = field.help
     ? resolveLabel(ctx.t, widget.type, field.help)
     : undefined;
 
-  const visible = field.visibleWhen ? field.visibleWhen(ctx) : true;
-  const disabled = field.disabledWhen ? field.disabledWhen(ctx) : false;
+  const visible = isFieldVisible(field, ctx);
+  const disabled =
+    forceDisabled || (field.disabledWhen ? field.disabledWhen(ctx) : false);
   const value = ctx.config[field.key];
 
   const defaultValue = defaults ? defaults[field.key] : undefined;
   const canReset =
     field.type !== 'custom' &&
+    field.type !== 'partnerWidget' &&
     defaults !== undefined &&
     defaultValue !== undefined &&
     value !== undefined &&
@@ -100,6 +110,19 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           </div>
         )
       : undefined;
+  const renderField =
+    field.type === 'partnerWidget'
+      ? (inner: Field, innerForceDisabled: boolean) => (
+          <FieldRenderer
+            field={inner}
+            widget={widget}
+            ctx={ctx}
+            updateConfig={updateConfig}
+            defaults={defaults}
+            forceDisabled={innerForceDisabled}
+          />
+        )
+      : undefined;
   const control = (
     <Component
       field={field}
@@ -112,6 +135,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       ctx={ctx}
       updateConfig={updateConfig}
       renderRow={renderRow}
+      renderField={renderField}
     />
   );
 

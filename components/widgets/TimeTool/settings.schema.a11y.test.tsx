@@ -10,6 +10,7 @@ import schema from './settings.schema';
 vi.mock('@/context/useDashboard', () => ({
   useDashboard: () => ({
     activeDashboard: { widgets: [{ type: 'expectations' }] },
+    addWidget: vi.fn(),
   }),
 }));
 
@@ -109,8 +110,14 @@ describe('time-tool settings drawer accessibility', () => {
     expect(
       within(dialog).queryByRole('group', { name: 'Color Palette' })
     ).not.toBeInTheDocument();
-    // Only the Traffic Light, Randomizer, Stations and NextUp tips remain: Expectations is on the board.
-    expect(within(dialog).getAllByRole('listitem')).toHaveLength(4);
+    // Expectations is on the board, so only the other four partner cards offer an add button.
+    expect(
+      within(dialog).getAllByRole('button', { name: /^Add .* widget$/ })
+    ).toHaveLength(4);
+    expect(within(dialog).getByRole('radio', { name: 'Lvl 2' })).toBeEnabled();
+    expect(
+      within(dialog).getByRole('switch', { name: 'Auto-rotate stations' })
+    ).toBeDisabled();
   });
 
   it('renders the display group on the Style tab', () => {

@@ -20,6 +20,7 @@ import { EmojiPicker } from './EmojiPicker';
 import { ImageUpload } from './ImageUpload';
 import { SoundPicker } from './SoundPicker';
 import { RosterPicker } from './RosterPicker';
+import { PartnerWidget } from './PartnerWidget';
 
 /** Total registry over the field union. */
 export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
@@ -42,4 +43,5 @@ export const FIELD_COMPONENTS: Record<Field['type'], React.FC<FieldProps>> = {
   rosterPicker: RosterPicker as React.FC<FieldProps>,
   list: List,
   custom: Custom,
+  partnerWidget: PartnerWidget,
 };

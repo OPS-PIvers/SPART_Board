@@ -14,7 +14,12 @@ import { WidgetBuildingToggle } from '@/components/common/WidgetBuildingToggle';
 import { Z_INDEX } from '@/config/zIndex';
 import { useHelpItemsForWidget } from '@/hooks/useHelpResources';
 import { requestOpenHelp } from '@/components/help/helpCenterState';
-import type { GlobalFeature, GlobalStyle, WidgetData } from '@/types';
+import type {
+  GlobalFeature,
+  GlobalStyle,
+  WidgetData,
+  WidgetType,
+} from '@/types';
 import { SchemaRenderer } from './renderer/SchemaRenderer';
 import { FieldRenderer } from './renderer/FieldRenderer';
 import { resolveLabel } from './renderer/resolveLabel';
@@ -57,6 +62,8 @@ export type SettingsDrawerProps = {
   readOnly?: boolean;
   isAdmin?: boolean;
   canAccessFeature?: (featureId: GlobalFeature) => boolean;
+  canAccessWidget?: (type: WidgetType) => boolean;
+  toolLabel?: (type: WidgetType) => string;
   defaults?: Record<string, unknown>;
   /** The focus hook (1b.2) targets this heading on open. */
   headingRef?: React.RefObject<HTMLHeadingElement | null>;
@@ -87,6 +94,8 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
   readOnly = false,
   isAdmin = false,
   canAccessFeature,
+  canAccessWidget,
+  toolLabel,
   defaults,
   headingRef,
 }) => {
@@ -153,9 +162,11 @@ const SettingsDrawerComponent: React.FC<SettingsDrawerProps> = ({
       widget,
       isAdmin,
       canAccessFeature: canAccessFeature ?? (() => true),
+      canAccessWidget,
+      toolLabel,
       t,
     }),
-    [config, widget, isAdmin, canAccessFeature, t]
+    [config, widget, isAdmin, canAccessFeature, canAccessWidget, toolLabel, t]
   );
 
   const schemaSections = useMemo(

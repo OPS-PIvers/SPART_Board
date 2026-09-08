@@ -341,6 +341,11 @@ type Field =
 // isAdmin, feature flags, roster presence and WidgetData fields (maximized, isLocked); a
 // config-only predicate would push all of those into Custom fields.
 
+// `partnerWidget` wraps a control that only acts through a sibling widget: titled by the partner
+// (ctx.toolLabel), disabled with `missingHelp` + a one-tap add while the partner is off the board,
+// and dropped entirely when ctx.canAccessWidget denies the partner. Any field may carry `section`,
+// a sub-heading leaf printed once above the first visible field that names it.
+
 type Group = {
   id: 'content' | 'behavior' | 'display';
   title?: string;

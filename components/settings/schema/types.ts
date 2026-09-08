@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { GlobalFeature, WidgetData } from '@/types';
+import type { GlobalFeature, WidgetData, WidgetType } from '@/types';
 import type { AppearanceKey } from '@/utils/widgetConfigPersistence';
 
 /** Appearance keys a schema may list in `styleKeys` (membership checked at runtime). */
@@ -15,6 +15,10 @@ export type FieldCtx = {
   widget: WidgetData;
   isAdmin: boolean;
   canAccessFeature: (featureId: GlobalFeature) => boolean;
+  /** Widget-level feature permission; a `partnerWidget` card is dropped entirely when this denies its partner. */
+  canAccessWidget?: (type: WidgetType) => boolean;
+  /** Dock-facing widget name (admin displayName override, else the TOOLS label). */
+  toolLabel?: (type: WidgetType) => string;
   t: TranslateFn;
 };
 
@@ -30,6 +34,8 @@ export type FieldBase<K extends string> = {
   key: NoDots<K>;
   label: string;
   help?: string;
+  /** Sub-heading leaf; SchemaRenderer prints it once above the first visible field that carries it. */
+  section?: string;
   visibleWhen?: (ctx: FieldCtx) => boolean;
   disabledWhen?: (ctx: FieldCtx) => boolean;
 };
@@ -184,10 +190,29 @@ export type CustomField<K extends string> = FieldBase<K> & {
   render: (ctx: CustomRenderCtx) => ReactNode;
 };
 
+/** A setting that only acts through a sibling widget: the card is titled by the partner, disables its control while the partner is off the board, and offers a one-tap add. */
+export type PartnerWidgetField<K extends string> = FieldBase<K> & {
+  type: 'partnerWidget';
+  partner: WidgetType;
+  control: RowField<K> | CustomField<K>;
+  /** Explanation shown (with the add button) while the partner is missing. */
+  missingHelp: string;
+};
+
 export type Field<K extends string = string, Row = Record<string, unknown>> =
   | RowField<K>
   | ListField<K, Row>
-  | CustomField<K>;
+  | CustomField<K>
+  | PartnerWidgetField<K>;
+
+/** `visibleWhen` plus the partner-permission gate, so every renderer and the filter agree. */
+export function isFieldVisible(field: Field, ctx: FieldCtx): boolean {
+  if (field.visibleWhen && !field.visibleWhen(ctx)) return false;
+  if (field.type === 'partnerWidget' && ctx.canAccessWidget) {
+    return ctx.canAccessWidget(field.partner);
+  }
+  return true;
+}
 
 export type GroupId = 'content' | 'behavior' | 'display';
 

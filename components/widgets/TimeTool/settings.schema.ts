@@ -9,7 +9,6 @@ import { TIME_TOOL_SOUNDS } from '@/config/timeTool';
 import { playTimerAlert, resumeAudio } from '@/utils/timeToolAudio';
 import {
   TimeToolModeField,
-  TimeToolNexusHints,
   TimeToolTrafficColorField,
   TimeToolVoiceLevelField,
 } from './settingsFields';
@@ -23,15 +22,12 @@ const renderVoiceLevel = (ctx: CustomRenderCtx) =>
 const renderTrafficColor = (ctx: CustomRenderCtx) =>
   React.createElement(TimeToolTrafficColorField, { ctx });
 
-const renderNexusHints = (ctx: CustomRenderCtx) =>
-  React.createElement(TimeToolNexusHints, { ctx });
-
 // Same synthesis the timer plays at zero; the context must be resumed from the click first.
 export const previewTimerSound = (sound: string) => {
   void resumeAudio().then(() => playTimerAlert(sound));
 };
 
-const isTimerMode = (ctx: FieldCtx) => ctx.config.mode === 'timer';
+const isTimerMode = (ctx: FieldCtx) => (ctx.config.mode ?? 'timer') === 'timer';
 
 export default defineSettings<TimeToolConfig>({
   groups: [
@@ -70,44 +66,80 @@ export default defineSettings<TimeToolConfig>({
           step: 5,
           visibleWhen: isTimerMode,
         },
-        // schema-gap: boardAwareHint
+        // Timer-end partner cards: each disables while its partner is off the board and offers a one-tap add.
         {
-          type: 'custom',
-          key: 'startTime',
-          label: 'connectedWidgets',
-          render: renderNexusHints,
-        },
-        // schema-gap: segmentedNullable
-        {
-          type: 'custom',
+          type: 'partnerWidget',
           key: 'timerEndVoiceLevel',
           label: 'timerEndVoiceLevel',
-          render: renderVoiceLevel,
+          section: 'timerEndSection',
+          partner: 'expectations',
+          missingHelp: 'addExpectationsTip',
+          visibleWhen: isTimerMode,
+          // schema-gap: segmentedNullable
+          control: {
+            type: 'custom',
+            key: 'timerEndVoiceLevel',
+            label: 'timerEndVoiceLevel',
+            render: renderVoiceLevel,
+          },
         },
-        // schema-gap: segmentedNullable
         {
-          type: 'custom',
+          type: 'partnerWidget',
           key: 'timerEndTrafficColor',
           label: 'timerEndTrafficColor',
-          render: renderTrafficColor,
+          section: 'timerEndSection',
+          partner: 'traffic',
+          missingHelp: 'addTrafficLightTip',
+          visibleWhen: isTimerMode,
+          // schema-gap: segmentedNullable
+          control: {
+            type: 'custom',
+            key: 'timerEndTrafficColor',
+            label: 'timerEndTrafficColor',
+            render: renderTrafficColor,
+          },
         },
         {
-          type: 'toggle',
+          type: 'partnerWidget',
           key: 'timerEndTriggerRandom',
           label: 'timerEndTriggerRandom',
-          help: 'timerEndTriggerRandomHelp',
+          section: 'timerEndSection',
+          partner: 'random',
+          missingHelp: 'addRandomizerTip',
+          visibleWhen: isTimerMode,
+          control: {
+            type: 'toggle',
+            key: 'timerEndTriggerRandom',
+            label: 'timerEndTriggerRandom',
+          },
         },
         {
-          type: 'toggle',
-          key: 'timerEndTriggerNextUp',
-          label: 'timerEndTriggerNextUp',
-          help: 'timerEndTriggerNextUpHelp',
-        },
-        {
-          type: 'toggle',
+          type: 'partnerWidget',
           key: 'timerEndTriggerStationsRotate',
           label: 'timerEndTriggerStationsRotate',
-          help: 'timerEndTriggerStationsRotateHelp',
+          section: 'timerEndSection',
+          partner: 'stations',
+          missingHelp: 'addStationsTip',
+          visibleWhen: isTimerMode,
+          control: {
+            type: 'toggle',
+            key: 'timerEndTriggerStationsRotate',
+            label: 'timerEndTriggerStationsRotate',
+          },
+        },
+        {
+          type: 'partnerWidget',
+          key: 'timerEndTriggerNextUp',
+          label: 'timerEndTriggerNextUp',
+          section: 'timerEndSection',
+          partner: 'nextUp',
+          missingHelp: 'addNextUpTip',
+          visibleWhen: isTimerMode,
+          control: {
+            type: 'toggle',
+            key: 'timerEndTriggerNextUp',
+            label: 'timerEndTriggerNextUp',
+          },
         },
       ],
     },

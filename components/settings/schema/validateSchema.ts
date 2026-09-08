@@ -90,7 +90,31 @@ export function validateSchema<C = Record<string, unknown>>(
     }
     lastOrder = Math.max(lastOrder, order);
 
-    for (const field of group.fields as ReadonlyArray<Field>) {
+    const fields = (group.fields as ReadonlyArray<Field>).flatMap(
+      (field): Field[] => {
+        if (field.type !== 'partnerWidget') return [field];
+        if (!resolves(catalog, type, field.missingHelp)) {
+          errors.push(
+            `${type}: missingHelp "${field.missingHelp}" resolves to neither widgetSettings.${type}.${field.missingHelp} nor widgetSettings.common.${field.missingHelp}`
+          );
+        }
+        if (field.control.key !== field.key) {
+          errors.push(
+            `${type}: partner card "${field.key}" wraps a control keyed "${field.control.key}"; keys must match`
+          );
+        }
+        return [field, field.control];
+      }
+    );
+    for (const field of fields) {
+      if (
+        field.section !== undefined &&
+        !resolves(catalog, type, field.section)
+      ) {
+        errors.push(
+          `${type}: section "${field.section}" resolves to neither widgetSettings.${type}.${field.section} nor widgetSettings.common.${field.section}`
+        );
+      }
       if (field.key.includes('.')) {
         errors.push(
           `${type}: field key "${field.key}" is dotted; top-level config keys only`
@@ -108,6 +132,7 @@ export function validateSchema<C = Record<string, unknown>>(
       }
       if (
         field.type !== 'custom' &&
+        field.type !== 'partnerWidget' &&
         defaults &&
         !(field.key in defaults) &&
         !field.key.includes('.')

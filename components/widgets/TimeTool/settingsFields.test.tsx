@@ -65,9 +65,11 @@ const renderKey = (key: string, config: Record<string, unknown>) => {
   return updateConfig;
 };
 
+const addWidget = vi.fn();
 const boardWith = (...types: WidgetType[]) =>
   mockedUseDashboard.mockReturnValue({
     activeDashboard: { widgets: types.map((type) => ({ type })) },
+    addWidget,
   } as unknown as ReturnType<typeof useDashboard>);
 
 beforeEach(() => {
@@ -138,14 +140,12 @@ describe('nullable timer-end fields', () => {
     expect(updateConfig).toHaveBeenCalledWith({ timerEndVoiceLevel: 4 });
   });
 
-  it('disables the voice level control and shows a tip when Expectations is absent', () => {
+  it('disables the voice level control inside its partner card when Expectations is absent', () => {
     renderKey('timerEndVoiceLevel', { timerEndVoiceLevel: 2 });
-    const radiogroup = screen.getByRole('radiogroup', {
-      name: 'Switch to Voice Level when finished',
-    });
-    expect(radiogroup).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('radio', { name: 'Lvl 2' })).toBeDisabled();
     expect(screen.getByText(leaves.addExpectationsTip)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button'));
+    expect(addWidget).toHaveBeenCalledWith('expectations');
   });
 
   it('treats an absent traffic color as "None" and writes color names', () => {
@@ -161,37 +161,12 @@ describe('nullable timer-end fields', () => {
     });
   });
 
-  it('disables the traffic color control and shows a tip when Traffic Light is absent', () => {
+  it('disables the traffic color control inside its partner card when Traffic Light is absent', () => {
     renderKey('timerEndTrafficColor', {});
-    const radiogroup = screen.getByRole('radiogroup', {
-      name: 'Auto-set Traffic Light',
-    });
-    expect(radiogroup).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('radio', { name: 'Slow' })).toBeDisabled();
     expect(screen.getByText(leaves.addTrafficLightTip)).toBeInTheDocument();
-  });
-});
-
-describe('connected-widget hints', () => {
-  it('lists a tip for every missing partner widget', () => {
-    renderKey('startTime', {});
-    const items = screen.getAllByRole('listitem');
-    expect(items).toHaveLength(5);
-    expect(items[0]).toHaveTextContent(leaves.addExpectationsTip);
-  });
-
-  it('omits tips for partners already on the board', () => {
-    boardWith('expectations', 'traffic', 'random');
-    renderKey('startTime', {});
-    const texts = screen.getAllByRole('listitem').map((li) => li.textContent);
-    expect(texts).toEqual([leaves.addStationsTip, leaves.addNextUpTip]);
-  });
-
-  it('shows the all-connected line when nothing is missing', () => {
-    boardWith('expectations', 'traffic', 'random', 'stations', 'nextUp');
-    renderKey('startTime', {});
-    expect(screen.queryByRole('list')).toBeNull();
-    expect(screen.getByText(leaves.allConnected)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button'));
+    expect(addWidget).toHaveBeenCalledWith('traffic');
   });
 });
 
