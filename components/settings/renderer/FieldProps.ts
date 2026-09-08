@@ -24,4 +24,6 @@ export type FieldProps<F extends Field = Field> = {
   ) => ReactNode;
   /** Mount-stable patch writer for Custom `render` and fields that write a second key. */
   updateConfig?: UpdateConfig;
+  /** PartnerWidget only: renders the inner control via FieldRenderer. */
+  renderField?: (field: Field, forceDisabled: boolean) => ReactNode;
 };

@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/useAuth';
+import { useToolLabel } from '@/hooks/useToolLabel';
 import {
   useDashboardActions,
   useDashboardCanvasSelector,
@@ -141,6 +142,7 @@ export const SettingsDrawerHost: React.FC = () => {
   const { t } = useTranslation();
   const {
     canAccessFeature,
+    canAccessWidget,
     featurePermissions,
     dockPosition,
     settingsDrawerWidth,
@@ -148,6 +150,7 @@ export const SettingsDrawerHost: React.FC = () => {
     isAdmin,
   } = useAuth();
   const enabled = canAccessFeature('settings-drawer');
+  const toolLabel = useToolLabel();
 
   const { updateWidget, updateWidgets } = useDashboardActions();
   const getCanvasState = useDashboardCanvasStateGetter();
@@ -419,6 +422,8 @@ export const SettingsDrawerHost: React.FC = () => {
         readOnly={readOnly}
         isAdmin={isAdmin === true}
         canAccessFeature={canAccessFeature}
+        canAccessWidget={canAccessWidget}
+        toolLabel={toolLabel}
         headingRef={headingRef}
       />
     </>

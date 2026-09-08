@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/useAuth';
+import { useToolLabel } from '@/hooks/useToolLabel';
 import { useDashboardActions } from '@/context/dashboardCanvasStore';
 import { WIDGET_SETTINGS_SCHEMAS } from '@/components/widgets/WidgetRegistry';
 import type { WidgetData, WidgetType } from '@/types';
@@ -29,7 +30,8 @@ export const SchemaAppearanceFallback: React.FC<
   SchemaAppearanceFallbackProps
 > = ({ widget }) => {
   const { t } = useTranslation();
-  const { isAdmin, canAccessFeature } = useAuth();
+  const { isAdmin, canAccessFeature, canAccessWidget } = useAuth();
+  const toolLabel = useToolLabel();
   const { updateWidget } = useDashboardActions();
 
   const [schemaState, dispatchSchema] = useReducer(schemaReducer, {
@@ -80,9 +82,11 @@ export const SchemaAppearanceFallback: React.FC<
       widget,
       isAdmin: isAdmin === true,
       canAccessFeature,
+      canAccessWidget,
+      toolLabel,
       t,
     }),
-    [config, widget, isAdmin, canAccessFeature, t]
+    [config, widget, isAdmin, canAccessFeature, canAccessWidget, toolLabel, t]
   );
 
   if (!schema) return null;

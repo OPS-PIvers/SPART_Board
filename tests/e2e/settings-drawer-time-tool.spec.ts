@@ -76,9 +76,9 @@ test.describe('time-tool settings drawer at 1280x800', () => {
     await step.fill('30');
     await expect(step).toHaveValue('30');
 
-    // Behavior: connected-widget tips appear for every missing partner on an empty board.
+    // Behavior: every partner card offers a one-tap add on an empty board.
     await expect(
-      drawer.locator('[data-testid="time-tool-nexus-hints"] li')
+      drawer.getByRole('button', { name: /^Add .* widget$/ })
     ).toHaveCount(5);
 
     // Display group lives on the Style tab: visual ring draws the progress ring behind the digits.
@@ -170,8 +170,9 @@ test.describe('time-tool settings drawer at 1280x800', () => {
       );
     expect(tabbableKeys.length).toBeGreaterThan(0);
 
+    // A partner card and its inner control share a key, so compare distinct keys.
     const visited = await expectTabOrderStaysInDrawer(page, drawer);
-    expect([...visited].sort()).toEqual([...tabbableKeys].sort());
+    expect([...visited].sort()).toEqual([...new Set(tabbableKeys)].sort());
   });
 });
 

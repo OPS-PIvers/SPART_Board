@@ -1,6 +1,5 @@
 import React from 'react';
 import type { TimeToolConfig, WidgetType } from '@/types';
-import { useDashboard } from '@/context/useDashboard';
 import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 import { resolveLabel } from '@/components/settings/renderer/resolveLabel';
 import type { CustomRenderCtx } from '@/components/settings/schema/types';
@@ -125,42 +124,28 @@ export const TimeToolModeField: React.FC<CustomFieldProps> = ({ ctx }) => {
 
 const VOICE_LEVELS: ReadonlyArray<number> = [0, 1, 2, 3, 4];
 
-const TIP_CLASS =
-  'text-xxs text-brand-blue-dark bg-brand-blue-lighter/20 border border-brand-blue-lighter/30 rounded-lg px-2.5 py-2 leading-snug';
-
-// "None" writes null; the front face treats null and absent alike.
-// Disabled (with an inline tip) when no Expectations widget is on the board, matching the legacy panel's gate.
+// "None" writes null; the front face treats null and absent alike. The partner card gates it on the Expectations widget.
 export const TimeToolVoiceLevelField: React.FC<CustomFieldProps> = ({
   ctx,
 }) => {
   const leaf = leafResolver(ctx);
   const config = ctx.config as Partial<TimeToolConfig>;
   const value = config.timerEndVoiceLevel ?? null;
-  const { activeDashboard } = useDashboard();
-  const hasExpectations = !!activeDashboard?.widgets.some(
-    (w) => w.type === 'expectations'
-  );
   return (
-    <div className="flex flex-col gap-1.5">
-      <TimeToolRadioGroup<number | null>
-        id={ctx.id}
-        labelId={ctx.labelId}
-        name={leaf('timerEndVoiceLevel')}
-        options={[
-          { value: null, label: leaf('none') },
-          ...VOICE_LEVELS.map((level) => ({
-            value: level,
-            label: `${leaf('level')} ${level}`,
-          })),
-        ]}
-        value={value}
-        onSelect={(level) => ctx.updateConfig({ timerEndVoiceLevel: level })}
-        disabled={!hasExpectations}
-      />
-      {!hasExpectations && (
-        <p className={TIP_CLASS}>{leaf('addExpectationsTip')}</p>
-      )}
-    </div>
+    <TimeToolRadioGroup<number | null>
+      id={ctx.id}
+      labelId={ctx.labelId}
+      name={leaf('timerEndVoiceLevel')}
+      options={[
+        { value: null, label: leaf('none') },
+        ...VOICE_LEVELS.map((level) => ({
+          value: level,
+          label: `${leaf('level')} ${level}`,
+        })),
+      ]}
+      value={value}
+      onSelect={(level) => ctx.updateConfig({ timerEndVoiceLevel: level })}
+    />
   );
 };
 
@@ -185,74 +170,28 @@ const trafficSelectedClass = (color: TrafficColor | null) => {
   }
 };
 
-// Disabled (with an inline tip) when no Traffic Light widget is on the board, matching the legacy panel's gate.
+// The partner card gates it on the Traffic Light widget.
 export const TimeToolTrafficColorField: React.FC<CustomFieldProps> = ({
   ctx,
 }) => {
   const leaf = leafResolver(ctx);
   const config = ctx.config as Partial<TimeToolConfig>;
   const value = config.timerEndTrafficColor ?? null;
-  const { activeDashboard } = useDashboard();
-  const hasTrafficLight = !!activeDashboard?.widgets.some(
-    (w) => w.type === 'traffic'
-  );
   return (
-    <div className="flex flex-col gap-1.5">
-      <TimeToolRadioGroup<TrafficColor | null>
-        id={ctx.id}
-        labelId={ctx.labelId}
-        name={leaf('timerEndTrafficColor')}
-        options={[
-          { value: null, label: leaf('none') },
-          ...TRAFFIC_OPTIONS.map((option) => ({
-            value: option.value,
-            label: leaf(option.leaf),
-          })),
-        ]}
-        value={value}
-        onSelect={(color) => ctx.updateConfig({ timerEndTrafficColor: color })}
-        selectedClass={trafficSelectedClass}
-        disabled={!hasTrafficLight}
-      />
-      {!hasTrafficLight && (
-        <p className={TIP_CLASS}>{leaf('addTrafficLightTip')}</p>
-      )}
-    </div>
-  );
-};
-
-const NEXUS_SIBLINGS: ReadonlyArray<{ type: WidgetType; tipLeaf: string }> = [
-  { type: 'expectations', tipLeaf: 'addExpectationsTip' },
-  { type: 'traffic', tipLeaf: 'addTrafficLightTip' },
-  { type: 'random', tipLeaf: 'addRandomizerTip' },
-  { type: 'stations', tipLeaf: 'addStationsTip' },
-  { type: 'nextUp', tipLeaf: 'addNextUpTip' },
-];
-
-// Board-aware tips: one callout per timer-end partner widget missing from the active board.
-export const TimeToolNexusHints: React.FC<CustomFieldProps> = ({ ctx }) => {
-  const leaf = leafResolver(ctx);
-  const { activeDashboard } = useDashboard();
-  const present = new Set(activeDashboard?.widgets.map((w) => w.type) ?? []);
-  const missing = NEXUS_SIBLINGS.filter((s) => !present.has(s.type));
-  if (missing.length === 0) {
-    return (
-      <p id={ctx.id} className="text-xxs text-slate-600">
-        {leaf('allConnected')}
-      </p>
-    );
-  }
-  return (
-    <ul
+    <TimeToolRadioGroup<TrafficColor | null>
       id={ctx.id}
-      className="flex flex-col gap-1.5"
-      data-testid="time-tool-nexus-hints"
-    >
-      {missing.map((sibling) => (
-        <li key={sibling.type} className={TIP_CLASS}>
-          {leaf(sibling.tipLeaf)}
-        </li>
-      ))}
-    </ul>
+      labelId={ctx.labelId}
+      name={leaf('timerEndTrafficColor')}
+      options={[
+        { value: null, label: leaf('none') },
+        ...TRAFFIC_OPTIONS.map((option) => ({
+          value: option.value,
+          label: leaf(option.leaf),
+        })),
+      ]}
+      value={value}
+      onSelect={(color) => ctx.updateConfig({ timerEndTrafficColor: color })}
+      selectedClass={trafficSelectedClass}
+    />
   );
 };

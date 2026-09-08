@@ -70,9 +70,29 @@ describe('time-tool settings schema', () => {
   it('warns only for the timer-end toggles, which have no literal front-face fallback', () => {
     expect(validateSchema('time-tool', schema).warnings).toEqual([
       'time-tool: WIDGET_DEFAULTS.config has no default for "timerEndTriggerRandom"',
-      'time-tool: WIDGET_DEFAULTS.config has no default for "timerEndTriggerNextUp"',
       'time-tool: WIDGET_DEFAULTS.config has no default for "timerEndTriggerStationsRotate"',
+      'time-tool: WIDGET_DEFAULTS.config has no default for "timerEndTriggerNextUp"',
     ]);
+  });
+
+  it('wraps every timer-end setting in a partner card under one section, hidden in stopwatch mode', () => {
+    const ctx = (mode: string) => ({ config: { mode } }) as unknown as FieldCtx;
+    const behavior = schema.groups.find((g) => g.id === 'behavior');
+    const cards = (behavior?.fields ?? []).filter(
+      (f) => f.type === 'partnerWidget'
+    );
+    expect(cards.map((f) => f.type === 'partnerWidget' && f.partner)).toEqual([
+      'expectations',
+      'traffic',
+      'random',
+      'stations',
+      'nextUp',
+    ]);
+    for (const card of cards) {
+      expect(card.section).toBe('timerEndSection');
+      expect(card.visibleWhen?.(ctx('timer'))).toBe(true);
+      expect(card.visibleWhen?.(ctx('stopwatch'))).toBe(false);
+    }
   });
 
   it('keeps defaults equal to the front-face fallbacks (TimeToolWidget.tsx ~400-404)', () => {
@@ -94,12 +114,11 @@ describe('time-tool settings schema', () => {
       ['mode', 'selectedSound'],
       [
         'adjustStepSeconds',
-        'startTime',
         'timerEndVoiceLevel',
         'timerEndTrafficColor',
         'timerEndTriggerRandom',
-        'timerEndTriggerNextUp',
         'timerEndTriggerStationsRotate',
+        'timerEndTriggerNextUp',
       ],
       ['visualType', 'clockStyle', 'themeColor', 'glow'],
     ]);

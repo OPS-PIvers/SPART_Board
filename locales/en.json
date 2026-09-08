@@ -1220,7 +1220,10 @@
       "rosterActive": "Active class",
       "rosterNone": "No active class",
       "rosterStudentCount_one": "{{count}} student",
-      "rosterStudentCount_other": "{{count}} students"
+      "rosterStudentCount_other": "{{count}} students",
+      "partner": {
+        "add": "Add {{name}} widget"
+      }
     },
     "lunchCount": {
       "schoolSite": "School Site",
@@ -1293,8 +1296,7 @@
       "soundAlert": "Alert",
       "adjustStepSeconds": "Adjust Step (seconds)",
       "adjustStepHint": "Tap to add or subtract this much time. Press and hold to add faster.",
-      "connectedWidgets": "Timer End Action",
-      "allConnected": "Expectations, Traffic Light, Randomizer, Stations, and NextUp widgets are all on this board.",
+      "timerEndSection": "When the timer ends",
       "addExpectationsTip": "Add an \"Expectations\" widget to enable automatic voice level changes when the timer hits zero!",
       "addTrafficLightTip": "Add a Traffic Light widget to enable automatic color changes!",
       "addRandomizerTip": "Add a Randomizer widget to auto-pick the next student when the timer ends.",
@@ -1308,11 +1310,8 @@
       "trafficSlow": "Slow",
       "trafficGo": "Go",
       "timerEndTriggerRandom": "Auto-Pick Random Student",
-      "timerEndTriggerRandomHelp": "Requires a Randomizer widget on this board.",
       "timerEndTriggerNextUp": "Auto-Advance NextUp Queue",
-      "timerEndTriggerNextUpHelp": "Requires a NextUp widget on this board.",
       "timerEndTriggerStationsRotate": "Auto-rotate stations",
-      "timerEndTriggerStationsRotateHelp": "Requires a Stations widget on this board.",
       "visualType": "Display Style",
       "digital": "Digital",
       "visualRing": "Visual Ring",
