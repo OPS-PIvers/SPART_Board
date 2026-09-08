@@ -4,16 +4,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // True if the caller's email has an /admins/{email} doc.
-    // token.get('email','') (not direct .email) avoids a CEL "undefined" throw
-    // on tokens with no email claim (anon PIN), even behind a != null guard —
-    // load-bearing because isAdmin() runs before the anon-student branch in the
-    // quiz-response update OR chain.
-    // email_verified is REQUIRED: this project's Auth also accepts email/password
-    // sign-in (see aiGeneration.ts's isExternalCaller / resolveOrgForUser.ts), so
-    // an unverified, self-reported `email` claim could otherwise be forged to a
-    // real admin's address to claim the /admins/{email} doc without ever proving
-    // ownership of it — the single highest-privilege gate in this file must not
-    // trust that claim any less strictly than the AI-quota/org-resolution paths do.
+    // token.get('email','') (not direct .email) avoids a CEL "undefined" throw on
+    // tokens with no email claim (anon PIN) - load-bearing because isAdmin() runs
+    // before the anon-student branch in the quiz-response update OR chain.
+    // email_verified is REQUIRED: email/password sign-in is also enabled, so an
+    // unverified self-reported email could otherwise be forged to an admin's address
+    // to claim the /admins doc. Matches aiGeneration.ts / resolveOrgForUser.ts.
     function isAdmin() {
       return request.auth != null &&
              request.auth.token.get('email', '') != '' &&
@@ -94,12 +90,10 @@ service cloud.firestore {
 
     // ---- Organization helpers (see docs/organization_wiring_implementation.md) ----
 
-    // Super admins recognized from EITHER source (LO2): the legacy
-    // admin_settings/user_roles.superAdmins[] list, OR an operator-org member doc
-    // with roleId == 'super_admin'. Mirrors OrganizationPanel.resolveActorRole;
-    // legacy list kept as an accepted source until a Paul-gated migration. Checks
-    // run globally, so roleId is read from the operator org (`orono`) by fixed
-    // path — CEL cannot resolve the caller's org dynamically.
+    // Super admins from EITHER source (LO2): legacy admin_settings/user_roles
+    // .superAdmins[], OR an operator-org member doc with roleId == 'super_admin'.
+    // Mirrors OrganizationPanel.resolveActorRole. roleId is read from the operator
+    // org (`orono`) by fixed path - CEL cannot resolve the caller's org dynamically.
     function isSuperAdmin() {
       return request.auth != null &&
              request.auth.token.email != null &&
@@ -209,17 +203,12 @@ service cloud.firestore {
     }
 
     // ---- M1 full sign-in lockout (deny-by-status) ----
-    // Rules can't resolve a user's org dynamically (that's the resolveOrgForUser
-    // CF, not CEL) and can't enumerate orgs, so the gate is enforced against the
-    // operator org (`orono`) — the one org checkable by fixed path, where the
-    // active user base lives. Mirrors OPERATOR_ORG_ID in context/AuthContext.tsx.
-    // Follow-up: a member deactivated in a 2nd/3rd org is blocked at sign-in by
-    // AuthContext but not yet by these rules (a per-uid org-index doc would close
-    // that gap).
-    // operatorMember(): caller's operator-org member doc, or null if absent. One
-    // get() (Firestore caches same-path get()s per evaluation; missing → null)
-    // both tests membership (!= null) and reads status, halving read cost on the
-    // ~15 owner collections gated by notDeactivated().
+    // CEL can't resolve a user's org dynamically or enumerate orgs, so the gate runs
+    // against the operator org (`orono`), the one org checkable by fixed path.
+    // Mirrors OPERATOR_ORG_ID in context/AuthContext.tsx. Follow-up: a member
+    // deactivated only in a 2nd/3rd org is blocked by AuthContext, not by these rules.
+    // operatorMember(): caller's operator-org member doc or null. One get() (cached
+    // per evaluation) both tests membership and reads status.
     function operatorMember() {
       return get(/databases/$(database)/documents/organizations/orono/members/$(request.auth.token.email.lower()));
     }
@@ -237,19 +226,12 @@ service cloud.firestore {
     }
 
     // ---- Organizations collection (Phase 3: scoped writes enabled) ----
-    // Rules enforce role scoping; the client also gates UI via the
-    // `org-admin-writes` flag. Scoping summary:
-    //   - Super admins: any field, any org.
-    //   - Domain admins: org-wide writes for their org (except AI/plan flags,
-    //     super-admin only) on buildings, domains, roles (custom only),
-    //     members, studentPageConfig.
-    //   - Building admins: read-only except member `status` for a member whose
-    //     buildingIds intersect the actor's own. Never roleId.
-    //   - System roles (`system: true`) are client-immutable; migration-seeded,
-    //     clone-to-customize.
-    // Ordering: isOrgMember() (one exists()) is checked before isSuperAdmin()
-    // (exists()+get() on admin_settings/user_roles) so the common teacher path
-    // stays cheap and the super-admin lookup runs only for non-members.
+    // Super admins: any field, any org. Domain admins: org-wide writes for their org
+    // (except AI/plan flags, super-admin only). Building admins: read-only except
+    // member `status` for a member whose buildingIds intersect their own, never roleId.
+    // System roles (`system: true`) are client-immutable.
+    // Ordering: isOrgMember() (one exists()) precedes isSuperAdmin() (exists()+get())
+    // so the common teacher path stays cheap.
 
     match /organizations/{orgId} {
       allow read: if isOrgMember(orgId) || isSuperAdmin();
@@ -297,23 +279,11 @@ service cloud.firestore {
       match /domains/{domainId} {
         allow read: if isOrgMember(orgId) || isSuperAdmin();
         // Domain/super admin only. Create pins canonical orgId + doc id, forces
-        // status:'pending' and users:0 (verification is server-side DNS; users is
-        // derived), and hasOnly([...]) blocks stray fields. Update is whitelisted
-        // to the configurable fields.
-        //
-        // `domain` must be normalized (leading '@', all-lowercase, dotted
-        // hostname shape) on BOTH create and update. `resolveOrgIdForDomain`
-        // (functions/src/classlinkShared.ts) resolves a signed-in user's org
-        // via an EXACT-match Firestore query against a value it builds as
-        // '@' + <lowercased email/hd domain> — it never normalizes the STORED
-        // side. Before this check, nothing enforced that shape here: this
-        // rule only pinned the schema (hasOnly) and identity fields, so a
-        // write with mismatched case or stray whitespace (e.g. a hand-edited
-        // Firestore console value, or a future write path that skips the
-        // admin UI's own client-side normalization) would be silently
-        // accepted, then every sign-in from that domain would fail org
-        // resolution forever with no error surfaced anywhere — the domain
-        // would look "added" in the admin UI but never actually resolve.
+        // status:'pending' and users:0, and hasOnly([...]) blocks stray fields.
+        // `domain` must be normalized (leading '@', lowercase, dotted hostname) on BOTH
+        // create and update: resolveOrgIdForDomain (classlinkShared.ts) resolves a user's
+        // org via EXACT-match query and never normalizes the STORED side, so a mismatched
+        // value would be accepted here and then fail org resolution forever, silently.
         allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           request.resource.data.orgId == orgId &&
           request.resource.data.id == domainId &&
@@ -382,16 +352,12 @@ service cloud.firestore {
                        request.auth.token.email.lower() == emailLower) ||
                     isOrgMember(orgId) ||
                     isSuperAdmin();
-        // Domain+ admins manage members via a field whitelist so identity fields
-        // (email, orgId, uid, addedBy, addedBySource) stay pinned. `uid` is NOT
-        // update-whitelisted: the first-sign-in uid link must go through a CF
-        // (Admin SDK) so no client can reassign a uid and hijack the account.
-        // Building admins may update only `status` on members whose buildingIds
-        // intersect their own (see update branch). Create pins doc id ==
-        // lowercased email (so isOrgMember()'s members/{email.lower()} lookup
-        // resolves), requires the core fields, and hasOnly() the invite-shape
-        // keys. F15: request.resource.data.email is forced to lower() and ==
-        // emailLower, so the stored email and doc id are both guaranteed lowercase.
+        // Domain+ admins manage members via a field whitelist so identity fields (email,
+        // orgId, uid, addedBy, addedBySource) stay pinned. `uid` is NOT update-whitelisted:
+        // the first-sign-in uid link must go through a CF so no client can reassign a uid
+        // and hijack the account. Building admins may update only `status` on members whose
+        // buildingIds intersect their own. Create pins doc id == lowercased email (so
+        // isOrgMember()'s lookup resolves) and forces data.email == emailLower (F15).
         allow create: if (isSuperAdmin() || isDomainAdmin(orgId)) &&
           request.resource.data.email == request.resource.data.email.lower() &&
           request.resource.data.email == emailLower &&
@@ -730,14 +696,11 @@ service cloud.firestore {
     }
 
     // Admin-created short links resolved at /r/:code.
-    // - get: public (anyone can follow a known shortlink).
-    // - list: admin-only (blocks anonymous enumeration of all codes + targets).
-    // - create: admins, plus non-anonymous users minting an Activity Wall
-    //   gallery link stamped with their own uid (students excluded).
-    // - edit/delete: admin-only.
-    // - update: narrow anonymous path — the resolver may only bump `clicks` by
-    //   exactly 1 and stamp `lastClickedAt`, clamped to ±5min of server time
-    //   (prevents counter inflation/reset and far-future timestamp poisoning).
+    // get: public. list: admin-only (blocks anonymous enumeration of codes+targets).
+    // create: admins, plus non-anon users minting an Activity Wall gallery link
+    // stamped with their own uid. edit/delete: admin-only.
+    // update: narrow anonymous path - may only bump `clicks` by exactly 1 and stamp
+    // `lastClickedAt` within +/-5min of server time (blocks counter inflation/reset).
     match /short_links/{code} {
       allow get: if true;
       allow list: if isAdmin();
@@ -762,24 +725,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Classroom Add-on course links — maps a Google Classroom courseId to a
-    // ClassLink section sourcedId so the add-on resolves students via OneRoster.
-    // READ open to any authed user (the discovery iframe needs it). WRITES are
-    // server-only: linkClassroomCourse / unlinkClassroomCourse verify (with the
-    // teacher's classroom.courses.readonly token) that the caller teaches the
-    // course, then write via Admin SDK. Rules can't verify that, so a client
-    // create would let anyone squat any courseId and mis-route/lock out students.
+    // Classroom Add-on course links - maps a Google Classroom courseId to a ClassLink
+    // section sourcedId. READ open to any authed user (the discovery iframe needs it).
+    // WRITES are server-only: linkClassroomCourse verifies the caller teaches the
+    // course, then writes via Admin SDK. Rules can't verify that, so a client create
+    // would let anyone squat any courseId and mis-route students.
     match /classroom_course_links/{courseId} {
       allow read: if request.auth != null;
       allow write: if false;
     }
 
-    // ── Schoology LTI 1.3 ────────────────────────────────────────────────
-    // Server-internal OIDC handshake state — Admin SDK only, never
-    // client-visible. The OIDC login-initiation CF writes the per-launch
-    // `state`/`nonce` here and the launch CF reads + deletes it (both bypass
-    // rules via the Admin SDK). Clients have no reason to touch it, and the
-    // doc is short-lived CSRF protection, so deny all client access outright.
+    // Schoology LTI 1.3: server-internal OIDC handshake state, Admin SDK only.
+    // The login-initiation CF writes per-launch `state`/`nonce`; the launch CF reads
+    // and deletes it. Short-lived CSRF protection with no client path - deny all.
     match /lti_oidc_state/{state} {
       allow read, write: if false;
     }
@@ -793,49 +751,35 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Schoology section (LTI context) -> ClassLink class link. The LTI analogue
-    // of classroom_course_links: keyed by the LTI `context_id`, it pairs a seen
-    // Schoology section to a ClassLink class for the same teacher
-    // ({ teacherUid, classlinkClassId, classlinkOrgId, contextTitle, rosterId }).
-    // READ is open to any authed user (the teacher monitor + SidebarClasses read
-    // it to resolve link state). WRITES are SERVER-ONLY — linkLtiCourseV1
-    // verifies the caller owns a session that actually SAW this context (the LTI
-    // analogue of verifyTeacherOfCourse) before writing via the
-    // Admin SDK; rules cannot validate an LTI launch, so a client write would let
-    // any authed user squat any context_id.
+    // Schoology section (LTI context) -> ClassLink class link; LTI analogue of
+    // classroom_course_links, keyed by LTI `context_id`. READ open to any authed user
+    // (teacher monitor + SidebarClasses resolve link state). WRITES are SERVER-ONLY:
+    // linkLtiCourseV1 verifies the caller owns a session that SAW this context before
+    // writing via Admin SDK. Rules can't validate an LTI launch, so a client write
+    // would let any authed user squat any context_id.
     match /lti_course_links/{contextId} {
       allow read: if request.auth != null;
       allow write: if false;
     }
 
-    // PII-free grade-sync keys (pseudonym sub -> resourceLink). Written by the
-    // launch exchange CF and read by the AGS grade-push CF — BOTH via the Admin
-    // SDK, which bypasses these rules. No client path ever reads or writes them,
-    // so deny all client access: a doc carries the student's LTI `sub` + AGS
-    // line-item/score URLs, which no authenticated user (least of all an
-    // anonymous studentRole session) should be able to enumerate.
+    // PII-free grade-sync keys (pseudonym sub -> resourceLink). Written and read only
+    // by CFs via the Admin SDK. Deny all client access: a doc carries the student's
+    // LTI `sub` + AGS line-item/score URLs, which no client should enumerate.
     match /lti_grade_links/{pseudonymUid}/resources/{resourceLinkId} {
       allow read, write: if false;
     }
 
-    // PII-free sticky identity bridge (Schoology sub pseudonym -> ClassLink
-    // pseudonym), written and read ONLY by the launch exchange CF via the Admin
-    // SDK, which bypasses these rules. It exists so a OneRoster blip or an
-    // unlinked section can't re-identify a student mid-assignment. Both sides
-    // are HMAC pseudonyms and neither is a secret on its own, but the mapping
-    // LINKS a student's two identities — exactly the correlation the pseudonym
-    // design avoids — so deny all client access.
+    // PII-free sticky identity bridge (Schoology sub pseudonym -> ClassLink pseudonym),
+    // written and read only by the launch exchange CF via Admin SDK. Exists so a
+    // OneRoster blip can't re-identify a student mid-assignment. Neither side is a
+    // secret alone, but the mapping LINKS a student's two identities - deny all.
     match /lti_identity_bridge/{pseudonymUid} {
       allow read, write: if false;
     }
 
-    // PII-free NRPS membership endpoints, keyed by quiz session → context. The
-    // launch-exchange CF writes the context's `context_memberships_url` here and
-    // the name-resolver CF reads it — BOTH via the Admin SDK, which bypasses
-    // these rules. No client path ever touches them (a doc holds a roster
-    // service URL that no authenticated user should enumerate), so deny all
-    // client access. The `{document=**}` recursive wildcard covers the
-    // `contexts/{contextId}` subcollection too.
+    // PII-free NRPS membership endpoints, keyed by quiz session -> context. Written and
+    // read only by CFs via Admin SDK; a doc holds a roster service URL no client should
+    // enumerate, so deny all. `{document=**}` covers the contexts/{contextId} subcollection.
     match /lti_session_memberships/{sessionId}/{document=**} {
       allow read, write: if false;
     }
@@ -933,27 +877,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Shared boards — backing store for live-shared dashboards. Import modes:
-    //   - copy      : reader pulls a snapshot, no doc-side state
-    //   - view-only : reader joins as { role: 'viewer' }, host pushes
-    //   - synced    : reader joins as { role: 'collaborator' }, both push
-    // Fields: originalAuthor (uid host), sharedAt, participants
-    // { [uid]: { role, joinedAt, displayName? } }, intendedMode, updatedAt/By,
-    // plus all Dashboard fields. Update rules: host = anything; collaborator =
-    // content but not participants/ownership; viewer = none; any authed user may
-    // append only themselves to participants; intendedMode is immutable after
+    // Shared boards - backing store for live-shared dashboards. Import modes: copy
+    // (snapshot, no doc-side state), view-only (reader joins as viewer, host pushes),
+    // synced (reader joins as collaborator, both push). Update rules: host = anything;
+    // collaborator = content but not participants/ownership; viewer = none; any authed
+    // user may append only themselves to participants; intendedMode immutable after
     // create (the recipient flow trusts it to skip the picker).
     match /shared_boards/{shareId} {
-      // GET (single doc, `resource` fully bound). Substitute shares carry
-      // org-internal routing/Drive-grant metadata, so reads are restricted to
-      // host, admins, and @orono.k12.mn.us callers (the gate the /subs UI
-      // enforces) AND not past expiresAt for the email branch (a hostile
-      // direct-REST client could otherwise read a frozen board snapshot plus
-      // Drive-grant metadata indefinitely after expiry — the expireSubShares
-      // sweep can leave an expired doc with driveGrants in place for up to a
-      // 7-day grace window). Host and admin can still read past expiry for
-      // cleanup. Other modes stay readable by any authed user (discovered by
-      // share URL, not query). Mirrors /shared_collections.
+      // GET (single doc, `resource` fully bound). Substitute shares carry org-internal
+      // routing/Drive-grant metadata, so reads are limited to host, admins, and
+      // @orono.k12.mn.us callers AND not past expiresAt for the email branch - otherwise
+      // a direct-REST client could read a frozen board snapshot plus Drive-grant metadata
+      // indefinitely after expiry (the sweep can leave an expired doc up to 7 days).
+      // Host/admin still read past expiry for cleanup. Mirrors /shared_collections.
       allow get: if request.auth != null && (
         resource.data.get('intendedMode', null) != 'substitute'
         || resource.data.get('originalAuthor', null) == request.auth.uid
@@ -964,27 +900,18 @@ service cloud.firestore {
         )
       );
 
-      // LIST is evaluated against the QUERY, not the matched documents — the
-      // result is the same for a query returning 50 docs or zero. Only fields
-      // the query pins with an EQUALITY filter carry their value; any other
-      // field falls back to the `.get()` default, and a field the query
-      // RANGE-filters raises an evaluation error that denies the whole query.
-      // That is why the get branches above cannot be reused here: under the
-      // /subs directory query `intendedMode == 'substitute'` makes the first
-      // branch false, `originalAuthor` defaults to null, and `expiresAt` —
-      // range-filtered by that query — errors. Every non-admin sub was denied
-      // on /subs as a result. Each branch below reads only what its own query
-      // pins by equality:
-      //   - own shares: originalAuthor == uid (useReconcileExpiredSubShares)
+      // LIST is evaluated against the QUERY, not the matched documents. Only fields the
+      // query pins with an EQUALITY filter carry their value; others fall back to the
+      // `.get()` default, and a RANGE-filtered field raises an error that denies the whole
+      // query. So the get branches can't be reused: under `intendedMode == 'substitute'`
+      // the first branch is false, `originalAuthor` defaults to null, and range-filtered
+      // `expiresAt` errors. Each branch below reads only what its own query pins:
+      //   - own shares: originalAuthor == uid
       //   - /subs directory: intendedMode == 'substitute' + @orono email
-      //   - PLC board picker: plcId == <plc> + current membership of that PLC
-      //     (sound only because a substitute share can never carry a plcId —
-      //     forbidden at create and pinned in `allow update` below)
-      // An unscoped list stays denied for everyone but admins. Expiry is NOT
-      // enforceable here (see above), so an @orono caller can list — never
-      // `get` — an expired substitute share until the hourly expireSubShares
-      // sweep reaps it (≤1h, or ≤7d for a share still holding unrevoked Drive
-      // grants). Mirrors /shared_collections.
+      //   - PLC board picker: plcId == <plc> + membership (sound only because a substitute
+      //     share can never carry a plcId - forbidden at create, pinned in update)
+      // Unscoped list stays admin-only. Expiry is NOT enforceable here, so an @orono
+      // caller can list - never `get` - an expired sub share until the sweep reaps it.
       allow list: if request.auth != null && (
         isAdmin()
         || resource.data.get('originalAuthor', null) == request.auth.uid
@@ -1000,13 +927,11 @@ service cloud.firestore {
         )
       );
 
-      // Host writes their own share; a `plcId` tag requires current membership of
-      // that PLC (defense-in-depth on the client picker). Substitute addendum
-      // (intendedMode == 'substitute'): buildingId non-empty string (the /subs
-      // query joins on it); expiresAt a number in the future and ≤14 days out
-      // (1209600000ms — caps share + Drive-grant lifetime); initialState a list
-      // (subs trust it for "Reset board"); subEmails capped ≤20 (see DoS note
-      // below). PLC scoping is not allowed for substitute shares.
+      // Host writes their own share; a `plcId` tag requires current membership of that
+      // PLC. Substitute addendum (intendedMode == 'substitute'): buildingId non-empty
+      // string; expiresAt a future number <=14 days out (caps share + Drive-grant
+      // lifetime); initialState a list; subEmails capped <=20. PLC scoping is not
+      // allowed for substitute shares.
       allow create: if request.auth != null &&
         request.resource.data.originalAuthor == request.auth.uid &&
         (
@@ -1033,26 +958,21 @@ service cloud.firestore {
           ).data.memberUids
         );
 
-      // Host or admin: full update (content + participants), but intendedMode is
-      // locked to its create value and any plcId change (set/retarget) requires
-      // current membership of the target PLC (admins bypass). Allowed plcId
-      // transitions: unchanged, → null, or to a PLC the writer belongs to.
-      // Substitute addendum: all lifecycle fields (buildingId, initialState,
-      // expiresAt, subEmails, driveGrants) are pinned to create-time values so the
-      // sub's frozen, time-boxed snapshot can't drift (Drive grants can't outlive
-      // their window; cleanup accounting stays accurate). Admin-overridable.
+      // Host or admin: full update, but intendedMode is locked to its create value and
+      // any plcId change requires current membership of the target PLC (admins bypass).
+      // Substitute addendum: all lifecycle fields (buildingId, initialState, expiresAt,
+      // subEmails, driveGrants) are pinned to create-time values so the frozen,
+      // time-boxed snapshot can't drift. Admin-overridable.
       allow update: if request.auth != null &&
         (resource.data.get('originalAuthor', null) == request.auth.uid || isAdmin()) &&
         request.resource.data.get('intendedMode', null) == resource.data.get('intendedMode', null) &&
-        // "substitute + plcId" must stay an impossible state. The `list` rule's
-        // plcId branch admits any member of that PLC with no @orono/expiry gate,
-        // and it CANNOT re-check intendedMode: the PLC query doesn't pin that
-        // field, so in query scope it resolves to the `.get()` default rather
-        // than the doc's value and the check silently passes. Create already
-        // forbids plcId on substitute shares; this keeps a later update from
-        // attaching one and exposing driveGrants/subEmails/initialState to the
-        // PLC. Deliberately NOT admin-overridable — unlike the lifecycle pins
-        // below, this one is what makes the list branch sound.
+        // "substitute + plcId" must stay an impossible state. The `list` rule's plcId
+        // branch admits any member of that PLC with no @orono/expiry gate and CANNOT
+        // re-check intendedMode (the PLC query doesn't pin it, so in query scope it
+        // resolves to the `.get()` default and passes silently). Create already forbids
+        // plcId on substitute shares; this stops a later update from attaching one and
+        // exposing driveGrants/subEmails/initialState. Deliberately NOT admin-overridable
+        // - this is what makes the list branch sound.
         (
           request.resource.data.get('intendedMode', null) != 'substitute'
           || request.resource.data.get('plcId', null) == null
@@ -1138,13 +1058,11 @@ service cloud.firestore {
         )
       );
 
-      // LIST is query-scoped (see the /shared_boards list rule for the full
-      // explanation): only equality-pinned fields carry a value, and the
-      // range-filtered `expiresAt` errors outright. Branches match the two
-      // queries the app issues — a host's own substitute shares
-      // (hostUid == uid) and the /subs Collections directory (intendedMode ==
-      // 'substitute' + @orono email). Expiry can't be enforced in query scope,
-      // so expired shares stay listable (never `get`-able) until the sweep.
+      // LIST is query-scoped (see /shared_boards list for the full explanation): only
+      // equality-pinned fields carry a value and range-filtered `expiresAt` errors.
+      // Branches match the two queries the app issues - a host's own substitute shares
+      // and the /subs directory. Expiry can't be enforced in query scope, so expired
+      // shares stay listable (never `get`-able) until the sweep.
       allow list: if request.auth != null && (
         isAdmin()
         || resource.data.get('hostUid', null) == request.auth.uid
@@ -1278,14 +1196,11 @@ service cloud.firestore {
     // doc for the sessionId + toggles (allowComments/allowCommentResponses/
     // allowLikes). Readable by any signed-in caller (incl. anonymous students).
     match /shared_activity_walls/{shareId} {
-      // READ: any authed caller (incl. anonymous gallery viewers) may read a
-      // live share; host and admin can still read past revoke/expiry for
-      // management/cleanup. Mirrors the expiresAt cutoff already enforced on
-      // /shared_boards and /shared_collections — without this, the
-      // "Available until X" / revoke UX in ActivityWallGalleryView is
-      // cosmetic only, since a caller that bypasses the client UI can keep
-      // reading a gallery's title/prompt/sessionId/identificationMode
-      // forever after the teacher revokes it or its expiresAt passes.
+      // READ: any authed caller (incl. anonymous gallery viewers) may read a live share;
+      // host and admin can still read past revoke/expiry for cleanup. Mirrors the
+      // expiresAt cutoff on /shared_boards and /shared_collections - without it the
+      // "Available until X" / revoke UX is cosmetic, since a caller bypassing the client
+      // could keep reading a gallery's title/prompt/sessionId forever after revoke.
       allow read: if request.auth != null && (
         resource.data.get('originalAuthor', null) == request.auth.uid
         || isAdmin()
@@ -1425,14 +1340,12 @@ service cloud.firestore {
       }
     }
 
-    // Synced quiz groups — canonical mutable record of a quiz shared across PLC
-    // peers. Group id is an unguessable v4 UUID, so reads are auth-only. Content
-    // writes (questions/title/version) require existing participation; version
-    // increments monotonically so a non-participant can't overwrite. The
-    // participants map is client-immutable — joins/leaves go through the
-    // join/leaveSyncedQuizGroup CFs. Create is open to any authed user iff
-    // participants carries only the caller's uid (lets shareAssignment stand up
-    // the group inline); later additions require the function path.
+    // Synced quiz groups - canonical mutable record of a quiz shared across PLC peers.
+    // Group id is an unguessable v4 UUID, so reads are auth-only. Content writes
+    // require existing participation; version increments monotonically so a
+    // non-participant can't overwrite. The participants map is client-immutable
+    // (joins/leaves go through CFs); create is open iff participants carries only the
+    // caller's uid.
     match /synced_quizzes/{groupId} {
       allow get: if request.auth != null;
       // list closed: it would let any authed user enumerate every synced quiz
@@ -1511,13 +1424,9 @@ service cloud.firestore {
     }
 
     // ---- Shared / Synced VIDEO ACTIVITY parallel collections (PR3) ----
-    //
-    // Mirrors the quiz `/shared_assignments` and `/synced_quizzes` rule blocks
-    // exactly, scoped to Video Activity. Kept as parallel collections (rather
-    // than mixing into the quiz collections behind a `kind` discriminator) so
-    // existing quiz-only rules don't have to migrate, and so VA's content
-    // schema can drift independently (it carries `youtubeUrl` and a different
-    // question shape).
+    // Mirrors the quiz /shared_assignments and /synced_quizzes blocks, scoped to Video
+    // Activity. Kept parallel (not a `kind` discriminator) so quiz rules don't migrate
+    // and VA's schema can drift independently.
 
     match /shared_video_activity_assignments/{shareId} {
       allow get: if request.auth != null;
@@ -1591,11 +1500,10 @@ service cloud.firestore {
     }
 
     // ---- PLC (Professional Learning Community) helpers + rules ----
-    // PLCs are top-level so every member (not just the lead) can read the doc.
-    // The lead has full write authority; non-leads can only self-add (accept an
-    // invite) or self-remove (leave). Invitations use a deterministic doc id
-    // `<plcId>_<emailLower>` so the accept rule verifies an invite without
-    // enumerating; re-inviting the same email overwrites (re-arms a declined one).
+    // PLCs are top-level so every member can read the doc. The lead has full write
+    // authority; non-leads can only self-add (accept an invite) or self-remove.
+    // Invitations use a deterministic id `<plcId>_<emailLower>` so accept verifies an
+    // invite without enumerating; re-inviting overwrites.
     function plcInviteDocId(plcId, emailLower) {
       return plcId + '_' + emailLower;
     }
@@ -1607,13 +1515,10 @@ service cloud.firestore {
       return plcData.get('members', {}).get(uid, {}).get('role', '');
     }
 
-    // True when the caller may WRITE PLC content (viewer role, Decision 3.2). An
-    // editor is a member whose role in the `members` map is not 'viewer'. Legacy
-    // (map-less) PLCs treat any uid in the denormalized memberUids as an editor
-    // (viewer only exists in the map, so a map-less PLC has no viewers — gating on
-    // the map alone would lock un-migrated members out during rollout). Content
-    // subcollections thread this into their write branches (reads stay open).
-    // Viewer-writable surfaces (own presence doc, own plc_state cursor) skip it.
+    // True when the caller may WRITE PLC content (Decision 3.2). An editor is a member
+    // whose role in `members` is not 'viewer'. Legacy (map-less) PLCs treat any uid in
+    // memberUids as an editor, so un-migrated members aren't locked out during rollout.
+    // Content subcollections thread this into write branches; reads stay open.
     function plcCanEditContent(plcId) {
       let plcData = get(/databases/$(database)/documents/plcs/$(plcId)).data;
       let role = plcRoleOf(plcData, request.auth.uid);
@@ -1646,10 +1551,8 @@ service cloud.firestore {
     }
 
     // Guards the broad sitting-lead update branch against minting a second lead
-    // (Decision 1.2). That branch is the only path that can rewrite arbitrary
-    // members entries, so its only permitted members mutation is a single-member
-    // REMOVAL named by the transient `removeMemberUid` pointer (entry flips to
-    // status 'removed'; no other entry changes). Returns true when members is
+    // (Decision 1.2). Its only permitted members mutation is a single-member REMOVAL
+    // named by the transient `removeMemberUid` pointer. Returns true when members is
     // untouched, so rename / tenancy-backfill writes still pass.
     function plcBroadMembersOk() {
       let touchesMembers =
@@ -1768,13 +1671,10 @@ service cloud.firestore {
       return old == null || knew == old;
     }
 
-    // True iff the update is any current member setting/clearing `sharedSheetUrl`
-    // and nothing else (any member, not lead-only — a teammate may create the
-    // first PLC assignment before the lead). Allowed transitions: null → string
-    // (first set), string → null (clear). Rejected: string → different string
-    // (would orphan another's cached sheet); a same-value re-set produces no diff
-    // and is treated as an mtime-only no-op. Defense-in-depth on the transactional
-    // client setPlcSharedSheetUrl.
+    // True iff a current member sets/clears `sharedSheetUrl` and nothing else (any
+    // member, not lead-only). Allowed: null -> string, string -> null. Rejected:
+    // string -> different string (would orphan another's cached sheet). Defense-in-depth
+    // on the transactional client setPlcSharedSheetUrl.
     function isSettingPlcSharedSheetUrl() {
       return (request.auth.uid in resource.data.memberUids)
         // hasOnly + hasAny: diff is exactly sharedSheetUrl (+ updatedAt); hasAny
@@ -1857,12 +1757,10 @@ service cloud.firestore {
         && plcUpdatedAtOk();
     }
 
-    // True iff a membership manager (lead OR coLead, Decision 1.2) transfers
-    // leadership to another current member — the only way to move the crown.
-    // Constrained: invoker is lead/coLead; new leadUid is an existing member ≠ old
-    // lead; map lockstep (incoming → 'lead', outgoing demoted, never two leads);
-    // diff closed to leadUid/members/memberUids/memberEmails/updatedAt; membership
-    // set unchanged (reassigns a role, doesn't add/drop).
+    // True iff a membership manager (lead OR coLead) transfers leadership to another
+    // current member - the only way to move the crown. Invoker is lead/coLead; new
+    // leadUid is an existing member != old lead; map lockstep (never two leads); diff
+    // closed to leadUid/members/memberUids/memberEmails/updatedAt; membership unchanged.
     function isTransferringPlcLead() {
       let oldLead = resource.data.leadUid;
       let newLead = request.resource.data.leadUid;
@@ -1903,14 +1801,11 @@ service cloud.firestore {
         && plcUpdatedAtOk();
     }
 
-    // True iff a membership manager (lead OR coLead) changes exactly ONE member's
-    // role within {coLead, member, viewer} and nothing else (setMemberRole). CEL
-    // can't index a map at a dynamic key, so the target uid is the schema-locked
-    // transient `roleChangeUid` pointer (excluded from every other branch).
-    // Guards exactly-one-lead: invoker is lead/coLead; leadUid immutable and the
-    // lead stays 'lead'; diff closed to members + roleChangeUid + updatedAt; only
-    // the named entry changes; target ≠ sitting lead; new role never 'lead'; the
-    // member already exists.
+    // True iff a membership manager changes exactly ONE member's role within {coLead,
+    // member, viewer} and nothing else. CEL can't index a map at a dynamic key, so the
+    // target is the schema-locked transient `roleChangeUid` pointer. Guards
+    // exactly-one-lead: leadUid immutable, lead stays 'lead', diff closed to members +
+    // roleChangeUid + updatedAt, target != sitting lead, new role never 'lead'.
     function isChangingMemberRole() {
       let target = request.resource.data.get('roleChangeUid', '');
       let changedKeys =
@@ -1942,14 +1837,11 @@ service cloud.firestore {
         && plcUpdatedAtOk();
     }
 
-    // True iff an in-org SITE ADMIN recovers an abandoned PLC (Decision 3.4) —
-    // reassigning leadership WITHOUT being a member (the escape hatch when a lead
-    // leaves the district). Scoped: caller isAdmin(); PLC has an orgId and the
-    // admin is in that SAME org (never another org's PLC); new leadUid is an
-    // existing member ≠ old lead; map lockstep (incoming → 'lead', outgoing
-    // demoted, never two leads); membership set unchanged; diff closed to
-    // leadUid/members/memberUids/memberEmails/updatedAt. Mutually exclusive with
-    // the member-only branches (which all require membership the admin lacks).
+    // True iff an in-org SITE ADMIN recovers an abandoned PLC (Decision 3.4) -
+    // reassigning leadership WITHOUT being a member. Scoped: isAdmin(); PLC has an
+    // orgId and the admin is in that SAME org; new leadUid is an existing member != old
+    // lead; map lockstep; membership unchanged; diff closed to leadUid/members/
+    // memberUids/memberEmails/updatedAt. Mutually exclusive with the member-only branches.
     function isAdminManagingPlc() {
       let oldLead = resource.data.get('leadUid', '');
       let newLead = request.resource.data.get('leadUid', '');
@@ -2056,21 +1948,14 @@ service cloud.firestore {
              || request.resource.data.get('updatedAt', 0) is int
            );
 
-      // Lead can rename, remove a member (named via `removeMemberUid`), or
-      // backfill tenancy — but can't vacate leadership here (leadUid immutable,
-      // lead stays in memberUids) and can't mint a second lead (plcBroadMembersOk
-      // limits members mutations to a single named removal; promotions go through
-      // isChangingMemberRole / isTransferringPlcLead). Tenancy (orgId/buildingId)
-      // is immutable-after-set (only null→value), so a member can't re-home the
-      // PLC. The update branches are MUTUALLY EXCLUSIVE, each a disjoint shape:
-      //   - broad sitting-lead update (rename / tenancy / single removal);
-      //   - isAcceptingPlcInvite — non-member self-adds via a pending invite;
-      //   - isLeavingPlc — a non-lead member self-removes;
-      //   - isTransferringPlcLead / isChangingMemberRole — lead/coLead MEMBER;
-      //   - isSettingPlcSharedSheetUrl / isUpdatingPlcFeatures /
-      //     isUpdatingPlcDigestOptIn — any member, narrow field;
-      //   - isAdminManagingPlc — in-org SITE ADMIN (non-member) recovery, the only
-      //     non-member branch (isAdmin() + same-org, never overlaps the rest).
+      // Lead can rename, remove a member (via `removeMemberUid`), or backfill tenancy -
+      // but can't vacate leadership (leadUid immutable) or mint a second lead
+      // (plcBroadMembersOk limits members mutations to one named removal). Tenancy
+      // (orgId/buildingId) is immutable-after-set. The update branches are MUTUALLY
+      // EXCLUSIVE, each a disjoint shape: broad sitting-lead update; isAcceptingPlcInvite;
+      // isLeavingPlc; isTransferringPlcLead / isChangingMemberRole; isSettingPlcSharedSheetUrl
+      // / isUpdatingPlcFeatures / isUpdatingPlcDigestOptIn; isAdminManagingPlc (the only
+      // non-member branch).
       allow update: if request.auth != null && (
         (
           request.auth.uid == resource.data.leadUid
@@ -2118,14 +2003,11 @@ service cloud.firestore {
                /databases/$(database)/documents/plcs/$(plcId)
              ).data.memberUids;
 
-        // Author-only writes; doc id pinned to the source assignment id for
-        // join-back. Author must be a current PLC member (non-members can't
-        // fabricate entries for someone else's assignment). hasOnly([...]) locks
-        // the shape. sheetUrl is pinned to the trusted Google Sheets host/path
-        // (rendered as a clickable link, so an arbitrary string is a phishing
-        // vector; per-assignment sheets mean no single canonical URL). create/
-        // update are split so update can check the *existing* ownerUid (else a
-        // member could take over another's entry) and pin id/ownerUid/createdAt.
+        // Author-only writes; doc id pinned to the source assignment id for join-back.
+        // Author must be a current PLC member. hasOnly([...]) locks the shape. sheetUrl is
+        // pinned to the trusted Google Sheets host/path (rendered as a clickable link, so
+        // an arbitrary string is a phishing vector). create/update are split so update can
+        // check the *existing* ownerUid and pin id/ownerUid/createdAt.
         allow create: if request.auth != null
           && request.auth.uid == request.resource.data.ownerUid
           && request.auth.uid in get(
@@ -2254,14 +2136,11 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
-      // PLC Common Assessments (Decision 4.0c, §3.6) — a quiz/video-activity whose
-      // pooled results aggregate to one canonical id, replacing title-matching.
-      // PLC-owned: any non-viewer member authors/edits/soft-deletes. Identity (id),
-      // authorship (createdBy/createdAt), kind, and the syncGroupId pointer are
-      // immutable post-create (a stale mirror can't retarget the sync group or
-      // flip the kind). Shape locked via hasOnly([...]); optional scheduling
-      // (unitLabel/opensAt/dueAt) + deletedAt tombstone validated when present,
-      // time fields dual-accept int||timestamp||null.
+      // PLC Common Assessments (Decision 4.0c) - a quiz/VA whose pooled results aggregate
+      // to one canonical id. PLC-owned: any non-viewer member authors/edits/soft-deletes.
+      // Identity (id), authorship, kind, and the syncGroupId pointer are immutable
+      // post-create so a stale mirror can't retarget the sync group. Shape locked via
+      // hasOnly([...]); time fields dual-accept int||timestamp||null.
       match /assessments/{assessmentId} {
         allow read: if request.auth != null
           && request.auth.uid in get(
@@ -2333,23 +2212,13 @@ service cloud.firestore {
           && plcCanEditContent(plcId);
       }
 
-      // PLC Meeting records (Decisions 4.0, 4.0b, §3.7). The archived,
-      // exportable record produced by Meeting Mode: facilitator, attendees
-      // (captured from presence), the assessments reviewed, the team's
-      // decisions + action items, and freeform notes. PLC-owned: any current
-      // member can author, edit while the meeting runs, or soft-delete a
-      // record. Identity (`id`), authorship (`createdBy`), the immutable
-      // `heldAt` timestamp, and the `facilitatorUid` are pinned post-create so a
-      // teammate's edit can never rewrite who ran the meeting or when. The
-      // working fields (attendeeUids, assessmentIds, agenda, decisions,
-      // actionItems, notesBody, status, updatedAt) and the `deletedAt`
-      // soft-delete tombstone (Decision 3.1) are mutable.
-      //
-      // The `decisions` / `actionItems` lists carry opaque interior maps
-      // (linkedDataCard, assigneeUid/dueAt/todoId) whose shape varies; CEL
-      // can't `.every()` over a list, so the rule validates the list TYPE here
-      // and leans on the client parser for interior fields — the blast radius
-      // is bounded to a single membership-gated PLC's own record.
+      // PLC Meeting records (Decisions 4.0/4.0b) - the archived, exportable record from
+      // Meeting Mode. PLC-owned: any current member authors, edits, or soft-deletes.
+      // Identity (`id`), authorship (`createdBy`), `heldAt`, and `facilitatorUid` are
+      // pinned post-create so a teammate's edit can't rewrite who ran the meeting or when.
+      // The `decisions`/`actionItems` lists carry opaque interior maps whose shape varies;
+      // CEL can't `.every()` over a list, so the rule validates the list TYPE and leans on
+      // the client parser - blast radius is one membership-gated PLC's own record.
       match /meetings/{meetingId} {
         allow read: if request.auth != null
           && request.auth.uid in get(
@@ -2551,13 +2420,11 @@ service cloud.firestore {
           && plcCanEditContent(plcId);
       }
 
-      // PLC Rubric Library (M12 Phase 3-I). Unlike quizzes/video-activities,
-      // the full rubric payload is inlined (rubrics are small; no synced-group
-      // indirection). Posture mirrors the Quiz Library — any non-viewer member
-      // shares / mirror-edits / unshares; identity + attribution
-      // (id/sharedBy*/sharedAt) immutable post-create. `criteria` is a list of
-      // complex objects CEL can't deep-validate; shape locked via hasOnly([...])
-      // and interior validation is client-enforced, same as personal rubrics.
+      // PLC Rubric Library (M12 Phase 3-I). The full rubric payload is inlined (rubrics
+      // are small; no synced-group indirection). Posture mirrors the Quiz Library: any
+      // non-viewer member shares/mirror-edits/unshares; identity + attribution immutable
+      // post-create. `criteria` is a list of complex objects CEL can't deep-validate;
+      // shape locked via hasOnly([...]), interior validation is client-enforced.
       match /rubrics/{plcRubricId} {
         allow read: if request.auth != null
           && request.auth.uid in get(
@@ -3112,22 +2979,16 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId; // Teacher controls it
 
       match /students/{studentId} {
-        // Student session records store only a PIN — no PII.
-        // The student's anonymous auth UID is used as the document ID so that
-        // Firestore rules can validate ownership without server-side logic.
-        // - Authenticated users can read student records (to check for PIN duplicates)
-        // - Students can create and update only their own record (for heartbeats/disconnects)
-        // - Only teacher and admins can delete records
+        // Student session records store only a PIN - no PII. The anonymous auth UID is the
+        // doc ID so rules can validate ownership without server-side logic. Authed users
+        // read (PIN duplicate checks); students create/update only their own record
+        // (heartbeats/disconnects); only teacher and admins delete.
         allow read: if request.auth != null;
-        // Matches the client's exact write shape (LiveStudent /
-        // hooks/useLiveSession.ts `newStudent`) — without this, any caller
-        // who learns a sessionId (the parent `sessions` read is a broad,
-        // tracked MEDIUM) could spray unbounded arbitrary-shape docs into a
-        // teacher's live roster. pin is capped at MAX_PIN_LENGTH (10).
-        // Not enforced here: cross-document PIN uniqueness (joinSession's
-        // client-side check is a non-atomic race, same accepted trade-off
-        // as the join-code collision check) — would need a transaction or
-        // Cloud Function to close properly; tracked in firestore-rules.md.
+        // Matches the client's exact write shape (useLiveSession.ts `newStudent`) - without
+        // it, any caller who learns a sessionId could spray unbounded arbitrary-shape docs
+        // into a teacher's live roster. pin is capped at MAX_PIN_LENGTH (10).
+        // Not enforced: cross-document PIN uniqueness (needs a transaction or CF); tracked
+        // in firestore-rules.md.
         function isValidLiveStudentPayload(data) {
           return data.keys().hasOnly(['pin', 'status', 'joinedAt', 'lastActive']) &&
             data.pin is string && data.pin.size() > 0 && data.pin.size() <= 10 &&
@@ -3138,17 +2999,12 @@ service cloud.firestore {
         allow create: if request.auth != null &&
           request.auth.uid == studentId &&
           isValidLiveStudentPayload(request.resource.data);
-        // Teacher/admin may set `status` to any value (toggleFreezeStudent,
-        // endSession's disconnect sweep) — that's the freeze control itself.
-        // The owning student may only mark themselves disconnected
-        // (leaveSession); letting them set 'active'/'frozen' directly would
-        // let a student self-unfreeze via a bare status-only write. The
-        // owning student also rejoins by re-writing the full shape over an
-        // existing doc (joinSession's `setDoc`, evaluated here as an update
-        // since the doc pre-exists, always sets status:'active') — blocked
-        // while currently frozen, and pinned to 'active' as the only status
-        // it may write, so a fabricated rejoin can't be used to either
-        // escape an active freeze or self-freeze via the wider shape check.
+        // Teacher/admin may set `status` to any value (freeze control, disconnect sweep).
+        // The owning student may only mark themselves disconnected - letting them set
+        // 'active'/'frozen' would allow self-unfreeze via a bare status-only write. The
+        // student also rejoins by re-writing the full shape over an existing doc
+        // (joinSession's setDoc, evaluated as an update), blocked while frozen and pinned
+        // to 'active', so a fabricated rejoin can't escape a freeze or self-freeze.
         allow update: if request.auth != null &&
           (
             ((request.auth.uid == userId || isAdmin()) &&
@@ -3167,22 +3023,16 @@ service cloud.firestore {
       }
     }
 
-    // Per-student assignment pointers (M17). One doc per (student, assignment),
-    // written EXCLUSIVELY by setAssignmentTargetsV1 and the assignment-deletion
-    // cleanup triggers (Admin SDK bypasses these rules) — no client write path
-    // exists, because the pseudonym uid derivation needs the server-only HMAC
-    // secret. Reads (get AND list) are gated purely on the {studentUid} path
-    // segment plus the studentRole claim, so a student's own listener works and
-    // nobody can enumerate another student's items.
-    //
-    // NON-GOAL, recorded deliberately: no Cloud Function, admin surface, or
-    // export job may query /student_assignments grouped per-student ACROSS
-    // assignments. The collection exists solely for each student's own
-    // listener; teacher surfaces always resolve identity through the
-    // per-assignment pseudonym functions (getPseudonymsForAssignmentV1), which
-    // is what preserves cross-assignment unlinkability. A collectionGroup
-    // query on `items` is denied here by omission — no wildcard rule matches
-    // that collection group.
+    // Per-student assignment pointers (M17). One doc per (student, assignment), written
+    // EXCLUSIVELY by setAssignmentTargetsV1 and the deletion cleanup triggers via Admin
+    // SDK - no client write path exists (the pseudonym uid derivation needs the
+    // server-only HMAC secret). Reads (get AND list) are gated on the {studentUid} path
+    // segment plus the studentRole claim, so a student's own listener works and nobody
+    // can enumerate another student's items.
+    // NON-GOAL, recorded deliberately: nothing may query /student_assignments per-student
+    // ACROSS assignments. Teacher surfaces resolve identity through the per-assignment
+    // pseudonym functions, which preserves cross-assignment unlinkability. A
+    // collectionGroup query on `items` is denied by omission.
     match /student_assignments/{studentUid} {
       allow read, write: if false;
 
@@ -3210,13 +3060,11 @@ service cloud.firestore {
     // owns the document and stores their uid on the `teacherUid` field.
     // Multiple concurrent sessions per teacher are allowed.
     match /quiz_sessions/{sessionId} {
-      // Reads are intentionally permissive: any authed caller can get/list session
-      // docs. studentRole class gating is enforced on the response WRITE rules
-      // below (runtime get() of the parent classId), not on read — students see
-      // session metadata by id but can't submit outside their classIds. Tighter
-      // enumeration would need a CF proxy. Privacy: a sessionId is an unguessable
-      // v4 UUID; the doc exposes only code/classId/publicQuestions (answer-key
-      // stripped) /revealedAnswers — no PII.
+      // Reads are intentionally permissive: any authed caller can get/list session docs.
+      // studentRole class gating is enforced on the response WRITE rules below (runtime
+      // get() of the parent classId), not on read - students see session metadata by id
+      // but can't submit outside their classIds. Privacy: a sessionId is an unguessable
+      // v4 UUID and the doc exposes no PII (answer-key stripped).
       allow read: if request.auth != null;
       // Only the teacher (session owner) can create/update/delete the session document.
       // Ownership is carried on the `teacherUid` field (no longer the doc id).
@@ -3226,12 +3074,11 @@ service cloud.firestore {
         resource.data.teacherUid == request.auth.uid;
 
       match /responses/{responseKey} {
-        // Quiz response records store only a PIN — no name/email. {responseKey}
-        // equals the student uid for SSO joiners, or `pin-{classPeriod}-{pin}` for
-        // anonymous joiners (so the attempt cap survives storage resets), so
-        // ownership compares the `studentUid` field, not the key. Teacher ownership
-        // is read from the parent session doc. LO4: all session-field helpers below
-        // read off ONE sessionData() snapshot (fewer reads, same authorization).
+        // Quiz response records store only a PIN - no name/email. {responseKey} equals the
+        // student uid for SSO joiners, or `pin-{classPeriod}-{pin}` for anonymous joiners
+        // (so the attempt cap survives storage resets), so ownership compares the
+        // `studentUid` field, not the key. Teacher ownership is read from the parent session.
+        // LO4: all session-field helpers below read off ONE sessionData() snapshot.
         function sessionData() {
           return get(/databases/$(database)/documents/quiz_sessions/$(sessionId)).data;
         }
@@ -3289,11 +3136,10 @@ service cloud.firestore {
            (resource == null || request.auth.uid == resource.data.studentUid))
         );
         // Create runs only when the doc is absent, so the deterministic key gives
-        // one-doc-per-roster-student. Field ownership: auth.uid == studentUid. Key
-        // format: SSO writers use responseKey == auth.uid; anon PIN writers use
-        // `pin-{encodedPeriod}-{encodedPin}` ([a-z0-9_] segments, mirroring
-        // encodeResponseKeySegment). Same-PIN+period classmate grief isn't fully
-        // preventable (shared secret); cross-auth-type paths are closed.
+        // one-doc-per-roster-student. Field ownership: auth.uid == studentUid. SSO writers
+        // use responseKey == auth.uid; anon PIN writers use `pin-{encodedPeriod}-{encodedPin}`.
+        // Same-PIN+period classmate grief isn't fully preventable (shared secret);
+        // cross-auth-type paths are closed.
         allow create: if request.auth != null &&
           request.resource.data.studentUid == request.auth.uid &&
           // If supplied, lastWriteAt must be server-stamped (== request.time).
@@ -3334,12 +3180,10 @@ service cloud.firestore {
         allow update: if request.auth != null && (
           // Teacher and admins can update any field
           request.auth.uid == sessionTeacherUid() || isAdmin() ||
-          // Students update only their own response (ownership via studentUid, not
-          // the key) to submit answers or rejoin under the cap. Mutable: answers,
-          // status, submittedAt, tabSwitchWarnings, completedAttempts, classPeriod,
-          // score (reset to null on rejoin). pin/join metadata immutable.
-          // Monotonic (no rollback): tabSwitchWarnings, completedAttempts.
-          // Score guard: students may only ever write null to score.
+          // Students update only their own response (ownership via studentUid, not the key).
+          // Mutable: answers, status, submittedAt, tabSwitchWarnings, completedAttempts,
+          // classPeriod, score (reset to null on rejoin). pin/join metadata immutable.
+          // Monotonic: tabSwitchWarnings, completedAttempts. Students may only write null to score.
           (request.auth.uid == resource.data.studentUid &&
            passesStudentClassGateCompat(sessionClassIds(), sessionClassId()) &&
            // Student writes stop at the session close time (M17). The teacher
@@ -3348,49 +3192,32 @@ service cloud.firestore {
             isResultsProtectionOnlyWrite() ||
             resource.data.get('unlocked', false) == true) &&
            request.resource.data.studentUid == resource.data.studentUid &&
-           // SSO studentRole responses omit `pin` entirely (no PIN was used
-           // to join), so direct dot-access on `resource.data.pin` would
-           // throw a Null-value error and deny the write. Use `.get(_, null)`
-           // so the immutability check tolerates the field being absent on
-           // both sides — the `hasOnly([...])` clause below still prevents
-           // a student from adding/changing `pin` or `joinedAt`.
+           // SSO studentRole responses omit `pin` entirely, so direct dot-access on
+           // `resource.data.pin` would throw a Null-value error and deny the write. Use
+           // `.get(_, null)` so the immutability check tolerates the field being absent on
+           // both sides - the `hasOnly([...])` clause below still blocks adding/changing it.
            request.resource.data.get('pin', null) == resource.data.get('pin', null) &&
            request.resource.data.get('joinedAt', null) == resource.data.get('joinedAt', null) &&
-           // Score may stay unchanged OR transition to null (rejoin reset).
-           // Students can never write a non-null score they didn't already
-           // have — blocks score forgery while allowing both mid-quiz writes
-           // (score is null on both sides → diff doesn't touch it) and
-           // post-publish results-protection writes (score unchanged from
-           // the graded value). The earlier blanket `score == null` check
-           // rejected results-view writes against scored docs.
+           // Score may stay unchanged OR transition to null (rejoin reset). Students can never
+           // write a non-null score they didn't already have - blocks forgery while allowing
+           // mid-quiz writes (null on both sides) and post-publish results-protection writes
+           // (score unchanged from the graded value).
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['score']) ||
             request.resource.data.score == null) &&
-           // Students may only ever write `0` to `preSyncVersion`. The
-           // rejoin path resets it to 0 so a previously-tagged response
-           // re-enters the "untagged" pool that
-           // `syncAssignmentToLatest` queries with
-           // `where('preSyncVersion', '==', 0)`. Allowing arbitrary
-           // values here would let a malicious student forge a tag
-           // (e.g. `preSyncVersion: 999`) to dodge future sync
-           // tagging, mirroring the create-time constraint above.
+           // Students may only ever write `0` to `preSyncVersion`. The rejoin path resets it to
+           // 0 so a previously-tagged response re-enters the untagged pool that
+           // syncAssignmentToLatest queries. Arbitrary values would let a student forge a tag
+           // to dodge future sync tagging, mirroring the create-time constraint above.
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['preSyncVersion']) ||
             request.resource.data.preSyncVersion == 0) &&
-           // NOTE: `grading` (and everything under it — `gradingSnapshot`,
-           // `annotations`, `rubricScores`, `overallComment`, `pointsAwarded`,
-           // `gradedBy`, `gradedAt`) is deliberately ABSENT from this
-           // whitelist. The teacher branch above is unrestricted, so
-           // teachers write `grading.<questionId>` via dotted field
-           // paths; any student write that touches `grading.*` is
-           // rejected by this `hasOnly([...])` check. Phase 2 of the
-           // written-response feature adds annotations and grading
-           // snapshots under the same key — they inherit the same
-           // student-side protection by construction. See
-           // docs/written-response-quiz-questions.md §9.
-           // Use `affectedKeys()` (added ∪ removed ∪ changed), not
-           // `changedKeys()` — the latter only covers keys that exist on
-           // BOTH sides with different values, so a smuggled NEW field
-           // (e.g. `somethingElse: 'hack'`) would land in `addedKeys` and
-           // bypass the whitelist entirely.
+           // NOTE: `grading` (and everything under it) is deliberately ABSENT from this
+           // whitelist. The teacher branch above is unrestricted, so teachers write
+           // `grading.<questionId>` via dotted field paths; any student write touching
+           // `grading.*` is rejected by this hasOnly([...]). See
+           // docs/written-response-quiz-questions.md section 9.
+           // Use `affectedKeys()` (added + removed + changed), not `changedKeys()` - the latter
+           // only covers keys present on BOTH sides, so a smuggled NEW field would land in
+           // addedKeys and bypass the whitelist entirely.
            request.resource.data.diff(resource.data)
              .affectedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings', 'completedAttempts', 'classPeriod', 'score', 'preSyncVersion', 'unlocked', 'resultsTabWarnings', 'resultsLockedOut', 'resultsLockedOutAt', 'lastWriteAt', 'handRaisedAt', 'stimulusPlays', 'stimulusErrors', 'servedQuestionIds', 'recordingNoticeAckedAt']) &&
            // M17 served-subset snapshot: a student may only stamp
@@ -3405,12 +3232,10 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/student_assignments/$(request.auth.uid)/items/$(sessionData().assignmentId)) &&
              request.resource.data.servedQuestionIds ==
                get(/databases/$(database)/documents/student_assignments/$(request.auth.uid)/items/$(sessionData().assignmentId)).data.get('override', {}).get('questionIds', null))) &&
-           // Stimulus telemetry maps (per-attempt play counters + load-failure
-           // counters). Truthfulness is client-enforced pacing/diagnostics, not
-           // a security boundary — but size is: the teacher monitor reads every
-           // response doc in the session, so cap the key count to stop a student
-           // inflating their own doc toward the 1 MB limit with junk keys.
-           // Plays are keyed `a{attempt}:{stimulusId}`, errors by stimulus id.
+           // Stimulus telemetry maps (per-attempt play + load-failure counters). Truthfulness
+           // is client-enforced diagnostics, not a security boundary - but size is: the teacher
+           // monitor reads every response doc in the session, so cap the key count to stop a
+           // student inflating their doc toward the 1 MB limit with junk keys.
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['stimulusPlays']) ||
             (request.resource.data.stimulusPlays is map &&
              request.resource.data.stimulusPlays.keys().size() <= 200)) &&
@@ -3431,16 +3256,11 @@ service cloud.firestore {
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['recordingNoticeAckedAt']) ||
             (request.resource.data.recordingNoticeAckedAt is int &&
              request.resource.data.recordingNoticeAckedAt > 0)) &&
-           // `lastWriteAt` is the idle-auto-submit cutoff field. Must
-           // be server-stamped (`serverTimestamp()` from the SDK, which
-           // resolves to `request.time` at rule evaluation), NOT a
-           // client `Date.now()`. Equality with `request.time` enforces
-           // server stamping: any client that passes a raw Timestamp
-           // or a number is rejected. This closes the clock-skew
-           // failure modes — past-clock devices can't get force-
-           // finalized on the next sweep, future-clock devices can't
-           // evade idle auto-submit indefinitely, and multi-tab
-           // students with drifting clocks can't lock themselves out.
+           // `lastWriteAt` is the idle-auto-submit cutoff and must be server-stamped
+           // (serverTimestamp(), which resolves to request.time at evaluation), NOT a client
+           // Date.now(). Equality with request.time enforces that: a raw Timestamp or number is
+           // rejected. Closes the clock-skew failure modes - past-clock devices can't be
+           // force-finalized early, future-clock devices can't evade idle auto-submit.
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastWriteAt']) ||
             request.resource.data.lastWriteAt == request.time) &&
            // Students may only ever CLEAR the unlock flag (write `false`)
@@ -3453,14 +3273,10 @@ service cloud.firestore {
             request.resource.data.tabSwitchWarnings >= resource.data.get('tabSwitchWarnings', 0)) &&
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['completedAttempts']) ||
             request.resource.data.get('completedAttempts', 0) >= resource.data.get('completedAttempts', 0)) &&
-           // Results-view screenshot-protection guards. The student app's
-           // `useResultsTabWarnings` hook increments `resultsTabWarnings`
-           // (via `increment(1)`) on each visibility/blur round-trip on the
-           // published-results screen, and flips `resultsLockedOut` true
-           // (+ stamps `resultsLockedOutAt`) once the threshold is reached.
-           // Both monotonic from the student side; only the teacher (via
-           // the unlock-results action) can decrement warnings or clear
-           // the lockout.
+           // Results-view screenshot-protection guards. useResultsTabWarnings increments
+           // `resultsTabWarnings` on each visibility/blur round-trip and flips
+           // `resultsLockedOut` (+ `resultsLockedOutAt`) at the threshold. Both monotonic from
+           // the student side; only the teacher can decrement warnings or clear the lockout.
            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resultsTabWarnings']) ||
             request.resource.data.get('resultsTabWarnings', 0) >= resource.data.get('resultsTabWarnings', 0)) &&
            // `resultsLockedOut` may only stay the same OR transition false→true.
@@ -3683,15 +3499,12 @@ service cloud.firestore {
         );
       allow write: if isAdmin();
 
-      // Poll votes subcollection — authenticated users can read live tallies and cast votes.
-      // Value-locked to exactly what PollWidget's setDoc({count: increment(1)}, {merge:
-      // true}) produces: a create must land on 1, an update must be previous + 1. Field
-      // transforms are resolved into request.resource before rules run, so the real call
-      // site passes while a same-shaped overwrite ({count: 0} to wipe a tally, {count:
-      // 999999} to inflate one) is denied — the gap left by the earlier shape-only check.
-      // Caps abuse at +1 per write; per-voter dedup would need a per-voter vote doc.
-      // Delete is admin-only (mirrors the poll_sessions/votes sibling's teacher/admin-only
-      // reset); no client deletes a pollVotes doc today.
+      // Poll votes subcollection - authed users read live tallies and cast votes.
+      // Value-locked to exactly what PollWidget's setDoc({count: increment(1)}, {merge:true})
+      // produces: create must land on 1, update must be previous + 1. Field transforms are
+      // resolved into request.resource before rules run, so the real call site passes while
+      // a same-shaped overwrite ({count: 0} or {count: 999999}) is denied. Caps abuse at +1
+      // per write; per-voter dedup would need a per-voter vote doc. Delete is admin-only.
       match /pollVotes/{optionIndex} {
         allow read: if request.auth != null;
         allow create: if request.auth != null &&
@@ -4089,14 +3902,12 @@ service cloud.firestore {
           resource.data.studentUid == request.auth.uid
         );
 
-        // Any authed user (anon or studentRole) creates/updates their own
-        // submission while the session is active. studentUid must == auth.uid
-        // (attributable + readable back). Anon launches must also use auth.uid as
-        // the doc id (no doc-spraying); studentRole launches use an opaque
-        // pseudonym (HMAC-unforgeable, class-gated). Two write paths: (1) full
-        // submission (submissionsEnabled true) payload ≤50 keys; (2) completion
-        // marker (any active session) payload exactly {completed: true} — lets
-        // view-only assignments show the /my-assignments badge.
+        // Any authed user (anon or studentRole) creates/updates their own submission while
+        // the session is active. studentUid must == auth.uid. Anon launches must also use
+        // auth.uid as the doc id (no doc-spraying); studentRole launches use an opaque
+        // pseudonym (HMAC-unforgeable, class-gated). Two write paths: full submission
+        // (submissionsEnabled, payload <=50 keys) and completion marker (exactly
+        // {completed: true}) for the /my-assignments badge.
         allow create, update: if request.auth != null &&
           maSessionData().status == 'active' &&
           passesStudentClassGateList(maSessionClassIds()) &&
@@ -4221,12 +4032,11 @@ service cloud.firestore {
           glWithinSessionCloseWindow() &&
           // Block joins before the assignment's open time (M17).
           glWithinSessionOpenWindow();
-        // Two disjoint branches: TEACHER (owning teacher/admin writes score +
-        // per-answer isCorrect on publishAssignmentScores, clears on unpublish;
-        // teacherUid is the sole gate, unconstrained payload so publish fields
-        // don't need rules edits) and STUDENT (append answers / set completedAt,
-        // score client-immutable). Mutually exclusive — a student fails the
-        // teacher disjunct and falls through to the student invariants.
+        // Two disjoint branches: TEACHER (owning teacher/admin writes score + per-answer
+        // isCorrect on publish, clears on unpublish; teacherUid is the sole gate,
+        // unconstrained payload) and STUDENT (append answers / set completedAt, score
+        // client-immutable). Mutually exclusive - a student fails the teacher disjunct and
+        // falls through to the student invariants.
         allow update: if request.auth != null && (
           // Teacher branch.
           (request.auth.uid == glSessionTeacherUid() || isAdmin()) ||
@@ -4314,24 +4124,16 @@ service cloud.firestore {
                 awParentSession().get('studentsCanSeePosts', true) != false);
       }
       // Engagement (likes/comments) reads are an unfiltered collection listen
-      // (useWallEngagement.ts has no per-post `where`, by design — see its
-      // header comment), so Firestore's list-query rule can only depend on
-      // session-level state: a rule referencing resource.data here would
-      // make the ENTIRE listen provably unsafe and Firestore denies the
-      // whole query outright (not a per-doc filter) the moment any narrower
-      // document could exist — this is NOT the "sessions broad read" tradeoff,
-      // it is a hard List-query constraint (rules aren't filters). So the
-      // moderation boundary has to hold at CREATE time instead: a like/comment
-      // may never be attached to a submission that is still pending review,
-      // for ANY caller including the owner — otherwise that still-unreviewed
-      // post's existence/content reaches the whole class through this same
-      // unfiltered listen the instant anyone engages with it, before a
-      // teacher ever approved it. The submissionId must also reference a
-      // real, approved post: every legitimate caller (useWallEngagement.ts)
-      // always supplies the id of a post it is currently rendering, so this
-      // costs no real usage while closing off a fabricated-id create that
-      // would otherwise seed the whole class's unfiltered listen with
-      // engagement docs for a post that never existed.
+      // (useWallEngagement.ts has no per-post `where`, by design), so the list-query rule
+      // can only depend on session-level state: a rule referencing resource.data here
+      // would make the ENTIRE listen unsafe and Firestore denies the whole query (rules
+      // aren't filters). So the moderation boundary holds at CREATE time instead: a
+      // like/comment may never attach to a submission still pending review, for ANY caller
+      // including the owner - otherwise that unreviewed post's content reaches the whole
+      // class through this same unfiltered listen the instant anyone engages with it.
+      // submissionId must also reference a real, approved post: every legitimate caller
+      // supplies the id of a post it is rendering, so this costs no real usage while
+      // closing a fabricated-id create.
       function awEngagementSubmissionOk(refSubmissionId) {
         let ref = /databases/$(database)/documents/activity_wall_sessions/$(sessionId)/submissions/$(refSubmissionId);
         return exists(ref) && get(ref).data.get('status', 'approved') == 'approved';
@@ -4440,15 +4242,12 @@ service cloud.firestore {
                  awLinkPreviewOk();
         }
 
-        // Any authed user (incl. anon) can create a submission (photo subs may
-        // carry storage metadata for Drive archiving). studentRole users must be
-        // enrolled; uses the Phase-5A compat gate (classIds ?? legacy classId).
-        // hasOnly() closes an unbounded-field-injection gap (same bug class as
-        // the nextup_sessions/quiz stimulusPlays fixes): without it, a caller
-        // could smuggle arbitrary extra keys — incl. a large junk string field
-        // toward the 1MB doc cap — past every per-field check below, and every
-        // gallery viewer's onSnapshot on the whole submissions collection
-        // (publiclyShared) would pay to download it on every emission.
+        // Any authed user (incl. anon) can create a submission (photo subs may carry storage
+        // metadata for Drive archiving). studentRole users must be enrolled; uses the
+        // Phase-5A compat gate (classIds ?? legacy classId). hasOnly() closes an
+        // unbounded-field-injection gap: without it a caller could smuggle arbitrary extra
+        // keys - incl. a large junk string toward the 1MB cap - past every per-field check,
+        // and every gallery viewer's onSnapshot would pay to download it on each emission.
         allow create: if request.auth != null &&
           exists(/databases/$(database)/documents/activity_wall_sessions/$(sessionId)) &&
           passesStudentClassGateCompat(awSessionClassIds(), awSessionClassId()) &&
@@ -4502,18 +4301,14 @@ service cloud.firestore {
           awFieldTypesOk() &&
           awTypeAllowed() &&
           (!('archiveStatus' in request.resource.data) || request.resource.data.archiveStatus == 'firebase');
-        // Teacher/admins read+delete submissions, EXCEPT a published view-only
-        // gallery (publiclyShared == true) is readable by any authed caller (incl.
-        // anon gallery viewers). Delete stays teacher/admin-only.
-        // A student can list/get their own posts via a where('authorUid','==',uid)
-        // query even on a non-public wall (Padlet-lite "my posts" view).
-        // A published PADLET gallery only exposes APPROVED posts, so a pending
-        // post awaiting moderation never leaks; new gallery clients query with
-        // where('status','==','approved'). Legacy sessions keep the old
-        // unconditional public read: the deployed prod gallery lists unfiltered
-        // and would break the moment these rules ship.
-        // Merged student page: the student-link audience reads approved posts
-        // while the teacher keeps the wall visible (studentsCanSeePosts).
+        // Teacher/admins read+delete submissions, EXCEPT a published view-only gallery
+        // (publiclyShared) is readable by any authed caller. Delete stays teacher/admin-only.
+        // A student can list/get their own posts via where('authorUid','==',uid) even on a
+        // non-public wall. A published PADLET gallery only exposes APPROVED posts, so a
+        // pending post never leaks; new clients query where('status','==','approved').
+        // Legacy sessions keep the old unconditional public read (the deployed prod gallery
+        // lists unfiltered and would break otherwise). Merged student page: the student-link
+        // audience reads approved posts while the teacher keeps the wall visible.
         allow read: if request.auth != null &&
                             (isAdmin() ||
                              sessionId.matches(request.auth.uid + '_.*') ||
@@ -4533,12 +4328,10 @@ service cloud.firestore {
                             resource.data.get('authorUid', '') == request.auth.uid &&
                             awSession().get('allowStudentDelete', false) == true &&
                             awAcceptingResponses();
-        // hasOnly() lists every field this doc can ever carry (create-time
-        // fields + the Admin-SDK-written archive fields) since request.resource
-        // .data on an update is the doc AFTER merge — untouched existing fields
-        // (e.g. driveFileId set server-side by the archive pipeline) stay
-        // present and must pass the whitelist too. See create's comment above
-        // for why an unbounded extra field matters here.
+        // hasOnly() lists every field this doc can ever carry (create-time fields + the
+        // Admin-SDK-written archive fields) since request.resource.data on an update is the
+        // doc AFTER merge - untouched existing fields (e.g. driveFileId) stay present and
+        // must pass the whitelist too. See create's comment for why an extra field matters.
         allow update: if request.auth != null &&
                             (isAdmin() || sessionId.matches(request.auth.uid + '_.*')) &&
                             request.resource.data.keys().hasOnly([
@@ -4569,12 +4362,11 @@ service cloud.firestore {
                             (!('lastAttemptAt' in request.resource.data) || request.resource.data.lastAttemptAt is int) &&
                             (!('storageCleanupPending' in request.resource.data) || request.resource.data.storageCleanupPending is bool) &&
                             (!('drivePermission' in request.resource.data) || request.resource.data.drivePermission is string);
-        // Student self-edit: only the author, only while the wall is open and
-        // the teacher enabled editing, only content-shaped fields. `status` is
-        // writable in exactly one direction: when moderation is on and the edit
-        // touches `content`, the post must return to 'pending' — otherwise a
-        // student could smuggle unreviewed text into an already-approved card.
-        // With moderation off, status must stay untouched as before.
+        // Student self-edit: only the author, only while the wall is open and the teacher
+        // enabled editing, only content-shaped fields. `status` is writable in exactly one
+        // direction: when moderation is on and the edit touches `content`, the post returns
+        // to 'pending' - otherwise a student could smuggle unreviewed text into an approved
+        // card. With moderation off, status must stay untouched.
         allow update: if request.auth != null &&
                             awIsPadletSession() &&
                             resource.data.get('authorUid', '') == request.auth.uid &&
