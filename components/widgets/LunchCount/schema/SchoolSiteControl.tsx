@@ -34,6 +34,8 @@ const SchoolSiteControlImpl: React.FC<CustomRenderCtx> = ({
         updateConfig({
           schoolSite: newSite,
           cachedMenu: null,
+          // Also clear so useNutrislice's staleness check refetches the new site today, not tomorrow.
+          lastSyncDate: null,
           gradeLevel: validGrades.includes(gradeLevel) ? gradeLevel : '',
         });
       }}
