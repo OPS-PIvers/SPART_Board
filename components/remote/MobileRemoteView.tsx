@@ -59,6 +59,7 @@ const REMOTE_SUPPORTED_TYPES: WidgetType[] = [
   'webcam',
   'activity-wall',
   'embed',
+  'quiz',
 ];
 
 /** Widget types that are always skipped on the remote (truly non-interactive) */
