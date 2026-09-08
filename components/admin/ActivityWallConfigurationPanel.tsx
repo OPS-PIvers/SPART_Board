@@ -3,6 +3,10 @@ import { BuildingSelector } from './BuildingSelector';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { useBuildingSelection } from '@/hooks/useBuildingSelection';
 import {
+  canonicalBuildingId,
+  canonicalizeBuildingKeyedRecord,
+} from '@/config/buildings';
+import {
   ActivityWallGlobalConfig,
   ActivityWallBuildingConfig,
   ActivityWallMode,
@@ -23,9 +27,12 @@ export const ActivityWallConfigurationPanel: React.FC<
     useBuildingSelection(BUILDINGS);
 
   const globalConfig = config as unknown as ActivityWallGlobalConfig;
-  const buildingDefaults = globalConfig.buildingDefaults ?? {};
+  const canonicalId = canonicalBuildingId(selectedBuildingId);
+  const buildingDefaults = canonicalizeBuildingKeyedRecord(
+    globalConfig.buildingDefaults ?? {}
+  );
   const currentBuildingConfig: ActivityWallBuildingConfig = buildingDefaults[
-    selectedBuildingId
+    canonicalId
   ] ?? {
     defaultMode: 'text',
     defaultIdentificationMode: 'anonymous',
@@ -39,7 +46,7 @@ export const ActivityWallConfigurationPanel: React.FC<
       ...globalConfig,
       buildingDefaults: {
         ...buildingDefaults,
-        [selectedBuildingId]: {
+        [canonicalId]: {
           ...currentBuildingConfig,
           ...updates,
         },
