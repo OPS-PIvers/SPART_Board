@@ -16,7 +16,7 @@ const addTimerWidget = async (page: Page): Promise<Locator> => {
 
   const timerButton = page.getByRole('button', { name: /^Timer$/i }).first();
   await expect(timerButton).toBeVisible();
-  await timerButton.click();
+  await timerButton.click({ force: true });
 
   // Close the dock, then select the widget: the gear only renders while selected.
   await page.mouse.click(0, 0);
