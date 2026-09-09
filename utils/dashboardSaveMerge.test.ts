@@ -172,6 +172,50 @@ describe('mergeDashboardForSave', () => {
     expect(merged.libraryOrder).toEqual(['text']);
   });
 
+  it('takes a remote config edit for a version-less widget whose local copy is only key-reordered', () => {
+    // Same config content as base, different key order (as Firestore echoes it back) —
+    // must still read as "unchanged locally" so the server's real edit isn't dropped.
+    const base = board([
+      widget('a', 'x', { config: { text: 'x', color: 'red' } }),
+    ]);
+    const local = board([
+      widget('a', 'x', { config: { color: 'red', text: 'x' } }),
+    ]);
+    const server = board([
+      widget('a', 'x', { config: { color: 'blue', text: 'x' } }),
+    ]);
+
+    const merged = mergeDashboardForSave(local, server, baselineOf(base));
+
+    expect(merged.widgets[0].config).toEqual({ color: 'blue', text: 'x' });
+  });
+
+  it('takes a remote annotation edit when the local copy is unchanged but key-reordered', () => {
+    const path = (color: string, reordered = false) =>
+      reordered
+        ? { width: 2, color, points: [] }
+        : { points: [], color, width: 2 };
+    const base = board([
+      widget('a', 'x', {
+        annotation: { mode: 'window', paths: [path('red')] },
+      }),
+    ]);
+    const local = board([
+      widget('a', 'x', {
+        annotation: { paths: [path('red', true)], mode: 'window' },
+      }),
+    ]);
+    const server = board([
+      widget('a', 'x', {
+        annotation: { mode: 'window', paths: [path('blue')] },
+      }),
+    ]);
+
+    const merged = mergeDashboardForSave(local, server, baselineOf(base));
+
+    expect(merged.widgets[0].annotation).toEqual(server.widgets[0].annotation);
+  });
+
   it('treats an absent field and an explicit null as the same baseline value', () => {
     const base = board([]);
     const local = board([]);
