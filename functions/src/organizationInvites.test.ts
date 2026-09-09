@@ -78,6 +78,8 @@ import {
   CLAIM_URL_ORIGIN,
   DEFAULT_EXPIRES_IN_DAYS,
   MAX_EXPIRES_IN_DAYS,
+  createOrganizationInvites,
+  claimOrganizationInvite,
   type InvitationRecord,
   type MemberRecord,
 } from './organizationInvites';
@@ -729,6 +731,7 @@ describe('evaluateClaim', () => {
       invitation: undefined,
       member: validMember,
       signedInEmailLower: 'user@ex.com',
+      signedInEmailVerified: true,
       signedInUid: 'uid',
       now,
     });
@@ -744,6 +747,7 @@ describe('evaluateClaim', () => {
       },
       member: validMember,
       signedInEmailLower: 'user@ex.com',
+      signedInEmailVerified: true,
       signedInUid: 'uid',
       now,
     });
@@ -759,6 +763,7 @@ describe('evaluateClaim', () => {
       },
       member: validMember,
       signedInEmailLower: 'user@ex.com',
+      signedInEmailVerified: true,
       signedInUid: 'uid',
       now,
     });
@@ -771,6 +776,7 @@ describe('evaluateClaim', () => {
       invitation: validInvitation,
       member: validMember,
       signedInEmailLower: 'someone-else@ex.com',
+      signedInEmailVerified: true,
       signedInUid: 'uid',
       now,
     });
@@ -783,6 +789,7 @@ describe('evaluateClaim', () => {
       invitation: validInvitation,
       member: undefined,
       signedInEmailLower: 'user@ex.com',
+      signedInEmailVerified: true,
       signedInUid: 'uid',
       now,
     });
@@ -795,6 +802,7 @@ describe('evaluateClaim', () => {
       invitation: validInvitation,
       member: validMember,
       signedInEmailLower: 'user@ex.com',
+      signedInEmailVerified: true,
       signedInUid: 'firebase-uid-42',
       now,
     });
@@ -810,5 +818,70 @@ describe('evaluateClaim', () => {
         claimedByUid: 'firebase-uid-42',
       });
     }
+  });
+
+  // Regression: an unverified caller must never claim an invitation, even one
+  // addressed to a real (possibly admin) email they don't own — email/password
+  // sign-in lets an attacker self-report any address. Sibling fix to
+  // resolveOrgForUser.ts (#2884) and firestore.rules isAdmin() (#2915).
+  it('returns permission-denied for an unverified caller, even with a matching invitation and member', () => {
+    const verdict = evaluateClaim({
+      invitation: validInvitation,
+      member: validMember,
+      signedInEmailLower: 'user@ex.com',
+      signedInEmailVerified: false,
+      signedInUid: 'attacker-uid',
+      now,
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) expect(verdict.code).toBe('permission-denied');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createOrganizationInvites / claimOrganizationInvite — email verification gate
+// ---------------------------------------------------------------------------
+
+type CallableHandler = (request: {
+  auth?: { uid: string; token: { email?: string; email_verified?: boolean } };
+  data: unknown;
+}) => Promise<unknown>;
+
+describe('createOrganizationInvites — email verification gate', () => {
+  it('rejects an unverified caller before touching Firestore', async () => {
+    const handler = createOrganizationInvites as unknown as CallableHandler;
+    await expect(
+      handler({
+        auth: {
+          uid: 'attacker-uid',
+          token: { email: 'admin@orono.k12.mn.us' },
+        },
+        data: {
+          orgId: 'orono',
+          invitations: [
+            {
+              email: 'attacker@evil.com',
+              roleId: 'super_admin',
+              buildingIds: [],
+            },
+          ],
+        },
+      })
+    ).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+});
+
+describe('claimOrganizationInvite — email verification gate', () => {
+  it('rejects an unverified caller before touching Firestore', async () => {
+    const handler = claimOrganizationInvite as unknown as CallableHandler;
+    await expect(
+      handler({
+        auth: {
+          uid: 'attacker-uid',
+          token: { email: 'admin@orono.k12.mn.us' },
+        },
+        data: { token: 'some-invite-token', orgId: 'orono' },
+      })
+    ).rejects.toMatchObject({ code: 'permission-denied' });
   });
 });
