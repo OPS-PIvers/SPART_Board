@@ -6,6 +6,7 @@ import {
   QUIZ_READ_ALOUD_LANGUAGES,
 } from '@/config/quizReadAloud';
 import { inputClass, labelClass } from './quizEditorFieldStyles';
+import { ReadAloudPreviewButton } from '@/components/quiz/readAloud/ReadAloudPreviewButton';
 
 const OTHER = '__other__';
 
@@ -72,12 +73,15 @@ export const QuizLanguageField: React.FC<{
           />
         </label>
       )}
-      <p className="text-xs text-slate-500">
-        {t(
-          'quizReadAloud.languageHelp',
-          'Picks the voice used when this quiz is read aloud.'
-        )}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-slate-500">
+          {t(
+            'quizReadAloud.languageHelp',
+            'Picks the voice used when this quiz is read aloud.'
+          )}
+        </p>
+        <ReadAloudPreviewButton language={value || DEFAULT_QUIZ_LANGUAGE} />
+      </div>
     </div>
   );
 };

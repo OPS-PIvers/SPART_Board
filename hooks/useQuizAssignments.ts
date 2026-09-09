@@ -83,6 +83,7 @@ import { selectRepresentativeAnswers } from '@/utils/answerTakeOrdering';
 import { applyMediaSlots, readSlotGrade } from '@/utils/mediaGrading';
 import { responseHasArtifacts } from '@/utils/responseArtifacts';
 import { AuthContext } from '@/context/AuthContextValue';
+import { prepareQuizReadAloudInBackground } from '@/utils/quizReadAloudApi';
 
 /** Import-mode picker result for shared-assignment paste flows. */
 export type SharedAssignmentImportMode = 'sync' | 'copy';
@@ -954,6 +955,16 @@ export const useQuizAssignments = (
       );
       batch.set(doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId), session);
       await batch.commit();
+
+      // R1: synthesize up front, billed to the teacher; the student fallback
+      // covers the assign-then-start race. Override-only flags added later go
+      // through `setAssignmentTargetsV1`, which re-triggers server-side.
+      const anyOverrideReadAloud = Object.values(
+        overridesBySourcedId ?? {}
+      ).some((o) => o?.readAloud === true);
+      if (opts.readAloudAll === true || anyOverrideReadAloud) {
+        prepareQuizReadAloudInBackground(assignmentId);
+      }
 
       // PLC dashboard index: when this assignment opts into PLC mode,
       // record a snapshot under `plcs/{plcId}/assignment_index` so every
@@ -2099,6 +2110,12 @@ export const useQuizAssignments = (
         mediaResponseEnabled:
           syncHasRecording || stickyMediaMarker ? true : deleteField(),
       });
+      const syncReadAloud =
+        (behavior?.sessionOptions ?? assignment.sessionOptions)
+          ?.readAloudAll === true ||
+        Object.values(assignment.overridesBySourcedId ?? {}).some(
+          (o) => o?.readAloud === true
+        );
       // 2 writes already used (assignment + session); fill the rest.
       const firstChunkSize = Math.min(
         responsesToTag.length,
@@ -2110,6 +2127,8 @@ export const useQuizAssignments = (
         });
       }
       await firstBatch.commit();
+      // Rebuilt publicQuestions may carry new text; re-hash and fill the manifest.
+      if (syncReadAloud) prepareQuizReadAloudInBackground(assignmentId);
 
       // Subsequent chunks for any remaining responses.
       for (

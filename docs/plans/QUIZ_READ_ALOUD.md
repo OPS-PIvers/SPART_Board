@@ -223,6 +223,22 @@ override later (R1). Steps:
 A 20-question quiz is about 100 parts and finishes in roughly 15 s. Idempotent:
 re-running after an edit re-hashes everything and synthesizes only changed lines (R7).
 
+PR2 implementation notes:
+
+- `whole` speaks the choices **unlettered** (prompt, pause, choice, pause, …). Answer
+  order is shuffled per student, so canonical "A. / B." letters would contradict the
+  rows on screen; the timing-driven row highlight carries the order instead.
+- A `preparing` manifest younger than 3 minutes short-circuits a second prepare
+  (`startedAt`), so the assign-path client call and the `setAssignmentTargetsV1`
+  re-trigger cannot double-synthesize. The targets re-trigger runs with a 40 s deadline
+  inside that callable (timeout raised to 120 s); parts past the deadline land in
+  `failedKeys` with `status: 'partial'` and the student fallback fills them.
+- The manifest also carries `failedKeys` and, while running, `startedAt`.
+- Sync pickup (`syncAssignmentToLatest`) re-prepares in the background when the
+  assignment has `readAloudAll` or any `readAloud` override.
+- Timings for `whole` are persisted as object metadata on the MP3, so a cache hit
+  returns them without re-synthesis.
+
 ### 4.1 `synthesizeQuizAudioV1` (onCall, `functions/src/quizReadAloud.ts`)
 
 Request:
@@ -331,8 +347,8 @@ match /quiz_tts_cache/{voice}/{fileName} {
 Students open manifest paths through the Firebase Storage SDK (R9), so the URL is
 stable per object and the one-year immutable header lets each browser fetch a part
 once. Object names are content hashes: the same question text in two quizzes shares
-one file and is billed once district-wide (R8). A lifecycle rule deletes objects
-older than 365 days; a re-assigned old quiz simply re-prepares in the background.
+one file and is billed once district-wide (R8). A lifecycle rule (`storage.lifecycle.json`,
+applied with `gsutil lifecycle set`, §8) deletes objects older than 365 days; a re-assigned old quiz simply re-prepares in the background.
 Drive is deliberately not used: audio is derived, PII-free and shared across
 teachers, and Drive playback would have to go through the base64 proxy pattern in
 `getQuizArtifactPlaybackUrl.ts`.
@@ -477,6 +493,9 @@ Rollout: admin → beta (the teachers with read-aloud students) → public.
 - **Privacy**: cached objects contain only quiz text, never student identity; object
   names are hashes; no PII enters `ai_usage` beyond the uid already used by other AI
   features. Consistent with the student PII posture in `studentAssignmentTargets.ts`.
+- **Lifecycle rule** (one-off, not deployed by the Firebase CLI):
+  `gsutil lifecycle set storage.lifecycle.json gs://<project>.firebasestorage.app`.
+  The rule is scoped to the `quiz_tts_cache/` prefix.
 - **Cache purge**: safe at any time; lifecycle rule deletes at 365 days (R8).
 
 ## 9. Out of scope (v1)

@@ -53,6 +53,9 @@ export { archiveQuizMediaArtifact } from './quizMediaArchive';
 export { sweepStuckQuizArchives } from './sweepStuckQuizArchives';
 export { getQuizArtifactPlaybackUrl } from './getQuizArtifactPlaybackUrl';
 
+// ── Quiz read-aloud (Cloud Text-to-Speech; docs/plans/QUIZ_READ_ALOUD.md) ──
+export { prepareQuizReadAloudV1, synthesizeQuizAudioV1 } from './quizReadAloud';
+
 // ── Org-admin media review & compliance delete (COPPA review-and-delete) ───
 export {
   listQuizMediaForOrgAdmin,

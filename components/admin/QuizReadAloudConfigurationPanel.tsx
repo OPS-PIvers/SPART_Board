@@ -12,6 +12,7 @@ import {
   monthlyTtsUsageDocId,
   normalizeQuizReadAloudSettings,
 } from '@/config/quizReadAloud';
+import { ReadAloudPreviewButton } from '@/components/quiz/readAloud/ReadAloudPreviewButton';
 
 interface MonthlyUsage {
   neural2Chars: number;
@@ -154,7 +155,7 @@ export const QuizReadAloudConfigurationPanel: React.FC = () => {
                           {tag}
                         </span>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2 space-y-1">
                         <select
                           aria-label={`${label} Neural2 voice`}
                           className={selectClass}
@@ -169,8 +170,13 @@ export const QuizReadAloudConfigurationPanel: React.FC = () => {
                             </option>
                           ))}
                         </select>
+                        <ReadAloudPreviewButton
+                          language={tag}
+                          voice={draft.voicesByLanguage[tag]}
+                          label="Play sample"
+                        />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2 space-y-1">
                         <select
                           aria-label={`${label} Standard fallback voice`}
                           className={selectClass}
@@ -189,6 +195,11 @@ export const QuizReadAloudConfigurationPanel: React.FC = () => {
                             </option>
                           ))}
                         </select>
+                        <ReadAloudPreviewButton
+                          language={tag}
+                          voice={draft.standardVoicesByLanguage[tag]}
+                          label="Play sample"
+                        />
                       </td>
                     </tr>
                   );
