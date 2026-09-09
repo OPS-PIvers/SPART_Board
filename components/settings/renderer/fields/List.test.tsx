@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { WidgetData } from '@/types';
@@ -151,6 +151,44 @@ describe('List field', () => {
       />
     );
     expect(screen.getByText('addRow').closest('button')).toBeDisabled();
+  });
+
+  it('keeps focus on an untouched row (by identity) when an earlier row is removed', () => {
+    const Wrapper: React.FC = () => {
+      const [items, setItems] = useState<Record<string, unknown>[]>([
+        { label: 'a' },
+        { label: 'b' },
+        { label: 'c' },
+      ]);
+      return (
+        <List
+          field={field}
+          value={items}
+          onChange={(next) => setItems(next as Record<string, unknown>[])}
+          id="items"
+          disabled={false}
+          ctx={makeCtx()}
+          renderRow={(row, index, onRowChange) => (
+            <input
+              aria-label={`row-${index}`}
+              value={row.label as string}
+              onChange={(e) => onRowChange({ ...row, label: e.target.value })}
+            />
+          )}
+        />
+      );
+    };
+    render(<Wrapper />);
+    const cInput = screen.getAllByRole('textbox')[2];
+    cInput.focus();
+    expect(document.activeElement).toBe(cInput);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'removeRow' })[0]);
+
+    const remaining = screen.getAllByRole('textbox');
+    expect(remaining).toHaveLength(2);
+    expect((document.activeElement as HTMLInputElement).value).toBe('c');
+    expect(document.activeElement).toBe(cInput);
   });
 
   it('reorders via SortableList onReorder and emits the reordered array', () => {
