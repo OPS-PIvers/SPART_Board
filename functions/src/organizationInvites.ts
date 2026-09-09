@@ -554,15 +554,26 @@ export function evaluateClaim({
   invitation,
   member,
   signedInEmailLower,
+  signedInEmailVerified,
   signedInUid,
   now,
 }: {
   invitation: InvitationRecord | undefined;
   member: MemberRecord | undefined;
   signedInEmailLower: string;
+  signedInEmailVerified: boolean;
   signedInUid: string;
   now: Date;
 }): ClaimVerdict {
+  // Unverified claims can't prove ownership of the invited address (email/password sign-in allows a self-reported one) — same rail as resolveOrgForUser.ts / isAdmin().
+  if (!signedInEmailVerified) {
+    return {
+      ok: false,
+      code: 'permission-denied',
+      message:
+        'Your email address must be verified before claiming an invitation.',
+    };
+  }
   if (!invitation) {
     return {
       ok: false,
@@ -768,6 +779,13 @@ export const createOrganizationInvites = onCall(
       throw new HttpsError(
         'invalid-argument',
         'Caller must have an email associated with their account.'
+      );
+    }
+    // Unverified claims can't prove ownership of the caller's address (email/password sign-in allows a self-reported one) — same rail as resolveOrgForUser.ts / isAdmin().
+    if (request.auth.token.email_verified !== true) {
+      throw new HttpsError(
+        'permission-denied',
+        'Caller email must be verified.'
       );
     }
     const callerEmailLower = callerEmail.toLowerCase();
@@ -995,6 +1013,13 @@ export const claimOrganizationInvite = onCall(
         'Caller must have an email associated with their account.'
       );
     }
+    // Unverified claims can't prove ownership of the invited address (email/password sign-in allows a self-reported one) — same rail as resolveOrgForUser.ts / isAdmin().
+    if (request.auth.token.email_verified !== true) {
+      throw new HttpsError(
+        'permission-denied',
+        'Your email address must be verified before claiming an invitation.'
+      );
+    }
     const { token, orgId } = parseClaimInvitePayload(request.data);
     const signedInEmailLower = callerEmail.toLowerCase();
     const signedInUid = request.auth.uid;
@@ -1032,6 +1057,7 @@ export const claimOrganizationInvite = onCall(
         invitation,
         member,
         signedInEmailLower,
+        signedInEmailVerified: request.auth?.token.email_verified === true,
         signedInUid,
         now: new Date(),
       });

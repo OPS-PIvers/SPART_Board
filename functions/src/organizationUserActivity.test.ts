@@ -101,7 +101,7 @@ interface ActivityResponse {
 }
 
 type CallableHandler = (request: {
-  auth?: { uid: string; token: { email?: string } };
+  auth?: { uid: string; token: { email?: string; email_verified?: boolean } };
   data: unknown;
 }) => Promise<ActivityResponse>;
 
@@ -110,7 +110,7 @@ const handler = getOrgUserActivity as unknown as CallableHandler;
 const ADMIN_EMAIL = 'admin@orono.k12.mn.us';
 
 function authedCaller(email = ADMIN_EMAIL) {
-  return { uid: 'uid-' + email, token: { email } };
+  return { uid: 'uid-' + email, token: { email, email_verified: true } };
 }
 
 function setSingleAdmin(email: string, roleId: string) {
@@ -147,7 +147,10 @@ describe('getOrgUserActivity — input validation', () => {
   it('rejects payloads missing orgId', async () => {
     await expect(
       handler({
-        auth: { uid: 'uid1', token: { email: ADMIN_EMAIL } },
+        auth: {
+          uid: 'uid1',
+          token: { email: ADMIN_EMAIL, email_verified: true },
+        },
         data: {},
       })
     ).rejects.toMatchObject({ code: 'invalid-argument' });
@@ -156,10 +159,30 @@ describe('getOrgUserActivity — input validation', () => {
   it('rejects non-object payloads', async () => {
     await expect(
       handler({
-        auth: { uid: 'uid1', token: { email: ADMIN_EMAIL } },
+        auth: {
+          uid: 'uid1',
+          token: { email: ADMIN_EMAIL, email_verified: true },
+        },
         data: 'not-an-object',
       })
     ).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+
+  // Regression: an unverified caller self-reporting a real admin's address
+  // must never reach the role check, let alone leak org-wide last-sign-in
+  // timestamps. Sibling fix to resolveOrgForUser.ts (#2884) and
+  // firestore.rules isAdmin() (#2915).
+  it('rejects an unverified caller impersonating an admin email', async () => {
+    setSingleAdmin(ADMIN_EMAIL, 'super_admin');
+    memberEmails = [ADMIN_EMAIL];
+
+    await expect(
+      handler({
+        auth: { uid: 'attacker-uid', token: { email: ADMIN_EMAIL } },
+        data: { orgId: 'orono' },
+      })
+    ).rejects.toMatchObject({ code: 'permission-denied' });
+    expect(getUsersSpy).not.toHaveBeenCalled();
   });
 });
 
