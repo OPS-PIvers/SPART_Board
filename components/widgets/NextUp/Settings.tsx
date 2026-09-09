@@ -15,9 +15,20 @@ import { Plus, RefreshCcw, Check, Trash2, Copy, Users } from 'lucide-react';
 import { SettingsLabel } from '@/components/common/SettingsLabel';
 import { PartnerCard } from '@/components/settings/PartnerCard';
 import { Toggle } from '@/components/common/Toggle';
+import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 
 const NEXTUP_FOLDER_NAME = 'NextUp';
 const SESSIONS_COLLECTION = 'nextup_sessions';
+const THEME_COLORS = [
+  '#2d3f89',
+  '#ad2122',
+  '#059669',
+  '#d97706',
+  '#7c3aed',
+  '#db2777',
+  '#2563eb',
+  '#4b5563',
+];
 
 export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -242,6 +253,16 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
+  // Shared select handler — reused by both onClick and the radiogroup
+  // roving-tabindex keydown handler (handleRadioGroupKeyDown) below.
+  const selectThemeColor = (color: string) =>
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        styling: { ...config.styling, themeColor: color },
+      },
+    });
+
   return (
     <div className="flex flex-col h-full overflow-hidden font-lexend">
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar text-brand-gray-darkest">
@@ -408,31 +429,23 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
 
           <div
             className="grid grid-cols-5 gap-2"
-            role="group"
+            role="radiogroup"
             aria-labelledby={visualStyleLabelId}
+            onKeyDown={(e) =>
+              handleRadioGroupKeyDown(e, THEME_COLORS, selectThemeColor)
+            }
           >
-            {[
-              '#2d3f89',
-              '#ad2122',
-              '#059669',
-              '#d97706',
-              '#7c3aed',
-              '#db2777',
-              '#2563eb',
-              '#4b5563',
-            ].map((color) => (
+            {THEME_COLORS.map((color) => (
               <button
                 key={color}
-                onClick={() =>
-                  updateWidget(widget.id, {
-                    config: {
-                      ...config,
-                      styling: { ...config.styling, themeColor: color },
-                    },
-                  })
-                }
+                type="button"
+                role="radio"
+                aria-checked={config.styling.themeColor === color}
+                tabIndex={config.styling.themeColor === color ? 0 : -1}
+                onClick={() => selectThemeColor(color)}
                 className={`h-8 rounded-lg border-2 transition-all ${config.styling.themeColor === color ? 'border-brand-gray-darkest scale-110 shadow-sm' : 'border-transparent'}`}
                 style={{ backgroundColor: color }}
+                aria-label={`Theme color ${color}`}
               />
             ))}
           </div>
