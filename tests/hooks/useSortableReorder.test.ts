@@ -154,6 +154,24 @@ describe('useSortableReorder', () => {
     );
   });
 
+  it('absorbs a changed item body when ids and order are unchanged', () => {
+    const first = makeItems(['a', 'b', 'c']);
+    const onCommit = vi.fn();
+
+    const { result, rerender } = renderHook(
+      ({ items }) => useSortableReorder({ items, getId, onCommit }),
+      { initialProps: { items: first } }
+    );
+
+    // A save that only edits one item's body: same ids, same order, one new
+    // object (the way a Firestore snapshot re-emits an edited doc).
+    const edited: Item[] = [first[0], { id: 'b', label: 'BBB' }, first[2]];
+    rerender({ items: edited });
+
+    expect(result.current.orderedItems.map(getId)).toEqual(['a', 'b', 'c']);
+    expect(result.current.orderedItems[1].label).toBe('BBB');
+  });
+
   it('does not loop when the caller passes a fresh array reference on every render', () => {
     // Regression: when a caller's parent re-renders and computes items via
     // useMemo with an unstable dep (e.g. an inline searchFields callback),

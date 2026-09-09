@@ -110,7 +110,27 @@ export function projectSessionStimuli(
   for (const s of quiz.stimuli ?? []) {
     if (!referenced.has(s.id) || seen.has(s.id)) continue;
     seen.add(s.id);
-    out.push({ ...s, label: '' });
+    // Authoring-only fields stay off the session doc; reviewed text travels via readAloudTextByStimulusId.
+    const { readAloudText: _t, readAloudSource: _src, ...rest } = s;
+    out.push({ ...rest, label: '' });
+  }
+  return out;
+}
+
+/** Reviewed read-aloud text for referenced image/pdf stimuli, keyed by id (plan §3). */
+export function readAloudTextByStimulusId(
+  quiz: Pick<QuizData, 'questions' | 'stimuli'>
+): Record<string, string> {
+  const referenced = new Set<string>();
+  for (const q of quiz.questions) {
+    for (const id of q.stimulusIds ?? []) referenced.add(id);
+  }
+  const out: Record<string, string> = {};
+  for (const s of quiz.stimuli ?? []) {
+    if (!referenced.has(s.id) || out[s.id] !== undefined) continue;
+    if (s.type !== 'image' && s.type !== 'pdf') continue;
+    const text = s.readAloudText?.trim();
+    if (text) out[s.id] = text;
   }
   return out;
 }

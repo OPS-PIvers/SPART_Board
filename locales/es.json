@@ -1858,7 +1858,8 @@
       "rubricSwaps_other": "{{count}} cambios de rúbrica",
       "tabWarningsOff": "Avisos de pestaña desactivados",
       "tabWarning": "Aviso de pestaña: {{threshold}}",
-      "windowShifted": "Horario ajustado"
+      "windowShifted": "Horario ajustado",
+      "readAloud": "Lectura en voz alta"
     }
   },
   "assignTargeting": {
@@ -1947,6 +1948,41 @@
       "notGradedYet": "Sin calificar todavía",
       "barLabel": "Puntuación media {{pct}} %"
     }
+  },
+  "quizReadAloud": {
+    "label": "Leer en voz alta",
+    "help": "Solo para estudiantes con sesión iniciada.",
+    "sectionLabel": "Lectura en voz alta",
+    "languageLabel": "Idioma",
+    "languageTagLabel": "Código de idioma",
+    "languageOther": "Otro…",
+    "languageHelp": "Elige la voz que se usa al leer este cuestionario en voz alta.",
+    "readQuestion": "Leer pregunta",
+    "readPrompt": "Leer la pregunta en voz alta",
+    "readChoice": "Leer la opción {{n}} en voz alta",
+    "readItem": "Leer el elemento en voz alta",
+    "stop": "Detener",
+    "speed": "Velocidad {{rate}}",
+    "autoRead": "Lectura automática",
+    "loadError": "No se pudo cargar el audio. Toca para reintentar.",
+    "unavailable": "La lectura en voz alta no está disponible ahora.",
+    "preparing": "Preparando la lectura en voz alta…",
+    "partial": "Parte del audio se cargará al momento.",
+    "previewVoice": "Escuchar la voz",
+    "readPassage": "Leer el pasaje en voz alta",
+    "passage": "Pasaje",
+    "stimulusText": "Texto para leer en voz alta",
+    "stimulusTextPlaceholder": "Texto que escuchan los estudiantes para este estímulo",
+    "sourcePdfText": "Texto del PDF",
+    "sourceOcr": "OCR",
+    "sourceEdited": "Editado",
+    "sourceNone": "Ninguno",
+    "extract": "Extraer texto",
+    "extracting": "Extrayendo…",
+    "clear": "Borrar",
+    "readingHelp": "Déjalo vacío en evaluaciones de lectura.",
+    "needsManual": "No se pudo extraer el texto automáticamente. Pégalo o escríbelo aquí.",
+    "extractFailed": "La extracción de texto falló. Inténtalo de nuevo."
   },
   "quizMediaResponse": {
     "notice": {

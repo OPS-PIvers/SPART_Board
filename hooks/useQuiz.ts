@@ -268,6 +268,7 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
           ...(updatedQuiz.stimuli && updatedQuiz.stimuli.length > 0
             ? { stimuli: updatedQuiz.stimuli }
             : {}),
+          ...(updatedQuiz.language ? { language: updatedQuiz.language } : {}),
           expectedVersion: existingSync.lastSyncedVersion,
           uid: userId,
           ...(effectiveBehavior !== undefined
@@ -339,6 +340,7 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
         ...(canonical.stimuli && canonical.stimuli.length > 0
           ? { stimuli: canonical.stimuli }
           : {}),
+        ...(canonical.language ? { language: canonical.language } : {}),
         createdAt: quizMeta.createdAt,
         updatedAt: now,
       };
@@ -571,6 +573,7 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
         ...(sourceData.stimuli && sourceData.stimuli.length > 0
           ? { stimuli: sourceData.stimuli.map((s) => ({ ...s })) }
           : {}),
+        ...(sourceData.language ? { language: sourceData.language } : {}),
         createdAt: now,
         updatedAt: now,
       };
@@ -649,6 +652,7 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
         ...(shared.stimuli && shared.stimuli.length > 0
           ? { stimuli: shared.stimuli }
           : {}),
+        ...(shared.language ? { language: shared.language } : {}),
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };

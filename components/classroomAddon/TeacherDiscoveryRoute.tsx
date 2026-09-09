@@ -550,6 +550,7 @@ export const ClassroomAddonTeacherSpike: React.FC = () => {
         driveFileId: selectedQuiz.driveFileId,
         questions: quizData.questions,
         ...(quizData.stimuli ? { stimuli: quizData.stimuli } : {}),
+        ...(quizData.language ? { language: quizData.language } : {}),
       },
       {
         className: 'Google Classroom',

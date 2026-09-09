@@ -1858,7 +1858,8 @@
       "rubricSwaps_other": "{{count}} changements de grille",
       "tabWarningsOff": "Avertissements d'onglet désactivés",
       "tabWarning": "Avertissement d'onglet : {{threshold}}",
-      "windowShifted": "Fenêtre décalée"
+      "windowShifted": "Fenêtre décalée",
+      "readAloud": "Lecture à voix haute"
     }
   },
   "assignTargeting": {
@@ -1947,6 +1948,41 @@
       "notGradedYet": "Pas encore noté",
       "barLabel": "Score moyen {{pct}} %"
     }
+  },
+  "quizReadAloud": {
+    "label": "Lire à voix haute",
+    "help": "Élèves connectés uniquement.",
+    "sectionLabel": "Lecture à voix haute",
+    "languageLabel": "Langue",
+    "languageTagLabel": "Code de langue",
+    "languageOther": "Autre…",
+    "languageHelp": "Définit la voix utilisée pour lire ce quiz à voix haute.",
+    "readQuestion": "Lire la question",
+    "readPrompt": "Lire la question à voix haute",
+    "readChoice": "Lire le choix {{n}} à voix haute",
+    "readItem": "Lire l'élément à voix haute",
+    "stop": "Arrêter",
+    "speed": "Vitesse {{rate}}",
+    "autoRead": "Lecture automatique",
+    "loadError": "Impossible de charger l'audio. Touchez pour réessayer.",
+    "unavailable": "La lecture à voix haute n'est pas disponible pour le moment.",
+    "preparing": "Préparation de la lecture à voix haute…",
+    "partial": "Une partie de l'audio se chargera à la demande.",
+    "previewVoice": "Écouter la voix",
+    "readPassage": "Lire le passage à voix haute",
+    "passage": "Passage",
+    "stimulusText": "Texte lu à voix haute",
+    "stimulusTextPlaceholder": "Texte que les élèves entendent pour ce support",
+    "sourcePdfText": "Texte du PDF",
+    "sourceOcr": "OCR",
+    "sourceEdited": "Modifié",
+    "sourceNone": "Aucun",
+    "extract": "Extraire le texte",
+    "extracting": "Extraction…",
+    "clear": "Effacer",
+    "readingHelp": "Laisser vide pour les évaluations de lecture.",
+    "needsManual": "Impossible d'extraire le texte automatiquement. Collez-le ou saisissez-le ici.",
+    "extractFailed": "L'extraction du texte a échoué. Réessayez."
   },
   "quizMediaResponse": {
     "notice": {

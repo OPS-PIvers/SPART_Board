@@ -11,4 +11,5 @@ export const AI_FEATURE_LABELS: Record<string, string> = {
   'instructional-routine': 'Instructional Routines AI',
   'widget-builder': 'Widget Builder AI',
   'widget-explainer': 'Widget Explainer AI',
+  tts: 'Quiz Read-Aloud',
 };

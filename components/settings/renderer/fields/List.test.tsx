@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import type { WidgetData } from '@/types';
 import type { FieldCtx, ListField } from '@/components/settings/schema/types';
 import { FieldRenderer } from '../FieldRenderer';
@@ -10,6 +10,7 @@ let capturedOnReorder: ((next: unknown[]) => void) | undefined;
 vi.mock('@/components/common/SortableList', () => ({
   SortableList: (props: {
     items: unknown[];
+    getId: (item: unknown) => string;
     onReorder: (next: unknown[]) => void;
     renderItem: (
       item: unknown,
@@ -24,13 +25,15 @@ vi.mock('@/components/common/SortableList', () => ({
     capturedOnReorder = props.onReorder;
     return (
       <div>
-        {props.items.map((item, index) =>
-          props.renderItem(
-            item,
-            { attributes: {}, listeners: undefined, isDragging: false },
-            index
-          )
-        )}
+        {props.items.map((item, index) => (
+          <div key={props.getId(item)}>
+            {props.renderItem(
+              item,
+              { attributes: {}, listeners: undefined, isDragging: false },
+              index
+            )}
+          </div>
+        ))}
       </div>
     );
   },
@@ -151,6 +154,101 @@ describe('List field', () => {
       />
     );
     expect(screen.getByText('addRow').closest('button')).toBeDisabled();
+  });
+
+  it('keeps focus on an untouched row (by identity) when an earlier row is removed', () => {
+    const Wrapper: React.FC = () => {
+      const [items, setItems] = useState<Record<string, unknown>[]>([
+        { label: 'a' },
+        { label: 'b' },
+        { label: 'c' },
+      ]);
+      return (
+        <List
+          field={field}
+          value={items}
+          onChange={(next) => setItems(next as Record<string, unknown>[])}
+          id="items"
+          disabled={false}
+          ctx={makeCtx()}
+          renderRow={(row, index, onRowChange) => (
+            <input
+              aria-label={`row-${index}`}
+              value={row.label as string}
+              onChange={(e) => onRowChange({ ...row, label: e.target.value })}
+            />
+          )}
+        />
+      );
+    };
+    render(<Wrapper />);
+    const cInput = screen.getAllByRole('textbox')[2];
+    cInput.focus();
+    expect(document.activeElement).toBe(cInput);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'removeRow' })[0]);
+
+    const remaining = screen.getAllByRole('textbox');
+    expect(remaining).toHaveLength(2);
+    expect((document.activeElement as HTMLInputElement).value).toBe('c');
+    expect(document.activeElement).toBe(cInput);
+  });
+
+  it('keeps focus on a row (by identity) when a sortable reorder moves it', () => {
+    const initial = [{ label: 'a' }, { label: 'b' }, { label: 'c' }];
+    const Wrapper: React.FC = () => {
+      const [items, setItems] = useState<Record<string, unknown>[]>(initial);
+      return (
+        <List
+          field={{ ...field, sortable: true }}
+          value={items}
+          onChange={(next) => setItems(next as Record<string, unknown>[])}
+          id="items"
+          disabled={false}
+          ctx={makeCtx()}
+          renderRow={(row, index, onRowChange) => (
+            <input
+              aria-label={`row-${index}`}
+              value={row.label as string}
+              onChange={(e) => onRowChange({ ...row, label: e.target.value })}
+            />
+          )}
+        />
+      );
+    };
+    render(<Wrapper />);
+    const cInput = screen.getAllByRole('textbox')[2];
+    cInput.focus();
+    expect(document.activeElement).toBe(cInput);
+
+    act(() => {
+      capturedOnReorder?.([initial[2], initial[0], initial[1]]);
+    });
+
+    const reordered = screen.getAllByRole('textbox');
+    expect(reordered.map((i) => (i as HTMLInputElement).value)).toEqual([
+      'c',
+      'a',
+      'b',
+    ]);
+    expect(document.activeElement).toBe(cInput);
+  });
+
+  it('renders primitive rows without throwing on the identity map', () => {
+    expect(() =>
+      render(
+        <List
+          field={field}
+          value={['a', 'b']}
+          onChange={vi.fn()}
+          id="items"
+          disabled={false}
+          ctx={makeCtx()}
+          renderRow={(row) => <span>{row as unknown as React.ReactNode}</span>}
+        />
+      )
+    ).not.toThrow();
+    expect(screen.getByText('a')).toBeTruthy();
   });
 
   it('reorders via SortableList onReorder and emits the reordered array', () => {

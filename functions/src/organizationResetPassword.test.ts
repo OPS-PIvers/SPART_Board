@@ -35,7 +35,7 @@ vi.mock('firebase-functions/v2/https', () => {
 import { resetOrganizationUserPassword } from './organizationResetPassword';
 
 type CallableHandler = (request: {
-  auth?: { uid: string; token: { email?: string } };
+  auth?: { uid: string; token: { email?: string; email_verified?: boolean } };
   data: unknown;
 }) => Promise<unknown>;
 
@@ -64,7 +64,10 @@ describe('resetOrganizationUserPassword — input validation', () => {
   it('rejects payloads missing orgId', async () => {
     await expect(
       handler({
-        auth: { uid: 'uid1', token: { email: 'admin@orono.k12.mn.us' } },
+        auth: {
+          uid: 'uid1',
+          token: { email: 'admin@orono.k12.mn.us', email_verified: true },
+        },
         data: { email: 'a@b.com' },
       })
     ).rejects.toMatchObject({ code: 'invalid-argument' });
@@ -73,7 +76,10 @@ describe('resetOrganizationUserPassword — input validation', () => {
   it('rejects payloads missing email', async () => {
     await expect(
       handler({
-        auth: { uid: 'uid1', token: { email: 'admin@orono.k12.mn.us' } },
+        auth: {
+          uid: 'uid1',
+          token: { email: 'admin@orono.k12.mn.us', email_verified: true },
+        },
         data: { orgId: 'orono' },
       })
     ).rejects.toMatchObject({ code: 'invalid-argument' });
@@ -82,7 +88,10 @@ describe('resetOrganizationUserPassword — input validation', () => {
   it('rejects non-object payloads', async () => {
     await expect(
       handler({
-        auth: { uid: 'uid1', token: { email: 'admin@orono.k12.mn.us' } },
+        auth: {
+          uid: 'uid1',
+          token: { email: 'admin@orono.k12.mn.us', email_verified: true },
+        },
         data: 'not-an-object',
       })
     ).rejects.toMatchObject({ code: 'invalid-argument' });
@@ -180,7 +189,10 @@ describe('resetOrganizationUserPassword — response shape', () => {
     );
 
     const result = await handler({
-      auth: { uid: 'uid1', token: { email: 'admin@orono.k12.mn.us' } },
+      auth: {
+        uid: 'uid1',
+        token: { email: 'admin@orono.k12.mn.us', email_verified: true },
+      },
       data: { orgId: 'orono', email: 'teacher@orono.k12.mn.us' },
     });
 
@@ -203,7 +215,10 @@ describe('resetOrganizationUserPassword — response shape', () => {
     generatePasswordResetLinkMock.mockResolvedValue(mintedUrl);
 
     const result = (await handler({
-      auth: { uid: 'uid1', token: { email: 'admin@orono.k12.mn.us' } },
+      auth: {
+        uid: 'uid1',
+        token: { email: 'admin@orono.k12.mn.us', email_verified: true },
+      },
       data: { orgId: 'orono', email: 'teacher@orono.k12.mn.us' },
     })) as { sent: boolean; email: string; resetUrl?: string };
 
@@ -223,7 +238,10 @@ describe('resetOrganizationUserPassword — response shape', () => {
 
     await expect(
       handler({
-        auth: { uid: 'uid1', token: { email: 'admin@orono.k12.mn.us' } },
+        auth: {
+          uid: 'uid1',
+          token: { email: 'admin@orono.k12.mn.us', email_verified: true },
+        },
         data: { orgId: 'orono', email: 'teacher@orono.k12.mn.us' },
       })
     ).rejects.toMatchObject({
@@ -231,5 +249,34 @@ describe('resetOrganizationUserPassword — response shape', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       message: expect.stringMatching(/claim.*invite/i),
     });
+  });
+});
+
+// Regression: an attacker who self-registers (email/password sign-in) with a
+// real admin's address, without ever verifying it, must not be able to mint —
+// and, with the email queue disabled, receive directly in the response — a
+// password-reset link for another org member. Sibling fix to
+// resolveOrgForUser.ts (#2884) and firestore.rules isAdmin() (#2915).
+describe('resetOrganizationUserPassword — email verification gate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('rejects an unverified caller impersonating a real admin email, before minting a reset link', async () => {
+    firestoreMock.mockReturnValue(buildFirestoreStub({ emailEnabled: false }));
+    generatePasswordResetLinkMock.mockResolvedValue(
+      'https://example.com/reset?token=stolen'
+    );
+
+    await expect(
+      handler({
+        auth: {
+          uid: 'attacker-uid',
+          token: { email: 'admin@orono.k12.mn.us' },
+        },
+        data: { orgId: 'orono', email: 'teacher@orono.k12.mn.us' },
+      })
+    ).rejects.toMatchObject({ code: 'permission-denied' });
+    expect(generatePasswordResetLinkMock).not.toHaveBeenCalled();
   });
 });

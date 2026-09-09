@@ -55,6 +55,8 @@ export interface OverrideEditorRowProps {
   /** Other selected students eligible for "Copy overrides from". */
   peers?: OverrideEditorPeer[];
   defaultExpanded?: boolean;
+  /** Quiz only. Shows the "Read aloud" checkbox; the host resolves the 'quiz-read-aloud' gate. */
+  readAloudAvailable?: boolean;
 }
 
 /** `labelKey`/`labelDefault` are absent for the bare multiplier units (1.5x, 2x), which read the same in every locale. */
@@ -109,6 +111,7 @@ export const OverrideEditorRow: React.FC<OverrideEditorRowProps> = ({
   rubrics = [],
   peers = [],
   defaultExpanded = false,
+  readAloudAvailable = false,
 }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -270,6 +273,24 @@ export const OverrideEditorRow: React.FC<OverrideEditorRowProps> = ({
               />
             </div>
           </div>
+
+          {quizMode && readAloudAvailable && (
+            <div>
+              <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <input
+                  type="checkbox"
+                  checked={override.readAloud === true}
+                  onChange={(e) =>
+                    patch({ readAloud: e.target.checked ? true : undefined })
+                  }
+                />
+                {t('quizReadAloud.label', 'Read aloud')}
+              </label>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {t('quizReadAloud.help', 'Signed-in students only.')}
+              </p>
+            </div>
+          )}
 
           {quizMode && (
             <div>

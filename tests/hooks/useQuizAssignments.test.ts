@@ -1978,6 +1978,36 @@ describe('useQuizAssignments - createAssignment (PLC index side effect)', () => 
     return call[1] as Record<string, unknown>;
   }
 
+  it('snapshots readAloudAll and the quiz language onto the session doc', async () => {
+    const { result } = renderHook(() => useQuizAssignments(TEACHER_UID));
+    await act(async () => {
+      await result.current.createAssignment(
+        { ...QUIZ, language: 'es-US' },
+        {
+          sessionMode: 'student',
+          sessionOptions: { readAloudAll: true },
+        }
+      );
+    });
+    expect(findSessionSet()).toMatchObject({
+      readAloudAll: true,
+      language: 'es-US',
+    });
+  });
+
+  it('writes neither readAloudAll nor language when the quiz has no read-aloud settings', async () => {
+    const { result } = renderHook(() => useQuizAssignments(TEACHER_UID));
+    await act(async () => {
+      await result.current.createAssignment(QUIZ, {
+        sessionMode: 'teacher',
+        sessionOptions: { readAloudAll: false },
+      });
+    });
+    const session = findSessionSet();
+    expect(session).not.toHaveProperty('readAloudAll');
+    expect(session).not.toHaveProperty('language');
+  });
+
   it('mints the session with blockCopyPaste:true when the option is set', async () => {
     const { result } = renderHook(() => useQuizAssignments(TEACHER_UID));
     await act(async () => {

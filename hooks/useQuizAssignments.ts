@@ -61,7 +61,10 @@ import type {
 } from '@/types';
 import { isFreeResponseType } from '@/types';
 import { normalizeQuizQuestions } from '@/utils/quizQuestionNormalize';
-import { projectSessionStimuli } from '@/utils/quizStimuli';
+import {
+  projectSessionStimuli,
+  readAloudTextByStimulusId,
+} from '@/utils/quizStimuli';
 import { dedupeQuestionsById } from '@/utils/quizMaxPoints';
 import type { SessionTargets } from '@/utils/resolveAssignmentTargets';
 import {
@@ -83,6 +86,7 @@ import { selectRepresentativeAnswers } from '@/utils/answerTakeOrdering';
 import { applyMediaSlots, readSlotGrade } from '@/utils/mediaGrading';
 import { responseHasArtifacts } from '@/utils/responseArtifacts';
 import { AuthContext } from '@/context/AuthContextValue';
+import { prepareQuizReadAloudInBackground } from '@/utils/quizReadAloudApi';
 
 /** Import-mode picker result for shared-assignment paste flows. */
 export type SharedAssignmentImportMode = 'sync' | 'copy';
@@ -176,6 +180,8 @@ export interface AssignmentQuizRef {
   questions: QuizQuestion[];
   /** Stimuli referenced by `questions[].stimulusIds`; projected onto the session doc. */
   stimuli?: QuizStimulus[];
+  /** Read-aloud language snapshotted onto the session doc. */
+  language?: string;
 }
 
 export interface UseQuizAssignmentsResult {
@@ -499,6 +505,7 @@ function sessionOptionsToSessionPatch(
     patch.shuffleQuestions = o.shuffleQuestions;
   if (o.shuffleAnswerOptions !== undefined)
     patch.shuffleAnswerOptions = o.shuffleAnswerOptions;
+  if (o.readAloudAll !== undefined) patch.readAloudAll = o.readAloudAll;
   return patch;
 }
 
@@ -845,6 +852,10 @@ export const useQuizAssignments = (
       const opts = settings.sessionOptions;
       // Dedupe once so totalQuestions and publicQuestions can't drift apart.
       const sessionQuestions = dedupeQuestionsById(quiz.questions);
+      const sessionReadAloudText = readAloudTextByStimulusId({
+        questions: sessionQuestions,
+        stimuli: quiz.stimuli,
+      });
       const sessionStimuli = projectSessionStimuli({
         questions: sessionQuestions,
         stimuli: quiz.stimuli,
@@ -887,6 +898,12 @@ export const useQuizAssignments = (
         // Stimuli referenced by at least one question, labels stripped.
         // Omitted entirely for stimulus-free quizzes.
         ...(sessionStimuli.length > 0 ? { stimuli: sessionStimuli } : {}),
+        // Read-aloud snapshot (docs/plans/QUIZ_READ_ALOUD.md §3); omitted when off.
+        ...(opts.readAloudAll ? { readAloudAll: true } : {}),
+        ...(quiz.language ? { language: quiz.language } : {}),
+        ...(Object.keys(sessionReadAloudText).length > 0
+          ? { readAloudTextByStimulusId: sessionReadAloudText }
+          : {}),
         // Phase 1 toggles
         tabWarningsEnabled: opts.tabWarningsEnabled ?? true,
         ...(opts.tabWarningThreshold !== undefined
@@ -948,6 +965,16 @@ export const useQuizAssignments = (
       );
       batch.set(doc(db, QUIZ_SESSIONS_COLLECTION, assignmentId), session);
       await batch.commit();
+
+      // R1: synthesize up front, billed to the teacher; the student fallback
+      // covers the assign-then-start race. Override-only flags added later go
+      // through `setAssignmentTargetsV1`, which re-triggers server-side.
+      const anyOverrideReadAloud = Object.values(
+        overridesBySourcedId ?? {}
+      ).some((o) => o?.readAloud === true);
+      if (opts.readAloudAll === true || anyOverrideReadAloud) {
+        prepareQuizReadAloudInBackground(assignmentId);
+      }
 
       // PLC dashboard index: when this assignment opts into PLC mode,
       // record a snapshot under `plcs/{plcId}/assignment_index` so every
@@ -1567,6 +1594,7 @@ export const useQuizAssignments = (
           ...(quizData.stimuli && quizData.stimuli.length > 0
             ? { stimuli: quizData.stimuli }
             : {}),
+          ...(quizData.language ? { language: quizData.language } : {}),
           // Plumb the PLC id through so downstream notification routing
           // can scope stale-content alerts to the right inbox. Not
           // consumed today; the field is reserved for future use.
@@ -1589,6 +1617,7 @@ export const useQuizAssignments = (
         ...(quizData.stimuli && quizData.stimuli.length > 0
           ? { stimuli: quizData.stimuli }
           : {}),
+        ...(quizData.language ? { language: quizData.language } : {}),
         createdAt: quizData.createdAt,
         updatedAt: quizData.updatedAt,
         assignmentSettings: {
@@ -1653,6 +1682,7 @@ export const useQuizAssignments = (
       let initialQuestions = normalizeQuizQuestions(shared.questions);
       let initialTitle = shared.title;
       let initialStimuli = shared.stimuli;
+      let initialLanguage = shared.language;
       let canonicalVersion: number | undefined = undefined;
       if (effectiveMode === 'sync' && shared.syncGroupId) {
         // Fail the sync import outright if the canonical doc is
@@ -1668,6 +1698,7 @@ export const useQuizAssignments = (
         initialTitle = canonical.title;
         initialQuestions = canonical.questions;
         initialStimuli = canonical.stimuli;
+        initialLanguage = canonical.language;
         canonicalVersion = canonical.version;
       }
 
@@ -1679,6 +1710,7 @@ export const useQuizAssignments = (
         ...(initialStimuli && initialStimuli.length > 0
           ? { stimuli: initialStimuli }
           : {}),
+        ...(initialLanguage ? { language: initialLanguage } : {}),
         createdAt: now,
         updatedAt: now,
       };
@@ -1827,6 +1859,7 @@ export const useQuizAssignments = (
             driveFileId: savedMeta.driveFileId,
             questions: newQuiz.questions,
             ...(newQuiz.stimuli ? { stimuli: newQuiz.stimuli } : {}),
+            ...(newQuiz.language ? { language: newQuiz.language } : {}),
           },
           importedSettings,
           {
@@ -1950,6 +1983,10 @@ export const useQuizAssignments = (
       );
       const syncHasRecording = publicQuestions.some((q) => !!q.recording);
       const canonicalStimuli = projectSessionStimuli({
+        questions: canonicalQuestions,
+        stimuli: canonical.stimuli,
+      });
+      const canonicalReadAloudText = readAloudTextByStimulusId({
         questions: canonicalQuestions,
         stimuli: canonical.stimuli,
       });
@@ -2081,11 +2118,22 @@ export const useQuizAssignments = (
         // publicQuestions; deleteField clears stale entries when the
         // canonical edit removed the last stimulus.
         stimuli: canonicalStimuli.length > 0 ? canonicalStimuli : deleteField(),
+        language: canonical.language ?? deleteField(),
+        readAloudTextByStimulusId:
+          Object.keys(canonicalReadAloudText).length > 0
+            ? canonicalReadAloudText
+            : deleteField(),
         // Re-derived every sync, so revoking the gate clears a stale marker —
         // unless committed takes still depend on it.
         mediaResponseEnabled:
           syncHasRecording || stickyMediaMarker ? true : deleteField(),
       });
+      const syncReadAloud =
+        (behavior?.sessionOptions ?? assignment.sessionOptions)
+          ?.readAloudAll === true ||
+        Object.values(assignment.overridesBySourcedId ?? {}).some(
+          (o) => o?.readAloud === true
+        );
       // 2 writes already used (assignment + session); fill the rest.
       const firstChunkSize = Math.min(
         responsesToTag.length,
@@ -2097,6 +2145,8 @@ export const useQuizAssignments = (
         });
       }
       await firstBatch.commit();
+      // Rebuilt publicQuestions may carry new text; re-hash and fill the manifest.
+      if (syncReadAloud) prepareQuizReadAloudInBackground(assignmentId);
 
       // Subsequent chunks for any remaining responses.
       for (

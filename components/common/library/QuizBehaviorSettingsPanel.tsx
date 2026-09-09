@@ -13,6 +13,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, Zap, Clock } from 'lucide-react';
 import { Toggle } from '@/components/common/Toggle';
 import type { QuizBehaviorSettings, QuizSessionMode } from '@/types';
@@ -34,6 +35,8 @@ export interface QuizBehaviorSettingsPanelProps {
    * Default false.
    */
   modeLocked?: boolean;
+  /** Shows the "Read aloud" toggle; the host resolves the 'quiz-read-aloud' gate. */
+  readAloudAvailable?: boolean;
 }
 
 const MODES_BASE: Omit<AssignModeOption, 'disabled'>[] = [
@@ -134,7 +137,8 @@ const TabWarningThresholdRow: React.FC<{
 
 export const QuizBehaviorSettingsPanel: React.FC<
   QuizBehaviorSettingsPanelProps
-> = ({ value, onChange, modeLocked = false }) => {
+> = ({ value, onChange, modeLocked = false, readAloudAvailable = false }) => {
+  const { t } = useTranslation();
   const modes: AssignModeOption[] = MODES_BASE.map((m) => ({
     ...m,
     disabled: modeLocked,
@@ -234,68 +238,88 @@ export const QuizBehaviorSettingsPanel: React.FC<
           )
         }
         trailingSlot={
-          <CollapsibleSection label="Gamification">
-            <ToggleRow
-              compact
-              label="Speed Bonus Points"
-              checked={value.sessionOptions.speedBonusEnabled ?? false}
-              onChange={(v) =>
-                onChange({
-                  ...value,
-                  sessionOptions: {
-                    ...value.sessionOptions,
-                    speedBonusEnabled: v,
-                  },
-                })
-              }
-              hint="Up to 50% bonus for fast answers"
-            />
-            <ToggleRow
-              compact
-              label="Streak Bonuses"
-              checked={value.sessionOptions.streakBonusEnabled ?? false}
-              onChange={(v) =>
-                onChange({
-                  ...value,
-                  sessionOptions: {
-                    ...value.sessionOptions,
-                    streakBonusEnabled: v,
-                  },
-                })
-              }
-              hint="Multiplier for consecutive correct answers"
-            />
-            <ToggleRow
-              compact
-              label="Podium Between Questions"
-              checked={value.sessionOptions.showPodiumBetweenQuestions ?? false}
-              onChange={(v) =>
-                onChange({
-                  ...value,
-                  sessionOptions: {
-                    ...value.sessionOptions,
-                    showPodiumBetweenQuestions: v,
-                  },
-                })
-              }
-              hint="Show top 3 leaderboard after each question"
-            />
-            <ToggleRow
-              compact
-              label="Sound Effects"
-              checked={value.sessionOptions.soundEffectsEnabled ?? false}
-              onChange={(v) =>
-                onChange({
-                  ...value,
-                  sessionOptions: {
-                    ...value.sessionOptions,
-                    soundEffectsEnabled: v,
-                  },
-                })
-              }
-              hint="Chimes, ticks, and fanfares during the quiz"
-            />
-          </CollapsibleSection>
+          <>
+            {readAloudAvailable && (
+              <ToggleRow
+                label={t('quizReadAloud.label', 'Read aloud')}
+                checked={value.sessionOptions.readAloudAll ?? false}
+                onChange={(v) =>
+                  onChange({
+                    ...value,
+                    sessionOptions: {
+                      ...value.sessionOptions,
+                      readAloudAll: v,
+                    },
+                  })
+                }
+                hint={t('quizReadAloud.help', 'Signed-in students only.')}
+              />
+            )}
+            <CollapsibleSection label="Gamification">
+              <ToggleRow
+                compact
+                label="Speed Bonus Points"
+                checked={value.sessionOptions.speedBonusEnabled ?? false}
+                onChange={(v) =>
+                  onChange({
+                    ...value,
+                    sessionOptions: {
+                      ...value.sessionOptions,
+                      speedBonusEnabled: v,
+                    },
+                  })
+                }
+                hint="Up to 50% bonus for fast answers"
+              />
+              <ToggleRow
+                compact
+                label="Streak Bonuses"
+                checked={value.sessionOptions.streakBonusEnabled ?? false}
+                onChange={(v) =>
+                  onChange({
+                    ...value,
+                    sessionOptions: {
+                      ...value.sessionOptions,
+                      streakBonusEnabled: v,
+                    },
+                  })
+                }
+                hint="Multiplier for consecutive correct answers"
+              />
+              <ToggleRow
+                compact
+                label="Podium Between Questions"
+                checked={
+                  value.sessionOptions.showPodiumBetweenQuestions ?? false
+                }
+                onChange={(v) =>
+                  onChange({
+                    ...value,
+                    sessionOptions: {
+                      ...value.sessionOptions,
+                      showPodiumBetweenQuestions: v,
+                    },
+                  })
+                }
+                hint="Show top 3 leaderboard after each question"
+              />
+              <ToggleRow
+                compact
+                label="Sound Effects"
+                checked={value.sessionOptions.soundEffectsEnabled ?? false}
+                onChange={(v) =>
+                  onChange({
+                    ...value,
+                    sessionOptions: {
+                      ...value.sessionOptions,
+                      soundEffectsEnabled: v,
+                    },
+                  })
+                }
+                hint="Chimes, ticks, and fanfares during the quiz"
+              />
+            </CollapsibleSection>
+          </>
         }
       />
     </>

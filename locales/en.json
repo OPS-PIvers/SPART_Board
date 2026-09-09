@@ -2046,7 +2046,8 @@
       "rubricSwaps_other": "{{count}} rubric swaps",
       "tabWarningsOff": "Tab warnings off",
       "tabWarning": "Tab warning: {{threshold}}",
-      "windowShifted": "Window shifted"
+      "windowShifted": "Window shifted",
+      "readAloud": "Read aloud"
     }
   },
   "assignTargeting": {
@@ -2135,6 +2136,41 @@
       "notGradedYet": "Not graded yet",
       "barLabel": "Average score {{pct}}%"
     }
+  },
+  "quizReadAloud": {
+    "label": "Read aloud",
+    "help": "Signed-in students only.",
+    "sectionLabel": "Read aloud",
+    "languageLabel": "Language",
+    "languageTagLabel": "Language tag",
+    "languageOther": "Other…",
+    "languageHelp": "Picks the voice used when this quiz is read aloud.",
+    "readQuestion": "Read question",
+    "readPrompt": "Read question aloud",
+    "readChoice": "Read choice {{n}} aloud",
+    "readItem": "Read item aloud",
+    "stop": "Stop",
+    "speed": "Speed {{rate}}",
+    "autoRead": "Auto-read",
+    "loadError": "Couldn't load audio. Tap to try again.",
+    "unavailable": "Read-aloud isn't available right now.",
+    "preparing": "Preparing read-aloud…",
+    "partial": "Some audio will load on demand.",
+    "previewVoice": "Preview voice",
+    "readPassage": "Read passage aloud",
+    "passage": "Passage",
+    "stimulusText": "Read-aloud text",
+    "stimulusTextPlaceholder": "Text students hear for this stimulus",
+    "sourcePdfText": "PDF text",
+    "sourceOcr": "OCR",
+    "sourceEdited": "Edited",
+    "sourceNone": "None",
+    "extract": "Extract text",
+    "extracting": "Extracting…",
+    "clear": "Clear",
+    "readingHelp": "Leave empty on reading assessments.",
+    "needsManual": "Couldn't extract text automatically. Paste or type it here.",
+    "extractFailed": "Text extraction failed. Try again."
   },
   "quizMediaResponse": {
     "notice": {

@@ -139,6 +139,13 @@ export const getOrgUserActivity = onCall<OrgUserActivityPayload>(
         'Caller must have a verified email.'
       );
     }
+    // Unverified claims can't prove ownership of the caller's address (email/password sign-in allows a self-reported one) — same rail as resolveOrgForUser.ts / isAdmin().
+    if (request.auth.token.email_verified !== true) {
+      throw new HttpsError(
+        'permission-denied',
+        'Caller email must be verified.'
+      );
+    }
     const callerEmailLower = callerEmail.toLowerCase();
 
     const { orgId } = parsePayload(request.data);

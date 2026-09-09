@@ -42,6 +42,10 @@ let sessionDoc: { exists: boolean; data: () => unknown };
 let contextDoc: { exists: boolean; data: () => unknown };
 // The caller's own ClassLink rosters' classlinkClassIds (suggest ownership gate).
 let ownedRosters: string[] = [];
+// The caller's own admin test-class slugs (mock ClassLink rosters).
+let ownedTestClasses: string[] = [];
+// The caller's own seen-section docs, keyed by contextId.
+const seenSections = new Map<string, { sessionId: string }>();
 const courseLinks = new Map<string, Record<string, unknown>>();
 
 vi.mock('firebase-admin', () => ({
@@ -68,10 +72,24 @@ vi.mock('firebase-admin', () => ({
         return {
           doc: () => ({
             collection: () => ({
+              doc: (ctx: string) => ({
+                get: async () => ({
+                  exists: seenSections.has(ctx),
+                  data: () => seenSections.get(ctx),
+                }),
+                delete: async () => {
+                  seenSections.delete(ctx);
+                },
+              }),
               get: async () => ({
-                docs: ownedRosters.map((cid) => ({
-                  data: () => ({ classlinkClassId: cid }),
-                })),
+                docs: [
+                  ...ownedRosters.map((cid) => ({
+                    data: () => ({ classlinkClassId: cid }),
+                  })),
+                  ...ownedTestClasses.map((tid) => ({
+                    data: () => ({ testClassId: tid }),
+                  })),
+                ],
               }),
             }),
           }),
@@ -186,6 +204,8 @@ beforeEach(() => {
   // Classes the caller owns (link verifies ownership; suggest intersects). Covers
   // both the link tests' ids (cl-1, cl-new) and the suggest candidates (cl-A/B).
   ownedRosters = ['cl-1', 'cl-new', 'cl-A', 'cl-B'];
+  ownedTestClasses = ['mock-p1'];
+  seenSections.clear();
   courseLinks.clear();
   fetchNrpsMembersMock.mockReset();
   fetchClassStudentsMock.mockReset();
@@ -217,6 +237,22 @@ describe('linkLtiCourseV1', () => {
     );
   });
 
+  it("drops the caller's own stale seen-section record when its session is gone", async () => {
+    seenSections.set('ctx-1', { sessionId: 'S1' });
+    await expect(callLink({ auth: TEACHER, data: base })).rejects.toThrow(
+      /launch record is out of date/
+    );
+    expect(seenSections.has('ctx-1')).toBe(false);
+  });
+
+  it("keeps the opaque error for a missing session the caller's record does not name", async () => {
+    seenSections.set('ctx-1', { sessionId: 'S-other' });
+    await expect(callLink({ auth: TEACHER, data: base })).rejects.toThrow(
+      /Not the teacher/
+    );
+    expect(seenSections.has('ctx-1')).toBe(true);
+  });
+
   it('rejects when the session never saw this context', async () => {
     sessionDoc = { exists: true, data: () => ({ teacherUid: 'teacher-1' }) };
     contextDoc = { exists: false, data: () => undefined };
@@ -233,6 +269,47 @@ describe('linkLtiCourseV1', () => {
         data: { ...base, classlinkClassId: 'cl-someone-elses' },
       })
     ).rejects.toThrow(/your own ClassLink classes/);
+  });
+
+  it('links an owned admin test class, storing classlinkClassId: null for the bridge', async () => {
+    seenSession();
+    const res = await callLink({
+      auth: TEACHER,
+      data: {
+        ...base,
+        classlinkClassId: undefined,
+        classlinkOrgId: undefined,
+        testClassId: 'mock-p1',
+        rosterId: 'r-test',
+      },
+    });
+    expect(res).toEqual({ ok: true, contextId: 'ctx-1' });
+    expect(courseLinks.get('ctx-1')).toMatchObject({
+      classlinkClassId: null,
+      testClassId: 'mock-p1',
+      rosterId: 'r-test',
+    });
+    expect(dropLinkedSectionPeriodMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        classlinkClassId: 'mock-p1',
+        rosterId: 'r-test',
+      })
+    );
+  });
+
+  it('rejects a testClassId the caller does not own, and both ids at once', async () => {
+    seenSession();
+    await expect(
+      callLink({
+        auth: TEACHER,
+        data: { ...base, classlinkClassId: undefined, testClassId: 'not-mine' },
+      })
+    ).rejects.toThrow(/your own test classes/);
+    await expect(
+      callLink({ auth: TEACHER, data: { ...base, testClassId: 'mock-p1' } })
+    ).rejects.toThrow(/exactly one of/);
+    expect(courseLinks.size).toBe(0);
   });
 
   it('writes the link doc (captured title + paired class) on success', async () => {

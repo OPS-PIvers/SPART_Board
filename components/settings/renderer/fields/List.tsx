@@ -20,20 +20,27 @@ const ListImpl: React.FC<FieldProps> = ({
   ctx,
   renderRow,
 }) => {
-  // Positional ids: an edit replaces the row object, so identity keys would remount the row and drop focus.
-  const positionalIds = useRef<string[]>([]);
+  // Keyed by object identity, not array index, so remove/reorder can't steal another row's focus.
+  const rowIds = useRef(new WeakMap<Row, string>());
+  // Primitive rows (malformed/legacy) can't key a WeakMap, so hold them by value — equal primitives share an id, which nothing can distinguish anyway.
+  const primitiveRowIds = useRef(new Map<unknown, string>());
   const rows = Array.isArray(value) ? (value as Row[]) : [];
-  while (positionalIds.current.length < rows.length) {
-    positionalIds.current.push(`row-${rowIdCounter++}`);
-  }
-  if (positionalIds.current.length > rows.length) {
-    positionalIds.current.length = rows.length;
-  }
 
-  const getRowId = (row: Row, index: number): string =>
-    typeof row.id === 'string' && row.id
-      ? row.id
-      : (positionalIds.current[index] ?? `row-${index}`);
+  const getRowId = (row: Row): string => {
+    if (row === null || typeof row !== 'object') {
+      const cached = primitiveRowIds.current.get(row);
+      if (cached) return cached;
+      const minted = `row-${rowIdCounter++}`;
+      primitiveRowIds.current.set(row, minted);
+      return minted;
+    }
+    if (typeof row.id === 'string' && row.id) return row.id;
+    const existing = rowIds.current.get(row);
+    if (existing) return existing;
+    const fresh = `row-${rowIdCounter++}`;
+    rowIds.current.set(row, fresh);
+    return fresh;
+  };
 
   if (field.type !== 'list') return null;
   const listField = field as ListField<string>;
@@ -52,6 +59,14 @@ const ListImpl: React.FC<FieldProps> = ({
   };
 
   const handleRowChange = (index: number, nextRow: Row) => {
+    if (
+      nextRow !== rows[index] &&
+      nextRow !== null &&
+      typeof nextRow === 'object' &&
+      !(typeof nextRow.id === 'string' && nextRow.id)
+    ) {
+      rowIds.current.set(nextRow, getRowId(rows[index]));
+    }
     onChange(rows.map((row, i) => (i === index ? nextRow : row)));
   };
 
@@ -112,14 +127,12 @@ const ListImpl: React.FC<FieldProps> = ({
       {sortable ? (
         <SortableList
           items={rows}
-          getId={(item) => getRowId(item, rows.indexOf(item))}
+          getId={(item) => getRowId(item)}
           onReorder={(next) => onChange(next)}
           renderItem={(item, dragHandle, index) => row(item, index, dragHandle)}
         />
       ) : (
-        rows.map((r, index) => (
-          <div key={getRowId(r, index)}>{row(r, index)}</div>
-        ))
+        rows.map((r, index) => <div key={getRowId(r)}>{row(r, index)}</div>)
       )}
       <button
         type="button"

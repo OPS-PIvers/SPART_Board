@@ -196,6 +196,7 @@ export const PlcAssignmentsInProgressSubTab: React.FC<
           ...(canonical.stimuli && canonical.stimuli.length > 0
             ? { stimuli: structuredClone(canonical.stimuli) }
             : {}),
+          ...(canonical.language ? { language: canonical.language } : {}),
           createdAt: now,
           updatedAt: now,
         };
@@ -230,6 +231,7 @@ export const PlcAssignmentsInProgressSubTab: React.FC<
             ...(canonical.stimuli && canonical.stimuli.length > 0
               ? { stimuli: canonical.stimuli }
               : {}),
+            ...(canonical.language ? { language: canonical.language } : {}),
           },
           {
             ...behavior,

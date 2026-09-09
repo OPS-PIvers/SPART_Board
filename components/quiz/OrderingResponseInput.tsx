@@ -22,8 +22,12 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { QuizPublicQuestion } from '@/types';
 import { useResetOnChange } from '@/hooks/useResetOnChange';
+import { ReadAloudButton } from './readAloud/ReadAloudButton';
+import { READ_ALOUD_HIGHLIGHT_CLASS } from './readAloud/readAloudHighlight';
+import type { ReadAloudItemControls } from './readAloud/useQuizReadAloud';
 
 interface OrderingResponseInputProps {
   question: QuizPublicQuestion;
@@ -31,6 +35,8 @@ interface OrderingResponseInputProps {
   onChange: (answer: string) => void;
   disabled?: boolean;
   light?: boolean;
+  /** D8 speaker beside every item; absent when read-aloud is off. */
+  readAloud?: ReadAloudItemControls;
 }
 
 const BANK_ID = '__bank__';
@@ -101,6 +107,8 @@ const Slot: React.FC<{
   downDisabled: boolean;
   disabled?: boolean;
   light?: boolean;
+  speaker?: React.ReactNode;
+  highlighted?: boolean;
 }> = ({
   id,
   index,
@@ -113,6 +121,8 @@ const Slot: React.FC<{
   downDisabled,
   disabled,
   light,
+  speaker,
+  highlighted,
 }) => {
   const { isOver, setNodeRef } = useDroppable({ id, disabled });
   const {
@@ -130,7 +140,10 @@ const Slot: React.FC<{
     : {};
   const slotPosition = `position ${index + 1}`;
   return (
-    <div ref={setNodeRef} className="flex items-center gap-2">
+    <div
+      ref={setNodeRef}
+      className={`flex items-center gap-2 rounded-xl ${highlighted ? READ_ALOUD_HIGHLIGHT_CLASS : ''}`}
+    >
       <span
         className={`font-black text-sm w-6 shrink-0 text-center ${light ? 'text-brand-blue-primary' : 'text-violet-400'}`}
       >
@@ -185,6 +198,7 @@ const Slot: React.FC<{
           Drop here
         </button>
       )}
+      {filledLabel ? speaker : null}
       <div className="flex flex-col">
         <button
           type="button"
@@ -215,7 +229,20 @@ export const OrderingResponseInput: React.FC<OrderingResponseInputProps> = ({
   onChange,
   disabled,
   light,
+  readAloud,
 }) => {
+  const { t } = useTranslation();
+  const speaker = (text: string) =>
+    readAloud ? (
+      <ReadAloudButton
+        label={t('quizReadAloud.readItem', 'Read item aloud')}
+        status={readAloud.status('orderingItem', text)}
+        onClick={() => readAloud.play('orderingItem', text)}
+        onStop={readAloud.stop}
+      />
+    ) : null;
+  const isHighlighted = (text: string) =>
+    readAloud?.highlighted('orderingItem', text) === true;
   const items = React.useMemo<string[]>(
     () => question.orderingItems ?? [],
     [question.orderingItems]
@@ -435,6 +462,8 @@ export const OrderingResponseInput: React.FC<OrderingResponseInputProps> = ({
                 downDisabled={i === slots.length - 1}
                 disabled={disabled}
                 light={light}
+                speaker={label ? speaker(label) : null}
+                highlighted={label ? isHighlighted(label) : false}
               />
             );
           })}
@@ -469,16 +498,21 @@ export const OrderingResponseInput: React.FC<OrderingResponseInputProps> = ({
                 selectedSource?.kind === 'bank' &&
                 selectedSource.itemIndex === itemIndex;
               return (
-                <DraggableChip
+                <span
                   key={itemIndex}
-                  id={`bank-${itemIndex}`}
-                  label={items[itemIndex]}
-                  selected={selected}
-                  disabled={disabled}
-                  onTap={() => handleBankChipTap(itemIndex)}
-                  ariaLabel={`${items[itemIndex]}, in word bank`}
-                  light={light}
-                />
+                  className={`inline-flex items-center gap-1 rounded-xl ${isHighlighted(items[itemIndex]) ? READ_ALOUD_HIGHLIGHT_CLASS : ''}`}
+                >
+                  <DraggableChip
+                    id={`bank-${itemIndex}`}
+                    label={items[itemIndex]}
+                    selected={selected}
+                    disabled={disabled}
+                    onTap={() => handleBankChipTap(itemIndex)}
+                    ariaLabel={`${items[itemIndex]}, in word bank`}
+                    light={light}
+                  />
+                  {speaker(items[itemIndex])}
+                </span>
               );
             })}
           </div>

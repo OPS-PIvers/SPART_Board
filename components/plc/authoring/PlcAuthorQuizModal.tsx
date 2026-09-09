@@ -56,6 +56,7 @@ export const PlcAuthorQuizModal: React.FC<PlcAuthorQuizModalProps> = ({
         driveFileId: metadata.driveFileId,
         questions: quiz.questions,
         ...(quiz.stimuli ? { stimuli: quiz.stimuli } : {}),
+        ...(quiz.language ? { language: quiz.language } : {}),
       };
       setQuizRef(ref);
       setSavedBehavior(behavior);

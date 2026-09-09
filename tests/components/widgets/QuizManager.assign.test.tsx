@@ -864,3 +864,60 @@ describe('QuizManager assign — destination chooser (Phase 2)', () => {
     expect(onAssign).not.toHaveBeenCalled();
   });
 });
+
+describe('QuizManager assign — behavior seeded from the latest quiz doc', () => {
+  it('uses settings saved after the library rendered (same id, changed body)', async () => {
+    const onAssign = vi.fn() as unknown as React.ComponentProps<
+      typeof QuizManager
+    >['onAssign'];
+    const props = {
+      loading: false,
+      error: null,
+      onNew: vi.fn(),
+      onImport: vi.fn(),
+      onEdit: vi.fn(),
+      onPreview: vi.fn(),
+      onAssign,
+      onResults: vi.fn(),
+      onDelete: vi.fn(),
+      onShare: vi.fn(),
+      rosters: ROSTERS,
+      config: BASE_CONFIG,
+      managerTab: 'library' as const,
+    };
+    const before = makeQuizMeta({
+      behavior: { ...DEFAULT_QUIZ_BEHAVIOR, sessionMode: 'student' },
+    });
+    const { rerender } = render(<QuizManager quizzes={[before]} {...props} />);
+    await screen.findByRole('button', { name: /^assign$/i });
+
+    // The teacher saves the quiz's Settings tab: Firestore re-emits the same
+    // quiz id with a new body while the library stays mounted.
+    const after = makeQuizMeta({
+      updatedAt: 3000,
+      behavior: {
+        ...DEFAULT_QUIZ_BEHAVIOR,
+        sessionMode: 'student',
+        sessionOptions: {
+          ...DEFAULT_QUIZ_BEHAVIOR.sessionOptions,
+          readAloudAll: true,
+        },
+      },
+    });
+    rerender(<QuizManager quizzes={[after]} {...props} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /^assign$/i }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /SpartBoard Only/i })
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: /chapter 5 review/i,
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: /^assign$/i }));
+
+    await waitFor(() => expect(onAssign).toHaveBeenCalledOnce());
+    const behavior = (onAssign as ReturnType<typeof vi.fn>).mock
+      .calls[0][1] as QuizBehaviorSettings;
+    expect(behavior.sessionOptions.readAloudAll).toBe(true);
+  });
+});

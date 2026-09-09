@@ -23,6 +23,7 @@ const GEMINI_SPECIFIC_FEATURES = [
   'instructional-routine',
   'widget-builder',
   'widget-explainer',
+  'tts',
 ] as const;
 
 describe('AI_FEATURE_LABELS', () => {

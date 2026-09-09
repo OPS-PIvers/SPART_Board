@@ -562,10 +562,22 @@ export async function isQuizMediaResponseGranted(
   teacherEmail: string | null,
   teacherUid: string
 ): Promise<boolean> {
-  const snap = await db
-    .collection('global_permissions')
-    .doc(QUIZ_MEDIA_FEATURE_ID)
-    .get();
+  return isGlobalFeatureGranted(
+    db,
+    QUIZ_MEDIA_FEATURE_ID,
+    teacherEmail,
+    teacherUid
+  );
+}
+
+/** Same fail-closed gate for any `global_permissions/{featureId}` record. */
+export async function isGlobalFeatureGranted(
+  db: Firestore,
+  featureId: string,
+  teacherEmail: string | null,
+  teacherUid: string
+): Promise<boolean> {
+  const snap = await db.collection('global_permissions').doc(featureId).get();
   if (!snap.exists) return false;
   const data = snap.data() ?? {};
   if (data.enabled !== true) return false;

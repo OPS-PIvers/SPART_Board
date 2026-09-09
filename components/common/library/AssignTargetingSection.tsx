@@ -87,6 +87,8 @@ export interface AssignTargetingSectionProps {
   showDueAt?: boolean;
   /** Present only for quiz consumers — unlocks question subset / MC hider / rubric swap in B2 rows. */
   quizContext?: AssignTargetingQuizContext;
+  /** Quiz only. Host passes `canAccessFeature('quiz-read-aloud')`. */
+  readAloudAvailable?: boolean;
   /**
    * Fired on first expansion into 'students' mode (F1 fix — the host lazily
    * loads full quiz content only when the teacher actually opens this
@@ -189,6 +191,7 @@ export const AssignTargetingSection: React.FC<AssignTargetingSectionProps> = ({
   kind,
   showDueAt = false,
   quizContext,
+  readAloudAvailable = false,
   onExpand,
 }) => {
   const { t } = useTranslation();
@@ -363,6 +366,7 @@ export const AssignTargetingSection: React.FC<AssignTargetingSectionProps> = ({
                       override={value.overridesByKey[row.key] ?? {}}
                       onChange={(next) => setOverrideForKey(row.key, next)}
                       quizMode={kind === 'quiz'}
+                      readAloudAvailable={readAloudAvailable}
                       questions={quizContext?.questions ?? []}
                       rubrics={quizContext?.rubrics ?? []}
                       peers={peers}

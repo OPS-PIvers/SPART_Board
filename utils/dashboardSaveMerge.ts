@@ -68,7 +68,7 @@ export const serializeDashboardField = (value: unknown): string =>
 const configChanged = (a: WidgetData, b: WidgetData) =>
   a.version !== undefined && b.version !== undefined
     ? a.version !== b.version
-    : JSON.stringify(a.config) !== JSON.stringify(b.config);
+    : stableStringify(a.config) !== stableStringify(b.config);
 
 const pick = (w: WidgetData, fields: readonly MergeFieldKey[]) => {
   const out: Record<string, unknown> = {};
@@ -93,7 +93,7 @@ const mergeWidget = (
     ? {}
     : pick(server, LAYOUT_FIELDS)),
   ...(anyChanged(local, base, STYLE_FIELDS) ? {} : pick(server, STYLE_FIELDS)),
-  ...(JSON.stringify(local.annotation) === JSON.stringify(base.annotation)
+  ...(stableStringify(local.annotation) === stableStringify(base.annotation)
     ? { annotation: server.annotation }
     : {}),
 });

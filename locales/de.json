@@ -1858,7 +1858,8 @@
       "rubricSwaps_other": "{{count}} Rasterwechsel",
       "tabWarningsOff": "Tab-Warnungen aus",
       "tabWarning": "Tab-Warnung: {{threshold}}",
-      "windowShifted": "Zeitfenster verschoben"
+      "windowShifted": "Zeitfenster verschoben",
+      "readAloud": "Vorlesen"
     }
   },
   "assignTargeting": {
@@ -1947,6 +1948,41 @@
       "notGradedYet": "Noch nicht bewertet",
       "barLabel": "Durchschnittliche Punktzahl {{pct}} %"
     }
+  },
+  "quizReadAloud": {
+    "label": "Vorlesen",
+    "help": "Nur für angemeldete Schüler.",
+    "sectionLabel": "Vorlesen",
+    "languageLabel": "Sprache",
+    "languageTagLabel": "Sprachcode",
+    "languageOther": "Andere…",
+    "languageHelp": "Legt die Stimme fest, mit der dieses Quiz vorgelesen wird.",
+    "readQuestion": "Frage vorlesen",
+    "readPrompt": "Frage vorlesen",
+    "readChoice": "Antwort {{n}} vorlesen",
+    "readItem": "Element vorlesen",
+    "stop": "Stopp",
+    "speed": "Tempo {{rate}}",
+    "autoRead": "Automatisch vorlesen",
+    "loadError": "Audio konnte nicht geladen werden. Zum Wiederholen tippen.",
+    "unavailable": "Vorlesen ist derzeit nicht verfügbar.",
+    "preparing": "Vorlesen wird vorbereitet…",
+    "partial": "Ein Teil des Audios wird bei Bedarf geladen.",
+    "previewVoice": "Stimme anhören",
+    "readPassage": "Textpassage vorlesen",
+    "passage": "Textpassage",
+    "stimulusText": "Vorlesetext",
+    "stimulusTextPlaceholder": "Text, den Lernende zu diesem Material hören",
+    "sourcePdfText": "PDF-Text",
+    "sourceOcr": "OCR",
+    "sourceEdited": "Bearbeitet",
+    "sourceNone": "Keiner",
+    "extract": "Text extrahieren",
+    "extracting": "Wird extrahiert…",
+    "clear": "Leeren",
+    "readingHelp": "Bei Leseprüfungen leer lassen.",
+    "needsManual": "Der Text konnte nicht automatisch extrahiert werden. Hier einfügen oder eingeben.",
+    "extractFailed": "Textextraktion fehlgeschlagen. Bitte erneut versuchen."
   },
   "quizMediaResponse": {
     "notice": {

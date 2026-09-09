@@ -79,22 +79,24 @@ const flattenFolders = (folders: LibraryFolder[]): FlatNode[] => {
 
   const knownIds = new Set(folders.map((f) => f.id));
   const out: FlatNode[] = [];
+  const visited = new Set<string>();
   const walk = (parentId: string | null, depth: number): void => {
     const children = byParent.get(parentId) ?? [];
     for (const child of children) {
+      if (visited.has(child.id)) continue;
+      visited.add(child.id);
       out.push({ id: child.id, name: child.name, depth });
       walk(child.id, depth + 1);
     }
   };
   walk(null, 0);
 
-  // Surface any orphan folders (parent id is not in our set) at the root
-  // so they're still pickable instead of silently hidden.
+  // Surface orphan folders (parent id not in our set) and their subtree at the root, instead of hiding them.
   for (const f of folders) {
-    if (f.parentId != null && !knownIds.has(f.parentId)) {
-      if (!out.some((n) => n.id === f.id)) {
-        out.push({ id: f.id, name: f.name, depth: 0 });
-      }
+    if (f.parentId != null && !knownIds.has(f.parentId) && !visited.has(f.id)) {
+      visited.add(f.id);
+      out.push({ id: f.id, name: f.name, depth: 0 });
+      walk(f.id, 1);
     }
   }
 

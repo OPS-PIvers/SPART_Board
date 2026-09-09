@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ScheduleConfigurationPanel } from './ScheduleConfigurationPanel';
 import { ScheduleGlobalConfig } from '@/types';
+import type { Building } from '@/config/buildings';
 
 // The panel reads its building list from `useAdminBuildings()`, which returns
 // `[]` for a no-org/provider-less render. An admin always has an org in real
 // usage, so mock the hook to supply the building list the panel renders.
+// It can also return a legacy long-form building doc id (e.g.
+// `orono-high-school`) when an org's building record predates the short-id
+// migration — see config/buildings.ts's BUILDING_ID_ALIASES.
+const mockUseAdminBuildings = vi.fn<() => Building[]>(() => [
+  { id: 'b1', name: 'Building 1', gradeLevels: [], gradeLabel: '' },
+  { id: 'b2', name: 'Building 2', gradeLevels: [], gradeLabel: '' },
+]);
 vi.mock('@/hooks/useAdminBuildings', () => ({
-  useAdminBuildings: () => [
-    { id: 'b1', name: 'Building 1', gradeLevels: [], gradeLabel: '' },
-    { id: 'b2', name: 'Building 2', gradeLevels: [], gradeLabel: '' },
-  ],
+  useAdminBuildings: () => mockUseAdminBuildings(),
 }));
 
 describe('ScheduleConfigurationPanel', () => {
@@ -44,6 +49,13 @@ describe('ScheduleConfigurationPanel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    mockUseAdminBuildings.mockReturnValue([
+      { id: 'b1', name: 'Building 1', gradeLevels: [], gradeLabel: '' },
+      { id: 'b2', name: 'Building 2', gradeLevels: [], gradeLabel: '' },
+    ]);
   });
 
   it('renders correctly with initial config', () => {
@@ -152,5 +164,63 @@ describe('ScheduleConfigurationPanel', () => {
       })
     ).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Test Schedule')).not.toBeInTheDocument();
+  });
+
+  it('finds buildingDefaults saved under the canonical id when the org building record resolves to a legacy raw id', () => {
+    // Saved config is canonically keyed ('high'), but this org's building
+    // doc still resolves to the legacy long-form id.
+    mockUseAdminBuildings.mockReturnValue([
+      {
+        id: 'orono-high-school',
+        name: 'Orono High',
+        gradeLevels: [],
+        gradeLabel: '',
+      },
+    ]);
+
+    const config: ScheduleGlobalConfig = {
+      buildingDefaults: {
+        high: {
+          buildingId: 'high',
+          items: [],
+          schedules: [
+            { id: 's1', name: 'Legacy-Keyed Schedule', items: [], days: [] },
+          ],
+        },
+      },
+    };
+
+    render(
+      <ScheduleConfigurationPanel config={config} onChange={mockOnChange} />
+    );
+
+    // If the lookup missed (raw-id bug), the saved schedule would be invisible.
+    expect(
+      screen.getByDisplayValue('Legacy-Keyed Schedule')
+    ).toBeInTheDocument();
+  });
+
+  it('saves building defaults under the canonical building id, not the legacy raw id', () => {
+    mockUseAdminBuildings.mockReturnValue([
+      {
+        id: 'orono-high-school',
+        name: 'Orono High',
+        gradeLevels: [],
+        gradeLabel: '',
+      },
+    ]);
+
+    const config: ScheduleGlobalConfig = { buildingDefaults: {} };
+
+    render(
+      <ScheduleConfigurationPanel config={config} onChange={mockOnChange} />
+    );
+
+    fireEvent.click(screen.getByText('Add Schedule'));
+
+    expect(mockOnChange).toHaveBeenCalledTimes(1);
+    const updated = mockOnChange.mock.calls[0][0] as ScheduleGlobalConfig;
+    expect(updated.buildingDefaults.high?.schedules).toHaveLength(1);
+    expect(updated.buildingDefaults['orono-high-school']).toBeUndefined();
   });
 });

@@ -32,6 +32,7 @@ import {
 import { StimulusManagerPanel } from './StimulusManagerPanel';
 import { useQuizEditorState } from './useQuizEditorState';
 import { DEFAULT_QUIZ_BEHAVIOR } from '@/utils/quizBehavior';
+import { QuizLanguageField } from './QuizLanguageField';
 import { sanitizeStimulusPointers } from '@/utils/quizStimuli';
 
 interface QuizEditorModalProps {
@@ -177,6 +178,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
 }) => {
   const { canAccessFeature } = useAuth();
   const aiEnabled = canAccessFeature('gemini-functions');
+  const readAloudAvailable = canAccessFeature('quiz-read-aloud');
 
   const editorState = useQuizEditorState({ quiz });
 
@@ -184,6 +186,8 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
     title,
     questions,
     stimuli,
+    language,
+    setLanguage,
     saving,
     setSaving,
     setError,
@@ -192,6 +196,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
     originalTitle,
     originalQuestions,
     originalStimuli,
+    originalLanguage,
   } = editorState;
 
   // ─── Behavior settings state ─────────────────────────────────────────────
@@ -222,6 +227,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
   const isDirty = useMemo(
     () =>
       title !== originalTitle ||
+      language !== originalLanguage ||
       !(
         questions === originalQuestions ||
         questionsEqual(questions, originalQuestions)
@@ -233,6 +239,8 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
     [
       title,
       originalTitle,
+      language,
+      originalLanguage,
       questions,
       originalQuestions,
       stimuli,
@@ -282,6 +290,7 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
           title: title.trim(),
           questions: cleanQuestions,
           ...(stimuli.length > 0 ? { stimuli } : { stimuli: undefined }),
+          ...(language ? { language } : { language: undefined }),
           updatedAt: Date.now(),
         },
         behavior
@@ -366,12 +375,19 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
               }
             />
           ) : editorTab === 'stimuli' ? (
-            <StimulusManagerPanel state={editorState} />
+            <StimulusManagerPanel
+              state={editorState}
+              readAloudAvailable={readAloudAvailable}
+            />
           ) : (
             <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50 px-5 py-5 space-y-5">
+              {readAloudAvailable && (
+                <QuizLanguageField value={language} onChange={setLanguage} />
+              )}
               <QuizBehaviorSettingsPanel
                 value={behavior}
                 onChange={setBehavior}
+                readAloudAvailable={readAloudAvailable}
               />
             </div>
           )}
