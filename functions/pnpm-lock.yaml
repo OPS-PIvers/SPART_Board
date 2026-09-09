@@ -18,6 +18,9 @@ importers:
       '@google-cloud/functions-framework':
         specifier: ^5.0.0
         version: 5.0.0
+      '@google-cloud/text-to-speech':
+        specifier: ^7.1.0
+        version: 7.1.0
       '@google/genai':
         specifier: ^1.51.0
         version: 1.51.0
@@ -320,6 +323,10 @@ packages:
   '@google-cloud/storage@7.18.0':
     resolution: {integrity: sha512-r3ZwDMiz4nwW6R922Z1pwpePxyRwE5GdevYX63hRmAQUkUQJcBH/79EnQPDv5cOv1mFBgevdNWQfi3tie3dHrQ==}
     engines: {node: '>=14'}
+
+  '@google-cloud/text-to-speech@7.1.0':
+    resolution: {integrity: sha512-BypyZAl8//FF6u+qOKTDV87XljjuDTyfsZT4ttrEdnO2Jt66xsoOkEvioJ+FM144M3B4iIcE0ZThKoGdtdfIng==}
+    engines: {node: '>=22'}
 
   '@google/genai@1.51.0':
     resolution: {integrity: sha512-vTZZF3CSimN7cn2zsLpW2p5WF0eZa5Gz69ITMPCNHpPrDlAstOfGifSfi0p/s9Z9400f7xJRkgvkQNrcM7pJ6w==}
@@ -1506,6 +1513,10 @@ packages:
     resolution: {integrity: sha512-YGGyuEdVIjqxkxVH1pUTMY/XtmmsApXrCVv5EU25iX6inEPbV+VakJfLealkBtJN69AQmh1eGOdCl9Sm1UP6XQ==}
     engines: {node: '>=18'}
 
+  gaxios@7.3.1:
+    resolution: {integrity: sha512-kB3rzJV7d9juLZh8/56QTXCwQfxyhdOMdyYk1HdQKFtF8TJTDTZQJtixWIwXdE9Jji91mC41DUNpjleo4L4eAQ==}
+    engines: {node: '>=18'}
+
   gcp-metadata@6.1.1:
     resolution: {integrity: sha512-a4tiq7E0/5fTjxPAaH4jpjkSv/uCaU2p5KC6HVGrvl0cDjA8iBZv4vv1gyzlmK0ZUKqwpOyQMKzZQe3lTit77A==}
     engines: {node: '>=14'}
@@ -1513,6 +1524,10 @@ packages:
   gcp-metadata@8.1.2:
     resolution: {integrity: sha512-zV/5HKTfCeKWnxG0Dmrw51hEWFGfcF2xiXqcA3+J90WDuP0SvoiSO5ORvcBsifmx/FoIjgQN3oNOGaQ5PhLFkg==}
     engines: {node: '>=18'}
+
+  gcp-metadata@9.0.3:
+    resolution: {integrity: sha512-2YYnIlHaKBGT2IPg3G2M57hia9Galz15zsEOvw9T3oRf0lSn6KN6VcHQLqby7x8ksYKnjXvp3rp2KJyLCN6zfQ==}
+    engines: {node: '>=22'}
 
   generator-function@2.0.1:
     resolution: {integrity: sha512-SFdFmIJi+ybC0vjlHN0ZGVGHc3lgE0DxPAT0djjVg+kjOnSqclqmj0KQ7ykTOLP6YxoqOvuAODGdcHJn+43q3g==}
@@ -1555,6 +1570,10 @@ packages:
     resolution: {integrity: sha512-7ABviyMOlX5hIVD60YOfHw4/CxOfBhyduaYB+wbFWCWoni4N7SLcV46hrVRktuBbZjFC9ONyqamZITN7q3n32w==}
     engines: {node: '>=18'}
 
+  google-auth-library@11.0.2:
+    resolution: {integrity: sha512-vzpgPutxrghPsnjrjpzLX2bdv8IOL719Rh0oEjGnQu8YCIbnbMuTTQ5zU9LcKvLdOPgCxBwppbvnhgW90Qna5Q==}
+    engines: {node: '>=22'}
+
   google-auth-library@9.15.1:
     resolution: {integrity: sha512-Jb6Z0+nvECVz+2lzSMt9u98UsoakXxA2HGHMCxh+so3n90XgYWkq5dur19JAJV7ONiJY22yBTyJB1TSkvPq9Ng==}
     engines: {node: '>=14'}
@@ -1563,6 +1582,10 @@ packages:
     resolution: {integrity: sha512-V6eky/xz2mcKfAd1Ioxyd6nmA61gao3n01C+YeuIwu3vzM9EDR6wcVzMSIbLMDXWeoi9SHYctXuKYC5uJUT3eQ==}
     engines: {node: '>=14'}
 
+  google-gax@6.2.0:
+    resolution: {integrity: sha512-Ii5SHZBTTD/Sya/RilYA4QwGY+odowapOns67HPQ9uvU0be6CF+owZIyPhuVegpMOqIt6EgeGAIbzw5N31btng==}
+    engines: {node: '>=22'}
+
   google-logging-utils@0.0.2:
     resolution: {integrity: sha512-NEgUnEcBiP5HrPzufUkBzJOD/Sxsco3rLNo1F1TNf7ieU8ryUzBhqba8r756CjLX7rn3fHl6iLEwPYuqpoKgQQ==}
     engines: {node: '>=14'}
@@ -1570,6 +1593,10 @@ packages:
   google-logging-utils@1.1.3:
     resolution: {integrity: sha512-eAmLkjDjAFCVXg7A1unxHsLf961m6y17QFqXqAXGj/gVkKFrEICfStRfwUlGNfeCEjNRa32JEWOUTlYXPyyKvA==}
     engines: {node: '>=14'}
+
+  google-logging-utils@2.0.1:
+    resolution: {integrity: sha512-HMhaQghlOTvbcb3c4T5jmmOMtG3JUF1iOQMezaJXL86CDS+Tm2vHd0IeLFRAx3+ewd+bo9E1HFHoy17X5aJa9A==}
+    engines: {node: '>=22'}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -1629,6 +1656,10 @@ packages:
   http-proxy-agent@5.0.0:
     resolution: {integrity: sha512-n2hY8YdoRE1i7r6M0w9DIw5GgZN0G25P8zLCRQ8rjXtTU3vsNFBI/vWK/UIeE6g5MUUz6avwAPXmL6Fy9D/90w==}
     engines: {node: '>= 6'}
+
+  http-proxy-agent@7.0.2:
+    resolution: {integrity: sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==}
+    engines: {node: '>= 14'}
 
   http-response-object@3.0.2:
     resolution: {integrity: sha512-bqX0XTF6fnXSQcEJ2Iuyr75yVakyjIDCqroJQ/aHfSdlM743Cwqoi2nDYMzLGWUcuTWGWy8AAvOKXTfiv6q9RA==}
@@ -2332,6 +2363,10 @@ packages:
     resolution: {integrity: sha512-SAzp/O4Yh02jGdRc+uIrGoe87dkN/XtwxfZ4ZyafJHymd79ozp5VG5nyZ7ygqPM5+cpLDjjGnYFUkngonyDPOQ==}
     engines: {node: '>=14.0.0'}
 
+  proto3-json-serializer@4.0.2:
+    resolution: {integrity: sha512-VUQlb/J2WjOG8BKhdLwJUz+MKxSMtBGYh+TaNmRtiYVhlIzXjzeAGIx7gtc3lXlA2iURzfF2+cXaQvC2ofwzpg==}
+    engines: {node: '>=22'}
+
   protobufjs@7.5.6:
     resolution: {integrity: sha512-M71sTMB146U3u0di3yup8iM+zv8yPRNQVr1KK4tyBitl3qFvEGucq/rGDRShD2rsJhtN02RJaJ7j5X5hmy8SJg==}
     engines: {node: '>=12.0.0'}
@@ -2393,6 +2428,10 @@ packages:
   retry-request@7.0.2:
     resolution: {integrity: sha512-dUOvLMJ0/JJYEn8NrpOaGNE7X3vpI5XlZS/u0ANjqtcZVKnIxP7IgCFwrKTxENw29emmwug53awKtaMm4i9g5w==}
     engines: {node: '>=14'}
+
+  retry-request@9.0.1:
+    resolution: {integrity: sha512-4kGHEBl0ME6gR+8QB1sPMyg58jUxLUcCZNeqLDrfqzk0eWQN8XJFmeu7fmZCjlZCRW0S2u64Ik1HkO/0sWgCYQ==}
+    engines: {node: '>=22'}
 
   retry@0.13.1:
     resolution: {integrity: sha512-XQBQ3I8W1Cge0Seh+6gjj03LbmRFWuoszgK9ooCpwYIrhhoO80pfq4cUkU5DkknwfOfFteRwlZ56PYOGYyFWdg==}
@@ -2594,6 +2633,10 @@ packages:
   synckit@0.11.12:
     resolution: {integrity: sha512-Bh7QjT8/SuKUIfObSXNHNSK6WHo6J1tHCqJsuaFDP7gP0fkzSfTxI8y85JrppZ0h8l0maIgc2tfuZQ6/t3GtnQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
+
+  teeny-request@11.0.1:
+    resolution: {integrity: sha512-bNr5j2YjSdajgCVsp+8JVjRf1uHIbpNISLeKp/7V1NnVMX3Gh6H/kECNGlm2Q3I68ACODQ0iv6aZ3Rvm8WgLGA==}
+    engines: {node: '>=22'}
 
   teeny-request@9.0.0:
     resolution: {integrity: sha512-resvxdc6Mgb7YEThw6G6bExlXKkv6+YbuzGg9xuXxSgxJF7Ozs+o8Y9+2R3sArdWdW8nOokoQb1yrpFB0pQK2g==}
@@ -3233,6 +3276,12 @@ snapshots:
       - supports-color
     optional: true
 
+  '@google-cloud/text-to-speech@7.1.0':
+    dependencies:
+      google-gax: 6.2.0
+    transitivePeerDependencies:
+      - supports-color
+
   '@google/genai@1.51.0':
     dependencies:
       google-auth-library: 10.5.0
@@ -3248,7 +3297,6 @@ snapshots:
     dependencies:
       '@grpc/proto-loader': 0.8.0
       '@js-sdsl/ordered-map': 4.4.2
-    optional: true
 
   '@grpc/proto-loader@0.7.15':
     dependencies:
@@ -3264,7 +3312,6 @@ snapshots:
       long: 5.3.2
       protobufjs: 7.5.6
       yargs: 17.7.2
-    optional: true
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -3483,8 +3530,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@js-sdsl/ordered-map@4.4.2':
-    optional: true
+  '@js-sdsl/ordered-map@4.4.2': {}
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
@@ -3500,8 +3546,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
-  '@opentelemetry/api@1.9.0':
-    optional: true
+  '@opentelemetry/api@1.9.0': {}
 
   '@oxc-project/types@0.126.0': {}
 
@@ -4217,7 +4262,6 @@ snapshots:
       inherits: 2.0.4
       readable-stream: 3.6.2
       stream-shift: 1.0.3
-    optional: true
 
   eastasianwidth@0.2.0: {}
 
@@ -4240,7 +4284,6 @@ snapshots:
   end-of-stream@1.4.5:
     dependencies:
       once: 1.4.0
-    optional: true
 
   env-paths@2.2.1: {}
 
@@ -4565,6 +4608,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  gaxios@7.3.1:
+    dependencies:
+      extend: 3.0.2
+      https-proxy-agent: 7.0.6
+      node-fetch: 3.3.2
+    transitivePeerDependencies:
+      - supports-color
+
   gcp-metadata@6.1.1:
     dependencies:
       gaxios: 6.7.1
@@ -4578,6 +4629,14 @@ snapshots:
     dependencies:
       gaxios: 7.1.3
       google-logging-utils: 1.1.3
+      json-bigint: 1.0.0
+    transitivePeerDependencies:
+      - supports-color
+
+  gcp-metadata@9.0.3:
+    dependencies:
+      gaxios: 7.3.1
+      google-logging-utils: 2.0.1
       json-bigint: 1.0.0
     transitivePeerDependencies:
       - supports-color
@@ -4640,6 +4699,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  google-auth-library@11.0.2:
+    dependencies:
+      base64-js: 1.5.1
+      ecdsa-sig-formatter: 1.0.11
+      gaxios: 7.3.1
+      gcp-metadata: 9.0.3
+      google-logging-utils: 2.0.1
+      jws: 4.0.1
+    transitivePeerDependencies:
+      - supports-color
+
   google-auth-library@9.15.1:
     dependencies:
       base64-js: 1.5.1
@@ -4671,9 +4741,27 @@ snapshots:
       - supports-color
     optional: true
 
+  google-gax@6.2.0:
+    dependencies:
+      '@grpc/grpc-js': 1.14.3
+      '@grpc/proto-loader': 0.8.0
+      '@opentelemetry/api': 1.9.0
+      duplexify: 4.1.3
+      google-auth-library: 11.0.2
+      google-logging-utils: 2.0.1
+      node-fetch: 3.3.2
+      object-hash: 3.0.0
+      proto3-json-serializer: 4.0.2
+      protobufjs: 7.5.6
+      retry-request: 9.0.1
+    transitivePeerDependencies:
+      - supports-color
+
   google-logging-utils@0.0.2: {}
 
   google-logging-utils@1.1.3: {}
+
+  google-logging-utils@2.0.1: {}
 
   gopd@1.2.0: {}
 
@@ -4741,6 +4829,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
     optional: true
+
+  http-proxy-agent@7.0.2:
+    dependencies:
+      agent-base: 7.1.4
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
 
   http-response-object@3.0.2:
     dependencies:
@@ -5286,8 +5381,7 @@ snapshots:
     dependencies:
       p-locate: 4.1.0
 
-  lodash.camelcase@4.3.0:
-    optional: true
+  lodash.camelcase@4.3.0: {}
 
   lodash.clonedeep@4.5.0: {}
 
@@ -5434,8 +5528,7 @@ snapshots:
 
   object-assign@4.1.1: {}
 
-  object-hash@3.0.0:
-    optional: true
+  object-hash@3.0.0: {}
 
   object-inspect@1.13.4: {}
 
@@ -5543,6 +5636,10 @@ snapshots:
       protobufjs: 7.5.6
     optional: true
 
+  proto3-json-serializer@4.0.2:
+    dependencies:
+      protobufjs: 7.5.6
+
   protobufjs@7.5.6:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
@@ -5621,6 +5718,13 @@ snapshots:
       - encoding
       - supports-color
     optional: true
+
+  retry-request@9.0.1:
+    dependencies:
+      extend: 3.0.2
+      teeny-request: 11.0.1
+    transitivePeerDependencies:
+      - supports-color
 
   retry@0.13.1: {}
 
@@ -5818,10 +5922,8 @@ snapshots:
   stream-events@1.0.5:
     dependencies:
       stubs: 3.0.0
-    optional: true
 
-  stream-shift@1.0.3:
-    optional: true
+  stream-shift@1.0.3: {}
 
   string-length@4.0.2:
     dependencies:
@@ -5861,8 +5963,7 @@ snapshots:
   strnum@1.1.2:
     optional: true
 
-  stubs@3.0.0:
-    optional: true
+  stubs@3.0.0: {}
 
   supports-color@7.2.0:
     dependencies:
@@ -5875,6 +5976,15 @@ snapshots:
   synckit@0.11.12:
     dependencies:
       '@pkgr/core': 0.2.9
+
+  teeny-request@11.0.1:
+    dependencies:
+      http-proxy-agent: 7.0.2
+      https-proxy-agent: 7.0.6
+      node-fetch: 3.3.2
+      stream-events: 1.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   teeny-request@9.0.0:
     dependencies:

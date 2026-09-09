@@ -24,8 +24,12 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { QuizPublicQuestion } from '@/types';
 import { useResetOnChange } from '@/hooks/useResetOnChange';
+import { ReadAloudButton } from './readAloud/ReadAloudButton';
+import { READ_ALOUD_HIGHLIGHT_CLASS } from './readAloud/readAloudHighlight';
+import type { ReadAloudItemControls } from './readAloud/useQuizReadAloud';
 
 interface MatchingResponseInputProps {
   question: QuizPublicQuestion;
@@ -33,6 +37,8 @@ interface MatchingResponseInputProps {
   onChange: (answer: string) => void;
   disabled?: boolean;
   light?: boolean;
+  /** D8 speaker beside every term and definition; absent when read-aloud is off. */
+  readAloud?: ReadAloudItemControls;
 }
 
 const BANK_ID = '__bank__';
@@ -173,7 +179,22 @@ export const MatchingResponseInput: React.FC<MatchingResponseInputProps> = ({
   onChange,
   disabled,
   light,
+  readAloud,
 }) => {
+  const { t } = useTranslation();
+  const speaker = (kind: 'matchingLeft' | 'matchingRight', text: string) =>
+    readAloud ? (
+      <ReadAloudButton
+        label={t('quizReadAloud.readItem', 'Read item aloud')}
+        status={readAloud.status(kind, text)}
+        onClick={() => readAloud.play(kind, text)}
+        onStop={readAloud.stop}
+      />
+    ) : null;
+  const rowHighlight = (
+    kind: 'matchingLeft' | 'matchingRight',
+    text: string
+  ) => (readAloud?.highlighted(kind, text) ? READ_ALOUD_HIGHLIGHT_CLASS : '');
   const terms = React.useMemo<string[]>(
     () => question.matchingLeft ?? [],
     [question.matchingLeft]
@@ -414,21 +435,27 @@ export const MatchingResponseInput: React.FC<MatchingResponseInputProps> = ({
             return (
               <div key={term} className="flex items-center gap-3">
                 <span
-                  className={`text-sm font-bold w-1/2 break-words ${light ? 'text-slate-700' : 'text-slate-200'}`}
+                  className={`flex w-1/2 items-center gap-2 rounded-xl text-sm font-bold break-words ${light ? 'text-slate-700' : 'text-slate-200'} ${rowHighlight('matchingLeft', term)}`}
                   title={term}
                 >
-                  {term}
+                  <span className="min-w-0 flex-1">{term}</span>
+                  {speaker('matchingLeft', term)}
                 </span>
                 {placedLabel ? (
-                  <DraggableChip
-                    id={`zone-${term}`}
-                    label={placedLabel}
-                    selected={placedSelected}
-                    disabled={disabled}
-                    onTap={() => handleZoneChipTap(term)}
-                    ariaLabel={`${placedLabel}, matched to ${term}`}
-                    light={light}
-                  />
+                  <span
+                    className={`flex flex-1 items-center gap-1 rounded-xl ${rowHighlight('matchingRight', placedLabel)}`}
+                  >
+                    <DraggableChip
+                      id={`zone-${term}`}
+                      label={placedLabel}
+                      selected={placedSelected}
+                      disabled={disabled}
+                      onTap={() => handleZoneChipTap(term)}
+                      ariaLabel={`${placedLabel}, matched to ${term}`}
+                      light={light}
+                    />
+                    {speaker('matchingRight', placedLabel)}
+                  </span>
                 ) : (
                   <DropZone
                     id={`zone-${term}`}
@@ -476,16 +503,21 @@ export const MatchingResponseInput: React.FC<MatchingResponseInputProps> = ({
                 selectedSource?.kind === 'bank' &&
                 selectedSource.optionIndex === optionIndex;
               return (
-                <DraggableChip
+                <span
                   key={optionIndex}
-                  id={`bank-${optionIndex}`}
-                  label={allOptions[optionIndex]}
-                  selected={selected}
-                  disabled={disabled}
-                  onTap={() => handleBankChipTap(optionIndex)}
-                  ariaLabel={`${allOptions[optionIndex]}, in word bank`}
-                  light={light}
-                />
+                  className={`inline-flex items-center gap-1 rounded-xl ${rowHighlight('matchingRight', allOptions[optionIndex])}`}
+                >
+                  <DraggableChip
+                    id={`bank-${optionIndex}`}
+                    label={allOptions[optionIndex]}
+                    selected={selected}
+                    disabled={disabled}
+                    onTap={() => handleBankChipTap(optionIndex)}
+                    ariaLabel={`${allOptions[optionIndex]}, in word bank`}
+                    light={light}
+                  />
+                  {speaker('matchingRight', allOptions[optionIndex])}
+                </span>
               );
             })}
           </div>

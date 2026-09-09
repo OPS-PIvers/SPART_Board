@@ -3672,6 +3672,8 @@ export interface QuizSession {
   readAloudAll?: boolean;
   /** Snapshot of `QuizData.language` at assign time; absent = 'en-US'. */
   language?: string;
+  /** Written by `prepareQuizReadAloudV1`; absent on pre-feature sessions (plan §3). */
+  readAloud?: QuizReadAloudManifest;
 
   /**
    * True once at least one Schoology LTI student has launched this session and
@@ -7211,6 +7213,33 @@ export type GlobalFeature =
   | 'quiz-read-aloud';
 
 /** `admin_settings/quiz_read_aloud` — voice mapping for quiz read-aloud (docs/plans/QUIZ_READ_ALOUD.md §3). */
+/** One spoken unit of a question (docs/plans/QUIZ_READ_ALOUD.md §4.1). */
+export type QuizReadAloudPart =
+  | { kind: 'question' }
+  | { kind: 'choice'; index: number }
+  | { kind: 'matchingLeft' | 'matchingRight' | 'orderingItem'; index: number }
+  | { kind: 'stimulus'; stimulusId: string }
+  | { kind: 'whole' };
+
+/** SSML mark timing inside a `whole` recording; drives the row highlight (D9). */
+export interface QuizReadAloudTiming {
+  kind: string;
+  index?: number;
+  startMs: number;
+}
+
+/** `session.readAloud`: part key → Storage path, plus timings and stimulus chunk order. */
+export interface QuizReadAloudManifest {
+  status: 'preparing' | 'ready' | 'partial' | 'failed';
+  voice: string;
+  preparedAt?: number;
+  startedAt?: number;
+  files: Record<string, string>;
+  timings?: Record<string, QuizReadAloudTiming[]>;
+  stimulusChunks?: Record<string, string[]>;
+  failedKeys?: string[];
+}
+
 export interface QuizReadAloudAdminSettings {
   /** BCP-47 tag -> Neural2 voice name. */
   voicesByLanguage: Record<string, string>;
