@@ -20,14 +20,14 @@ import { handleRadioGroupKeyDown } from '@/components/common/radioGroupKeyNav';
 const NEXTUP_FOLDER_NAME = 'NextUp';
 const SESSIONS_COLLECTION = 'nextup_sessions';
 const THEME_COLORS = [
-  '#2d3f89',
-  '#ad2122',
-  '#059669',
-  '#d97706',
-  '#7c3aed',
-  '#db2777',
-  '#2563eb',
-  '#4b5563',
+  { value: '#2d3f89', name: 'Navy' },
+  { value: '#ad2122', name: 'Crimson' },
+  { value: '#059669', name: 'Emerald' },
+  { value: '#d97706', name: 'Amber' },
+  { value: '#7c3aed', name: 'Violet' },
+  { value: '#db2777', name: 'Pink' },
+  { value: '#2563eb', name: 'Blue' },
+  { value: '#4b5563', name: 'Slate' },
 ];
 
 export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
@@ -253,13 +253,12 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  // Shared select handler — reused by both onClick and the radiogroup
-  // roving-tabindex keydown handler (handleRadioGroupKeyDown) below.
-  const selectThemeColor = (color: string) =>
+  // Shared select handler — reused by the onClick and roving-tabindex keydown paths.
+  const selectThemeColor = (color: (typeof THEME_COLORS)[number]) =>
     updateWidget(widget.id, {
       config: {
         ...config,
-        styling: { ...config.styling, themeColor: color },
+        styling: { ...config.styling, themeColor: color.value },
       },
     });
 
@@ -437,15 +436,15 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
           >
             {THEME_COLORS.map((color) => (
               <button
-                key={color}
+                key={color.value}
                 type="button"
                 role="radio"
-                aria-checked={config.styling.themeColor === color}
-                tabIndex={config.styling.themeColor === color ? 0 : -1}
+                aria-checked={config.styling.themeColor === color.value}
+                tabIndex={config.styling.themeColor === color.value ? 0 : -1}
                 onClick={() => selectThemeColor(color)}
-                className={`h-8 rounded-lg border-2 transition-all ${config.styling.themeColor === color ? 'border-brand-gray-darkest scale-110 shadow-sm' : 'border-transparent'}`}
-                style={{ backgroundColor: color }}
-                aria-label={`Theme color ${color}`}
+                className={`h-8 rounded-lg border-2 transition-all ${config.styling.themeColor === color.value ? 'border-brand-gray-darkest scale-110 shadow-sm' : 'border-transparent'}`}
+                style={{ backgroundColor: color.value }}
+                aria-label={`Theme color ${color.name}`}
               />
             ))}
           </div>
