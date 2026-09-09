@@ -67,6 +67,10 @@ export const summarizeOverride = (
         defaultValue: 'Tab warning: {{threshold}}',
       })
     );
+  if (override.readAloud)
+    chips.push(
+      t('studentOverride.chip.readAloud', { defaultValue: 'Read aloud' })
+    );
   if (override.openAt || override.closeAt)
     chips.push(
       t('studentOverride.chip.windowShifted', {

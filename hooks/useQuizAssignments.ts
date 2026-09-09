@@ -176,6 +176,8 @@ export interface AssignmentQuizRef {
   questions: QuizQuestion[];
   /** Stimuli referenced by `questions[].stimulusIds`; projected onto the session doc. */
   stimuli?: QuizStimulus[];
+  /** Read-aloud language snapshotted onto the session doc. */
+  language?: string;
 }
 
 export interface UseQuizAssignmentsResult {
@@ -499,6 +501,7 @@ function sessionOptionsToSessionPatch(
     patch.shuffleQuestions = o.shuffleQuestions;
   if (o.shuffleAnswerOptions !== undefined)
     patch.shuffleAnswerOptions = o.shuffleAnswerOptions;
+  if (o.readAloudAll !== undefined) patch.readAloudAll = o.readAloudAll;
   return patch;
 }
 
@@ -887,6 +890,9 @@ export const useQuizAssignments = (
         // Stimuli referenced by at least one question, labels stripped.
         // Omitted entirely for stimulus-free quizzes.
         ...(sessionStimuli.length > 0 ? { stimuli: sessionStimuli } : {}),
+        // Read-aloud snapshot (docs/plans/QUIZ_READ_ALOUD.md §3); omitted when off.
+        ...(opts.readAloudAll ? { readAloudAll: true } : {}),
+        ...(quiz.language ? { language: quiz.language } : {}),
         // Phase 1 toggles
         tabWarningsEnabled: opts.tabWarningsEnabled ?? true,
         ...(opts.tabWarningThreshold !== undefined
@@ -1567,6 +1573,7 @@ export const useQuizAssignments = (
           ...(quizData.stimuli && quizData.stimuli.length > 0
             ? { stimuli: quizData.stimuli }
             : {}),
+          ...(quizData.language ? { language: quizData.language } : {}),
           // Plumb the PLC id through so downstream notification routing
           // can scope stale-content alerts to the right inbox. Not
           // consumed today; the field is reserved for future use.
@@ -1589,6 +1596,7 @@ export const useQuizAssignments = (
         ...(quizData.stimuli && quizData.stimuli.length > 0
           ? { stimuli: quizData.stimuli }
           : {}),
+        ...(quizData.language ? { language: quizData.language } : {}),
         createdAt: quizData.createdAt,
         updatedAt: quizData.updatedAt,
         assignmentSettings: {
@@ -1653,6 +1661,7 @@ export const useQuizAssignments = (
       let initialQuestions = normalizeQuizQuestions(shared.questions);
       let initialTitle = shared.title;
       let initialStimuli = shared.stimuli;
+      let initialLanguage = shared.language;
       let canonicalVersion: number | undefined = undefined;
       if (effectiveMode === 'sync' && shared.syncGroupId) {
         // Fail the sync import outright if the canonical doc is
@@ -1668,6 +1677,7 @@ export const useQuizAssignments = (
         initialTitle = canonical.title;
         initialQuestions = canonical.questions;
         initialStimuli = canonical.stimuli;
+        initialLanguage = canonical.language;
         canonicalVersion = canonical.version;
       }
 
@@ -1679,6 +1689,7 @@ export const useQuizAssignments = (
         ...(initialStimuli && initialStimuli.length > 0
           ? { stimuli: initialStimuli }
           : {}),
+        ...(initialLanguage ? { language: initialLanguage } : {}),
         createdAt: now,
         updatedAt: now,
       };
@@ -1827,6 +1838,7 @@ export const useQuizAssignments = (
             driveFileId: savedMeta.driveFileId,
             questions: newQuiz.questions,
             ...(newQuiz.stimuli ? { stimuli: newQuiz.stimuli } : {}),
+            ...(newQuiz.language ? { language: newQuiz.language } : {}),
           },
           importedSettings,
           {
@@ -2081,6 +2093,7 @@ export const useQuizAssignments = (
         // publicQuestions; deleteField clears stale entries when the
         // canonical edit removed the last stimulus.
         stimuli: canonicalStimuli.length > 0 ? canonicalStimuli : deleteField(),
+        language: canonical.language ?? deleteField(),
         // Re-derived every sync, so revoking the gate clears a stale marker —
         // unless committed takes still depend on it.
         mediaResponseEnabled:

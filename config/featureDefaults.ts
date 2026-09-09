@@ -205,6 +205,13 @@ export const FEATURE_DEFAULTS: Record<GlobalFeature, FeatureDefault> = {
     defaultEnabled: true,
     missingDocPublic: false,
   },
+  // Quiz read-aloud (Cloud TTS). Admin-only while the player ships in
+  // stacked PRs; every teacher-side affordance hides until it is opened up.
+  'quiz-read-aloud': {
+    defaultAccessLevel: 'admin',
+    defaultEnabled: true,
+    missingDocPublic: false,
+  },
 };
 
 /**

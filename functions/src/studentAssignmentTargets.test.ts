@@ -1439,6 +1439,7 @@ describe('sanitizeOverride', () => {
         questionIds: ['q1', 'q2'],
         hiddenOptionIdsByQuestion: { q1: ['o1'] },
         tabWarningThreshold: 'off',
+        readAloud: true,
         openAt: 1,
         closeAt: 2,
       })
@@ -1447,8 +1448,15 @@ describe('sanitizeOverride', () => {
       questionIds: ['q1', 'q2'],
       hiddenOptionIdsByQuestion: { q1: ['o1'] },
       tabWarningThreshold: 'off',
+      readAloud: true,
       openAt: 1,
       closeAt: 2,
+    });
+  });
+
+  it('drops a non-true readAloud value', () => {
+    expect(sanitizeOverride({ readAloud: 'yes', timeMultiplier: 2 })).toEqual({
+      timeMultiplier: 2,
     });
   });
 

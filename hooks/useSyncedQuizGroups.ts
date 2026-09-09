@@ -69,6 +69,8 @@ export interface PublishSyncedQuizInput {
   questions: QuizQuestion[];
   /** Stimuli referenced by the questions. Omitted = clear on the canonical. */
   stimuli?: QuizStimulus[];
+  /** Read-aloud language. Omitted = clear on the canonical. */
+  language?: string;
   /**
    * The version of the canonical doc the caller's local Drive replica is
    * based on. The transaction asserts `current.version === expectedVersion`;
@@ -220,6 +222,7 @@ export async function pullSyncedQuizContent(groupId: string): Promise<{
   title: string;
   questions: QuizQuestion[];
   stimuli?: QuizStimulus[];
+  language?: string;
   behavior?: QuizBehaviorSettings;
   version: number;
 }> {
@@ -229,12 +232,13 @@ export async function pullSyncedQuizContent(groupId: string): Promise<{
   }
   const data = snap.data() as Pick<
     SyncedQuizGroup,
-    'title' | 'questions' | 'stimuli' | 'behavior' | 'version'
+    'title' | 'questions' | 'stimuli' | 'language' | 'behavior' | 'version'
   >;
   return {
     title: data.title,
     questions: normalizeQuizQuestions(data.questions ?? []),
     stimuli: data.stimuli,
+    language: data.language,
     behavior: data.behavior,
     version: data.version ?? 1,
   };
@@ -255,6 +259,7 @@ export async function createSyncedQuizGroup(input: {
   title: string;
   questions: QuizQuestion[];
   stimuli?: QuizStimulus[];
+  language?: string;
   plcId?: string;
   behavior?: QuizBehaviorSettings;
 }): Promise<void> {
@@ -267,6 +272,7 @@ export async function createSyncedQuizGroup(input: {
     ...(input.stimuli && input.stimuli.length > 0
       ? { stimuli: input.stimuli }
       : {}),
+    ...(input.language ? { language: input.language } : {}),
     participants: { [input.uid]: { joinedAt: now } },
     ...(input.plcId ? { plcId: input.plcId } : {}),
     ...(input.behavior ? { behavior: input.behavior } : {}),
@@ -332,6 +338,7 @@ export async function publishSyncedQuiz(
         input.stimuli && input.stimuli.length > 0
           ? input.stimuli
           : deleteField(),
+      language: input.language ?? deleteField(),
       updatedAt: now,
       updatedBy: input.uid,
       ...(input.behavior ? { behavior: input.behavior } : {}),
@@ -364,7 +371,10 @@ export async function publishSyncedQuiz(
  * (Firestore rejects it) and the schema-locked rule stays satisfied.
  */
 function buildQuizVersionContent(
-  source: Pick<SyncedQuizGroup, 'title' | 'questions' | 'stimuli' | 'behavior'>
+  source: Pick<
+    SyncedQuizGroup,
+    'title' | 'questions' | 'stimuli' | 'language' | 'behavior'
+  >
 ): PlcQuizVersionContent {
   return {
     title: source.title,
@@ -372,6 +382,7 @@ function buildQuizVersionContent(
     ...(source.stimuli && source.stimuli.length > 0
       ? { stimuli: source.stimuli }
       : {}),
+    ...(source.language ? { language: source.language } : {}),
     ...(source.behavior ? { behavior: source.behavior } : {}),
   };
 }
@@ -480,6 +491,7 @@ export async function restoreSyncedVersion(
     ...(restoredStimuli && restoredStimuli.length > 0
       ? { stimuli: restoredStimuli }
       : {}),
+    ...(content.language ? { language: content.language } : {}),
     ...(content.behavior ? { behavior: content.behavior } : {}),
   });
 }

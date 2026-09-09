@@ -1858,7 +1858,8 @@
       "rubricSwaps_other": "{{count}} cambios de rúbrica",
       "tabWarningsOff": "Avisos de pestaña desactivados",
       "tabWarning": "Aviso de pestaña: {{threshold}}",
-      "windowShifted": "Horario ajustado"
+      "windowShifted": "Horario ajustado",
+      "readAloud": "Lectura en voz alta"
     }
   },
   "assignTargeting": {
@@ -1947,6 +1948,15 @@
       "notGradedYet": "Sin calificar todavía",
       "barLabel": "Puntuación media {{pct}} %"
     }
+  },
+  "quizReadAloud": {
+    "label": "Leer en voz alta",
+    "help": "Solo para estudiantes con sesión iniciada.",
+    "sectionLabel": "Lectura en voz alta",
+    "languageLabel": "Idioma",
+    "languageTagLabel": "Código de idioma",
+    "languageOther": "Otro…",
+    "languageHelp": "Elige la voz que se usa al leer este cuestionario en voz alta."
   },
   "quizMediaResponse": {
     "notice": {

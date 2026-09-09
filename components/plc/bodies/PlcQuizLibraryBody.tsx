@@ -401,6 +401,7 @@ export const PlcQuizLibraryBody: React.FC<PlcQuizLibraryBodyProps> = ({
           ...(canonical.stimuli && canonical.stimuli.length > 0
             ? { stimuli: canonical.stimuli }
             : {}),
+          ...(canonical.language ? { language: canonical.language } : {}),
           createdAt: now,
           updatedAt: now,
         };
@@ -534,6 +535,7 @@ export const PlcQuizLibraryBody: React.FC<PlcQuizLibraryBodyProps> = ({
           ...(canonical.stimuli && canonical.stimuli.length > 0
             ? { stimuli: canonical.stimuli }
             : {}),
+          ...(canonical.language ? { language: canonical.language } : {}),
           createdAt: now,
           updatedAt: now,
         };
@@ -593,6 +595,7 @@ export const PlcQuizLibraryBody: React.FC<PlcQuizLibraryBodyProps> = ({
             ...(canonical.stimuli && canonical.stimuli.length > 0
               ? { stimuli: canonical.stimuli }
               : {}),
+            ...(canonical.language ? { language: canonical.language } : {}),
           },
           {
             // The canonical doc carries the behavior the author last published;
@@ -724,6 +727,7 @@ export const PlcQuizLibraryBody: React.FC<PlcQuizLibraryBodyProps> = ({
             ...(canonical.stimuli && canonical.stimuli.length > 0
               ? { stimuli: canonical.stimuli }
               : {}),
+            ...(canonical.language ? { language: canonical.language } : {}),
             createdAt: now,
             updatedAt: now,
           };

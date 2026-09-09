@@ -1858,7 +1858,8 @@
       "rubricSwaps_other": "{{count}} Rasterwechsel",
       "tabWarningsOff": "Tab-Warnungen aus",
       "tabWarning": "Tab-Warnung: {{threshold}}",
-      "windowShifted": "Zeitfenster verschoben"
+      "windowShifted": "Zeitfenster verschoben",
+      "readAloud": "Vorlesen"
     }
   },
   "assignTargeting": {
@@ -1947,6 +1948,15 @@
       "notGradedYet": "Noch nicht bewertet",
       "barLabel": "Durchschnittliche Punktzahl {{pct}} %"
     }
+  },
+  "quizReadAloud": {
+    "label": "Vorlesen",
+    "help": "Nur für angemeldete Schüler.",
+    "sectionLabel": "Vorlesen",
+    "languageLabel": "Sprache",
+    "languageTagLabel": "Sprachcode",
+    "languageOther": "Andere…",
+    "languageHelp": "Legt die Stimme fest, mit der dieses Quiz vorgelesen wird."
   },
   "quizMediaResponse": {
     "notice": {

@@ -46,6 +46,7 @@ import {
   Link2,
   Mic,
   PanelRight,
+  Volume2,
 } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
 import { useStorage } from '@/hooks/useStorage';
@@ -168,6 +169,13 @@ const GLOBAL_FEATURES: {
     icon: Mic,
     description:
       "Lets teachers add a spoken-answer question to a quiz. Students record audio, which is archived to the teacher's own Google Drive. Fail-closed: until this is saved and enabled, the recording controls and the student capture flow stay hidden everywhere. Access level, beta users, building and minimum tier all apply, and the decision is frozen onto each assignment when it is assigned — revoking access hides recording from new assignments and from any existing one the teacher re-syncs.",
+  },
+  {
+    id: 'quiz-read-aloud',
+    label: 'Quiz read-aloud (text-to-speech)',
+    icon: Volume2,
+    description:
+      'Lets teachers mark a quiz assignment, or individual signed-in students, to have questions and answer choices read aloud with a Google Cloud voice. Anonymous PIN joiners never get it. Fail-closed: until this is saved and enabled, the override checkbox, the assignment toggle and the quiz language field stay hidden. Characters are billed to the teacher who assigns; voices are set under Tools → Quiz Read-Aloud.',
   },
   {
     id: 'settings-drawer',

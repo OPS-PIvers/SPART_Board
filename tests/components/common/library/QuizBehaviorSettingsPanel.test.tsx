@@ -239,4 +239,29 @@ describe('QuizBehaviorSettingsPanel', () => {
     expect(autoBtn).toBeDisabled();
     expect(selfBtn).toBeDisabled();
   });
+
+  it('hides the Read aloud toggle unless readAloudAvailable is set', () => {
+    render(
+      <QuizBehaviorSettingsPanel value={defaultValue} onChange={vi.fn()} />
+    );
+    expect(
+      screen.queryByRole('switch', { name: /Read aloud/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('toggling Read aloud writes sessionOptions.readAloudAll', () => {
+    const onChange = vi.fn();
+    render(
+      <QuizBehaviorSettingsPanel
+        value={defaultValue}
+        onChange={onChange}
+        readAloudAvailable
+      />
+    );
+    fireEvent.click(screen.getByRole('switch', { name: /Read aloud/i }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const next = onChange.mock.calls[0][0] as QuizBehaviorSettings;
+    expect(next.sessionOptions).toMatchObject({ readAloudAll: true });
+    expect(next.sessionMode).toBe(defaultValue.sessionMode);
+  });
 });
