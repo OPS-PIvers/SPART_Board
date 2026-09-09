@@ -9,6 +9,7 @@
  * attach (never auto-shared silently).
  */
 import React, { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertCircle,
   ChevronDown,
@@ -18,6 +19,7 @@ import {
   Paperclip,
   Trash2,
   Upload,
+  Volume2,
 } from 'lucide-react';
 import type { QuizStimulus, QuizStimulusType } from '@/types';
 import {
@@ -30,6 +32,7 @@ import {
 import { extractGoogleFileId } from '@/utils/urlHelpers';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { useDialog } from '@/context/useDialog';
+import { extractStimulusReadAloudText } from '@/utils/quizReadAloudApi';
 import type { QuizEditorController } from './useQuizEditorState';
 
 const labelClass =
@@ -228,7 +231,9 @@ const UrlAddRow: React.FC<{
 
 export const StimulusManagerPanel: React.FC<{
   state: QuizEditorController;
-}> = ({ state }) => {
+  /** `quiz-read-aloud` gate; shows the per-stimulus read-aloud text row (D12). */
+  readAloudAvailable?: boolean;
+}> = ({ state, readAloudAvailable = false }) => {
   const { stimuli, questions } = state;
   const intake = useStimulusIntake(state);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -280,7 +285,12 @@ export const StimulusManagerPanel: React.FC<{
       ) : (
         <div className="space-y-2">
           {stimuli.map((s) => (
-            <StimulusCard key={s.id} stimulus={s} state={state} />
+            <StimulusCard
+              key={s.id}
+              stimulus={s}
+              state={state}
+              readAloudAvailable={readAloudAvailable}
+            />
           ))}
         </div>
       )}
@@ -293,10 +303,159 @@ export const StimulusManagerPanel: React.FC<{
   );
 };
 
+const SOURCE_LABEL_KEY: Record<
+  NonNullable<QuizStimulus['readAloudSource']>,
+  string
+> = {
+  'pdf-text': 'quizReadAloud.sourcePdfText',
+  ocr: 'quizReadAloud.sourceOcr',
+  edited: 'quizReadAloud.sourceEdited',
+};
+
+/** D12: collapsed "Read-aloud text" row under image/pdf stimuli; R12 help copy. */
+const ReadAloudTextRow: React.FC<{
+  stimulus: QuizStimulus;
+  onChange: (updates: Partial<QuizStimulus>) => void;
+}> = ({ stimulus: s, onChange }) => {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<'needs-manual' | 'failed' | null>(null);
+  const text = s.readAloudText ?? '';
+  const badge = text
+    ? t(SOURCE_LABEL_KEY[s.readAloudSource ?? 'edited'])
+    : t('quizReadAloud.sourceNone', 'None');
+
+  const extract = async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const res = await extractStimulusReadAloudText({
+        stimulusId: s.id,
+        type: s.type === 'pdf' ? 'pdf' : 'image',
+        ...(s.driveFileId ? { driveFileId: s.driveFileId } : { url: s.url }),
+      });
+      if (res.source === 'needs-manual' || !res.text) {
+        setNotice('needs-manual');
+        return;
+      }
+      onChange({ readAloudText: res.text, readAloudSource: res.source });
+    } catch {
+      setNotice('failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const clear = () => {
+    setNotice(null);
+    onChange({ readAloudText: undefined, readAloudSource: undefined });
+  };
+
+  return (
+    <div className="rounded-lg border border-slate-200">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50"
+      >
+        {open ? (
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        )}
+        <Volume2 className="h-3.5 w-3.5" aria-hidden />
+        <span className="flex-1">
+          {t('quizReadAloud.stimulusText', 'Read-aloud text')}
+        </span>
+        <span
+          data-testid="read-aloud-source-badge"
+          className={`rounded px-1.5 py-0.5 text-xxs font-bold uppercase tracking-wider ${
+            text
+              ? 'bg-brand-blue-lighter text-brand-blue-primary'
+              : 'bg-slate-100 text-slate-500'
+          }`}
+        >
+          {badge}
+        </span>
+      </button>
+      {open && (
+        <div className="space-y-2 border-t border-slate-100 px-2.5 pb-2.5 pt-2">
+          <textarea
+            aria-label={t('quizReadAloud.stimulusText', 'Read-aloud text')}
+            value={text}
+            rows={5}
+            disabled={busy}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (next.trim()) {
+                onChange({ readAloudText: next, readAloudSource: 'edited' });
+              } else {
+                onChange({
+                  readAloudText: undefined,
+                  readAloudSource: undefined,
+                });
+              }
+            }}
+            placeholder={t(
+              'quizReadAloud.stimulusTextPlaceholder',
+              'Text students hear for this stimulus'
+            )}
+            className={`${inputClass} resize-y text-sm`}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void extract()}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue-primary px-2.5 py-1.5 text-xs font-bold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+            >
+              {busy && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              )}
+              {busy
+                ? t('quizReadAloud.extracting', 'Extracting…')
+                : t('quizReadAloud.extract', 'Extract text')}
+            </button>
+            <button
+              type="button"
+              onClick={clear}
+              disabled={busy || !text}
+              className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {t('quizReadAloud.clear', 'Clear')}
+            </button>
+            <span className="text-xs text-slate-500">
+              {t(
+                'quizReadAloud.readingHelp',
+                'Leave empty on reading assessments.'
+              )}
+            </span>
+          </div>
+          {notice && (
+            <p role="status" className="text-xs text-amber-700">
+              {notice === 'needs-manual'
+                ? t(
+                    'quizReadAloud.needsManual',
+                    "Couldn't extract text automatically. Paste or type it here."
+                  )
+                : t(
+                    'quizReadAloud.extractFailed',
+                    'Text extraction failed. Try again.'
+                  )}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const StimulusCard: React.FC<{
   stimulus: QuizStimulus;
   state: QuizEditorController;
-}> = ({ stimulus: s, state }) => {
+  readAloudAvailable: boolean;
+}> = ({ stimulus: s, state, readAloudAvailable }) => {
   const {
     questions,
     updateStimulus,
@@ -364,6 +523,12 @@ const StimulusCard: React.FC<{
               Make sure this doc is shared as &ldquo;anyone with the link can
               view&rdquo; — SpartBoard can&apos;t verify pasted doc links.
             </p>
+          )}
+          {readAloudAvailable && (s.type === 'image' || s.type === 'pdf') && (
+            <ReadAloudTextRow
+              stimulus={s}
+              onChange={(updates) => updateStimulus(s.id, updates)}
+            />
           )}
           {isPlayLimitedType(s.type) && (
             <div>

@@ -7,7 +7,14 @@
  * (and audio/video does not restart) as the student advances within its
  * question set (see GuidedLearningPlayer's unkeyed-media precedent).
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   ChevronDown,
@@ -26,6 +33,10 @@ import {
   stimulusMediaUrl,
 } from '@/utils/quizStimuli';
 import { convertToEmbedUrl } from '@/utils/urlHelpers';
+import { chunkReadAloudText } from '@/utils/quizReadAloudApi';
+import { ReadAloudButton } from './readAloud/ReadAloudButton';
+import type { ReadAloudStatus } from './readAloud/useQuizReadAloud';
+import { READ_ALOUD_HIGHLIGHT_CLASS } from './readAloud/readAloudHighlight';
 import {
   YT_PLAYER_STATE,
   extractYouTubeId,
@@ -33,8 +44,20 @@ import {
   type YTPlayer,
 } from '@/utils/youtube';
 
+/** Read-aloud controls for an image/pdf stimulus with reviewed text (plan §6.2). */
+export interface StimulusReadAloud {
+  text: string;
+  status: ReadAloudStatus;
+  highlighted: boolean;
+  chunkIndex: number | null;
+  onPlay: () => void;
+  onStop: () => void;
+}
+
 export interface StimulusRendererProps {
   stimulus: QuizStimulus;
+  /** Present only when the student is flagged and the stimulus has reviewed text. */
+  readAloud?: StimulusReadAloud;
   /** Completed plays already recorded for this stimulus this attempt. */
   playsUsed?: number;
   /** Called once each time a play-limited stimulus finishes a complete play. */
@@ -470,8 +493,66 @@ const PdfStimulus: React.FC<StimulusRendererProps & { retryNonce: number }> = ({
 
 // ─── Per-type dispatcher with the scoped retry wrapper ──────────────────────
 
+const StimulusReadAloudHeader: React.FC<{
+  readAloud: StimulusReadAloud;
+  light: boolean;
+}> = ({ readAloud, light }) => {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-2xl pr-3 transition-colors ${
+        readAloud.highlighted ? READ_ALOUD_HIGHLIGHT_CLASS : ''
+      }`}
+    >
+      <ReadAloudButton
+        label={t('quizReadAloud.readPassage', 'Read passage aloud')}
+        status={readAloud.status}
+        onClick={readAloud.onPlay}
+        onStop={readAloud.onStop}
+        variant="ghost"
+      />
+      <span
+        className={`text-xs font-bold ${light ? 'text-slate-600' : 'text-slate-300'}`}
+      >
+        {t('quizReadAloud.passage', 'Passage')}
+      </span>
+    </div>
+  );
+};
+
+const StimulusReadAloudPane: React.FC<{
+  readAloud: StimulusReadAloud;
+  light: boolean;
+}> = ({ readAloud, light }) => {
+  const chunks = useMemo(
+    () => chunkReadAloudText(readAloud.text),
+    [readAloud.text]
+  );
+  return (
+    <div
+      data-testid="stimulus-read-aloud-pane"
+      className={`rounded-xl border p-3 text-sm leading-relaxed ${
+        light
+          ? 'border-slate-200 bg-white text-slate-800'
+          : 'border-slate-700 bg-slate-800/60 text-slate-100'
+      }`}
+    >
+      {chunks.map((chunk, i) => (
+        <p
+          key={i}
+          className={`whitespace-pre-line rounded-lg px-2 py-1 transition-colors ${
+            i === readAloud.chunkIndex ? READ_ALOUD_HIGHLIGHT_CLASS : ''
+          }`}
+        >
+          {chunk}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 export const StimulusRenderer: React.FC<StimulusRendererProps> = (props) => {
-  const { stimulus, light = false } = props;
+  const { stimulus, light = false, readAloud } = props;
   const [retryNonce, setRetryNonce] = useState(0);
   const [failed, setFailed] = useState(false);
 
@@ -515,8 +596,14 @@ export const StimulusRenderer: React.FC<StimulusRendererProps> = (props) => {
 
   return (
     <div className="flex flex-col gap-2 h-full" data-stimulus-id={stimulus.id}>
+      {readAloud && (
+        <StimulusReadAloudHeader readAloud={readAloud} light={light} />
+      )}
       {failed && <StimulusErrorCard light={light} onRetry={handleRetry} />}
       {body}
+      {readAloud && readAloud.status !== 'idle' && (
+        <StimulusReadAloudPane readAloud={readAloud} light={light} />
+      )}
     </div>
   );
 };

@@ -252,6 +252,49 @@ describe('QuizStudentApp — read-aloud eligibility', () => {
     expect(screen.queryByRole('button', { name: 'Read question' })).toBeNull();
   });
 
+  it('shows the passage speaker only for an attached image stimulus with reviewed text', async () => {
+    pointerState.current = pointer({ readAloud: true });
+    hookState.session = buildSession({
+      publicQuestions: [
+        { ...QUESTIONS[0], stimulusIds: ['img'] },
+        QUESTIONS[1],
+      ],
+      stimuli: [
+        { id: 'img', type: 'image', url: 'https://x.test/a.png', label: '' },
+        { id: 'other', type: 'image', url: 'https://x.test/b.png', label: '' },
+      ],
+      readAloudTextByStimulusId: { img: 'A sign reads STOP.', other: 'Never' },
+    });
+    render(<QuizStudentApp />);
+    await waitForQuestion();
+    expect(
+      screen.getAllByRole('button', { name: 'Read passage aloud' })
+    ).toHaveLength(1);
+    // The pane only opens while the passage plays.
+    expect(screen.queryByTestId('stimulus-read-aloud-pane')).toBeNull();
+  });
+
+  it('mounts no passage speaker when the stimulus has no reviewed text', async () => {
+    pointerState.current = pointer({ readAloud: true });
+    hookState.session = buildSession({
+      publicQuestions: [
+        { ...QUESTIONS[0], stimulusIds: ['img'] },
+        QUESTIONS[1],
+      ],
+      stimuli: [
+        { id: 'img', type: 'image', url: 'https://x.test/a.png', label: '' },
+      ],
+    });
+    render(<QuizStudentApp />);
+    await waitForQuestion();
+    expect(
+      screen.queryByRole('button', { name: 'Read passage aloud' })
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Read question aloud' })
+    ).toBeInTheDocument();
+  });
+
   it('puts a speaker beside every matching term and definition', async () => {
     pointerState.current = pointer({ readAloud: true, questionIds: ['q2'] });
     render(<QuizStudentApp />);

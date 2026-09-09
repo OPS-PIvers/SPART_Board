@@ -3034,6 +3034,7 @@ describe('index barrel — deployed export set', () => {
     'archiveQuizMediaArtifact',
     'sweepStuckQuizArchives',
     'synthesizeQuizAudioV1',
+    'extractStimulusReadAloudTextV1',
     'getQuizArtifactPlaybackUrl',
     // Org-admin media review & compliance delete
     'listQuizMediaForOrgAdmin',

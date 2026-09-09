@@ -3296,6 +3296,10 @@ export interface QuizStimulus {
   label: string;
   /** audio/video/youtube only: max completed plays per attempt. Undefined = unlimited. */
   playLimit?: number;
+  /** image/pdf only: teacher-reviewed text spoken by read-aloud. Absent = no speaker (plan §3). */
+  readAloudText?: string;
+  /** How `readAloudText` was produced; 'edited' once the teacher touches it. */
+  readAloudSource?: 'pdf-text' | 'ocr' | 'edited';
 }
 
 export interface QuizQuestion {
@@ -3672,6 +3676,8 @@ export interface QuizSession {
   readAloudAll?: boolean;
   /** Snapshot of `QuizData.language` at assign time; absent = 'en-US'. */
   language?: string;
+  /** Reviewed stimulus text by id; the only stimulus text the synth function may speak (plan §3). */
+  readAloudTextByStimulusId?: Record<string, string>;
   /** Written by `prepareQuizReadAloudV1`; absent on pre-feature sessions (plan §3). */
   readAloud?: QuizReadAloudManifest;
 

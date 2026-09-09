@@ -53,6 +53,14 @@ export interface QuizReadAloudController {
   choicePart: (text: string) => QuizReadAloudPart | null;
   items: ReadAloudItemControls;
   statusOf: (part: QuizReadAloudPart | null) => ReadAloudStatus;
+  /** D9: attached stimulus passages first, then the `whole` recording. */
+  readQuestion: () => void;
+  /** True from readQuestion() until its last part ends or stop(). */
+  readingQuestion: boolean;
+  /** Index of the stimulus chunk being spoken, else null (R5 pane highlight). */
+  chunkIndex: number | null;
+  /** Reviewed text for an attached stimulus, else undefined (no speaker). */
+  stimulusText: (stimulusId: string) => string | undefined;
 }
 
 interface Args {
@@ -63,6 +71,8 @@ interface Args {
   canonicalQuestions: QuizPublicQuestion[];
   question: QuizPublicQuestion | undefined;
   nextQuestion: QuizPublicQuestion | undefined;
+  /** `session.readAloudTextByStimulusId`; only attached ids with text get a speaker. */
+  stimulusTextById?: Record<string, string>;
 }
 
 interface Resolved {
@@ -120,6 +130,7 @@ export function useQuizReadAloud({
   canonicalQuestions,
   question,
   nextQuestion,
+  stimulusTextById,
 }: Args): QuizReadAloudController {
   const [playingPart, setPlayingPart] = useState<QuizReadAloudPart | null>(
     null
@@ -128,6 +139,8 @@ export function useQuizReadAloud({
     null
   );
   const [subPart, setSubPart] = useState<QuizReadAloudPart | null>(null);
+  const [chunkIndex, setChunkIndex] = useState<number | null>(null);
+  const [readingQuestion, setReadingQuestion] = useState(false);
   const [error, setError] = useState<ReadAloudError>(null);
   const [denied, setDenied] = useState(false);
   const [rate, setRate] = useState<number>(initialRate);
@@ -141,6 +154,7 @@ export function useQuizReadAloud({
   const requestSeq = useRef(0);
   const playlistRef = useRef<{ urls: string[]; index: number } | null>(null);
   const timingsRef = useRef<QuizReadAloudTiming[] | null>(null);
+  const queueRef = useRef<QuizReadAloudPart[]>([]);
   const questionId = question?.id;
   const canonical = useMemo(
     () => canonicalQuestions.find((q) => q.id === questionId),
@@ -160,6 +174,9 @@ export function useQuizReadAloud({
     requestSeq.current += 1;
     playlistRef.current = null;
     timingsRef.current = null;
+    queueRef.current = [];
+    setReadingQuestion(false);
+    setChunkIndex(null);
     const audio = audioRef.current;
     if (audio) {
       audio.pause();
@@ -210,10 +227,14 @@ export function useQuizReadAloud({
     [manifest, sessionId, urlFor]
   );
 
-  const play = useCallback(
-    (part: QuizReadAloudPart) => {
+  const start = useCallback(
+    (part: QuizReadAloudPart, keepQueue: boolean) => {
       if (!enabled || !questionId || denied) return;
+      const queue = keepQueue ? queueRef.current : [];
+      const wasReading = keepQueue && readingQuestion;
       stop();
+      queueRef.current = queue;
+      if (wasReading) setReadingQuestion(true);
       const seq = requestSeq.current;
       const qid = questionId;
       setError(null);
@@ -231,9 +252,12 @@ export function useQuizReadAloud({
           if (seq !== requestSeq.current) return;
           setLoadingPart(null);
           setPlayingPart(part);
+          setChunkIndex(part.kind === 'stimulus' ? 0 : null);
           if (part.kind !== 'whole') setSubPart(part);
         } catch (err) {
           if (seq !== requestSeq.current) return;
+          queueRef.current = [];
+          setReadingQuestion(false);
           setLoadingPart(null);
           setPlayingPart(null);
           if (err instanceof FunctionsError) {
@@ -253,8 +277,50 @@ export function useQuizReadAloud({
         }
       })();
     },
-    [enabled, questionId, denied, stop, resolvePart, getAudio, rate]
+    [
+      enabled,
+      questionId,
+      denied,
+      readingQuestion,
+      stop,
+      resolvePart,
+      getAudio,
+      rate,
+    ]
   );
+
+  const play = useCallback(
+    (part: QuizReadAloudPart) => start(part, false),
+    [start]
+  );
+
+  const stimulusText = useCallback(
+    (stimulusId: string): string | undefined => {
+      if (!question?.stimulusIds?.includes(stimulusId)) return undefined;
+      const text = stimulusTextById?.[stimulusId]?.trim() ?? '';
+      return text.length > 0 ? text : undefined;
+    },
+    [question, stimulusTextById]
+  );
+
+  const readQuestion = useCallback(() => {
+    if (!enabled || !questionId || denied) return;
+    const parts: QuizReadAloudPart[] = [];
+    for (const sid of question?.stimulusIds ?? []) {
+      if (stimulusText(sid)) parts.push({ kind: 'stimulus', stimulusId: sid });
+    }
+    parts.push({ kind: 'whole' });
+    stop();
+    queueRef.current = parts.slice(1);
+    setReadingQuestion(true);
+    start(parts[0], true);
+  }, [enabled, questionId, denied, question, stimulusText, stop, start]);
+
+  // The ended handler below starts queued parts through this ref.
+  const startRef = useRef(start);
+  useEffect(() => {
+    startRef.current = start;
+  });
 
   // Audio element events: chunk playlists advance, timings drive the whole-read highlight.
   useEffect(() => {
@@ -264,6 +330,7 @@ export function useQuizReadAloud({
       const list = playlistRef.current;
       if (list && list.index + 1 < list.urls.length) {
         list.index += 1;
+        setChunkIndex(list.index);
         audio.src = list.urls[list.index];
         audio.playbackRate = rate;
         void audio.play().catch(() => setError('load'));
@@ -273,6 +340,13 @@ export function useQuizReadAloud({
       timingsRef.current = null;
       setPlayingPart(null);
       setSubPart(null);
+      setChunkIndex(null);
+      const next = queueRef.current.shift();
+      if (next) {
+        startRef.current(next, true);
+        return;
+      }
+      setReadingQuestion(false);
     };
     const onTimeUpdate = () => {
       const timings = timingsRef.current;
@@ -288,6 +362,9 @@ export function useQuizReadAloud({
       setSubPart((prev) => (sameReadAloudPart(prev, next) ? prev : next));
     };
     const onError = () => {
+      queueRef.current = [];
+      setReadingQuestion(false);
+      setChunkIndex(null);
       setPlayingPart(null);
       setLoadingPart(null);
       setError('load');
@@ -434,5 +511,9 @@ export function useQuizReadAloud({
     choicePart,
     items,
     statusOf,
+    readQuestion,
+    readingQuestion,
+    chunkIndex,
+    stimulusText,
   };
 }

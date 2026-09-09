@@ -1968,7 +1968,21 @@
     "unavailable": "Vorlesen ist derzeit nicht verfügbar.",
     "preparing": "Vorlesen wird vorbereitet…",
     "partial": "Ein Teil des Audios wird bei Bedarf geladen.",
-    "previewVoice": "Stimme anhören"
+    "previewVoice": "Stimme anhören",
+    "readPassage": "Textpassage vorlesen",
+    "passage": "Textpassage",
+    "stimulusText": "Vorlesetext",
+    "stimulusTextPlaceholder": "Text, den Lernende zu diesem Material hören",
+    "sourcePdfText": "PDF-Text",
+    "sourceOcr": "OCR",
+    "sourceEdited": "Bearbeitet",
+    "sourceNone": "Keiner",
+    "extract": "Text extrahieren",
+    "extracting": "Wird extrahiert…",
+    "clear": "Leeren",
+    "readingHelp": "Bei Leseprüfungen leer lassen.",
+    "needsManual": "Der Text konnte nicht automatisch extrahiert werden. Hier einfügen oder eingeben.",
+    "extractFailed": "Textextraktion fehlgeschlagen. Bitte erneut versuchen."
   },
   "quizMediaResponse": {
     "notice": {

@@ -5,6 +5,7 @@ import {
   isPlayLimitedType,
   projectSessionStimuli,
   questionsUsingStimulus,
+  readAloudTextByStimulusId,
   resolveStimuli,
   sanitizeStimulusPointers,
   stimulusPlayKey,
@@ -98,6 +99,42 @@ describe('projectSessionStimuli', () => {
     });
     expect(projected).toHaveLength(1);
     expect(projected[0].url).toBe('https://example.com/first.png');
+  });
+
+  it('strips the authoring-only read-aloud fields', () => {
+    const projected = projectSessionStimuli({
+      questions: [q('a', ['s1'])],
+      stimuli: [
+        stim('s1', { readAloudText: 'Passage', readAloudSource: 'pdf-text' }),
+      ],
+    });
+    expect(projected[0]).not.toHaveProperty('readAloudText');
+    expect(projected[0]).not.toHaveProperty('readAloudSource');
+  });
+});
+
+describe('readAloudTextByStimulusId', () => {
+  it('collects trimmed text for referenced image/pdf stimuli only', () => {
+    const out = readAloudTextByStimulusId({
+      questions: [q('a', ['s1', 's2', 's3', 's4'])],
+      stimuli: [
+        stim('s1', { readAloudText: '  Passage one.  ' }),
+        stim('s2', { type: 'pdf', readAloudText: 'Passage two.' }),
+        stim('s3', { type: 'audio', readAloudText: 'never spoken' }),
+        stim('s4', { readAloudText: '   ' }),
+        stim('s5', { readAloudText: 'unreferenced' }),
+      ],
+    });
+    expect(out).toEqual({ s1: 'Passage one.', s2: 'Passage two.' });
+  });
+
+  it('is empty when nothing has text', () => {
+    expect(
+      readAloudTextByStimulusId({
+        questions: [q('a', ['s1'])],
+        stimuli: [stim('s1')],
+      })
+    ).toEqual({});
   });
 });
 

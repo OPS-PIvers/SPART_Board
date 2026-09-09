@@ -8,8 +8,13 @@ export const ReadAloudToolbar: React.FC<{
   controller: QuizReadAloudController;
 }> = ({ controller }) => {
   const { t } = useTranslation();
-  const whole = controller.statusOf({ kind: 'whole' });
-  const active = whole !== 'idle';
+  const wholeStatus = controller.statusOf({ kind: 'whole' });
+  const active = controller.readingQuestion || wholeStatus !== 'idle';
+  const whole: typeof wholeStatus = !active
+    ? 'idle'
+    : controller.loadingPart
+      ? 'loading'
+      : 'playing';
   const rateLabel = `${controller.rate}×`;
   const message =
     controller.error === 'unavailable'
@@ -23,9 +28,7 @@ export const ReadAloudToolbar: React.FC<{
       <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-2">
         <button
           type="button"
-          onClick={
-            active ? controller.stop : () => controller.play({ kind: 'whole' })
-          }
+          onClick={active ? controller.stop : controller.readQuestion}
           aria-pressed={whole === 'playing'}
           aria-busy={whole === 'loading'}
           className={`inline-flex min-h-11 items-center gap-2 rounded-2xl border-2 px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-primary/60 ${
