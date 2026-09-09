@@ -479,8 +479,10 @@ Rollout: admin → beta (the teachers with read-aloud students) → public.
 
 ## 8. Deployment and operations
 
-- **Enable the Cloud Text-to-Speech API** on the Firebase project and grant the
-  Cloud Functions runtime service account `roles/cloudtts.user`. Per
+- **Enable the Cloud Text-to-Speech API** on the Firebase project (done 2026-09-08 via
+  `gcloud services enable texttospeech.googleapis.com`). There is no `roles/cloudtts.user`
+  role; Cloud TTS only requires `serviceusage.services.use`, which the runtime account
+  (`759666600376-compute@…`) already holds through `roles/editor`. Per
   `dev-branch-deploys-functions-to-prod`, a push to `dev-paul` deploys functions to
   the shared prod project: the new function is additive and flag-gated, so this is
   safe, but the API must be enabled **before** PR2 merges or the callable returns
@@ -493,8 +495,8 @@ Rollout: admin → beta (the teachers with read-aloud students) → public.
 - **Privacy**: cached objects contain only quiz text, never student identity; object
   names are hashes; no PII enters `ai_usage` beyond the uid already used by other AI
   features. Consistent with the student PII posture in `studentAssignmentTargets.ts`.
-- **Lifecycle rule** (one-off, not deployed by the Firebase CLI):
-  `gsutil lifecycle set storage.lifecycle.json gs://<project>.firebasestorage.app`.
+- **Lifecycle rule** (one-off, not deployed by the Firebase CLI; applied 2026-09-08):
+  `gcloud storage buckets update gs://spartboard.firebasestorage.app --lifecycle-file=storage.lifecycle.json`.
   The rule is scoped to the `quiz_tts_cache/` prefix.
 - **Cache purge**: safe at any time; lifecycle rule deletes at 365 days (R8).
 
