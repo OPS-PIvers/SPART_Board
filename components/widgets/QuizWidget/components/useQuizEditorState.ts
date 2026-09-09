@@ -51,6 +51,9 @@ export interface QuizEditorController {
   addQuestion: () => void;
   deleteQuestion: (id: string) => void;
   reorderQuestions: (next: QuizQuestion[]) => void;
+  // Read-aloud language (BCP-47); '' = unset
+  language: string;
+  setLanguage: (next: string) => void;
   // Stimuli
   stimuli: QuizStimulus[];
   addStimulus: (stimulus: QuizStimulus) => void;
@@ -87,6 +90,7 @@ export interface QuizEditorController {
   originalTitle: string;
   originalQuestions: QuizQuestion[];
   originalStimuli: QuizStimulus[];
+  originalLanguage: string;
 }
 
 export function useQuizEditorState({
@@ -106,7 +110,10 @@ export function useQuizEditorState({
     [quiz]
   );
 
+  const originalLanguage = quiz?.language ?? '';
+
   const [title, setTitle] = useState<string>(originalTitle);
+  const [language, setLanguage] = useState<string>(originalLanguage);
   const [questions, setQuestions] = useState<QuizQuestion[]>(originalQuestions);
   const [stimuli, setStimuli] = useState<QuizStimulus[]>(originalStimuli);
   const [saving, setSaving] = useState(false);
@@ -131,6 +138,7 @@ export function useQuizEditorState({
   if (quiz !== prevQuiz) {
     setPrevQuiz(quiz);
     setTitle(originalTitle);
+    setLanguage(originalLanguage);
     setQuestions(originalQuestions);
     setStimuli(originalStimuli);
     setError(null);
@@ -427,6 +435,8 @@ export function useQuizEditorState({
     addQuestion,
     deleteQuestion,
     reorderQuestions,
+    language,
+    setLanguage,
     stimuli,
     addStimulus,
     updateStimulus,
@@ -455,5 +465,6 @@ export function useQuizEditorState({
     originalTitle,
     originalQuestions,
     originalStimuli,
+    originalLanguage,
   };
 }

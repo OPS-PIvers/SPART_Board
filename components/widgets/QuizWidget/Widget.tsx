@@ -115,6 +115,7 @@ import type { StudentTargetRef } from '@/types';
 const VIEW_ONLY_SESSION_OPTIONS: Required<QuizSessionOptions> = {
   tabWarningsEnabled: false,
   tabWarningThreshold: 'off',
+  readAloudAll: false,
   blockCopyPaste: false,
   showResultToStudent: false,
   showCorrectAnswerToStudent: false,
@@ -1515,6 +1516,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 driveFileId: meta.driveFileId,
                 questions: data.questions,
                 ...(data.stimuli ? { stimuli: data.stimuli } : {}),
+                ...(data.language ? { language: data.language } : {}),
               },
               {
                 sessionMode: mode,
@@ -1737,6 +1739,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               driveFileId: meta.driveFileId,
               questions: data.questions,
               ...(data.stimuli ? { stimuli: data.stimuli } : {}),
+              ...(data.language ? { language: data.language } : {}),
             },
             {
               sessionMode: 'teacher',

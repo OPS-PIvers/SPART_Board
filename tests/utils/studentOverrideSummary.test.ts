@@ -72,4 +72,11 @@ describe('summarizeOverride', () => {
       await i18n.changeLanguage('en');
     }
   });
+
+  it('adds a Read aloud chip', () => {
+    expect(summarizeOverride({ readAloud: true, openAt: 1 }, t)).toEqual([
+      'Read aloud',
+      'Window shifted',
+    ]);
+  });
 });

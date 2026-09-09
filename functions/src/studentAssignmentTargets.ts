@@ -147,6 +147,7 @@ export interface StudentOverride {
   hiddenOptionIdsByQuestion?: Record<string, string[]>;
   rubricOverrideByQuestion?: Record<string, unknown>;
   tabWarningThreshold?: number | 'off';
+  readAloud?: boolean;
   openAt?: number;
   closeAt?: number;
 }
@@ -386,6 +387,8 @@ export function sanitizeOverride(raw: unknown): StudentOverride | null {
     threshold >= 0
   )
     out.tabWarningThreshold = Math.floor(threshold);
+
+  if (src.readAloud === true) out.readAloud = true;
 
   if (typeof src.openAt === 'number' && Number.isFinite(src.openAt))
     out.openAt = src.openAt;

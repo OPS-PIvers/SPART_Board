@@ -70,7 +70,7 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
   row,
 }) => {
   const { t } = useTranslation();
-  const { user, orgId } = useAuth();
+  const { user, orgId, canAccessFeature } = useAuth();
   const { rosters } = useDashboard();
   const { saveEdit, closeNow } = useAssignmentDetailActions();
 
@@ -352,6 +352,9 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
               onChange={setDraft}
               kind={row.kind}
               showDueAt={row.kind === 'quiz'}
+              readAloudAvailable={
+                row.kind === 'quiz' && canAccessFeature('quiz-read-aloud')
+              }
             />
             {saveError && (
               <p className="text-xs font-medium text-brand-red-primary">

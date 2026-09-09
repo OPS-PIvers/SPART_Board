@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Sparkles,
   X,
+  Volume2,
 } from 'lucide-react';
 
 import { useAuth } from '@/context/useAuth';
@@ -27,6 +28,7 @@ import { OrganizationPanel } from './Organization/OrganizationPanel';
 import { AnalyticsManager } from './Analytics/AnalyticsManager';
 import { DashboardTemplatesManager } from './DashboardTemplatesManager';
 import { LinkShortenerManager } from './LinkShortenerManager';
+import { QuizReadAloudConfigurationPanel } from './QuizReadAloudConfigurationPanel';
 import { PresetSubEmailsManager } from './PresetSubEmailsManager';
 import { PlcResourcesManager } from './PlcResourcesManager/PlcResourcesManager';
 import { HelpCenterManager } from './HelpCenter/HelpCenterManager';
@@ -120,6 +122,12 @@ const TAB_GROUPS = [
         label: 'Links',
         icon: Link2,
         component: LinkShortenerManager,
+      },
+      {
+        id: 'quiz-read-aloud',
+        label: 'Quiz Read-Aloud',
+        icon: Volume2,
+        component: QuizReadAloudConfigurationPanel,
       },
     ],
   },

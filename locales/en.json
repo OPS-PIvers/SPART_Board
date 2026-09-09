@@ -2046,7 +2046,8 @@
       "rubricSwaps_other": "{{count}} rubric swaps",
       "tabWarningsOff": "Tab warnings off",
       "tabWarning": "Tab warning: {{threshold}}",
-      "windowShifted": "Window shifted"
+      "windowShifted": "Window shifted",
+      "readAloud": "Read aloud"
     }
   },
   "assignTargeting": {
@@ -2135,6 +2136,15 @@
       "notGradedYet": "Not graded yet",
       "barLabel": "Average score {{pct}}%"
     }
+  },
+  "quizReadAloud": {
+    "label": "Read aloud",
+    "help": "Signed-in students only.",
+    "sectionLabel": "Read aloud",
+    "languageLabel": "Language",
+    "languageTagLabel": "Language tag",
+    "languageOther": "Other…",
+    "languageHelp": "Picks the voice used when this quiz is read aloud."
   },
   "quizMediaResponse": {
     "notice": {

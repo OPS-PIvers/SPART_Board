@@ -394,4 +394,79 @@ describe('OverrideEditorRow', () => {
       tabWarningThreshold: 'off',
     });
   });
+
+  it('hides the Read aloud checkbox unless the host says the feature is available', () => {
+    render(
+      <OverrideEditorRow
+        studentName="Ada Lovelace"
+        override={{}}
+        onChange={vi.fn()}
+        quizMode
+        questions={questions}
+        defaultExpanded
+      />
+    );
+    expect(
+      screen.queryByRole('checkbox', { name: 'Read aloud' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show Read aloud outside quiz mode even when available', () => {
+    render(
+      <OverrideEditorRow
+        studentName="Ada Lovelace"
+        override={{}}
+        onChange={vi.fn()}
+        readAloudAvailable
+        defaultExpanded
+      />
+    );
+    expect(
+      screen.queryByRole('checkbox', { name: 'Read aloud' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('emits readAloud: true and clears it back to undefined', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <OverrideEditorRow
+        studentName="Ada Lovelace"
+        override={{}}
+        onChange={onChange}
+        quizMode
+        readAloudAvailable
+        questions={questions}
+        defaultExpanded
+      />
+    );
+    expect(screen.getByText('Signed-in students only.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Read aloud' }));
+    expect(onChange).toHaveBeenCalledWith({ readAloud: true });
+
+    rerender(
+      <OverrideEditorRow
+        studentName="Ada Lovelace"
+        override={{ readAloud: true }}
+        onChange={onChange}
+        quizMode
+        readAloudAvailable
+        questions={questions}
+        defaultExpanded
+      />
+    );
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Read aloud' }));
+    expect(onChange).toHaveBeenLastCalledWith({ readAloud: undefined });
+  });
+
+  it('shows a Read aloud chip when collapsed', () => {
+    render(
+      <OverrideEditorRow
+        studentName="Grace Hopper"
+        override={{ readAloud: true }}
+        onChange={vi.fn()}
+      />
+    );
+    expect(screen.getByText('Read aloud')).toBeInTheDocument();
+    expect(screen.queryByText('No accommodations')).not.toBeInTheDocument();
+  });
 });

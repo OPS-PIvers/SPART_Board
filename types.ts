@@ -3429,6 +3429,8 @@ export interface QuizData {
   questions: QuizQuestion[];
   /** Stimuli attachable to questions via `QuizQuestion.stimulusIds`. */
   stimuli?: QuizStimulus[];
+  /** BCP-47 tag that picks the read-aloud voice. Absent = 'en-US'. */
+  language?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -3541,6 +3543,8 @@ export interface QuizSessionOptions extends BaseSessionOptions {
    * `StudentOverride.tabWarningThreshold`.
    */
   tabWarningThreshold?: number | 'off';
+  /** Read aloud for every signed-in student on the assignment, not only overrides. */
+  readAloudAll?: boolean;
 }
 
 /**
@@ -3664,6 +3668,10 @@ export interface QuizSession {
    * sessions and on quizzes with no attached stimuli.
    */
   stimuli?: QuizStimulus[];
+  /** Snapshot of `sessionOptions.readAloudAll` at assign time; absent on pre-feature sessions. */
+  readAloudAll?: boolean;
+  /** Snapshot of `QuizData.language` at assign time; absent = 'en-US'. */
+  language?: string;
 
   /**
    * True once at least one Schoology LTI student has launched this session and
@@ -4668,6 +4676,7 @@ export interface StudentOverride {
   // quiz only; 'points' means grade this question by raw points, ignoring any rubric
   rubricOverrideByQuestion?: Record<string, RubricSnapshot | 'points'>;
   tabWarningThreshold?: number | 'off'; // quiz only (during-taking system)
+  readAloud?: boolean; // quiz only; signed-in students, needs 'quiz-read-aloud'
   openAt?: number;
   closeAt?: number; // per-student window shift (epoch ms)
 }
@@ -4905,6 +4914,8 @@ export interface SyncedQuizGroup {
   questions: QuizQuestion[];
   /** Stimuli referenced by `questions[].stimulusIds`. Absent on legacy groups. */
   stimuli?: QuizStimulus[];
+  /** Mirrors `QuizData.language`. */
+  language?: string;
   /** Behavior settings authored in the editor; synced to PLC members. */
   behavior?: QuizBehaviorSettings;
   /**
@@ -4940,6 +4951,8 @@ export interface SharedQuizAssignment {
   questions: QuizQuestion[];
   /** Stimuli referenced by `questions[].stimulusIds`. Absent on legacy shares. */
   stimuli?: QuizStimulus[];
+  /** Mirrors `QuizData.language`. */
+  language?: string;
   createdAt: number;
   updatedAt: number;
   assignmentSettings: QuizAssignmentSettings;
@@ -5028,6 +5041,8 @@ export interface PlcQuizVersionContent {
   questions: QuizQuestion[];
   /** Present when the snapshotted quiz carried stimuli. */
   stimuli?: QuizStimulus[];
+  /** Mirrors `QuizData.language`. */
+  language?: string;
   behavior?: QuizBehaviorSettings;
 }
 
@@ -7192,7 +7207,19 @@ export type GlobalFeature =
   | 'anonymous-join'
   /** Fail-closed: read it through `canAccessQuizMediaResponse`, never `canAccessFeature`. */
   | 'quiz-media-response'
-  | 'settings-drawer';
+  | 'settings-drawer'
+  | 'quiz-read-aloud';
+
+/** `admin_settings/quiz_read_aloud` — voice mapping for quiz read-aloud (docs/plans/QUIZ_READ_ALOUD.md §3). */
+export interface QuizReadAloudAdminSettings {
+  /** BCP-47 tag -> Neural2 voice name. */
+  voicesByLanguage: Record<string, string>;
+  /** BCP-47 tag -> Standard voice name used past the monthly Neural2 cap. */
+  standardVoicesByLanguage: Record<string, string>;
+  defaultLanguage: string;
+  neural2MonthlyCapChars: number;
+  speakingRateDefault: number;
+}
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;

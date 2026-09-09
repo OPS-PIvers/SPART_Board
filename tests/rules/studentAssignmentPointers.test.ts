@@ -94,13 +94,14 @@ const asUnauth = () => testEnv.unauthenticatedContext().firestore();
 const itemPath = (uid: string, assignmentId = ASSIGNMENT_ID) =>
   `student_assignments/${uid}/items/${assignmentId}`;
 
-const pointer = () => ({
+const pointer = (extra: Record<string, unknown> = {}) => ({
   kind: 'quiz',
   sessionId: ASSIGNMENT_ID,
   teacherUid: TEACHER_UID,
   classId: 'class-A',
   createdAt: 1000,
   updatedAt: 1000,
+  ...extra,
 });
 
 beforeAll(async () => {
@@ -126,7 +127,10 @@ beforeEach(async () => {
     const db = ctx.firestore();
     await setDoc(doc(db, `admins/${ADMIN_EMAIL}`), { email: ADMIN_EMAIL });
     await setDoc(doc(db, itemPath(STUDENT_A_UID)), pointer());
-    await setDoc(doc(db, itemPath(STUDENT_A_UID, 'assignment-2')), pointer());
+    await setDoc(
+      doc(db, itemPath(STUDENT_A_UID, 'assignment-2')),
+      pointer({ override: { readAloud: true, timeMultiplier: 1.5 } })
+    );
     await setDoc(doc(db, itemPath(STUDENT_B_UID)), pointer());
   });
 });
@@ -135,6 +139,14 @@ describe('student_assignments — self-read only', () => {
   it('student can get their own pointer doc', async () => {
     await assertSucceeds(
       getDoc(doc(asStudent(STUDENT_A_UID), itemPath(STUDENT_A_UID)))
+    );
+  });
+
+  it('student can read their own pointer doc that carries override.readAloud', async () => {
+    await assertSucceeds(
+      getDoc(
+        doc(asStudent(STUDENT_A_UID), itemPath(STUDENT_A_UID, 'assignment-2'))
+      )
     );
   });
 
@@ -226,6 +238,14 @@ describe('student_assignments — no client write path', () => {
     await assertFails(
       updateDoc(doc(asStudent(STUDENT_A_UID), itemPath(STUDENT_A_UID)), {
         closeAt: 9_999_999_999_999,
+      })
+    );
+  });
+
+  it('student cannot grant themselves override.readAloud', async () => {
+    await assertFails(
+      updateDoc(doc(asStudent(STUDENT_A_UID), itemPath(STUDENT_A_UID)), {
+        'override.readAloud': true,
       })
     );
   });
