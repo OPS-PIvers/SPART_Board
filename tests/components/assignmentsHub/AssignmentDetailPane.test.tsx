@@ -73,6 +73,7 @@ describe('AssignmentDetailPane — D3 edit-in-place', () => {
     (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       user: { uid: 'teacher-1' },
       orgId: 'org-1',
+      canAccessFeature: () => false,
     });
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       rosters: [roster],
@@ -209,6 +210,7 @@ describe('AssignmentDetailPane — Schoology section resolution', () => {
     (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       user: { uid: 'teacher-1' },
       orgId: 'org-1',
+      canAccessFeature: () => false,
     });
     (
       useAssignmentPseudonymsMulti as unknown as ReturnType<typeof vi.fn>
