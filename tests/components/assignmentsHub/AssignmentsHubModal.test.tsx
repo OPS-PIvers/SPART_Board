@@ -65,6 +65,7 @@ function setupHooks({
 } = {}) {
   (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
     user: { uid: 'teacher-1' },
+    canAccessFeature: () => false,
   });
   (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
     rosters: [],
