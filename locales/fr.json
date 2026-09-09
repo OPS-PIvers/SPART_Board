@@ -1956,7 +1956,19 @@
     "languageLabel": "Langue",
     "languageTagLabel": "Code de langue",
     "languageOther": "Autre…",
-    "languageHelp": "Définit la voix utilisée pour lire ce quiz à voix haute."
+    "languageHelp": "Définit la voix utilisée pour lire ce quiz à voix haute.",
+    "readQuestion": "Lire la question",
+    "readPrompt": "Lire la question à voix haute",
+    "readChoice": "Lire le choix {{n}} à voix haute",
+    "readItem": "Lire l'élément à voix haute",
+    "stop": "Arrêter",
+    "speed": "Vitesse {{rate}}",
+    "autoRead": "Lecture automatique",
+    "loadError": "Impossible de charger l'audio. Touchez pour réessayer.",
+    "unavailable": "La lecture à voix haute n'est pas disponible pour le moment.",
+    "preparing": "Préparation de la lecture à voix haute…",
+    "partial": "Une partie de l'audio se chargera à la demande.",
+    "previewVoice": "Écouter la voix"
   },
   "quizMediaResponse": {
     "notice": {

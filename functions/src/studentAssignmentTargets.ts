@@ -619,7 +619,9 @@ export async function handleSetAssignmentTargets(
   hmacSecret: string,
   input: SetAssignmentTargetsInput,
   loadContext: () => Promise<TargetAuthorizationContext>,
-  preSkipped: SetAssignmentTargetsResult['skipped'] = []
+  preSkipped: SetAssignmentTargetsResult['skipped'] = [],
+  /** Runs after the commit when a quiz target gains `override.readAloud` (R1). */
+  onReadAloudGained?: (sessionId: string) => Promise<void>
 ): Promise<SetAssignmentTargetsResult> {
   const assignmentRef = db
     .collection('users')
@@ -919,6 +921,13 @@ export async function handleSetAssignmentTargets(
     await sessionRef.set({ individualTargeting: false }, { merge: true });
   }
 
+  const readAloudGained =
+    input.kind === 'quiz' &&
+    [...overrideChangesByUid.values()].some((v) => v?.readAloud === true);
+  if (readAloudGained && onReadAloudGained) {
+    await onReadAloudGained(input.sessionId);
+  }
+
   return {
     written: admitted.length,
     updated,
@@ -1211,6 +1220,7 @@ export async function loadTargetDirectory(
 export const setAssignmentTargetsV1 = onCall(
   {
     memory: '256MiB',
+    timeoutSeconds: 120,
     cors: ALLOWED_ORIGINS,
     secrets: [
       CLASSLINK_CLIENT_ID,
@@ -1270,7 +1280,13 @@ export const setAssignmentTargetsV1 = onCall(
       hmacSecret,
       input,
       loadContext,
-      skipped
+      skipped,
+      // Lazy so the TTS client loads only on the quiz read-aloud path.
+      async (sessionId) => {
+        const { prepareReadAloudAfterTargets } =
+          await import('./quizReadAloud');
+        await prepareReadAloudAfterTargets(sessionId, callerUid);
+      }
     );
   }
 );

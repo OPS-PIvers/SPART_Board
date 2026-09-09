@@ -2144,7 +2144,19 @@
     "languageLabel": "Language",
     "languageTagLabel": "Language tag",
     "languageOther": "Other…",
-    "languageHelp": "Picks the voice used when this quiz is read aloud."
+    "languageHelp": "Picks the voice used when this quiz is read aloud.",
+    "readQuestion": "Read question",
+    "readPrompt": "Read question aloud",
+    "readChoice": "Read choice {{n}} aloud",
+    "readItem": "Read item aloud",
+    "stop": "Stop",
+    "speed": "Speed {{rate}}",
+    "autoRead": "Auto-read",
+    "loadError": "Couldn't load audio. Tap to try again.",
+    "unavailable": "Read-aloud isn't available right now.",
+    "preparing": "Preparing read-aloud…",
+    "partial": "Some audio will load on demand.",
+    "previewVoice": "Preview voice"
   },
   "quizMediaResponse": {
     "notice": {

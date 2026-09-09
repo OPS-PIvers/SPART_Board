@@ -1956,7 +1956,19 @@
     "languageLabel": "Sprache",
     "languageTagLabel": "Sprachcode",
     "languageOther": "Andere…",
-    "languageHelp": "Legt die Stimme fest, mit der dieses Quiz vorgelesen wird."
+    "languageHelp": "Legt die Stimme fest, mit der dieses Quiz vorgelesen wird.",
+    "readQuestion": "Frage vorlesen",
+    "readPrompt": "Frage vorlesen",
+    "readChoice": "Antwort {{n}} vorlesen",
+    "readItem": "Element vorlesen",
+    "stop": "Stopp",
+    "speed": "Tempo {{rate}}",
+    "autoRead": "Automatisch vorlesen",
+    "loadError": "Audio konnte nicht geladen werden. Zum Wiederholen tippen.",
+    "unavailable": "Vorlesen ist derzeit nicht verfügbar.",
+    "preparing": "Vorlesen wird vorbereitet…",
+    "partial": "Ein Teil des Audios wird bei Bedarf geladen.",
+    "previewVoice": "Stimme anhören"
   },
   "quizMediaResponse": {
     "notice": {

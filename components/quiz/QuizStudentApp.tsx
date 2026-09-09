@@ -105,6 +105,13 @@ import { StudentLeaderboard } from './StudentLeaderboard';
 import { QuizPausedPlaceholder } from './QuizPausedPlaceholder';
 import { MatchingResponseInput } from './MatchingResponseInput';
 import { OrderingResponseInput } from './OrderingResponseInput';
+import {
+  useQuizReadAloud,
+  type ReadAloudItemControls,
+} from './readAloud/useQuizReadAloud';
+import { ReadAloudButton } from './readAloud/ReadAloudButton';
+import { ReadAloudToolbar } from './readAloud/ReadAloudToolbar';
+import { highlightClass } from './readAloud/readAloudHighlight';
 import { TeacherPreviewBanner } from '@/components/student/TeacherPreviewBanner';
 import { usePreviewMode } from '@/hooks/usePreviewMode';
 import { ResultsWatermark } from './ResultsWatermark';
@@ -1186,6 +1193,10 @@ const QuizJoinFlow: React.FC<{
         pointerTabWarningThreshold={myOverride?.tabWarningThreshold}
         override={myOverride}
         effectiveCloseAt={myEffectiveWindow.closeAt}
+        readAloudRequested={
+          isStudentRole &&
+          (myOverride?.readAloud === true || session.readAloudAll === true)
+        }
       />
     );
   }
@@ -1306,6 +1317,8 @@ const ActiveQuiz: React.FC<{
   override?: StudentOverride;
   /** Effective close (M17 F2): pointer top-level `closeAt` when present, else the session's. */
   effectiveCloseAt?: number;
+  /** SSO student flagged for read-aloud (override or `readAloudAll`); the light shell decides the rest. */
+  readAloudRequested?: boolean;
 }> = ({
   session,
   currentQuestion: sessionQuestion,
@@ -1328,6 +1341,7 @@ const ActiveQuiz: React.FC<{
   pointerTabWarningThreshold,
   override,
   effectiveCloseAt,
+  readAloudRequested,
 }) => {
   const { showAlert } = useDialog();
   const { t } = useTranslation();
@@ -1665,6 +1679,19 @@ const ActiveQuiz: React.FC<{
     answerOptionShuffleEnabled,
     studentShuffleSeed,
   ]);
+
+  // Read-aloud (docs/plans/QUIZ_READ_ALOUD.md §6.2): self-paced light shell only.
+  const readAloud = useQuizReadAloud({
+    enabled: readAloudRequested === true && isStudentPaced,
+    sessionId: session.id,
+    manifest: session.readAloud,
+    canonicalQuestions: session.publicQuestions,
+    question: currentQuestion,
+    nextQuestion: isStudentPaced
+      ? orderedPublicQuestions[localIndex + 1]
+      : undefined,
+  });
+  const readAloudOn = readAloud.enabled;
 
   // ─── Stimuli for the current question ───────────────────────────────────────
   // Resolved against the session's projected stimuli array. Renderers are
@@ -2826,6 +2853,7 @@ const ActiveQuiz: React.FC<{
           style={{ width: `${progress}%` }}
         />
       </div>
+      {readAloudOn && <ReadAloudToolbar controller={readAloud} />}
 
       <div
         className={
@@ -2929,11 +2957,30 @@ const ActiveQuiz: React.FC<{
           )}
 
           {/* Question */}
-          <h2
-            className={`text-xl font-bold mb-8 leading-snug break-words ${headingText}`}
-          >
-            {currentQuestion.text}
-          </h2>
+          {readAloudOn ? (
+            <div
+              className={`mb-8 flex items-start gap-3 rounded-2xl transition-colors ${highlightClass({ kind: 'question' }, readAloud.highlightedPart)}`}
+            >
+              <h2
+                className={`flex-1 text-xl font-bold leading-snug break-words ${headingText}`}
+              >
+                {currentQuestion.text}
+              </h2>
+              <ReadAloudButton
+                variant="prominent"
+                label={t('quizReadAloud.readPrompt', 'Read question aloud')}
+                status={readAloud.statusOf({ kind: 'question' })}
+                onClick={() => readAloud.play({ kind: 'question' })}
+                onStop={readAloud.stop}
+              />
+            </div>
+          ) : (
+            <h2
+              className={`text-xl font-bold mb-8 leading-snug break-words ${headingText}`}
+            >
+              {currentQuestion.text}
+            </h2>
+          )}
 
           {/* Answer area */}
           {recordingConfig && (
@@ -3004,15 +3051,46 @@ const ActiveQuiz: React.FC<{
                     ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
                     : 'border-slate-700 bg-slate-800/50 text-slate-500 cursor-default';
                 }
+                if (!readAloudOn) {
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => !isLocked && setCacheForCurrent(opt)}
+                      disabled={isLocked || submitting}
+                      className={cls}
+                    >
+                      {opt}
+                    </button>
+                  );
+                }
+                // D2: speaker beside the row, never inside the answer button.
+                const choicePart = readAloud.choicePart(opt);
+                const shownIndex = options.indexOf(opt) + 1;
                 return (
-                  <button
+                  <div
                     key={opt}
-                    onClick={() => !isLocked && setCacheForCurrent(opt)}
-                    disabled={isLocked || submitting}
-                    className={cls}
+                    className={`flex items-stretch gap-2 rounded-2xl transition-colors ${highlightClass(choicePart, readAloud.highlightedPart)}`}
                   >
-                    {opt}
-                  </button>
+                    <button
+                      onClick={() => !isLocked && setCacheForCurrent(opt)}
+                      disabled={isLocked || submitting}
+                      className={`${cls} flex-1`}
+                    >
+                      {opt}
+                    </button>
+                    {choicePart && (
+                      <ReadAloudButton
+                        label={t('quizReadAloud.readChoice', {
+                          defaultValue: 'Read choice {{n}} aloud',
+                          n: shownIndex,
+                        })}
+                        status={readAloud.statusOf(choicePart)}
+                        onClick={() => readAloud.play(choicePart)}
+                        onStop={readAloud.stop}
+                        className="self-center"
+                      />
+                    )}
+                  </div>
                 );
               })}
 
@@ -3226,6 +3304,7 @@ const ActiveQuiz: React.FC<{
                 isLastQuestion={currentIndex >= effectiveTotalQuestions - 1}
                 onNext={handleNext}
                 saveError={saveError}
+                readAloud={readAloudOn ? readAloud.items : undefined}
               />
             )}
 
@@ -3449,6 +3528,8 @@ const StructuredQuestionInput: React.FC<{
   isLastQuestion: boolean;
   onNext: () => void;
   saveError?: string | null;
+  /** Per-item speaker controls (D8); absent when read-aloud is off. */
+  readAloud?: ReadAloudItemControls;
 }> = ({
   question,
   submitted,
@@ -3462,6 +3543,7 @@ const StructuredQuestionInput: React.FC<{
   isLastQuestion,
   onNext,
   saveError,
+  readAloud,
 }) => {
   const isMatching = question.type === 'Matching';
 
@@ -3537,6 +3619,7 @@ const StructuredQuestionInput: React.FC<{
               onChange={handleAnswerChange}
               disabled={submitting}
               light={isStudentPaced}
+              readAloud={readAloud}
             />
           ) : (
             <OrderingResponseInput
@@ -3545,6 +3628,7 @@ const StructuredQuestionInput: React.FC<{
               onChange={handleAnswerChange}
               disabled={submitting}
               light={isStudentPaced}
+              readAloud={readAloud}
             />
           )}
 

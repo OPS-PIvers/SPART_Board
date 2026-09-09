@@ -5,7 +5,10 @@
 // only (useAssignmentPseudonyms.ts contract) — mini-app doesn't need a name
 // map keyed by uid since its submissions ARE keyed by the resolved pseudonym.
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+import type { QuizReadAloudManifest } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { Users, Lock } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
@@ -244,6 +247,32 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
     ]
   );
 
+  // Read-aloud manifest status (plan §6.1): only subscribed for quiz rows with the flag on.
+  const readAloudAvailable =
+    row.kind === 'quiz' && canAccessFeature('quiz-read-aloud');
+  const [readAloudStatus, setReadAloudStatus] = useState<
+    QuizReadAloudManifest['status'] | null
+  >(null);
+  useEffect(() => {
+    if (!readAloudAvailable) return;
+    return onSnapshot(
+      doc(db, 'quiz_sessions', row.sessionId),
+      (snap) => {
+        const manifest = snap.data()?.readAloud as
+          | QuizReadAloudManifest
+          | undefined;
+        setReadAloudStatus(manifest?.status ?? null);
+      },
+      () => setReadAloudStatus(null)
+    );
+  }, [readAloudAvailable, row.sessionId]);
+  const readAloudLine =
+    readAloudStatus === 'preparing'
+      ? t('quizReadAloud.preparing', 'Preparing read-aloud…')
+      : readAloudStatus === 'partial' || readAloudStatus === 'failed'
+        ? t('quizReadAloud.partial', 'Some audio will load on demand.')
+        : null;
+
   const counts = useMemo(() => {
     const c: Record<string, number> = {
       'not-started': 0,
@@ -323,6 +352,9 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
             ))}
           </div>
         )}
+        {readAloudLine && (
+          <p className="mt-1 text-xs text-slate-500">{readAloudLine}</p>
+        )}
         {!isEmptyRoster && (
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {STATUS_ORDER.map((status) => (
@@ -352,9 +384,7 @@ export const AssignmentDetailPane: React.FC<{ row: UnifiedAssignmentRow }> = ({
               onChange={setDraft}
               kind={row.kind}
               showDueAt={row.kind === 'quiz'}
-              readAloudAvailable={
-                row.kind === 'quiz' && canAccessFeature('quiz-read-aloud')
-              }
+              readAloudAvailable={readAloudAvailable}
             />
             {saveError && (
               <p className="text-xs font-medium text-brand-red-primary">
