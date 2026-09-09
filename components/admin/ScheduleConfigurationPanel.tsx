@@ -1,6 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useAdminBuildings } from '@/hooks/useAdminBuildings';
 import { useBuildingSelection } from '@/hooks/useBuildingSelection';
+import {
+  canonicalBuildingId,
+  canonicalizeBuildingKeyedRecord,
+} from '@/config/buildings';
 import { BuildingSelector } from './BuildingSelector';
 import { useDialog } from '@/context/useDialog';
 import {
@@ -186,11 +190,18 @@ export const ScheduleConfigurationPanel: React.FC<
     })
   );
 
+  // useAdminBuildings() can return a legacy long-form id; key buildingDefaults off the canonical id.
+  const canonicalId = canonicalBuildingId(selectedBuildingId);
+
+  const buildingDefaults = useMemo(
+    () => canonicalizeBuildingKeyedRecord(config.buildingDefaults ?? {}),
+    [config.buildingDefaults]
+  );
+
   const handleUpdateBuilding = useCallback(
     (updates: Partial<BuildingScheduleDefaults>) => {
-      const currentDefaults = config.buildingDefaults ?? {};
-      const currentConfig = currentDefaults[selectedBuildingId] ?? {
-        buildingId: selectedBuildingId,
+      const currentConfig = buildingDefaults[canonicalId] ?? {
+        buildingId: canonicalId,
         items: [],
         schedules: [],
       };
@@ -198,29 +209,25 @@ export const ScheduleConfigurationPanel: React.FC<
       onChange({
         ...config,
         buildingDefaults: {
-          ...currentDefaults,
-          [selectedBuildingId]: {
+          ...buildingDefaults,
+          [canonicalId]: {
             ...currentConfig,
             ...updates,
           },
         },
       });
     },
-    [config, selectedBuildingId, onChange]
+    [config, buildingDefaults, canonicalId, onChange]
   );
 
-  const buildingDefaults = useMemo(
-    () => config.buildingDefaults ?? {},
-    [config.buildingDefaults]
-  );
   const currentBuildingConfig = useMemo(
     () =>
-      buildingDefaults[selectedBuildingId] ?? {
-        buildingId: selectedBuildingId,
+      buildingDefaults[canonicalId] ?? {
+        buildingId: canonicalId,
         items: [],
         schedules: [],
       },
-    [buildingDefaults, selectedBuildingId]
+    [buildingDefaults, canonicalId]
   );
 
   // Migrate legacy items into a "Default Schedule" if no schedules exist yet
