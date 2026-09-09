@@ -45,10 +45,15 @@ export const LinkSchoologyModal: React.FC<LinkSchoologyModalProps> = ({
   addToast,
   updateRoster,
 }) => {
-  // Only ClassLink rosters can be paired (the link is to a ClassLink class).
+  // ClassLink rosters and admin test classes (mock ClassLink) can be paired.
   const candidateRosters = useMemo(
-    () => rosters.filter((r) => !!r.classlinkClassId),
+    () => rosters.filter((r) => !!r.classlinkClassId || !!r.testClassId),
     [rosters]
+  );
+  // Auto-match overlaps OneRoster emails, so only real ClassLink classes take part.
+  const matchCandidates = useMemo(
+    () => candidateRosters.filter((r) => !!r.classlinkClassId),
+    [candidateRosters]
   );
 
   // A section is already linked when some roster mirrors its contextId. Track
@@ -90,9 +95,9 @@ export const LinkSchoologyModal: React.FC<LinkSchoologyModalProps> = ({
     // if the modal opens before seenSections/rosters load, set the ref only when
     // we truly run the suggest, and let the length deps re-trigger this effect
     // when the inventory arrives (otherwise auto-match would silently never run).
-    if (unlinkedSections.length === 0 || candidateRosters.length === 0) return;
+    if (unlinkedSections.length === 0 || matchCandidates.length === 0) return;
     suggestedRef.current = true;
-    const candidates = candidateRosters.map((r) => ({
+    const candidates = matchCandidates.map((r) => ({
       classlinkClassId: r.classlinkClassId as string,
     }));
     void (async () => {
@@ -105,7 +110,7 @@ export const LinkSchoologyModal: React.FC<LinkSchoologyModalProps> = ({
             candidates,
           });
           if (!res.suggestion) continue;
-          const roster = candidateRosters.find(
+          const roster = matchCandidates.find(
             (r) => r.classlinkClassId === res.suggestion?.classlinkClassId
           );
           if (!roster) continue;
@@ -128,13 +133,13 @@ export const LinkSchoologyModal: React.FC<LinkSchoologyModalProps> = ({
     // we depend on their LENGTHS so the effect re-fires when the inventory loads
     // (0 → N) without churning on array-identity changes that would re-suggest.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, unlinkedSections.length, candidateRosters.length]);
+  }, [isOpen, unlinkedSections.length, matchCandidates.length]);
 
   const handleLink = async (section: SchoologySeenSection) => {
     const rosterId = selections[section.contextId];
     const roster = candidateRosters.find((r) => r.id === rosterId);
-    if (!roster?.classlinkClassId) {
-      addToast('Pick one of your ClassLink classes first.', 'info');
+    if (!roster) {
+      addToast('Pick one of your classes first.', 'info');
       return;
     }
     setRowState((p) => ({ ...p, [section.contextId]: 'linking' }));
@@ -143,8 +148,12 @@ export const LinkSchoologyModal: React.FC<LinkSchoologyModalProps> = ({
         contextId: section.contextId,
         sessionId: section.sessionId,
         kind: section.kind,
-        classlinkClassId: roster.classlinkClassId,
-        classlinkOrgId: roster.classlinkOrgId,
+        ...(roster.classlinkClassId
+          ? {
+              classlinkClassId: roster.classlinkClassId,
+              classlinkOrgId: roster.classlinkOrgId,
+            }
+          : { testClassId: roster.testClassId }),
         rosterId: roster.id,
       });
       // Mirror onto the roster so link state shows everywhere (best-effort —

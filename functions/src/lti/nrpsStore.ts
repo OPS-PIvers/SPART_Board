@@ -353,15 +353,16 @@ export async function persistLtiLaunchContext(
       .doc(contextId)
       .get();
     const link = linkSnap.data() ?? {};
-    if (
-      sectionPairedOnSession(sessionData, link.classlinkClassId, link.rosterId)
-    ) {
+    // A test-class link pairs on the roster's testClassId slug (also in classIds).
+    const pairedClassId: unknown =
+      link.classlinkClassId ?? (link.testClassId as unknown);
+    if (sectionPairedOnSession(sessionData, pairedClassId, link.rosterId)) {
       nextPeriodNames = await dedupeLinkedSectionPeriod(db, {
         kind,
         sessionId,
         sessionData,
         contextTitle: args.contextTitle,
-        classlinkClassId: link.classlinkClassId,
+        classlinkClassId: pairedClassId,
         rosterId: link.rosterId,
       });
       if (nextPeriodNames) update.periodNames = nextPeriodNames;

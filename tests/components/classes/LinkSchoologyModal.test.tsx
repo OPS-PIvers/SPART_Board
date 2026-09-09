@@ -18,9 +18,16 @@ import { LinkSchoologyModal } from '@/components/classes/LinkSchoologyModal';
 const roster = (
   id: string,
   name: string,
-  classlinkClassId?: string
+  classlinkClassId?: string,
+  testClassId?: string
 ): ClassRoster =>
-  ({ id, name, students: [], classlinkClassId }) as unknown as ClassRoster;
+  ({
+    id,
+    name,
+    students: [],
+    classlinkClassId,
+    testClassId,
+  }) as unknown as ClassRoster;
 
 const section = (
   contextId: string,
@@ -95,6 +102,40 @@ describe('LinkSchoologyModal', () => {
     );
     expect(addToast.mock.calls.some(([, type]) => type === 'success')).toBe(
       true
+    );
+  });
+
+  it('offers an admin test class as a link target without asking for an auto-match', async () => {
+    linkMock.mockResolvedValue({ ok: true, contextId: 'ctx-1' });
+    render(
+      <LinkSchoologyModal
+        isOpen
+        onClose={vi.fn()}
+        rosters={[
+          roster('rManual', 'Manual class'),
+          roster('rTest', 'Mock Period 1 (test)', undefined, 'mock-p1'),
+        ]}
+        seenSections={[section('ctx-1', 'Model Course: Hour 1')]}
+        addToast={addToast}
+        updateRoster={updateRoster}
+      />
+    );
+    const select = screen.getByLabelText(/Class for Model Course/i);
+    fireEvent.change(select, { target: { value: 'rTest' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Link$/i }));
+    await waitFor(() => expect(linkMock).toHaveBeenCalledTimes(1));
+    expect(linkMock.mock.calls[0][1]).toEqual({
+      contextId: 'ctx-1',
+      sessionId: 'sess-ctx-1',
+      kind: 'quiz',
+      testClassId: 'mock-p1',
+      rosterId: 'rTest',
+    });
+    expect(suggestMock).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(updateRoster).toHaveBeenCalledWith('rTest', {
+        ltiContextId: 'ctx-1',
+      })
     );
   });
 

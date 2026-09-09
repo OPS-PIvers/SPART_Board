@@ -27,7 +27,9 @@ export interface LinkLtiCourseArgs {
   sessionId: string;
   kind: LtiLinkKind;
   /** The ClassLink class `sourcedId` to pair the section with. */
-  classlinkClassId: string;
+  classlinkClassId?: string;
+  /** Or an admin test-class slug (mock ClassLink); exactly one of the two. */
+  testClassId?: string;
   classlinkOrgId?: string;
   /** The SpartBoard roster id, denormalized onto the link for display. */
   rosterId?: string;

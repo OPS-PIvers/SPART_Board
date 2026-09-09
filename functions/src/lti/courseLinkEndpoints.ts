@@ -152,25 +152,42 @@ function parseKind(kind: unknown): LtiSessionKind {
 }
 
 /**
- * The set of ClassLink class ids the caller's OWN rosters carry. Used to ensure
- * a teacher can only act on their own classes — both when persisting a link and
- * when overlap-matching — so a caller can't bind/fetch a foreign class id.
+ * The class ids the caller's OWN rosters carry — ClassLink ids and admin
+ * test-class slugs separately. Used to ensure a teacher can only act on their
+ * own classes — both when persisting a link and when overlap-matching — so a
+ * caller can't bind/fetch a foreign class id.
  */
-async function ownedClasslinkClassIds(
+async function ownedClassIds(
   db: admin.firestore.Firestore,
   callerUid: string
-): Promise<Set<string>> {
+): Promise<{ classlink: Set<string>; test: Set<string> }> {
   const snap = await db
     .collection(USERS_COLLECTION)
     .doc(callerUid)
     .collection('rosters')
     .get();
-  const owned = new Set<string>();
+  const classlink = new Set<string>();
+  const test = new Set<string>();
   for (const d of snap.docs) {
-    const cid = (d.data() as { classlinkClassId?: unknown }).classlinkClassId;
-    if (typeof cid === 'string' && cid) owned.add(cid);
+    const data = d.data() as {
+      classlinkClassId?: unknown;
+      testClassId?: unknown;
+    };
+    if (typeof data.classlinkClassId === 'string' && data.classlinkClassId) {
+      classlink.add(data.classlinkClassId);
+    }
+    if (typeof data.testClassId === 'string' && data.testClassId) {
+      test.add(data.testClassId);
+    }
   }
-  return owned;
+  return { classlink, test };
+}
+
+async function ownedClasslinkClassIds(
+  db: admin.firestore.Firestore,
+  callerUid: string
+): Promise<Set<string>> {
+  return (await ownedClassIds(db, callerUid)).classlink;
 }
 
 // ── linkLtiCourseV1 ─────────────────────────────────────────────────────────
@@ -183,6 +200,7 @@ export const linkLtiCourseV1 = onCall(
       sessionId?: unknown;
       kind?: unknown;
       classlinkClassId?: unknown;
+      testClassId?: unknown;
       classlinkOrgId?: unknown;
       rosterId?: unknown;
     };
@@ -191,10 +209,18 @@ export const linkLtiCourseV1 = onCall(
     const kind = parseKind(data.kind);
     const classlinkClassId =
       typeof data.classlinkClassId === 'string' ? data.classlinkClassId : '';
-    if (!ID_RE.test(contextId) || !ID_RE.test(sessionId) || !classlinkClassId) {
+    // Admin test classes (mock ClassLink) link too, so the LTI flow is testable end to end.
+    const testClassId =
+      typeof data.testClassId === 'string' ? data.testClassId : '';
+    if (
+      !ID_RE.test(contextId) ||
+      !ID_RE.test(sessionId) ||
+      (!classlinkClassId && !testClassId) ||
+      (classlinkClassId && testClassId)
+    ) {
       throw new HttpsError(
         'invalid-argument',
-        'contextId, sessionId, and classlinkClassId are required.'
+        'contextId, sessionId, and exactly one of classlinkClassId or testClassId are required.'
       );
     }
     const classlinkOrgId =
@@ -210,14 +236,20 @@ export const linkLtiCourseV1 = onCall(
       contextId
     );
 
-    // The classlinkClassId is client-supplied; verify it's one of the caller's
-    // OWN ClassLink classes so a teacher can't bind a foreign class id into a
-    // section link (which downstream name-resolution would then OneRoster-fetch).
-    const owned = await ownedClasslinkClassIds(db, callerUid);
-    if (!owned.has(classlinkClassId)) {
+    // The class id is client-supplied; verify it's one of the caller's OWN
+    // classes so a teacher can't bind a foreign class id into a section link
+    // (which downstream name-resolution would then OneRoster-fetch).
+    const owned = await ownedClassIds(db, callerUid);
+    if (classlinkClassId && !owned.classlink.has(classlinkClassId)) {
       throw new HttpsError(
         'permission-denied',
         'You can only link one of your own ClassLink classes.'
+      );
+    }
+    if (testClassId && !owned.test.has(testClassId)) {
+      throw new HttpsError(
+        'permission-denied',
+        'You can only link one of your own test classes.'
       );
     }
 
@@ -258,10 +290,13 @@ export const linkLtiCourseV1 = onCall(
           : null;
       const finalContextTitle = contextTitle ?? storedTitle;
       linkedTitle = finalContextTitle;
+      // A test link stores classlinkClassId: null so the identity bridge (which
+      // OneRoster-fetches the paired class) skips it.
       const payload: Record<string, unknown> = {
         teacherUid: callerUid,
         contextId,
-        classlinkClassId,
+        classlinkClassId: classlinkClassId || null,
+        testClassId: testClassId || null,
         classlinkOrgId,
         contextTitle: finalContextTitle,
         rosterId,
@@ -277,7 +312,8 @@ export const linkLtiCourseV1 = onCall(
         kind,
         sessionId,
         contextTitle: linkedTitle,
-        classlinkClassId,
+        // Test rosters put their slug on the session's classIds, so it pairs the same way.
+        classlinkClassId: classlinkClassId || testClassId,
         rosterId,
       });
     } catch (err) {
