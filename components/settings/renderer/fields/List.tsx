@@ -22,9 +22,18 @@ const ListImpl: React.FC<FieldProps> = ({
 }) => {
   // Keyed by object identity, not array index, so remove/reorder can't steal another row's focus.
   const rowIds = useRef(new WeakMap<Row, string>());
+  // Malformed/legacy rows can be primitives, which a WeakMap can't key; hold those by value.
+  const primitiveRowIds = useRef(new Map<unknown, string>());
   const rows = Array.isArray(value) ? (value as Row[]) : [];
 
   const getRowId = (row: Row): string => {
+    if (row === null || typeof row !== 'object') {
+      const cached = primitiveRowIds.current.get(row);
+      if (cached) return cached;
+      const minted = `row-${rowIdCounter++}`;
+      primitiveRowIds.current.set(row, minted);
+      return minted;
+    }
     if (typeof row.id === 'string' && row.id) return row.id;
     const existing = rowIds.current.get(row);
     if (existing) return existing;
@@ -52,6 +61,8 @@ const ListImpl: React.FC<FieldProps> = ({
   const handleRowChange = (index: number, nextRow: Row) => {
     if (
       nextRow !== rows[index] &&
+      nextRow !== null &&
+      typeof nextRow === 'object' &&
       !(typeof nextRow.id === 'string' && nextRow.id)
     ) {
       rowIds.current.set(nextRow, getRowId(rows[index]));
