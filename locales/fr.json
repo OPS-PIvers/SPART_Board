@@ -1968,7 +1968,21 @@
     "unavailable": "La lecture à voix haute n'est pas disponible pour le moment.",
     "preparing": "Préparation de la lecture à voix haute…",
     "partial": "Une partie de l'audio se chargera à la demande.",
-    "previewVoice": "Écouter la voix"
+    "previewVoice": "Écouter la voix",
+    "readPassage": "Lire le passage à voix haute",
+    "passage": "Passage",
+    "stimulusText": "Texte lu à voix haute",
+    "stimulusTextPlaceholder": "Texte que les élèves entendent pour ce support",
+    "sourcePdfText": "Texte du PDF",
+    "sourceOcr": "OCR",
+    "sourceEdited": "Modifié",
+    "sourceNone": "Aucun",
+    "extract": "Extraire le texte",
+    "extracting": "Extraction…",
+    "clear": "Effacer",
+    "readingHelp": "Laisser vide pour les évaluations de lecture.",
+    "needsManual": "Impossible d'extraire le texte automatiquement. Collez-le ou saisissez-le ici.",
+    "extractFailed": "L'extraction du texte a échoué. Réessayez."
   },
   "quizMediaResponse": {
     "notice": {

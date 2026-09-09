@@ -70,13 +70,18 @@ import {
   splitStimuliForLayout,
   stimulusPlayKey,
 } from '@/utils/quizStimuli';
-import { CollapsibleStimuli, StimulusRenderer } from './QuizStimulusView';
+import {
+  CollapsibleStimuli,
+  StimulusRenderer,
+  type StimulusReadAloud,
+} from './QuizStimulusView';
 import {
   QuizSession,
   QuizPublicQuestion,
   WrittenAnswerGrade,
   Rubric,
   StudentOverride,
+  QuizStimulus,
   isFreeResponseType,
   isAnswerSubmitted,
   type ResponseArtifact,
@@ -111,7 +116,10 @@ import {
 } from './readAloud/useQuizReadAloud';
 import { ReadAloudButton } from './readAloud/ReadAloudButton';
 import { ReadAloudToolbar } from './readAloud/ReadAloudToolbar';
-import { highlightClass } from './readAloud/readAloudHighlight';
+import {
+  highlightClass,
+  sameReadAloudPart,
+} from './readAloud/readAloudHighlight';
 import { TeacherPreviewBanner } from '@/components/student/TeacherPreviewBanner';
 import { usePreviewMode } from '@/hooks/usePreviewMode';
 import { ResultsWatermark } from './ResultsWatermark';
@@ -1690,8 +1698,27 @@ const ActiveQuiz: React.FC<{
     nextQuestion: isStudentPaced
       ? orderedPublicQuestions[localIndex + 1]
       : undefined,
+    stimulusTextById: session.readAloudTextByStimulusId,
   });
   const readAloudOn = readAloud.enabled;
+  // Speaker + text pane only for image/pdf stimuli with reviewed text (plan §6.2).
+  const stimulusReadAloudFor = (
+    s: QuizStimulus
+  ): StimulusReadAloud | undefined => {
+    if (!readAloudOn || (s.type !== 'image' && s.type !== 'pdf'))
+      return undefined;
+    const text = readAloud.stimulusText(s.id);
+    if (!text) return undefined;
+    const part = { kind: 'stimulus', stimulusId: s.id } as const;
+    return {
+      text,
+      status: readAloud.statusOf(part),
+      highlighted: sameReadAloudPart(part, readAloud.highlightedPart),
+      chunkIndex: readAloud.chunkIndex,
+      onPlay: () => readAloud.play(part),
+      onStop: readAloud.stop,
+    };
+  };
 
   // ─── Stimuli for the current question ───────────────────────────────────────
   // Resolved against the session's projected stimuli array. Renderers are
@@ -2874,6 +2901,7 @@ const ActiveQuiz: React.FC<{
                   stimulus={s}
                   light={light}
                   onLoadError={handleStimulusLoadError}
+                  readAloud={stimulusReadAloudFor(s)}
                 />
               </div>
             ))}
@@ -2951,6 +2979,7 @@ const ActiveQuiz: React.FC<{
                   playsUsed={playsUsedFor(s.id)}
                   onPlayCompleted={handleStimulusPlayCompleted}
                   onLoadError={handleStimulusLoadError}
+                  readAloud={stimulusReadAloudFor(s)}
                 />
               ))}
             </div>

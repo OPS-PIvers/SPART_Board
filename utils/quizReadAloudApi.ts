@@ -83,3 +83,64 @@ export function prepareQuizReadAloudInBackground(sessionId: string): void {
 export function resolveReadAloudUrl(path: string): Promise<string> {
   return getDownloadURL(storageRef(storage, path));
 }
+
+export interface ExtractStimulusTextResult {
+  text: string;
+  source: 'pdf-text' | 'ocr' | 'needs-manual';
+}
+
+/** Teacher-only authoring call (plan §4.2); the server picks text layer vs OCR. */
+export async function extractStimulusReadAloudText(input: {
+  stimulusId: string;
+  type: 'image' | 'pdf';
+  driveFileId?: string;
+  url?: string;
+}): Promise<ExtractStimulusTextResult> {
+  const callable = httpsCallable<typeof input, ExtractStimulusTextResult>(
+    functions,
+    'extractStimulusReadAloudTextV1'
+  );
+  return (await callable(input)).data;
+}
+
+export const STIMULUS_CHUNK_BYTES = 4500;
+const utf8 = new TextEncoder();
+const byteLength = (s: string) => utf8.encode(s).length;
+
+/** Client mirror of the server's R4 chunker so the text pane can highlight the chunk being read. */
+export function chunkReadAloudText(
+  text: string,
+  maxBytes = STIMULUS_CHUNK_BYTES
+): string[] {
+  const clean = text.trim();
+  if (!clean) return [];
+  const sentences = clean.split(/(?<=[.!?])\s+|\n{2,}/).filter(Boolean);
+  const chunks: string[] = [];
+  let current = '';
+  const push = () => {
+    if (current.trim()) chunks.push(current.trim());
+    current = '';
+  };
+  for (const sentence of sentences) {
+    let piece = sentence.trim();
+    while (byteLength(piece) > maxBytes) {
+      push();
+      let cut = piece.length;
+      while (cut > 0 && byteLength(piece.slice(0, cut)) > maxBytes)
+        cut = Math.floor(cut * 0.9);
+      const space = piece.lastIndexOf(' ', cut);
+      const at = space > cut / 2 ? space : cut;
+      chunks.push(piece.slice(0, at).trim());
+      piece = piece.slice(at).trim();
+    }
+    const candidate = current ? `${current} ${piece}` : piece;
+    if (byteLength(candidate) > maxBytes) {
+      push();
+      current = piece;
+    } else {
+      current = candidate;
+    }
+  }
+  push();
+  return chunks;
+}

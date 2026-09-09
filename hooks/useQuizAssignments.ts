@@ -61,7 +61,10 @@ import type {
 } from '@/types';
 import { isFreeResponseType } from '@/types';
 import { normalizeQuizQuestions } from '@/utils/quizQuestionNormalize';
-import { projectSessionStimuli } from '@/utils/quizStimuli';
+import {
+  projectSessionStimuli,
+  readAloudTextByStimulusId,
+} from '@/utils/quizStimuli';
 import { dedupeQuestionsById } from '@/utils/quizMaxPoints';
 import type { SessionTargets } from '@/utils/resolveAssignmentTargets';
 import {
@@ -849,6 +852,10 @@ export const useQuizAssignments = (
       const opts = settings.sessionOptions;
       // Dedupe once so totalQuestions and publicQuestions can't drift apart.
       const sessionQuestions = dedupeQuestionsById(quiz.questions);
+      const sessionReadAloudText = readAloudTextByStimulusId({
+        questions: sessionQuestions,
+        stimuli: quiz.stimuli,
+      });
       const sessionStimuli = projectSessionStimuli({
         questions: sessionQuestions,
         stimuli: quiz.stimuli,
@@ -894,6 +901,9 @@ export const useQuizAssignments = (
         // Read-aloud snapshot (docs/plans/QUIZ_READ_ALOUD.md §3); omitted when off.
         ...(opts.readAloudAll ? { readAloudAll: true } : {}),
         ...(quiz.language ? { language: quiz.language } : {}),
+        ...(Object.keys(sessionReadAloudText).length > 0
+          ? { readAloudTextByStimulusId: sessionReadAloudText }
+          : {}),
         // Phase 1 toggles
         tabWarningsEnabled: opts.tabWarningsEnabled ?? true,
         ...(opts.tabWarningThreshold !== undefined
@@ -1976,6 +1986,10 @@ export const useQuizAssignments = (
         questions: canonicalQuestions,
         stimuli: canonical.stimuli,
       });
+      const canonicalReadAloudText = readAloudTextByStimulusId({
+        questions: canonicalQuestions,
+        stimuli: canonical.stimuli,
+      });
 
       // Tag any pre-existing responses with the OLD `syncedVersion` so
       // the results UI can render "Answered before v{N+1} update" chips.
@@ -2105,6 +2119,10 @@ export const useQuizAssignments = (
         // canonical edit removed the last stimulus.
         stimuli: canonicalStimuli.length > 0 ? canonicalStimuli : deleteField(),
         language: canonical.language ?? deleteField(),
+        readAloudTextByStimulusId:
+          Object.keys(canonicalReadAloudText).length > 0
+            ? canonicalReadAloudText
+            : deleteField(),
         // Re-derived every sync, so revoking the gate clears a stale marker —
         // unless committed takes still depend on it.
         mediaResponseEnabled:

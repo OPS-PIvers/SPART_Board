@@ -2156,7 +2156,21 @@
     "unavailable": "Read-aloud isn't available right now.",
     "preparing": "Preparing read-aloud…",
     "partial": "Some audio will load on demand.",
-    "previewVoice": "Preview voice"
+    "previewVoice": "Preview voice",
+    "readPassage": "Read passage aloud",
+    "passage": "Passage",
+    "stimulusText": "Read-aloud text",
+    "stimulusTextPlaceholder": "Text students hear for this stimulus",
+    "sourcePdfText": "PDF text",
+    "sourceOcr": "OCR",
+    "sourceEdited": "Edited",
+    "sourceNone": "None",
+    "extract": "Extract text",
+    "extracting": "Extracting…",
+    "clear": "Clear",
+    "readingHelp": "Leave empty on reading assessments.",
+    "needsManual": "Couldn't extract text automatically. Paste or type it here.",
+    "extractFailed": "Text extraction failed. Try again."
   },
   "quizMediaResponse": {
     "notice": {

@@ -375,7 +375,10 @@ export const QuizEditorModal: React.FC<QuizEditorModalProps> = ({
               }
             />
           ) : editorTab === 'stimuli' ? (
-            <StimulusManagerPanel state={editorState} />
+            <StimulusManagerPanel
+              state={editorState}
+              readAloudAvailable={readAloudAvailable}
+            />
           ) : (
             <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50 px-5 py-5 space-y-5">
               {readAloudAvailable && (
