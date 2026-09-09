@@ -19,8 +19,6 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, activeDashboard, addToast } = useDashboard();
   const config = widget.config as ChecklistConfig;
-  // Extract fields, but DO NOT default items to [] here, or we break reference
-  // equality checks in the derived state pattern below, causing infinite renders.
   const {
     items,
     mode = 'manual',
@@ -33,18 +31,16 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   const [localText, setLocalText] = React.useState(
     safeItems.map((i) => i.text).join('\n')
   );
-  const [prevItems, setPrevItems] = React.useState(items);
-  const [skipNextSync, setSkipNextSync] = React.useState(false);
+  const itemsText = safeItems.map((i) => i.text).join('\n');
+  const [syncedText, setSyncedText] = React.useState(itemsText);
+  const [pushedText, setPushedText] = React.useState(itemsText);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Sync external prop changes to local text (skip self-inflicted updates from debounced save)
-  if (items !== prevItems) {
-    setPrevItems(items);
-    if (skipNextSync) {
-      setSkipNextSync(false);
-    } else {
-      setLocalText(safeItems.map((i) => i.text).join('\n'));
-    }
+  // Compare by content, not reference: a save echo re-creates the items array
+  // and must not wipe keystrokes typed since the debounced save fired.
+  if (itemsText !== syncedText) {
+    setSyncedText(itemsText);
+    if (itemsText !== pushedText) setLocalText(itemsText);
   }
 
   // Clean up timeout on unmount
@@ -105,7 +101,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
           };
         });
 
-      setSkipNextSync(true);
+      setPushedText(newItems.map((i) => i.text).join('\n'));
       updateWidgetRef.current(widget.id, {
         config: { ...configRef.current, items: newItems },
       });

@@ -1,9 +1,9 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChecklistSettings } from './Settings';
 import { useDashboard } from '@/context/useDashboard';
-import { WidgetData } from '@/types';
+import { ChecklistItem, WidgetData } from '@/types';
 
 vi.mock('@/context/useDashboard', () => ({
   useDashboard: vi.fn(),
@@ -53,5 +53,71 @@ describe('ChecklistSettings — First/Last Names label associations', () => {
     expect(screen.getByLabelText('Last Names')).toBeInstanceOf(
       HTMLTextAreaElement
     );
+  });
+});
+
+describe('ChecklistSettings — task list draft survives save echoes', () => {
+  it('keeps keystrokes typed after the debounced save when the items echo back', () => {
+    vi.useFakeTimers();
+    const updateWidget = vi.fn();
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      updateWidget,
+      activeDashboard: undefined,
+      addToast: vi.fn(),
+      rosters: [],
+      activeRosterId: undefined,
+    });
+    const manual: WidgetData = {
+      ...widget,
+      config: { ...widget.config, mode: 'manual', items: [] },
+    };
+    const { rerender } = render(<ChecklistSettings widget={manual} />);
+    const box = screen.getByPlaceholderText<HTMLTextAreaElement>(
+      'Enter tasks here...'
+    );
+
+    fireEvent.change(box, { target: { value: 'r' } });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(updateWidget).toHaveBeenCalledTimes(1);
+    const saved = (
+      updateWidget.mock.calls[0][1] as { config: { items: ChecklistItem[] } }
+    ).config.items;
+    expect(saved.map((i) => i.text)).toEqual(['r']);
+
+    // Typing continues before the save round-trips.
+    fireEvent.change(box, { target: { value: 're' } });
+
+    // Local optimistic update, then the Firestore echo with fresh object refs.
+    rerender(
+      <ChecklistSettings
+        widget={{ ...manual, config: { ...manual.config, items: saved } }}
+      />
+    );
+    rerender(
+      <ChecklistSettings
+        widget={{
+          ...manual,
+          config: { ...manual.config, items: saved.map((i) => ({ ...i })) },
+        }}
+      />
+    );
+    expect(box.value).toBe('re');
+
+    // A genuine external edit still replaces the draft.
+    rerender(
+      <ChecklistSettings
+        widget={{
+          ...manual,
+          config: {
+            ...manual.config,
+            items: [{ id: 'x', text: 'from elsewhere', completed: false }],
+          },
+        }}
+      />
+    );
+    expect(box.value).toBe('from elsewhere');
+    vi.useRealTimers();
   });
 });
