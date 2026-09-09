@@ -898,9 +898,30 @@ export async function prepareReadAloudAfterTargets(
 
 // ── synthesizeQuizAudioV1 ──────────────────────────────────────────────────
 
+function inSessionClass(
+  session: Record<string, unknown>,
+  classIds: readonly string[] | undefined
+): boolean {
+  if (!classIds || classIds.length === 0) return false;
+  const sessionClassIds: unknown = session.classIds;
+  const ids = new Set<string>(
+    Array.isArray(sessionClassIds)
+      ? sessionClassIds.filter((c): c is string => typeof c === 'string')
+      : []
+  );
+  if (typeof session.classId === 'string') ids.add(session.classId);
+  return classIds.some((c) => ids.has(c));
+}
+
 export async function synthesizeQuizAudio(
   request: SynthesizeQuizAudioRequest,
-  caller: { uid: string; email: string | null; studentRole: boolean },
+  caller: {
+    uid: string;
+    email: string | null;
+    studentRole: boolean;
+    /** `classIds` custom claim; lets class-wide (pointer-less) students in. */
+    classIds?: string[];
+  },
   deps: ReadAloudDeps
 ): Promise<SynthesizeQuizAudioResult> {
   const { db } = deps;
@@ -945,17 +966,19 @@ export async function synthesizeQuizAudio(
     .collection('items')
     .doc(request.sessionId)
     .get();
-  if (!pointerSnap.exists)
-    throw new HttpsError(
-      'permission-denied',
-      'Assignment not found for this student.'
-    );
   const pointer = pointerSnap.data() ?? {};
   const sessionRef = db.collection('quiz_sessions').doc(request.sessionId);
   const sessionSnap = await sessionRef.get();
   if (!sessionSnap.exists)
     throw new HttpsError('not-found', 'Quiz session not found.');
   const session = sessionSnap.data() ?? {};
+  // Class-wide assignments write no pointer docs; the token's classIds claim
+  // is the same membership proof the student app uses to list them.
+  if (!pointerSnap.exists && !inSessionClass(session, caller.classIds))
+    throw new HttpsError(
+      'permission-denied',
+      'Assignment not found for this student.'
+    );
   if (session.status === 'ended')
     throw new HttpsError('failed-precondition', 'This quiz has ended.');
   const override = (pointer.override ?? {}) as Record<string, unknown>;
@@ -1202,8 +1225,15 @@ export const synthesizeQuizAudioV1 = onCall(
         uid: request.auth.uid,
         email: request.auth.token.email ?? null,
         studentRole: request.auth.token.studentRole === true,
+        classIds: claimClassIds(request.auth.token.classIds),
       },
       buildDefaultDeps()
     );
   }
 );
+
+function claimClassIds(raw: unknown): string[] {
+  return Array.isArray(raw)
+    ? raw.filter((c): c is string => typeof c === 'string' && c.length > 0)
+    : [];
+}

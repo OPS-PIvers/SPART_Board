@@ -213,6 +213,7 @@ function makeDeps(
 
 const student = { uid: STUDENT, email: null, studentRole: true };
 const teacher = { uid: TEACHER, email: 't@x.org', studentRole: false };
+const classStudent = { ...student, classIds: ['c1'] };
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -391,6 +392,33 @@ describe('synthesizeQuizAudio — student fallback', () => {
     const noPointer = makeDeps(makeDocs({ pointer: null }));
     await expect(
       synthesizeQuizAudio(req, student, noPointer.deps)
+    ).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+
+  it('allows a pointer-less student whose token class matches the session', async () => {
+    const { deps, synthesize } = makeDeps(
+      makeDocs({ session: { classIds: ['c1'] }, pointer: null })
+    );
+    const res = await synthesizeQuizAudio(req, classStudent, deps);
+    expect(res.cached).toBe(false);
+    expect(synthesize).toHaveBeenCalledTimes(1);
+  });
+
+  it('denies a pointer-less student when no class matches or readAloudAll is off', async () => {
+    const other = makeDeps(
+      makeDocs({ session: { classIds: ['c2'] }, pointer: null })
+    );
+    await expect(
+      synthesizeQuizAudio(req, classStudent, other.deps)
+    ).rejects.toMatchObject({ code: 'permission-denied' });
+    const off = makeDeps(
+      makeDocs({
+        session: { classIds: ['c1'], readAloudAll: false },
+        pointer: null,
+      })
+    );
+    await expect(
+      synthesizeQuizAudio(req, classStudent, off.deps)
     ).rejects.toMatchObject({ code: 'permission-denied' });
   });
 
