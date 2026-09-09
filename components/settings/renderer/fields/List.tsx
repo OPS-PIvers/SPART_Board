@@ -22,7 +22,7 @@ const ListImpl: React.FC<FieldProps> = ({
 }) => {
   // Keyed by object identity, not array index, so remove/reorder can't steal another row's focus.
   const rowIds = useRef(new WeakMap<Row, string>());
-  // Malformed/legacy rows can be primitives, which a WeakMap can't key; hold those by value.
+  // Primitive rows (malformed/legacy) can't key a WeakMap, so hold them by value — equal primitives share an id, which nothing can distinguish anyway.
   const primitiveRowIds = useRef(new Map<unknown, string>());
   const rows = Array.isArray(value) ? (value as Row[]) : [];
 
