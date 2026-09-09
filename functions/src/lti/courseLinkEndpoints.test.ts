@@ -44,6 +44,8 @@ let contextDoc: { exists: boolean; data: () => unknown };
 let ownedRosters: string[] = [];
 // The caller's own admin test-class slugs (mock ClassLink rosters).
 let ownedTestClasses: string[] = [];
+// The caller's own seen-section docs, keyed by contextId.
+const seenSections = new Map<string, { sessionId: string }>();
 const courseLinks = new Map<string, Record<string, unknown>>();
 
 vi.mock('firebase-admin', () => ({
@@ -70,6 +72,15 @@ vi.mock('firebase-admin', () => ({
         return {
           doc: () => ({
             collection: () => ({
+              doc: (ctx: string) => ({
+                get: async () => ({
+                  exists: seenSections.has(ctx),
+                  data: () => seenSections.get(ctx),
+                }),
+                delete: async () => {
+                  seenSections.delete(ctx);
+                },
+              }),
               get: async () => ({
                 docs: [
                   ...ownedRosters.map((cid) => ({
@@ -194,6 +205,7 @@ beforeEach(() => {
   // both the link tests' ids (cl-1, cl-new) and the suggest candidates (cl-A/B).
   ownedRosters = ['cl-1', 'cl-new', 'cl-A', 'cl-B'];
   ownedTestClasses = ['mock-p1'];
+  seenSections.clear();
   courseLinks.clear();
   fetchNrpsMembersMock.mockReset();
   fetchClassStudentsMock.mockReset();
@@ -223,6 +235,22 @@ describe('linkLtiCourseV1', () => {
     await expect(callLink({ auth: TEACHER, data: base })).rejects.toThrow(
       /Not the teacher/
     );
+  });
+
+  it("drops the caller's own stale seen-section record when its session is gone", async () => {
+    seenSections.set('ctx-1', { sessionId: 'S1' });
+    await expect(callLink({ auth: TEACHER, data: base })).rejects.toThrow(
+      /launch record is out of date/
+    );
+    expect(seenSections.has('ctx-1')).toBe(false);
+  });
+
+  it("keeps the opaque error for a missing session the caller's record does not name", async () => {
+    seenSections.set('ctx-1', { sessionId: 'S-other' });
+    await expect(callLink({ auth: TEACHER, data: base })).rejects.toThrow(
+      /Not the teacher/
+    );
+    expect(seenSections.has('ctx-1')).toBe(true);
   });
 
   it('rejects when the session never saw this context', async () => {

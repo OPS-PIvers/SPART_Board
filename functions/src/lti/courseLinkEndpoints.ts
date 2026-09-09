@@ -34,6 +34,7 @@ import {
   QUIZ_SESSIONS_COLLECTION,
   VIDEO_ACTIVITY_SESSIONS_COLLECTION,
   LTI_SESSION_MEMBERSHIPS_COLLECTION,
+  LTI_SEEN_SECTIONS_SUBCOLLECTION,
   USERS_COLLECTION,
   dropLinkedSectionPeriod,
   type LtiSessionKind,
@@ -92,6 +93,8 @@ async function assertOwnsSchoologyContext(
     typeof sessSnap.data()?.teacherUid === 'string'
       ? (sessSnap.data()?.teacherUid as string)
       : '';
+  if (!sessSnap.exists)
+    await rejectStaleSeenSection(db, callerUid, sessionId, contextId);
   if (!sessSnap.exists || sessTeacherUid !== callerUid) {
     throw new HttpsError(
       'permission-denied',
@@ -119,6 +122,32 @@ async function assertOwnsSchoologyContext(
         ? cd.contextMembershipsUrl
         : null,
   };
+}
+
+/**
+ * The caller's own seen-section record can outlive its anchor session (the
+ * assignment was deleted). Only when THAT record names this sessionId — so a
+ * probe with a random id learns nothing — drop it (the nudge stops counting it)
+ * and say plainly that a relaunch is needed.
+ */
+async function rejectStaleSeenSection(
+  db: admin.firestore.Firestore,
+  callerUid: string,
+  sessionId: string,
+  contextId: string
+): Promise<void> {
+  const seenRef = db
+    .collection(USERS_COLLECTION)
+    .doc(callerUid)
+    .collection(LTI_SEEN_SECTIONS_SUBCOLLECTION)
+    .doc(contextId);
+  const seen = await seenRef.get();
+  if (!seen.exists || seen.data()?.sessionId !== sessionId) return;
+  await seenRef.delete();
+  throw new HttpsError(
+    'failed-precondition',
+    'That launch record is out of date. Open the assignment from Schoology again, then link it.'
+  );
 }
 
 /** Require an authed, email-bearing, non-student caller; return their uid. */
