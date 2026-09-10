@@ -21,6 +21,12 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
   // Derived from the canonical MATH_TOOL_META — no local duplication
   const TOOL_TYPES = MATH_TOOL_META;
   const isRotatable = ROTATABLE_TOOLS.includes(config.toolType);
+  // Guards the "Tool Type" radiogroup's roving tabindex against a persisted
+  // toolType outside MATH_TOOL_META, which would otherwise leave every
+  // option tabIndex={-1} and make the group keyboard-unreachable.
+  const hasMatchingToolType = TOOL_TYPES.some(
+    (t) => t.type === config.toolType
+  );
 
   const numberLineModes: NumberLineMode[] = [
     'integers',
@@ -57,9 +63,11 @@ export const MathToolInstanceSettings: React.FC<{ widget: WidgetData }> = ({
             handleRadioGroupKeyDown(e, TOOL_TYPES, selectToolType)
           }
         >
-          {TOOL_TYPES.map((tool) => {
+          {TOOL_TYPES.map((tool, index) => {
             const { type, label, emoji } = tool;
-            const selected = config.toolType === type;
+            const selected = hasMatchingToolType
+              ? config.toolType === type
+              : index === 0;
             return (
               <button
                 key={type}
