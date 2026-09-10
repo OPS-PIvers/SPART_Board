@@ -201,8 +201,7 @@ describe('computeWidgetPixelRect', () => {
   });
 
   it('keeps the locked aspect ratio when a tiny aspect-fitted rect hits the min-size floor', () => {
-    // A 3:1 widget, small enough on this viewport that fitAspectInside's
-    // output falls below both MIN_PIXEL_W and MIN_PIXEL_H.
+    // A 3:1 widget whose fitted size on this viewport is below both floors.
     const aspectRatio = 3;
     const rect = computeWidgetPixelRect(
       { xProp: 0, yProp: 0, wProp: 0.02, hProp: 0.02, aspectRatio },
