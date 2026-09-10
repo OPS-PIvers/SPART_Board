@@ -258,8 +258,19 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
     const movementYPct = (e.movementY / rect.height) * 100;
 
     const resizedNode = nodes.find((n) => n.id === resizingNodeId);
-    const maxW = 100 - (resizedNode?.x ?? 0);
-    const maxH = 100 - (resizedNode?.y ?? 0);
+    // Heal x/y the same way displayNodes does — a legacy out-of-bounds
+    // raw x/y would otherwise yield a negative maxW/maxH that collapses
+    // the node to the size floor on touch.
+    const healedPos = resizedNode
+      ? clampNodePosition(
+          resizedNode.x,
+          resizedNode.y,
+          resizedNode.width ?? DEFAULT_WIDTH,
+          resizedNode.height ?? DEFAULT_HEIGHT
+        )
+      : { x: 0, y: 0 };
+    const maxW = 100 - healedPos.x;
+    const maxH = 100 - healedPos.y;
     dim.w = Math.max(5, Math.min(maxW, dim.w + movementXPct));
     dim.h = Math.max(5, Math.min(maxH, dim.h + movementYPct));
 

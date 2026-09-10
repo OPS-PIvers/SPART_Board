@@ -194,4 +194,35 @@ describe('ConceptWebWidget — node bounds clamping', () => {
     expect(nodeEl.style.left).toBe('0%');
     expect(nodeEl.style.top).toBe('0%');
   });
+
+  it('does not collapse a healed out-of-bounds node to the size floor on the first resize touch', () => {
+    const widgetData = createWidgetData({
+      nodes: [
+        // Raw x=150 is out of bounds; the node renders healed at x=85. maxW
+        // must be computed from the healed x, not the raw one, or it goes
+        // negative and Math.min forces the node straight to the 5% floor.
+        { id: 'node-1', text: 'Idea', x: 150, y: -20, width: 15, height: 15 },
+      ],
+    });
+    const { container } = render(<ConceptWebWidget widget={widgetData} />);
+
+    const resizeHandle = container.querySelector<HTMLElement>('.resize-handle');
+    if (!resizeHandle) throw new Error('Resize handle not found');
+    resizeHandle.setPointerCapture = vi.fn();
+    resizeHandle.releasePointerCapture = vi.fn();
+
+    fireEvent.pointerDown(resizeHandle, { pointerId: 1 });
+    // A tiny nudge should barely change the size, not collapse it to 5.
+    dispatchPointerMoveWithMovement(resizeHandle, 1, 1, 1);
+    fireEvent.pointerUp(resizeHandle, { pointerId: 1 });
+
+    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
+    const savedConfig = (
+      mockUpdateWidget.mock.calls[0][1] as { config: ConceptWebConfig }
+    ).config;
+    const savedNode = savedConfig.nodes.find((n) => n.id === 'node-1');
+    if (!savedNode) throw new Error('node-1 missing from saved config');
+
+    expect(savedNode.width).toBeGreaterThan(14);
+  });
 });
