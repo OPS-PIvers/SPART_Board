@@ -91,8 +91,7 @@ beforeEach(async () => {
   await testEnv.clearFirestore();
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
-    // Legacy super-admin list stays EMPTY so the super-admin grant below can
-    // only come from the member roleId branch (isMemberSuperAdmin()).
+    // Empty so the super-admin grant below only comes from isMemberSuperAdmin().
     await setDoc(doc(db, 'admin_settings/user_roles'), { superAdmins: [] });
 
     await setDoc(doc(db, `organizations/${ORG_ID}`), {
@@ -140,8 +139,7 @@ beforeEach(async () => {
       orgId: ORG_ID,
       name: 'Orono High',
     });
-    // The real site admin's /admins doc — present regardless of who currently
-    // holds a token claiming that email address.
+    // The real site admin's /admins doc, independent of who claims that email.
     await setDoc(doc(db, `admins/${SITE_ADMIN_EMAIL}`), { addedAt: 1 });
   });
 });
