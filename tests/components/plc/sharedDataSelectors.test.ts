@@ -816,6 +816,18 @@ describe('buildAssessmentCards', () => {
     expect(cards[0].syncGroupId).toBe('sync-1');
   });
 
+  it('falls back to the aggregate title before the weakest-question text', () => {
+    const cards = buildAssessmentCards(
+      [makeAggregate({ title: 'Unit 4 CFA (server)' })],
+      [],
+      members,
+      'uid-alice',
+      new Map()
+    );
+    expect(cards[0].isDesignated).toBe(false);
+    expect(cards[0].title).toBe('Unit 4 CFA (server)');
+  });
+
   it('marks an undesignated card and uses the weakest-question text as the title fallback', () => {
     const cards = buildAssessmentCards(
       [makeAggregate()],

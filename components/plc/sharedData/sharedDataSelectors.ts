@@ -275,7 +275,7 @@ export interface AssessmentRunStatus {
 export interface AssessmentDataCard {
   /** Canonical assessment id (== aggregate doc id == comments thread suffix). */
   assessmentId: string;
-  /** Display title — designated assessment title, else first weak-question text. */
+  /** Display title — assessment title, else aggregate title, else weak-question text. */
   title: string;
   /** The designated common assessment, if this group has been promoted. */
   assessment: PlcCommonAssessment | null;
@@ -457,12 +457,12 @@ export function buildAssessmentCards(
           a.teacherName.localeCompare(b.teacherName)
       );
 
-    // Title precedence: designated assessment title, else weakest-question
-    // text, else first-question text. Empty strings fall through (so a blank
-    // assessment title doesn't blank the card) — hence the explicit non-empty
-    // checks rather than `??` (which would stop at the empty string).
+    // Title precedence: designated assessment title, else the server-written
+    // aggregate title, else weakest-question text, else first-question text.
+    // Empty strings fall through — hence the non-empty checks rather than `??`.
     const titleCandidates = [
       assessment?.title,
+      aggregate.title,
       weak[0]?.text?.slice(0, 60),
       aggregate.perQuestion[0]?.text?.slice(0, 60),
     ];

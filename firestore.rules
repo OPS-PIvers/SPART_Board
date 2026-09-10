@@ -2005,8 +2005,9 @@ service cloud.firestore {
 
         // Author-only writes; doc id pinned to the source assignment id for join-back.
         // Author must be a current PLC member. hasOnly([...]) locks the shape. sheetUrl is
-        // pinned to the trusted Google Sheets host/path (rendered as a clickable link, so
-        // an arbitrary string is a phishing vector). create/update are split so update can
+        // optional ('' when the assignment has no sheet); when set it is pinned to the
+        // trusted Google Sheets host/path (rendered as a clickable link, so an arbitrary
+        // string is a phishing vector). create/update are split so update can
         // check the *existing* ownerUid and pin id/ownerUid/createdAt.
         allow create: if request.auth != null
           && request.auth.uid == request.resource.data.ownerUid
@@ -2020,7 +2021,10 @@ service cloud.firestore {
              ])
           && request.resource.data.kind in ['quiz', 'video-activity']
           && request.resource.data.status in ['active', 'paused', 'inactive']
-          && request.resource.data.sheetUrl.matches('^https://docs[.]google[.]com/spreadsheets/.*$');
+          && (
+               request.resource.data.sheetUrl == ''
+               || request.resource.data.sheetUrl.matches('^https://docs[.]google[.]com/spreadsheets/.*$')
+             );
 
         allow update: if request.auth != null
           // Caller must be the *existing* owner — prevents takeover by a
@@ -2041,7 +2045,10 @@ service cloud.firestore {
              ])
           && request.resource.data.kind in ['quiz', 'video-activity']
           && request.resource.data.status in ['active', 'paused', 'inactive']
-          && request.resource.data.sheetUrl.matches('^https://docs[.]google[.]com/spreadsheets/.*$');
+          && (
+               request.resource.data.sheetUrl == ''
+               || request.resource.data.sheetUrl.matches('^https://docs[.]google[.]com/spreadsheets/.*$')
+             );
 
         // Authors clean up their own entries. No lead-override — leads ask the
         // owner to sweep stale entries.
@@ -2154,7 +2161,8 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
                'id', 'title', 'kind', 'syncGroupId', 'unitLabel',
                'opensAt', 'dueAt', 'status',
-               'createdBy', 'createdAt', 'updatedAt', 'deletedAt'
+               'createdBy', 'createdAt', 'updatedAt', 'deletedAt',
+               'sourceQuizId', 'dirtyAt'
              ])
           && request.resource.data.id == assessmentId
           && request.resource.data.createdBy == request.auth.uid
@@ -2175,7 +2183,15 @@ service cloud.firestore {
           && plcSubNullableTimeFieldOk('dueAt')
           && plcSubDeletedAtOk()
           && plcSubTimeFieldOk('createdAt')
-          && plcSubTimeFieldOk('updatedAt');
+          && plcSubTimeFieldOk('updatedAt')
+          // sourceQuizId: first quiz that auto-created this assessment. dirtyAt is
+          // owned by the markPlcAssessmentDirty function (Admin SDK); clients may
+          // only write it as null/absent.
+          && (
+               !('sourceQuizId' in request.resource.data)
+               || request.resource.data.sourceQuizId is string
+             )
+          && request.resource.data.get('dirtyAt', null) == null;
 
         // Update: non-viewer member mutates working fields (title/unitLabel/
         // opensAt/dueAt/status/updatedAt) or soft-deletes via deletedAt. Identity,
@@ -2185,7 +2201,8 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
                'id', 'title', 'kind', 'syncGroupId', 'unitLabel',
                'opensAt', 'dueAt', 'status',
-               'createdBy', 'createdAt', 'updatedAt', 'deletedAt'
+               'createdBy', 'createdAt', 'updatedAt', 'deletedAt',
+               'sourceQuizId', 'dirtyAt'
              ])
           && request.resource.data.id == resource.data.id
           && request.resource.data.createdBy == resource.data.createdBy
@@ -2203,7 +2220,13 @@ service cloud.firestore {
           && plcSubNullableTimeFieldOk('opensAt')
           && plcSubNullableTimeFieldOk('dueAt')
           && plcSubDeletedAtOk()
-          && plcSubTimeFieldOk('updatedAt');
+          && plcSubTimeFieldOk('updatedAt')
+          // Server-written dirtyAt and the sourceQuizId pointer must round-trip
+          // unchanged: clients can neither forge nor clear them.
+          && request.resource.data.get('sourceQuizId', null)
+               == resource.data.get('sourceQuizId', null)
+          && request.resource.data.get('dirtyAt', null)
+               == resource.data.get('dirtyAt', null);
 
         // Non-viewer member can hard-delete (PLC-owned model). Soft-delete via
         // deletedAt is typical; the orphaned aggregates/{assessmentId} doc is
@@ -3068,9 +3091,28 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Only the teacher (session owner) can create/update/delete the session document.
       // Ownership is carried on the `teacherUid` field (no longer the doc id).
+      // PLC pooling link (docs/plans/PLC_ASSESSMENT_DATA.md §4): a session may
+      // carry plcId + syncGroupId only for a PLC the caller belongs to. Writes are
+      // already owner-only, so set/clear of plcId stays teacher-only. `.get()`
+      // everywhere so a missing field denies instead of throwing.
+      function plcLinkOk(d) {
+        return d.get('plcId', '') is string && d.get('plcId', '').size() > 0
+          && d.get('syncGroupId', '') is string && d.get('syncGroupId', '').size() > 0
+          && request.auth.uid in get(
+               /databases/$(database)/documents/plcs/$(d.plcId)
+             ).data.memberUids;
+      }
       allow create: if request.auth != null &&
-        request.resource.data.teacherUid == request.auth.uid;
-      allow update, delete: if request.auth != null &&
+        request.resource.data.teacherUid == request.auth.uid &&
+        (!('plcId' in request.resource.data) || plcLinkOk(request.resource.data));
+      // Update: an unchanged or cleared plcId needs no PLC read; a new/changed
+      // non-null plcId re-runs the membership gate.
+      allow update: if request.auth != null &&
+        resource.data.teacherUid == request.auth.uid &&
+        (request.resource.data.get('plcId', null) == resource.data.get('plcId', null) ||
+         request.resource.data.get('plcId', null) == null ||
+         plcLinkOk(request.resource.data));
+      allow delete: if request.auth != null &&
         resource.data.teacherUid == request.auth.uid;
 
       match /responses/{responseKey} {

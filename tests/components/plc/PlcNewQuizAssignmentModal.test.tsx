@@ -9,7 +9,7 @@
  *     sourced from getQuizBehavior(pickedQuiz.behavior), NOT from removed
  *     controls.
  *   - dueAt flows into settings when a date is entered.
- *   - PLC linkage (plc.id, plc.name) is still set.
+ *   - PLC linkage (plc.id, plc.name, memberEmails) is set with no sheetUrl.
  *
  * Mocking strategy:
  *   - useQuiz: quizzes list with one item carrying a behavior.
@@ -98,10 +98,6 @@ vi.mock('@/context/useAuth', () => ({
       displayName: 'Ms. Smith',
       email: 'smith@school.edu',
     },
-    googleAccessToken: null,
-    // Path B: sheet auto-create now gates on ensureGoogleScope. Resolve null to
-    // preserve the "no token → skip sheet creation" behavior these tests assert.
-    ensureGoogleScope: vi.fn().mockResolvedValue(null),
   })),
 }));
 
@@ -117,12 +113,6 @@ vi.mock('@/hooks/useSyncedQuizGroups', () => ({
   callLeaveSyncedQuizGroup: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/utils/quizDriveService', () => ({
-  QuizDriveService: vi.fn().mockImplementation(() => ({
-    createPlcSheetAndShare: vi.fn().mockResolvedValue({ url: '' }),
-  })),
-}));
-
 vi.mock('@/utils/resolveAssignmentTargets', () => ({
   deriveSessionTargetsFromRosters: vi.fn().mockReturnValue({
     classIds: [],
@@ -134,7 +124,6 @@ vi.mock('@/utils/resolveAssignmentTargets', () => ({
 
 vi.mock('@/utils/plc', () => ({
   getPlcMemberEmails: vi.fn().mockReturnValue([]),
-  getPlcTeammateEmails: vi.fn().mockReturnValue([]),
 }));
 
 vi.mock('@/utils/logError', () => ({
@@ -346,6 +335,7 @@ describe('PlcNewQuizAssignmentModal (Task 10 — slimmed configure step)', () =>
     expect(settings.plc).toBeDefined();
     expect((settings.plc as Record<string, unknown>).id).toBe(fakePlc.id);
     expect((settings.plc as Record<string, unknown>).name).toBe(fakePlc.name);
+    expect(settings.plc).not.toHaveProperty('sheetUrl');
   });
 
   it('forwards dueAt into settings when a date is entered', async () => {

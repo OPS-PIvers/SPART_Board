@@ -404,9 +404,14 @@ describe('PlcQuizLibraryBody', () => {
       );
     });
 
-    it('still adds the quiz, unlinked, when the sheet cannot be created', async () => {
+    it('still adds the quiz, PLC-linked without a sheet, when the sheet cannot be created', async () => {
+      const linkage = {
+        id: 'plc-1',
+        name: 'Test PLC',
+        memberEmails: ['t@example.com'],
+      };
       vi.mocked(buildPlcLinkage).mockResolvedValueOnce({
-        linkage: undefined,
+        linkage,
         error: new Error('Sheets API down'),
       });
       renderSubject();
@@ -419,7 +424,8 @@ describe('PlcQuizLibraryBody', () => {
         unknown,
         Record<string, unknown>,
       ];
-      expect(settings).not.toHaveProperty('plc');
+      expect(settings.plc).toEqual(linkage);
+      expect(settings.plc).not.toHaveProperty('sheetUrl');
     });
 
     it('renders the class-period picker optimistically after assign (no listener snapshot)', async () => {

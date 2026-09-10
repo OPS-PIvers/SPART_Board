@@ -1,6 +1,6 @@
 # PLC Assessment Data: reliable pooled results, merged Assessments tab, folders, action items
 
-**Status:** approved design, not started
+**Status:** approved design; PR 1 built 2026-09-10 (see §8.1), PRs 2-4 not started
 **Decided:** 2026-09-09 (grilling session with Paul; lead-teacher transcript as input)
 **Target:** PRs 1 and 2 live before the 2026-09-28 PD day; PRs 3 and 4 in the same window if they fit
 **Branch flow:** four sequential PRs into `dev-paul`, then `dev-paul` → `main`
@@ -279,6 +279,30 @@ completedResponses`.
 - [ ] `scripts/backfill-plc-sessions.mjs` with `--apply`
 - [ ] English 9 dry run reviewed by Paul, live run, prod verification
 - [ ] `public/changelog.json` entry
+
+### 8.1 PR 1 implementation notes (2026-09-10)
+
+Deviations from the sections above, decided while building:
+
+- The assessment record is created **server-side** by `markPlcAssessmentDirty` when a
+  session carrying `plcId` is first written (doc id = the pooling key). Clients never
+  write `dirtyAt` and do not auto-create; rules pin `dirtyAt` to its stored value.
+- `PlcLinkage.sheetUrl` stays as an **optional** field instead of moving to
+  `plcSheetUrl`; the link is valid with `id` + `name` alone.
+- The `contributions` and `assignment_index` rule blocks, the `usePlcContributions` read
+  hook, and `usePlcAssignmentIndex` are left for PR 2 (their readers still render). PR 1
+  only removes the contribution writers, the widget PLC tab, and the old function, and
+  relaxes the `assignment_index` sheet-URL requirement to allow an empty string.
+- **Backfill pools by normalized title.** The English 9 dry run showed each member's
+  assignment carries its own `sync.groupId` (the PLC assign modal mints a new group when
+  a teacher picks their own copy), so five runs of one pre-assessment had five keys. The
+  script writes one pool key per title onto the sessions: the PLC library entry's group
+  when the title matches, else the largest run's group. The live assign path still pools
+  by `syncGroupId`; PR 2's retroactive picker (D12) and a title-aware default in
+  `PlcNewQuizAssignmentModal` (prefer the PLC library group when the picked quiz title
+  matches) are needed so new assignments do not repeat the split.
+- The response trigger only reads the parent session when a response's `status` or
+  `score` changes, so autosave writes cost nothing.
 
 ### PR 2: merged Assessments tab and pooled view
 
