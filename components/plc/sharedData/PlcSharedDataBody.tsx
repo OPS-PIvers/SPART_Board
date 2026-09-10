@@ -27,10 +27,10 @@
  *                            regression); no other teacher's PII is exposed.
  *
  * Each card carries a scoped `PlcCommentsThread` keyed to
- * `assessment:<assessmentId>` (already forward-aligned in Wave 2). Cards that
- * have not yet been promoted to a first-class common assessment expose a
+ * `assessment:<assessmentId>` (already forward-aligned in Wave 2). Legacy
+ * cards (no assessment doc AND no server-written `aggregate.title`) expose a
  * "Designate as common assessment" affordance that calls the provider
- * `designateAssessment` action.
+ * `designateAssessment` action; server-titled aggregates hide it.
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
@@ -247,8 +247,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
       {expanded && (
         <div className="border-t border-slate-100 bg-slate-50 p-4 space-y-5">
-          {/* Designate affordance — promote this group to a common assessment */}
-          {!card.isDesignated && canEdit && (
+          {/* Designate affordance — legacy groups only; server-titled aggregates need none */}
+          {!card.isDesignated && canEdit && !card.aggregate.title && (
             <div className="flex items-center justify-between gap-3 bg-white border border-brand-blue-primary/20 rounded-xl px-3 py-2.5">
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-800">

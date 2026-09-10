@@ -11,7 +11,7 @@ import {
 import type { Plc, PlcContribution } from '@/types';
 import { usePlcContributions } from '@/hooks/usePlcContributions';
 import { usePlcAssignments } from '@/hooks/usePlcAssignments';
-import { PlcAggregateSection } from '@/components/common/library/PlcTab';
+import { PlcAggregateSection } from '@/components/common/library/PlcAggregateSection';
 import {
   type SchemaGroup,
   aggregateGroup,

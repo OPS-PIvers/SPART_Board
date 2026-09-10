@@ -361,6 +361,22 @@ describe('PlcSharedDataBody (aggregate-driven)', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('uses the aggregate title and hides the designate affordance for a server-titled aggregate', () => {
+    mockAggregatesSlice = {
+      data: [makeAggregate({ title: 'Unit 4 CFA (server)' })],
+      loading: false,
+      error: null,
+      enabled: true,
+    };
+    render(<PlcSharedDataBody plc={fakePlc} />);
+    const card = screen.getByTestId('shared-data-card');
+    expect(within(card).getByText('Unit 4 CFA (server)')).toBeInTheDocument();
+    fireEvent.click(within(card).getByRole('button'));
+    expect(
+      within(card).queryByRole('button', { name: /^Designate$/ })
+    ).not.toBeInTheDocument();
+  });
+
   it('does NOT show the designate affordance once the group is designated', () => {
     const assessment: PlcCommonAssessment = {
       id: 'sync-1',

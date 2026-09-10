@@ -428,8 +428,8 @@ export const ClassroomAddonTeacherSpike: React.FC = () => {
 
   // Build the PLC linkage when the teacher opted into "Share with PLC" and
   // picked a PLC — same shared builder the normal flow uses, so the linkage
-  // shape (auto-created sheet + name + member snapshot) is identical. A failed
-  // sheet auto-create falls through to no linkage and is logged. Shared by both
+  // shape (optional sheet + name + member snapshot) is identical. A failed
+  // sheet auto-create keeps the link without a sheet and is logged. Shared by both
   // the quiz and video-activity attach paths; `sheetTitle` only names the
   // auto-created sheet (the builder is widget-agnostic), so either a quiz or a
   // VA title is fine.
@@ -468,7 +468,7 @@ export const ClassroomAddonTeacherSpike: React.FC = () => {
         if (plcSheetError) {
           append(
             `Note: couldn't create the shared PLC sheet (${plcSheetError.message}). ` +
-              'Attaching without PLC sharing.'
+              'Results still pool on the PLC dashboard.'
           );
         } else if (linkage) {
           append(`Results will export to the "${linkage.name}" PLC sheet.`);
@@ -533,8 +533,8 @@ export const ClassroomAddonTeacherSpike: React.FC = () => {
 
     // Build the PLC linkage when the teacher opted into "Share with PLC" and
     // picked a PLC — same shared builder the normal flow uses, so the linkage
-    // shape (auto-created sheet + name + member snapshot) is identical. A
-    // failed sheet auto-create falls through to no linkage and is logged.
+    // shape (optional sheet + name + member snapshot) is identical. A
+    // failed sheet auto-create keeps the link without a sheet and is logged.
     const plcLinkage = await resolvePlcLinkageForAttach(selectedQuiz.title);
 
     // `sessionMode` + `sessionOptions` + `attemptLimit` now come from the
@@ -732,8 +732,8 @@ export const ClassroomAddonTeacherSpike: React.FC = () => {
 
     // Build the PLC linkage when the teacher opted into "Share with PLC" and
     // picked a PLC — same shared builder the quiz path uses, so the linkage
-    // shape (auto-created sheet + name + member snapshot) is identical. A
-    // failed sheet auto-create falls through to no linkage and is logged.
+    // shape (optional sheet + name + member snapshot) is identical. A
+    // failed sheet auto-create keeps the link without a sheet and is logged.
     const plcLinkage = await resolvePlcLinkageForAttach(selectedActivity.title);
 
     // VA has no join code — the assignment is identified by its sessionId

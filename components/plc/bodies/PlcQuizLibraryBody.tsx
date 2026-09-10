@@ -556,9 +556,8 @@ export const PlcQuizLibraryBody: React.FC<PlcQuizLibraryBodyProps> = ({
           });
         }
 
-        // Same per-assignment PLC sheet the board's assign flow creates, so
-        // the pickup registers on the In-progress tab and exports like any
-        // other PLC assignment. A failed sheet create still adds the quiz.
+        // Same PLC linkage the board's assign flow creates; the optional
+        // sheet is best-effort and a failed create keeps the link.
         const sheetsToken = await ensureGoogleScope('spreadsheets', {
           interactive: true,
         });
@@ -577,7 +576,7 @@ export const PlcQuizLibraryBody: React.FC<PlcQuizLibraryBodyProps> = ({
           addToast(
             t('plcDashboard.assignmentsLibrary.sheetAutoCreateFailed', {
               defaultValue:
-                'Could not create the shared PLC results sheet. The quiz was added to your board but will not show on the PLC In-progress tab.',
+                'Could not create the shared PLC results sheet. The quiz was added to your board and is still shared with the PLC.',
             }),
             'warning'
           );

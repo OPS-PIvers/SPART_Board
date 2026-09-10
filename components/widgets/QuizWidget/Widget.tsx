@@ -1129,8 +1129,6 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         overridesBySourcedId={activeAssignment?.overridesBySourcedId ?? null}
         initialExportUrl={activeAssignment?.exportUrl ?? null}
         plcSheetUrl={activeAssignment?.plc?.sheetUrl ?? null}
-        plcId={activeAssignment?.plc?.id ?? null}
-        syncGroupId={activeAssignment?.sync?.groupId ?? null}
         onExportUrlSaved={
           activeAssignmentId
             ? (url) => setAssignmentExportUrl(activeAssignmentId, url)
@@ -1380,14 +1378,9 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           );
           const derived = deriveSessionTargetsFromRosters(selectedRosters);
 
-          // Resolve the shared sheet + assemble the PlcLinkage via the
-          // shared builder (also used by the Classroom add-on attach path so
-          // the linkage shape stays identical). The builder auto-creates a
-          // fresh per-assignment Google Sheet (or passes a manually-pasted
-          // URL through), snapshots the PLC name + member emails, and only
-          // returns a linkage when every required field resolves. A failed
-          // sheet auto-create surfaces on `error` (we toast it) and falls
-          // through to non-PLC linkage so the assignment still creates.
+          // Assemble the PlcLinkage via the shared builder. The optional
+          // per-assignment sheet is auto-created when possible; a failed
+          // create surfaces on `error` (toasted) but keeps the PLC link.
           const selectedPlc =
             plcOptions.plcMode && plcOptions.plcId
               ? plcs.find((p) => p.id === plcOptions.plcId)
@@ -1397,9 +1390,8 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             // Path B: the builder may auto-create a Google Sheet, so acquire
             // the Sheets scope on demand (silent for already-granted users,
             // one-time consent for never-granted — this is a user gesture).
-            // A null token means no Sheets access; pass it through so the
-            // builder skips creation and falls back to non-PLC linkage,
-            // exactly as the old no-token path did.
+            // A null token means no Sheets access; the builder then links
+            // the PLC without a sheet.
             const sheetsToken = await ensureGoogleScope('spreadsheets', {
               interactive: true,
             });
@@ -1418,7 +1410,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               );
               addToast(
                 plcSheetError.message ||
-                  'Could not create the shared PLC sheet — you can still paste a URL manually.',
+                  'Could not create the shared PLC sheet — the assignment is still shared with your PLC.',
                 'error'
               );
             }

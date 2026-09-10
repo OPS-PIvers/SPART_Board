@@ -535,7 +535,7 @@ const LtiDeepLinkFlow: React.FC = () => {
       if (plcSheetError) {
         setErrorMsg(
           `Note: couldn't create the shared PLC sheet (${plcSheetError.message}). ` +
-            'Adding without PLC sharing.'
+            'Results still pool on the PLC dashboard.'
         );
       }
       return linkage;

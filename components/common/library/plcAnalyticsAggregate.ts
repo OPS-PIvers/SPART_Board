@@ -1,15 +1,7 @@
 /**
- * Pure aggregation helpers for PLC contributions. Lifted out of `PlcTab.tsx`
- * so the cross-quiz `PlcAnalyticsBody` can reuse the same math without
- * tripping `react-refresh/only-export-components` on the component file.
- *
- * The two callers of these helpers:
- *   - `PlcTab` — single-quiz schema-drift view (rendered inside QuizResults).
- *   - `PlcAnalyticsBody` — cross-quiz PLC dashboard analytics.
- *
- * Both group by exact question-id sequence so per-question stats can index
- * positionally without misaligning columns when teammates' synced quizzes
- * have drifted.
+ * Pure aggregation helpers for PLC contributions, used by `PlcAnalyticsBody`
+ * (via `PlcAggregateSection`). Groups by exact question-id sequence so
+ * per-question stats index positionally even when synced quizzes drift.
  */
 
 import type { PlcContribution, PlcContributionQuestion } from '@/types';
