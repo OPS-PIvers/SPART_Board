@@ -132,6 +132,8 @@ export const applyMinSizePreserveAspect = (
   minW = MIN_PIXEL_W,
   minH = MIN_PIXEL_H
 ): PixelRect => {
+  // Aspect ratio is undefined at zero width/height; fall back to the independent floor clamp.
+  if (rect.w <= 0 || rect.h <= 0) return applyMinSize(rect, minW, minH);
   const scale = Math.max(1, minW / rect.w, minH / rect.h);
   const w = rect.w * scale;
   const h = rect.h * scale;

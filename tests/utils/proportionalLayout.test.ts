@@ -233,6 +233,18 @@ describe('applyMinSizePreserveAspect', () => {
     expect(rect.x + rect.w / 2).toBeCloseTo(105, 5);
     expect(rect.y + rect.h / 2).toBeCloseTo(105, 5);
   });
+
+  it('floors a zero-width rect to minW/minH instead of producing NaN', () => {
+    const rect = applyMinSizePreserveAspect({ x: 0, y: 0, w: 0, h: 20 });
+    expect(rect.w).toBe(MIN_PIXEL_W);
+    expect(rect.h).toBe(MIN_PIXEL_H);
+  });
+
+  it('floors a zero-height rect to minW/minH instead of producing NaN', () => {
+    const rect = applyMinSizePreserveAspect({ x: 0, y: 0, w: 20, h: 0 });
+    expect(rect.w).toBe(MIN_PIXEL_W);
+    expect(rect.h).toBe(MIN_PIXEL_H);
+  });
 });
 
 describe('REFERENCE_VIEWPORT', () => {
