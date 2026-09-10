@@ -121,6 +121,26 @@ export const applyMinSize = (
 });
 
 /**
+ * Apply pixel min-size floors to a rect while preserving its aspect ratio.
+ * Unlike {@link applyMinSize}, w and h are scaled together (by whichever
+ * ratio the tighter floor demands) so a widget already fitted to an aspect
+ * ratio doesn't get stretched off that ratio by an independent w/h clamp.
+ * Grows from the rect's center so the result stays centered in its outer box.
+ */
+export const applyMinSizePreserveAspect = (
+  rect: PixelRect,
+  minW = MIN_PIXEL_W,
+  minH = MIN_PIXEL_H
+): PixelRect => {
+  const scale = Math.max(1, minW / rect.w, minH / rect.h);
+  const w = rect.w * scale;
+  const h = rect.h * scale;
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2;
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+};
+
+/**
  * Compute the pixel rect a widget should render at, given its proportional
  * bounds and the current viewport. Applies aspect-ratio fitting (when
  * stretchBehavior is 'preserve-aspect') and min-size floors.
@@ -145,15 +165,17 @@ export const computeWidgetPixelRect = (
 ): PixelRect => {
   const outer = propToPixel(widget, vpW, vpH);
   let rect = outer;
-  if (
+  const aspectFitted =
     stretchBehavior === 'preserve-aspect' &&
     typeof widget.aspectRatio === 'number' &&
     Number.isFinite(widget.aspectRatio) &&
-    widget.aspectRatio > 0
-  ) {
-    rect = fitAspectInside(outer, widget.aspectRatio);
+    widget.aspectRatio > 0;
+  if (aspectFitted) {
+    rect = fitAspectInside(outer, widget.aspectRatio as number);
   }
-  rect = applyMinSize(rect, minW, minH);
+  rect = aspectFitted
+    ? applyMinSizePreserveAspect(rect, minW, minH)
+    : applyMinSize(rect, minW, minH);
   return {
     x: Math.round(rect.x),
     y: Math.round(rect.y),
