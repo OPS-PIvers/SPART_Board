@@ -167,13 +167,14 @@ export const computeWidgetPixelRect = (
 ): PixelRect => {
   const outer = propToPixel(widget, vpW, vpH);
   let rect = outer;
+  const { aspectRatio } = widget;
   const aspectFitted =
     stretchBehavior === 'preserve-aspect' &&
-    typeof widget.aspectRatio === 'number' &&
-    Number.isFinite(widget.aspectRatio) &&
-    widget.aspectRatio > 0;
+    typeof aspectRatio === 'number' &&
+    Number.isFinite(aspectRatio) &&
+    aspectRatio > 0;
   if (aspectFitted) {
-    rect = fitAspectInside(outer, widget.aspectRatio as number);
+    rect = fitAspectInside(outer, aspectRatio);
   }
   rect = aspectFitted
     ? applyMinSizePreserveAspect(rect, minW, minH)
