@@ -156,4 +156,42 @@ describe('ConceptWebWidget — node bounds clamping', () => {
     expect(savedNode.width).toBe(60);
     expect(savedNode.height).toBe(60);
   });
+
+  it('heals a node persisted out of bounds so it renders inside the container', () => {
+    const widgetData = createWidgetData({
+      nodes: [
+        // Persisted before this clamp existed — unrecoverable via drag alone
+        // since the container is overflow-hidden and the node can't be grabbed.
+        { id: 'node-1', text: 'Idea', x: 150, y: -20, width: 15, height: 15 },
+      ],
+    });
+    const { container } = render(<ConceptWebWidget widget={widgetData} />);
+
+    const nodeEl = container.querySelector<HTMLElement>(
+      '[data-node-id="node-1"]'
+    );
+    if (!nodeEl) throw new Error('Node element not found');
+
+    expect(nodeEl.style.left).toBe('85%');
+    expect(nodeEl.style.top).toBe('0%');
+  });
+
+  it('heals a node persisted wider than the container so it never overflows', () => {
+    const widgetData = createWidgetData({
+      nodes: [
+        { id: 'node-1', text: 'Idea', x: 96, y: 96, width: 120, height: 120 },
+      ],
+    });
+    const { container } = render(<ConceptWebWidget widget={widgetData} />);
+
+    const nodeEl = container.querySelector<HTMLElement>(
+      '[data-node-id="node-1"]'
+    );
+    if (!nodeEl) throw new Error('Node element not found');
+
+    expect(nodeEl.style.width).toBe('100%');
+    expect(nodeEl.style.height).toBe('100%');
+    expect(nodeEl.style.left).toBe('0%');
+    expect(nodeEl.style.top).toBe('0%');
+  });
 });

@@ -391,9 +391,21 @@ export const ConceptWebWidget: React.FC<WidgetComponentProps> = ({
       if (n.id === resizingNodeId && resizingNodeDim) {
         node = { ...node, width: resizingNodeDim.w, height: resizingNodeDim.h };
       }
-      return node;
+      // Heal a node persisted out of bounds before the drag/resize clamp existed.
+      const width = Math.min(node.width ?? DEFAULT_WIDTH, 100);
+      const height = Math.min(node.height ?? DEFAULT_HEIGHT, 100);
+      const { x, y } = clampNodePosition(node.x, node.y, width, height);
+      return { ...node, x, y, width, height };
     });
-  }, [nodes, activeNodeId, activeNodePos, resizingNodeId, resizingNodeDim]);
+  }, [
+    nodes,
+    activeNodeId,
+    activeNodePos,
+    resizingNodeId,
+    resizingNodeDim,
+    DEFAULT_WIDTH,
+    DEFAULT_HEIGHT,
+  ]);
 
   const sourceDrawNode = useMemo(() => {
     if (!drawingFromId) return null;
