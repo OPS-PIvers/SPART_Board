@@ -4,7 +4,7 @@ _Audit model: claude-sonnet-4-6_
 _Action model: claude-opus-4-6_
 _Audit cadence: daily_
 _Last audited: 2026-09-10_
-_Last action: 2026-09-07 — MEDIUM `CatalystVisualWidget` uncapped icon/title `cqmin` resolved: initial fix used `min(96px, 40cqmin)`/`min(20px, 6cqmin)` per the item's own Fix guidance, but automated PR review correctly flagged this as the wrong tool for the widget's hero content (a hard `min()` bound at the widget's own 600×400 default size), citing the `ConceptWeb` precedent (reverted from `min()` to `clamp()` for the same reason) and `WeatherWidget`'s uncapped hero content. Revised to `clamp(32px, 40cqmin, 220px)`/`clamp(14px, 6cqmin, 36px)`. `tsc --noEmit`/`eslint`/`prettier --check` clean. Moved to Completed._
+_Last action: 2026-09-10 — MEDIUM `CustomWidgetWidget` opaque loading/no-content states resolved: dropped `bg-slate-800` from both roots' `className` (`Widget.tsx:252,278`), leaving `w-full h-full flex items-center justify-center text-slate-400` so `DraggableWindow`'s glass shell and the Transparency slider show through, matching the `BlendingBoard`/`CarRiderPro`/`First5` resolution precedent. `text-slate-400` left as-is (borderline per CLAUDE.md, not touched further). `tsc --noEmit`/`eslint`/`prettier --check` clean. Moved to Completed._
 
 ---
 
@@ -21,13 +21,6 @@ _Nothing currently in progress._
 ---
 
 ## Open
-
-### MEDIUM `CustomWidgetWidget` loading and no-content states use a full-widget opaque `bg-slate-800` root, masking the glass shell
-
-- **Detected:** 2026-09-10
-- **File:** `components/widgets/CustomWidget/Widget.tsx:252,278`
-- **Detail:** `custom-widget` has `skipScaling: true` (confirmed in `WidgetRegistry.ts`) and is a CQ front face, but its `docLoading` branch (`:249-258`, "Loading…") and its no-grid-definition branch (`:275-284`, "No content configured.") both render `<div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400" style={{ fontSize: 'min(14px, 5cqmin)' }}>` — an opaque `bg-slate-800` fill across the full widget. This is the identical anti-pattern already fixed in `BlendingBoard`/`CarRiderPro`/`First5` (2026-08-25/2026-08-27, Completed below): a full `w-full h-full` root with an opaque background color masks `DraggableWindow`'s glass shell and makes the per-widget/global Transparency slider look broken while either state is showing. `CustomWidgetWidget`'s own loaded (`block`/`code` mode) branches are transparent (`w-full h-full`, no background class) — only these two early-return states carry the violation. This is a distinct file from the three already-Completed widgets, not a regression of that fix.
-- **Fix:** Drop `bg-slate-800` from both roots' `className`, leaving `w-full h-full flex items-center justify-center text-slate-400` (matching the file's own transparent loaded-state convention and the `BlendingBoard`/`CarRiderPro`/`First5` resolution precedent). Keep `text-slate-400` — per CLAUDE.md's muted-text-on-dark-surface guidance this remains borderline; consider `text-slate-300` for closer AA alignment on the now-transparent surface if this is touched.
 
 ### LOW `MiniAppAssignModal`'s "skipped students" warning text drops to hardcoded `text-xs` amid otherwise-correct cqmin scaling
 
@@ -399,6 +392,14 @@ _2026-09-10: Full audit (Thursday daily). `git log --oneline --since="2026-09-09
 ---
 
 ## Completed
+
+### MEDIUM `CustomWidgetWidget` loading and no-content states use a full-widget opaque `bg-slate-800` root, masking the glass shell
+
+- **Detected:** 2026-09-10
+- **Completed:** 2026-09-10
+- **File:** `components/widgets/CustomWidget/Widget.tsx:252,278`
+- **Detail:** `custom-widget` has `skipScaling: true` (confirmed in `WidgetRegistry.ts`) and is a CQ front face, but its `docLoading` branch (`:249-258`, "Loading…") and its no-grid-definition branch (`:275-284`, "No content configured.") both rendered `<div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400" style={{ fontSize: 'min(14px, 5cqmin)' }}>` — an opaque `bg-slate-800` fill across the full widget. This was the identical anti-pattern already fixed in `BlendingBoard`/`CarRiderPro`/`First5` (2026-08-25/2026-08-27, below): a full `w-full h-full` root with an opaque background color masks `DraggableWindow`'s glass shell and makes the per-widget/global Transparency slider look broken while either state is showing. `CustomWidgetWidget`'s own loaded (`block`/`code` mode) branches were already transparent (`w-full h-full`, no background class) — only these two early-return states carried the violation.
+- **Resolution:** Dropped `bg-slate-800` from both roots' `className`, leaving `w-full h-full flex items-center justify-center text-slate-400` (matching the file's own transparent loaded-state convention and the `BlendingBoard`/`CarRiderPro`/`First5` resolution precedent). Kept `text-slate-400` as-is — per CLAUDE.md's muted-text-on-dark-surface guidance this remains borderline, left untouched since it wasn't the item's core fix. `tsc --noEmit` clean, `eslint components/widgets/CustomWidget/Widget.tsx` exit 0, `prettier --check` clean.
 
 ### MEDIUM `CatalystVisualWidget` primary icon and title use uncapped `cqmin` with no px ceiling
 
